@@ -21,14 +21,20 @@ import android.cts.statsdatom.lib.DeviceUtils
 import android.cts.statsdatom.lib.ReportUtils
 import android.input.InputDeviceBus
 import android.input.InputDeviceUsageType
+import android.input.KeyboardSystemEvent
 import com.android.compatibility.common.util.CddTest
+import com.android.compatibility.common.util.PollingCheck
+import com.android.os.AtomsProto.Atom
 import com.android.os.StatsLog.EventMetricData
 import com.android.os.input.InputDeviceUsageReported
 import com.android.os.input.InputExtensionAtoms
+import com.android.os.input.KeyboardConfigured
+import com.android.os.input.KeyboardSystemsEventReported
 import com.android.os.input.TouchpadUsage
 import com.android.tradefed.testtype.DeviceTestCase
 import com.android.tradefed.util.RunUtil
 import com.google.protobuf.ExtensionRegistry
+import java.util.concurrent.TimeUnit
 import org.hamcrest.Description
 import org.hamcrest.Matcher
 import org.hamcrest.MatcherAssert.assertThat
@@ -91,9 +97,9 @@ class InputAtomsTest : DeviceTestCase() {
 
         val matchesAtom = Matchers.allOf<InputDeviceUsageReported>(
                 member("vendorId", { vendorId },
-                        equalTo(Integer.decode("0x18d1"))),
+                        equalTo(0x18d1)),
                 member("productId", { productId },
-                        equalTo(Integer.decode("0xabcd"))),
+                        equalTo(0xabcd)),
                 member("hasVersionId", { hasVersionId() },
                         equalTo(true)),
                 member("deviceBus", { deviceBus },
@@ -119,6 +125,18 @@ class InputAtomsTest : DeviceTestCase() {
                         matchesAtom)))
     }
 
+    private fun getTouchpadUsageAtom(): TouchpadUsage {
+        // Trigger atom pull.
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
+        var atoms: List<Atom> = listOf()
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5), {
+            atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
+            atoms.size > 0
+        })
+        assertThat(atoms.size, equalTo(1))
+        return atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+    }
+
     @CddTest(requirements = ["6.1/C-0-10"])
     fun testTouchpadUsageAtom_FingerAndPalmCounts() {
         setupTouchpadUsageConfig()
@@ -129,14 +147,12 @@ class InputAtomsTest : DeviceTestCase() {
                 EMULATE_INPUT_DEVICE_CLASS,
                 "useTouchpadWithFingersAndPalms")
 
-        // Trigger atom pull.
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
-        assertThat(atoms.size, equalTo(1))
-        val touchpadUsage: TouchpadUsage = atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+        val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
+                member("vendorId", { vendorId }, equalTo(0x18d1)),
+                member("productId", { productId }, equalTo(0xabcd)),
+                member("deviceBus", { deviceBus },
+                        equalTo(InputDeviceBus.USB)),
                 member("fingerCount", { fingerCount }, equalTo(3)),
                 member("palmCount", { palmCount }, equalTo(2)),
         ))
@@ -153,13 +169,7 @@ class InputAtomsTest : DeviceTestCase() {
             "twoFingerSwipeOnTouchpad"
         )
 
-        // Trigger atom pull.
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
-        assertThat(atoms.size, equalTo(1))
-        val touchpadUsage: TouchpadUsage = atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+        val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
             member("twoFingerSwipeGestureCount", { twoFingerSwipeGestureCount }, equalTo(1)),
             member("threeFingerSwipeGestureCount", { threeFingerSwipeGestureCount }, equalTo(0)),
@@ -179,13 +189,7 @@ class InputAtomsTest : DeviceTestCase() {
             "threeFingerSwipeOnTouchpad"
         )
 
-        // Trigger atom pull.
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
-        assertThat(atoms.size, equalTo(1))
-        val touchpadUsage: TouchpadUsage = atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+        val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
             member("twoFingerSwipeGestureCount", { twoFingerSwipeGestureCount }, equalTo(0)),
             member("threeFingerSwipeGestureCount", { threeFingerSwipeGestureCount }, equalTo(1)),
@@ -205,13 +209,7 @@ class InputAtomsTest : DeviceTestCase() {
             "fourFingerSwipeOnTouchpad"
         )
 
-        // Trigger atom pull.
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
-        assertThat(atoms.size, equalTo(1))
-        val touchpadUsage: TouchpadUsage = atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+        val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
             member("twoFingerSwipeGestureCount", { twoFingerSwipeGestureCount }, equalTo(0)),
             member("threeFingerSwipeGestureCount", { threeFingerSwipeGestureCount }, equalTo(0)),
@@ -231,13 +229,7 @@ class InputAtomsTest : DeviceTestCase() {
             "pinchOnTouchpad"
         )
 
-        // Trigger atom pull.
-        AtomTestUtils.sendAppBreadcrumbReportedAtom(device)
-        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
-
-        val atoms = ReportUtils.getGaugeMetricAtoms(device, registry, false)
-        assertThat(atoms.size, equalTo(1))
-        val touchpadUsage: TouchpadUsage = atoms[0].getExtension(InputExtensionAtoms.touchpadUsage)
+        val touchpadUsage = getTouchpadUsageAtom()
         assertThat(touchpadUsage, Matchers.allOf<TouchpadUsage>(
             member("twoFingerSwipeGestureCount", { twoFingerSwipeGestureCount }, equalTo(0)),
             member("threeFingerSwipeGestureCount", { threeFingerSwipeGestureCount }, equalTo(0)),
@@ -258,6 +250,99 @@ class InputAtomsTest : DeviceTestCase() {
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG.toLong())
         ReportUtils.getGaugeMetricAtoms(device, registry, false)
     }
+
+    @CddTest(requirements = ["6.1/C-0-10"])
+    fun testKeyboardConfiguredAtom() {
+        val builder = ConfigUtils.createConfigBuilder("AID_NOBODY")
+        ConfigUtils.addEventMetric(builder, InputExtensionAtoms.KEYBOARD_CONFIGURED_FIELD_NUMBER)
+        ConfigUtils.uploadConfig(device, builder)
+
+        DeviceUtils.runDeviceTests(
+            device,
+            TEST_APP_PACKAGE,
+            EMULATE_INPUT_DEVICE_CLASS,
+            "createKeyboardDevice"
+        )
+        val metricData = waitForMetricData()
+        val matchesAtom = Matchers.allOf<KeyboardConfigured>(
+            member(
+                "vendorId",
+                { vendorId },
+                equalTo(0x18d1)
+            ),
+            member(
+                "productId",
+                { productId },
+                equalTo(0xabcd)
+            ),
+        )
+
+        assertThat(metricData, hasItem<EventMetricData>(
+            member(
+                "atom",
+                { atom.getExtension(InputExtensionAtoms.keyboardConfigured) },
+                matchesAtom
+            )
+        ))
+    }
+
+    @CddTest(requirements = ["6.1/C-0-10"])
+    fun testKeyboardSystemEventsAtom() {
+        val builder = ConfigUtils.createConfigBuilder("AID_NOBODY")
+        ConfigUtils.addEventMetric(
+            builder,
+            InputExtensionAtoms.KEYBOARD_SYSTEMS_EVENT_REPORTED_FIELD_NUMBER
+        )
+        ConfigUtils.uploadConfig(device, builder)
+
+        DeviceUtils.runDeviceTests(
+            device,
+            TEST_APP_PACKAGE,
+            EMULATE_INPUT_DEVICE_CLASS,
+            // We are using CAPS_LOCK as the "SystemsEvent" since, we feel it is very unlikely to be
+            // changed by the OEMs or in future QPR releases. Other "SystemsEvents" especially
+            // shortcuts are not enforced by other CTS tests, so using those here might cause CTS
+            // compatibility issues.
+            "createKeyboardDeviceAndSendCapsLockKey"
+        )
+
+        val metricData = waitForMetricData()
+        val matchesAtom = Matchers.allOf<KeyboardSystemsEventReported>(
+            member(
+                "vendorId",
+                { vendorId },
+                equalTo(0x18d1)
+            ),
+            member(
+                "productId",
+                { productId },
+                equalTo(0xabcd)
+            ),
+            member(
+                "keyboardSystemsEvent",
+                { keyboardSystemEvent },
+                equalTo(KeyboardSystemEvent.TOGGLE_CAPS_LOCK)
+            )
+        )
+
+        assertThat(metricData, hasItem<EventMetricData>(
+            member(
+                "atom",
+                { atom.getExtension(InputExtensionAtoms.keyboardSystemsEventReported) },
+                matchesAtom
+            )
+        ))
+    }
+
+    private fun waitForMetricData(): List<EventMetricData> {
+        var metricData: List<EventMetricData> = listOf()
+        PollingCheck.waitFor(TimeUnit.SECONDS.toMillis(5)) {
+            metricData = ReportUtils.getEventMetricDataList(device, registry)
+            metricData.isNotEmpty()
+        }
+        return metricData
+    }
+
 }
 
 // Returns a matcher that helps match member variables of a class.

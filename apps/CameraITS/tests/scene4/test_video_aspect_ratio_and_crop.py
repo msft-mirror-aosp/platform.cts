@@ -154,7 +154,6 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
       logging.debug('Supported video qualities: %s', supported_video_qualities)
       full_or_better = camera_properties_utils.full_or_better(props)
       raw_avlb = camera_properties_utils.raw16(props)
-      debug = self.debug_mode
 
       # Converge 3A.
       cam.do_3a()
@@ -220,6 +219,18 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
                 'recordedOutputPath'].split('/')[-1]
             logging.debug('video_file_name: %s', video_file_name)
 
+            # Validate colorspace
+            colorspace = video_processing_utils.get_video_colorspace(
+                self.log_path, video_file_name)
+            if (hlg10_param and
+                video_processing_utils.COLORSPACE_HDR not in colorspace):
+              raise AssertionError('colorspace check failed for HDR.')
+            if (not hlg10_param and
+                video_processing_utils.COLORSPACE_SDR not in colorspace):
+              raise AssertionError('colorspace check failed for SDR.')
+            logging.debug('Colorspace test passed, video colorspace is %s',
+                          colorspace)
+
             # Extract last key frame as numpy image
             last_key_frame = (
                 video_processing_utils.extract_last_key_frame_from_recording(
@@ -233,9 +244,8 @@ class VideoAspectRatioAndCropTest(its_base_test.ItsBaseTest):
                 last_key_frame, ref_img_name, image_fov_utils.CIRCLE_MIN_AREA,
                 image_fov_utils.CIRCLE_COLOR)
 
-            if debug:
-              opencv_processing_utils.append_circle_center_to_img(
-                  circle, last_key_frame, ref_img_name)
+            opencv_processing_utils.append_circle_center_to_img(
+                circle, last_key_frame, ref_img_name)
 
             max_img_value = _MAX_8BIT_IMGS
             if hlg10_param:

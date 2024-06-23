@@ -101,13 +101,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
 
         // Auth and check again now
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
     }
 
@@ -246,13 +240,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
 
         // Accept authentication and end
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 1, callbackState.mNumAuthRejected);
     }
 
@@ -357,13 +345,14 @@ public class BiometricActivityTests extends BiometricTestBase {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             for (SensorProperties prop : mSensorProperties) {
-                try (BiometricTestSession session =
-                             mBiometricManager.createTestSession(prop.getSensorId());
-                     ActivitySession activitySession =
-                             new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
-                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(
-                            session, prop.getSensorId(), false /* shouldEnrollBiometric */,
-                            activitySession);
+                try (
+                        BiometricTestSession session = mBiometricManager.createTestSession(
+                                prop.getSensorId());
+                        ActivitySession activitySession = new ActivitySession(this,
+                                CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)
+                ) {
+                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(session,
+                            prop.getSensorId(), false /* shouldEnrollBiometric */, activitySession);
                 }
             }
         }
@@ -384,7 +373,7 @@ public class BiometricActivityTests extends BiometricTestBase {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             try (ActivitySession activitySession =
-                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)){
+                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
                 testBiometricOrCredential_credentialButtonInvoked_forConfiguration(null,
                         0 /* sensorId */, false /* shouldEnrollBiometric */, activitySession);
             }

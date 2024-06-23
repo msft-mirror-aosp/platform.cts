@@ -43,11 +43,14 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
+import android.net.wifi.OuiKeyedData;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDiscoveryConfig;
+import android.net.wifi.p2p.WifiP2pExtListenParams;
 import android.net.wifi.p2p.WifiP2pGroup;
 import android.net.wifi.p2p.WifiP2pGroupList;
 import android.net.wifi.p2p.WifiP2pInfo;
@@ -60,10 +63,13 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
+import android.os.PersistableBundle;
 import android.os.WorkSource;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -72,6 +78,7 @@ import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
+import com.android.wifi.flags.Flags;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -155,12 +162,13 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     private WifiP2pConfig mTestWifiP2pPeerConfig;
     private static boolean sWasWifiEnabled;
     private static boolean sWasScanThrottleEnabled;
-
+    private final Object mLock = new Object();
 
     private static final String TAG = "ConcurrencyTest";
     private static final int TIMEOUT_MS = 15000;
     private static final int WAIT_MS = 100;
     private static final int DURATION = 5000;
+    private static final int TEST_OUI = 0x00C82ADD; // Google OUI
     private static final BroadcastReceiver RECEIVER = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -671,6 +679,18 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         return MY_RESPONSE.deviceName;
     }
 
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pGroup#setVendorData"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testWifiP2pGroupSetAndGetVendorData() {
+        List<OuiKeyedData> vendorData = createTestOuiKeyedDataList(5);
+        WifiP2pGroup group = new WifiP2pGroup();
+        group.setVendorData(vendorData);
+        assertTrue(vendorData.equals(group.getVendorData()));
+    }
+
     @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#setDeviceName"})
     @Test
     public void testSetDeviceName() {
@@ -805,6 +825,38 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertTrue(MY_RESPONSE.success);
     }
 
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#setWifiP2pChannels",
+            "android.net.wifi.p2p.WifiP2pManager#startListening",
+            "android.net.wifi.p2p.WifiP2pManager#stopListening"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testP2pListeningWithParameters() {
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            sWifiP2pManager.setWifiP2pChannels(sWifiP2pChannel, 6, 11, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(MY_RESPONSE.success);
+        });
+
+        List<OuiKeyedData> vendorData = createTestOuiKeyedDataList(5);
+        WifiP2pExtListenParams extListenParams =
+                new WifiP2pExtListenParams.Builder().setVendorData(vendorData).build();
+        assertTrue(vendorData.equals(extListenParams.getVendorData()));
+
+        resetResponse(MY_RESPONSE);
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            sWifiP2pManager.startListening(sWifiP2pChannel, extListenParams, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(MY_RESPONSE.success);
+        });
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.stopListening(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+    }
+
     @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#setServiceResponseListener",
             "android.net.wifi.p2p.WifiP2pManager#addLocalService",
             "android.net.wifi.p2p.WifiP2pManager#clearLocalServices",
@@ -868,7 +920,7 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertTrue(MY_RESPONSE.success);
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#discoverPeersOnSpecificFrequency"})
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#discoverPeers"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
     public void testDiscoverPeersOnSpecificFreq() {
@@ -988,6 +1040,94 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
     }
 
+    private static OuiKeyedData createTestOuiKeyedData(int oui) {
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putString("stringFieldKey", "stringData");
+        bundle.putInt("intFieldKey", 789);
+        return new OuiKeyedData.Builder(oui, bundle).build();
+    }
+
+    private static List<OuiKeyedData> createTestOuiKeyedDataList(int size) {
+        List<OuiKeyedData> ouiKeyedDataList = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            ouiKeyedDataList.add(createTestOuiKeyedData(TEST_OUI));
+        }
+        return ouiKeyedDataList;
+    }
+
+    /**
+     * Test that we can trigger a P2P scan using
+     * {@link WifiP2pManager#startPeerDiscovery(
+     * WifiP2pManager.Channel, WifiP2pDiscoveryConfig, WifiP2pManager.ActionListener)}
+     */
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#startPeerDiscovery"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testStartPeerDiscovery() {
+        if (!sWifiP2pManager.isChannelConstrainedDiscoverySupported()) return;
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.requestDiscoveryState(
+                sWifiP2pChannel, new WifiP2pManager.DiscoveryStateListener() {
+                    @Override
+                    public void onDiscoveryStateAvailable(int state) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.discoveryState = state;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+                });
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STOPPED, MY_RESPONSE.discoveryState);
+
+        WifiP2pDiscoveryConfig discoveryConfig = new WifiP2pDiscoveryConfig.Builder(
+                WifiP2pManager.WIFI_P2P_SCAN_SINGLE_FREQ)
+                .setFrequencyMhz(2412)
+                .setVendorData(createTestOuiKeyedDataList(5))
+                .build();
+
+        // If there is any saved network and this device is connecting to this saved network,
+        // p2p discovery might be blocked during DHCP provision.
+        int retryCount = 3;
+        while (retryCount > 0) {
+            resetResponse(MY_RESPONSE);
+            sWifiP2pManager.startPeerDiscovery(sWifiP2pChannel,
+                    discoveryConfig, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            if (MY_RESPONSE.success
+                    || MY_RESPONSE.failureReason != WifiP2pManager.BUSY) {
+                break;
+            }
+            Log.w(TAG, "Discovery is blocked, try again!");
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ex) { }
+            retryCount--;
+        }
+        assertTrue(MY_RESPONSE.success);
+        assertTrue(waitForBroadcasts(MySync.DISCOVERY_STATE));
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.requestDiscoveryState(sWifiP2pChannel,
+                new WifiP2pManager.DiscoveryStateListener() {
+                    @Override
+                    public void onDiscoveryStateAvailable(int state) {
+                        synchronized (MY_RESPONSE) {
+                            MY_RESPONSE.valid = true;
+                            MY_RESPONSE.discoveryState = state;
+                            MY_RESPONSE.notify();
+                        }
+                    }
+                });
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertEquals(WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED, MY_RESPONSE.discoveryState);
+
+        sWifiP2pManager.stopPeerDiscovery(sWifiP2pChannel, null);
+    }
+
     @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig.Builder#setGroupClientIpProvisioningMode"})
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
@@ -1001,6 +1141,24 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
                 .setGroupClientIpProvisioningMode(
                         GROUP_CLIENT_IP_PROVISIONING_MODE_IPV6_LINK_LOCAL)
                 .build();
+        sWifiP2pManager.connect(sWifiP2pChannel, config, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertFalse(MY_RESPONSE.success);
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pConfig.Builder#setVendorData"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testP2pConnectDoesNotThrowExceptionWithVendorData() {
+        OuiKeyedData vendorDataElement =
+                new OuiKeyedData.Builder(TEST_OUI, new PersistableBundle()).build();
+        List<OuiKeyedData> vendorData = Arrays.asList(vendorDataElement);
+        WifiP2pConfig config = new WifiP2pConfig.Builder()
+                .setDeviceAddress(MacAddress.fromString("aa:bb:cc:dd:ee:ff"))
+                .build();
+        config.setVendorData(vendorData);
         sWifiP2pManager.connect(sWifiP2pChannel, config, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
         assertFalse(MY_RESPONSE.success);
@@ -1186,5 +1344,183 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         assertEquals(WpsInfo.INVALID, infoCopy.setup);
         assertNull(infoCopy.BSSID);
         assertNull(infoCopy.pin);
+    }
+
+    /**
+     * Tests that we can properly get/set fields in {@link WifiP2pDiscoveryConfig}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifiP2pDiscoveryConfig() {
+        int scanType = WifiP2pManager.WIFI_P2P_SCAN_SINGLE_FREQ;
+        int frequencyMhz = 2600;
+        WifiP2pDiscoveryConfig config = new WifiP2pDiscoveryConfig.Builder(scanType)
+                .setFrequencyMhz(frequencyMhz)
+                .build();
+        assertEquals(scanType, config.getScanType());
+        assertEquals(frequencyMhz, config.getFrequencyMhz());
+    }
+
+    /**
+     * Tests that we can properly get/set fields in {@link WifiP2pDiscoveryConfig},
+     * including the Vendor Data.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testWifiP2pDiscoveryConfigWithVendorData() {
+        int scanType = WifiP2pManager.WIFI_P2P_SCAN_SINGLE_FREQ;
+        int frequencyMhz = 2600;
+        List<OuiKeyedData> vendorData = createTestOuiKeyedDataList(5);
+        WifiP2pDiscoveryConfig config = new WifiP2pDiscoveryConfig.Builder(scanType)
+                .setFrequencyMhz(frequencyMhz)
+                .setVendorData(vendorData)
+                .build();
+        assertEquals(scanType, config.getScanType());
+        assertEquals(frequencyMhz, config.getFrequencyMhz());
+        assertTrue(vendorData.equals(config.getVendorData()));
+    }
+
+    /**
+     * Tests that we can properly set/get vendor data in {@link WifiP2pDevice}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testWifiP2pDeviceWithVendorData() {
+        WifiP2pDevice device = new WifiP2pDevice();
+        List<OuiKeyedData> vendorData = createTestOuiKeyedDataList(5);
+        device.setVendorData(vendorData);
+        assertEquals(vendorData, device.getVendorData());
+    }
+
+    private static class TestWifiP2pListener implements WifiP2pManager.WifiP2pListener {
+        final Object mP2pListenerLock;
+        int mListenState = -1;
+        boolean mP2pGroupCreating = false;
+        boolean mP2pGroupRemoved = false;
+        WifiP2pInfo mP2pInfo = null;
+        WifiP2pGroup mP2pGroup = null;
+
+        TestWifiP2pListener(Object lock) {
+            mP2pListenerLock = lock;
+        }
+
+        public int getListenState() {
+            synchronized (mP2pListenerLock) {
+                return mListenState;
+            }
+        }
+
+        public boolean getP2pGroupCreating() {
+            synchronized (mP2pListenerLock) {
+                return mP2pGroupCreating;
+            }
+        }
+
+        public WifiP2pInfo getP2pInfo() {
+            synchronized (mP2pListenerLock) {
+                return mP2pInfo;
+            }
+        }
+
+        public WifiP2pGroup getP2pGroup() {
+            synchronized (mP2pListenerLock) {
+                return mP2pGroup;
+            }
+        }
+
+        @Override
+        public void onListenStateChanged(boolean started) {
+            synchronized (mP2pListenerLock) {
+                mListenState = started ? WifiP2pManager.WIFI_P2P_LISTEN_STARTED
+                        : WifiP2pManager.WIFI_P2P_LISTEN_STOPPED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onGroupCreated(@NonNull WifiP2pInfo wifiP2pInfo,
+                @NonNull WifiP2pGroup wifiP2pGroup) {
+            synchronized (mP2pListenerLock) {
+                mP2pInfo = wifiP2pInfo;
+                mP2pGroup = wifiP2pGroup;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onGroupCreating() {
+            synchronized (mP2pListenerLock) {
+                mP2pGroupCreating = true;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onGroupRemoved() {
+            synchronized (mP2pListenerLock) {
+                mP2pGroupRemoved = true;
+                mP2pListenerLock.notify();
+            }
+        }
+    }
+
+    private void waitForP2pListenerCallbackCalled(TestWifiP2pListener p2pListener) {
+        synchronized (p2pListener.mP2pListenerLock) {
+            long timeout = System.currentTimeMillis() + TIMEOUT_MS;
+            while (System.currentTimeMillis() < timeout) {
+                try {
+                    p2pListener.mP2pListenerLock.wait(WAIT_MS);
+                } catch (InterruptedException e) { }
+            }
+        }
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#registerWifiP2pListener",
+            "android.net.wifi.p2p.WifiP2pManager#unregisterWifiP2pListener"})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifiP2pListenerListenStateChanged() {
+        TestWifiP2pListener p2pListener = new TestWifiP2pListener(mLock);
+
+        sWifiP2pManager.registerWifiP2pListener(mExecutor, p2pListener);
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.startListening(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        waitForP2pListenerCallbackCalled(p2pListener);
+        assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STARTED, p2pListener.getListenState());
+
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.stopListening(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        waitForP2pListenerCallbackCalled(p2pListener);
+        assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STOPPED, p2pListener.getListenState());
+
+        sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
+    }
+
+    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#registerWifiP2pListener",
+            "android.net.wifi.p2p.WifiP2pManager#unregisterWifiP2pListener"})
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifiP2pListenerGroupCreated() {
+        TestWifiP2pListener p2pListener = new TestWifiP2pListener(mLock);
+
+        sWifiP2pManager.registerWifiP2pListener(mExecutor, p2pListener);
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.createGroup(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        assertTrue(MY_RESPONSE.success);
+        waitForP2pListenerCallbackCalled(p2pListener);
+        assertTrue(p2pListener.getP2pGroupCreating());
+        assertTrue(p2pListener.getP2pInfo().groupFormed);
+        assertNotNull(p2pListener.getP2pGroup());
+
+        sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
     }
 }

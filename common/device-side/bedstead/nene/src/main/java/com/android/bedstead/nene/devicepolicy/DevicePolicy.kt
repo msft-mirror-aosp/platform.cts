@@ -139,13 +139,13 @@ object DevicePolicy {
     /**
      * Set the device owner.
      */
-    fun setDeviceOwner(deviceOwnerComponent: ComponentName): DeviceOwner {
+    @JvmOverloads
+    fun setDeviceOwner(deviceOwnerComponent: ComponentName, user: UserReference = TestApis.users().system()): DeviceOwner {
         if (!Versions.meetsMinimumSdkVersionRequirement(Build.VERSION_CODES.S)) {
             return setDeviceOwnerPreS(deviceOwnerComponent)
         } else if (!Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
             return setDeviceOwnerPreU(deviceOwnerComponent)
         }
-        val user = TestApis.users().system()
         try {
             TestApis.permissions().withPermission(
                 CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
@@ -465,6 +465,27 @@ object DevicePolicy {
                 throw NeneException("Error waiting for network log throttle", e)
             }
             forceNetworkLogs()
+        }
+    }
+
+    @Experimental
+    fun forceSecurityLogs() {
+        TestApis.permissions().withPermission(
+            CommonPermissions.FORCE_DEVICE_POLICY_MANAGER_LOGS
+        ).use {
+            val throttle = devicePolicyManager.forceSecurityLogs()
+            if (throttle == -1L) {
+                throw NeneException("Error forcing security logs: returned -1")
+            }
+            if (throttle == 0L) {
+                return
+            }
+            try {
+                Thread.sleep(throttle)
+            } catch (e: InterruptedException) {
+                throw NeneException("Error waiting for security log throttle", e)
+            }
+            forceSecurityLogs()
         }
     }
 

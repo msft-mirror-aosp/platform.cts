@@ -19,18 +19,15 @@ package android.voiceinteraction.cts;
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_APP_OPS_MODES;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
-import static android.Manifest.permission.RECEIVE_SANDBOXED_DETECTION_TRAINING_DATA;
+import static android.Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE;
 import static android.Manifest.permission.RECEIVE_SANDBOX_TRIGGER_AUDIO;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.content.pm.PackageManager.FEATURE_MICROPHONE;
 import static android.service.voice.HotwordDetectionServiceFailure.ERROR_CODE_SHUTDOWN_HDS_ON_VOICE_ACTIVATION_OP_DISABLED;
-import static android.service.voice.HotwordDetectionServiceFailure.ERROR_CODE_ON_TRAINING_DATA_EGRESS_LIMIT_EXCEEDED;
-import static android.service.voice.HotwordDetectionServiceFailure.ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION;
 import static android.voiceinteraction.common.Utils.AUDIO_EGRESS_DETECTED_RESULT;
 import static android.voiceinteraction.common.Utils.AUDIO_EGRESS_DETECTED_RESULT_WRONG_COPY_BUFFER_SIZE;
 import static android.voiceinteraction.common.Utils.EXTRA_HOTWORD_DETECTION_SERVICE_CAN_READ_AUDIO_DATA_IS_NOT_ZERO;
 import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
-import static android.voiceinteraction.cts.testcore.Helper.DETECTED_RESULT;
 import static android.voiceinteraction.cts.testcore.Helper.MANAGE_VOICE_KEYPHRASES;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_TIMEOUT_IN_MS;
 import static android.voiceinteraction.cts.testcore.Helper.createKeyphraseRecognitionExtraList;
@@ -44,11 +41,16 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.app.AppOpsManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
+import android.app.wearable.WearableSensingManager;
+import android.content.ComponentName;
 import android.content.pm.PackageManager;
 import android.hardware.soundtrigger.SoundTrigger;
 import android.media.AudioAttributes;
@@ -60,17 +62,18 @@ import android.os.ParcelFileDescriptor;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.permission.flags.Flags;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.DeviceConfig;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetectionServiceFailure;
 import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
-import android.service.voice.HotwordTrainingData;
 import android.service.voice.SandboxedDetectionInitializer;
 import android.soundtrigger.cts.instrumentation.SoundTriggerInstrumentationObserver;
 import android.util.Log;
@@ -79,6 +82,7 @@ import android.voiceinteraction.cts.services.BaseVoiceInteractionService;
 import android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService;
 import android.voiceinteraction.cts.testcore.Helper;
 import android.voiceinteraction.cts.testcore.VoiceInteractionServiceConnectedRule;
+import android.voiceinteraction.service.MainWearableSensingService;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.RequiresDevice;
@@ -104,8 +108,10 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for {@link HotwordDetectionService}.
@@ -118,6 +124,14 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
     // The VoiceInteractionService used by this test
     private static final String SERVICE_COMPONENT =
             "android.voiceinteraction.cts.services.CtsBasicVoiceInteractionService";
+    private static final int USER_ID = UserHandle.myUserId();
+    private static final String MAIN_WEARABLE_SENSING_SERVICE_NAME =
+            "android.voiceinteraction.cts/android.voiceinteraction.service."
+                    + "MainWearableSensingService";
+    private static final ComponentName VIS_COMPONENT_NAME =
+            new ComponentName("android.voiceinteraction.cts", SERVICE_COMPONENT);
+    private static final int TEMPORARY_SERVICE_DURATION_MS = 10000;
+    private static final String KEY_WEARABLE_SENSING_SERVICE_ENABLED = "service_enabled";
 
     private final CountDownLatch mLatch = new CountDownLatch(1);
 
@@ -154,6 +168,8 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
     private static final PackageManager sPkgMgr = sInstrumentation.getContext().getPackageManager();
+    private static final WearableSensingManager sWearableSensingManager =
+            sInstrumentation.getContext().getSystemService(WearableSensingManager.class);
 
     @Rule
     public VoiceInteractionServiceConnectedRule mConnectedRule =
@@ -172,6 +188,8 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
     private SoundTrigger.Keyphrase[] mKeyphraseArray;
     private final SoundTriggerInstrumentationObserver mInstrumentationObserver =
             new SoundTriggerInstrumentationObserver();
+    private final Executor mExecutor = Executors.newSingleThreadExecutor();
+    private String mOriginalWearableSensingServiceEnabledConfig;
 
     @BeforeClass
     public static void enableIndicators() {
@@ -241,8 +259,6 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        // Reset training data egress count for each test.
-        runWithShellPermissionIdentity(() -> mService.resetHotwordTrainingDataEgressCountForTest());
 
         // Set voice activation op to true for shell after each test.
         runWithShellPermissionIdentity(() ->
@@ -250,6 +266,7 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
 
         mService.resetState();
         mService = null;
+        clearTestableWearableSensingService();
     }
 
     public String getTestVoiceInteractionService() {
@@ -941,431 +958,6 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
     }
 
     @Test
-    public void testHotwordDetectionService_dspDetectorTrainingData_opAndPermGranted()
-            throws Throwable {
-        // Create AlwaysOnHotwordDetector that sends training data after detection.
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
-                createAlwaysOnHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initTrainingDataLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(alwaysOnHotwordDetector);
-
-            // wait onTrainingData() called and verify the data
-            mService.waitOnTrainingDataCalled();
-            HotwordTrainingData trainingDataResult =
-                    mService.getHotwordServiceOnTrainingData();
-            assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-        } finally {
-            alwaysOnHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareDetectorTrainingData_opAndPermGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initTrainingDataLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ false);
-
-            // wait onTrainingData() called and verify the data
-            mService.waitOnTrainingDataCalled();
-            HotwordTrainingData trainingDataResult =
-                    mService.getHotwordServiceOnTrainingData();
-            assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareExternalDetectionTrainingData_opAndPermGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initTrainingDataLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ true);
-
-            // wait onTrainingData() called and verify the data
-            mService.waitOnTrainingDataCalled();
-            HotwordTrainingData trainingDataResult =
-                    mService.getHotwordServiceOnTrainingData();
-            assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_dspDetectorTrainingData_opNotGranted()
-            throws Throwable {
-        // Create AlwaysOnHotwordDetector that sends training data after detection.
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
-                createAlwaysOnHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to default mode (not allowed).
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(alwaysOnHotwordDetector);
-
-            // wait onFailure() called and verify the result.
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            alwaysOnHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareDetectorTrainingData_opNotGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to default mode (not allowed).
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ false);
-
-            // wait onFailure() called and verify the result
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareExternalDetectionTrainingData_opNotGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to default mode (not allowed).
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ true);
-
-            // wait onFailure() called and verify the result
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_dspDetectorTrainingData_permNotGranted()
-            throws Throwable {
-        // Create AlwaysOnHotwordDetector that sends training data after detection.
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
-                createAlwaysOnHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Adopt permissions except training data permission.
-            adoptShellPermissionIdentityForHotword();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(alwaysOnHotwordDetector);
-
-            // wait onFailure() called and verify the result.
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            alwaysOnHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareDetectorTrainingData_permNotGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Adopt permissions except training data permission.
-            adoptShellPermissionIdentityForHotword();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ false);
-
-            // wait onFailure() called and verify the result
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-    @Test
-    public void testHotwordDetectionService_softwareExternalDetectionTrainingData_permNotGranted()
-            throws Throwable {
-        // Create SoftwareHotwordDetector that sends training data after detection.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ true);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Adopt permissions except training data permission.
-            adoptShellPermissionIdentityForHotword();
-            mService.initOnFailureLatch();
-
-            // Trigger detector and verify detection.
-            triggerDetectorAndVerifyDetection(softwareHotwordDetector,
-                    /* externalDetection= */ true);
-
-            // wait onFailure() called and verify the result
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_SECURITY_EXCEPTION);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-        }
-    }
-
-
-    @Test(timeout = 120000)
-    public void testHotwordDetectionService_dspDetectorTrainingData_whenLimitExceeded()
-            throws Throwable {
-        // Create AlwaysOnHotwordDetector.
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
-                createAlwaysOnHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ false);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-
-            // STEP 1: Trigger 20 training data events (use up all of the daily limit).
-            for (int i = 0; i < 20; i++) {
-                // Initialize training data latch.
-                mService.initTrainingDataLatch();
-                // Trigger detector.
-                triggerDetector(alwaysOnHotwordDetector);
-                // Verify training data event.
-                mService.waitOnTrainingDataCalled();
-                HotwordTrainingData trainingDataResult =
-                        mService.getHotwordServiceOnTrainingData();
-                assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-            }
-
-            // STEP 2: Trigger one more training data event (past limit) and verify that notified of
-            // failure to egress due to limit exceeded.
-            // Initialize failure latch.
-            mService.initOnFailureLatch();
-            // Trigger detector.
-            triggerDetector(alwaysOnHotwordDetector);
-            // Verify that training data egress limit was notified.
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_EGRESS_LIMIT_EXCEEDED);
-
-            // Verify that only 20 training data events were egressed.
-            assertThat(mService.getDspOnTrainingDataCount()).isEqualTo(20);
-        } finally {
-            alwaysOnHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test(timeout = 120000)
-    public void testHotwordDetectionService_softwareDetectorTrainingData_whenLimitExceeded()
-            throws Throwable {
-        // Create SoftwareHotwordDetector.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ false);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-
-            // STEP 1: Trigger 20 training data events (use up all of the daily limit).
-            for (int i = 0; i < 20; i++) {
-                // Initialize training data latch.
-                mService.initTrainingDataLatch();
-                // Trigger detector.
-                triggerDetector(softwareHotwordDetector, /* externalDetection= */ false);
-                // Verify training data event.
-                mService.waitOnTrainingDataCalled();
-                HotwordTrainingData trainingDataResult =
-                        mService.getHotwordServiceOnTrainingData();
-                assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-                // For software detector we need to stop recognition between triggers.
-                softwareHotwordDetector.stopRecognition();
-            }
-
-            // STEP 2: Trigger one more training data event (past limit) and verify that notified of
-            // failure to egress due to limit exceeded.
-            // Initialize failure latch.
-            mService.initOnFailureLatch();
-            // Trigger detector.
-            triggerDetector(softwareHotwordDetector, /* externalDetection= */ false);
-            // Verify that training data egress limit was notified.
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_EGRESS_LIMIT_EXCEEDED);
-
-            // Verify that only 20 training data events were egressed.
-            assertThat(mService.getSoftwareOnTrainingDataCount()).isEqualTo(20);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test(timeout = 120000)
-    public void testHotwordDetectionService_softwareExternalTrainingData_whenLimitExceeded()
-            throws Throwable {
-        // Create SoftwareHotwordDetector.
-        HotwordDetector softwareHotwordDetector =
-                createSoftwareHotwordDetectorForTrainingDataEgress(/* sendAfterDetect= */ false);
-
-        try {
-            // Set training data op to MODE_ALLOWED.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ true);
-            // Grant training data permission.
-            adoptShellPermissionIdentityForHotwordWithTrainingData();
-            // STEP 1: Trigger 20 training data events (use up all of the daily limit).
-            for (int i = 0; i < 20; i++) {
-                // Initialize training data latch.
-                mService.initTrainingDataLatch();
-                // Trigger detector.
-                triggerDetector(softwareHotwordDetector, /* externalDetection= */ true);
-                // Verify training data event.
-                mService.waitOnTrainingDataCalled();
-                HotwordTrainingData trainingDataResult =
-                        mService.getHotwordServiceOnTrainingData();
-                assertThat(trainingDataResult).isEqualTo(Utils.HOTWORD_TRAINING_DATA);
-            }
-
-            // STEP 2: Trigger one more training data event (past limit) and verify that notified of
-            // failure to egress due to limit exceeded.
-            // Initialize failure latch.
-            mService.initOnFailureLatch();
-            // Trigger detector.
-            triggerDetector(softwareHotwordDetector, /* externalDetection= */ true);
-            // Verify that training data egress limit was notified.
-            mService.waitOnFailureCalled();
-            verifyHotwordDetectionServiceFailure(mService.getHotwordDetectionServiceFailure(),
-                    ERROR_CODE_ON_TRAINING_DATA_EGRESS_LIMIT_EXCEEDED);
-
-            // Verify that only 20 training data events were egressed.
-            assertThat(mService.getSoftwareOnTrainingDataCount()).isEqualTo(20);
-        } finally {
-            softwareHotwordDetector.destroy();
-            // Drop identity adopted.
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity();
-            // Reset training data op to default mode.
-            setTrainingDataAppOpForShellIdentity(/* allow= */ false);
-        }
-    }
-
-    @Test
     @RequiresFlagsEnabled(Flags.FLAG_VOICE_ACTIVATION_PERMISSION_APIS)
     public void testCreateAlwaysOnHotwordDetector_withoutVoiceActivationPerm_throwsException()
             throws Throwable {
@@ -1622,7 +1214,6 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         }
     }
 
-
     @Test
     @CddTest(requirements = {"9.8/H-1-15"})
     public void testHotwordDetectionService_onDetectFromExternalSourceWithAudioEgress()
@@ -1662,6 +1253,235 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
             // Drop identity adopted.
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_onDetectFromWearableWithAudioEgress() throws Throwable {
+        assumeFalse(isWatch());  // WearableSensingManagerService is not supported on WearOS
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            setupForWearableTests(alwaysOnHotwordDetector);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    VIS_COMPONENT_NAME,
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+            mService.initDetectRejectLatch();
+
+            sendAudioStreamFromWearable();
+
+            // wait for onDetected() to be called and verify the result
+            mService.waitOnDetectOrRejectCalled();
+            AlwaysOnHotwordDetector.EventPayload detectResult =
+                    mService.getHotwordServiceOnDetectedResult();
+
+            Helper.verifyDetectedResult(detectResult, AUDIO_EGRESS_DETECTED_RESULT);
+            // Wait for the async call into WearableSensingService.
+            SystemClock.sleep(2000);
+            verifyWearableSensingServiceHotwordValidatedCalled();
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_onDetectFromWearable_doesNotNoteRecordAudioOp()
+            throws Throwable {
+        assumeFalse(isWatch());
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            setupForWearableTests(alwaysOnHotwordDetector);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    VIS_COMPONENT_NAME,
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+            mService.initDetectRejectLatch();
+
+            sendAudioStreamFromWearable();
+
+            // wait for onDetected() to be called
+            mService.waitOnDetectOrRejectCalled();
+            AlwaysOnHotwordDetector.EventPayload detectResult =
+                    mService.getHotwordServiceOnDetectedResult();
+            // make sure this is onDetected and not onRejected
+            assertThat(detectResult).isNotNull();
+
+            verifyRecordAudioNote(/* shouldNote= */ false);
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_onRejectWearableHotword_notifiesWearable()
+            throws Throwable {
+        assumeFalse(isWatch());  // WearableSensingManagerService is not supported on WearOS
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            setupForWearableTests(alwaysOnHotwordDetector);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    VIS_COMPONENT_NAME,
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+
+            sendNonHotwordAudioStreamFromWearable();
+
+            // Wait for the async call into WearableSensingService.
+            SystemClock.sleep(2000);
+            verifyWearableSensingServiceAudioStopCalled();
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_receivesOptionsFromWearable() throws Throwable {
+        assumeFalse(isWatch());  // WearableSensingManagerService is not supported on WearOS
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            setupForWearableTests(alwaysOnHotwordDetector);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    VIS_COMPONENT_NAME,
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+            mService.initDetectRejectLatch();
+
+            // The HotwordDetectionService should reject the non-hotword audio stream, but if it
+            // receives the expected options, it will call onDetect instead. This is an indirect
+            // way to verify that options are received because it is difficult to send a message
+            // from HotwordDetectionService back to this test.
+            sendNonHotwordAudioStreamWithAcceptDetectionOptionsFromWearable();
+
+            // verify that onDetect is called
+            mService.waitOnDetectOrRejectCalled();
+            AlwaysOnHotwordDetector.EventPayload detectResult =
+                    mService.getHotwordServiceOnDetectedResult();
+            assertThat(detectResult).isNotNull();
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_wearableHotwordWithWrongVisComponent_notifiesWearable()
+            throws Throwable {
+        assumeFalse(isWatch());  // WearableSensingManagerService is not supported on WearOS
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            setupForWearableTests(alwaysOnHotwordDetector);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    new ComponentName("my.package", "my.package.MyClass"),
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+            mService.initDetectRejectLatch();
+
+            sendAudioStreamFromWearable();
+
+            // Wait for the async call into WearableSensingService.
+            SystemClock.sleep(2000);
+            verifyWearableSensingServiceAudioStopCalled();
+            // The audio stream is not sent to HDS, so neither onDetect nor onReject should be
+            // called
+            assertThrows(AssertionError.class, () -> mService.waitOnDetectOrRejectCalled());
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.wearable.Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
+    public void testHotwordDetectionService_closePipeInWearableHotwordResult_notifiesWearable()
+            throws Throwable {
+        assumeFalse(isWatch());  // WearableSensingManagerService is not supported on WearOS
+        // Create AlwaysOnHotwordDetector
+        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
+                createAlwaysOnHotwordDetectorWithSoundTriggerInjection();
+        try {
+            // Do not close the audio stream in HotwordDetectionService immediately after
+            // read. Wait until this test requests it.
+            setupForWearableTests(alwaysOnHotwordDetector, /* closeStreamAfterRead= */ false);
+            CountDownLatch statusLatch = new CountDownLatch(1);
+            sWearableSensingManager.startHotwordRecognition(
+                    VIS_COMPONENT_NAME,
+                    mExecutor,
+                    (status) -> {
+                        statusLatch.countDown();
+                    });
+            assertThat(statusLatch.await(3, SECONDS)).isTrue();
+            mService.initDetectRejectLatch();
+
+            sendAudioStreamFromWearable();
+            // wait for onDetected() called and close the PFD in the result
+            mService.waitOnDetectOrRejectCalled();
+            AlwaysOnHotwordDetector.EventPayload detectResult =
+                    mService.getHotwordServiceOnDetectedResult();
+            detectResult
+                    .getHotwordDetectedResult()
+                    .getAudioStreams()
+                    .get(0)
+                    .getAudioStreamParcelFileDescriptor()
+                    .close();
+            /*
+             * Check if the output PFD sent by HotwordDetectionService is broken (it should).
+             * If yes, HotwordDetectionService will close the audio stream it received.
+             * This is indirect because there is no simple way for HotwordDetectionService to
+             * propagate a test failure signal back to the test driver.
+             */
+            runWithShellPermissionIdentity(
+                    () -> {
+                        PersistableBundle persistableBundle = new PersistableBundle();
+                        persistableBundle.putBoolean(
+                                Utils.KEY_CLOSE_INPUT_AUDIO_STREAM_IF_OUTPUT_PIPE_BROKEN, true);
+                        alwaysOnHotwordDetector.updateState(
+                                persistableBundle, Helper.createFakeSharedMemoryData());
+                    },
+                    MANAGE_HOTWORD_DETECTION);
+            adoptShellPermissionIdentityForHotwordAndWearableSensing();
+            // Wait for all the PFDs involved with the call above to be cleaned up
+            SystemClock.sleep(4000);
+
+            /*
+             * Write more data from wearable onto the same stream. This should trigger a pipe
+             * broken exception in the system_server thread that copies from the output of
+             * WearableSensingService to the input of HotwordDetectionService, which triggers
+             * the callback to stop the wearable stream.
+             */
+            sendMoreAudioDataFromWearable();
+            // Wait for the async call into WearableSensingService.
+            SystemClock.sleep(2000);
+            verifyWearableSensingServiceAudioStopCalled();
+        } finally {
+            cleanupForWearableTests(alwaysOnHotwordDetector);
         }
     }
 
@@ -2461,7 +2281,7 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
      * AlwaysOnHotwordDetector. This method will disable test model after verifying the result.
      * If you want to disable the test model manually, please use
      * {@link #verifyOnDetectFromDspWithSoundTriggerInjectionSuccess(
-     *AlwaysOnHotwordDetector, boolean)}
+     * AlwaysOnHotwordDetector, boolean)}
      */
     private void verifyOnDetectFromDspWithSoundTriggerInjectionSuccess(
             AlwaysOnHotwordDetector alwaysOnHotwordDetector) throws Throwable {
@@ -2527,110 +2347,6 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         assertThat(hotwordDetectionServiceFailure.getErrorCode()).isEqualTo(errorCode);
     }
 
-    /** Triggers software detector and verifies detection */
-    private void triggerDetectorAndVerifyDetection(HotwordDetector softwareDetector,
-            boolean externalDetection) throws Exception {
-        mService.initDetectRejectLatch();
-
-        triggerDetector(softwareDetector, /* externalDetection= */ externalDetection);
-
-        // Verify detection.
-        mService.waitOnDetectOrRejectCalled();
-        Helper.verifyDetectedResult(mService.getHotwordServiceOnDetectedResult(), DETECTED_RESULT);
-    }
-
-    /** Triggers always on hotword detector (simulate DSP trigger) and verifies detection */
-    private void triggerDetectorAndVerifyDetection(
-            AlwaysOnHotwordDetector alwaysOnHotwordDetector)
-            throws Exception {
-        mService.initDetectRejectLatch();
-
-        triggerDetector(alwaysOnHotwordDetector);
-
-        // Verify detection.
-        mService.waitOnDetectOrRejectCalled();
-        Helper.verifyDetectedResult(mService.getHotwordServiceOnDetectedResult(), DETECTED_RESULT);
-    }
-
-    /** Triggers software detector (start recognition). */
-    private void triggerDetector(HotwordDetector softwareDetector,
-            boolean externalDetection) throws Exception {
-        if (externalDetection) {
-            softwareDetector.startRecognition(Helper.createFakeAudioStream(),
-                    Helper.createFakeAudioFormat(), Helper.createFakePersistableBundleData());
-
-        } else {
-            softwareDetector.startRecognition();
-        }
-    }
-
-    /** Triggers always on hotword detector (simulate DSP trigger) */
-    private void triggerDetector(
-            AlwaysOnHotwordDetector alwaysOnHotwordDetector)
-            throws Exception {
-        // Trigger test detection event.
-        alwaysOnHotwordDetector.triggerHardwareRecognitionEventForTest(
-                /* status= */ 0, /* soundModelHandle= */ 100,
-                /* halEventReceivedMillis */ 12345, /* captureAvailable= */ true,
-                /* captureSession= */ 101, /* captureDelayMs= */ 1000,
-                /* capturePreambleMs= */ 1001, /* triggerInData= */ true,
-                Helper.createFakeAudioFormat(), new byte[1024],
-                Helper.createFakeKeyphraseRecognitionExtraList());
-    }
-
-    /**
-     * Creates a software hotword detector and inform HDS to egress training data.
-     *
-     * @param sendAfterDetect whether to send training data after detection.
-     */
-    private HotwordDetector createSoftwareHotwordDetectorForTrainingDataEgress(
-            boolean sendAfterDetect) throws Throwable {
-        HotwordDetector softwareHotwordDetector = createSoftwareHotwordDetector(/* useOnFailure= */
-                true);
-
-        // Update HotwordDetectionService options to send training data on every detection.
-        runWithShellPermissionIdentity(() -> {
-            PersistableBundle persistableBundle = new PersistableBundle();
-            persistableBundle.putInt(Helper.KEY_TEST_SCENARIO,
-                    sendAfterDetect
-                            ? Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA_AFTER_DETECT
-                            : Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA);
-            softwareHotwordDetector.updateState(
-                    persistableBundle,
-                    Helper.createFakeSharedMemoryData());
-        }, MANAGE_HOTWORD_DETECTION);
-
-        return softwareHotwordDetector;
-    }
-
-    /**
-     * Creates always-on hotword detector and inform HDS to egress training data after detection
-     * events.
-     *
-     * @param sendAfterDetect whether to send training data after detection.
-     */
-    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetectorForTrainingDataEgress(boolean
-            sendAfterDetect)
-            throws Throwable {
-        AlwaysOnHotwordDetector alwaysOnHotwordDetector =
-                createAlwaysOnHotwordDetectorWithSoundTriggerInjection(/* withFailureCallback= */
-                        true);
-
-        // Update HotwordDetectionService options to send training data on every detection.
-        runWithShellPermissionIdentity(() -> {
-            PersistableBundle persistableBundle = new PersistableBundle();
-            persistableBundle.putInt(Helper.KEY_TEST_SCENARIO,
-                    sendAfterDetect
-                            ? Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA_AFTER_DETECT
-                            : Utils.EXTRA_HOTWORD_DETECTION_SERVICE_SEND_TRAINING_DATA);
-            alwaysOnHotwordDetector.updateState(
-                    persistableBundle,
-                    Helper.createFakeSharedMemoryData());
-        }, MANAGE_HOTWORD_DETECTION);
-
-        return alwaysOnHotwordDetector;
-    }
-
     /**
      * Create software hotword detector and wait for ready
      */
@@ -2680,18 +2396,12 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         return alwaysOnHotwordDetector;
     }
 
-    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetectorWithSoundTriggerInjection()
-            throws Throwable {
-        return createAlwaysOnHotwordDetectorWithSoundTriggerInjection(false);
-    }
-
     /**
      * Create AlwaysOnHotwordDetector with SoundTrigger injection. Please call
      * {@link #verifyOnDetectFromDspWithSoundTriggerInjectionSuccess} or {@link #disableTestModel()}
      * before finishing the test.
      */
-    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetectorWithSoundTriggerInjection(
-            boolean withFailureCallback)
+    private AlwaysOnHotwordDetector createAlwaysOnHotwordDetectorWithSoundTriggerInjection()
             throws Throwable {
         final UUID uuid = new UUID(5, 7);
         final UUID vendorUuid = new UUID(7, 5);
@@ -2706,12 +2416,7 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         mService.initAvailabilityChangeLatch();
 
         // Create AlwaysOnHotwordDetector and wait ready.
-        if (withFailureCallback) {
-            mService.createAlwaysOnHotwordDetectorWithOnFailureCallback(/* useExecutor= */
-                    false, /* runOnMainThread= */ false);
-        } else {
-            mService.createAlwaysOnHotwordDetector();
-        }
+        mService.createAlwaysOnHotwordDetector();
 
         mService.waitSandboxedDetectionServiceInitializedCalledOrException();
 
@@ -2738,13 +2443,13 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         uiAutomation.adoptShellPermissionIdentity(RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD);
     }
 
-    private void adoptShellPermissionIdentityForHotwordWithTrainingData() {
+    private void adoptShellPermissionIdentityForHotwordAndWearableSensing() {
         // Drop any identity adopted earlier.
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.dropShellPermissionIdentity();
         // need to retain the identity until the callback is triggered
-        uiAutomation.adoptShellPermissionIdentity(RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD,
-                RECEIVE_SANDBOXED_DETECTION_TRAINING_DATA);
+        uiAutomation.adoptShellPermissionIdentity(
+                RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD, MANAGE_WEARABLE_SENSING_SERVICE);
     }
 
     private void adoptShellPermissionIdentityForHotwordWithVoiceActivation() {
@@ -2797,30 +2502,14 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
     }
 
     /**
-     * This method sets the training data app op for shell identity.
-     * <p> This should be used if
-     * {@link HotwordDetectionServiceBasicTest#adoptShellPermissionIdentityForHotwordWithTrainingData()}
-     * has been called. When adopting shell permission identity, both permissions and app-op checks
-     * are redirected from the  test app to the shell identity (uid: 2000, package name:
-     * "com.android.shell"). </p>
-     */
-    private void setTrainingDataAppOpForShellIdentity(boolean allow) {
-        runWithShellPermissionIdentity(() -> {
-            mAppOpsManager.setUidMode(RECEIVE_SANDBOXED_DETECTION_TRAINING_DATA_OP_STR,
-                    Process.SHELL_UID,
-                    allow ? AppOpsManager.MODE_ALLOWED : AppOpsManager.opToDefaultMode(
-                            RECEIVE_SANDBOXED_DETECTION_TRAINING_DATA_OP_STR));
-        });
-    }
-
-    /**
      * This method sets the voice activation app op for shell identity.
      * <p> This should be used if
      * {@link HotwordDetectionServiceBasicTest#adoptShellPermissionIdentityForHotwordWithVoiceActivation()}
      * has been called and should only be called while the permission identity is in effect. When
      * adopting shell permission identity, both permissions and app-op checks are redirected from
-     *  the test app to the shell identity (uid: 2000, package name:
-     * "com.android.shell"). </p>
+     *  the test app to the shell identity (package name: "com.android.shell").
+     *  See {@link com.android.server.am.ActivityManagerService#startDelegateShellPermissionIdentity(int, String[])}
+     *  to see how the delegation is performed </p>
      */
     private void setVoiceActivationOpForShellIdentity(boolean allow) {
         // We expect this call to be made after
@@ -2829,7 +2518,150 @@ public class HotwordDetectionServiceBasicTest extends AbstractHdsTestCase {
         // identity, that would OVERRIDE any existing permission adopted and break the flow of
         // running tests.
         mAppOpsManager.setUidMode(RECEIVE_SANDBOX_TRIGGER_AUDIO_OP_STR,
-                    Process.SHELL_UID,
-                    allow ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_ERRORED);
+                UserHandle.getUid(UserHandle.getUserId(Process.myUid()), Process.SHELL_UID),
+                allow ? AppOpsManager.MODE_ALLOWED : AppOpsManager.MODE_ERRORED);
+    }
+
+    private void setupForWearableTests(AlwaysOnHotwordDetector alwaysOnHotwordDetector)
+            throws Exception {
+        setupForWearableTests(alwaysOnHotwordDetector, true);
+    }
+
+    private void setupForWearableTests(
+            AlwaysOnHotwordDetector alwaysOnHotwordDetector, boolean closeStreamAfterRead)
+            throws Exception {
+        mOriginalWearableSensingServiceEnabledConfig =
+                getWearableSensingServiceEnabledDeviceConfig();
+        setWearableSensingServiceEnabledDeviceConfig("true");
+        // Update HotwordDetectionService options to enable Audio egress
+        runWithShellPermissionIdentity(
+                () -> {
+                    PersistableBundle persistableBundle = new PersistableBundle();
+                    persistableBundle.putInt(
+                            Helper.KEY_TEST_SCENARIO,
+                            Utils.EXTRA_HOTWORD_DETECTION_SERVICE_ENABLE_AUDIO_EGRESS);
+                    persistableBundle.putBoolean(
+                            Utils.KEY_AUDIO_EGRESS_CLOSE_AUDIO_STREAM_AFTER_READ,
+                            closeStreamAfterRead);
+                    alwaysOnHotwordDetector.updateState(
+                            persistableBundle, Helper.createFakeSharedMemoryData());
+                },
+                MANAGE_HOTWORD_DETECTION);
+        adoptShellPermissionIdentityForHotwordAndWearableSensing();
+        setTestableWearableSensingService();
+        resetWearableSensingServiceStates();
+        alwaysOnHotwordDetector.startRecognition(0, new byte[] {1, 2, 3, 4, 5});
+        RecognitionSession recognitionSession =
+                waitForFutureDoneAndAssertSuccessful(
+                        mInstrumentationObserver.getOnRecognitionStartedFuture());
+        assertThat(recognitionSession).isNotNull();
+    }
+
+    private void cleanupForWearableTests(AlwaysOnHotwordDetector alwaysOnHotwordDetector)
+            throws Exception {
+        if (mOriginalWearableSensingServiceEnabledConfig != null) {
+            setWearableSensingServiceEnabledDeviceConfig(
+                    mOriginalWearableSensingServiceEnabledConfig);
+            mOriginalWearableSensingServiceEnabledConfig = null;
+        }
+        // destroy detector
+        alwaysOnHotwordDetector.destroy();
+        // Drop identity adopted.
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .dropShellPermissionIdentity();
+        clearTestableWearableSensingService();
+    }
+
+    private static String getWearableSensingServiceEnabledDeviceConfig() {
+        return runWithShellPermissionIdentity(
+                () -> {
+                    return DeviceConfig.getProperty(
+                            DeviceConfig.NAMESPACE_WEARABLE_SENSING,
+                            KEY_WEARABLE_SENSING_SERVICE_ENABLED);
+                });
+    }
+
+    private static void setWearableSensingServiceEnabledDeviceConfig(String newValue) {
+        runWithShellPermissionIdentity(
+                () -> {
+                    DeviceConfig.setProperty(
+                            DeviceConfig.NAMESPACE_WEARABLE_SENSING,
+                            KEY_WEARABLE_SENSING_SERVICE_ENABLED,
+                            newValue,
+                            /* makeDefault= */ false);
+                });
+    }
+
+    /** Temporarily sets the WearableSensingService to the test implementation. */
+    private void setTestableWearableSensingService() {
+        runShellCommand(
+                "cmd wearable_sensing set-temporary-service %d %s %d",
+                USER_ID, MAIN_WEARABLE_SENSING_SERVICE_NAME, TEMPORARY_SERVICE_DURATION_MS);
+    }
+
+    /** Resets the WearableSensingService implementation. */
+    private void clearTestableWearableSensingService() {
+        runShellCommand("cmd wearable_sensing set-temporary-service %d", USER_ID);
+    }
+
+    private void resetWearableSensingServiceStates() throws Exception {
+        provideDataToWearableSensingServiceAndWait(MainWearableSensingService.ACTION_RESET);
+    }
+
+    private void sendAudioStreamFromWearable() throws Exception {
+        provideDataToWearableSensingServiceAndWait(MainWearableSensingService.ACTION_SEND_AUDIO);
+    }
+
+    private void sendNonHotwordAudioStreamFromWearable() throws Exception {
+        provideDataToWearableSensingServiceAndWait(
+                MainWearableSensingService.ACTION_SEND_NON_HOTWORD_AUDIO);
+    }
+
+    private void sendNonHotwordAudioStreamWithAcceptDetectionOptionsFromWearable()
+            throws Exception {
+        provideDataToWearableSensingServiceAndWait(
+                MainWearableSensingService
+                        .ACTION_SEND_NON_HOTWORD_AUDIO_WITH_ACCEPT_DETECTION_OPTIONS);
+    }
+
+    private void sendMoreAudioDataFromWearable() throws Exception {
+        provideDataToWearableSensingServiceAndWait(
+                MainWearableSensingService.ACTION_SEND_MORE_AUDIO_DATA);
+    }
+
+    private void verifyWearableSensingServiceHotwordValidatedCalled() throws Exception {
+        assertThat(
+                        provideDataToWearableSensingServiceAndWait(
+                                MainWearableSensingService.ACTION_VERIFY_HOTWORD_VALIDATED_CALLED))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private void verifyWearableSensingServiceAudioStopCalled() throws Exception {
+        assertThat(
+                        provideDataToWearableSensingServiceAndWait(
+                                MainWearableSensingService.ACTION_VERIFY_AUDIO_STOP_CALLED))
+                .isEqualTo(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    private int provideDataToWearableSensingServiceAndWait(String value) throws Exception {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicInteger statusRef = new AtomicInteger();
+        PersistableBundle data = new PersistableBundle();
+        data.putString(MainWearableSensingService.BUNDLE_ACTION_KEY, value);
+        sWearableSensingManager.provideData(
+                data,
+                null,
+                mExecutor,
+                (status) -> {
+                    statusRef.set(status);
+                    latch.countDown();
+                });
+        assertThat(latch.await(3, SECONDS)).isTrue();
+        return statusRef.get();
+    }
+
+    private boolean isWatch() {
+        return sPkgMgr.hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

@@ -22,8 +22,11 @@ import android.os.PersistableBundle;
 import android.os.SharedMemory;
 import android.service.ambientcontext.AmbientContextDetectionResult;
 import android.service.ambientcontext.AmbientContextDetectionServiceStatus;
+import android.service.wearable.WearableSensingDataRequester;
 import android.service.wearable.WearableSensingService;
 import android.util.Log;
+
+import com.google.common.collect.HashMultimap;
 
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -52,6 +55,10 @@ public class CtsWearableSensingService extends WearableSensingService {
             sAmbientContextDetectionServiceStatusConsumer;
     private static AmbientContextDetectionServiceStatus sServiceStatusToConsume;
     private static String sPackageName = null;
+    private static final HashMultimap<Integer, WearableSensingDataRequester> sDataRequesters =
+            HashMultimap.create();
+    private static boolean sOnStopHotwordRecognitionCalled = false;
+    private static boolean sShouldCallParentAndReturn = false;
 
     @Override
     public void onDataStreamProvided(ParcelFileDescriptor parcelFileDescriptor,
@@ -68,6 +75,52 @@ public class CtsWearableSensingService extends WearableSensingService {
         Log.w(TAG, "onDataProvided");
         sData = data;
         sSharedMemory = sharedMemory;
+        sStatusConsumer = statusConsumer;
+        sRespondLatch.countDown();
+    }
+
+    @Override
+    public void onDataRequestObserverRegistered(
+            int dataType,
+            String packageName,
+            WearableSensingDataRequester dataRequester,
+            Consumer<Integer> statusConsumer) {
+        if (sShouldCallParentAndReturn) {
+            super.onDataRequestObserverRegistered(
+                    dataType, packageName, dataRequester, statusConsumer);
+            return;
+        }
+        sDataRequesters.put(dataType, dataRequester);
+        sPackageName = packageName;
+        sStatusConsumer = statusConsumer;
+        sRespondLatch.countDown();
+    }
+
+    @Override
+    public void onDataRequestObserverUnregistered(
+            int dataType,
+            String packageName,
+            WearableSensingDataRequester dataRequester,
+            Consumer<Integer> statusConsumer) {
+        if (sShouldCallParentAndReturn) {
+            super.onDataRequestObserverUnregistered(
+                    dataType, packageName, dataRequester, statusConsumer);
+            return;
+        }
+        sDataRequesters.remove(dataType, dataRequester);
+        sPackageName = packageName;
+        sStatusConsumer = statusConsumer;
+        sRespondLatch.countDown();
+    }
+
+    @Override
+    public void onStopHotwordRecognition(Consumer<Integer> statusConsumer) {
+        if (sShouldCallParentAndReturn) {
+            super.onStopHotwordRecognition(statusConsumer);
+            return;
+        }
+        Log.i(TAG, "onStopHotwordRecognition");
+        sOnStopHotwordRecognitionCalled = true;
         sStatusConsumer = statusConsumer;
         sRespondLatch.countDown();
     }
@@ -112,6 +165,9 @@ public class CtsWearableSensingService extends WearableSensingService {
         sAmbientContextDetectionServiceStatusConsumer = null;
         sServiceStatusToConsume = null;
         sPackageName = null;
+        sDataRequesters.clear();
+        sOnStopHotwordRecognitionCalled = false;
+        sShouldCallParentAndReturn = false;
     }
 
     public static void whenCallbackTriggeredRespondWithStatus(int status) {
@@ -165,6 +221,7 @@ public class CtsWearableSensingService extends WearableSensingService {
                 throw new AssertionError("CtsWearableSensingService"
                         + " timed out while expecting a call.");
             }
+            Log.i(TAG, "Sending status " + sStatusToConsume);
             sStatusConsumer.accept(sStatusToConsume);
             // reset for next
             sRespondLatch = new CountDownLatch(1);
@@ -187,5 +244,22 @@ public class CtsWearableSensingService extends WearableSensingService {
 
     public static String getLastCallingPackage() {
         return sPackageName;
+    }
+
+    /** Gets the data requesters registered for the provided data type. */
+    public static Set<WearableSensingDataRequester> getDataRequesters(int dataType) {
+        return sDataRequesters.get(dataType);
+    }
+
+    public static boolean getOnStopHotwordRecognitionCalled() {
+        return sOnStopHotwordRecognitionCalled;
+    }
+
+    /**
+     * Configures this WearableSensingService to delegate to its parent when a non-abstract method
+     * is called.
+     */
+    public static void configureMethodsToCallParentAndReturn() {
+        sShouldCallParentAndReturn = true;
     }
 }

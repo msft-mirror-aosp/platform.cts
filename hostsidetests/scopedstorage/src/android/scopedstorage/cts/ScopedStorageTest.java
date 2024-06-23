@@ -83,6 +83,7 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -108,6 +109,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Runs the scoped storage tests on primary external storage.
@@ -164,14 +167,33 @@ public class ScopedStorageTest {
     private static final TestApp APP_D_LEGACY_HAS_RW = new TestApp("TestAppDLegacy",
             "android.scopedstorage.cts.testapp.D", 1, false, "CtsScopedStorageTestAppDLegacy.apk");
 
+    // Polling timeout in millis
+    private static final long POLLING_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(20);
+
+    // Polling sleep time in millis
+    private static final long POLLING_SLEEP_MILLIS = 100;
     @Before
     public void setup() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        if (!context.getPackageManager().isInstantApp()) {
+        PackageManager packageManager = InstrumentationRegistry.getInstrumentation()
+                .getContext().getPackageManager();
+        if (!packageManager.isInstantApp()) {
             pollForExternalStorageState();
             getExternalFilesDir().mkdirs();
         }
-        MediaStore.waitForIdle(context.getContentResolver());
+
+        pollForCondition(
+                () -> packageManager.resolveContentProvider(MediaStore.AUTHORITY, 0) != null);
+        assumeTrue(packageManager.resolveContentProvider(MediaStore.AUTHORITY, 0) != null);
+    }
+
+    public static void pollForCondition(Supplier<Boolean> condition)
+            throws Exception {
+        for (int i = 0; i < POLLING_TIMEOUT_MILLIS / POLLING_SLEEP_MILLIS; i++) {
+            if (condition.get()) {
+                return;
+            }
+            Thread.sleep(POLLING_SLEEP_MILLIS);
+        }
     }
 
     /**

@@ -12,69 +12,73 @@
 package android.hardware.camera2.cts;
 
 import static android.hardware.camera2.cts.CameraTestUtils.*;
-import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10HDR10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.AV1ProfileMain10HDR10Plus;
 import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10;
+import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10;
 import static android.media.MediaCodecInfo.CodecProfileLevel.HEVCProfileMain10HDR10Plus;
 
 import static com.android.ex.camera2.blocking.BlockingSessionCallback.*;
-
-import android.graphics.ImageFormat;
-import android.graphics.SurfaceTexture;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
-import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CaptureRequest;
-import android.hardware.camera2.CaptureResult;
-import android.hardware.camera2.cts.helpers.StaticMetadata;
-import android.hardware.camera2.params.DynamicRangeProfiles;
-import android.hardware.camera2.params.OutputConfiguration;
-import android.hardware.camera2.params.SessionConfiguration;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.hardware.HardwareBuffer;
-import android.media.MediaMuxer;
-import android.util.Size;
-import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
-import android.media.CamcorderProfile;
-import android.media.EncoderProfiles;
-import android.media.MediaCodec;
-import android.media.MediaCodecInfo.CodecCapabilities;
-import android.media.Image;
-import android.media.ImageReader;
-import android.media.ImageWriter;
-import android.media.MediaCodecList;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
-import android.media.MediaRecorder;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.SystemClock;
-import android.test.suitebuilder.annotation.LargeTest;
-import android.util.Log;
-import android.util.Range;
-import android.view.Surface;
-
-import com.android.compatibility.common.util.MediaUtils;
-import com.android.ex.camera2.blocking.BlockingSessionCallback;
-
-import junit.framework.AssertionFailedError;
-
-import org.junit.runners.Parameterized;
-import org.junit.runner.RunWith;
-import org.junit.Test;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.graphics.ImageFormat;
+import android.graphics.SurfaceTexture;
+import android.hardware.HardwareBuffer;
+import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraConstrainedHighSpeedCaptureSession;
+import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
+import android.hardware.camera2.cts.helpers.StaticMetadata;
+import android.hardware.camera2.cts.testcases.Camera2SurfaceViewTestCase;
+import android.hardware.camera2.params.DynamicRangeProfiles;
+import android.hardware.camera2.params.OutputConfiguration;
+import android.hardware.camera2.params.SessionConfiguration;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.CamcorderProfile;
+import android.media.EncoderProfiles;
+import android.media.Image;
+import android.media.ImageReader;
+import android.media.ImageWriter;
+import android.media.MediaCodec;
+import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecList;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
+import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.SystemClock;
+import android.util.Log;
+import android.util.Range;
+import android.util.Size;
+import android.view.Surface;
+
+import androidx.test.filters.LargeTest;
+
+import com.android.compatibility.common.util.MediaUtils;
+import com.android.ex.camera2.blocking.BlockingSessionCallback;
+
+import junit.framework.AssertionFailedError;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.HashMap;
 import java.util.Optional;
 import java.util.Set;
 
@@ -111,10 +115,16 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
             CamcorderProfile.QUALITY_LOW,
     };
 
-    private static final int[] mTenBitCodecProfileList = {
+    private static final int[] mTenBitHEVCCodecProfileList = {
             HEVCProfileMain10,
             HEVCProfileMain10HDR10,
             HEVCProfileMain10HDR10Plus,
+            //todo(b/215396395): DolbyVision
+    };
+    private static final int[] mTenBitAV1CodecProfileList = {
+            AV1ProfileMain10,
+            AV1ProfileMain10HDR10,
+            AV1ProfileMain10HDR10Plus,
             //todo(b/215396395): DolbyVision
     };
     private static final int MAX_VIDEO_SNAPSHOT_IMAGES = 5;
@@ -447,7 +457,7 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
 
     /**
      * <p>
-     * Test basic camera 10-bit recording.
+     * Test basic camera 10-bit recording for HEVC codec.
      * </p>
      * <p>
      * This test covers the typical basic use case of camera recording.
@@ -458,7 +468,28 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
      * </p>
      */
     @Test(timeout=60*60*1000) // timeout = 60 mins for long running tests
-    public void testBasic10BitRecording() throws Exception {
+    public void testBasic10BitRecordingHEVC() throws Exception {
+        testBasic10BitRecording(mTenBitHEVCCodecProfileList, MediaFormat.MIMETYPE_VIDEO_HEVC);
+    }
+
+    /**
+     * <p>
+     * Test basic camera 10-bit recording for AV1 codec.
+     * </p>
+     * <p>
+     * This test covers the typical basic use case of camera recording.
+     * MediaCodec is used to record 10-bit video, CamcorderProfile and codec profiles
+     * are used to configure the MediaCodec. It goes through the pre-defined
+     * CamcorderProfile and 10-bit codec profile lists, tests each configuration and
+     * validates the recorded video. Preview is set to the video size.
+     * </p>
+     */
+    @Test(timeout=60*60*1000) // timeout = 60 mins for long running tests
+    public void testBasic10BitRecordingAV1() throws Exception {
+        testBasic10BitRecording(mTenBitAV1CodecProfileList, MediaFormat.MIMETYPE_VIDEO_AV1);
+    }
+
+    private void testBasic10BitRecording(int[] tenBitCodecProfileList, String mimetype) throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         for (int i = 0; i < cameraIdsUnderTest.length; i++) {
             try {
@@ -489,14 +520,14 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                         continue;
                     }
 
-                    for (int codecProfile : mTenBitCodecProfileList) {
+                    for (int codecProfile : tenBitCodecProfileList) {
                         CamcorderProfile profile = CamcorderProfile.get(cameraId, camcorderProfile);
 
                         Size videoSize = new Size(profile.videoFrameWidth,
                                 profile.videoFrameHeight);
                         MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
                         MediaFormat format = MediaFormat.createVideoFormat(
-                                MediaFormat.MIMETYPE_VIDEO_HEVC, videoSize.getWidth(),
+                                mimetype, videoSize.getWidth(),
                                 videoSize.getHeight());
                         format.setInteger(MediaFormat.KEY_PROFILE, codecProfile);
                         format.setInteger(MediaFormat.KEY_BIT_RATE, profile.videoBitRate);
@@ -529,6 +560,9 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
                         try {
                             mediaCodec = MediaCodec.createByCodecName(codecName);
                             assertNotNull(mediaCodec);
+                            if (!mediaCodec.getCodecInfo().isHardwareAccelerated()) {
+                                continue;
+                            }
 
                             openDevice(cameraIdsUnderTest[i]);
 
