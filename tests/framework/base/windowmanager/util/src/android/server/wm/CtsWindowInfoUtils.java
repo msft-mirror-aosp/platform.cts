@@ -415,7 +415,8 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier) throws InterruptedException {
+            @NonNull Supplier<IBinder> windowTokenSupplier, boolean useGlobalInjection) 
+            throws InterruptedException {
         Rect bounds = getWindowBounds(windowTokenSupplier);
         if (bounds == null) {
             return false;
@@ -423,7 +424,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
@@ -441,7 +442,8 @@ public class CtsWindowInfoUtils {
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindow(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
+            boolean useGlobalInjection)
             throws InterruptedException {
         Rect bounds = getWindowBounds(windowTokenSupplier);
         if (bounds == null) {
@@ -450,7 +452,7 @@ public class CtsWindowInfoUtils {
 
         final Point coord = new Point(bounds.left + (offset != null ? offset.x : 0),
                 bounds.top + (offset != null ? offset.y : 0));
-        sendTap(instrumentation, coord);
+        sendTap(instrumentation, coord, useGlobalInjection);
         return true;
     }
 
@@ -471,15 +473,16 @@ public class CtsWindowInfoUtils {
         return bounds;
     }
 
-    private static void sendTap(Instrumentation instrumentation, Point coord) {
+    private static void sendTap(Instrumentation instrumentation, Point coord,
+            boolean useGlobalInjection) {
         // Get anchor coordinates on the screen
         final long downTime = SystemClock.uptimeMillis();
 
-        UiAutomation uiAutomation = instrumentation.getUiAutomation();
         CtsTouchUtils ctsTouchUtils = new CtsTouchUtils(instrumentation.getTargetContext());
-        ctsTouchUtils.injectDownEvent(uiAutomation, downTime, coord.x, coord.y, true, null);
-        ctsTouchUtils.injectUpEvent(uiAutomation, downTime, false, coord.x, coord.y,
-                true, null);
+        ctsTouchUtils.injectDownEvent(instrumentation, downTime, coord.x, coord.y,
+                /* eventInjectionListener= */ null, useGlobalInjection);
+        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y,
+                /*waitForAnimations=*/ true, null, useGlobalInjection);
 
         instrumentation.waitForIdleSync();
     }
