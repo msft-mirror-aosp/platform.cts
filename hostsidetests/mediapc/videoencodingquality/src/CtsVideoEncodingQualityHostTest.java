@@ -421,7 +421,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
             JSONArray codecConfigs = obj.getJSONArray("CodecConfigs");
             int th = Runtime.getRuntime().availableProcessors() / 2;
             th = Math.min(Math.max(1, th), 8);
-            String filter = "libvmaf=feature=name=psnr:model=version=vmaf_v0.6.1:n_threads=" + th;
+            String filter =
+                    "[0:v]setpts=PTS-STARTPTS[reference];[1:v]setpts=PTS-STARTPTS[distorted];"
+                            + "[distorted][reference]libvmaf=feature=name=psnr:model=version"
+                            + "=vmaf_v0.6.1:n_threads=" + th;
             for (int i = 0; i < codecConfigs.length(); i++) {
                 JSONObject codecConfig = codecConfigs.getJSONObject(i);
                 String outputName = codecConfig.getString("EncodedFileName");
@@ -429,8 +432,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
                 String outputVmafPath = outDir + "/" + outputName + ".txt";
                 String cmd = "./bin/ffmpeg";
                 cmd += " -hide_banner";
-                cmd += " -i " + outDir + "/" + outputName + ".mp4" + " -an";
-                cmd += " -i " + "samples/" + refFileName + " -an";
+                cmd += " -r " + fps;
+                cmd += " -i " + "samples/" + refFileName + " -an"; // reference video
+                cmd += " -r " + fps;
+                cmd += " -i " + outDir + "/" + outputName + ".mp4" + " -an"; // distorted video
                 cmd += " -filter_complex " + "\"" + filter + "\"";
                 cmd += " -f null -";
                 cmd += " > " + outputVmafPath + " 2>&1";
