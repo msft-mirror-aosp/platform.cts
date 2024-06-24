@@ -166,10 +166,22 @@ public final class TransformReverseTransformIdentityTest {
         .setWidth(inpWidth)
         .setHeight(inpHeight)
         .build();
+    int encWidth, encHeight;
+    if (outWidth >= outHeight) {
+      encWidth = outWidth;
+      encHeight = outHeight;
+    } else {
+      // Encoders commonly support higher maximum widths than maximum heights.
+      // VideoTranscodingSamplePipeline#getSurfaceInfo may rotate frame before encoding, so the
+      // encoded frame's width >= height, and sets rotationDegrees in the output Format to ensure
+      // the frame is displayed in the correct orientation.
+      encWidth = outHeight;
+      encHeight = outWidth;
+    }
     Format encFormat = new Format.Builder()
         .setSampleMimeType(mediaType)
-        .setWidth(outWidth)
-        .setHeight(outHeight)
+        .setWidth(encWidth)
+        .setHeight(encHeight)
         .build();
     boolean transformCodecSupported = !AndroidTestUtil.skipAndLogIfFormatsUnsupported(
         context, testId, decFormat, encFormat);
@@ -214,7 +226,7 @@ public final class TransformReverseTransformIdentityTest {
             .run(testId, editedMediaItem);
 
     Format muxedOutputFormat = MediaEditingUtil.getMuxedWidthHeight(transformationResult.filePath);
-    if (outWidth > outHeight) {
+    if (outWidth >= outHeight) {
       assertThat(muxedOutputFormat.width).isEqualTo(outWidth);
       assertThat(muxedOutputFormat.height).isEqualTo(outHeight);
     } else {

@@ -30,16 +30,15 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assert.assertThrows;
 
 import android.os.VibrationEffect;
-import android.os.vibrator.Flags;
 import android.os.vibrator.persistence.ParsedVibration;
 import android.os.vibrator.persistence.VibrationXmlParser;
 import android.os.vibrator.persistence.VibrationXmlSerializer;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Rule;
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -47,16 +46,15 @@ import org.xml.sax.SAXException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringReader;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 /**
  * Tests for XML serialization of {@link VibrationEffect} via {@link VibrationXmlSerializer}
@@ -69,42 +67,39 @@ import junitparams.Parameters;
 })
 public class VibrationEffectXmlSerializationTest {
 
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Test
-    @Parameters(method = "getEffectsAndVibrationSelectXmls")
-    public void testValidParseDocument_vibrationSelectRootTag(
-            VibrationEffect[] expectedEffects, String xml) throws Exception {
-        assertWithMessage("Found wrong parse result for " + xml)
-                .that(parseDocument(xml).getVibrationEffects())
-                .containsExactly(expectedEffects).inOrder();
-    }
-
-    @Test
-    @Parameters(method = "getEffectsAndVibrationSelectXmls")
-    public void testValidVibrationSelectXmlsFailWithParseVibrationEffect(
-            VibrationEffect[] unused, String xml) throws Exception {
-        assertWithMessage("Expected vibration-effect parsing to fail for vibration-select " + xml)
-                .that(parseVibrationEffect(xml))
-                .isNull();
-    }
-
     @Test
     @Parameters(method = "getEffectsAndVibrationEffectXmls")
-    public void testValidParseDocument_vibrationEffectRootTag(
+    public void testParse_vibrationEffectRootTag_isSuccessful(
             VibrationEffect expectedEffect, String xml) throws Exception {
         assertWithMessage("Found wrong parse result for " + xml)
-                .that(parseDocument(xml).getVibrationEffects())
-                .containsExactly(expectedEffect).inOrder();
+                .that(VibrationXmlParser.parse(toInputStream(xml)))
+                .isEqualTo(toParsedVibration(expectedEffect));
+    }
+
+    @Test
+    @Parameters(method = "getEffectsAndVibrationSelectXmls")
+    public void testParse_vibrationSelectRootTag_isSuccessful(
+            VibrationEffect[] expectedEffects, String xml) throws Exception {
+        assertWithMessage("Found wrong parse result for " + xml)
+                .that(VibrationXmlParser.parse(toInputStream(xml)))
+                .isEqualTo(toParsedVibration(expectedEffects));
+    }
+
+    @Test
+    @Parameters(method = "getEffectsAndVibrationSelectXmls")
+    public void testParseVibrationEffect_vibrationSelectRootTag_fails(
+            VibrationEffect[] unused, String xml) {
+        assertThrows("Expected vibration-effect parsing to fail for " + xml,
+                VibrationXmlParser.ParseFailedException.class,
+                () -> VibrationXmlParser.parseVibrationEffect(toInputStream(xml)));
     }
 
     @Test
     @Parameters(method = "getEffectsAndVibrationEffectXmls")
-    public void testParseValidVibrationEffect(VibrationEffect expectedEffect, String xml)
-            throws Exception {
-        assertWithMessage("Found wrong parse result for " + xml)
-                .that(parseVibrationEffect(xml))
+    public void testParseVibrationEffect_vibrationEffectRootTag_isSuccessful(
+            VibrationEffect expectedEffect, String xml) throws Exception {
+        assertWithMessage("Found wrong vibration-effect parsing result for " + xml)
+                .that(VibrationXmlParser.parseVibrationEffect(toInputStream(xml)))
                 .isEqualTo(expectedEffect);
     }
 
@@ -126,14 +121,12 @@ public class VibrationEffectXmlSerializationTest {
         // Serialize effect
         VibrationXmlSerializer.serialize(effect, writer);
         // Parse serialized effect
-        StringReader reader = new StringReader(writer.toString());
-        VibrationEffect parsedEffect = VibrationXmlParser.parseVibrationEffect(reader);
-        assertThat(parsedEffect).isEqualTo(effect);
+        assertSuccessfulParse(writer.toString(), effect);
     }
 
     @Test
     public void testParseValidVibrationEffectWithCommentsAndSpaces() throws Exception {
-        assertThat(parseVibrationEffect(
+        assertSuccessfulParse(
                 """
 
                 <!-- comment before root tag -->
@@ -148,13 +141,13 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
 
                 <!-- comment after root tag -->
-                """))
-                .isEqualTo(VibrationEffect.createPredefined(EFFECT_CLICK));
+                """,
+                VibrationEffect.createPredefined(EFFECT_CLICK));
     }
 
     @Test
     public void testParseValidDocumentWithCommentsAndSpaces() throws Exception {
-        assertThat(parseDocument(
+        assertSuccessfulParse(
                 """
 
                 <!-- comment before root tag -->
@@ -169,10 +162,10 @@ public class VibrationEffectXmlSerializationTest {
                 </vibration-effect>
 
                 <!-- comment after root tag -->
-                """).getVibrationEffects())
-                .containsExactly(VibrationEffect.createPredefined(EFFECT_CLICK)).inOrder();
+                """,
+                VibrationEffect.createPredefined(EFFECT_CLICK));
 
-        assertThat(parseDocument(
+        assertThat(VibrationXmlParser.parse(toInputStream(
                 """
 
                 <!-- comment before root tag -->
@@ -194,15 +187,14 @@ public class VibrationEffectXmlSerializationTest {
                     <!-- comment before closing root tag -->
                 </vibration-select>
                 <!-- comment after root tag -->
-                """).getVibrationEffects())
-                .containsExactly(
+                """)))
+                .isEqualTo(toParsedVibration(
                         VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK),
-                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK))
-                .inOrder();
+                        VibrationEffect.createPredefined(VibrationEffect.EFFECT_TICK)));
     }
 
     @Test
-    public void testParseInvalidXmlIsNull() throws Exception {
+    public void testParseInvalidXmlFails() {
         assertFailedParse("");
         assertFailedParse("<!-- pure comment -->");
         assertFailedParse("invalid");
@@ -215,10 +207,12 @@ public class VibrationEffectXmlSerializationTest {
         // Root tags mismatch
         assertFailedParse("<vibration-select></vibration-effect>");
         assertFailedParse("<vibration-effect></vibration-select>");
+        // Using <vibration> tag instead of <vibration-effect>
+        assertFailedParse("<vibration><predefined-effect name=\"click\"/></vibration>");
     }
 
     @Test
-    public void testParseInvalidElementsOnStartIsNull() throws Exception {
+    public void testParseInvalidElementsOnStartFails() {
         assertFailedParse(
                 """
                 # some invalid initial text
@@ -256,7 +250,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidElementsOnEndIsNull() throws Exception {
+    public void testParseInvalidElementsOnEndFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -299,17 +293,18 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseEmptyVibrationTagIsNull() throws Exception {
-        assertFailedParse("<vibration/>");
+    public void testParseEmptyVibrationTagFails() {
+        assertFailedParse("<vibration-effect/>");
     }
 
     @Test
     public void testParseEmptyVibrationSelectTagIsEmpty() throws Exception {
-        assertThat(parseDocument("<vibration-select/>").getVibrationEffects()).isEmpty();
+        assertThat(VibrationXmlParser.parse(toInputStream("<vibration-select/>")))
+                .isEqualTo(toParsedVibration());
     }
 
     @Test
-    public void testParseMultipleVibrationTagsIsNull() throws Exception {
+    public void testParseMultipleVibrationTagsFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -322,7 +317,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseMultipleVibrationSelectTagsIsNull() throws Exception {
+    public void testParseMultipleVibrationSelectTagsFails() {
         assertFailedParse(
                 """
                 <vibration-select>
@@ -339,7 +334,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseEffectTagWrongAttributesIsNull() throws Exception {
+    public void testParseEffectTagWrongAttributesFails() {
         // Missing name attribute
         assertFailedParse("<vibration-effect><predefined-effect/></vibration-effect>");
 
@@ -359,7 +354,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testBadVibrationXmlWithinVibrationSelectTagIsNull() throws Exception {
+    public void testBadVibrationXmlWithinVibrationSelectTagFails() {
         assertFailedParse(
                 """
                 <vibration-select>
@@ -381,7 +376,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseHiddenPredefinedEffectIsNull() throws Exception {
+    public void testParseHiddenPredefinedEffectFails() {
         // Hidden effect id
         assertFailedParse(
                 """
@@ -400,7 +395,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParsePrimitiveTagWrongAttributesIsNull() throws Exception {
+    public void testParsePrimitiveTagWrongAttributesFails() {
         // Missing name attribute
         assertFailedParse(
                 """
@@ -427,7 +422,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseWaveformEffectAndRepeatingTagsAnyAttributeIsNull() throws Exception {
+    public void testParseWaveformEffectAndRepeatingTagsAnyAttributeFails() {
         // Waveform with wrong attribute
         assertFailedParse(
                 """
@@ -452,7 +447,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseWaveformEntryTagWrongAttributesIsNull() throws Exception {
+    public void testParseWaveformEntryTagWrongAttributesFails() {
         // Missing amplitude attribute
         assertFailedParse(
                 """
@@ -495,7 +490,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidPredefinedEffectNameIsNull() throws Exception {
+    public void testParseInvalidPredefinedEffectNameFails() {
         // Invalid effect name
         assertFailedParse(
                 """
@@ -506,7 +501,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParsePredefinedFollowedAnyEffectIsNull() throws Exception {
+    public void testParsePredefinedFollowedAnyEffectFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -535,7 +530,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseRepeatingPredefinedEffectsIsNull() throws Exception {
+    public void testParseRepeatingPredefinedEffectsFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -547,7 +542,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseAnyTagInsidePredefinedEffectIsNull() throws Exception {
+    public void testParseAnyTagInsidePredefinedEffectFails() {
         // Predefined inside predefined effect
         assertFailedParse(
                 """
@@ -582,7 +577,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidPrimitiveNameAndAttributesIsNull() throws Exception {
+    public void testParseInvalidPrimitiveNameAndAttributesFails() {
         // Invalid primitive name.
         assertFailedParse(
                 """
@@ -627,7 +622,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParsePrimitiveFollowedByOtherEffectsIsNull() throws Exception {
+    public void testParsePrimitiveFollowedByOtherEffectsFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -647,7 +642,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseAnyTagInsidePrimitiveIsNull() throws Exception {
+    public void testParseAnyTagInsidePrimitiveFails() {
         // Predefined inside primitive effect.
         assertFailedParse(
                 """
@@ -682,7 +677,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseRepeatingPrimitivesIsNull() throws Exception {
+    public void testParseRepeatingPrimitivesFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -695,7 +690,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidWaveformEntryAttributesIsNull() throws Exception {
+    public void testParseInvalidWaveformEntryAttributesFails() {
         // Invalid amplitude.
         assertFailedParse(
                 """
@@ -718,7 +713,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidTagInsideWaveformEffectIsNull() throws Exception {
+    public void testParseInvalidTagInsideWaveformEffectFails() {
         // Primitive inside waveform or repeating.
         assertFailedParse(
                 """
@@ -789,7 +784,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseInvalidVibrationWaveformIsNull() throws Exception {
+    public void testParseInvalidVibrationWaveformFails() {
         // Empty waveform.
         assertFailedParse(
                 """
@@ -851,7 +846,7 @@ public class VibrationEffectXmlSerializationTest {
     }
 
     @Test
-    public void testParseWaveformFollowedAnyEffectIsNull() throws Exception {
+    public void testParseWaveformFollowedAnyEffectFails() {
         assertFailedParse(
                 """
                 <vibration-effect>
@@ -899,7 +894,8 @@ public class VibrationEffectXmlSerializationTest {
         // Predefined effect with hidden effect id.
         assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
                 () -> VibrationXmlSerializer.serialize(
-                        VibrationEffect.get(VibrationEffect.EFFECT_TEXTURE_TICK), writer));
+                        VibrationEffect.get(VibrationEffect.EFFECT_TEXTURE_TICK),
+                        writer));
         assertThat(writer.toString()).isEmpty();
 
         // Step with non-default frequency.
@@ -907,7 +903,8 @@ public class VibrationEffectXmlSerializationTest {
                 () -> VibrationXmlSerializer.serialize(
                         VibrationEffect.startWaveform(targetFrequency(150f))
                                 .addSustain(Duration.ofMillis(100))
-                                .build(), writer));
+                                .build(),
+                        writer));
         assertThat(writer.toString()).isEmpty();
 
         // Step with non-integer amplitude.
@@ -915,7 +912,8 @@ public class VibrationEffectXmlSerializationTest {
                 () -> VibrationXmlSerializer.serialize(
                         VibrationEffect.startWaveform(targetAmplitude(0.00123f))
                                 .addSustain(Duration.ofMillis(100))
-                                .build(), writer));
+                                .build(),
+                        writer));
         assertThat(writer.toString()).isEmpty();
 
         // Waveform with ramp segments
@@ -924,7 +922,8 @@ public class VibrationEffectXmlSerializationTest {
                         VibrationEffect.startWaveform()
                                 .addSustain(Duration.ofMillis(100))
                                 .addTransition(Duration.ofMillis(50), targetAmplitude(1))
-                                .build(), writer));
+                                .build(),
+                        writer));
         assertThat(writer.toString()).isEmpty();
 
         // Composition with non-primitive segments
@@ -933,7 +932,8 @@ public class VibrationEffectXmlSerializationTest {
                         VibrationEffect.startComposition()
                                 .addPrimitive(PRIMITIVE_CLICK)
                                 .addEffect(VibrationEffect.createPredefined(EFFECT_CLICK))
-                                .compose(), writer));
+                                .compose(),
+                        writer));
         assertThat(writer.toString()).isEmpty();
 
         // Composition with repeating primitive segments
@@ -945,25 +945,9 @@ public class VibrationEffectXmlSerializationTest {
                                                 .addPrimitive(PRIMITIVE_CLICK)
                                                 .addPrimitive(PRIMITIVE_TICK, 1f, /* delay= */ 100)
                                                 .compose())
-                                .compose(), writer));
+                                .compose(),
+                        writer));
         assertThat(writer.toString()).isEmpty();
-    }
-
-    private static VibrationEffect parseVibrationEffect(String xml) throws IOException {
-        return VibrationXmlParser.parseVibrationEffect(new StringReader(xml));
-    }
-
-    private static ParsedVibration parseDocument(String xml) throws IOException {
-        return VibrationXmlParser.parseDocument(new StringReader(xml));
-    }
-
-    private static void assertFailedParse(String xml) throws IOException {
-        assertWithMessage("Expected vibration-effect parsing to fail for " + xml)
-                .that(VibrationXmlParser.parseVibrationEffect(new StringReader(xml)))
-                .isNull();
-        assertWithMessage("Expected document parsing to fail for " + xml)
-                .that(VibrationXmlParser.parseDocument(new StringReader(xml)))
-                .isNull();
     }
 
     @SuppressWarnings("unused") // Used in tests with @Parameters
@@ -1126,6 +1110,24 @@ public class VibrationEffectXmlSerializationTest {
         };
     }
 
+    private static void assertFailedParse(String xml) {
+        assertThrows("Expected parsing to fail for " + xml,
+                VibrationXmlParser.ParseFailedException.class,
+                () -> VibrationXmlParser.parse(toInputStream(xml)));
+        assertThrows("Expected vibration-effect parsing to fail for " + xml,
+                VibrationXmlParser.ParseFailedException.class,
+                () -> VibrationXmlParser.parseVibrationEffect(toInputStream(xml)));
+    }
+
+    private static void assertSuccessfulParse(String xml, VibrationEffect effect) throws Exception {
+        assertWithMessage("Failed parsing for " + xml)
+                .that(VibrationXmlParser.parse(toInputStream(xml)))
+                .isEqualTo(toParsedVibration(effect));
+        assertWithMessage("Failed vibration-effect parsing for " + xml)
+                .that(VibrationXmlParser.parseVibrationEffect(toInputStream(xml)))
+                .isEqualTo(effect);
+    }
+
     static void assertSameXml(String expectedXml, String actualXml)
             throws ParserConfigurationException {
         // DocumentBuilderFactory does not support setValidating(true) in Android, so the method
@@ -1159,5 +1161,13 @@ public class VibrationEffectXmlSerializationTest {
 
     private static String removeWhitespaceBetweenXmlTags(String xml) {
         return xml.replaceAll(">\\s+<", "><");
+    }
+
+    private static ParsedVibration toParsedVibration(VibrationEffect... effects) {
+        return new ParsedVibration(Arrays.asList(effects));
+    }
+
+    private static InputStream toInputStream(String xml) {
+        return new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
     }
 }

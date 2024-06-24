@@ -18,6 +18,7 @@ package android.os.cts;
 
 import android.os.Environment;
 import android.os.FileObserver;
+import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
@@ -58,8 +59,9 @@ public class FileObserverTest extends AndroidTestCase {
         dir = getContext().getCacheDir();
         helpSetUp(dir);
 
-        // Instant apps cannot access external storage
-        if (!InstrumentationRegistry.getTargetContext().getPackageManager().isInstantApp()) {
+        // Instant apps and SDK sandboxes cannot access external storage
+        if (!InstrumentationRegistry.getTargetContext().getPackageManager().isInstantApp()
+                && !Process.isSdkSandbox()) {
             dir = getContext().getExternalFilesDir(null);
             helpSetUp(dir);
 
