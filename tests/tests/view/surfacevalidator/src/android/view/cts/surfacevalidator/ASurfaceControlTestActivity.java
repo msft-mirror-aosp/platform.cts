@@ -39,6 +39,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsAnimation;
 import android.view.WindowManager;
@@ -173,8 +174,13 @@ public class ASurfaceControlTestActivity extends Activity {
         while (retries < maxRetries) {
             final CountDownLatch countDownLatch = new CountDownLatch(1);
             UiAutomation uiAutomation = mInstrumentation.getUiAutomation();
+            int[] outLocation = new int[2];
             mHandler.post(() -> {
-                mScreenshot = uiAutomation.takeScreenshot(getWindow());
+                Window window = getWindow();
+                mScreenshot = uiAutomation.takeScreenshot(window);
+                window.getDecorView()
+                        .findViewById(android.R.id.content)
+                        .getLocationInWindow(outLocation);
                 countDownLatch.countDown();
             });
 
@@ -188,7 +194,7 @@ public class ASurfaceControlTestActivity extends Activity {
             Bitmap swBitmap = mScreenshot.copy(Bitmap.Config.ARGB_8888, false);
             mScreenshot.recycle();
 
-            numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap);
+            numMatchingPixels = pixelChecker.getNumMatchingPixels(swBitmap, outLocation);
             bounds = pixelChecker.getBoundsToCheck(swBitmap);
             success = pixelChecker.checkPixels(numMatchingPixels, swBitmap.getWidth(),
                     swBitmap.getHeight());
@@ -275,13 +281,15 @@ public class ASurfaceControlTestActivity extends Activity {
             mLogWhenNoMatch = logWhenNoMatch;
         }
 
-        int getNumMatchingPixels(Bitmap bitmap) {
+        int getNumMatchingPixels(Bitmap bitmap, int[] outLocation) {
             int numMatchingPixels = 0;
             int numErrorsLogged = 0;
+            int offsetX = OFFSET_X + outLocation[0];
+            int offsetY = OFFSET_Y + outLocation[1];
             Rect boundsToCheck = getBoundsToCheck(bitmap);
             for (int x = boundsToCheck.left; x < boundsToCheck.right; x++) {
                 for (int y = boundsToCheck.top; y < boundsToCheck.bottom; y++) {
-                    int color = bitmap.getPixel(x + OFFSET_X, y + OFFSET_Y);
+                    int color = bitmap.getPixel(x + offsetX, y + offsetY);
                     if (getExpectedColor(x, y).matchesColor(color)) {
                         numMatchingPixels++;
                     } else if (DEBUG && mLogWhenNoMatch && numErrorsLogged < 100) {
