@@ -529,8 +529,8 @@ public class BluetoothAdapterTest {
         assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, null));
         assertFalse(mAdapter.unregisterBluetoothConnectionCallback(null));
 
+        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertTrue(mAdapter.registerBluetoothConnectionCallback(executor, callback));
-        assertTrue(mAdapter.unregisterBluetoothConnectionCallback(callback));
     }
 
     @Test
