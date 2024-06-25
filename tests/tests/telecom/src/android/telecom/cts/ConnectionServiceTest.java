@@ -366,7 +366,8 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testCallFilteringCompleteSignalInContacts() throws Exception {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
