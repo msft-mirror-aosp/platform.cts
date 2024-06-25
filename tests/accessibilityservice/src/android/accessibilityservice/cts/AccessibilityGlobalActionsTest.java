@@ -34,6 +34,7 @@ import android.platform.test.annotations.Presubmit;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -65,6 +66,7 @@ public class AccessibilityGlobalActionsTest {
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
+    private static UiDevice sUiDevice;
 
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
@@ -74,6 +76,7 @@ public class AccessibilityGlobalActionsTest {
     public static void oneTimeSetup() {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiDevice = UiDevice.getInstance(sInstrumentation);
         AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         sUiAutomation.setServiceInfo(info);
@@ -93,8 +96,13 @@ public class AccessibilityGlobalActionsTest {
 
     @After
     public void tearDown() throws Exception {
-        // Make sure we clean up and back to home screen again, or let test fail...
-        homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
+        // The majority of system actions involve System UI requests that both:
+        //   - Can take a few seconds to take effect on certain device types.
+        //   - Perform behavior that depends on the specific SystemUI implementation of the device,
+        //     making it untestable to a device-agnostic CTS test like this.
+        // So instead of waiting for any specific condition, we repeatedly try to get to the home
+        // screen to clean up before starting the next test.
+        sUiDevice.pressHome();
     }
 
     @MediumTest
