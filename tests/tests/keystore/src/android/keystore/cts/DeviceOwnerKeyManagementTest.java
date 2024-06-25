@@ -569,13 +569,14 @@ public class DeviceOwnerKeyManagementTest {
         return false;
     }
 
-    private boolean checkDeviceLocked() throws Exception {
+    private boolean checkDeviceLocked(boolean useStrongBox) throws Exception {
         String keystoreAlias = "check_device_state";
         KeyGenParameterSpec.Builder builder =
                 new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
                         .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
                         .setAttestationChallenge(new byte[128])
-                        .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512);
+                        .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512)
+                        .setIsStrongBoxBacked(useStrongBox);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM_EC,
                 "AndroidKeyStore");
@@ -586,7 +587,7 @@ public class DeviceOwnerKeyManagementTest {
 
         try {
             Certificate []certificates = keyStore.getCertificateChain(keystoreAlias);
-            verifyCertificateChain(certificates, false);
+            verifyCertificateChain(certificates, useStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
 
@@ -614,7 +615,7 @@ public class DeviceOwnerKeyManagementTest {
                 + " first_api_level < 14", TestUtils.isGsiImage()
                 && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
+        final boolean isDeviceLocked = checkDeviceLocked(false /* useStrongBox */);
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(false /* useStrongBox */);
         } catch (NeneException e) {
@@ -645,7 +646,7 @@ public class DeviceOwnerKeyManagementTest {
                 + " first_api_level < 14", TestUtils.isGsiImage()
                 && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
+        final boolean isDeviceLocked = checkDeviceLocked(true /* useStrongBox */);
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(true  /* useStrongBox */);
         } catch (NeneException e) {
