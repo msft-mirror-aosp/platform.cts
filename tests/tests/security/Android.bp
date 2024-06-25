@@ -102,8 +102,8 @@ android_test {
 
 android_test_helper_app {
     name: "PackageInstallerTestApp",
-    srcs: ["testdata/src/**/*.java"],
-    manifest: "testdata/packageinstallertestapp.xml",
+    srcs: ["testdata/packageinstallertestapp/src/**/*.java"],
+    manifest: "testdata/packageinstallertestapp/AndroidManifest.xml",
 }
 
 android_test_helper_app {
