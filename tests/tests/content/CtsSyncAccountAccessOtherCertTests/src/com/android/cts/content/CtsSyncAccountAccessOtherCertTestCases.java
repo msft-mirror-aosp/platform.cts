@@ -115,7 +115,7 @@ public class CtsSyncAccountAccessOtherCertTestCases {
         if (uiDevice.openNotification()) {
             Thread.sleep(1000);
             UiScrollable uiScrollable = new UiScrollable(new UiSelector().scrollable(true));
-            if (uiScrollable != null) {
+            if (uiScrollable.exists()) {
                 uiScrollable.scrollTextIntoView("Clear all");
             }
             UiObject2 clear = uiDevice.findObject(By.text("Clear all"));
