@@ -3007,6 +3007,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * same.
      */
     public void testSoftApConfigurationGetPersistentRandomizedMacAddress() throws Exception {
+	if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
         SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 mWifiManager::getSoftApConfiguration);
         final String ssid = currentConfig.getSsid().length() <= 28
