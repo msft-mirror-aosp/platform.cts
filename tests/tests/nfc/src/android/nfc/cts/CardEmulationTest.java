@@ -632,6 +632,7 @@ public class CardEmulationTest {
     public void testTwoCustomPollingLoopToPreferredCustomAndBackgroundDynamic() {
         assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         Activity activity = createAndResumeActivity();
@@ -690,6 +691,7 @@ public class CardEmulationTest {
     public void testTwoCustomPollingLoopToCustomAndBackgroundDynamic() {
         assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         Activity activity = createAndResumeActivity();
