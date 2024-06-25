@@ -13,6 +13,7 @@
             <PCI>273</PCI>
             <TAC>13100</TAC>
             <EARFCN>9260</EARFCN>
+            <BANDWIDTH>10000</BANDWIDTH>
             <OperatorInfo>
                 <AlphaLong>Google Fi</AlphaLong>
                 <AlphaShort>Fi</AlphaShort>

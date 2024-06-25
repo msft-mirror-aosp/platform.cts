@@ -65,7 +65,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -248,7 +247,6 @@ public class CloseSystemDialogsTest {
     }
 
     @Test
-    @Ignore
     public void testCloseSystemDialogs_inTrampolineWhenTargetSdk30_isSent() throws Exception {
         int notificationId = 43;
         CompletableFuture<Integer> result = new CompletableFuture<>();

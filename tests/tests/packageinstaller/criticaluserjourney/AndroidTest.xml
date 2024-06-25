@@ -37,9 +37,9 @@
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
-        <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsEmptyTestApp.apk" />
-        <option name="push" value="CtsEmptyTestAppV2.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsEmptyTestAppV2.apk" />
-        <option name="push" value="CtsCujInstallerTestApp.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsCujInstallerTestApp.apk" />
+        <option name="push" value="CtsInstallerCujTestApp.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestApp.apk" />
+        <option name="push" value="CtsInstallerCujTestAppV2.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestAppV2.apk" />
+        <option name="push" value="CtsInstallerCujTestInstaller.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestInstaller.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

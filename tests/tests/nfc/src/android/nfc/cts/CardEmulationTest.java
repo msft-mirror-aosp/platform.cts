@@ -622,6 +622,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTwoCustomPollingLoopToPreferredCustomAndBackgroundDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         Activity activity = createAndResumeActivity();
@@ -679,6 +680,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTwoCustomPollingLoopToCustomAndBackgroundDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         Activity activity = createAndResumeActivity();

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package android.adpf.common;
+package android.packageinstaller.cts.cuj.app;
 
-public class ADPFHintSessionUtils {
+import android.app.Activity;
 
-    public static String addCommandExtra(String command, String key, Object value) {
-        return String.format(command + " -e %s %s", key, value);
-    }
-
+public class MainActivity extends Activity {
 }

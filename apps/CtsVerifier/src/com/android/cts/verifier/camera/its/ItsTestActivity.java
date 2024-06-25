@@ -91,6 +91,7 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String TAG = "ItsTestActivity";
     private static final String EXTRA_CAMERA_ID = "camera.its.extra.CAMERA_ID";
     private static final String EXTRA_RESULTS = "camera.its.extra.RESULTS";
+    private static final String EXTRA_TABLET_NAME = "camera.its.extra.TABLET_NAME";
     private static final String EXTRA_VERSION = "camera.its.extra.VERSION";
     private static final String CURRENT_VERSION = "1.0";
     private static final String ACTION_ITS_RESULT =
@@ -352,9 +353,11 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                 String cameraId = intent.getStringExtra(EXTRA_CAMERA_ID);
                 String results = intent.getStringExtra(EXTRA_RESULTS);
+                String tabletName = intent.getStringExtra(EXTRA_TABLET_NAME);
                 if (cameraId == null || results == null) {
                     Log.e(TAG, "cameraId = " + ((cameraId == null) ? "null" : cameraId) +
-                            ", results = " + ((results == null) ? "null" : results));
+                            ", results = " + ((results == null) ? "null" : results) +
+                            ", tabletName = " + ((tabletName == null) ? "null" : tabletName));
                     return;
                 }
 
@@ -403,6 +406,7 @@ public class ItsTestActivity extends DialogTestListActivity {
 
                     JSONObject camJsonObj = new JSONObject();
                     camJsonObj.put("camera_id", cameraId);
+                    camJsonObj.put("tablet_name", tabletName);
                     // Update test execution results
                     for (String scene : scenes) {
                         JSONObject sceneResult = jsonResults.getJSONObject(scene);

@@ -66,15 +66,6 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
     @Before
     public void setUp() throws Exception {
         mDevice = getDevice();
-        final String[] abis = getProperty("ro.product.cpu.abilist").split(",");
-        boolean supported = false;
-        for (String abi : abis) {
-            if (abi.toLowerCase().startsWith("arm")) {
-                supported = true;
-                break;
-            }
-        }
-        assumeTrue("Test skipped as no ARM based ABI is supported", supported);
     }
 
     private String getProperty(String prop) throws Exception {
@@ -109,6 +100,18 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
                 || hardware.contains("ranchu")
                 || hardware.contains("cutf_cvm") || hardware.contains("starfish");
         assumeFalse("Test is skipped on virtual device ", isVirtual);
+    }
+
+    private void checkArmAbi() throws Exception {
+        final String[] abis = getProperty("ro.product.cpu.abilist").split(",");
+        boolean supported = false;
+        for (String abi : abis) {
+            if (abi.toLowerCase().startsWith("arm")) {
+                supported = true;
+                break;
+            }
+        }
+        assumeTrue("Test skipped as no ARM based ABI is supported", supported);
     }
 
     private static long getMedian(long[] numbers) {
@@ -148,6 +151,7 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
         checkMinSdkVersion();
         checkMinVendorApiLevel();
         checkVirtualDevice();
+        checkArmAbi();
         installPackage(PACKAGE_APK);
         // wake up and unlock the device, otherwise the device test may crash on drawing GL
         mDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
