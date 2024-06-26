@@ -143,6 +143,7 @@ public class VirtualSensorTest {
         final PackageManager packageManager = context.getPackageManager();
         assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
         mSensorManager = context.getSystemService(SensorManager.class);
+        assumeTrue(mSensorManager.getSensorList(Sensor.TYPE_ALL).size() > 0);
 
         mVirtualDeviceManager = context.getSystemService(VirtualDeviceManager.class);
     }
