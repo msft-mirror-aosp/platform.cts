@@ -23,7 +23,6 @@
 #include <android/log.h>
 #include <gtest/gtest.h>
 #include <sys/system_properties.h>
-
 #include "utils.h"
 
 // This was copied from "system/core/libcutils/properties.cpp" because the linker says
@@ -201,10 +200,10 @@ TEST_P(AAudioStreamBuilderChannelCountTest, openStream) {
 
 INSTANTIATE_TEST_CASE_P(CC, AAudioStreamBuilderChannelCountTest,
         ::testing::Values(
-                // Reasonable values
+                // Values that should work.
                 AAUDIO_UNSPECIFIED, 1, 2, 3, 4, 5, 6, 7, 8,
-                // Odd values
-                AAUDIO_UNSPECIFIED - 1, 9, 100, 1000000, 10000000),
+                // These values should fail.
+                AAUDIO_UNSPECIFIED - 1, 11, 100, 10000, 10000000),
         &AAudioStreamBuilderChannelCountTest::getTestName);
 
 class AAudioStreamBuilderFormatTest : public ::testing::TestWithParam<aaudio_format_t> {
