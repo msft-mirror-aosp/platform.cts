@@ -136,6 +136,9 @@
     <option name="compatibility:include-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.CustomAudienceApiCtsTest#testLeaveCustomAudience_joinedCustomAudience_success" />
     <option name="compatibility:include-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.TestAdSelectionManagerTest#testFailsWithInvalidAdSelectionConfigNoBuyers" />
 
+     <!-- CtsAdServicesNotInAllowListEndToEndTests -->
+    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_fledgeFetchAndJoinCustomAudience" />
+
     <!-- CtsAdServicesPermissionsAppOptOutEndToEndTests -->
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_fledgeFetchAndJoinCustomAudience" />
 
@@ -163,6 +166,9 @@
 
     <!-- CtsAppCompatHostTestCases -->
     <option name="compatibility:include-filter" value="CtsAppCompatHostTestCases com.android.cts.appcompat.AppCompatOverridesServiceTest#testPackageOverrideFlagPackageInstalledAfterFlagAdded" />
+
+    <!-- CtsAppEnumerationTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.MediaSessionEnumerationTests#queriesPackage_isTrustedForMediaControl_canSeeTarget" />
 
     <!-- CtsAppExitTestCases -->
     <option name="compatibility:include-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testFreezerNormalExitCode" />
@@ -1780,8 +1786,10 @@
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[LANDSCAPE]" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[LANDSCAPE_SPLIT]" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[PORTRAIT]" />
+    <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[PORTRAIT_SPLIT]" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[REVERSE_LANDSCAPE]" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[REVERSE_LANDSCAPE_SPLIT]" />
+    <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.PointerCancelTest#testPointerCancelForSplitTouch" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.PointerCancelTest#testPointerCancelMotion" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.TouchModeTest#testDetachedViewReturnsDefaultTouchMode" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.TouchModeTest#testTouchModeUpdate_DisplayHasOwnFocus" />
@@ -2428,6 +2436,7 @@
     <option name="compatibility:include-filter" value="CtsNoPermissionTestCases25 android.packageinstaller.nopermission.cts.NoPermissionTests#noPermissionsTestSession" />
 
     <!-- CtsNotificationTestCases -->
+    <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerBubbleTest#testNotificationManagerBubble_setSuppressBubble_notificationNoLocusId" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.SensitiveNotificationRedactionTest#testE2ERedaction_shouldNotRedact" />
 
     <!-- CtsOsTestCases -->
@@ -3382,9 +3391,11 @@
     <option name="compatibility:include-filter" value="CtsVoiceRecognitionTestCases android.voicerecognition.cts.RecognitionServiceMicIndicatorTest#testTrustedRecognitionServiceCanBlameCallingApp" />
 
     <!-- CtsWebkitTestCases -->
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsBeforeUnloadIsCalled" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewClientTest#testShouldOverrideUrlLoadingOnCreateWindow" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testFindNext" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRequestChildRectangleOnScreen" />
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRequestImageRef" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetNetworkAvailable" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetSafeBrowsingAllowlistWithValidList" />
 

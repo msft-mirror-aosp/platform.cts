@@ -696,8 +696,6 @@
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.KeyboardLayoutTest#testKeyboardLayoutType_CorrectlyInitialized" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.ModifierKeyRemappingTest#testHardwareKeyEventsWithRemapping_AfterKeyboardAdded" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.ModifierKeyRemappingTest#testModifierKeyRemapping" />
-    <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.MultiTouchTest#testMultiTouch[PORTRAIT_SPLIT]" />
-    <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.PointerCancelTest#testPointerCancelForSplitTouch" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.StylusButtonInputEventTest#testStylusButtonsDisabledKeyEvents" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.StylusButtonInputEventTest#testStylusButtonsDisabledMotionEvents" />
     <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.StylusButtonInputEventTest#testStylusButtonsEnabledKeyEvents" />
@@ -748,7 +746,6 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testBlockWindowsSync" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnConsoleMessage" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsAlert" />
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsBeforeUnloadIsCalled" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsConfirm" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnJsPrompt" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebChromeClientTest#testOnProgressChanged" />
@@ -871,7 +868,6 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testPrintingPagesCount" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRemoveJavascriptInterface" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRequestFocusNodeHref" />
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRequestImageRef" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSaveAndRestoreState" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSaveWebArchive" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testScrollBarOverlay" />

@@ -3184,12 +3184,14 @@ public class ItsService extends Service implements SensorEventListener {
                 sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false, this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            reqBuilder = ItsSerializer.deserialize(reqBuilder,
-                    params.getJSONObject("captureRequest"));
+            JSONObject captureReqJSON = params.getJSONObject("captureRequest");
+            // Create deep copy of the original capture request. The deserialize operation strips
+            // keys. The deep copy preserves the keys.
+            JSONObject threeAReqJSON = new JSONObject(captureReqJSON.toString());
+            reqBuilder = ItsSerializer.deserialize(reqBuilder, captureReqJSON);
             CaptureRequest.Builder threeAReqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder,
-                    params.getJSONObject("captureRequest"));
+            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder, threeAReqJSON);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // Do not send 3A results
             mSend3AResults = false;
