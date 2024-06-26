@@ -55,7 +55,6 @@
     <option name="compatibility:include-filter" value="CtsPackageSchemeTestsWithVisibility android.packageinstaller.packagescheme.cts.withvisibility.WithVisibilityPackageSchemeTest#whenTargetAppIsNotInstalled_TestCantFindIt" />
 
     <!-- CtsAdServicesNotInAllowListEndToEndTests -->
-    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_fledgeFetchAndJoinCustomAudience" />
     <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_selectAds_adSelectionFromOutcomesConfig" />
 
     <!-- CtsWallpaperSdk33TestCases -->
