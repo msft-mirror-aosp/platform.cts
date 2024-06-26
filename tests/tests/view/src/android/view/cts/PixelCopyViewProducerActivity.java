@@ -71,7 +71,7 @@ public class PixelCopyViewProducerActivity extends Activity implements OnDrawLis
         setContentView(mContent);
 
         Window window = getWindow();
-        window.setDecorFitsSystemWindows(true);
+        window.setDecorFitsSystemWindows(false);
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setStatusBarContrastEnforced(false);
         window.setNavigationBarColor(Color.TRANSPARENT);
