@@ -548,9 +548,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
                 mock(CameraManager.AvailabilityCallback.class);
         manager.registerAvailabilityCallback(mockAvailCb, cameraHandler);
 
-        // Remove current task from top of stack. This will impact the camera access
-        // priorities.
-        getActivity().moveTaskToBack(/*nonRoot*/true);
+        // Launch home activity to remove current task from top of stack.
+        // This will impact the camera access priorities.
+        launchHomeActivity();
 
         verify(mockAvailCb, timeout(
                 PERMISSION_CALLBACK_TIMEOUT_MS).atLeastOnce()).onCameraAccessPrioritiesChanged();
@@ -581,9 +581,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             context = initializeAvailabilityCallbacksNative();
             assertTrue("Failed to initialize native availability callbacks", (context != 0));
 
-            // Remove current task from top of stack. This will impact the camera access
-            // pririorties.
-            getActivity().moveTaskToBack(/*nonRoot*/true);
+            // Launch home activity to remove current task from top of stack.
+            // This will impact the camera access priorities.
+            launchHomeActivity();
 
             Thread.sleep(PERMISSION_CALLBACK_TIMEOUT_MS);
             assertTrue("No camera permission access changed callback received",
@@ -917,5 +917,12 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         assertTrue("Only had " + expIndex + " of " + expected.length +
                 " expected objects in array " + Arrays.toString(actual) + ", expected was " +
                 Arrays.toString(expected), expIndex == expected.length);
+    }
+
+    private void launchHomeActivity() {
+        final Intent home = new Intent(Intent.ACTION_MAIN);
+        home.addCategory(Intent.CATEGORY_HOME);
+        home.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(home);
     }
 }
