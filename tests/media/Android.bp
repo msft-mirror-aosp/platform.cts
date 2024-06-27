@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_solutions",
 }
 
 android_test {
@@ -54,6 +55,7 @@ android_test {
 
 android_test {
     name: "MctsMediaV2TestCases",
+    team: "trendy_team_android_media_codec_framework",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
@@ -83,6 +85,7 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",

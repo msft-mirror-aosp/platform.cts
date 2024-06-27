@@ -62,6 +62,8 @@ class MultiUserAnnotationExecutorTest {
         Truth.assertThat(users().main()).isNotNull()
     }
 
+    // TODO b/334025286 move here multi-user tests from DeviceState
+
     companion object {
         @JvmField
         @ClassRule

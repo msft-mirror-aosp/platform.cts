@@ -26,7 +26,7 @@ import com.android.server.appsearch.external.localstorage.stats.InitializeStats;
 import com.android.server.appsearch.external.localstorage.stats.OptimizeStats;
 import com.android.server.appsearch.external.localstorage.stats.PutDocumentStats;
 import com.android.server.appsearch.external.localstorage.stats.RemoveStats;
-import com.android.server.appsearch.external.localstorage.stats.SearchIntentStats;
+import com.android.server.appsearch.external.localstorage.stats.SearchSessionStats;
 import com.android.server.appsearch.external.localstorage.stats.SearchStats;
 import com.android.server.appsearch.external.localstorage.stats.SetSchemaStats;
 
@@ -63,8 +63,8 @@ public final class SimpleTestLogger implements AppSearchLogger {
     /** Holds {@link android.app.appsearch.stats.SchemaMigrationStats} after logging. */
     @Nullable public SchemaMigrationStats mSchemaMigrationStats;
 
-    /** Holds {@link SearchIntentStats} after logging. */
-    @NonNull public List<SearchIntentStats> mSearchIntentsStats = new ArrayList<>();
+    /** Holds {@link SearchSessionStats} after logging. */
+    @NonNull public List<SearchSessionStats> mSearchSessionsStats = new ArrayList<>();
 
     @Override
     public void logStats(@NonNull CallStats stats) {
@@ -107,7 +107,7 @@ public final class SimpleTestLogger implements AppSearchLogger {
     }
 
     @Override
-    public void logStats(@NonNull List<SearchIntentStats> searchIntentsStats) {
-        mSearchIntentsStats.addAll(searchIntentsStats);
+    public void logStats(@NonNull List<SearchSessionStats> searchSessionsStats) {
+        mSearchSessionsStats.addAll(searchSessionsStats);
     }
 }

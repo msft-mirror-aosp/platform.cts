@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsVideoTestCases",
+    team: "trendy_team_android_video_image_codecs",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [

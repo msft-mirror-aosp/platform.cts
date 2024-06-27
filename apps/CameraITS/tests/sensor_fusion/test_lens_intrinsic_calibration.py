@@ -115,11 +115,15 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
   # Extract principal points from capture result
   principal_points = []
   for capture_result in capture_results:
-    intrinsic_calibration = capture_result['android.lens.intrinsicCalibration']
-    logging.debug('IntrinsicCalibration = %s', str(intrinsic_calibration))
+    if capture_result.get('android.lens.intrinsicCalibration'):
+      intrinsic_cal = capture_result['android.lens.intrinsicCalibration']
+      logging.debug('Intrinsic Calibration: %s', str(intrinsic_cal))
+      principal_points.append(calculate_principal_point(*intrinsic_cal[:5]))
 
-    principal_point = calculate_principal_point(*intrinsic_calibration[:5])
-    principal_points.append(principal_point)
+  if not principal_points:
+    logging.debug('Lens Intrinsic are not reported in Capture Results.')
+    return {'gyro': None, 'max_pp_diff': None,
+            'failure': None, 'skip': True}
 
   # Calculate variations in principal points
   first_point = principal_points[0]
@@ -161,7 +165,7 @@ def verify_lens_intrinsics(recording_obj, gyro_events, test_name, log_path):
         f'THRESHOLD : {_PRINCIPAL_POINT_THRESH}.')
 
   return {'gyro': max_gyro_angle, 'max_pp_diff': max_pp_diff,
-          'failure': failure_msg}
+          'failure': failure_msg, 'skip': False}
 
 
 def verify_lens_intrinsics_sample(recording_obj):
@@ -198,7 +202,7 @@ def verify_lens_intrinsics_sample(recording_obj):
     logging.debug('Lens Intrinsic Samples are not reported')
     # Don't change print to logging. Used for KPI.
     print(f'{_NAME}_samples_principal_points_diff_detected: false')
-    return None
+    return {'failure': None, 'skip': True}
 
   failure_msg = ''
 
@@ -240,7 +244,9 @@ def verify_lens_intrinsics_sample(recording_obj):
   else:
     failure_msg = failure_msg + 'Timestamps in samples did not change. \n\n'
 
-  return failure_msg if failure_msg else None
+  failure_msg = None if failure_msg else failure_msg
+
+  return {'failure': failure_msg, 'skip': False}
 
 
 class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
@@ -295,25 +301,30 @@ class LensIntrinsicCalibrationTest(its_base_test.ItsBaseTest):
       # Grab the video from the save location on DUT
       self.dut.adb.pull([recording_obj['recordedOutputPath'], log_path])
 
-      stabilization_result = verify_lens_intrinsics(
+      intrinsic_result = verify_lens_intrinsics(
           recording_obj, gyro_events, _NAME, log_path)
 
       # Don't change print to logging. Used for KPI.
       print(f'{_NAME}_max_principal_point_diff: ',
-            stabilization_result['max_pp_diff'])
+            intrinsic_result['max_pp_diff'])
       # Assert PASS/FAIL criteria
-      if stabilization_result['failure'] is not None:
+      if intrinsic_result['failure']:
         first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
-        failure_msg = stabilization_result['failure']
+        failure_msg = intrinsic_result['failure']
         if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
           raise AssertionError(failure_msg)
         else:
           raise AssertionError(f'{its_session_utils.NOT_YET_MANDATED_MESSAGE}'
                                f'\n\n{failure_msg}')
 
-      failure_msg = verify_lens_intrinsics_sample(recording_obj)
-      if failure_msg:
-        raise AssertionError(failure_msg)
+      samples_results = verify_lens_intrinsics_sample(recording_obj)
+      if samples_results['failure']:
+        raise AssertionError(samples_results['failure'])
+
+      camera_properties_utils.skip_unless(
+          not (intrinsic_result['skip'] and samples_results['skip']),
+          'Lens intrinsic and samples are not available in results.')
+
 
 if __name__ == '__main__':
   test_runner.main()

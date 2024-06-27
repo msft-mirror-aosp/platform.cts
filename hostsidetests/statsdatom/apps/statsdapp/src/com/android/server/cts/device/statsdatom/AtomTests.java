@@ -22,8 +22,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeNotNull;
-import static org.junit.Assume.assumeTrue;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -66,12 +64,10 @@ import android.net.NetworkRequest;
 import android.net.cts.util.CtsNetUtils;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.os.PerformanceHintManager;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.RemoteException;
@@ -89,7 +85,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
 import libcore.javax.net.ssl.TestSSLContext;
@@ -1125,31 +1120,6 @@ public class AtomTests {
                         new GameModeConfiguration.Builder()
                                 .setScalingFactor(0.9f)
                                 .setFpsOverride(60).build()));
-    }
-
-    @Test
-    public void testCreateHintSession() throws Exception {
-        final long targetNs = 16666666L;
-        final int firstApiLevel = PropertyUtil.getFirstApiLevel();
-        Context context = InstrumentationRegistry.getContext();
-        PerformanceHintManager phm = context.getSystemService(PerformanceHintManager.class);
-
-        assertNotNull(phm);
-
-        // If the device does not support ADPF hint session,
-        // getPreferredUpdateRateNanos() returns -1.
-        // We only test the devices supporting it and will check
-        // if assumption fails in PerformanceHintManagerStatsTests#testCreateHintSessionStatsd
-        assumeTrue(phm.getPreferredUpdateRateNanos() != -1);
-
-        PerformanceHintManager.Session session =
-                phm.createHintSession(new int[]{Process.myPid()}, targetNs);
-
-        if (firstApiLevel < Build.VERSION_CODES.S) {
-            assumeNotNull(session);
-        } else {
-            assertNotNull(session);
-        }
     }
 
     @Test

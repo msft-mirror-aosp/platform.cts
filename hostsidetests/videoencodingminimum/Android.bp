@@ -18,10 +18,12 @@ package {
 
 java_test_host {
     name: "CtsVideoQualityFloorHostTestCases",
+    team: "trendy_team_android_video_image_codecs",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [
         "cts-host-utils",
+        "cts-statsd-atom-host-test-utils",
     ],
     libs: [
         "cts-tradefed",
