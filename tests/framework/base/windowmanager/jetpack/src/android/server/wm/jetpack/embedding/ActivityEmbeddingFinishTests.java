@@ -67,7 +67,6 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
      * Tests that finishing the primary activity results in the secondary activity resizing to fill
      * the task.
      */
-    @FlakyTest(bugId = 302112669)
     @Test
     public void testFinishPrimary() throws InterruptedException {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
@@ -93,7 +92,6 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
      * Tests that finishing the secondary activity results in the primary activity resizing to fill
      * the task.
      */
-    @FlakyTest(bugId = 302192873)
     @Test
     public void testFinishSecondary() throws InterruptedException {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();

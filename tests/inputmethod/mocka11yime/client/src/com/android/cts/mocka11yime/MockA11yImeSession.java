@@ -231,8 +231,10 @@ public final class MockA11yImeSession implements AutoCloseable {
                         MockA11yImeConstants.COMPONENT_NAME.flattenToShortString()));
 
         PollingCheck.check("MockA11yIme did not become available in " + timeout + " msec. "
-                + "Make sure you set UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES when "
-                + "obtaining UiAutomation object.", timeout, enabledCondition);
+                        + "Make sure you set UiAutomation"
+                        + ".FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES when "
+                        + "obtaining UiAutomation object. uiAutomation=" + uiAutomation, timeout,
+                enabledCondition);
 
         return new MockA11yImeSession(context, actionName,
                 new MockA11yImeEventStream(receiver::takeEventSnapshot), () -> {

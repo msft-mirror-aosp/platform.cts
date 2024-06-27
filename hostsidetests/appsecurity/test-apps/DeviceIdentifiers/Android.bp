@@ -40,4 +40,5 @@ android_test_helper_app {
     dex_preopt: {
         enabled: false,
     },
+    sdk_version: "test_current",
 }

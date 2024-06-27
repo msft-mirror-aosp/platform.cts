@@ -14,11 +14,11 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_solutions_editing",
 }
 
 android_test {
     name: "CtsMediaTranscodingTestCases",
-    team: "trendy_team_android_media_solutions",
     defaults: [
         "CtsMediaTranscodingTestCasesDefaults",
         "cts_defaults",
@@ -33,11 +33,11 @@ android_test {
         "compatibility-device-util-axt",
     ],
     resource_dirs: ["res"],
+    sdk_version: "test_current",
 }
 
 android_test {
     name: "MctsMediaTranscodingTestCases",
-    team: "trendy_team_android_media_solutions",
     defaults: [
         "CtsMediaTranscodingTestCasesDefaults",
         "cts_defaults",

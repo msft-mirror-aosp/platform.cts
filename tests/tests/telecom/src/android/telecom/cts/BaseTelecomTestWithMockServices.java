@@ -281,6 +281,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     }
 
     boolean mShouldTestTelecom = true;
+    boolean mWatchDevice = false;
+
 
     @Override
     protected void setUp() throws Exception {
@@ -291,6 +293,10 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         if (!mShouldTestTelecom) {
             return;
         }
+
+        PackageManager packageManager = mContext.getPackageManager();
+        mWatchDevice = packageManager != null && packageManager.hasSystemFeature(
+                PackageManager.FEATURE_WATCH);
 
         // Assume we start in normal mode at the start of all Telecom tests; a failure to leave car
         // mode in any of the tests would cause subsequent test failures.

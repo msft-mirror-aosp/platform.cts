@@ -1565,9 +1565,12 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 // Create capture image reader
                 SimpleImageReaderListener captureListener = new SimpleImageReaderListener();
-                if (setUsageFlag) {
+                boolean isPrivateFormat = (format == ImageFormat.PRIVATE);
+                long usage = isPrivateFormat ? HardwareBuffer.USAGE_COMPOSER_OVERLAY :
+                        HardwareBuffer.USAGE_CPU_READ_OFTEN;
+                if (setUsageFlag || isPrivateFormat) {
                     captureReader = createImageReader(captureSz, format, MAX_NUM_IMAGES,
-                            HardwareBuffer.USAGE_CPU_READ_OFTEN, captureListener);
+                            usage, captureListener);
                 } else {
                     captureReader = createImageReader(captureSz, format, MAX_NUM_IMAGES,
                             captureListener);

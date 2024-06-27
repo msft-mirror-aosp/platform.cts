@@ -27,6 +27,7 @@ import static android.contentcaptureservice.cts.Helper.toSet;
 
 import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLifecycle.DESTROYED;
 import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLifecycle.RESUMED;
+import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLifecycle.STARTED;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -35,14 +36,18 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.contentcaptureservice.cts.CtsContentCaptureService.Session;
 import android.platform.test.annotations.AppModeFull;
+import android.provider.DeviceConfig;
 import android.support.test.uiautomator.UiDevice;
 import android.util.Log;
+import android.view.contentcapture.ContentCaptureManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ActivitiesWatcher.ActivityWatcher;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
+import com.android.compatibility.common.util.DeviceConfigStateManager;
+import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -56,6 +61,8 @@ public class BlankActivityTest
         extends AbstractContentCaptureIntegrationAutoActivityLaunchTest<BlankActivity> {
 
     private static final String TAG = BlankActivityTest.class.getSimpleName();
+    private static final String DEVICE_CONFIG_ENABLE_ACTIVITY_START_ASSIST_CONTENT =
+            "enable_activity_start_assist_content";
 
     private static final ActivityTestRule<BlankActivity> sActivityRule = new ActivityTestRule<>(
             BlankActivity.class, false, false);
@@ -251,6 +258,27 @@ public class BlankActivityTest
         } finally {
             receiver3.unregisterQuietly();
         }
+    }
+
+    @Test
+    public void testSnapshotReceivedOnActivityStart() throws Exception {
+        final CtsContentCaptureService service = enableService();
+        final ActivityWatcher watcher = startWatcher();
+
+        final DeviceConfigStateManager deviceConfigStateManager = new DeviceConfigStateManager(
+                sContext,
+                DeviceConfig.NAMESPACE_CONTENT_CAPTURE,
+                DEVICE_CONFIG_ENABLE_ACTIVITY_START_ASSIST_CONTENT);
+        String originalConfigVal = deviceConfigStateManager.get();
+        deviceConfigStateManager.set("true");
+        final BlankActivity activity = launchActivity();
+        watcher.waitFor(STARTED);
+
+        PollingCheck.waitFor(() -> service.mActivityStartSnapShotReceived);
+
+        activity.finish();
+        watcher.waitFor(DESTROYED);
+        deviceConfigStateManager.set(originalConfigVal);
     }
 
     private BlockingBroadcastReceiver registerResultReceiver() {

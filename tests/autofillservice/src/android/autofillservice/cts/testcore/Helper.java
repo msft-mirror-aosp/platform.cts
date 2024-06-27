@@ -1874,6 +1874,7 @@ public final class Helper {
 
     public enum DeviceStateEnum {
         HALF_FOLDED,
+        OPENED,
         REAR_DISPLAY
     };
 
@@ -1884,12 +1885,14 @@ public final class Helper {
         DeviceStateManager mDeviceStateManager;
         int[] mHalfFoldedStates;
         int[] mRearDisplayStates;
+        int[] mOpenDisplayStates;
         int mCurrentState = -1;
 
         DeviceStateAssessor(Context context) {
             Resources systemRes = Resources.getSystem();
             mHalfFoldedStates = getStatesFromConfig(systemRes, "config_halfFoldedDeviceStates");
             mRearDisplayStates = getStatesFromConfig(systemRes, "config_rearDisplayDeviceStates");
+            mOpenDisplayStates = getStatesFromConfig(systemRes, "config_openDeviceStates");
             try {
                 mDeviceStateManager = context.getSystemService(DeviceStateManager.class);
                 mDeviceStateManager.registerCallback(context.getMainExecutor(), this);
@@ -1929,6 +1932,9 @@ public final class Helper {
             switch(deviceState) {
                 case HALF_FOLDED:
                     states = mHalfFoldedStates;
+                    break;
+                case OPENED:
+                    states = mOpenDisplayStates;
                     break;
                 case REAR_DISPLAY:
                     states = mRearDisplayStates;
