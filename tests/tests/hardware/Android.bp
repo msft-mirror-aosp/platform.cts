@@ -84,5 +84,8 @@ android_test {
         "src/**/*.java",
         "src/**/*.kt",
     ],
+    data: [
+        ":TestIme",
+    ],
     sdk_version: "test_current",
 }
