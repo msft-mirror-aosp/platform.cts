@@ -77,23 +77,11 @@ jboolean android_os_cts_OSFeatures_hasSeccompSupport(JNIEnv* env, jobject)
     return WIFSIGNALED(status) && (WTERMSIG(status) == SIGSYS);
 }
 
-jboolean android_os_cts_OSFeatures_needsSeccompSupport(JNIEnv*, jobject)
-{
-#if !defined(ARCH_SUPPORTS_SECCOMP)
-    // Seccomp support is only available for ARM, x86, x86_64.
-    // This define is controlled by the Android.mk.
-    return false;
-#endif
-    return true;
-}
-
 static JNINativeMethod gMethods[] = {
     {  "prctlCapBsetRead", "(I)I",
             (void *) android_os_cts_OSFeatures_prctlCapBsetRead },
     {  "hasSeccompSupport", "()Z",
             (void *) android_os_cts_OSFeatures_hasSeccompSupport  },
-    {  "needsSeccompSupport", "()Z",
-            (void *) android_os_cts_OSFeatures_needsSeccompSupport  }
 };
 
 int register_android_os_cts_OSFeatures(JNIEnv* env)

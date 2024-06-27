@@ -1185,7 +1185,7 @@ public class CardEmulationTest {
             Assert.assertTrue(adapter.isObserveModeEnabled());
             List<PollingFrame> receivedFrames =
                     notifyPollingLoopAndWait(frames1,
-                    WalletRoleTestUtils.getWalletRoleHolderXService().getClassName());
+                    WalletRoleTestUtils.getWalletRoleHolderService().getClassName());
             Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
             receivedFrames =
                     notifyPollingLoopAndWait(frames2, CtsMyHostApduService.class.getName());
