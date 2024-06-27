@@ -33,7 +33,8 @@ public class RecordingResult {
             CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID,
             CaptureResult.LENS_INTRINSIC_CALIBRATION,
             // TODO: b/332581106 - Evaluate if data added by samples surpasses socket limit
-            CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES
+            CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES,
+            CaptureResult.SENSOR_TIMESTAMP
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;

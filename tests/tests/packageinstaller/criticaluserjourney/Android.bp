@@ -38,9 +38,9 @@ android_test {
         "general-tests",
     ],
     data: [
-        ":CtsCujInstallerTestApp",
-        ":CtsEmptyTestApp",
-        ":CtsEmptyTestAppV2",
+        ":CtsInstallerCujTestApp",
+        ":CtsInstallerCujTestAppV2",
+        ":CtsInstallerCujTestInstaller",
     ],
     per_testcase_directory: true,
 }

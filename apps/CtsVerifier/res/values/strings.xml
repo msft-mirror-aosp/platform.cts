@@ -3182,7 +3182,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="nfc_tests_dialog_content">
         The NFC tests.\n
         The DUT \"must\" be connected to a host to run these tests.\n
-        Please follow the detailed instruction of the tests to execute scripts and get results.
+        Please follow the detailed instruction of the tests to execute scripts and get results.\n
+        The tests will be set as passing if the DUT is not supported with NFC.\n
+        See the instruction in the following link.\n
+        https://source.android.com/docs/compatibility/cts/ctsv-multidevice
     </string>
 
     <!-- String for Projection Tests -->

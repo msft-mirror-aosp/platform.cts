@@ -21,7 +21,7 @@ android_test_helper_app {
     name: "CtsEmptyTestApp",
     defaults: ["cts_defaults"],
     sdk_version: "current",
-    min_sdk_version: "23",
+    min_sdk_version: "26",
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",
@@ -89,5 +89,19 @@ android_test_helper_app {
     test_suites: [
         "cts",
         "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyTestApp_LowTargetSdk",
+    defaults: ["cts_defaults"],
+    target_sdk_version: "18",
+    manifest: "AndroidManifest_LowTargetSdk.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "arcts",
+        "cts",
+        "general-tests",
+        "sts",
     ],
 }

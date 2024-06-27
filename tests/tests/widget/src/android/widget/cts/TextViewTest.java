@@ -21,6 +21,7 @@ import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK
 import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
 import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
 import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
+import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 import static com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -354,6 +355,27 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> mTextView.setKeyListener(qwertyKeyListener));
         mInstrumentation.waitForIdleSync();
         assertSame(qwertyKeyListener, mTextView.getKeyListener());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_FIX_NULL_TYPEFACE_BOLDING)
+    public void testFontWeightAdjustment_forceBoldTextEnabled_typefaceNull_textIsBolded()
+            throws Throwable {
+        mActivityRule.runOnUiThread(() -> mTextView = findTextView(R.id.textview_text));
+        final int defaultFontWeight = mTextView.getTypeface().getWeight();
+        mInstrumentation.waitForIdleSync();
+        mActivityRule.runOnUiThread(() -> mTextView.setTypeface(null));
+        mInstrumentation.waitForIdleSync();
+
+        Configuration cf = new Configuration();
+        final int fontWeightAdjustment = FontStyle.FONT_WEIGHT_BOLD - defaultFontWeight;
+        cf.fontWeightAdjustment =
+                fontWeightAdjustment <= 0 ? FontStyle.FONT_WEIGHT_MAX : fontWeightAdjustment;
+        mActivityRule.runOnUiThread(() -> mTextView.dispatchConfigurationChanged(cf));
+        mInstrumentation.waitForIdleSync();
+
+        Typeface forceBoldedPaintTf = mTextView.getPaint().getTypeface();
+        assertEquals(Typeface.DEFAULT_BOLD, forceBoldedPaintTf);
     }
 
     @Test
@@ -1826,6 +1848,7 @@ public class TextViewTest {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
 
@@ -3304,6 +3327,7 @@ public class TextViewTest {
         layout.addView(tvEllipsizeEnd, layoutParams);
         layout.addView(tvEllipsizeNone, layoutParams);
         layout.addView(tvNoMaxLine, layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout,
                 new ViewGroup.LayoutParams(
@@ -3350,6 +3374,7 @@ public class TextViewTest {
         layout.addView(tvNoMaxLine, layoutParams);
         layout.addView(tvEllipsizeEnd, layoutParams);
         layout.addView(tvEllipsizeNone, layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() ->  mActivity.setContentView(layout,
                 new ViewGroup.LayoutParams(
@@ -3406,6 +3431,7 @@ public class TextViewTest {
         layout.addView(tvEllipsizeEnd, layoutParams);
         layout.addView(tvEllipsizeNone, layoutParams);
         layout.addView(tvThreeLines, layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() ->  mActivity.setContentView(layout,
                 new ViewGroup.LayoutParams(
@@ -3763,6 +3789,7 @@ public class TextViewTest {
                 ViewGroup.LayoutParams.MATCH_PARENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
@@ -3889,6 +3916,7 @@ public class TextViewTest {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
@@ -3949,6 +3977,7 @@ public class TextViewTest {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
@@ -4017,6 +4046,7 @@ public class TextViewTest {
                 LayoutParams.WRAP_CONTENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
@@ -4461,6 +4491,7 @@ public class TextViewTest {
         final String text = "abcde";
         mActivityRule.runOnUiThread(() -> {
             mTextView = new EditText(mActivity);
+            mTextView.setFitsSystemWindows(true);
             mActivity.setContentView(mTextView);
             mTextView.setText(text, BufferType.SPANNABLE);
             mTextView.setTextIsSelectable(true);
@@ -4514,6 +4545,7 @@ public class TextViewTest {
 
         final FrameLayout layout = new FrameLayout(mActivity);
         layout.addView(innerLayout);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> {
             mActivity.setContentView(layout);
@@ -4689,6 +4721,7 @@ public class TextViewTest {
     @Test
     public void testSetMaxLinesException() {
         mTextView = new TextView(mActivity);
+        mTextView.setFitsSystemWindows(true);
         mActivity.setContentView(mTextView);
         mTextView.setWidth(mTextView.getWidth() >> 3);
         mTextView.setMaxLines(-1);
@@ -4729,6 +4762,7 @@ public class TextViewTest {
     @Test
     public void testSetLinesException() {
         mTextView = new TextView(mActivity);
+        mTextView.setFitsSystemWindows(true);
         mActivity.setContentView(mTextView);
         mTextView.setWidth(mTextView.getWidth() >> 3);
         mTextView.setLines(-1);
@@ -5444,6 +5478,7 @@ public class TextViewTest {
 
         final FrameLayout layout = new FrameLayout(mActivity);
         layout.addView(mTextView);
+        layout.setFitsSystemWindows(true);
 
         // make the fading to be shown
         mTextView.setHorizontalFadingEdgeEnabled(true);
@@ -6049,6 +6084,7 @@ public class TextViewTest {
                 ViewGroup.LayoutParams.MATCH_PARENT);
         layout.addView(mTextView, layoutParams);
         layout.setLayoutParams(layoutParams);
+        layout.setFitsSystemWindows(true);
 
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(layout));
         mInstrumentation.waitForIdleSync();
@@ -6146,6 +6182,7 @@ public class TextViewTest {
             top.addView(placeholder, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
             mTextView = new EditText(mActivity);
             top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            top.setFitsSystemWindows(true);
             mActivity.setContentView(top);
 
             assertFalse(mTextView.didTouchFocusSelect());
@@ -7081,6 +7118,7 @@ public class TextViewTest {
         final String text = "abcde";
         mActivityRule.runOnUiThread(() -> {
             mTextView = new EditText(mActivity);
+            mTextView.setFitsSystemWindows(true);
             mActivity.setContentView(mTextView);
             mTextView.setText(text, BufferType.SPANNABLE);
             mTextView.setTextIsSelectable(true);
@@ -7160,6 +7198,7 @@ public class TextViewTest {
                 PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
         mActivityRule.runOnUiThread(() -> {
             mTextView = new EditText(mActivity);
+            mTextView.setFitsSystemWindows(true);
             mActivity.setContentView(mTextView);
             mTextView.setText(text, BufferType.SPANNABLE);
             mTextView.setTextIsSelectable(true);
@@ -7207,6 +7246,7 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> {
             FrameLayout layout = new FrameLayout(mActivity);
             layout.setFocusable(true);
+            layout.setFitsSystemWindows(true);
             mActivity.setContentView(layout);
             mTextView = new EditText(mActivity);
             mTextView.setText(text, BufferType.SPANNABLE);
@@ -7245,6 +7285,7 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> {
             FrameLayout layout = new FrameLayout(mActivity);
             layout.setFocusable(true);
+            layout.setFitsSystemWindows(true);
             mActivity.setContentView(layout);
             mTextView = new EditText(mActivity);
             mTextView.setText(text, BufferType.SPANNABLE);
@@ -7289,6 +7330,7 @@ public class TextViewTest {
         mActivityRule.runOnUiThread(() -> {
             FrameLayout layout = new FrameLayout(mActivity);
             layout.setFocusable(true);
+            layout.setFitsSystemWindows(true);
             mActivity.setContentView(layout);
             mTextView = new EditText(mActivity);
             mTextView.setText(text, BufferType.SPANNABLE);
@@ -7537,6 +7579,7 @@ public class TextViewTest {
             mTextView.setFocusable(true);
             mTextView.setOnClickListener(mockOnClickListener);
             top.addView(mTextView, LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+            top.setFitsSystemWindows(true);
             mActivity.setContentView(top);
         });
         mInstrumentation.waitForIdleSync();
@@ -9086,6 +9129,7 @@ public class TextViewTest {
 
         mActivityRule.runOnUiThread(() -> {
             mTextView = new EditText(mActivity);
+            mTextView.setFitsSystemWindows(true);
             mActivity.setContentView(mTextView);
             mTextView.setText(text, BufferType.EDITABLE);
             mTextView.requestFocus();
@@ -9659,6 +9703,7 @@ public class TextViewTest {
     }
 
     private void layout(final TextView textView) throws Throwable {
+        textView.setFitsSystemWindows(true);
         mActivityRule.runOnUiThread(() -> mActivity.setContentView(textView));
         mInstrumentation.waitForIdleSync();
     }

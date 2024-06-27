@@ -52,6 +52,7 @@ LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
 PRIVATE_FORMAT = 'priv'
+JPEG_R_FMT_STR = 'jpeg_r'
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
@@ -69,6 +70,7 @@ TABLET_ALLOWLIST = (
     'agta',  # Nokia T21
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
+    'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
@@ -2929,6 +2931,15 @@ def remove_frame_files(dir_name, save_files_list=None):
     for image in glob.glob('%s/*.png' % dir_name):
       if save_files_list is None or image not in save_files_list:
         os.remove(image)
+
+
+def remove_file(file_name_with_path):
+  """Removes file at given path.
+
+  Args:
+    file_name_with_path: string, filename with path.
+  """
+  remove_mp4_file(file_name_with_path)
 
 
 def remove_mp4_file(file_name_with_path):
