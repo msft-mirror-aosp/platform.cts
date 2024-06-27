@@ -129,7 +129,9 @@ public class VideoEncoderValidationTestBase extends CodecEncoderTestBase {
     @AfterClass
     public static void cleanUpResources() {
         for (RawResource res : RES_YUV_MAP.values()) {
-            new File(res.mFileName).delete();
+            if (res != null) {
+                new File(res.mFileName).delete();
+            }
         }
         RES_YUV_MAP.clear();
     }

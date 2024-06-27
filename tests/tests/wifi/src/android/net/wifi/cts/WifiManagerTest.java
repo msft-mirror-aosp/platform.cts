@@ -2355,7 +2355,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         allowedUIDs.add(Process.SHELL_UID);
         allowedUIDs.add(Process.PHONE_UID);
         allowedUIDs.add(Process.NETWORK_STACK_UID);
-        allowedUIDs.add(Process.NFC_UID);
+        if (!SdkLevel.isAtLeastV()) {
+            allowedUIDs.add(Process.NFC_UID);
+        }
 
         // only quick settings is allowed to bind to the BIND_QUICK_SETTINGS_TILE permission, using
         // this fact to determined allowed package name for sysui. This is a signature permission,
@@ -6394,6 +6396,11 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             assertEquals(qosCharacteristics, downlinkParams.getQosCharacteristics());
         }
 
+        if (ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Uplink policies were not tested, since they are not supported before V");
+            return;
+        }
+
         // Valid uplink parameters
         if (qosR3Supported()) {
             QosPolicyParams uplinkParams =
@@ -7393,6 +7400,47 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             if (isRestoreRequired) {
                 sWifiManager.setD2dAllowedWhenInfraStaDisabled(currentD2dAllowed);
             }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#getBssidBlocklist(List, Executor, Consumer)}
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BSSID_BLOCKLIST_API)
+    @Test
+    @ApiTest(apis = {"android.net.wifi.WifiManager#getBssidBlocklist"})
+    public void testGetBssidBlocklist() throws Exception {
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        Mutable<Boolean> isResultNonNull = new Mutable<Boolean>(false);
+        long now, deadline;
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.getBssidBlocklist(Collections.EMPTY_LIST, mExecutor,
+                    new Consumer<List<MacAddress>>() {
+                        @Override
+                        public void accept(List<MacAddress> value) {
+                            synchronized (mLock) {
+                                isQuerySucceeded.value = true;
+                                if (value != null) {
+                                    isResultNonNull.value = true;
+                                }
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("getBssidBlocklist fail", isQuerySucceeded.value);
+            assertTrue("getBssidBlocklist returned null list", isResultNonNull.value);
+        } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
