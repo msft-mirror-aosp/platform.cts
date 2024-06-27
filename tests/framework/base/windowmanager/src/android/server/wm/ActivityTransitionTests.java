@@ -28,11 +28,10 @@ import static android.server.wm.ActivityTransitionTests.OverridePendingTransitio
 import static android.server.wm.ActivityTransitionTests.OverridePendingTransitionActivity.EXIT_ANIM_KEY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
-import static android.view.RoundedCorner.POSITION_BOTTOM_LEFT;
 import static android.view.RoundedCorner.POSITION_BOTTOM_RIGHT;
 import static android.view.RoundedCorner.POSITION_TOP_LEFT;
-import static android.view.RoundedCorner.POSITION_TOP_RIGHT;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
@@ -270,8 +269,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, LEFT);
         final TestBounds testBounds = getTestBounds();
-        final Rect appBounds = testBounds.appBounds;
-        final int xIndex = appBounds.left + (appBounds.right - appBounds.left) * 3 / 4;
+        final Rect transitionBounds = testBounds.transitionBounds;
+        final int xIndex = transitionBounds.left
+                + (transitionBounds.right - transitionBounds.left) * 3 / 4;
         getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
                 .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
                 .run();
@@ -295,8 +295,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, TOP);
         final TestBounds testBounds = getTestBounds();
-        final Rect appBounds = testBounds.appBounds;
-        final int xIndex = (appBounds.left + appBounds.right) / 2;
+        final Rect transitionBounds = testBounds.transitionBounds;
+        final int xIndex = (transitionBounds.left + transitionBounds.right) / 2;
         getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
                 .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
                 .run();
@@ -319,8 +319,9 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, RIGHT);
         final TestBounds testBounds = getTestBounds();
-        final Rect appBounds = testBounds.appBounds;
-        final int xIndex = appBounds.left + (appBounds.right - appBounds.left) / 4;
+        final Rect transitionBounds = testBounds.transitionBounds;
+        final int xIndex = transitionBounds.left
+                + (transitionBounds.right - transitionBounds.left) / 4;
         getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
                 .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
                 .run();
@@ -345,8 +346,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         final Bundle extras = new Bundle();
         extras.putInt(DIRECTION_KEY, BOTTOM);
         final TestBounds testBounds = getTestBounds();
-        final Rect appBounds = testBounds.appBounds;
-        final int xIndex = (appBounds.left + appBounds.right) / 2;
+        final Rect transitionBounds = testBounds.transitionBounds;
+        final int xIndex = (transitionBounds.left + transitionBounds.right) / 2;
         getTestBuilder().setClass(EdgeExtensionActivity.class).setExtras(extras)
                 .setTestFunction(createAssertColorChangeXIndex(xIndex, testBounds))
                 .run();
@@ -389,16 +390,14 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     private static class TestBounds {
         public Rect rect;
-        public Rect appBounds;
-        public ArrayList<Rect> excluded;
+        public Rect transitionBounds;
     }
 
     private TestBounds getTestBounds() {
         final LauncherActivity activity = startLauncherActivity();
         final TestBounds bounds = new TestBounds();
-        bounds.rect = activity.getActivityFullyVisibleRegion();
-        bounds.appBounds = getTopAppBounds();
-        bounds.excluded = activity.getRoundedCornersRegions();
+        bounds.rect = activity.getActivityTestableRegion();
+        bounds.transitionBounds = getTransitionAppBounds();
         launchHomeActivityNoWait();
         removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
@@ -491,10 +490,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         for (int x = testBounds.rect.left; x < testBounds.rect.right; x++) {
             for (int y = testBounds.rect.top;
                     y < testBounds.rect.bottom; y++) {
-                if (rectsContain(testBounds.excluded, x, y)) {
-                    continue;
-                }
-
                 final Color rawColor = screen.getColor(x, y);
                 final Color sRgbColor;
                 if (!rawColor.getColorSpace().equals(ColorSpace.get(ColorSpace.Named.SRGB))) {
@@ -535,11 +530,11 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         return false;
     }
 
-    private Rect getTopAppBounds() {
+    private Rect getTransitionAppBounds() {
         getWmState().computeState();
         final WindowManagerState.Activity activity = getWmState().getActivity(
                 ComponentName.unflattenFromString(getWmState().getFocusedActivity()));
-        return activity.getAppBounds();
+        return activity.getBounds();
     }
 
     private static class AssertionResult {
@@ -581,10 +576,6 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         for (int x = testBounds.rect.left; x < testBounds.rect.right; x++) {
             for (int y = testBounds.rect.top;
                     y < testBounds.rect.bottom; y++) {
-                if (rectsContain(testBounds.excluded, x, y)) {
-                    continue;
-                }
-
                 // Edge pixels can have any color depending on the blending strategy of the device.
                 if (Math.abs(x - xIndex) <= 1) {
                     continue;
@@ -667,6 +658,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
+            getWindow().getAttributes().layoutInDisplayCutoutMode =
+                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
             // Ensure the activity is edge-to-edge
             // In tests we rely on the activity's content filling the entire window
             getWindow().setDecorFitsSystemWindows(false);
@@ -677,53 +670,41 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             setContentView(view);
         }
 
-        private Rect getActivityFullyVisibleRegion() {
+        private Rect getActivityTestableRegion() {
             final Rect activityBounds = getWindowManager().getCurrentWindowMetrics().getBounds();
             final Insets insets = mInsets.getInsets(WindowInsets.Type.systemBars()
                     | WindowInsets.Type.displayCutout());
             activityBounds.inset(insets);
-
+            cropRoundedCornersRegions(activityBounds);
             return new Rect(activityBounds);
         }
 
-        private ArrayList<Rect> getRoundedCornersRegions() {
-            RoundedCorner topRightCorner = mInsets.getRoundedCorner(POSITION_TOP_RIGHT);
+        private void cropRoundedCornersRegions(Rect activityBounds) {
             RoundedCorner topLeftCorner = mInsets.getRoundedCorner(POSITION_TOP_LEFT);
             RoundedCorner bottomRightCorner = mInsets.getRoundedCorner(POSITION_BOTTOM_RIGHT);
-            RoundedCorner bottomLeftCorner = mInsets.getRoundedCorner(POSITION_BOTTOM_LEFT);
 
-            final ArrayList<Rect> roundedCornersRects = new ArrayList<>();
+            final Rect innerRectangle = new Rect(activityBounds);
+            // There will be no testable region if the radius of rounded corner equals to the
+            // center of screen on a circle shape display. So instead of ignore rounded corner
+            // areas, consider the internal rectangle of rounded corner region as testable region.
+            // Where radius * cosine(45) == the projected length to x and y direction.
+            final double projectionConst = Math.cos(45);
 
-            if (topRightCorner != null) {
-                final Point center = topRightCorner.getCenter();
-                final int radius = topRightCorner.getRadius();
-                roundedCornersRects.add(
-                        new Rect(center.x, center.y - radius,
-                                center.x + radius, center.y));
-            }
             if (topLeftCorner != null) {
                 final Point center = topLeftCorner.getCenter();
                 final int radius = topLeftCorner.getRadius();
-                roundedCornersRects.add(
-                        new Rect(center.x - radius, center.y - radius,
-                                center.x, center.y));
+                final double projectLength = Math.ceil(radius * projectionConst);
+                innerRectangle.left = center.x - (int) projectLength;
+                innerRectangle.top = center.y - (int) projectLength;
             }
             if (bottomRightCorner != null) {
                 final Point center = bottomRightCorner.getCenter();
                 final int radius = bottomRightCorner.getRadius();
-                roundedCornersRects.add(
-                        new Rect(center.x, center.y,
-                                center.x + radius, center.y + radius));
+                final double projectLength = Math.ceil(radius * projectionConst);
+                innerRectangle.right = center.x + (int) projectLength;
+                innerRectangle.bottom = center.y + (int) projectLength;
             }
-            if (bottomLeftCorner != null) {
-                final Point center = bottomLeftCorner.getCenter();
-                final int radius = bottomLeftCorner.getRadius();
-                roundedCornersRects.add(
-                        new Rect(center.x - radius, center.y,
-                                center.x, center.y + radius));
-            }
-
-            return roundedCornersRects;
+            activityBounds.setIntersect(activityBounds, innerRectangle);
         }
 
         public void startActivity(ActivityOptions activityOptions, Class<?> klass) {
@@ -771,6 +752,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
             super.onCreate(savedInstanceState);
             setContentView(R.layout.vertical_color_split);
 
+            getWindow().getAttributes().layoutInDisplayCutoutMode =
+                    LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
             // Ensure the activity is edge-to-edge
             // In tests we rely on the activity's content filling the entire window
             getWindow().setDecorFitsSystemWindows(false);
