@@ -28,6 +28,8 @@ import android.hardware.input.VirtualMouse;
 import android.hardware.input.VirtualMouseConfig;
 import android.hardware.input.VirtualNavigationTouchpad;
 import android.hardware.input.VirtualNavigationTouchpadConfig;
+import android.hardware.input.VirtualRotaryEncoder;
+import android.hardware.input.VirtualRotaryEncoderConfig;
 import android.hardware.input.VirtualStylus;
 import android.hardware.input.VirtualStylusConfig;
 import android.hardware.input.VirtualTouchscreen;
@@ -102,6 +104,17 @@ public final class VirtualInputDeviceCreator {
             VirtualDevice virtualDevice, String name, Display display) {
         return prepareInputDevice(() -> virtualDevice.createVirtualMouse(
                 new VirtualMouseConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setInputDeviceName(name)
+                        .setAssociatedDisplayId(display.getDisplayId())
+                        .build()));
+    }
+
+    public static InputDeviceHolder<VirtualRotaryEncoder> createAndPrepareRotary(
+            VirtualDevice virtualDevice, String name, Display display) {
+        return prepareInputDevice(() -> virtualDevice.createVirtualRotaryEncoder(
+                new VirtualRotaryEncoderConfig.Builder()
                         .setVendorId(VENDOR_ID)
                         .setProductId(PRODUCT_ID)
                         .setInputDeviceName(name)
