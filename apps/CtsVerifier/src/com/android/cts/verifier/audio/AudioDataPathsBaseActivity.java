@@ -241,12 +241,15 @@ public abstract class AudioDataPathsBaseActivity
         final int mOutDeviceType; // TYPE_BUILTIN_SPEAKER for example
         final int mOutSampleRate;
         final int mOutChannelCount;
+        int mOutPerformanceMode;
         //TODO - Add usage and content types to output stream
 
         // Device for capturing the (played) signal
         final int mInDeviceType;  // TYPE_BUILTIN_MIC for example
         final int mInSampleRate;
         final int mInChannelCount;
+        int mInPerformanceMode;
+
         int mAnalysisChannel = 0;
         int mInputPreset;
 
@@ -456,17 +459,8 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         String getDescription() {
-            switch (mTransferType) {
-                case TRANSFER_LEGACY:
-                    return mDescription + "-" + getString(R.string.audio_datapaths_legacy);
-
-                case TRANSFER_MMAP_SHARED:
-                    return mDescription + "-" + getString(R.string.audio_datapaths_mmap_shared);
-
-                case TRANSFER_MMAP_EXCLUSIVE:
-                    return mDescription + "-" + getString(R.string.audio_datapaths_mmap_exclusive);
-            }
-            return mDescription + "-" + getString(R.string.audio_datapaths_invalid_transfer);
+            return mDescription + "-" + transferTypeToString(mTransferType)
+                    + ":" + performanceModeToString(mOutPerformanceMode);
         }
 
         void setAnalysisChannel(int channel) {
@@ -558,6 +552,19 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
+        String performanceModeToString(int performanceMode) {
+            switch (performanceMode) {
+                case BuilderBase.PERFORMANCE_MODE_NONE:
+                    return getString(R.string.perf_mode_none_abreviation);
+                case BuilderBase.PERFORMANCE_MODE_POWERSAVING:
+                    return getString(R.string.perf_mode_powersave_abreviation);
+                case BuilderBase.PERFORMANCE_MODE_LOWLATENCY:
+                    return getString(R.string.perf_mode_lowlatency_abreviation);
+                default:
+                    return getString(R.string.perf_mode_none_abreviation);
+            }
+        }
+
         // {device}:{channel}:{channelCount}:{SR}:{path}
         // SpeakerSafe:0:2:48000:Legacy
         String formatOutputAttributes() {
@@ -565,7 +572,8 @@ public abstract class AudioDataPathsBaseActivity
             return deviceName + ":" + mAnalysisChannel
                     + ":" + mOutChannelCount
                     + ":" + mOutSampleRate
-                    + ":" + transferTypeToString(mTransferType);
+                    + ":" + transferTypeToString(mTransferType)
+                    + ":" + performanceModeToString(mOutPerformanceMode);
         }
 
         String formatInputAttributes() {
@@ -634,6 +642,7 @@ public abstract class AudioDataPathsBaseActivity
                 mDuplexAudioManager.setNumPlayerChannels(mOutChannelCount);
                 mDuplexAudioManager.setPlayerSharingMode(mTransferType == TRANSFER_MMAP_EXCLUSIVE
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
+                mDuplexAudioManager.setPlayerPerformanceMode(mOutPerformanceMode);
 
                 // Recorder
                 mDuplexAudioManager.setRecorderRouteDevice(mInDeviceInfo);
@@ -642,6 +651,7 @@ public abstract class AudioDataPathsBaseActivity
                 mDuplexAudioManager.setNumRecorderChannels(mInChannelCount);
                 mDuplexAudioManager.setRecorderSharingMode(mTransferType == TRANSFER_MMAP_EXCLUSIVE
                         ? BuilderBase.SHARING_MODE_EXCLUSIVE : BuilderBase.SHARING_MODE_SHARED);
+                mDuplexAudioManager.setRecorderPerformanceMode(mInPerformanceMode);
 
                 boolean enableMMAP = mTransferType != TRANSFER_LEGACY;
                 Globals.setMMapEnabled(enableMMAP);
@@ -1071,13 +1081,41 @@ public abstract class AudioDataPathsBaseActivity
 
         public void addTestModule(TestModule module) {
             // We're going to expand each module to three, one for each transfer type
+
+            //
+            // BuilderBase.PERFORMANCE_MODE_NONE
+            //
             module.setTransferType(TestModule.TRANSFER_LEGACY);
+            // Test Performance Mode None for both Output and Input
+            module.mOutPerformanceMode = module.mInPerformanceMode =
+                    BuilderBase.PERFORMANCE_MODE_NONE;
             mTestModules.add(module);
 
+            //
+            // BuilderBase.PERFORMANCE_MODE_LOWLATENCY
+            //
+            try {
+                // Expand out to PerformanceMode.None & PerformanceMode.LowLatency
+                TestModule clonedModule = module.clone();
+                // Test Performance Mode LowLatency for both Output and Input
+                clonedModule.mOutPerformanceMode = module.mInPerformanceMode =
+                        BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
+                clonedModule.mSectionTitle = null;
+                mTestModules.add(clonedModule);
+            } catch (CloneNotSupportedException ex) {
+                Log.e(TAG, "Couldn't clone TestModule - PERFORMANCE_MODE_LOWLATENCY");
+            }
+
+            //
+            // MMAP Modes - BuilderBase.PERFORMANCE_MODE_LOWLATENCY
+            //
             if (mSupportsMMAP) {
                 try {
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
+                    // Test Performance Mode LowLatency for both Output and Input
+                    moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
+                            BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     mTestModules.add(moduleMMAP);
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_SHARED");
@@ -1088,6 +1126,9 @@ public abstract class AudioDataPathsBaseActivity
                 try {
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
+                    // Test Performance Mode LowLatency for both Output and Input
+                    moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
+                            BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     mTestModules.add(moduleExclusive);
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_EXCLUSIVE");
@@ -1561,6 +1602,7 @@ public abstract class AudioDataPathsBaseActivity
     //
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
         void stateChangeHandler() {
+            Log.i(TAG, "  stateChangeHandler()");
             mTestManager.validateTestDevices();
             if (!mIsHandheld) {
                 displayNonHandheldMessage();
@@ -1576,11 +1618,13 @@ public abstract class AudioDataPathsBaseActivity
 
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            Log.i(TAG, "onAudioDevicesAdded()");
             stateChangeHandler();
         }
 
         @Override
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+            Log.i(TAG, "onAudioDevicesRemoved()");
             stateChangeHandler();
         }
     }
