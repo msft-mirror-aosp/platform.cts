@@ -50,7 +50,8 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-       "mts-conscrypt",
+        "mts-conscrypt",
+        "mcts-conscrypt",
     ],
   test_config: "CtsLibcoreOkHttpTestCases.xml"
 }
