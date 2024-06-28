@@ -26,5 +26,6 @@ android_library {
     defaults: ["cts_support_defaults"],
     srcs: ["src/**/*.kt"],
     resource_dirs: ["res"],
-    sdk_version: "current",
+    // necessary for transmitting attr chains with tokens between test apps
+    platform_apis: true,
 }
