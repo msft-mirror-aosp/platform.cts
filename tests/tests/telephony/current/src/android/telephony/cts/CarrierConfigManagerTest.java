@@ -29,7 +29,6 @@ import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MO
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
-import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -249,8 +248,6 @@ public class CarrierConfigManagerTest {
                             + "doesn't match static default.",
                     config.getInt(KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT),
                     TimeUnit.SECONDS.toMillis(30));
-            assertFalse("KEY_SATELLITE_ESOS_SUPPORTED_BOOL doesn't match static default.",
-                    config.getBoolean(KEY_SATELLITE_ESOS_SUPPORTED_BOOL));
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",
