@@ -350,16 +350,6 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
-     * Starts the activity for the given class on the given virtual display and blocks until it is
-     * successfully launched there.
-     */
-    public <T extends Activity> T startActivityOnDisplaySync(
-            VirtualDisplay virtualDisplay, Class<T> clazz) {
-        final int displayId = virtualDisplay.getDisplay().getDisplayId();
-        return startActivityOnDisplaySync(displayId, clazz);
-    }
-
-    /**
      * Sends the given intent to the given virtual display.
      */
     public void sendIntentToDisplay(Intent intent, VirtualDisplay virtualDisplay) {
@@ -375,8 +365,18 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Starts the activity for the given class on the given virtual display and blocks until it is
+     * successfully launched there. The activity will be finished after the test run.
+     */
+    public <T extends Activity> T startActivityOnDisplaySync(
+            VirtualDisplay virtualDisplay, Class<T> clazz) {
+        final int displayId = virtualDisplay.getDisplay().getDisplayId();
+        return startActivityOnDisplaySync(displayId, clazz);
+    }
+
+    /**
      * Starts the activity for the given class on the given display and blocks until it is
-     * successfully launched there.
+     * successfully launched there. The activity will be finished after the test run.
      */
     public <T extends Activity> T startActivityOnDisplaySync(int displayId, Class<T> clazz) {
         return startActivityOnDisplaySync(displayId, new Intent(mContext, clazz)
@@ -385,7 +385,7 @@ public class VirtualDeviceRule implements TestRule {
 
     /**
      * Starts the activity for the given intent on the given virtual display and blocks until it is
-     * successfully launched there.
+     * successfully launched there. The activity will be finished after the test run.
      */
     public <T extends Activity> T startActivityOnDisplaySync(
             VirtualDisplay virtualDisplay, Intent intent) {
@@ -394,11 +394,14 @@ public class VirtualDeviceRule implements TestRule {
 
     /**
      * Starts the activity for the given intent on the given display and blocks until it is
-     * successfully launched there.
+     * successfully launched there. The activity will be finished after the test run.
      */
     public <T extends Activity> T startActivityOnDisplaySync(int displayId, Intent intent) {
         assumeActivityLaunchSupported(displayId);
-        return (T) getInstrumentation().startActivitySync(intent, createActivityOptions(displayId));
+        T activity = (T) getInstrumentation()
+                .startActivitySync(intent, createActivityOptions(displayId));
+        mTrackerRule.mActivities.add(activity);
+        return activity;
     }
 
     /**
@@ -466,9 +469,15 @@ public class VirtualDeviceRule implements TestRule {
 
         final ArrayList<VirtualDevice> mVirtualDevices = new ArrayList<>();
         final ArrayList<VirtualDisplay> mVirtualDisplays = new ArrayList<>();
+        final ArrayList<Activity> mActivities = new ArrayList<>();
 
         @Override
         protected void after() {
+            for (Activity activity : mActivities) {
+                activity.finish();
+            }
+            mActivities.clear();
+
             for (VirtualDevice virtualDevice : mVirtualDevices) {
                 virtualDevice.close();
             }

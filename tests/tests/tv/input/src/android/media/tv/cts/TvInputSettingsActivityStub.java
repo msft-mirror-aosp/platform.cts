@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2014 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package android.adpf.common;
+package android.media.tv.cts;
 
-public class ADPFHintSessionUtils {
+import android.preference.PreferenceActivity;
 
-    public static String addCommandExtra(String command, String key, Object value) {
-        return String.format(command + " -e %s %s", key, value);
-    }
+public class TvInputSettingsActivityStub extends PreferenceActivity {
 
 }

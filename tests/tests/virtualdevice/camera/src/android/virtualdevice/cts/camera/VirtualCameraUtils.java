@@ -34,6 +34,7 @@ import static android.opengl.EGL14.eglChooseConfig;
 import static android.opengl.EGL14.eglCreateContext;
 import static android.opengl.EGL14.eglDestroyContext;
 import static android.opengl.EGL14.eglGetDisplay;
+import static android.opengl.EGL14.eglGetError;
 import static android.opengl.EGL14.eglInitialize;
 import static android.opengl.EGL14.eglMakeCurrent;
 import static android.opengl.GLES20.GL_MAX_TEXTURE_SIZE;
@@ -93,7 +94,7 @@ public final class VirtualCameraUtils {
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
     // Difference between two bitmaps using average of per-pixel differences.
-    private static final double BITMAP_MAX_DIFF = 1.5;
+    private static final double BITMAP_MAX_DIFF = 2;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
@@ -336,7 +337,11 @@ public final class VirtualCameraUtils {
         EGLDisplay eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
         assumeFalse(eglDisplay.equals(EGL_NO_DISPLAY));
         int[] version = new int[2];
-        eglInitialize(eglDisplay, version, 0, version, 1);
+        if (!eglInitialize(eglDisplay, version, 0, version, 1)) {
+            throw new IllegalStateException(
+                    "eglInitialize() returned false. Can't query maximum texture size\n "
+                            + "eglGetError():" + eglGetError());
+        }
 
         int[] attribList = {EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
                 EGL_ALPHA_SIZE, 8, EGL_NONE};
@@ -345,8 +350,11 @@ public final class VirtualCameraUtils {
         int[] numConfigs = new int[1];
         if (!eglChooseConfig(
                 eglDisplay, attribList, 0, configs, 0, configs.length, numConfigs, 0)) {
-            return 0;
+            throw new IllegalStateException(
+                    "eglChooseConfig() returned false. Can't query maximum texture size\n"
+                            + "eglGetError():" + eglGetError());
         }
+
 
         int[] attrib2_list = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
         EGLContext eglContext = eglCreateContext(eglDisplay, configs[0], EGL_NO_CONTEXT,

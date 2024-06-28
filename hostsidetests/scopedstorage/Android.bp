@@ -658,7 +658,6 @@ android_test {
     srcs: ["general/**/*.java"],
     static_libs: [
         "truth",
-        "Nene",
         "cts-scopedstorage-lib",
         "androidx.test.uiautomator_uiautomator",
         "modules-utils-build_system",

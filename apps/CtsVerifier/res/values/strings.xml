@@ -1191,7 +1191,7 @@
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
     <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
-    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Please connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
@@ -3182,7 +3182,10 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="nfc_tests_dialog_content">
         The NFC tests.\n
         The DUT \"must\" be connected to a host to run these tests.\n
-        Please follow the detailed instruction of the tests to execute scripts and get results.
+        Please follow the detailed instruction of the tests to execute scripts and get results.\n
+        The tests will be set as passing if the DUT is not supported with NFC.\n
+        See the instruction in the following link.\n
+        https://source.android.com/docs/compatibility/cts/ctsv-multidevice
     </string>
 
     <!-- String for Projection Tests -->
