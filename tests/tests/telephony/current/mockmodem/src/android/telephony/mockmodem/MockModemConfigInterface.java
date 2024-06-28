@@ -137,6 +137,12 @@ public interface MockModemConfigInterface {
 
     void unregisterForSimInfoChanged(int logicalSlotId, Handler h);
 
+    // For SIM-IO on AIDs through logical channel
+    /** Register to receive notification when SIM IO data has changed */
+    void registerForSimIoDataChanged(int logicalSlotId, Handler h, int what, Object obj);
+    /** Unregister to receive notification when SIM IO data has changed */
+    void unregisterForSimIoDataChanged(int logicalSlotId, Handler h);
+
     // ***** IRadioNetwork
     /** Register/unregister notification handler for service status changed */
     void registerForServiceStateChanged(int logicalSlotId, Handler h, int what, Object obj);
