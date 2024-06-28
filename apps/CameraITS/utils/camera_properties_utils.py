@@ -746,6 +746,18 @@ def dynamic_range_ten_bit(props):
       'android.request.availableCapabilities']
 
 
+def intrinsic_calibration(props):
+  """Returns whether a device supports android.lens.intrinsicCalibration.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports android.lens.intrinsicCalibratino.
+  """
+  return props.get('android.lens.intrinsicCalibration') is not None
+
+
 def get_intrinsic_calibration(props, metadata, debug, fd=None):
   """Get intrinsicCalibration and create intrisic matrix.
 
