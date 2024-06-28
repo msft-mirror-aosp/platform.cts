@@ -53,6 +53,8 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
     private int mCurrentTest = TEST_NONE;
     private LinearLayout mLinearLayout;
     private Button mButtonTest;
+    private Button mButtonMandatoryYes;
+    private Button mButtonMandatoryNo;
     private ProgressBar mProgress;
     private TextView mResultText;
     private boolean mTestAECPassed;
@@ -61,6 +63,7 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
     private AcousticEchoCanceler mAec;
 
     private boolean mDeviceHasAEC = AcousticEchoCanceler.isAvailable();
+    private boolean mMandatory = mDeviceHasAEC;
 
     private final int mBlockSizeSamples = 4096;
     private final int mSamplingRate = 48000;
@@ -207,6 +210,12 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
         mLinearLayout = (LinearLayout)findViewById(R.id.audio_aec_test_layout);
         enableUILayout(mLinearLayout, false);
 
+        // Mandatory Buttons
+        mButtonMandatoryYes = (Button) findViewById(R.id.audio_aec_mandatory_yes);
+        mButtonMandatoryYes.setOnClickListener(this);
+        mButtonMandatoryNo = (Button) findViewById(R.id.audio_aec_mandatory_no);
+        mButtonMandatoryNo.setOnClickListener(this);
+
         // Test
         mButtonTest = (Button) findViewById(R.id.audio_aec_button_test);
         mButtonTest.setOnClickListener(this);
@@ -263,6 +272,18 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
         int id = v.getId();
         if (id == R.id.audio_aec_button_test) {
             startTest();
+        } else if (id == R.id.audio_aec_mandatory_no) {
+            enableUILayout(mLinearLayout, false);
+            getPassButton().setEnabled(true);
+            mButtonMandatoryNo.setEnabled(false);
+            mButtonMandatoryYes.setEnabled(false);
+            mMandatory = false;
+            Log.v(TAG, "AEC marked as NOT mandatory");
+        } else if (id == R.id.audio_aec_mandatory_yes) {
+            enableUILayout(mLinearLayout, true);
+            mButtonMandatoryNo.setEnabled(false);
+            mButtonMandatoryYes.setEnabled(false);
+            mMandatory = true;
         }
     }
 
@@ -281,7 +302,21 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
                 sendMessage(AudioTestRunner.TEST_MESSAGE,
                         "Testing Recording with AEC");
 
-                 //Step 0. Prepare system
+                //is AEC Available?
+                if (!AcousticEchoCanceler.isAvailable()) {
+                    String msg;
+                    if (mMandatory) {
+                        msg = "Error. AEC not available";
+                        sendMessage(AudioTestRunner.TEST_ENDED_ERROR, msg);
+                    } else {
+                        msg = "Warning. AEC not available.";
+                        sendMessage(AudioTestRunner.TEST_ENDED_OK, msg);
+                    }
+                    // storeTestResults(mMandatory, 0, 0, msg);
+                    return;
+                }
+
+                //Step 0. Prepare system
                 AudioManager am = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
                 int targetMode = AudioManager.MODE_IN_COMMUNICATION;
                 int originalMode = am.getMode();
@@ -349,11 +384,16 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
 
                 if (!mAec.getEnabled()) {
                     String msg = "AEC is not enabled by default.";
-                    mSRecorder.stopRecording();
-                    storeTestResults(mDeviceHasAEC, 0, 0, msg);
-                    am.setSpeakerphoneOn(originalSpeakerPhone);
-                    am.setMode(originalMode);
-                    sendMessage(AudioTestRunner.TEST_ENDED_ERROR, msg);
+                    if (mMandatory) {
+                        mSRecorder.stopRecording();
+                        storeTestResults(mDeviceHasAEC, 0, 0, msg);
+                        am.setSpeakerphoneOn(originalSpeakerPhone);
+                        am.setMode(originalMode);
+                        sendMessage(AudioTestRunner.TEST_ENDED_ERROR, msg);
+                        return;
+                    } else {
+                        sb.append("Warning. " + msg + "\n");
+                    }
                     return;
                 }
 
@@ -452,7 +492,11 @@ public class AudioAEC extends AudioFrequencyActivity implements View.OnClickList
                 if (mTestAECPassed) {
                     sb.append("All Tests Passed");
                 } else {
+                    if (mMandatory) {
                         sb.append("Test failed. Please fix issues and try again");
+                    } else {
+                        sb.append("Warning. Acoustic Coupling Levels did not pass criteria");
+                    }
                 }
 
                 storeTestResults(mDeviceHasAEC, maxAEC, maxNoAEC, sb.toString());
