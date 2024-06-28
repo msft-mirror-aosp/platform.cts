@@ -162,6 +162,18 @@ def sensor_fusion(props):
   return props.get('android.sensor.info.timestampSource') == 1
 
 
+def burst_capture_capable(props):
+  """Returns whether a device supports burst capture.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if the device supports burst capture.
+  """
+  return 6 in props.get('android.request.availableCapabilities', [])
+
+
 def logical_multi_camera(props):
   """Returns whether a device is a logical multi-camera.
 
