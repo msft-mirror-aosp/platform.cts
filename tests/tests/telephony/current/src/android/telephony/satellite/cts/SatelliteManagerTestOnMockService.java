@@ -3867,14 +3867,15 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 500));
 
         // Time out to disable satellite. Telephony should respond SATELLITE_RESULT_MODEM_TIMEOUT to
-        // clients and move to SATELLITE_MODEM_STATE_OFF
+        // clients and stay in SATELLITE_MODEM_STATE_NOT_CONNECTED as satellite disable request
+        // failed.
         logd("testRequestSatelliteEnabled_timeout: disabling satellite...");
         callback.clearModemStates();
         result = requestSatelliteEnabledWithResult(false, TIMEOUT);
         assertEquals(SatelliteManager.SATELLITE_RESULT_MODEM_TIMEOUT, result);
-        assertTrue(callback.waitUntilModemOff());
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
-        assertFalse(isSatelliteEnabled());
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.modemState);
+        assertTrue(isSatelliteEnabled());
         assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
 
         // Respond to the above disable request. Telephony should ignore the event.
@@ -3882,7 +3883,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         callback.clearModemStates();
         assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false));
         assertFalse(callback.waitUntilResult(1));
-        assertFalse(isSatelliteEnabled());
+        assertTrue(isSatelliteEnabled());
 
         // Restore the original states
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);

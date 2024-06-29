@@ -393,6 +393,11 @@ public class ActivityBlockingTest {
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(
                 mContext, mVirtualDisplay.getDisplay().getDisplayId(), intent)).isFalse();
         mRule.sendIntentToDisplay(intent, mVirtualDisplay);
+        if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
+            verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
+                    eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                    eq(intent.getComponent()), anyInt());
+        }
         assertBlockedAppStreamingActivityLaunched();
     }
 

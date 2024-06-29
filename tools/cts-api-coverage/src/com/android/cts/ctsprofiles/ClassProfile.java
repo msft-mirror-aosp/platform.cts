@@ -121,6 +121,25 @@ public class ClassProfile {
         return mMethods.get(methodSignature);
     }
 
+    /**
+     * Adds a supper method call when the method is extended from super classes. If the "super"
+     * keyword is not explicitly added, the java bytecode will not show which super class is called.
+     * In this case, find the nearest method along the super class chain and add an additionally
+     * call to that method.
+     */
+    public void resolveExtendedMethods() {
+        for (MethodProfile method : mMethods.values()) {
+            if (method.isDirectMember() || mSuperClass == null) {
+                continue;
+            }
+            MethodProfile superMethod = mSuperClass.findMethod(
+                    method.getMethodName(), method.getMethodParams());
+            if (superMethod != null) {
+                method.addMethodCall(superMethod);
+            }
+        }
+    }
+
     /** Adds an interface implemented by the class. */
     public void addInterface(ClassProfile interfaceProfile) {
         mInterfaces.add(interfaceProfile);
@@ -239,6 +258,17 @@ public class ClassProfile {
         return false;
     }
 
+    /** Finds the given method from the class or its super classes. */
+    private MethodProfile findMethod(String methodName, List<String> params) {
+        if (isApiClass()) {
+            return getOrCreateMethod(methodName, params);
+        }
+        String methodSignature = Utils.getMethodSignature(methodName, params);
+        if (mMethods.containsKey(methodSignature)) {
+            return mMethods.get(methodSignature);
+        }
+        return mSuperClass == null ? null : mSuperClass.findMethod(methodName, params);
+    }
 
     private boolean matchAnyTypes(int typesValue) {
         return (mClassType & typesValue) != 0;

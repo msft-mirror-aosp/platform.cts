@@ -160,7 +160,8 @@ class ZoomTest(its_base_test.ItsBaseTest):
           )
 
         if not zoom_capture_utils.verify_zoom_results(
-            test_data, size, z_max, z_min):
+            test_data, size, z_max, z_min,
+            offset_plot_name_stem=f'{img_name_stem}_{fmt}'):
           test_failed = True
 
     if test_failed:

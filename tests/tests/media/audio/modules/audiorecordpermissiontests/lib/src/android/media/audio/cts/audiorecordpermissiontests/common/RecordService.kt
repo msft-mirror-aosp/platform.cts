@@ -48,13 +48,13 @@ open class RecordService : Service() {
     var mFuture : Future<Any>? = null
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        Log.i(TAG, "Receive onStartCommand" + intent)
+        val shouldFg = intent.getBooleanExtra(EXTRA_IS_FOREGROUND, false)
+        Log.i(TAG, "Receive onStartCommand action: ${intent.getAction()}, fg: ${shouldFg}" + intent)
         when (intent.getAction()) {
             PREFIX + ACTION_START_RECORD -> {
-                Log.i(TAG, "Receive START_RECORD" + intent.getExtras())
                 if (mIsRecording.compareAndSet(false, true)) {
                     try {
-                        if (intent.getBooleanExtra(EXTRA_IS_FOREGROUND, false)) {
+                        if (shouldFg) {
                             Log.i(TAG, "Going foreground with capabilities " + getCapabilities())
                             startForeground(1, buildNotification(), getCapabilities())
                         }
@@ -65,8 +65,7 @@ open class RecordService : Service() {
                     mFuture = mExecutor.submit(::record, Object())
                 }
             }
-            PREFIX + ACTION_STOP_RECORD -> {
-                Log.i(TAG, "Receive STOP_RECORD")
+            PREFIX + ACTION_CLEANUP -> {
                 cleanup()
             }
         }

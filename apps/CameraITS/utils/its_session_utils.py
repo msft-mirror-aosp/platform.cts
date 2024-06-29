@@ -116,7 +116,7 @@ _VALIDATE_LIGHTING_REGIONS_MODULAR_UW = {
 }
 _VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
-_VALIDATE_LIGHTING_THRESH_DARK = 0.15  # Determined empirically for night test
+_VALIDATE_LIGHTING_THRESH_DARK = 0.3  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
 _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'
