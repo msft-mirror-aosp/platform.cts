@@ -30,7 +30,7 @@ import lighting_control_utils
 import low_light_utils
 import preview_processing_utils
 
-_AE_LOW_LIGHT_BOOST_MODE = 6  # The preview frame number to capture
+_AE_LOW_LIGHT_BOOST_MODE = 6
 
 _CONTROL_AF_MODE_AUTO = 1
 _CONTROL_AWB_MODE_AUTO = 1

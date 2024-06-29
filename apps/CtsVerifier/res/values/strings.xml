@@ -1191,7 +1191,7 @@
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
     <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
-    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Please connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
@@ -6100,7 +6100,7 @@ You should be prompted to select credentials; choose the ones you just installed
         The Acoustic Coupling Factor (ACF) will be computed for each case. A successful test expects ACF less than 0.4 for AEC ON,
         and ACF greater than 0.6 for AEC OFF.
         This test requires a quiet environment, and no headphones or similar connected.
-        This test must pass on any device which implements AEC.
+        This test must pass in devices where AEC functionality is mandatory or any device which implements AEC.
     </string>
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
