@@ -42,6 +42,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
     }
@@ -56,8 +57,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppInstallDialog();
+
         pressBack();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageNotInstalled();
     }
@@ -72,8 +76,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppInstallDialog();
+
         touchOutside();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageNotInstalled();
     }
@@ -88,8 +95,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppInstallDialog();
+
         clickCancelButton();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageNotInstalled();
     }
@@ -104,6 +114,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         exitGrantPermissionSettings();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageNotInstalled();
     }
@@ -115,6 +126,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationViaIntentForResult();
 
         waitForUiIdle();
+
+        assertTestAppInstallDialog();
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
@@ -130,6 +143,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
+        assertTestAppInstallDialog();
+
         pressBack();
 
         assertInstallerResponseActivityResultCanceled();
@@ -144,6 +159,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
+        assertTestAppInstallDialog();
+
         touchOutside();
 
         assertInstallerResponseActivityResultCanceled();
@@ -157,6 +174,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationViaIntentForResult();
 
         waitForUiIdle();
+
+        assertTestAppInstallDialog();
 
         clickCancelButton();
 
@@ -179,7 +198,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
 //        assertInstallerResponseActivityResultOK();
-        assertTestPackageLabelV2Installed();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -194,8 +213,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         pressBack();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -212,8 +234,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -230,8 +255,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         clickCancelButton();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -248,6 +276,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         exitGrantPermissionSettings();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -265,7 +294,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
         assertInstallerResponseActivityResultOK();
-        assertTestPackageLabelV2Installed();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -277,6 +306,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationUpdateViaIntentForResult();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -294,6 +325,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
         assertInstallerResponseActivityResultCanceled();
@@ -309,6 +342,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationUpdateViaIntentForResult();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 
@@ -328,8 +363,9 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
     }
@@ -346,9 +382,12 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         pressBack();
 
-        //assertInstallerResponseActivityResultCanceled();
+        // TODO (b/349258056): should get the correct activity result
+//        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
 
@@ -364,9 +403,12 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
-        //assertInstallerResponseActivityResultCanceled();
+        // TODO (b/349258056): should get the correct activity result
+//        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
 
@@ -382,8 +424,11 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         toggleToGrantRequestInstallPackagesPermission();
 
+        assertTestAppUpdateDialog();
+
         clickCancelButton();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -400,6 +445,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         exitGrantPermissionSettings();
 
+        // TODO (b/349258056): should get the correct activity result
 //        assertInstallerResponseActivityResultCanceled();
         assertTestPackageInstalled();
     }
@@ -415,7 +461,7 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
         assertInstallerResponseActivityResultOK();
         assertTestPackageInstalled();
@@ -430,6 +476,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationViaIntentWithPackageUriForResult();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -448,6 +496,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
 
         waitForUiIdle();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
         assertInstallerResponseActivityResultCanceled();
@@ -464,6 +514,8 @@ public class InstallationViaIntentForResultTest extends PackageInstallerCujTestB
         startInstallationViaIntentWithPackageUriForResult();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 

@@ -15,30 +15,30 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-        package="android.packageinstaller.cts.cujinstaller">
+        package="android.packageinstaller.cts.cuj.installer">
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application android:label="CTS CUJ Installer">
-        <activity android:name="android.packageinstaller.cts.cujinstaller.MainActivity"
+        <activity android:name="android.packageinstaller.cts.cuj.installer.MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.packageinstaller.cts.cujinstaller.action.LAUNCH_INSTALLER" />
+                <action android:name="android.packageinstaller.cts.cuj.installer.action.LAUNCH_INSTALLER" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <provider android:authorities="android.packageinstaller.cts.cujinstaller.fileprovider"
+        <provider android:authorities="android.packageinstaller.cts.cuj.installer.fileprovider"
             android:name="androidx.core.content.FileProvider"
             android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <receiver android:name="android.packageinstaller.cts.cujinstaller.MainActivity$InstallResultReceiver"
+        <receiver android:name="android.packageinstaller.cts.cuj.installer.MainActivity$InstallResultReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.packageinstaller.cts.cujinstaller.action.INSTALL_RESULT"/>
+                <action android:name="android.packageinstaller.cts.cuj.installer.action.INSTALL_RESULT"/>
             </intent-filter>
         </receiver>
     </application>
