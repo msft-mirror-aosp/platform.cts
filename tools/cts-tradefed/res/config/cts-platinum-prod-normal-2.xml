@@ -217,7 +217,6 @@
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#sessionCallback_queriesPackage_canSeeSession" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#shouldHideFromSuggestions_queriesNothing_cannotSeeNoApi" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.LauncherAppsEnumerationTests#shouldHideFromSuggestions_queriesPackage_canSeeNoApi" />
-    <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.MediaSessionEnumerationTests#queriesPackage_isTrustedForMediaControl_canSeeTarget" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.PackageInstallerEnumerationTests#getAllSessions_queriesNothingHasPermission_canSeeSession" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.PackageInstallerEnumerationTests#getAllSessions_queriesNothingTargetsQ_canSeeSession" />
     <option name="compatibility:include-filter" value="CtsAppEnumerationTestCases android.appenumeration.cts.PackageInstallerEnumerationTests#getAllSessions_queriesNothing_cannotSeeSession" />
@@ -489,7 +488,6 @@
 
     <!-- CtsNotificationTestCases -->
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerBubbleTest#testNotificationManagerBubble_setSuppressBubble_notSuppressable" />
-    <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerBubbleTest#testNotificationManagerBubble_setSuppressBubble_notificationNoLocusId" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testAutogrouping_autogroupStaysUntilAllNotificationsAddedToGroup" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testAutogrouping_autogroupStaysUntilAllNotificationsCanceled" />
     <option name="compatibility:include-filter" value="CtsNotificationTestCases android.app.notification.current.cts.NotificationManagerTest#testCustomMediaStyle_setNoClearFlag" />

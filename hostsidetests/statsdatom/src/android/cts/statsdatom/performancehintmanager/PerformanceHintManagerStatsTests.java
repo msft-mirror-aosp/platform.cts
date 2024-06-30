@@ -232,7 +232,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
     public void testAdpfHintSessionTidCleanupIsPushed() throws Exception {
         final int apiLevel = Integer.parseInt(
                 DeviceUtils.getProperty(getDevice(), ("ro.vendor.api_level")));
-        final int minLevel = 202404;
+        final int minLevel = 34;
         assumeTrue("Test is only enforced on vendor API level >= " + minLevel
                         + " while test device at = " + apiLevel, apiLevel >= minLevel);
 

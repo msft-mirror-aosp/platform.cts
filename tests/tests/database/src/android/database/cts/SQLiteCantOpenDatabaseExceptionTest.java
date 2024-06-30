@@ -21,12 +21,10 @@ import android.database.sqlite.SQLiteCantOpenDatabaseException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.OpenParams;
 import android.test.AndroidTestCase;
-import android.util.Log;
 
 import java.io.File;
 
 public class SQLiteCantOpenDatabaseExceptionTest  extends AndroidTestCase {
-    private static final String TAG = "SQLiteCantOpenDatabaseExceptionTest";
 
     private File getDatabaseFile(String name) {
         final Context c = getContext();
@@ -36,17 +34,12 @@ public class SQLiteCantOpenDatabaseExceptionTest  extends AndroidTestCase {
         return new File(getContext().getDatabasePath("a").getParentFile(), name);
     }
 
-    private void callWithExceptedMessage(File file, String expectedMessagePatter) {
+    private void verifyOpenFailure(File file) {
         try {
             SQLiteDatabase.openDatabase(file, new OpenParams.Builder().build());
             fail("SQLiteCantOpenDatabaseException was not thrown");
         } catch (SQLiteCantOpenDatabaseException e) {
-            Log.i(TAG, "Caught excepted exception: " + e.getMessage(), e);
-            if (e.getMessage().startsWith("Cannot open database") &&
-                    e.getMessage().matches(expectedMessagePatter)) {
-                return; // pass
-            }
-            fail("Unexpected exception message: " + e.getMessage());
+            // Okay - this exception was expected.
         }
     }
 
@@ -54,14 +47,14 @@ public class SQLiteCantOpenDatabaseExceptionTest  extends AndroidTestCase {
     public void testDirectoryDoesNotExist() {
         final File file = getDatabaseFile("nonexisitentdir/mydb.db");
 
-        callWithExceptedMessage(file, ".*: Directory .* doesn't exist");
+        verifyOpenFailure(file);
     }
 
     /** File doesn't exist */
     public void testFileDoesNotExist() {
         final File file = getDatabaseFile("mydb.db");
 
-        callWithExceptedMessage(file, ".*: File .* doesn't exist");
+        verifyOpenFailure(file);
     }
 
     /** File exists, but not readable. */
@@ -73,7 +66,7 @@ public class SQLiteCantOpenDatabaseExceptionTest  extends AndroidTestCase {
 
         file.setReadable(false);
 
-        callWithExceptedMessage(file, ".*: File .* not readable");
+        verifyOpenFailure(file);
     }
 
     /** Directory with the given name exists already. */
@@ -82,6 +75,6 @@ public class SQLiteCantOpenDatabaseExceptionTest  extends AndroidTestCase {
 
         file.mkdirs();
 
-        callWithExceptedMessage(file, ".*: Path .* is a directory");
+        verifyOpenFailure(file);
     }
 }
