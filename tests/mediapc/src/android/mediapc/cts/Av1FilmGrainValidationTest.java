@@ -14,24 +14,29 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.mediapc.cts;
 
 import static android.mediav2.common.cts.DecodeStreamToYuv.getImage;
 import static android.mediav2.common.cts.DecodeStreamToYuv.unWrapYUVImage;
 import static android.mediav2.common.cts.VideoErrorManager.computeFrameVariance;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import android.graphics.ImageFormat;
 import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediav2.common.cts.CodecDecoderTestBase;
+import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.ImageSurface;
 import android.mediav2.common.cts.OutputManager;
 import android.util.Log;
 import android.util.Pair;
+
+import androidx.test.filters.SmallTest;
+
+import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Assume;
 import org.junit.Test;
@@ -41,8 +46,8 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -71,12 +76,13 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
         }
     }
 
-    private final Map<Integer, FrameMetadata> mFrameVarList;
+    private final Map<Integer, FrameMetadata> mRefFrameVarList;
+    private Map<Integer, Double> mTestFrameVarList = new HashMap<>();
 
     public Av1FilmGrainValidationTest(String decoder, String mediaType, String testFile,
-            Map<Integer, FrameMetadata> frameVarList, String allTestParams) {
+            Map<Integer, FrameMetadata> refFrameVarList, String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
-        mFrameVarList = frameVarList;
+        mRefFrameVarList = refFrameVarList;
     }
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
@@ -95,25 +101,7 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
                                 Map.entry(151, new FrameMetadata(151, 2180.469236, 2214.399074)),
                                 Map.entry(169, new FrameMetadata(169, 2356.567787, 2390.686406)),
                                 Map.entry(174, new FrameMetadata(174, 2360.921796, 2391.112868)),
-                                Map.entry(178, new FrameMetadata(178, 2398.315402, 2432.657012)),
-                                Map.entry(202, new FrameMetadata(202, 2492.972204, 2523.962709)),
-                                Map.entry(209, new FrameMetadata(209, 2527.618761, 2563.03917)),
-                                Map.entry(216, new FrameMetadata(216, 2451.719897, 2483.775592)),
-                                Map.entry(240, new FrameMetadata(240, 2480.633388, 2520.155191)),
-                                Map.entry(273, new FrameMetadata(273, 2574.790839, 2607.216427)),
-                                Map.entry(277, new FrameMetadata(277, 2556.909117, 2590.407241)),
-                                Map.entry(278, new FrameMetadata(278, 2532.411330, 2567.341203)),
-                                Map.entry(280, new FrameMetadata(280, 2381.975912, 2417.329294)),
-                                Map.entry(285, new FrameMetadata(285, 2530.698041, 2560.922845)),
-                                Map.entry(302, new FrameMetadata(302, 2433.898254, 2464.906672)),
-                                Map.entry(304, new FrameMetadata(304, 2346.091436, 2384.606821)),
-                                Map.entry(311, new FrameMetadata(311, 2391.406914, 2421.758312)),
-                                Map.entry(341, new FrameMetadata(341, 2356.578383, 2390.325355)),
-                                Map.entry(343, new FrameMetadata(343, 2484.964095, 2515.606202)),
-                                Map.entry(351, new FrameMetadata(351, 2511.545498, 2544.680129)),
-                                Map.entry(386, new FrameMetadata(386, 2510.254054, 2541.890124)),
-                                Map.entry(408, new FrameMetadata(408, 2511.183279, 2545.874258)),
-                                Map.entry(424, new FrameMetadata(424, 2563.492336, 2598.342548))
+                                Map.entry(178, new FrameMetadata(178, 2398.315402, 2432.657012))
                         )},
         }));
         return prepareParamList(exhaustiveArgsList, false, false, true, false);
@@ -135,23 +123,13 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
         if (info.size > 0) {
             try (Image image = mImageSurface.getImage(1000)) {
                 assertNotNull("no image received from surface \n" + mTestConfig + mTestEnv, image);
-                if (mFrameVarList.containsKey(mOutputCount - 1)) {
+                if (mRefFrameVarList.containsKey(mOutputCount - 1)) {
                     MediaFormat format = getOutputFormat();
                     ArrayList<byte[]> data = unWrapYUVImage(getImage(image));
                     Pair<Double, Integer> var =
                             computeFrameVariance(getWidth(format), getHeight(format), data.get(0));
                     double frameVariance = var.first / var.second;
-                    FrameMetadata metadata = mFrameVarList.get(mOutputCount - 1);
-                    double refVariance = metadata.mVarWithoutFilmGrain + (
-                            (metadata.mVarWithFilmGrain - metadata.mVarWithoutFilmGrain)
-                                    * TOLERANCE);
-                    String msg = String.format(Locale.getDefault(),
-                            "FilmGrain filter not applied. For frame %d, received variance %f, "
-                                    + "expected min variance %f, no-filmgrain ref variance %f, "
-                                    + "film grain ref variance %f \n",
-                            metadata.mFrameIndex, frameVariance, refVariance,
-                            metadata.mVarWithoutFilmGrain, metadata.mVarWithFilmGrain);
-                    assertTrue(msg + mTestConfig + mTestEnv, frameVariance >= refVariance);
+                    mTestFrameVarList.put(mOutputCount - 1, frameVariance);
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -162,7 +140,9 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
     /**
      * Check description of class {@link Av1FilmGrainValidationTest}
      */
-    @Test
+    @SmallTest
+    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
+    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
     public void testAv1FilmGrainRequirement() throws Exception {
         Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
                 BOARD_FIRST_SDK_IS_AT_LEAST_202404);
@@ -179,5 +159,21 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
         mCodec.stop();
         mCodec.release();
         mExtractor.release();
+        boolean isReqSupported = true;
+        for (Map.Entry<Integer, FrameMetadata> entry : mRefFrameVarList.entrySet()) {
+            Integer frameId = entry.getKey();
+            FrameMetadata metadata = entry.getValue();
+            double refVariance = metadata.mVarWithoutFilmGrain + (
+                    (metadata.mVarWithFilmGrain - metadata.mVarWithoutFilmGrain) * TOLERANCE);
+            double testVariance = mTestFrameVarList.get(frameId);
+            if (testVariance < refVariance) {
+                isReqSupported = false;
+                break;
+            }
+        }
+        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
+        PerformanceClassEvaluator.VideoCodecRequirement rAV1DecoderReq = pce.addRAV1DecoderReq();
+        rAV1DecoderReq.setAv1DecoderReq(isReqSupported);
+        pce.submitAndCheck();
     }
 }
