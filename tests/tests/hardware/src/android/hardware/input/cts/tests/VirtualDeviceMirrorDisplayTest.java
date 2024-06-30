@@ -32,6 +32,8 @@ import android.hardware.input.VirtualMouseButtonEvent;
 import android.hardware.input.VirtualMouseRelativeEvent;
 import android.hardware.input.VirtualMouseScrollEvent;
 import android.hardware.input.VirtualNavigationTouchpad;
+import android.hardware.input.VirtualRotaryEncoder;
+import android.hardware.input.VirtualRotaryEncoderScrollEvent;
 import android.hardware.input.VirtualStylus;
 import android.hardware.input.VirtualStylusMotionEvent;
 import android.hardware.input.VirtualTouchEvent;
@@ -58,6 +60,7 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
@@ -442,6 +445,22 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                         1f /* pressure */, 0 /* buttonState */));
 
         verifyEvents(expectedEvents);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
+            Flags.FLAG_CONSISTENT_DISPLAY_FLAGS,
+            android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY})
+    @Test
+    public void virtualRotary_scrollEvent() {
+        VirtualRotaryEncoder rotary = VirtualInputDeviceCreator.createAndPrepareRotary(
+                mVirtualDevice, DEVICE_NAME, mVirtualDisplay.getDisplay()).getDevice();
+        final float scrollAmount = 1.0f;
+        rotary.sendScrollEvent(new VirtualRotaryEncoderScrollEvent.Builder()
+                .setScrollAmount(scrollAmount)
+                .build());
+        // Verify that events have been received on the activity running on default display.
+        verifyEvents(Collections.singletonList(
+                VirtualInputEventCreator.createRotaryEvent(scrollAmount)));
     }
 
     private float toWindowX(float posX) {

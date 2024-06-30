@@ -180,6 +180,28 @@ public class VirtualInputEventCreator {
                 0 /* flags */);
     }
 
+    public static MotionEvent createRotaryEvent(float scrollAmount) {
+        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_UNKNOWN;
+        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
+        pointerCoords.setAxisValue(MotionEvent.AXIS_SCROLL, scrollAmount);
+        return MotionEvent.obtain(
+                0 /* downTime */,
+                0 /* eventTime */,
+                MotionEvent.ACTION_SCROLL,
+                1 /* pointerCount */,
+                new MotionEvent.PointerProperties[]{pointerProperties},
+                new MotionEvent.PointerCoords[]{pointerCoords},
+                0 /* metaState */,
+                0 /* buttonState */,
+                1f /* xPrecision */,
+                1f /* yPrecision */,
+                0 /* deviceId */,
+                0 /* edgeFlags */,
+                InputDevice.SOURCE_ROTARY_ENCODER,
+                0 /* flags */);
+    }
+
     public static KeyEvent createKeyboardEvent(int action, int code) {
         return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD);
     }
