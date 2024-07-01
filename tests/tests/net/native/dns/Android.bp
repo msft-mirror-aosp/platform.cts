@@ -36,5 +36,7 @@ cc_test {
     test_suites: [
         "cts",
         "mts",
+        "mcts-dnsresolver",
+        "mcts-networking",
     ],
 }

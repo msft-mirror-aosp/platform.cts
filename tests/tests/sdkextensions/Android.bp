@@ -25,6 +25,7 @@ android_test {
         "cts",
         "mts",
         "general-tests",
+        "mcts-sdkextensions",
     ],
     sdk_version: "system_current",
 }
