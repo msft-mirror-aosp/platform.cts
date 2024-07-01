@@ -49,6 +49,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
@@ -638,6 +639,63 @@ class EnterpriseAnnotationExecutorTest {
     )
     @Test
     fun additionalQueryParameters_ensureHasWorkProfile_isRespected() {
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+    }
+
+    @Test
+    @RequireRunOnWorkProfile
+    fun workProfile_runningOnWorkProfile_returnsCurrentProfile() {
+        assertThat(sDeviceState.workProfile()).isEqualTo(users().instrumented())
+    }
+
+    @RequireRunOnWorkProfile
+    fun requireRunOnWorkProfileAnnotation_isRunningOnWorkProfile() {
+        assertThat(users().instrumented().type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME)
+    }
+
+    @Test
+    @RequireRunOnWorkProfile
+    fun requireRunOnWorkProfileAnnotation_workProfileHasProfileOwner() {
+        assertThat(devicePolicy().getProfileOwner(users().instrumented())).isNotNull()
+    }
+
+    @Test
+    @RequireRunOnWorkProfile
+    fun requireRunOnProfile_parentIsCurrentUser() {
+        assertThat(users().current()).isEqualTo(sDeviceState.workProfile().parent())
+    }
+
+    @Test
+    @RequireRunOnWorkProfile(switchedToParentUser = OptionalBoolean.FALSE)
+    fun requireRunOnProfile_specifyNotSwitchedToParentUser_parentIsNotCurrentUser() {
+        assertThat(users().current()).isNotEqualTo(sDeviceState.workProfile().parent())
+    }
+
+    @Test
+    @RequireRunOnWorkProfile(isOrganizationOwned = true)
+    fun requireRunOnWorkProfile_isOrganizationOwned_organizationOwnerIsTrue() {
+        val profileOwner = sDeviceState.profileOwner(
+            sDeviceState.workProfile()
+        ).devicePolicyController() as ProfileOwner
+        assertThat(profileOwner.isOrganizationOwned()).isTrue()
+    }
+
+    @Test
+    @RequireRunOnWorkProfile(isOrganizationOwned = false)
+    fun requireRunOnWorkProfile_isNotOrganizationOwned_organizationOwnedIsFalse() {
+        val profileOwner = sDeviceState.profileOwner(
+            sDeviceState.workProfile()
+        ).devicePolicyController() as ProfileOwner
+        assertThat(profileOwner.isOrganizationOwned()).isFalse()
+    }
+
+    @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)
+    @AdditionalQueryParameters(
+        forTestApp = RequireRunOnWorkProfile.DEFAULT_KEY,
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+    )
+    @Test
+    fun additionalQueryParameters_requireRunOnWorkProfile_isRespected() {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
     }
 

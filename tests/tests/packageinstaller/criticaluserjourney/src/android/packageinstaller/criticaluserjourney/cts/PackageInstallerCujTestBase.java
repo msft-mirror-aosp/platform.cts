@@ -135,6 +135,7 @@ public class PackageInstallerCujTestBase {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT = 2;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
 
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
@@ -297,7 +298,25 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Start the installation via startActivity.
+     * Start the installation via startActivity with ACTION_VIEW.
+     */
+    public static void startInstallationViaIntentActionView() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the test apk from version 1 to version 2
+     * via startActivity with ACTION_VIEW.
+     */
+    public static void startInstallationUpdateViaIntentActionView() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW,
+                /* useV2= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationViaIntent() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT);
@@ -306,7 +325,7 @@ public class PackageInstallerCujTestBase {
 
     /**
      * Start the installation to update the test apk from version 1 to version 2
-     * via startActivity.
+     * via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationUpdateViaIntent() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useV2= */ true);
