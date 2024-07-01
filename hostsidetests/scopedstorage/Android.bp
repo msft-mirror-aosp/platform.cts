@@ -103,6 +103,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -120,6 +121,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -137,6 +139,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -184,6 +187,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -201,6 +205,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -218,6 +223,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -354,6 +360,7 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -384,6 +391,7 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -417,6 +425,7 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
@@ -497,6 +506,7 @@ android_test {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "mcts-mediaprovider",
     ],
