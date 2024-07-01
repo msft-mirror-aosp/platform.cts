@@ -140,7 +140,7 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-3", "2.2.7.1/5.1/H-1-4"})
     public void test4k() throws Exception {
-        Assume.assumeTrue(Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         testCodec(2160, 3840, 30000000, REQUIRED_MIN_CONCURRENT_INSTANCES);
     }
 

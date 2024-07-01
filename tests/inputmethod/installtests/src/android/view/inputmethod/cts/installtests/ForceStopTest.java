@@ -21,7 +21,6 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.text.TextUtils;
@@ -38,7 +37,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
@@ -115,24 +113,20 @@ public class ForceStopTest {
      * A regression test for Bug 333798837 (for background users).
      */
     @RequireMultiUserSupport
-    @EnsureHasSecondaryUser
-    @EnsureHasAdditionalUser  // Required on Android Automotive
+    @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
-        final UserReference secondaryUser =
-                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
-        testImeRemainsEnabledAfterForceStopMain(secondaryUser, false /* selectIme */,
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */,
                 true /* backgroundUser */);
     }
 
     @RequireMultiUserSupport
-    @EnsureHasSecondaryUser
-    @EnsureHasAdditionalUser  // Required on Android Automotive
+    @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {
-        final UserReference secondaryUser =
-                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
-        testImeRemainsEnabledAfterForceStopMain(secondaryUser, true /* selectIme */,
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, true /* selectIme */,
                 true /* backgroundUser */);
     }
 
@@ -164,10 +158,6 @@ public class ForceStopTest {
             // Force-stopping a background user's IME package will unselect the IME.
             assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, userId);
         }
-    }
-
-    private static boolean isRunningOnAuto() {
-        return TestApis.packages().features().contains(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private static void forceStopPackage(String packageName, int userId) {

@@ -34,7 +34,7 @@ FLASH_MODE_TO_CLICKS = types.MappingProxyType({
     'OFF': 3,
     'AUTO': 2
 })
-IMG_CAPTURE_CMD = 'am start -a android.media.action.STILL_IMAGE_CAPTURE'
+IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JPG_FORMAT_STR = '.jpg'
 OK_BUTTON_TXT = 'OK'

@@ -56,6 +56,7 @@ EXTRA_VERSION = 'camera.its.extra.VERSION'
 CURRENT_ITS_VERSION = '1.0'  # version number to sync with CtsVerifier
 EXTRA_CAMERA_ID = 'camera.its.extra.CAMERA_ID'
 EXTRA_RESULTS = 'camera.its.extra.RESULTS'
+EXTRA_TABLET_NAME = 'camera.its.extra.TABLET_NAME'
 TIME_KEY_START = 'start'
 TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
@@ -156,7 +157,8 @@ _SCENE_REQ = types.MappingProxyType({
                    'See tests/scene_video/scene_video.mp4',
 })
 
-SUB_CAMERA_TESTS = types.MappingProxyType({
+# Made mutable to allow for test augmentation based on first API level
+SUB_CAMERA_TESTS = {
     'scene0': (
         'test_jitter',
         'test_metadata',
@@ -189,7 +191,7 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'sensor_fusion': (
         'test_sensor_fusion',
     ),
-})
+}
 
 _LIGHTING_CONTROL_TESTS = (
     'test_auto_flash.py',
@@ -210,12 +212,13 @@ _SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
-def report_result(device_id, camera_id, results):
+def report_result(device_id, camera_id, tablet_name, results):
   """Sends a pass/fail result to the device, via an intent.
 
   Args:
    device_id: The ID string of the device to report the results to.
    camera_id: The ID string of the camera for which to report pass/fail.
+   tablet_name: The tablet name to identify model and build.
    results: a dictionary contains all ITS scenes as key and result/summary of
             current ITS run. See test_report_result unit test for an example.
   """
@@ -238,6 +241,7 @@ def report_result(device_id, camera_id, results):
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
          f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
+         f"{EXTRA_TABLET_NAME} {tablet_name} --es "
          f"{EXTRA_RESULTS} \'{json_results}\'")
   its_device_utils.run(cmd)
 
@@ -520,6 +524,17 @@ def is_device_folded(device_id):
   return False
 
 
+def augment_sub_camera_tests(first_api_level):
+  """Adds certain tests to SUB_CAMERA_TESTS depending on first_api_level.
+
+  Args:
+    first_api_level: First api level of the device.
+  """
+  if (first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
+    logging.debug('Augmenting sub camera tests')
+    SUB_CAMERA_TESTS['scene6'] = ('test_in_sensor_zoom',)
+
+
 def main():
   """Run all the Camera ITS automated tests.
 
@@ -609,6 +624,9 @@ def main():
   device_id = get_device_serial_number('dut', config_file_contents)
   # Enable external storage on DUT to send summary report to CtsVerifier.apk
   enable_external_storage(device_id)
+
+  # Add to SUB_CAMERA_TESTS depending on first_api_level
+  augment_sub_camera_tests(its_session_utils.get_first_api_level(device_id))
 
   # Verify that CTS Verifier is installed
   its_session_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
@@ -1000,7 +1018,7 @@ def main():
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)
       logging.info('ITS results to CtsVerifier: %s', results)
-      report_result(device_id, camera_id, results)
+      report_result(device_id, camera_id, tablet_name, results)
     else:
       write_result(testbed_index, device_id, camera_id, results)
 
@@ -1043,7 +1061,7 @@ def main():
                             'model/type/build/revision.',
                             device_id, parsed_id)
               return
-            report_result(device_id, parsed_camera, parsed_results)
+            report_result(device_id, parsed_camera, tablet_name, parsed_results)
           for temp_file in glob.glob('testbed_*.tmp'):
             os.remove(temp_file)
           break

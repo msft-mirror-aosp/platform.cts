@@ -19,6 +19,7 @@ package android.compilation.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assume.assumeTrue;
 
 import android.compilation.cts.annotation.CtsTestCase;
 
@@ -53,6 +54,7 @@ public class CompilationTest extends BaseHostJUnit4Test {
             "/CtsCompilationApp_with_good_profile.apk";
     private static final String TEST_APP_WITH_BAD_PROFILE_RES =
             "/CtsCompilationApp_with_bad_profile.apk";
+    private static final String TEST_APP_DEBUGGABLE_RES = "/CtsCompilationApp_debuggable.apk";
     private static final String TEST_APP_2_PKG = "android.compilation.cts.appusedbyotherapp";
     private static final String TEST_APP_2_APK_RES = "/AppUsedByOtherApp.apk";
     private static final String TEST_APP_2_DM_RES = "/AppUsedByOtherApp_1.dm";
@@ -347,6 +349,49 @@ public class CompilationTest extends BaseHostJUnit4Test {
         });
         String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
         checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    @Test
+    public void testInstallCompilerFilterDefault() throws Exception {
+        assumeTrue(getDevice().getProperty("pm.dexopt.install").equals("speed-profile"));
+
+        mUtils.installFromResources(getAbi(), TEST_APP_WITH_GOOD_PROFILE_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "speed-profile");
+    }
+
+    @Test
+    public void testInstallCompilerFilterDebuggable() throws Exception {
+        mUtils.installFromResources(getAbi(), TEST_APP_DEBUGGABLE_RES);
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "run-from-apk");
+    }
+
+    @Test
+    public void testInstallCompilerFilterOverride() throws Exception {
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--dexopt-compiler-filter", "verify"),
+                List.of(Pair.create(TEST_APP_DEBUGGABLE_RES, null)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "verify");
+    }
+
+    @Test
+    public void testInstallCompilerFilterOverrideSkip() throws Exception {
+        mUtils.installFromResourcesWithArgs(getAbi(), List.of("--dexopt-compiler-filter", "skip"),
+                List.of(Pair.create(TEST_APP_WITH_GOOD_PROFILE_RES, null)));
+        String dump = mUtils.assertCommandSucceeds("pm art dump " + TEST_APP_PKG);
+        checkDexoptStatus(dump, Pattern.quote("base.apk"), "run-from-apk");
+    }
+
+    @Test
+    public void testInstallCompilerFilterOverrideInvalid() throws Exception {
+        Throwable throwable = assertThrows(Throwable.class, () -> {
+            mUtils.installFromResourcesWithArgs(getAbi(),
+                    List.of("--dexopt-compiler-filter", "bogus"),
+                    List.of(Pair.create(TEST_APP_WITH_GOOD_PROFILE_RES, null)));
+        });
+
+        assertThat(throwable.getMessage()).contains("Invalid compiler filter");
     }
 
     private void checkDexoptStatus(String dump, String dexfilePattern, String statusPattern) {

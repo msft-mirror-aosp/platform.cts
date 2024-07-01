@@ -24,7 +24,6 @@ android_test {
 
     srcs: [
         "src/**/*.java",
-        ":cts-wm-aspect-ratio-test-base",
     ],
 
     sdk_version: "30",

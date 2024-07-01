@@ -15,6 +15,7 @@
  */
 package com.android.bedstead.harrier
 
+import com.android.bedstead.multiuser.UsersComponent
 import kotlin.reflect.KClass
 
 class MainLocatorModule(private val deviceState: DeviceState) : BedsteadServiceLocator.Module {

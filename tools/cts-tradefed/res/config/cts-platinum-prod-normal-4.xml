@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2024 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<configuration description="Run CTS platinum tests in prod.">
+    <include name="cts-automated" />
+
+    <!-- CtsMemunreachableTestCases -->
+    <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableDebuggableApp" />
+    <option name="compatibility:include-filter" value="CtsMemunreachableTestCases android.memunreachable.cts.MemunreachableTests#testDumpsysMeminfoUnreachableUndebuggableApp" />
+
+    <!-- CtsWallpaperTestCases -->
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getDrawable_default_sameAsHome" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getDrawable_homeScreen_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getDrawable_lockScreenSet_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getFastDrawable_default_sameAsHome" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getFastDrawable_homeScreen_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#getFastDrawable_lockScreenSet_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekDrawable_default_sameAsHome" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekDrawable_homeScreen_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekDrawable_lockScreenSet_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekFastDrawable_default_sameAsHome" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekFastDrawable_homeScreen_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekFastDrawable_lockScreenSet_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#peekWallpaperDimensions_lockScreenUnset_succeeds" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#setLiveWallpaper_homeScreen_setsHomeWallpaperInfo" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#testAlwaysUpdateWallpaperPermission_allowOutOfFocusWallpaperCommand" />
+    <option name="compatibility:include-filter" value="CtsWallpaperTestCases android.app.cts.wallpapers.WallpaperManagerTest#wallpaperColors_secondary" />
+
+    <!-- CtsNotificationExtendersTestCases -->
+    <option name="compatibility:include-filter" value="CtsNotificationExtendersTestCases android.app.notification.extenders.cts.WearableExtenderApiTestHost#testWearableExtenderBackgroundBlockedDisabled" />
+
+    <!-- CtsAppFgsTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeDataSync" />
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeFileManagementPermission" />
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeMissing" />
+    <option name="compatibility:include-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeNone" />
+
+    <!-- CtsHostsideWebViewTests -->
+    <option name="compatibility:include-filter" value="CtsHostsideWebViewTests com.android.cts.webkit.WebViewHostSideURLUtilTest#testGuessFileNameChangeDisabled" />
+    <option name="compatibility:include-filter" value="CtsHostsideWebViewTests com.android.cts.webkit.WebViewHostSideURLUtilTest#testGuessFileNameChangeEnabled" />
+
+    <!-- CtsPackageSchemeTestsWithVisibility -->
+    <option name="compatibility:include-filter" value="CtsPackageSchemeTestsWithVisibility android.packageinstaller.packagescheme.cts.withvisibility.WithVisibilityPackageSchemeTest#whenTargetAppIsNotInstalled_TestCantFindIt" />
+
+    <!-- CtsAdServicesNotInAllowListEndToEndTests -->
+    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_selectAds_adSelectionFromOutcomesConfig" />
+
+    <!-- CtsWallpaperSdk33TestCases -->
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getDrawable_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getDrawable_withPermission_returnsCurrent" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getFastDrawable_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getFastDrawable_withPermission_returnsCurrent" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getWallpaperFile_lock_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getWallpaperFile_system_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#getWallpaperFile_system_withPermission_returnsCurrent" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#peekDrawable_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#peekDrawable_withPermission_returnsCurrent" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#peekFastDrawable_noPermission_returnsDefault" />
+    <option name="compatibility:include-filter" value="CtsWallpaperSdk33TestCases android.app.cts.wallpapers.WallpaperManagerSdk33Test#peekFastDrawable_withPermission_returnsCurrent" />
+
+    <!-- CtsSecurityTestCases -->
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testNoAddedCertificates[false]" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testNoAddedCertificates[true]" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates[false]" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.CertificateTest#testNoRemovedCertificates[true]" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.ServicePermissionsTest#testDumpProtected" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testAvoidCrossSigned" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testBasicChain" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testBridgeCrossing" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testCrossSign" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testDigestOrdering" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testSelfIssuedPreferred" />
+    <option name="compatibility:include-filter" value="CtsSecurityTestCases android.security.cts.X509CertChainBuildingTest#testUntrustedLoop" />
+
+    <!-- CtsBroadcastTestCases -->
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastDeliveryGroupTest#testDeliveryGroupPolicy_policyAll" />
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastDeliveryGroupTest#testDeliveryGroupPolicy_policyMostRecent" />
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastDeliveryGroupTest#testDeliveryGroupPolicy_withForceDelay_policyAll" />
+    <option name="compatibility:include-filter" value="CtsBroadcastTestCases android.app.cts.broadcasts.BroadcastDeliveryGroupTest#testDeliveryGroupPolicy_withForceDelay_policyMostRecent" />
+
+    <!-- CtsNNAPIBenchmarkTestCases -->
+    <option name="compatibility:include-filter" value="CtsNNAPIBenchmarkTestCases com.android.nn.benchmark.cts.NNAccuracyTest#testNNAPI[asr_float]" />
+    <option name="compatibility:include-filter" value="CtsNNAPIBenchmarkTestCases com.android.nn.benchmark.cts.NNAccuracyTest#testNNAPI[tts_float]" />
+
+    <!-- CtsMockingDebuggableTestCases -->
+    <option name="compatibility:include-filter" value="CtsMockingDebuggableTestCases com.android.dx.mockito.tests.BlacklistedApis#cannotCallBlackListedAfterSpying" />
+    <option name="compatibility:include-filter" value="CtsMockingDebuggableTestCases com.android.dx.mockito.tests.BlacklistedApis#mocksOfAbstractClassesCannotBeUsedToCallHiddenMethods" />
+    <option name="compatibility:include-filter" value="CtsMockingDebuggableTestCases com.android.dx.mockito.tests.BlacklistedApis#spiesCannotBeUsedToCallHiddenMethods" />
+
+    <!-- CtsIkeTestCases -->
+    <option name="compatibility:include-filter" value="CtsIkeTestCases android.ipsec.ike.cts.IkeSessionDigitalSignatureTest#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
+    <option name="compatibility:include-filter" value="CtsIkeTestCases android.ipsec.ike.cts.IkeSessionLivenessCheckTest#testIkeLivenessCheck" />
+    <option name="compatibility:include-filter" value="CtsIkeTestCases android.ipsec.ike.cts.IkeSessionMschapV2Test#testIkeSessionSetupAndChildSessionSetupWithTransportMode" />
+    <option name="compatibility:include-filter" value="CtsIkeTestCases android.ipsec.ike.cts.IkeSessionParamsTest#testSetLivenessRetransmissionTimeouts" />
+
+    <!-- CtsPdfModuleTestCases -->
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.CommonRendererTest#renderPreVOnNUllBitmap_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clearSelectionOnListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clearTextOnTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnCheckbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnInvalidPoint" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnRadioButton" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnReadOnlyCheckbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnReadOnlyRadioButton" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_clickOnTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnClickTypeWidget" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnReadOnlyCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnReadOnlyListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setChoiceSelectionOnTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setInvalidChoiceSelectionOnCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setMultipleChoiceSelectionOnListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setMultipleChoiceSelectionOnSingleSelectionListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnClickTypeWidget" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnReadOnlyCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnReadOnlyTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#applyEdit_setTextOnUneditableCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormType_acro" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormType_none" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormType_xfa" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormType_xfaf" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_charLimitTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_checkbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_editableCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_emptyPoint" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_filtering" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_invalidIndex" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_listbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_multiselectListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_radioButton" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_readOnlyCheckbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_readOnlyCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_readOnlyListbox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_readOnlyRadioButton" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_readOnlyTextField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_textField" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfFormFillingPreVTest#getFormWidgetInfo_unEditableCombobox" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#constructRenderer_fromNonPDF_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#constructRenderer_protectedPdfWithWrongPassword_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getDocumentType_withLinearizedPdf" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getDocumentType_withNonLinearizedPdf" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getOpenPage_pageOutOfBounds_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageDimension" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageGotoLinks_pageWithGotoLink" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageGotoLinks_pageWithoutGotoLink" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageIndex" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageLinks_pdfWithLink" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPageLinks_pdfWithoutLink" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPdfPageCount" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPdfPageImageContents_pdfWithAltText" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPdfPageImageContents_pdfWithText" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPdfPageTextContents_pdfWithText" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#getPdfPageTextContents_pdfWithTextAndImages" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#renderPage_withNullParams_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#rendererRecoversAfterFailure" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#searchPageText" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#searchPageText_querryTextInMultipleLines" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#searchPageText_returnsEmptySearchResult" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#searchPageText_withNullQuerry_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText_emptySpace" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText_textSpreadAcrossMultipleLines" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText_withNegativeIndex_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText_withoutLeftBoundary_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#selectPageText_withoutRightBoundary_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#usePage_afterPageClose_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#usePage_afterRendererClose_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#useRenderer_afterPageClose" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#useRenderer_afterRendererClose_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#write_protectedPdf_withSecurity" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#write_withNullDest_throwsException" />
+    <option name="compatibility:include-filter" value="CtsPdfModuleTestCases android.graphics.pdf.cts.module.PdfRendererPreVTest#write_withUnprotected" />
+
+    <!-- CtsStrictJavaPackagesTestCases -->
+    <option name="compatibility:include-filter" value="CtsStrictJavaPackagesTestCases android.compat.sjp.cts.StrictJavaPackagesTest#testBootClasspathAndSharedLibs_nonDuplicateClasses" />
+    <option name="compatibility:include-filter" value="CtsStrictJavaPackagesTestCases android.compat.sjp.cts.StrictJavaPackagesTest#testBootClasspathAndSystemServerClasspath_nonDuplicateClasses" />
+    <option name="compatibility:include-filter" value="CtsStrictJavaPackagesTestCases android.compat.sjp.cts.StrictJavaPackagesTest#testNoKotlinFilesInClasspaths" />
+
+    <!-- CtsMockingTestCases -->
+    <option name="compatibility:include-filter" value="CtsMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#cannotCallBlackListedAfterSpying" />
+    <option name="compatibility:include-filter" value="CtsMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#mocksOfAbstractClassesCannotBeUsedToCallHiddenMethods" />
+    <option name="compatibility:include-filter" value="CtsMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#spiesCannotBeUsedToCallHiddenMethods" />
+
+    <!-- CtsAndroidAppTestCases -->
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_defaultIdentityNotShared_identityNotAvailableToActivity" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_explicitIdentityNotShared_identityNotAvailableToActivity" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_explicitIdentityShared_identityAvailableToActivity" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_sendBroadcastToManifestReceiverIdentityNotShared_identityNotAvailable" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_sendBroadcastToManifestReceiverIdentityShared_identityAvailable" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_sendBroadcastToRuntimeReceiverDefault_identityNotAvailable" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_sendOrderedBroadcastToManifestReceiverIdentityNotShared_identityNotAvailable" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_sendOrderedBroadcastToManifestReceiverIdentityShared_identityAvailable" />
+    <option name="compatibility:include-filter" value="CtsAndroidAppTestCases android.app.cts.ShareIdentityTest#testShareIdentity_startActivityForResult_identityNotAvailableToActivity" />
+
+    <!-- CtsAppOps2TestCases -->
+    <option name="compatibility:include-filter" value="CtsAppOps2TestCases android.app.appops2.cts.AppOpsLoggingTest#requestInstall" />
+
+    <!-- CtsAppWidgetTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testGetAppWidgetIdsForHost" />
+    <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.RequestPinAppWidgetTest#testPinWidget_launcher2" />
+    <option name="compatibility:include-filter" value="CtsAppWidgetTestCases android.appwidget.cts.UpdateProviderInfoTest#testOverridesPersistedOnUpdate" />
+
+    <!-- CtsInlineMockingTestCases -->
+    <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#cannotCallBlackListedAfterSpying" />
+    <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#mocksOfAbstractClassesCannotBeUsedToCallHiddenMethods" />
+    <option name="compatibility:include-filter" value="CtsInlineMockingTestCases com.android.dx.mockito.tests.BlacklistedApis#spiesCannotBeUsedToCallHiddenMethods" />
+
+    <!-- CtsCameraHeadlessSystemUserTestCases -->
+    <option name="compatibility:include-filter" value="CtsCameraHeadlessSystemUserTestCases android.camera.cts.headlesssystemusertest.Camera2HeadlessSystemUserTest#testHeadlessSystemUser_InvalidAccess[1]" />
+    <option name="compatibility:include-filter" value="CtsCameraHeadlessSystemUserTestCases android.camera.cts.headlesssystemusertest.Camera2HeadlessSystemUserTest#testHeadlessSystemUser_SwitchForegroundUser[1]" />
+
+    <!-- CtsPdfTestCases -->
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#closeWithOpenPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#contentRectBottomToHigh" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#contentRectLeftNegative" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#contentRectRightToHigh" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#contentRectTopNegative" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#finishNullPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#finishPageFromWrongDoc" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#finishPageTwiceDoc" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#negativeHeightPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#negativePageNumber" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#negativeWidthPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#openTwoPages" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#startNullPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#startPageClosedDoc" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#writeClosedDoc" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#writeToNull" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#writeTwoPageDoc" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#writeTwoPageDocWithSameIndex" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#writeWithOpenPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#zeroHeightPage" />
+    <option name="compatibility:include-filter" value="CtsPdfTestCases android.graphics.pdf.cts.PdfDocumentTest#zeroWidthPage" />
+
+    <!-- CtsSettingsTestCases -->
+    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_receiveMultiPaneDeepLinkIntent_shouldStartActivity" />
+    <option name="compatibility:include-filter" value="CtsSettingsTestCases android.settings.cts.SettingsMultiPaneDeepLinkTest#deepLinkHomeActivity_splitNotSupported_deepLinkHomeDisabled" />
+
+    <!-- CtsDeviceConfigTestCases -->
+    <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigPublicNamespacesWithoutReadPermission" />
+    <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigWithAllPermissions" />
+    <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigWithWritePermission" />
+    <option name="compatibility:include-filter" value="CtsDeviceConfigTestCases android.deviceconfig.cts.DeviceConfigApiPermissionTests#testDeviceConfigWithoutPermissions" />
+
+    <!-- CtsNetHttpTestCases -->
+    <option name="compatibility:include-filter" value="CtsNetHttpTestCases android.net.http.cts.HttpEngineTest#testHttpEngine_EnableQuic" />
+
+    <!-- CtsIdentityTestCases -->
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.AttestationTest#attestationTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest#dynamicAuthMultipleGetEntries" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest#dynamicAuthNoUsageCountIncrement" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.DynamicAuthTest#dynamicAuthTest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.EphemeralKeyTest#createEphemeralKey" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.IdentityApiTest#testGetDirectAccessInstance" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.MultiDocumentPresentationTest#multipleDocuments" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.NoSessionEncryptionTest#noSessionEncryption" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#defaultStoreSupportsAnyDocumentType" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#nonExistent" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#nonExistentEntries" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#testProvisionAcpIdNotInValidRange" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#testProvisionAndRetrieveElementWithNoACP" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ProvisioningTest#testProvisionAndRetrieveWithEntryNotInRequest" />
+    <option name="compatibility:include-filter" value="CtsIdentityTestCases android.security.identity.cts.ReaderAuthTest#readerAuth" />
+
+    <!-- CtsNfcTestCases -->
+    <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.NfcPreferredPaymentTest#testDescriptionForPreferredPaymentService" />
+    <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.NfcPreferredPaymentTest#testGetSelectionModeForCategoryOther" />
+    <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.NfcPreferredPaymentTest#testGetSelectionModeForCategoryPayment" />
+    <option name="compatibility:include-filter" value="CtsNfcTestCases android.nfc.cts.NfcPreferredPaymentTest#testRouteDestinationForPreferredPaymentService" />
+
+    <!-- CtsAdServicesExtDataStorageServiceTest -->
+    <option name="compatibility:include-filter" value="CtsAdServicesExtDataStorageServiceTest com.android.adservices.tests.extdata.AdServicesExtDataServiceCtsTest#testAdServicesExtDataStorageService" />
+
+    <!-- CtsSdkSandboxInprocessTests -->
+    <option name="compatibility:include-filter" value="CtsSdkSandboxInprocessTests com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_MediaStoreApi" />
+
+    <!-- CtsLibcoreJsr166TestCases -->
+    <option name="compatibility:include-filter" value="CtsLibcoreJsr166TestCases jsr166.ThreadLocalRandomTest#testNextFloatBoundNonPositive" />
+    <option name="compatibility:include-filter" value="CtsLibcoreJsr166TestCases jsr166.ThreadLocalRandomTest#testNextFloatBounded2" />
+
+    <!-- CtsSdkExtensionsTestCases -->
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionAdServices" />
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionR" />
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionS" />
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionT" />
+    <option name="compatibility:include-filter" value="CtsSdkExtensionsTestCases com.android.os.ext.SdkExtensionsTest#testExtensionU" />
+
+    <!-- CtsContentCaptureServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsContentCaptureServiceTestCases android.contentcaptureservice.cts.BlankActivityTest#testOutsideOfPackageContentCaptureEnable_updateAllowList" />
+
+    <!-- CtsAutoFillServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedLoginActivityTest#testAutoFill_augmentedFillRequestCancelled" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dialog.MultipleStepsSignInActivityTest#testShowFillDialog_contentChanged_shownFillDialog" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineLoginActivityTest#autofillPccDatasetTest_setForAllHints" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.inline.InlineLoginActivityTest#testAutofill_pccDatasets" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.DisableAutofillTest#testDisableActivity" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.DisableAutofillTest#testDisableActivityThenWaitToReenableIt" />
+    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.servicebehavior.DisableAutofillTest#testDisableAppThenResetServiceToReenableIt" />
+
+</configuration>
