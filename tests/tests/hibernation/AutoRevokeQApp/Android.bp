@@ -30,6 +30,7 @@ android_test_helper_app {
         "vts",
         "vts10",
         "mts-permission",
+        "mcts-permission",
         "general-tests",
         "sts",
         "mcts-permission",
