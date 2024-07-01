@@ -20,6 +20,7 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
@@ -563,6 +564,24 @@ public class VirtualDeviceManagerBasicTest {
         assertThat(
                 mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
                         POLICY_TYPE_CLIPBOARD))
+                .isEqualTo(DEVICE_POLICY_DEFAULT);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_DYNAMIC_POLICY,
+            android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API})
+    public void policyTypeBlockedActivityDialog_changeAtRuntime_shouldReturnConfiguredValue() {
+        mVirtualDevice.setDevicePolicy(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR, DEVICE_POLICY_CUSTOM);
+        assertThat(
+                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
+                        POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR))
+                .isEqualTo(DEVICE_POLICY_CUSTOM);
+
+        mVirtualDevice.setDevicePolicy(
+                POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR, DEVICE_POLICY_DEFAULT);
+        assertThat(
+                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
+                        POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR))
                 .isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
