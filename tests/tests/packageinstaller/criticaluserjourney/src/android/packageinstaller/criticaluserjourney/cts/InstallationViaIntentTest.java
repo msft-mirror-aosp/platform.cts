@@ -38,11 +38,11 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -54,7 +54,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         pressBack();
 
@@ -69,7 +71,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         touchOutside();
 
@@ -84,7 +88,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         clickCancelButton();
 
@@ -99,7 +105,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageNotInstalled();
     }
@@ -114,7 +120,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickInstallButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -125,6 +131,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationViaIntent();
 
         waitForUiIdle();
+
+        assertTestAppInstallDialog();
 
         pressBack();
 
@@ -139,6 +147,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppInstallDialog();
+
         touchOutside();
 
         assertTestPackageNotInstalled();
@@ -151,6 +161,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationViaIntent();
 
         waitForUiIdle();
+
+        assertTestAppInstallDialog();
 
         clickCancelButton();
 
@@ -167,12 +179,12 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
-        assertTestPackageLabelV2Installed();
+        assertInstallSuccessDialogAndLaunchTestApp();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -185,7 +197,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -202,7 +216,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         touchOutside();
 
@@ -219,7 +235,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 
@@ -236,7 +254,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageInstalled();
     }
@@ -253,8 +271,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickUpdateButton(/* checkInstallingDialog= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
-        assertTestPackageLabelV2Installed();
+        assertInstallSuccessDialogAndLaunchTestApp();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -266,6 +284,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationUpdateViaIntent();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -282,6 +302,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
         assertTestPackageInstalled();
@@ -296,6 +318,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationUpdateViaIntent();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 
@@ -312,11 +336,11 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -330,7 +354,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -347,7 +373,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         touchOutside();
 
@@ -364,7 +392,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 
@@ -381,7 +411,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
         assertTestPackageInstalled();
     }
@@ -397,9 +427,9 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* checkGPPDialog= */ false);
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
 
-        assertInstallSuccessDialogAndClickDoneButton();
+        assertInstallSuccessDialogAndLaunchTestApp();
         assertTestPackageInstalled();
     }
 
@@ -412,6 +442,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationViaIntentWithPackageUri();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -429,6 +461,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
         assertTestPackageInstalled();
@@ -444,6 +478,8 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
         startInstallationViaIntentWithPackageUri();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 

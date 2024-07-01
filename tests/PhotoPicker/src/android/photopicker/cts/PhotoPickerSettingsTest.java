@@ -49,6 +49,7 @@ import androidx.test.uiautomator.UiObject;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.modules.utils.build.SdkLevel;
 
@@ -144,6 +145,7 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
     @Test
     @LargeTest
     @RequireRunOnWorkProfile
+    @RequireNotAutomotive(reason = "Profiles are not supported on AAOS")
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testSettingsLaunchedInPersonalProfile_WorkEnabled() throws Exception {
         mSettingsIntent.putExtra(EXTRA_TAB_USER_ID, sDeviceState.initialUser().id());
@@ -160,6 +162,7 @@ public class PhotoPickerSettingsTest extends PhotoPickerBaseTest {
     @Test
     @LargeTest
     @RequireRunOnWorkProfile
+    @RequireNotAutomotive(reason = "Profiles are not supported on AAOS")
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testSettingsLaunchedInWorkProfile() throws Exception {
         mSettingsIntent.putExtra(EXTRA_TAB_USER_ID, UserHandle.myUserId());

@@ -92,6 +92,12 @@ function download_mcts()
       # %W time of file birth, seconds since Epoch
       # %s seconds since the Epoch (1970-01-01 00:00 UTC)
       file_download_time=$(date -d "@$(stat -c %W ${file})" +%s )
+      # The OS Ubuntu below 20.10 version does not support stat command and
+      # return "0" by default, so we need to use debugfs to get the file
+      # creation time.
+      if [[ ${file_download_time} == "0" ]]; then
+        file_download_time=$(get_crtime ${file})
+      fi
       url_link_last_modified_string=$(curl -sI ${url} | grep -i "last-modified" |  cut -d: -f2- | xargs)
       url_link_time_stamp=$(date -d "${url_link_last_modified_string}" +%s )
       if [[ ${file_download_time} -lt ${url_link_time_stamp} ]]; then
@@ -105,6 +111,15 @@ function download_mcts()
      echo "Done"
      popd > /dev/null
   }
+
+function get_crtime() {
+  local target=$1
+  inode=$(stat -c '%i' "${target}")
+  fs=$(df  --output=source "${target}"  | tail -1)
+  crtime=$(debugfs -R 'stat <'"${inode}"'>' "${fs}" 2>/dev/null | grep -oP 'crtime.*--\s*\K.*')
+  file_download_time=$(date -d "${crtime}" +%s)
+  echo ${file_download_time}
+}
 
 files=(
   "android-mcts-adbd.zip"
