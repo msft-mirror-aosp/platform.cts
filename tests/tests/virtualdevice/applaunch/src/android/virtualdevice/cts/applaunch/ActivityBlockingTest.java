@@ -19,6 +19,7 @@ package android.virtualdevice.cts.applaunch;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -352,6 +353,21 @@ public class ActivityBlockingTest {
                 mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
         emptyActivity.startActivity(mMonitoredIntent);
         assertBlockedAppStreamingActivityLaunched();
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void blockedActivity_customBlockedActivityLaunchBehaviorPolicy() {
+        createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
+                .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_CUSTOM)
+                .setDevicePolicy(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR, DEVICE_POLICY_CUSTOM)
+                .build());
+
+        mRule.sendIntentToDisplay(mMonitoredIntent, mVirtualDisplay);
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
+                eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                eq(mMonitoredIntent.getComponent()), anyInt());
+        assertNoActivityLaunched(mMonitoredIntent);
     }
 
     private void createVirtualDeviceAndNonTrustedDisplay() {

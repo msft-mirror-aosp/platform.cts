@@ -70,6 +70,8 @@ public class MainActivity extends Activity {
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
     private static final String EXTRA_USE_APK_V2 = "extra_use_apk_v2";
 
+    private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
+
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
@@ -78,6 +80,7 @@ public class MainActivity extends Activity {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT = 2;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
     private static final int REQUEST_CODE = 311;
 
     private PackageInstaller mPackageInstaller;
@@ -188,6 +191,17 @@ public class MainActivity extends Activity {
         session.commit(getIntentSender(getApplicationContext()));
     }
 
+    private void startInstallationViaIntentWithActionView(String apkName) {
+        final File apkFile = new File(getFilesDir(), apkName);
+        final Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(FileProvider.getUriForFile(this, CONTENT_AUTHORITY, apkFile),
+                APK_MIME_TYPE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        startActivity(intent);
+        sendInstallerResponseBroadcast(getApplicationContext(),
+                STATUS_CUJ_INSTALLER_START_ACTIVITY_READY);
+    }
+
     private void startInstallationViaIntent(boolean getResult, String apkName) {
         final File apkFile = new File(getFilesDir(), apkName);
         final Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
@@ -262,35 +276,25 @@ public class MainActivity extends Activity {
             Log.i(TAG, "RequestInstallerReceiver Received intent " + intent
                     + ", event: " + event + ", useTestApkV2:" + useTestApkV2);
 
+            final String testApkName = useTestApkV2 ? TEST_APK_V2_NAME : TEST_APK_NAME;
+
             if (event == EVENT_REQUEST_INSTALLER_CLEAN_UP) {
                 cleanUp();
             } else if (event == EVENT_REQUEST_INSTALLER_SESSION) {
                 try {
-                    if (useTestApkV2) {
-                        startInstallationViaPackageInstallerSession(TEST_APK_V2_NAME);
-                    } else {
-                        startInstallationViaPackageInstallerSession(TEST_APK_NAME);
-                    }
+                    startInstallationViaPackageInstallerSession(testApkName);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT) {
                 try {
-                    if (useTestApkV2) {
-                        startInstallationViaIntent(/* getResult= */ false, TEST_APK_V2_NAME);
-                    } else {
-                        startInstallationViaIntent(/* getResult= */ false, TEST_APK_NAME);
-                    }
+                    startInstallationViaIntent(/* getResult= */ false, testApkName);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT) {
                 try {
-                    if (useTestApkV2) {
-                        startInstallationViaIntent(/* getResult= */ true, TEST_APK_V2_NAME);
-                    } else {
-                        startInstallationViaIntent(/* getResult= */ true, TEST_APK_NAME);
-                    }
+                    startInstallationViaIntent(/* getResult= */ true, testApkName);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
@@ -303,6 +307,12 @@ public class MainActivity extends Activity {
             } else if (event == EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT) {
                 try {
                     startInstallationViaIntentWithPackageUri(/* getResult= */ true);
+                } catch (Exception ex) {
+                    Log.e(TAG, "Exception event:" + event, ex);
+                }
+            } else if (event == EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW) {
+                try {
+                    startInstallationViaIntentWithActionView(testApkName);
                 } catch (Exception ex) {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }

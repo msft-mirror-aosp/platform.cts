@@ -19,19 +19,24 @@ import android.util.Log
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.devicepolicy.ProfileOwner
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.bedstead.remotedpc.RemotePolicyManager
+import com.android.bedstead.testapp.TestAppProvider
 
 /**
  * Contains Enterprise specific logic for device state tests.
@@ -44,6 +49,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
+    private val usersComponent: UsersComponent by locator
     private var devicePolicyManagerRoleHolder: RemoteDevicePolicyManagerRoleHolder? = null
     private var delegateDpc: RemotePolicyManager? = null
     var primaryPolicyManager: RemotePolicyManager? = null
@@ -58,7 +64,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             primaryPolicyManager != dpc
         check(
             !annotation.isPrimary || primaryPolicyManager == null ||
-                (!specifiesAdminType && !currentPrimaryPolicyManagerIsNotDelegator)
+                    (!specifiesAdminType && !currentPrimaryPolicyManagerIsNotDelegator)
         ) {
             "Only one DPC can be marked as primary per test " +
                     "(current primary is $primaryPolicyManager)"
@@ -162,7 +168,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
         }
         throw IllegalStateException(
             "No Harrier-managed profile owner or device owner. " +
-                "Ensure you have set up the DPC using bedstead annotations."
+                    "Ensure you have set up the DPC using bedstead annotations."
         )
     }
 
@@ -196,6 +202,76 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
         }
 
         return dpc()
+    }
+
+    /**
+     * See [EnsureHasWorkProfile]
+     */
+    fun ensureHasWorkProfile(annotation: EnsureHasWorkProfile) {
+        annotation.logic()
+    }
+
+    private fun EnsureHasWorkProfile.logic() {
+        val forUserReference: UserReference = deviceState.resolveUserTypeToUser(forUser)
+        val profile = usersComponent.ensureHasProfile(
+            profileType = EnsureHasWorkProfile.PROFILE_TYPE,
+            forUserReference,
+            isQuietModeEnabled,
+            installInstrumentedApp
+        )
+        profileOwnersComponent.ensureHasProfileOwner(
+            profile,
+            dpcIsPrimary,
+            useParentInstanceOfDpc,
+            affiliationIds = null,
+            dpcKey,
+            TestAppProvider().query(dpc)
+        )
+        usersComponent.ensureSwitchedToUser(switchedToParentUser, forUserReference)
+
+        if (isOrganizationOwned) {
+            // It doesn't make sense to have COPE + DO
+            deviceOwnerComponent.ensureHasNoDeviceOwner()
+        }
+
+        val profileOwner = deviceState
+                .profileOwner(deviceState.workProfile(forUser))
+                .devicePolicyController() as ProfileOwner
+        profileOwner.setIsOrganizationOwned(isOrganizationOwned)
+    }
+
+    /**
+     * See [RequireRunOnWorkProfile]
+     */
+    fun requireRunOnWorkProfile(annotation: RequireRunOnWorkProfile) {
+        annotation.logic()
+    }
+
+    private fun RequireRunOnWorkProfile.logic() {
+        val instrumentedUser = usersComponent.requireRunOnProfile(
+            userType = RequireRunOnWorkProfile.PROFILE_TYPE,
+            installInstrumentedAppInParent
+        )
+
+        profileOwnersComponent.ensureHasProfileOwner(
+            instrumentedUser,
+            dpcIsPrimary,
+            useParentInstance = false,
+            affiliationIds.toSet(),
+            dpcKey,
+            TestAppProvider().query(dpc)
+        )
+        usersComponent.ensureSwitchedToUser(switchedToParentUser, instrumentedUser.parent()!!)
+
+        if (isOrganizationOwned) {
+            // It doesn't make sense to have COPE + DO
+            deviceOwnerComponent.ensureHasNoDeviceOwner()
+        }
+
+        val profileOwner = deviceState
+                .profileOwner(deviceState.workProfile())
+                .devicePolicyController() as ProfileOwner
+        profileOwner.setIsOrganizationOwned(isOrganizationOwned)
     }
 
     companion object {

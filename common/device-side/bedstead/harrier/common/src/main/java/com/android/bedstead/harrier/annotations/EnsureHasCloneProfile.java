@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
 @EnsureHasProfileAnnotation("android.os.usertype.profile.CLONE")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasCloneProfile {
     /** Which user type the clone profile should be attached to. */
     UserType forUser() default INITIAL_USER;

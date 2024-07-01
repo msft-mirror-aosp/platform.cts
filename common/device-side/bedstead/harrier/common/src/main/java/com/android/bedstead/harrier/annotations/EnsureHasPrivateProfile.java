@@ -40,6 +40,7 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasProfileAnnotation("android.os.usertype.profile.PRIVATE")
 @RequirePrivateSpaceSupported
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasPrivateProfile {
     int ENSURE_HAS_PRIVATE_PROFILE_PRECEDENCE = REQUIRE_RUN_ON_PRECEDENCE - 1;
 

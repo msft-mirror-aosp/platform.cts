@@ -22,7 +22,6 @@ import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
 import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.queryable.annotations.Query;
 
@@ -45,9 +44,8 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireRunOnProfileAnnotation(value = "android.os.usertype.profile.MANAGED",
-        hasProfileOwner = true)
 @RequireFeature(FEATURE_DEVICE_ADMIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
 public @interface RequireRunOnWorkProfile {
     OptionalBoolean installInstrumentedAppInParent() default ANY;
 
@@ -101,4 +99,6 @@ public @interface RequireRunOnWorkProfile {
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
     int priority() default REQUIRE_RUN_ON_PRECEDENCE;
+
+    String PROFILE_TYPE = "android.os.usertype.profile.MANAGED";
 }

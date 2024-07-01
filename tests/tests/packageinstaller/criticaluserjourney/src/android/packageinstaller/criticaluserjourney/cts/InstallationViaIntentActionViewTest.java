@@ -24,15 +24,15 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for PackageInstaller CUJs via startActivity with ACTION_INSTALL_PACKAGE.
+ * Tests for PackageInstaller CUJs via startActivity with ACTION_VIEW.
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
+public class InstallationViaIntentActionViewTest extends PackageInstallerCujTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -48,7 +48,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_backKey_failed() throws Exception {
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -65,7 +65,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_touchOutside_failed() throws Exception {
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -82,7 +82,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_cancelButton_failed() throws Exception {
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -99,7 +99,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
     @Test
     public void newInstall_launchButNoGrantPermission_failed() throws Exception {
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -114,7 +114,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void newInstall_noLaunchGrantPermission_installButton_success() throws Exception {
         grantRequestInstallPackagesPermission();
 
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -128,7 +128,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void newInstall_noLaunchGrantPermission_backKey_failed() throws Exception {
         grantRequestInstallPackagesPermission();
 
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -143,7 +143,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void newInstall_noLaunchGrantPermission_touchOutside_failed() throws Exception {
         grantRequestInstallPackagesPermission();
 
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -158,7 +158,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void newInstall_noLaunchGrantPermission_cancelButton_failed() throws Exception {
         grantRequestInstallPackagesPermission();
 
-        startInstallationViaIntent();
+        startInstallationViaIntentActionView();
 
         waitForUiIdle();
 
@@ -173,7 +173,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void update_launchGrantPermission_updateButton_success() throws Exception {
         installTestPackage();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -191,7 +191,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void update_launchGrantPermission_backKey_failed() throws Exception {
         installTestPackage();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -210,7 +210,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void update_launchGrantPermission_touchOutside_failed() throws Exception {
         installTestPackage();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -229,7 +229,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void update_launchGrantPermission_cancelButton_failed() throws Exception {
         installTestPackage();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -248,7 +248,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
     public void update_launchButNoGrantPermission_failed() throws Exception {
         installTestPackage();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -265,7 +265,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         grantRequestInstallPackagesPermission();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -281,7 +281,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         grantRequestInstallPackagesPermission();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -298,7 +298,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         grantRequestInstallPackagesPermission();
 
-        startInstallationUpdateViaIntent();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 
@@ -315,167 +315,7 @@ public class InstallationViaIntentTest extends PackageInstallerCujTestBase {
 
         grantRequestInstallPackagesPermission();
 
-        startInstallationUpdateViaIntent();
-
-        waitForUiIdle();
-
-        assertTestAppUpdateDialog();
-
-        clickCancelButton();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_launchGrantPermission_updateButton_success() throws Exception {
-        installTestPackage();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickSettingsButton();
-
-        toggleToGrantRequestInstallPackagesPermission();
-
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
-
-        assertInstallSuccessDialogAndLaunchTestApp();
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_launchGrantPermission_backKey_failed() throws Exception {
-        installTestPackage();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickSettingsButton();
-
-        toggleToGrantRequestInstallPackagesPermission();
-
-        assertTestAppUpdateDialog();
-
-        pressBack();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_launchGrantPermission_touchOutside_failed() throws Exception {
-        installTestPackage();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickSettingsButton();
-
-        toggleToGrantRequestInstallPackagesPermission();
-
-        assertTestAppUpdateDialog();
-
-        touchOutside();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_launchGrantPermission_cancelButton_failed() throws Exception {
-        installTestPackage();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickSettingsButton();
-
-        toggleToGrantRequestInstallPackagesPermission();
-
-        assertTestAppUpdateDialog();
-
-        clickCancelButton();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_launchButNoGrantPermission_failed() throws Exception {
-        installTestPackage();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickSettingsButton();
-
-        exitGrantPermissionSettings();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_noLaunchGrantPermission_updateButton_success()
-            throws Exception {
-        installTestPackage();
-
-        grantRequestInstallPackagesPermission();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
-
-        assertInstallSuccessDialogAndLaunchTestApp();
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_noLaunchGrantPermission_backKey_failed() throws Exception {
-        installTestPackage();
-
-        grantRequestInstallPackagesPermission();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        assertTestAppUpdateDialog();
-
-        pressBack();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_noLaunchGrantPermission_touchOutside_failed()
-            throws Exception {
-        installTestPackage();
-
-        grantRequestInstallPackagesPermission();
-
-        startInstallationViaIntentWithPackageUri();
-
-        waitForUiIdle();
-
-        assertTestAppUpdateDialog();
-
-        touchOutside();
-
-        assertTestPackageInstalled();
-    }
-
-    @Test
-    public void updateWithPackageUri_noLaunchGrantPermission_cancelButton_failed()
-            throws Exception {
-        installTestPackage();
-
-        grantRequestInstallPackagesPermission();
-
-        startInstallationViaIntentWithPackageUri();
+        startInstallationUpdateViaIntentActionView();
 
         waitForUiIdle();
 

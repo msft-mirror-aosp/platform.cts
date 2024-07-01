@@ -31,12 +31,18 @@ import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser
 import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.harrier.annotations.RequireUserSupported
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers
 import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsersOnDefaultDisplay
+import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation
+import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.users.UserType
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
+import org.junit.AssumptionViolatedException
 
 fun RequireHasMainUser.logic() = assumeTrue(reason, users().main() != null)
 fun RequireMultiUserSupport.logic() {
@@ -132,5 +138,53 @@ fun RequireRunNotOnVisibleBackgroundNonProfileUser.logic() {
             "Test only runs non-profile user that's running visible in the background",
             FailureMode.SKIP
         )
+    }
+}
+
+/**
+ * See [EnsureCanAddUser]
+ */
+fun EnsureCanAddUser.logic() {
+    val maxUsers: Int = users().maxNumberOfUsersSupported
+    val currentUsers = users().all().size
+
+    // TODO(scottjonathan): Try to remove users until we have space - this will have to take
+    // into account other users which have been added during the setup of this test.
+    checkFailOrSkip(
+        "The device does not have space for $number additional user(s) " +
+                "($currentUsers current users, $maxUsers max users)",
+        currentUsers + number <= maxUsers,
+        failureMode
+    )
+}
+
+/**
+ * See [RequireUserSupported]
+ */
+fun RequireUserSupported.logic(): UserType {
+    val resolvedUserType = users().supportedType(value)
+    checkFailOrSkip(
+        "Device must support user type $value only supports: " +
+                users().supportedTypes(),
+        resolvedUserType != null,
+        failureMode
+    )
+    return resolvedUserType!!
+}
+
+/**
+ * See [EnsureHasNoUserAnnotation]
+ */
+fun EnsureHasNoUserAnnotation.logic(usersComponent: UsersComponent) {
+    val resolvedUserType = users().supportedType(value)
+        ?: return // These user types don't exist so there can't be any
+    for (secondaryUser: UserReference in users().findUsersOfType(resolvedUserType)) {
+        if (secondaryUser == users().instrumented()) {
+            throw AssumptionViolatedException(
+                "This test only runs on devices without a $value user. " +
+                        "But the instrumented user is $value"
+            )
+        }
+        usersComponent.removeAndRecordUser(secondaryUser)
     }
 }

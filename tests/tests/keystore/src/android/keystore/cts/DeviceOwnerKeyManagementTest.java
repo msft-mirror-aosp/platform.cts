@@ -606,6 +606,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestation() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties
@@ -637,6 +638,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestationUsingStrongBox() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties

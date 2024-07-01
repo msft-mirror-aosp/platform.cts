@@ -20,8 +20,11 @@ import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
+import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
@@ -43,6 +46,8 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     private val deviceState: DeviceState by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val enterpriseComponent: EnterpriseComponent by locator
+    private val testAppsComponent: TestAppsComponent by locator
+    private val userRestrictionsComponent: UserRestrictionsComponent by locator
     private val profileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
     private val changedProfileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
 
@@ -80,19 +85,18 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     /**
      * See [EnsureHasProfileOwner]
      */
-    @JvmOverloads
     fun ensureHasProfileOwner(
         user: UserReference,
-        isPrimary: Boolean,
-        useParentInstance: Boolean,
-        affiliationIds: Set<String>?,
-        key: String?,
-        dpcQuery: TestAppQueryBuilder,
+        isPrimary: Boolean = false,
+        useParentInstance: Boolean = false,
+        affiliationIds: Set<String>? = emptySet(),
+        key: String? = EnsureTestAppInstalled.DEFAULT_KEY,
+        dpcQuery: TestAppQueryBuilder = TestAppProvider().query(),
         resolvedDpcTestApp: TestApp? = null
     ) {
         var dpcQueryMutable = dpcQuery
         dpcQueryMutable.applyAnnotation(
-            deviceState.mAdditionalQueryParameters.getOrDefault(key, null)
+            testAppsComponent.additionalQueryParameters.getOrDefault(key, null)
         )
         if (dpcQueryMutable.isEmptyQuery) {
             dpcQueryMutable = TestAppProvider()
@@ -114,7 +118,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             profileOwners[user] = currentProfileOwner
         } else {
             if (user.parent() != null) {
-                deviceState.ensureDoesNotHaveUserRestriction(
+                userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
                     CommonUserRestrictions.DISALLOW_ADD_MANAGED_PROFILE,
                     user.parent()
                 )
