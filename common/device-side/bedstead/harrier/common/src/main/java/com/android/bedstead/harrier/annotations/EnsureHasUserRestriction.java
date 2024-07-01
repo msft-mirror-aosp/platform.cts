@@ -43,6 +43,7 @@ import java.lang.annotation.Target;
 @Repeatable(EnsureHasUserRestrictionGroup.class)
 // This is only required because the user restrictions are applied by a Device Admin.
 @RequireFeature(FEATURE_DEVICE_ADMIN)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasUserRestriction {
 
     int ENSURE_HAS_USER_RESTRICTION_PRIORITY = LATE;
