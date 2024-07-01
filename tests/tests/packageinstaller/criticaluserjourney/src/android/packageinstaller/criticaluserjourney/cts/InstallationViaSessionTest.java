@@ -38,11 +38,11 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickInstallButton();
 
-//        assertInstallSuccess();
+        assertInstallSuccess();
         assertTestPackageInstalled();
     }
 
@@ -54,11 +54,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -70,11 +72,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -86,11 +90,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppInstallDialog();
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -102,9 +108,9 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageNotInstalled();
     }
 
@@ -130,6 +136,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppInstallDialog();
+
         pressBack();
 
         assertInstallFailureAborted();
@@ -144,6 +152,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppInstallDialog();
+
         touchOutside();
 
         assertInstallFailureAborted();
@@ -157,6 +167,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
         startInstallationViaPackageInstallerSession();
 
         waitForUiIdle();
+
+        assertTestAppInstallDialog();
 
         clickCancelButton();
 
@@ -174,12 +186,12 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
 
         clickUpdateButton();
 
-//        assertInstallSuccess();
-        assertTestPackageLabelV2Installed();
+        assertInstallSuccess();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -192,11 +204,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -210,11 +224,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         touchOutside();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -228,11 +244,13 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        toggleAllowFromSource();
+        toggleToGrantRequestInstallPackagesPermission();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -246,9 +264,9 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         clickSettingsButton();
 
-        exitAllowFromSettings();
+        exitGrantPermissionSettings();
 
-//        assertInstallFailureAborted();
+        assertInstallFailureAborted();
         assertTestPackageInstalled();
     }
 
@@ -265,7 +283,7 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
         clickUpdateButton();
 
         assertInstallSuccess();
-        assertTestPackageLabelV2Installed();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -277,6 +295,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
         startInstallationUpdateViaPackageInstallerSession();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         pressBack();
 
@@ -294,6 +314,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
 
         waitForUiIdle();
 
+        assertTestAppUpdateDialog();
+
         touchOutside();
 
         assertInstallFailureAborted();
@@ -309,6 +331,8 @@ public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
         startInstallationUpdateViaPackageInstallerSession();
 
         waitForUiIdle();
+
+        assertTestAppUpdateDialog();
 
         clickCancelButton();
 

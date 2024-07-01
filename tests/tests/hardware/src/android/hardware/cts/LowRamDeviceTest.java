@@ -177,9 +177,16 @@ public class LowRamDeviceTest {
 
     @Test
     @CddTest(requirement = "7.6.1/H-1-1")
-    public void test32BitOnlyIfLessThan2GiB() {
-        if (getTotalMemory() < 2048 * ONE_MEGABYTE) {
-            assertEquals("Devices with less than 2GiB MUST support only 32-bit ABIs",
+    public void testDevicesWithLessThan2GiBMustOnlySupportOneAbi() {
+        // If you've got enough memory, you can support both 32-bit and 64-bit.
+        if (getTotalMemory() >= 2048 * ONE_MEGABYTE) return;
+
+        if (Build.SUPPORTED_32_BIT_ABIS.length == 0) {
+            // You're not supporting 32-bit, so presumably you're supporting 64-bit.
+            // We don't need to assert that separately.
+        } else {
+            // You're supporting 32-bit, so you can't support 64-bit.
+            assertEquals("Devices with less than 2GiB MUST support only 32-bit OR 64-bit, not both",
                          0, Build.SUPPORTED_64_BIT_ABIS.length);
         }
     }

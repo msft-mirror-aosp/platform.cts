@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasAdditionalUser {
     /** Whether the instrumented test app should be installed in the additional user. */
     OptionalBoolean installInstrumentedApp() default ANY;

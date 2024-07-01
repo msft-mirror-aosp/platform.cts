@@ -23,19 +23,26 @@ import static android.security.keystore.KeyProperties.KEY_ALGORITHM_RSA;
 import static android.security.keystore.KeyProperties.PURPOSE_ATTEST_KEY;
 import static android.security.keystore.KeyProperties.PURPOSE_SIGN;
 import static android.security.keystore.KeyProperties.SIGNATURE_PADDING_RSA_PSS;
+
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.keystore.cts.util.TestUtils;
 import android.security.keystore.KeyGenParameterSpec;
 import android.util.Log;
+
 import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.CddTest;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
@@ -48,9 +55,6 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 public class AttestKeyTest {
     private static final String TAG = AttestKeyTest.class.getSimpleName();
@@ -147,10 +151,9 @@ public class AttestKeyTest {
     @Test
     @CddTest(requirements = {"9.11/C-1-6"})
     public void testStrongBoxCannotAttestToTeeKey() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
         assumeTrue("Can only test with strongbox keymint",
-                TestUtils.getFeatureVersionKeystoreStrongBox(context)
-                        >= Attestation.KM_VERSION_KEYMINT_1);
+                TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                        Attestation.KM_VERSION_KEYMINT_1));
 
         final String strongBoxAttestKeyAlias = "nonAttestKey";
         final String attestedKeyAlias = "attestedKey";

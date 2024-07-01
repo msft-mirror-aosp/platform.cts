@@ -162,6 +162,18 @@ def sensor_fusion(props):
   return props.get('android.sensor.info.timestampSource') == 1
 
 
+def burst_capture_capable(props):
+  """Returns whether a device supports burst capture.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if the device supports burst capture.
+  """
+  return 6 in props.get('android.request.availableCapabilities', [])
+
+
 def logical_multi_camera(props):
   """Returns whether a device is a logical multi-camera.
 
@@ -746,6 +758,18 @@ def dynamic_range_ten_bit(props):
       'android.request.availableCapabilities']
 
 
+def intrinsic_calibration(props):
+  """Returns whether a device supports android.lens.intrinsicCalibration.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports android.lens.intrinsicCalibratino.
+  """
+  return props.get('android.lens.intrinsicCalibration') is not None
+
+
 def get_intrinsic_calibration(props, metadata, debug, fd=None):
   """Get intrinsicCalibration and create intrisic matrix.
 
@@ -758,13 +782,17 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
     fd: float; focal length from capture metadata.
 
   Returns:
-    intrinsic transformation matrix
+    numpy array for intrinsic transformation matrix or None
     k = [[f_x, s, c_x],
          [0, f_y, c_y],
          [0,   0,   1]]
   """
-  if metadata['android.lens.intrinsicCalibration']:
+  if metadata.get('android.lens.intrinsicCalibration'):
     ical = np.array(metadata['android.lens.intrinsicCalibration'])
+    logging.debug('Using capture metadata android.lens.intrinsicCalibration')
+  elif props.get('android.lens.intrinsicCalibration'):
+    ical = np.array(props['android.lens.intrinsicCalibration'])
+    logging.debug('Using camera property android.lens.intrinsicCalibration')
   else:
     logging.error('Camera does not have android.lens.intrinsicCalibration.')
     return None
@@ -1063,6 +1091,25 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
 
 
 def optical_stabilization_supported(props):

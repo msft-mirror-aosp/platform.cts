@@ -335,15 +335,15 @@
         <activity android:name="android.server.wm.other.EnsureBarContrastTest$TestActivity"
              android:screenOrientation="locked"
                   android:theme="@style/OptOutEdgeToEdge.NoStartingWindow"/>
-        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$PrimaryActivity"/>
-        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$SecondaryActivity"
+        <activity android:name="android.server.wm.input.WindowFocusTests$PrimaryActivity"/>
+        <activity android:name="android.server.wm.input.WindowFocusTests$SecondaryActivity"
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
-        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$TertiaryActivity"
+        <activity android:name="android.server.wm.input.WindowFocusTests$TertiaryActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|colorMode|density|touchscreen"/>
         <activity android:name="android.server.wm.activity.ActivityCaptureCallbackTests$PrimaryActivity"/>
         <activity android:name="android.server.wm.activity.ActivityCaptureCallbackTests$SecondaryActivity"/>
-        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$LosingFocusActivity"/>
-        <activity android:name="android.server.wm.multidisplay.WindowFocusTests$AutoEngagePointerCaptureActivity" />
+        <activity android:name="android.server.wm.input.WindowFocusTests$LosingFocusActivity"/>
+        <activity android:name="android.server.wm.input.WindowFocusTests$AutoEngagePointerCaptureActivity" />
         <activity android:name="android.server.wm.MetricsActivity"
              android:exported="true"
              android:resizeableActivity="true"
@@ -394,9 +394,15 @@
              android:label="DecorInsetTestsBase.TestActivity"
              android:exported="true"/>
 
+        <!-- The test tests insets dispatching. Here disables action bar because it might intercept
+             the insets and dispatch modified ones. -->
         <activity android:name="android.server.wm.window.WindowPolicyTests$TestActivity"
-                  android:theme="@android:style/Theme.Material.NoActionBar"
-                  android:exported="true"/>
+                  android:theme="@android:style/Theme.Material.NoActionBar"/>
+
+        <!-- INSETS_DECOUPLED_CONFIGURATION_ENFORCED can only be opted out before creating the
+             activity. -->
+        <activity android:name="android.server.wm.window.WindowPolicyTests$OptOutEdgeToEdgeActivity"
+                  android:theme="@style/OptOutEdgeToEdge"/>
 
         <activity android:name="android.server.wm.window.WindowCtsActivity"
              android:theme="@style/OptOutEdgeToEdge.NoActionBar"
@@ -440,7 +446,10 @@
             android:theme="@android:style/Theme.Material.NoActionBar" />
 
         <activity android:name="android.server.wm.insets.ForceRelayoutTestBase$TestActivity"
-             android:exported="true"/>
+                  android:exported="true"
+                  android:showWhenLocked="true"
+                  android:turnScreenOn="true"
+                  android:keepScreenOn="true"/>
 
         <activity android:name="android.server.wm.animations.ActivityTransitionTests$LauncherActivity"
             android:theme="@style/Theme.TranslucentBars"
