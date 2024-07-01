@@ -29,6 +29,7 @@ android_test_helper_app {
     test_suites: [
         "cts",
         "mts-permission",
+        "mcts-permission",
         "general-tests",
     ],
     srcs: ["src/**/*.java"],
