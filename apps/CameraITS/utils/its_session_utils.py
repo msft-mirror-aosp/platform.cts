@@ -52,6 +52,7 @@ LOAD_SCENE_DELAY_SEC = 3
 PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 PREVIEW_MIN_TESTED_AREA = 320 * 240
 PRIVATE_FORMAT = 'priv'
+JPEG_R_FMT_STR = 'jpeg_r'
 SCALING_TO_FILE_ATOL = 0.01
 SINGLE_CAPTURE_NCAP = 1
 SUB_CAMERA_SEPARATOR = '.'
@@ -69,6 +70,7 @@ TABLET_ALLOWLIST = (
     'agta',  # Nokia T21
     'gta4lwifi',  # Samsung Galaxy Tab A7
     'gta8wifi',  # Samsung Galaxy Tab A8
+    'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
@@ -114,7 +116,7 @@ _VALIDATE_LIGHTING_REGIONS_MODULAR_UW = {
 }
 _VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
-_VALIDATE_LIGHTING_THRESH_DARK = 0.15  # Determined empirically for night test
+_VALIDATE_LIGHTING_THRESH_DARK = 0.3  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
 _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'

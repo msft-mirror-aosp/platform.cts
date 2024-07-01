@@ -18,7 +18,7 @@ package android.media.audio.cts.audiorecordpermissiontests.common
 
 // Inbound messages
 const val ACTION_START_RECORD = ".ACTION_START_RECORD"
-const val ACTION_STOP_RECORD = ".ACTION_STOP_RECORD"
+const val ACTION_CLEANUP = ".ACTION_CLEANUP"
 const val ACTION_ACTIVITY_DO_FINISH = ".ACTION_ACTIVITY_DO_FINISH"
 const val EXTRA_IS_FOREGROUND = "EXTRA_IS_FOREGROUND"
 // Outbound messages

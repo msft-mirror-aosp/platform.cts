@@ -16,14 +16,22 @@
 
 package android.security.cts;
 
+import static org.junit.Assert.*;
+
+import android.media.MediaPlayer;
 import android.media.audiofx.AudioEffect;
 import android.media.audiofx.EnvironmentalReverb;
 import android.media.audiofx.Equalizer;
 import android.media.audiofx.PresetReverb;
-import android.media.MediaPlayer;
 import android.platform.test.annotations.AsbSecurityTest;
-import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 import android.util.Log;
+
+import androidx.test.runner.AndroidJUnit4;
+
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -31,11 +39,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static org.junit.Assert.*;
-
-import androidx.test.runner.AndroidJUnit4;
-import org.junit.runner.RunWith;
-import org.junit.Test;
 
 @RunWith(AndroidJUnit4.class)
 public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
@@ -44,6 +47,7 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
     private static final int mValue0 = 9999; //unlikely values. Should not change
     private static final int mValue1 = 13877;
     private static final int PRESET_CUSTOM = -1; //keep in sync AudioEqualizer.h
+    private static final int GET_PARAM_FAILED = -1;
 
     private static final int MEDIA_SHORT = 0;
     private static final int MEDIA_LONG = 1;
@@ -143,27 +147,24 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
             final byte testValue = 7;
             byte reply[] = new byte[Equalizer.PARAM_STRING_SIZE_MAX];
             Arrays.fill(reply, testValue);
-            if (!eqGetParam(media, command, invalidBand, reply)) {
-                fail("getParam PARAM_GET_PRESET_NAME did not complete successfully");
-            }
+            int length = eqGetParam(media, command, invalidBand, reply);
             //Compare
             if (invalidBand == PRESET_CUSTOM) {
                 final String expectedName = "Custom";
-                int length = 0;
-                while (reply[length] != 0) length++;
                 try {
+                    // remove the '\0' at the end if it exist (HIDL audio effect hal)
+                    if (reply[length - 1] == '\0') {
+                        length = length - 1;
+                    }
                     final String presetName =  new String(reply, 0, length,
                             StandardCharsets.ISO_8859_1.name());
                     assertEquals("getPresetName custom preset name failed", expectedName,
                             presetName);
                 } catch (Exception e) {
-                    Log.w(TAG,"Problem creating reply string.");
+                    Log.w(TAG, "Problem creating reply string.");
                 }
             } else {
-                for (int i = 0; i < reply.length; i++) {
-                    assertEquals(String.format("getParam should not change reply at byte %d", i),
-                            testValue, reply[i]);
-                }
+                assertTrue("getPresetName with invalid preset index should fail", length < 0);
             }
         }
     }
@@ -317,15 +318,16 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
             AudioEffect af = eq;
             Object o = AudioEffect.class.getDeclaredMethod("command", int.class, byte[].class,
                     byte[].class).invoke(af, cmdCode, command, reply);
+            int retStatus = (int) o;
 
             int replyValue = byteArrayToInt(reply, 0 /*offset*/);
             if (replyValue >= 0) {
                 Log.w(TAG, "Reply Value: " + replyValue);
             }
-            assertTrue("Negative replyValue was expected ", replyValue < 0);
+            assertTrue("Negative replyValue was expected ", retStatus !=  0);
             status = true;
         } catch (Exception e) {
-            Log.w(TAG,"Problem setting parameter in equalizer");
+            Log.w(TAG, "Problem setting parameter in equalizer");
         } finally {
             if (eq != null) {
                 eq.release();
@@ -375,7 +377,7 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
             assertEquals("reply expected to be all zeros", sum, 0);
             status = true;
         } catch (Exception e) {
-            Log.w(TAG,"Problem testing eqGetParamFreqRangeCommand");
+            Log.w(TAG, "Problem testing eqGetParamFreqRangeCommand");
             status = false;
         } finally {
             if (eq != null) {
@@ -388,10 +390,10 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
         return status;
     }
 
-    private boolean eqGetParam(int media, int command, int band, byte[] reply) {
+    private int eqGetParam(int media, int command, int band, byte[] reply) {
         MediaPlayer mp = null;
         Equalizer eq = null;
-        boolean status = false;
+        int length = GET_PARAM_FAILED;
         try {
             mp = MediaPlayer.create(getInstrumentation().getContext(), getMediaId(media));
             eq = new Equalizer(0 /*priority*/, mp.getAudioSessionId());
@@ -399,12 +401,11 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
             AudioEffect af = eq;
             int cmd[] = {command, band};
 
-            AudioEffect.class.getDeclaredMethod("getParameter", int[].class,
+            Object o = AudioEffect.class.getDeclaredMethod("getParameter", int[].class,
                     byte[].class).invoke(af, cmd, reply);
-            status = true;
+            length = (int) o;
         } catch (Exception e) {
-            Log.w(TAG,"Problem testing equalizer");
-            status = false;
+            Log.w(TAG, "Problem getting parameter from equalizer");
         } finally {
             if (eq != null) {
                 eq.release();
@@ -413,13 +414,13 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
                 mp.release();
             }
         }
-        return status;
+        return length;
     }
 
-    private boolean eqGetParam(int media, int command, int band, int[] reply) {
+    private int eqGetParam(int media, int command, int band, int[] reply) {
         MediaPlayer mp = null;
         Equalizer eq = null;
-        boolean status = false;
+        int length = GET_PARAM_FAILED;
         try {
             mp = MediaPlayer.create(getInstrumentation().getContext(), getMediaId(media));
             eq = new Equalizer(0 /*priority*/, mp.getAudioSessionId());
@@ -427,12 +428,11 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
             AudioEffect af = eq;
             int cmd[] = {command, band};
 
-            AudioEffect.class.getDeclaredMethod("getParameter", int[].class,
+            Object o = AudioEffect.class.getDeclaredMethod("getParameter", int[].class,
                     int[].class).invoke(af, cmd, reply);
-            status = true;
+            length = (int) o;
         } catch (Exception e) {
-            Log.w(TAG,"Problem getting parameter from equalizer");
-            status = false;
+            Log.w(TAG, "Problem getting parameter from equalizer");
         } finally {
             if (eq != null) {
                 eq.release();
@@ -441,17 +441,15 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
                 mp.release();
             }
         }
-        return status;
+        return length;
     }
 
     private void testGetParam(int media, int command, int[] bandArray, int value0, int value1) {
         int reply[] = {value0, value1};
         for (int invalidBand : INVALID_BAND_ARRAY)
         {
-            if (!eqGetParam(media, command, invalidBand, reply)) {
-                fail(String.format("getParam for command %d did not complete successfully",
-                        command));
-            }
+            final int length = eqGetParam(media, command, invalidBand, reply);
+            assertTrue("getParam with invalid bands should fail", length < 0);
             assertEquals("getParam should not change value0", value0, reply[0]);
             assertEquals("getParam should not change value1", value1, reply[1]);
         }
@@ -472,7 +470,7 @@ public class EffectBundleTest extends StsExtraBusinessLogicTestCase {
                     short[].class).invoke(af, cmd, value);
             status = true;
         } catch (Exception e) {
-            Log.w(TAG,"Problem setting parameter in equalizer");
+            Log.w(TAG, "Problem setting parameter in equalizer");
             status = false;
         } finally {
             if (eq != null) {
