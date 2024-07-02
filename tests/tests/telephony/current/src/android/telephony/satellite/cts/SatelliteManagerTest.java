@@ -35,6 +35,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
@@ -53,6 +54,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -889,5 +893,92 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
                 () -> sSatelliteManager.registerForCommunicationAllowedStateChanged(
                         getContext().getMainExecutor(),
                         satelliteCommunicationAllowedStateCallback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestProvisionSubscriberIds() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<List<ProvisionSubscriberId>> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        OutcomeReceiver<List<ProvisionSubscriberId>, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<ProvisionSubscriberId> result) {
+                        Log.d(TAG, "onResult: result.size=" + result.size());
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestProvisionSubscriberIds(
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testRequestIsProvisioned() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Boolean> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        final String subscriberId = "12345";
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.requestIsProvisioned(subscriberId,
+                        getContext().getMainExecutor(), receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSatellite() {
+        if (!shouldTestSatellite()) return;
+
+        final AtomicReference<Boolean> enabled = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        final List<ProvisionSubscriberId> list = new ArrayList<>(
+                Collections.singleton(new ProvisionSubscriberId("09876543", 12345)));
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        Log.d(TAG, "onResult: result=" + result);
+                        enabled.set(result);
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        Log.d(TAG, "onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                    }
+                };
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(),
+                        receiver));
     }
 }

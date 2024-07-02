@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters
 import com.android.bedstead.nene.TestApis.packages
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
@@ -41,11 +42,14 @@ import org.junit.Assume
 class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
     private val enterpriseComponent: EnterpriseComponent by locator
-    private val deviceState: DeviceState by locator
     private val testApps: MutableMap<String, TestAppInstance> = HashMap()
     private val installedTestApps: MutableSet<TestAppInstance> = HashSet()
     private val uninstalledTestApps: MutableSet<TestAppInstance> = HashSet()
     val testAppProvider = TestAppProvider()
+    private val _additionalQueryParameters: MutableMap<String, Query> = mutableMapOf()
+    val additionalQueryParameters: Map<String, Query>
+        get() = _additionalQueryParameters
+
 
     /**
      * See [EnsureTestAppHasPermission]
@@ -130,7 +134,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
         testApp: TestApp,
         user: UserReference
     ): TestAppInstance? {
-        if (deviceState.mAdditionalQueryParameters.isNotEmpty()) {
+        if (additionalQueryParameters.isNotEmpty()) {
             Assume.assumeFalse(
                 "b/276740719 - we don't support custom delegates",
                 EnsureHasDelegate.DELEGATE_KEY == key
@@ -200,7 +204,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
         isPrimary: Boolean
     ) {
         val testApp: TestApp = testAppProvider.query(query).applyAnnotation(
-            deviceState.mAdditionalQueryParameters.getOrDefault(key, null)
+            additionalQueryParameters.getOrDefault(key, null)
         ).get()
         val testAppInstance: TestAppInstance? = ensureTestAppInstalled(
             key,
@@ -219,6 +223,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     override fun teardownNonShareableState() {
         testApps.clear()
         testAppProvider.restore()
+        _additionalQueryParameters.clear()
     }
 
     override fun teardownShareableState() {
@@ -236,5 +241,9 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     override fun releaseResources() {
         testAppProvider.releaseResources()
         testApps.clear()
+    }
+
+    fun addQueryParameters(annotation: AdditionalQueryParameters) {
+        _additionalQueryParameters[annotation.forTestApp] = annotation.query
     }
 }
