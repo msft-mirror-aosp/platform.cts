@@ -27,6 +27,10 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.Manifest;
+import android.media.AudioRecord;
+import android.media.AudioFormat;
+
 import android.platform.test.annotations.AsbSecurityTest;
 
 import androidx.test.InstrumentationRegistry;
@@ -75,7 +79,7 @@ public class AudioRecordPermissionTests {
             stopActivity(mStartedActivityPackage);
         }
         if (mStartedServicePackage != null) {
-            stopService(mStartedServicePackage);
+            cleanup(mStartedServicePackage);
         }
     }
 
@@ -86,6 +90,7 @@ public class AudioRecordPermissionTests {
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
         startBackgroundServiceRecording(TEST_PACKAGE);
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + API_34_PACKAGE);
         // Prime future that the stream is silenced
         final var future =
                 getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
@@ -118,6 +123,7 @@ public class AudioRecordPermissionTests {
             final var receiveFuture = getFutureForIntent(
                     mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
+            SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
             future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         }
     }
@@ -167,6 +173,7 @@ public class AudioRecordPermissionTests {
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
         startBackgroundServiceRecording(TEST_PACKAGE);
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + API_33_PACKAGE);
         // Prime future that the stream is silenced
         final var future =
                 getFutureForIntent(mContext, TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
@@ -199,9 +206,10 @@ public class AudioRecordPermissionTests {
 
     private void startForegroundServiceRecording(String packageName) throws Exception {
         final var future = getFutureForIntent(mContext, packageName + ACTION_BEGAN_RECEIVE_AUDIO);
-        amShellCommand(
-                "start-foreground-service", packageName, ACTION_START_RECORD, " --ez "
-                + EXTRA_IS_FOREGROUND + " true");
+        mContext.startService(new Intent()
+                .setComponent(ComponentName.createRelative(packageName, SERVICE_NAME))
+                .setAction(packageName + ACTION_START_RECORD)
+                .putExtra(EXTRA_IS_FOREGROUND, true));
         try {
             future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
@@ -214,7 +222,9 @@ public class AudioRecordPermissionTests {
 
     private void startBackgroundServiceRecording(String packageName) throws Exception {
         final var future = getFutureForIntent(mContext, packageName + ACTION_BEGAN_RECEIVE_AUDIO);
-        amShellCommand("startservice", packageName, ACTION_START_RECORD);
+        mContext.startService(new Intent()
+                .setComponent(ComponentName.createRelative(packageName, SERVICE_NAME))
+                .setAction(packageName + ACTION_START_RECORD));
         try {
             future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
@@ -225,34 +235,16 @@ public class AudioRecordPermissionTests {
         mStartedServicePackage = packageName;
     }
 
-    private void stopService(String packageName) throws Exception {
+    private void cleanup(String packageName) throws Exception {
         final var future = getFutureForIntent(mContext, packageName + ACTION_FINISH_TEARDOWN);
-        amShellCommand("startservice", packageName, ACTION_STOP_RECORD);
+        mContext.startService(new Intent()
+                .setComponent(ComponentName.createRelative(packageName, SERVICE_NAME))
+                .setAction(packageName + ACTION_CLEANUP));
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         mStartedServicePackage = null;
         // Just in case
         mInstrumentation
                 .getTargetContext()
                 .stopService(new Intent().setClassName(packageName, packageName + SERVICE_NAME));
-    }
-
-    private void amShellCommand(String command, String packageName, String action)
-            throws Exception {
-        amShellCommand(command, packageName, action, "");
-    }
-
-    private void amShellCommand(String command, String packageName, String action, String extra)
-            throws Exception {
-        SystemUtil.runShellCommand(
-                mInstrumentation,
-                "am "
-                        + command
-                        + " -n "
-                        + ComponentName.createRelative(packageName, SERVICE_NAME)
-                                .flattenToShortString()
-                        + " -a "
-                        + packageName
-                        + action
-                        + extra);
     }
 }
