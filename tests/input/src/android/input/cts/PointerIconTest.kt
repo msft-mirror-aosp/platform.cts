@@ -30,7 +30,6 @@ import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
-import android.os.Environment
 import android.view.Display
 import android.view.MotionEvent
 import android.view.PointerIcon
@@ -225,9 +224,8 @@ class PointerIconTest {
     companion object {
         const val SCREENSHOT_DIFF_PERCENT = 0.01 // 1% total difference threshold
         const val ASSETS_PATH = "tests/input/assets"
-        val TEST_OUTPUT_PATH = Environment.getExternalStorageDirectory().absolutePath +
-                "/CtsInputTestCases/" +
-                PointerIconTest::class.java.simpleName
+        val TEST_OUTPUT_PATH =
+            "/sdcard/Download/CtsInputTestCases/" + PointerIconTest::class.java.simpleName
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")

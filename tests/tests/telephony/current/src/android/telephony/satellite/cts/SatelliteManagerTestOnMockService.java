@@ -64,6 +64,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
@@ -72,6 +73,7 @@ import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
@@ -4112,6 +4114,54 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         } finally {
             revokeSatellitePermission();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSubscriberIds() {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testProvisionSubscriberIds:");
+        grantSatellitePermission();
+
+        /* Test when this carrier is not supported ESOS in the carrier config */
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getActiveSubscriptionInfoList);
+        Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+        if (!infos.get(0).isOnlyNonTerrestrialNetwork()) {
+            // Verify no match the subscriberId.
+            assertFalse(pairResult.first.size() > 0);
+            assertNull(pairResult.second);
+        } else {
+            // Verify subscriberId is marked as isProvisioned false.
+            pairResult = requestProvisionSubscriberIds();
+            assertTrue(pairResult.first.size() > 0);
+            assertNull(pairResult.second);
+            assertFalse(isProvisioned(infos.get(0).getIccId()));
+        }
+
+        /* Test when this carrier is supported ESOS in the carrier config */
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        // Verify subscriberId is marked as isProvisioned false.
+        pairResult = requestProvisionSubscriberIds();
+        assertTrue(pairResult.first.size() > 0);
+        assertNull(pairResult.second);
+        assertFalse(isProvisioned(pairResult.first.get(0).getSubscriberId()));
+
+        // Called #provisionSatellite with the given subscriberId to provision. Verify that this
+        // subscriberId is subsequently marked as isProvisioned true.
+        assertTrue(isProvisionSatellite(pairResult.first));
+        assertTrue(isProvisioned(pairResult.first.get(0).getSubscriberId()));
     }
 
     /*

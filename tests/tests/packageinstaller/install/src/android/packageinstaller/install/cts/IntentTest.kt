@@ -63,6 +63,11 @@ class IntentTest : PackageInstallerTestBase() {
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed."
+        const val TEST_VERIFIER_APK_NAME = "CtsSufficientVerifierReject.apk"
+        const val TEST_VERIFIER_PACKAGE_NAME = "android.packageinstaller.sufficientverifierreject"
+        const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
+        const val TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME =
+            "android.packageinstaller.emptytestapp.rejectedbyverifier.cts"
 
         @JvmField
         @ClassRule
@@ -253,26 +258,30 @@ class IntentTest : PackageInstallerTestBase() {
         )
     }
 
+    /**
+     * Using a sufficient verifier, test whether InstallFailed dialog is shown when the sufficient
+     * verifier rejects installation of a test app.
+     */
     @Test
-    fun installLowTargetSdkApp_installFailedVisible() {
+    fun installRejectedByVerifier_installFailedVisible() {
+        uninstallPackage(TEST_VERIFIER_PACKAGE_NAME)
+        uninstallPackage(TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME)
+
+        installPackage(TEST_VERIFIER_APK_NAME)
+        assertInstalled(TEST_VERIFIER_PACKAGE_NAME)
+
         // We want the InstallFailed dialog to be visible. Thus, pass EXTRA_RETURN_RESULT as false
-        val installIntent = getInstallationIntent(TEST_LOW_TARGET_SDK_APK_NAME)
+        val installIntent = getInstallationIntent(TEST_REJECTED_BY_VERIFIER_APK_NAME)
         installIntent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
 
         val installation = startInstallationViaIntent(installIntent)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-        // GPP dialog should be shown. Clicking on "Got it" should cancel the installation
-        val gppDefaultBtn = uiDevice.wait(Until.findObject(By.text("Got it")), FIND_OBJECT_TIMEOUT)
-        if (gppDefaultBtn != null) {
-            gppDefaultBtn.click()
-        }
-
         // Click the positive button on the InstallFailed dialog
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
-        assertNotInstalled(TEST_LOW_TARGET_SDK_APK_PACKAGE_NAME)
+        assertNotInstalled(TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME)
     }
 
     private fun getInstallSourceInfo(): InstallSourceInfo {

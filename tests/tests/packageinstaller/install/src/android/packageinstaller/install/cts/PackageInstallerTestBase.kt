@@ -76,10 +76,6 @@ open class PackageInstallerTestBase {
         const val TEST_APK_PACKAGE_NAME = "android.packageinstaller.emptytestapp.cts"
         const val TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller"
 
-        const val TEST_LOW_TARGET_SDK_APK_NAME = "CtsEmptyTestApp_LowTargetSdk.apk"
-        const val TEST_LOW_TARGET_SDK_APK_PACKAGE_NAME =
-            "android.packageinstaller.emptytestapp.lowtargetsdk.cts"
-
         const val INSTALL_ACTION_CB = "PackageInstallerTestBase.install_cb"
 
         const val CONTENT_AUTHORITY = "android.packageinstaller.install.cts.fileprovider"
