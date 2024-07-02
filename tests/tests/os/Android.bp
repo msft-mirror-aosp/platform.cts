@@ -95,7 +95,9 @@ android_ravenwood_test {
         "sdk_sandbox_flags_lib",
     ],
     srcs: [
+        "src/android/os/connectivity/cts/CellularBatteryStatsTest.java",
         "src/android/os/connectivity/cts/WifiActivityEnergyInfoTest.java",
+        "src/android/os/connectivity/cts/WifiBatteryStatsTest.java",
         "src/android/os/cts/BadParcelableExceptionTest.java",
         "src/android/os/cts/BinderTest.java",
         "src/android/os/cts/BuildTest.java",
