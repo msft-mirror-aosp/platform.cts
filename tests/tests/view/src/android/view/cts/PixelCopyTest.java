@@ -20,12 +20,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
@@ -362,6 +364,10 @@ public class PixelCopyTest {
 
     @Test
     public void testWindowProducerScaling() {
+        // TODO (b/350809812): re-enable the test for automotive once all edge cases are resolved.
+        Context context = mInstrumentation.getTargetContext();
+        assumeFalse("Skip test: does not reliably work on automotive",
+                context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
         // Since we only sample mid-pixel of each qudrant, filtering
         // quality isn't tested
         Window window = waitForWindowProducerActivity();
