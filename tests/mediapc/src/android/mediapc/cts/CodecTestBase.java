@@ -246,10 +246,6 @@ abstract class CodecTestBase {
         mOutputCountListener = listener;
     }
 
-    private long getRenderTimeUs(long renderedTime, int frameIndex, long frameInterval) {
-        return renderedTime + frameIndex * frameInterval;
-    }
-
     /**
      * Called to handle a dequeued output buffer.
      *
@@ -260,48 +256,16 @@ abstract class CodecTestBase {
             mSawOutputEOS = true;
         }
 
-        long renderStartTimeUs = 0;
-        int outputCount = mOutputCount;
-        long nowUs = System.nanoTime() / 1000;
-        long mEachFrameTimeIntervalUs = 1000000 / 30;
-        String mediaType = mOutFormat.getString(MediaFormat.KEY_MIME);
-        int initialDelay = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? 8 : 0;
-
-        if (outputCount == 0) {
-            // delay rendering the first frame by the specific delay
-            renderStartTimeUs = nowUs + initialDelay * mEachFrameTimeIntervalUs;
-        }
-
-        if (nowUs > getRenderTimeUs(renderStartTimeUs, outputCount + 1, mEachFrameTimeIntervalUs)) {
-            // If the current sample timeStamp is greater than the actual presentation timeStamp
-            // of the next sample, we will consider it as a frame drop and don't render.
-            mFrameDrops++;
-            mCodec.releaseOutputBuffer(bufferIndex, false);
-        } else if (nowUs > getRenderTimeUs(renderStartTimeUs, outputCount,
-                mEachFrameTimeIntervalUs)) {
-            // If the current sample timeStamp is greater than the actual presentation timeStamp
-            // of the current sample, we can render it.
-            mCodec.releaseOutputBuffer(bufferIndex, true);
-        } else {
-            // If the current sample timestamp is less than the actual presentation timeStamp,
-            // We are okay with directly rendering the sample if we are less by not more than
-            // half of one sample duration. Otherwise we sleep for how much more we are less
-            // than the half of one sample duration.
-            if ((getRenderTimeUs(renderStartTimeUs, outputCount, mEachFrameTimeIntervalUs) - nowUs)
-                    > (mEachFrameTimeIntervalUs / 2)) {
-                try {
-                    Thread.sleep(((renderStartTimeUs
-                            + (outputCount * mEachFrameTimeIntervalUs) - nowUs)
-                            - (mEachFrameTimeIntervalUs / 2)) / 1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // Restore the interrupted status
-                    throw new RuntimeException("the thread caught an interrupted exception"
-                            + "instead of sleeping before rendering the sample timestamp" + e);
-                }
+        long expectedFrameDurationUs = 1000000 / 30;
+        long presentationTimeUs = info.presentationTimeUs;
+        if (mLastPresentationTimeUs != -1) {
+            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
+                mFrameDrops++;
             }
-            mCodec.releaseOutputBuffer(bufferIndex, true);
         }
+        mLastPresentationTimeUs = presentationTimeUs;
 
+        int outputCount = mOutputCount;
         // handle output count prior to releasing the buffer as that can take time
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mOutputCount++;
