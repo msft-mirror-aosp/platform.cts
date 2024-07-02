@@ -60,6 +60,10 @@
         <option name="run-command" value="cmd statusbar collapse" />
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
+
+        <!-- Temporarily disable Device Config sync -->
+        <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
+        <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
