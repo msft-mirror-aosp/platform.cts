@@ -31,7 +31,6 @@ import android.platform.test.annotations.RequiresDevice;
 import com.android.ddmlib.Log.LogLevel;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil.CLog;
-import com.android.tradefed.util.RunUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,18 +97,17 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     }
 
     private void testGetActiveSessions_primaryUser(boolean instant) throws Exception {
-        int mainUserId = getDevice().getMainUserId();
+        int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, mainUserId);
-        installAppAsUser(DEVICE_SIDE_TEST_APK, mainUserId, instant);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
+        installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, instant);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
-        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, mainUserId, false);
-        sendControlCommand(mainUserId, FLAG_CREATE_MEDIA_SESSION);
-
+        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
+        sendControlCommand(primaryUserId, FLAG_CREATE_MEDIA_SESSION);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
-        sendControlCommand(mainUserId, FLAG_SET_MEDIA_SESSION_ACTIVE);
+        sendControlCommand(primaryUserId, FLAG_SET_MEDIA_SESSION_ACTIVE);
         runTest("testGetActiveSessions_hasMediaSessionFromMediaSessionTestHelper");
     }
 
@@ -174,7 +172,6 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
 
         // Test if another restricted profile can get the session.
         // Remove the created user first not to exceed system's user number limit.
-        // Restricted profile's parent must be the primary user (the system user).
         int newUser = createAndStartRestrictedProfile(getDevice().getPrimaryUserId());
         installAppAsUser(DEVICE_SIDE_TEST_APK, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
@@ -208,9 +205,9 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
             return;
         }
 
-        // Managed profile's parent must not be the primary user (in the context of this test, we
-        // use the current user).
-        int newUser = createAndStartManagedProfile(getDevice().getCurrentUser());
+        // Test if another managed profile can get the session.
+        // Remove the created user first not to exceed system's user number limit.
+        int newUser = createAndStartManagedProfile(getDevice().getPrimaryUserId());
         installAppAsUser(DEVICE_SIDE_TEST_APK, newUser, instant);
         setAllowGetActiveSessionForTest(true, newUser);
         runTestAsUser("testGetActiveSessions_noMediaSession", newUser);
@@ -220,14 +217,14 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     @AppModeFull
     @RequiresDevice
     public void testGetActiveSessions_noSession2() throws Exception {
-        int currentUserId = getDevice().getCurrentUser();
+        int primaryUserId = getDevice().getPrimaryUserId();
 
-        setAllowGetActiveSessionForTest(true, currentUserId);
-        installAppAsUser(DEVICE_SIDE_TEST_APK, currentUserId, false);
+        setAllowGetActiveSessionForTest(true, primaryUserId);
+        installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
-        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, currentUserId, false);
-        sendControlCommand(currentUserId, FLAG_CREATE_MEDIA_SESSION2);
+        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
+        sendControlCommand(primaryUserId, FLAG_CREATE_MEDIA_SESSION2);
 
         // Wait for a second for framework to recognize media session2.
         Thread.sleep(TIMEOUT_MS);
@@ -237,13 +234,14 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     @AppModeFull
     @RequiresDevice
     public void testGetActiveSessions_withSession2() throws Exception {
-        int currentUserId = getDevice().getCurrentUser();
-        setAllowGetActiveSessionForTest(true, currentUserId);
-        installAppAsUser(DEVICE_SIDE_TEST_APK, currentUserId, false);
+        int primaryUserId = getDevice().getPrimaryUserId();
+
+        setAllowGetActiveSessionForTest(true, primaryUserId);
+        installAppAsUser(DEVICE_SIDE_TEST_APK, primaryUserId, false);
         runTest("testGetActiveSessions_noMediaSessionFromMediaSessionTestHelper");
 
-        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, currentUserId, false);
-        sendControlCommand(currentUserId,
+        installAppAsUser(MEDIA_SESSION_TEST_HELPER_APK, primaryUserId, false);
+        sendControlCommand(primaryUserId,
                 FLAG_CREATE_MEDIA_SESSION | FLAG_CREATE_MEDIA_SESSION2
                         | FLAG_SET_MEDIA_SESSION_ACTIVE);
 
@@ -307,7 +305,7 @@ public class MediaSessionManagerHostTest extends BaseMultiUserTest {
     }
 
     private void runTest(String testMethodName) throws DeviceNotAvailableException {
-        runTestAsUser(testMethodName, getDevice().getCurrentUser());
+        runTestAsUser(testMethodName, getDevice().getPrimaryUserId());
     }
 
     private void runTestAsUser(String testMethodName, int userId)
