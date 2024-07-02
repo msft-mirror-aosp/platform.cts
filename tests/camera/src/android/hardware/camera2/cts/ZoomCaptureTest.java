@@ -307,7 +307,14 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
             }
 
         } finally {
-            closeDefaultImageReader();
+            // Ensure that the default image reader is closed within the same thread
+            // the also runs the registered image listener.
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    closeDefaultImageReader();
+                }
+            });
         }
     }
 
@@ -321,12 +328,13 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Image img = mReader.acquireNextImage();
-            assertNotNull("Unable to acquire the latest image", img);
-            CameraTestUtils.validateImage(img, mMaxSize.getWidth(), mMaxSize.getHeight(),
-                    mImageFormat, mDebugFileNameBase);
-            Log.e(TAG, "Image verification done");
-            img.close();
+           Image img;
+           while ((mReader != null) && ((img = mReader.acquireNextImage()) != null)) {
+               CameraTestUtils.validateImage(img, mMaxSize.getWidth(), mMaxSize.getHeight(),
+                       mImageFormat, mDebugFileNameBase);
+               Log.e(TAG, "Image verification done");
+               img.close();
+           }
         }
     }
 }
