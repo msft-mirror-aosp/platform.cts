@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for PackageInstaller CUJs via startActivity.
+ * Tests for PackageInstaller CUJs via startActivity with ACTION_INSTALL_PACKAGE.
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
