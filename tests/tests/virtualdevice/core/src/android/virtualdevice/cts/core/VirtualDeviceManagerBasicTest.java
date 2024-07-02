@@ -64,9 +64,10 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.android.compatibility.common.util.SystemUtil;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.After;
 import org.junit.Before;
@@ -76,11 +77,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
 public class VirtualDeviceManagerBasicTest {
 
@@ -519,69 +522,18 @@ public class VirtualDeviceManagerBasicTest {
                 .isEqualTo(DEVICE_POLICY_CUSTOM);
     }
 
+    @Parameters(method = "allDynamicPolicies")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
-    public void policyTypeRecents_changeAtRuntime_shouldReturnConfiguredValue() {
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_CUSTOM);
+    public void dynamicPolicyType_changeAtRuntime_shouldReturnConfiguredValue(int policyType) {
+        mVirtualDevice.setDevicePolicy(policyType, DEVICE_POLICY_CUSTOM);
         assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_RECENTS))
+                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(), policyType))
                 .isEqualTo(DEVICE_POLICY_CUSTOM);
 
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_RECENTS, DEVICE_POLICY_DEFAULT);
+        mVirtualDevice.setDevicePolicy(policyType, DEVICE_POLICY_DEFAULT);
         assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_RECENTS))
-                .isEqualTo(DEVICE_POLICY_DEFAULT);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
-    public void policyTypeActivity_changeAtRuntime_shouldReturnConfiguredValue() {
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_CUSTOM);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_ACTIVITY))
-                .isEqualTo(DEVICE_POLICY_CUSTOM);
-
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_ACTIVITY))
-                .isEqualTo(DEVICE_POLICY_DEFAULT);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DYNAMIC_POLICY, Flags.FLAG_CROSS_DEVICE_CLIPBOARD})
-    public void policyTypeClipboard_changeAtRuntime_shouldReturnConfiguredValue() {
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_CLIPBOARD))
-                .isEqualTo(DEVICE_POLICY_CUSTOM);
-
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_DEFAULT);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_CLIPBOARD))
-                .isEqualTo(DEVICE_POLICY_DEFAULT);
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_DYNAMIC_POLICY,
-            android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API})
-    public void policyTypeBlockedActivityDialog_changeAtRuntime_shouldReturnConfiguredValue() {
-        mVirtualDevice.setDevicePolicy(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR, DEVICE_POLICY_CUSTOM);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR))
-                .isEqualTo(DEVICE_POLICY_CUSTOM);
-
-        mVirtualDevice.setDevicePolicy(
-                POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR, DEVICE_POLICY_DEFAULT);
-        assertThat(
-                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(),
-                        POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR))
+                mVirtualDeviceManager.getDevicePolicy(mVirtualDevice.getDeviceId(), policyType))
                 .isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
@@ -759,5 +711,19 @@ public class VirtualDeviceManagerBasicTest {
 
     private static void waitForCondition(String message, BooleanSupplier waitCondition) {
         assertThat(Condition.waitFor(message, waitCondition)).isTrue();
+    }
+
+    private List<Integer> allDynamicPolicies() {
+        List<Integer> dynamicPolicies = new ArrayList<>(Arrays.asList(
+                POLICY_TYPE_RECENTS,
+                POLICY_TYPE_ACTIVITY
+        ));
+        if (Flags.crossDeviceClipboard()) {
+            dynamicPolicies.add(POLICY_TYPE_CLIPBOARD);
+        }
+        if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
+            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR);
+        }
+        return dynamicPolicies;
     }
 }
