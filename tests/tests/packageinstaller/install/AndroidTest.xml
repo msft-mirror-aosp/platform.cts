@@ -63,7 +63,9 @@
         <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
-        <option name="push" value="CtsEmptyTestApp_LowTargetSdk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_LowTargetSdk.apk" />
+        <option name="push" value="CtsEmptyTestApp_RejectedByVerifier.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_RejectedByVerifier.apk" />
+        <option name="push" value="CtsSufficientVerifierReject.apk->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk" />
+        <option name="push" value="CtsSufficientVerifierReject.apk.idsig->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk.idsig" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
