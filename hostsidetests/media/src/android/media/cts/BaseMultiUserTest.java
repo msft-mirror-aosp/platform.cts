@@ -30,6 +30,7 @@ import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
 
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,6 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
 
     private String mPackageVerifier;
 
-    private int mInitialUserId;
     private Set<String> mExistingPackages;
     private List<Integer> mExistingUsers;
     private HashSet<String> mAvailableFeatures;
@@ -84,17 +84,12 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 "0",
                 USER_ALL);
 
-        mInitialUserId = getDevice().getCurrentUser();
-        mExistingUsers = getDevice().listUsers();
-        Integer mainUserId = getDevice().getMainUserId();
-        Integer primaryUserId = getDevice().getPrimaryUserId();
-        if (primaryUserId != null) {
-            getDevice().switchUser(primaryUserId);
-        } else if (mainUserId != null) {
-            getDevice().switchUser(mainUserId);
-        } else {
-            // Neither a primary nor a main user exists. Just use the current one.
-        }
+        mExistingUsers = new ArrayList<>();
+        int primaryUserId = getDevice().getPrimaryUserId();
+        mExistingUsers.add(primaryUserId);
+        mExistingUsers.add(USER_SYSTEM);
+
+        executeShellCommand("am switch-user " + primaryUserId);
         executeShellCommand("wm dismiss-keyguard");
     }
 
@@ -107,19 +102,10 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 mPackageVerifier,
                 USER_ALL);
 
-        // We want to fail if something goes wrong in tearDown, but we want to complete as many
-        // cleanup steps as we can to reduce the chances of leaving the device in an inconsistent
-        // state.
-        Throwable lastTearDownError = null;
-
         // Remove users created during the test.
         for (int userId : getDevice().listUsers()) {
             if (!mExistingUsers.contains(userId)) {
-                try {
-                    removeUser(userId);
-                } catch (Throwable t) {
-                    lastTearDownError = t;
-                }
+                removeUser(userId);
             }
         }
         // Remove packages installed during the test.
@@ -128,19 +114,9 @@ public class BaseMultiUserTest extends BaseMediaHostSideTest {
                 continue;
             }
             CLog.d("Removing leftover package: " + packageName);
-            try {
-                getDevice().uninstallPackage(packageName);
-            } catch (Throwable t) {
-                lastTearDownError = t;
-            }
-        }
-        if (getDevice().getCurrentUser() != mInitialUserId) {
-            getDevice().switchUser(mInitialUserId);
+            getDevice().uninstallPackage(packageName);
         }
         super.tearDown();
-        if (lastTearDownError != null) {
-            throw new AssertionError("Something went wrong while cleaning up.", lastTearDownError);
-        }
     }
 
     /**
