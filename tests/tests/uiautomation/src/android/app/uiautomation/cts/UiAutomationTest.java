@@ -16,11 +16,12 @@
 
 package android.app.uiautomation.cts;
 
+import static com.android.compatibility.common.util.TestUtils.waitOn;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
@@ -49,18 +50,18 @@ import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.ListView;
 
-import static com.android.compatibility.common.util.TestUtils.waitOn;
-
-
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
-import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -72,7 +73,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Tests for the UiAutomation APIs.
  */
-@RunWith(AndroidJUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public final class UiAutomationTest {
 
     private static final long IDLE_QUIET_TIME_MS = 1000;
@@ -80,6 +81,9 @@ public final class UiAutomationTest {
     private static final long TIMEOUT_FOR_SERVICE_ENABLE_MS = 10 * 1000;
     private static final long TIMEOUT_FOR_LISTENER_NOTIFIED_MS = 5000;
 
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     // Used to enable/disable accessibility services
     private static final String COMPONENT_NAME_SEPARATOR = ":";
@@ -102,13 +106,6 @@ public final class UiAutomationTest {
 
     @Before
     public void setUp() {
-        // TODO(b/272604566): remove check below once a11y supports concurrent users
-        // NOTE: cannot use Harrier / DeviceState because they call Instrumentation in a way that
-        // would make the tests pass. Besides, there are a @RequireNotVisibleBackgroundUsers and a
-        // @RequireRunNotOnSecondaryUser, but not a @RequireRunNotOnVisibleBackgroundSecondaryUser
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
-
         InstrumentedAccessibilityService.disableAllServices();
     }
 
@@ -280,6 +277,8 @@ public final class UiAutomationTest {
         enableAccessibilityService();
     }
 
+    // TODO(b/346195390): remove the annotation once a11y supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     @AppModeFull
     @Test
     public void testUiAutomationWithNoFlags_shutsDownA11yService() {
@@ -290,6 +289,8 @@ public final class UiAutomationTest {
         waitForAccessibilityServiceToUnbind();
     }
 
+    // TODO(b/346195390): remove the annotation once a11y supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     @AppModeFull
     @Test
     public void testUiAutomationWithDontUseAccessibilityFlag_shutsDownA11yService() {
@@ -301,6 +302,8 @@ public final class UiAutomationTest {
         waitForAccessibilityServiceToUnbind();
     }
 
+    // TODO(b/346195390): remove the annotation once a11y supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     @AppModeFull
     @Test
     public void testUiAutomationSuppressingA11yServices_a11yServiceStartsWhenDestroyed() {
@@ -313,6 +316,8 @@ public final class UiAutomationTest {
         waitForAccessibilityServiceToStart();
     }
 
+    // TODO(b/346195390): remove the annotation once a11y supports visible background users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     @AppModeFull
     @Test
     public void testUiAutomationSuppressingA11yServices_a11yServiceStartsWhenFlagsChange() {
