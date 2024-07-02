@@ -23,10 +23,10 @@ import static android.Manifest.permission.QUERY_USERS;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
-import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.os.Process.myUserHandle;
+
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
@@ -51,12 +51,12 @@ import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
-import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -611,5 +611,20 @@ public final class Users {
                 /* excludeDying= */ true,
                 /* excludePreCreated= */ false).stream()
                 .map(ui -> new UserInfo(ui));
+    }
+
+    /**
+     * Gets the maximum number of users supported by the device
+     */
+    public int getMaxNumberOfUsersSupported() {
+        try {
+            return ShellCommand.builder("pm get-max-users")
+                    .validate((output) -> output.startsWith("Maximum supported users:"))
+                    .executeAndParseOutput((output) ->
+                            Integer.parseInt(output.split(": ", 2)[1].trim())
+                    );
+        } catch (AdbException e) {
+            throw new IllegalStateException("Invalid command output", e);
+        }
     }
 }
