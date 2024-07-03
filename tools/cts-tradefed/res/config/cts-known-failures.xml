@@ -467,4 +467,7 @@
     <!-- b/325695985 -->
     <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
 
+    <!-- b/341232504 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioManagerTest#testAdjustUnmuteNotificationInSilent" />
+
 </configuration>
