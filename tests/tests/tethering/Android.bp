@@ -49,6 +49,10 @@ android_test {
         "cts",
         "general-tests",
         "mts",
+        "mcts-dnsresolver",
+        "mcts-networking",
+        "mcts-tethering",
+        "mcts-wifi",
     ],
 
     // Include both the 32 and 64 bit versions

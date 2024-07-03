@@ -33,7 +33,8 @@ android_test {
         "cts",
         "vts10",
         "general-tests",
-	"mts",
+        "mts",
+        "mcts-art",
     ],
     java_resources: [":libcore-expectations-knownfailures"],
 }
