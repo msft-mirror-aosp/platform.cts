@@ -3375,4 +3375,13 @@ public abstract class ActivityManagerTestBase {
                 .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
                         "android.software.car.splitscreen_multitasking") && isCar();
     }
+
+    /**
+     * Returns the main display assigned to the user.
+     * Note that this returns the DEFAULT_DISPLAY for the current user, and returns the display
+     * assigned to the user if it is a visible background user.
+     */
+    protected int getMainDisplayId() {
+        return mUserHelper.getMainDisplayId();
+    }
 }
