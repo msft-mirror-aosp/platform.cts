@@ -95,7 +95,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
           camera_properties_utils.zoom_ratio_range(props))
 
       # Determine test zoom range
-      zoom_max = float(props['android.control.zoomRatioRange'][1])  # max value
+      zoom_range = props['android.control.zoomRatioRange']
+      zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
       logging.debug('Zoom max value: %.2f', zoom_max)
       if zoom_max < _ZOOM_RATIO_THRESH:
         raise AssertionError(f'Maximum zoom ratio < {_ZOOM_RATIO_THRESH}x')
@@ -105,6 +106,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
           (zoom_max - _ZOOM_RATIO_MIN) / (_NUM_STEPS - 1))
       zoom_ratios = np.append(zoom_ratios, zoom_max)
       logging.debug('Testing zoom range: %s', zoom_ratios)
+      camera_properties_utils.skip_unless(
+          zoom_max >= zoom_min * _ZOOM_RATIO_THRESH)
 
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
