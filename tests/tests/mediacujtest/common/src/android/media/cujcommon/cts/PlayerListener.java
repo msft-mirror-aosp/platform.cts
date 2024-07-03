@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.media.AudioManager;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 
@@ -77,6 +78,8 @@ public abstract class PlayerListener implements Player.Listener {
   protected Format mCurrentTrackFormat;
   protected Format mConfiguredTrackFormat;
   protected long mStartTime;
+  protected AudioManager mAudioManager;
+  protected boolean mRingVolumeUpdated;
 
   public PlayerListener() {
     this.mSendMessagePosition = 0;
@@ -222,9 +225,14 @@ public abstract class PlayerListener implements Player.Listener {
           // Verify the total time taken by the notification test
           if (getTestType().equals(TestType.CALL_NOTIFICATION_TEST) || getTestType().equals(
               TestType.MESSAGE_NOTIFICATION_TEST)) {
+            // Restore the ring volume in case it was updated
+            if (mRingVolumeUpdated) {
+              mAudioManager.setStreamVolume(AudioManager.STREAM_RING,
+                  mAudioManager.getStreamMinVolume(AudioManager.STREAM_RING), 0 /*no flag used*/);
+            }
             long actualTime = System.currentTimeMillis() - mStartTime;
             assertEquals((float) mExpectedTotalTime, (float) actualTime,
-              NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+                NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
           }
           mPlaybackEnded = true;
           LISTENER_LOCK.notify();

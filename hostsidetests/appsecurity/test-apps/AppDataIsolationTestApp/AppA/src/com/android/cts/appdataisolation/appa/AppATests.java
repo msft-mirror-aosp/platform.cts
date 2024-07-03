@@ -16,6 +16,8 @@
 
 package com.android.cts.appdataisolation.appa;
 
+import static android.view.Display.DEFAULT_DISPLAY;
+
 import static com.android.cts.appdataisolation.common.FileUtils.APPA_PKG;
 import static com.android.cts.appdataisolation.common.FileUtils.APPB_PKG;
 import static com.android.cts.appdataisolation.common.FileUtils.CE_DATA_FILE_NAME;
@@ -34,7 +36,6 @@ import static com.android.cts.appdataisolation.common.UserUtils.getCurrentUserId
 
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -226,6 +227,15 @@ public class AppATests {
         mDevice.waitForIdle();
         mDevice.pressMenu();
         mDevice.waitForIdle();
+
+        // HSUM lock screen is taking time to accept input
+        // Pressing enter button twice to make sure it is ready to accept input
+        // before typing the pin
+        mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
+        mDevice.waitForIdle();
+        mDevice.executeShellCommand(testUnlockDeviceCommand_enter);
+        mDevice.waitForIdle();
+
         mDevice.executeShellCommand(testUnlockDeviceCommand_1);
         mDevice.waitForIdle();
         mDevice.executeShellCommand(testUnlockDeviceCommand_2);

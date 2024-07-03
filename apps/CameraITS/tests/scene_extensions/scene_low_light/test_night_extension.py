@@ -113,10 +113,14 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(should_run)
 
       tablet_name_unencoded = self.tablet.adb.shell(
-          ['getprop', 'ro.build.product']
+          ['getprop', 'ro.product.device']
       )
       tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
       logging.debug('Tablet name: %s', tablet_name)
+
+      if (tablet_name.lower() not in
+          low_light_utils.TABLET_LOW_LIGHT_SCENES_ALLOWLIST):
+        raise AssertionError('Tablet not supported for low light scenes.')
 
       if tablet_name == its_session_utils.TABLET_LEGACY_NAME:
         raise AssertionError(f'Incompatible tablet! Please use a tablet with '

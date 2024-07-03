@@ -14,6 +14,7 @@
 """Utility functions for verifying preview stabilization.
 """
 
+import cv2
 import fnmatch
 import logging
 import os
@@ -30,6 +31,8 @@ import video_processing_utils
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _ASPECT_TOL = 0.01
+_GREEN_TOL = 235
+_RED_BLUE_TOL = 15
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
@@ -289,7 +292,8 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
 
 def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
-                                   zoom_end, step_size, recording_duration_ms):
+                                   zoom_end, step_size, recording_duration_ms,
+                                   pad_frames_at_end=False):
   """Captures a preview video from the device.
 
   Captures camera preview frames from the passed device.
@@ -301,6 +305,8 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
     zoom_end: (float) is the ending zoom ratio during recording.
     step_size: (float) is the step for zoom ratio during recording.
     recording_duration_ms: preview recording duration in ms.
+    pad_frames_at_end: boolean; Whether to add additional frames at the end of
+      recording to workaround issue with MediaRecorder.
 
   Returns:
     recording object as described by cam.do_preview_recording_with_dynamic_zoom.
@@ -308,7 +314,8 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
   recording_obj = cam.do_preview_recording_with_dynamic_zoom(
       preview_size,
       stabilize=False,
-      sweep_zoom=(zoom_start, zoom_end, step_size, recording_duration_ms)
+      sweep_zoom=(zoom_start, zoom_end, step_size, recording_duration_ms),
+      pad_frames_at_end=pad_frames_at_end
   )
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
@@ -438,6 +445,37 @@ def mirror_preview_image_by_sensor_orientation(
   return output_preview_img
 
 
+def is_image_green(image_path):
+  """Checks if an image is mostly green.
+
+  Checks if an image is mostly green by ensuring green is dominant
+  and red/blue values are low.
+
+  Args:
+    image_path: str; The path to the image file.
+
+  Returns:
+    bool: True if mostly green, False otherwise.
+  """
+
+  image = cv2.imread(image_path)
+
+  average_color = np.mean(image, axis=(0, 1))
+
+  # Extract individual color values
+  blue_value = average_color[0]
+  green_value = average_color[1]
+  red_value = average_color[2]
+
+  # Check if green is dominant and red/blue are below the threshold
+  if (green_value > _GREEN_TOL and
+      red_value < _RED_BLUE_TOL and
+      blue_value < _RED_BLUE_TOL):
+    return True
+  else:
+    return False
+
+
 def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
                             log_path):
   """Captures a preview video from the device over zoom range.
@@ -464,9 +502,15 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   cam.do_3a()
 
   # recording preview
+  # TODO: b/350821827 - encode time stamps in camera frames instead of
+  #                     padded green frams
+  # MediaRecorder on some devices drop last few frames. To solve this issue
+  # add green frames as padding at the end of recorded camera frames. This way
+  # green buffer frames would be droped by MediaRecorder instead of actual
+  # frames. Later these green padded frames are removed.
   preview_rec_obj = collect_preview_data_with_zoom(
       cam, preview_size, z_min, z_max, z_step_size,
-      _PREVIEW_DURATION)
+      _PREVIEW_DURATION, pad_frames_at_end=True)
 
   preview_file_name = its_session_utils.pull_file_from_dut(
       dut, preview_rec_obj['recordedOutputPath'], log_path)
@@ -478,6 +522,17 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   file_list = video_processing_utils.extract_all_frames_from_video(
       log_path, preview_file_name, _IMG_FORMAT
   )
+
+  # Remove extra green buffer frames
+  for file_name in reversed(file_list):
+    file_path = os.path.join(log_path, file_name)
+    if is_image_green(file_path):
+      file_list.remove(file_name)
+      its_session_utils.remove_file(file_path)
+      logging.debug('Removed green file %s', file_name)
+    else:
+      logging.debug('Last camera frame: %s', file_name)
+      break
 
   # Raise error if capture result and frame count doesn't match
   capture_results = preview_rec_obj['captureMetadata']
@@ -496,7 +551,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   file_list = file_list[_SKIP_INITIAL_FRAMES:]
 
   # delete skipped files
-  for file_path in skipped_files:
-    its_session_utils.remove_file(os.path.join(log_path, file_path))
+  for file_name in skipped_files:
+    its_session_utils.remove_file(os.path.join(log_path, file_name))
 
   return capture_results, file_list

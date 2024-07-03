@@ -475,7 +475,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setPasswordQuality_complex_passwordWithAMinLengthOfFourRequired[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setPasswordQuality_success[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setRequiredPasswordComplexity_passwordQualityAlreadySet_clearsPasswordQuality[IncludeRunOnProfileOwnerPrimaryUser]" />
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setResetPasswordToken_notPermitted_throwsSecurityException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setResetPasswordToken_validToken_passwordTokenSet[IncludeRunOnProfileOwnerPrimaryUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SafeBootTest#setUserRestriction_disallowSafeBoot_isSet[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ScreenCaptureDisabledTest#createAdminSupportIntent_allowScreenCapture_doesNotCreate[IncludeRunOnProfileOwnerPrimaryUser]" />
@@ -891,7 +890,6 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testGetZoomControls" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testInvokeZoomPicker" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testScaleChangeCallbackMatchesGetScale" />
-    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testZoomByNonPowerOfTwoIncrements" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testZoomByPowerOfTwoIncrements" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testZoomIn" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testZoom_canNotZoomInPastMaximum" />

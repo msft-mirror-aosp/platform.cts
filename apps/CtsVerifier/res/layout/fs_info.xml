@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:fitsSystemWindows="true"
+    android:fitsSystemWindows="@bool/fit_system_windows"
     android:layout_width="fill_parent" android:layout_height="fill_parent">
     <GridLayout
         android:columnCount="2"
