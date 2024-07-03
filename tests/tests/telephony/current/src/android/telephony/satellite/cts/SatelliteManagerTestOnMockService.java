@@ -59,19 +59,21 @@ import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.os.PersistableBundle;
 import android.os.Process;
-import android.os.SystemProperties;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
@@ -177,7 +179,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             // FEATURE_TELEPHONY_SATELLITE is missing, so let's set up mock SatelliteManager.
             sSatelliteManager = new SatelliteManager(getContext());
         }
-        enforceMockModemDeveloperSetting();
+        MockModemManager.enforceMockModemDeveloperSetting();
 
         grantSatellitePermission();
 
@@ -3867,14 +3869,15 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 500));
 
         // Time out to disable satellite. Telephony should respond SATELLITE_RESULT_MODEM_TIMEOUT to
-        // clients and move to SATELLITE_MODEM_STATE_OFF
+        // clients and stay in SATELLITE_MODEM_STATE_NOT_CONNECTED as satellite disable request
+        // failed.
         logd("testRequestSatelliteEnabled_timeout: disabling satellite...");
         callback.clearModemStates();
         result = requestSatelliteEnabledWithResult(false, TIMEOUT);
         assertEquals(SatelliteManager.SATELLITE_RESULT_MODEM_TIMEOUT, result);
-        assertTrue(callback.waitUntilModemOff());
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
-        assertFalse(isSatelliteEnabled());
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.modemState);
+        assertTrue(isSatelliteEnabled());
         assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
 
         // Respond to the above disable request. Telephony should ignore the event.
@@ -3882,7 +3885,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         callback.clearModemStates();
         assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false));
         assertFalse(callback.waitUntilResult(1));
-        assertFalse(isSatelliteEnabled());
+        assertTrue(isSatelliteEnabled());
 
         // Restore the original states
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
@@ -4111,6 +4114,54 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         } finally {
             revokeSatellitePermission();
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSubscriberIds() {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testProvisionSubscriberIds:");
+        grantSatellitePermission();
+
+        /* Test when this carrier is not supported ESOS in the carrier config */
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getActiveSubscriptionInfoList);
+        Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+        if (!infos.get(0).isOnlyNonTerrestrialNetwork()) {
+            // Verify no match the subscriberId.
+            assertFalse(pairResult.first.size() > 0);
+            assertNull(pairResult.second);
+        } else {
+            // Verify subscriberId is marked as isProvisioned false.
+            pairResult = requestProvisionSubscriberIds();
+            assertTrue(pairResult.first.size() > 0);
+            assertNull(pairResult.second);
+            assertFalse(isProvisioned(infos.get(0).getIccId()));
+        }
+
+        /* Test when this carrier is supported ESOS in the carrier config */
+        bundle.putBoolean(
+                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        // Verify subscriberId is marked as isProvisioned false.
+        pairResult = requestProvisionSubscriberIds();
+        assertTrue(pairResult.first.size() > 0);
+        assertNull(pairResult.second);
+        assertFalse(isProvisioned(pairResult.first.get(0).getSubscriberId()));
+
+        // Called #provisionSatellite with the given subscriberId to provision. Verify that this
+        // subscriberId is subsequently marked as isProvisioned true.
+        assertTrue(isProvisionSatellite(pairResult.first));
+        assertTrue(isProvisioned(pairResult.first.get(0).getSubscriberId()));
     }
 
     /*
@@ -4616,16 +4667,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertThat(transmissionUpdateCallback.getReceiveDatagramStateChange(0)).isEqualTo(
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         expectedTransferState, expectedPendingCount, expectedErrorCode));
-    }
-
-    private static void enforceMockModemDeveloperSetting() {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!isAllowed && !DEBUG) {
-            throw new IllegalStateException(
-                    "!! Enable Mock Modem before running this test !! "
-                            + "Developer options => Allow Mock Modem");
-        }
     }
 
     private void identifyRadiosSensitiveToSatelliteMode() {

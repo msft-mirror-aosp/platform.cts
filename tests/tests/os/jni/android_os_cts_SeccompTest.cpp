@@ -20,26 +20,19 @@
 #include <time.h>
 #include <unistd.h>
 
-#if defined(ARCH_SUPPORTS_SECCOMP)
 #include <libminijail.h>
 #include <seccomp_bpf_tests.h>
-#endif
+
+#include "android-base/macros.h"
 
 jboolean android_security_cts_SeccompBpfTest_runKernelUnitTest(
       JNIEnv* env, jobject thiz __unused, jstring name) {
-#if defined(ARCH_SUPPORTS_SECCOMP)
     const char* nameStr = env->GetStringUTFChars(name, nullptr);
     return run_seccomp_test(nameStr);
-#endif  // ARCH_SUPPORTS_SECCOMP
-
-    return false;
 }
 
 jboolean android_security_cts_SeccompBpfTest_nativeInstallTestFilter(
         JNIEnv*, jclass, jint policyFd) {
-#if !defined(ARCH_SUPPORTS_SECCOMP)
-    return false;
-#else
     minijail* j = minijail_new();
     minijail_no_new_privs(j);
     minijail_use_seccomp_filter(j);
@@ -47,25 +40,11 @@ jboolean android_security_cts_SeccompBpfTest_nativeInstallTestFilter(
     minijail_parse_seccomp_filters_from_fd(j, policyFd);
     minijail_enter(j);
     minijail_destroy(j);
-
     return true;
-#endif
 }
 
 jstring android_security_cts_SeccompBpfTest_getPolicyAbiString(JNIEnv* env, jclass) {
-    const char* string;
-#if defined(__arm__)
-    string = "arm";
-#elif defined(__aarch64__)
-    string = "arm64";
-#elif defined(__i386__)
-    string = "i386";
-#elif defined(__x86_64__)
-    string = "x86-64";
-#else
-    return nullptr;
-#endif
-    return env->NewStringUTF(string);
+    return env->NewStringUTF(ABI_STRING);
 }
 
 jint android_security_cts_SeccompBpfTest_getClockBootTime(JNIEnv*, jclass) {

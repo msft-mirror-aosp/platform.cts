@@ -255,6 +255,12 @@ requirements {
   description:
     "Maximum codec initialization latency for a 1080p or smaller video "
     "encoding session for all hardware video encoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
 
   measurements: {
     key: "codec_initialization_latency_ms"
@@ -422,6 +428,12 @@ requirements {
   id: "5.1/H-1-8"
   name: "Audio encoder init latency"
   description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "codec_initialization_latency_ms"
     value: {
@@ -600,6 +612,12 @@ requirements {
   id: "5.1/H-1-13"
   name: "Audio decoder init latency"
   description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "codec_initialization_latency_ms"
     value: {
@@ -838,6 +856,12 @@ requirements {
   id: "5.12/H-1-2"
   name: "RGBA 1010102 color format"
   description: "RGBA_1010102 color format support for hardware encoders."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "rgba_1010102_color_format"
     value: {
@@ -895,6 +919,12 @@ requirements {
   id: "5.2/H-2-1"
   name: "VEQ"
   description: "Video encoding quality (VEQ) tests."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "bdrate_vmaf"
     value: {
@@ -1017,12 +1047,76 @@ requirements {
 }
 requirements {
   id: "5.3/H-1-1"
+  name: "Frame drop"
   description: "- Decoder frame drops"
+  test_configs: {
+    key: "1080p_30fps"
+    value: {
+      id: "1080p_30fps"
+    }
+  }
+  test_configs: {
+    key: "1080p_60fps"
+    value: {
+      id: "1080p_60fps"
+    }
+  }
+  test_configs: {
+    key: "4k_60fps"
+    value: {
+      id: "4k_60fps"
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_30sec"
+    value: {
+      description: "Frame dropped in 30 seconds"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_rate"
+    value: {
+      description: "Frame rate the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_INFO_ONLY
+      is_test_differentiator: true
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "Resolution the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_INFO_ONLY
+      is_test_differentiator: true
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.333 percent frame drop) for a 1080p 30 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_30fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1030,6 +1124,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST NOT drop more than 2 frames in 10 seconds (i.e less than 0.333 percent frame drop) for a 1080p 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 6
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1037,6 +1150,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.167 percent frame drop) for a 1080p 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1044,6 +1176,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.167 percent frame drop) for a 4K 60 fps video session under load."
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -1051,6 +1202,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
@@ -1794,23 +1964,97 @@ requirements {
 }
 requirements {
   id: "7.1.1.1/H-1-1"
+  name: "Screen Resolution R"
   description: "- Screen resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements {
+    key: "long_resolution_pixels"
+    value: {
+      id: "long_resolution_pixels"
+      description: "The screen resolution width in pixels (longer of the two dimensions)."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements {
+    key: "short_resolution_pixels"
+    value: {
+      id: "short_resolution_pixels"
+      description: "The screen resolution height in pixels (shorter of the two dimensions)."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have screen resolution of at least 1080p."
+      required_values: {
+        key: "long_resolution_pixels"
+        value: {
+          int_value: 1920
+        }
+      }
+      required_values: {
+        key: "short_resolution_pixels"
+        value: {
+          int_value: 1080
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.1.1.1/H-2-1"
+  name: "Screen Resolution"
   description: "- Screen resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements {
+    key: "long_resolution_pixels"
+    value: {
+      id: "long_resolution_pixels"
+      description: "The screen resolution width in pixels (longer of the two dimensions)."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements {
+    key: "short_resolution_pixels"
+    value: {
+      id: "short_resolution_pixels"
+      description: "The screen resolution height in pixels (shorter of the two dimensions)."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have screen resolution of at least 1080p."
+      required_values: {
+        key: "long_resolution_pixels"
+        value: {
+          int_value: 1920
+        }
+      }
+      required_values: {
+        key: "short_resolution_pixels"
+        value: {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1818,6 +2062,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values: {
+        key: "long_resolution_pixels"
+        value: {
+          int_value: 1920
+        }
+      }
+      required_values: {
+        key: "short_resolution_pixels"
+        value: {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1825,6 +2081,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "long_resolution_pixels"
+        value: {
+          int_value: 1920
+        }
+      }
+      required_values: {
+        key: "short_resolution_pixels"
+        value: {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1832,28 +2100,84 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "long_resolution_pixels"
+        value: {
+          int_value: 1920
+        }
+      }
+      required_values: {
+        key: "short_resolution_pixels"
+        value: {
+          int_value: 1080
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.1.1.3/H-1-1"
+  name: "Screen Density R"
   description: "- Screen density"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements {
+    key: "display_density_dpi"
+    value: {
+      id: "display_density_dpi"
+      description: "The screen display density in pixels per square inch."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have screen density of at least 400 dpi."
+      required_values: {
+        key: "display_density_dpi"
+        value: {
+          int_value: 400
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.1.1.3/H-2-1"
+  name: "Screen Density"
   description: "- Screen density"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements {
+    key: "display_density_dpi"
+    value: {
+      id: "display_density_dpi"
+      description: "The screen display density in pixels per square inch."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have screen density of at least 400 dpi."
+      required_values: {
+        key: "display_density_dpi"
+        value: {
+          int_value: 400
+        }
+      }
     }
   }
   specs {
@@ -1861,6 +2185,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values: {
+        key: "display_density_dpi"
+        value: {
+          int_value: 400
+        }
+      }
     }
   }
   specs {
@@ -1868,6 +2198,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "display_density_dpi"
+        value: {
+          int_value: 400
+        }
+      }
     }
   }
   specs {
@@ -1875,6 +2211,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "display_density_dpi"
+        value: {
+          int_value: 400
+        }
+      }
     }
   }
 }
@@ -1882,6 +2224,12 @@ requirements {
   id: "7.1.1.3/H-3-1"
   name: "HDR display"
   description: "HDR display"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: [
     {
       key: "is_hdr"
@@ -1930,6 +2278,12 @@ requirements {
   id: "7.6.1/H-1-1"
   name: "Android 11 Memory"
   description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "physical_memory_mb"
     value: {
@@ -1956,6 +2310,12 @@ requirements {
   id: "7.6.1/H-2-1"
   name: "Memory"
   description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "physical_memory_mb"
     value: {
@@ -2021,6 +2381,12 @@ requirements {
   id: "8.2/H-1-1"
   name: "Sequential write"
   description: "Sequential write"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "filesystem_io_rate_mbps"
     value: {
@@ -2241,6 +2607,12 @@ requirements {
   id: "7.1.4.1/H-1-3"
   name: "Vulkan"
   description: "Must support vulkan physical device protected memory and global priority."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: [
     {
       key: "vk_ext_global_priority"

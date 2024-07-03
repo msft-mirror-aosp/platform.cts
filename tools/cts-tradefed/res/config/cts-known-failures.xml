@@ -308,7 +308,15 @@
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
 
-    <!-- b/335116158 -->
-    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testIsUserForeground_differentContext_noPermission" />
-    <option name="compatibility:exclude-filter" value="CtsMultiUserTestCases android.multiuser.cts.UserManagerTest#testIsAdminUserForOtherUserContextFailsWithoutPermission" />
+    <!-- b/330018295 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+
+    <!-- b/341195751 -->
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication400" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication600" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
+
 </configuration>
