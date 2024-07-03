@@ -17,6 +17,7 @@
 package android.telephony.satellite.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -46,6 +47,7 @@ import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
@@ -58,6 +60,7 @@ import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.uwb.UwbManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -1396,5 +1399,124 @@ public class SatelliteManagerTestBase {
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
         return infos.stream().anyMatch(info -> info.getSubscriptionId() == subId);
+    }
+
+    protected static Pair<List<ProvisionSubscriberId>, Integer> requestProvisionSubscriberIds() {
+        final AtomicReference<List<ProvisionSubscriberId>> list = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<List<ProvisionSubscriberId>, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<ProvisionSubscriberId> result) {
+                        list.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestProvisionSubscriberIds(getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            loge("requestProvisionSubscriberIds ex=" + ex);
+            return null;
+        }
+
+        Integer error = errorCode.get();
+        if (error == null) {
+            assertTrue(list.get().size() > 0);
+            return new Pair<>(list.get(), error);
+        } else {
+            assertFalse(list.get().size() > 0);
+            return null;
+        }
+    }
+
+    protected static boolean isProvisioned(String subscriberId) {
+        final AtomicReference<Boolean> supported = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        supported.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestIsProvisioned(subscriberId, getContext().getMainExecutor(),
+                receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            loge("isProvisioned ex=" + ex);
+            return false;
+        }
+
+        Integer error = errorCode.get();
+        Boolean isSupported = supported.get();
+        if (error == null) {
+            assertNotNull(isSupported);
+            logd("isProvisioned isSupported=" + isSupported);
+            return isSupported;
+        } else {
+            assertNull(isSupported);
+            logd("isProvisioned error=" + error);
+            return false;
+        }
+    }
+
+    protected static boolean isProvisionSatellite(List<ProvisionSubscriberId> list) {
+        final AtomicReference<Boolean> supported = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        supported.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(),
+                receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            loge("isProvisionSatellite ex=" + ex);
+            return false;
+        }
+
+        Integer error = errorCode.get();
+        Boolean isSupported = supported.get();
+        if (error == null) {
+            assertNotNull(isSupported);
+            logd("isProvisionSatellite isSupported=" + isSupported);
+            return isSupported;
+        } else {
+            assertNull(isSupported);
+            logd("isProvisionSatellite error=" + error);
+            return false;
+        }
     }
 }
