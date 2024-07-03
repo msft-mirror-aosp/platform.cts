@@ -16,6 +16,8 @@
 
 package android.os.cts;
 
+import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
@@ -25,6 +27,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.os.vibrator.persistence.ParsedVibration;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -44,6 +47,7 @@ import java.util.Arrays;
 @ApiTest(apis = {
         "android.os.vibrator.persistence.ParsedVibration#resolve",
 })
+@RequiresFlagsEnabled(FLAG_VIBRATION_XML_APIS)
 public class ParsedVibrationTest {
 
     private static final VibrationEffect ONE_SHOT_DEFAULT_AMPLITUDE =
@@ -51,10 +55,10 @@ public class ParsedVibrationTest {
     private static final VibrationEffect ONE_SHOT_WITH_AMPLITUDE =
             VibrationEffect.createOneShot(10, 100);
     private static final VibrationEffect WAVEFORM_DEFAULT_AMPLITUDE =
-            VibrationEffect.createWaveform(new long[] { 10, 20, 30}, /* repeat= */ -1);
+            VibrationEffect.createWaveform(new long[] { 10, 20, 30 }, /* repeat= */ -1);
     private static final VibrationEffect WAVEFORM_WITH_AMPLITUDE =
             VibrationEffect.createWaveform(
-                    new long[] { 10, 20, 30}, new int[] { 64, 128, 255}, /* repeat= */ -1);
+                    new long[] { 10, 20, 30 }, new int[] { 64, 128, 255 }, /* repeat= */ -1);
     private static final VibrationEffect PREDEFINED_CLICK =
             VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK);
     private static final VibrationEffect PRIMITIVE_CLICK = VibrationEffect.startComposition()
@@ -120,7 +124,7 @@ public class ParsedVibrationTest {
 
         ParsedVibration vibration =
                 createParsedVibration(WAVEFORM_WITH_AMPLITUDE, WAVEFORM_DEFAULT_AMPLITUDE);
-        assertThat(vibration.resolve(mVibrator)).isEqualTo(ONE_SHOT_DEFAULT_AMPLITUDE);
+        assertThat(vibration.resolve(mVibrator)).isEqualTo(WAVEFORM_DEFAULT_AMPLITUDE);
     }
 
     @Test

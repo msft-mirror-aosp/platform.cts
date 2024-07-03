@@ -56,6 +56,9 @@ class PreviewRecorder implements AutoCloseable {
     // Frame capture timeout duration in milliseconds.
     private static final int FRAME_CAPTURE_TIMEOUT_MS = 2000; // 2 seconds
 
+    private static final int GREEN_PAINT = 1;
+    private static final int NO_PAINT = 0;
+
     // Simple Vertex Shader that rotates the texture before passing it to Fragment shader.
     private static final String VERTEX_SHADER = String.join(
             "\n",
@@ -84,8 +87,13 @@ class PreviewRecorder implements AutoCloseable {
             "precision mediump float;",
             "varying vec2 vTextureCoord;",
             "uniform samplerExternalOES sTexture;", // implicitly populated by SurfaceTexture
+            "uniform int paintIt;",
             "void main() {",
-            "    gl_FragColor = texture2D(sTexture, vTextureCoord);",
+            "    if (paintIt == 1) {",
+            "        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);",     // green frame
+            "    } else {",
+            "        gl_FragColor = texture2D(sTexture, vTextureCoord);",   // copy frame
+            "    }",
             "}",
             ""
     );
@@ -106,6 +114,7 @@ class PreviewRecorder implements AutoCloseable {
     private final Object mRecordLock = new Object();
     // Tracks if the mMediaRecorder/mMediaCodec is currently recording. Protected by mRecordLock.
     private volatile boolean mIsRecording = false;
+    private boolean mIsPaintGreen = false;
 
     private final Size mPreviewSize;
     private final int mMaxFps;
@@ -132,6 +141,8 @@ class PreviewRecorder implements AutoCloseable {
     private int mVPositionLoc;
     private int mTexMatrixLoc;
     private int mTexRotMatrixLoc;
+    private int mPaintItLoc;
+
 
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
@@ -220,9 +231,15 @@ class PreviewRecorder implements AutoCloseable {
                 }
                 try {
                     copyFrameToRecordSurface();
-                    mFrameTimeStamps.add(surfaceTexture.getTimestamp());
-                    Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size() + " timestamp = "
-                            + surfaceTexture.getTimestamp());
+                    // Capture results are not collected for padded green frames
+                    if (mIsPaintGreen) {
+                        Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
+                                + " with color. mIsPaintGreen = " + mIsPaintGreen);
+                    } else {
+                        mFrameTimeStamps.add(surfaceTexture.getTimestamp());
+                        Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
+                                + " timestamp = " + surfaceTexture.getTimestamp());
+                    }
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);
                     throw new ItsRuntimeException("Failed to copy texture to recorder.", e);
@@ -378,6 +395,8 @@ class PreviewRecorder implements AutoCloseable {
         mVPositionLoc = GLES20.glGetAttribLocation(mGLShaderProgram, "vPosition");
         mTexMatrixLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "texMatrix");
         mTexRotMatrixLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "texRotMatrix");
+        mPaintItLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "paintIt");
+
         GLES20.glUseProgram(mGLShaderProgram);
         assertNoGLError("glUseProgram");
     }
@@ -467,6 +486,9 @@ class PreviewRecorder implements AutoCloseable {
         GLES20.glUniformMatrix2fv(mTexRotMatrixLoc, /* count= */1, /* transpose= */false,
                 mTexRotMatrix, /* offset= */0);
         assertNoGLError("glUniformMatrix2fv");
+
+        GLES20.glUniform1i(mPaintItLoc, mIsPaintGreen ? GREEN_PAINT : NO_PAINT);
+        assertNoGLError("glUniform1i");
 
         // write vertices of the full-screen rectangle to the GLSL program
         ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(
@@ -587,6 +609,17 @@ class PreviewRecorder implements AutoCloseable {
             } else {
                 mMediaCodec.start();
             }
+        }
+    }
+
+    /**
+     * Record Green frames as buffer to workaround MediaRecorder
+     * issue of missing frames at the end
+     */
+    void recordGreenFrames() throws ItsException {
+        Logt.i(TAG, "Recording Green frames.");
+        synchronized (mRecordLock) {
+            mIsPaintGreen = true;
         }
     }
 
