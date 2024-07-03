@@ -39,8 +39,10 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -62,6 +64,7 @@ import android.server.wm.IgnoreOrientationRequestSession;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.DisplayCutout;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.ImageView;
@@ -340,6 +343,49 @@ public class VirtualDisplayTest {
             virtualDisplay.release();
         }
         assertDisplayUnregistered(display);
+    }
+
+    /**
+     * Ensures that an application can create a virtual display without a cutout.
+     */
+    @Test
+    public void testVirtualDisplayWithoutCutout() {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(
+                new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                        .setSurface(mSurface)
+                        .build());
+        try {
+            assertNull(virtualDisplay.getDisplay().getCutout());
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
+    }
+
+    /**
+     * Ensures that an application can create a virtual display with a cutout.
+     */
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_DISPLAY_INSETS)
+    @Test
+    public void testVirtualDisplayWithCutout() {
+        DisplayCutout cutout = new DisplayCutout(
+                /* safeInsets= */ Insets.of(1, 2, 3, 4),
+                /* boundLeft= */ new Rect(5, 6, 7, 8),
+                /* boundTop= */ new Rect(9, 10, 11, 12),
+                /* boundRight= */ new Rect(13, 14, 15, 16),
+                /* boundBottom= */ new Rect(17, 18, 19, 20),
+                /* waterfallInsets= */ Insets.of(21, 22, 23, 24));
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(
+                new VirtualDisplayConfig.Builder(NAME, WIDTH, HEIGHT, DENSITY)
+                        .setSurface(mSurface)
+                        .setDisplayCutout(cutout)
+                        .build());
+        try {
+            assertEquals(virtualDisplay.getDisplay().getCutout(), cutout);
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(virtualDisplay.getDisplay());
     }
 
     @Test
