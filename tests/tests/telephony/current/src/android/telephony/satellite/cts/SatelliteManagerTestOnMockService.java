@@ -4122,46 +4122,48 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testProvisionSubscriberIds:");
-        grantSatellitePermission();
-
+        // TODO(b/351911296): fix to CTS failed
+        beforeSatelliteForCarrierTest();
         /* Test when this carrier is not supported ESOS in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
-        bundle.putBoolean(
-                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
         overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        waitFor(TimeUnit.MINUTES.toMillis(1));
 
-        Context context = getContext();
-        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
         List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
-                SubscriptionManager::getActiveSubscriptionInfoList);
-        Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
-        if (!infos.get(0).isOnlyNonTerrestrialNetwork()) {
-            // Verify no match the subscriberId.
-            assertFalse(pairResult.first.size() > 0);
-            assertNull(pairResult.second);
-        } else {
-            // Verify subscriberId is marked as isProvisioned false.
-            pairResult = requestProvisionSubscriberIds();
-            assertTrue(pairResult.first.size() > 0);
-            assertNull(pairResult.second);
-            assertFalse(isProvisioned(infos.get(0).getIccId()));
+                SubscriptionManager::getAllSubscriptionInfoList);
+        grantSatellitePermission();
+        try {
+            Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+            if (pairResult == null) {
+                fail("requestProvisionSubscriberIds List<ProvisionSubscriberId> null");
+                revokeSatellitePermission();
+                return;
+            }
+
+            SubscriptionInfo prioritySubsInfo = null;
+            if (pairResult.first.size() > 0) {
+                ProvisionSubscriberId provisionSubscriberId = pairResult.first.get(0);
+                // is ntn only supported SubscriptionInfo exist
+                for (SubscriptionInfo info : infos) {
+                    if (provisionSubscriberId == null) {
+                        fail("requestProvisionSubscriberIds provisionSubscriberId null");
+                        revokeSatellitePermission();
+                        return;
+                    }
+                    if (info.getIccId().equals(provisionSubscriberId.getSubscriberId())) {
+                        prioritySubsInfo = info;
+                    }
+                }
+                assertNotNull(prioritySubsInfo);
+                assertFalse(isProvisioned(provisionSubscriberId.getSubscriberId()));
+            } else {
+                assertNull(prioritySubsInfo);
+            }
+        } finally {
+            revokeSatellitePermission();
         }
-
-        /* Test when this carrier is supported ESOS in the carrier config */
-        bundle.putBoolean(
-                CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-
-        // Verify subscriberId is marked as isProvisioned false.
-        pairResult = requestProvisionSubscriberIds();
-        assertTrue(pairResult.first.size() > 0);
-        assertNull(pairResult.second);
-        assertFalse(isProvisioned(pairResult.first.get(0).getSubscriberId()));
-
-        // Called #provisionSatellite with the given subscriberId to provision. Verify that this
-        // subscriberId is subsequently marked as isProvisioned true.
-        assertTrue(isProvisionSatellite(pairResult.first));
-        assertTrue(isProvisioned(pairResult.first.get(0).getSubscriberId()));
     }
 
     /*

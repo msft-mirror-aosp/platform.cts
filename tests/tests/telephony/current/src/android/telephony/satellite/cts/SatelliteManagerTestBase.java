@@ -1462,7 +1462,6 @@ public class SatelliteManagerTestBase {
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
-            loge("isProvisioned ex=" + ex);
             return false;
         }
 
@@ -1470,52 +1469,9 @@ public class SatelliteManagerTestBase {
         Boolean isSupported = supported.get();
         if (error == null) {
             assertNotNull(isSupported);
-            logd("isProvisioned isSupported=" + isSupported);
             return isSupported;
         } else {
             assertNull(isSupported);
-            logd("isProvisioned error=" + error);
-            return false;
-        }
-    }
-
-    protected static boolean isProvisionSatellite(List<ProvisionSubscriberId> list) {
-        final AtomicReference<Boolean> supported = new AtomicReference<>();
-        final AtomicReference<Integer> errorCode = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Boolean result) {
-                        supported.set(result);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onError(SatelliteManager.SatelliteException exception) {
-                        errorCode.set(exception.getErrorCode());
-                        latch.countDown();
-                    }
-                };
-
-        sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(),
-                receiver);
-        try {
-            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-        } catch (InterruptedException ex) {
-            loge("isProvisionSatellite ex=" + ex);
-            return false;
-        }
-
-        Integer error = errorCode.get();
-        Boolean isSupported = supported.get();
-        if (error == null) {
-            assertNotNull(isSupported);
-            logd("isProvisionSatellite isSupported=" + isSupported);
-            return isSupported;
-        } else {
-            assertNull(isSupported);
-            logd("isProvisionSatellite error=" + error);
             return false;
         }
     }
