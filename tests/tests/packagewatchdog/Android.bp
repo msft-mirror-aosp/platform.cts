@@ -26,7 +26,8 @@ android_test {
         "cts",
         "vts",
         "general-tests",
-        "mts-extservices"
+        "mts-extservices",
+        "mcts-extservices",
     ],
     libs: ["android.test.base"],
     static_libs: [
