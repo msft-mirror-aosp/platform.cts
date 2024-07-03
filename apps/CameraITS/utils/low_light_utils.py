@@ -40,6 +40,15 @@ _K_MEANS_ITERATIONS = 10
 _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
 
+# pylint: disable=line-too-long
+# Allowed tablets for low light scenes
+# List entries must be entered in lowercase
+TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
+    'gta8wifi',  # Samsung Galaxy Tab A8
+    'gta8',  # Samsung Galaxy Tab A8 LTE
+    'gta9pwifi',  # Samsung Galaxy Tab A9+
+)
+
 
 def _crop(img):
   """Crops the captured image according to the red square outline.
