@@ -311,7 +311,7 @@ class AeAwbRegions(its_base_test.ItsBaseTest):
       height = int(preview_size.split('x')[1])
       req = capture_request_utils.auto_capture_request()
       fmt = {'format': 'yuv', 'width': width, 'height': height}
-      cam.do_3a(lock_ae=True, lock_awb=True)
+      cam.do_3a()
       cap = cam.do_capture(req, fmt)
 
       # Save image and convert to numpy array
