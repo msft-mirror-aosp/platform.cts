@@ -63,7 +63,7 @@ android_test {
     srcs: ["legacy/src/**/*.java"],
     static_libs: ["truth-prebuilt", "cts-scopedstorage-lib"],
     compile_multilib: "both",
-    test_suites: ["general-tests", "mts", "cts"],
+    test_suites: ["general-tests", "mts", "cts", "mcts-mediaprovider"],
     sdk_version: "test_current",
     target_sdk_version: "29",
     java_resources: [
@@ -75,7 +75,7 @@ java_test_host {
     name: "CtsScopedStorageHostTest",
     srcs: ["host/src/**/*.java"],
     libs: ["tradefed", "testng"],
-    test_suites: ["general-tests", "mts", "cts"],
+    test_suites: ["general-tests", "mts", "cts", "mcts-mediaprovider"],
     test_config: "AndroidTest.xml",
 }
 
