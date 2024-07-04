@@ -1669,6 +1669,7 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
 
     @Test
     public void testSaveGoesAwayWhenTouchingOutside() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         saveGoesAway(DismissType.TOUCH_OUTSIDE);
     }
 

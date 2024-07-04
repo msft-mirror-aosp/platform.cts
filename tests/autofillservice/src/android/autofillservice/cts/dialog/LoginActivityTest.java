@@ -281,6 +281,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testTextView_clickTwiceWithShowFillDialog_showIme() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
@@ -371,7 +372,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testShowFillDialog_onlyShowOnce() throws Exception {
-        // Enable feature and test service
+       mUiBot.assumeMinimumResolution(500);
+       // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
 
@@ -486,6 +488,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testShowFillDialog_switchToUnsupportedField_fallbackDropdown() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
@@ -792,6 +795,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testCancelFillDialog_showDropdown() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
