@@ -29,7 +29,7 @@ LOCAL_MODULE_PATH := $(TARGET_OUT_DATA_APPS)
 LOCAL_MULTILIB := both
 
 # Tag this module as a cts test artifact
-LOCAL_COMPATIBILITY_SUITE := cts general-tests mts mts-neuralnetworks
+LOCAL_COMPATIBILITY_SUITE := cts general-tests mts mts-neuralnetworks mcts-neuralnetworks
 
 LOCAL_STATIC_JAVA_LIBRARIES := androidx.test.rules \
     compatibility-device-util-axt ctstestrunner-axt junit NeuralNetworksApiBenchmark_Lib

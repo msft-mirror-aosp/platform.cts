@@ -63,5 +63,6 @@ android_test {
         "cts",
         "mts-art",
         "general-tests",
+        "mcts-art",
     ],
 }

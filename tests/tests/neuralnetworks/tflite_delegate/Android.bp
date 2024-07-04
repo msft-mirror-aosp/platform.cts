@@ -50,8 +50,8 @@ cc_test {
     test_suites: [
         "cts",
         "mts",
-	"mts-neuralnetworks",
         "general-tests",
+        "mcts-neuralnetworks",
     ],
     sdk_version: "current",
     stl: "c++_static",
