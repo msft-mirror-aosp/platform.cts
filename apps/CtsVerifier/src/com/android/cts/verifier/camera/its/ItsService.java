@@ -3065,7 +3065,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
-        boolean paddedFramesAtEnd = cmdObj.getBoolean("paddedFramesAtEnd");
+        boolean paddedFramesAtEnd = cmdObj.optBoolean("paddedFramesAtEnd", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.

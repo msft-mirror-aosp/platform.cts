@@ -72,7 +72,7 @@ public final class ConcurrentUserActivityUtils {
                 () -> {
                     List<UserInfo> users = userManager.getAliveUsers();
                     for (UserInfo info : users) {
-                        if (info.id != initiatorUserId && info.isFull() && info.isInitialized()) {
+                        if (info.id != initiatorUserId && info.isFull()) {
                             responderUserId[0] = info.id;
                             break;
                         }

@@ -25,6 +25,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.platform.test.annotations.AsbSecurityTest;
 
@@ -51,11 +52,21 @@ public class BUG_283103220 extends StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = 283103220)
     public void testPocBUG_283103220() {
         try {
+            final Context context = getApplicationContext();
+
+            // Check if the device support picture-in-picture mode
+            assume().withMessage(
+                            "Skipping CTS test for BUG-283103220!"
+                                    + " The device doesn't support picture-in-picture mode!")
+                    .that(
+                            context.getPackageManager()
+                                    .hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE))
+                    .isTrue();
+
             // Register a receiver to receive any update from other app components.
             // Using the flag 'RECEIVER_EXPORTED' for API level 33 and above since it's
             // required for API 34 and above and available only from API level 33 onwards
             // and 0 otherwise.
-            final Context context = getApplicationContext();
             final int requiredFlag =
                     Build.VERSION.SDK_INT >= 33 /* TIRAMISU */
                             ? (int) Context.class.getField("RECEIVER_EXPORTED").get(context)

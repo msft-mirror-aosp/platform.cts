@@ -28,6 +28,8 @@ import android.os.Vibrator;
 import android.os.VibratorManager;
 import android.os.vibrator.persistence.ParsedVibration;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -35,6 +37,7 @@ import androidx.test.runner.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,6 +71,9 @@ public class ParsedVibrationTest {
             .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
             .addPrimitive(VibrationEffect.Composition.PRIMITIVE_LOW_TICK)
             .compose();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Vibrator mVibrator;
 

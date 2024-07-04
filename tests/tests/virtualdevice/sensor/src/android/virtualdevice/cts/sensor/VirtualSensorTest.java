@@ -306,8 +306,12 @@ public class VirtualSensorTest {
         Sensor sensor = mVirtualDeviceSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
         Sensor defaultDeviceSensor = mSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
 
-        assertThat(sensor.getHandle()).isEqualTo(defaultDeviceSensor.getHandle());
-        assertThat(sensor.getName()).isEqualTo(defaultDeviceSensor.getName());
+        if (defaultDeviceSensor == null) {
+          assertThat(sensor).isNull();
+        } else {
+          assertThat(sensor.getHandle()).isEqualTo(defaultDeviceSensor.getHandle());
+          assertThat(sensor.getName()).isEqualTo(defaultDeviceSensor.getName());
+        }
     }
 
     @Test
@@ -485,7 +489,9 @@ public class VirtualSensorTest {
 
         // The channel is created for the virtual device ID, configuring it for a sensor of the
         // default device should not be allowed.
-        Sensor defaultDeviceSensor = mSensorManager.getDefaultSensor(TYPE_ACCELEROMETER);
+        Sensor defaultDeviceSensor =
+              mSensorManager.getSensorList(Sensor.TYPE_ALL).stream().findFirst().orElse(null);
+        assumeTrue(defaultDeviceSensor != null);
         assertThat(mDirectChannel.configure(defaultDeviceSensor, RATE_NORMAL)).isEqualTo(0);
     }
 

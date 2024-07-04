@@ -156,10 +156,11 @@ public class PointerCaptureTest {
         injectMotionEvent(obtainRelativeMouseEvent(action, x, y));
     }
 
-    private static MotionEvent obtainRelativeMouseEvent(int action, int x, int y) {
+    private MotionEvent obtainRelativeMouseEvent(int action, int x, int y) {
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent event = MotionEvent.obtain(eventTime, eventTime, action, x, y, 0);
         event.setSource(InputDevice.SOURCE_MOUSE_RELATIVE);
+        event.setDisplayId(mActivity.getDisplayId());
         return event;
     }
 

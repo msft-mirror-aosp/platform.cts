@@ -23,6 +23,7 @@ import static android.os.VibrationEffect.Composition.PRIMITIVE_TICK;
 import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -33,12 +34,16 @@ import android.os.VibrationEffect;
 import android.os.vibrator.persistence.ParsedVibration;
 import android.os.vibrator.persistence.VibrationXmlParser;
 import android.os.vibrator.persistence.VibrationXmlSerializer;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import com.android.compatibility.common.util.ApiTest;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -65,7 +70,11 @@ import javax.xml.parsers.ParserConfigurationException;
         "android.os.vibrator.persistence.VibrationXmlParser#parse",
         "android.os.vibrator.persistence.VibrationXmlSerializer#serialize"
 })
+@RequiresFlagsEnabled(FLAG_VIBRATION_XML_APIS)
 public class VibrationEffectXmlSerializationTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     @Parameters(method = "getEffectsAndVibrationEffectXmls")
