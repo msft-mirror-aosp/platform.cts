@@ -38,6 +38,7 @@ android_test {
         "general-tests",
         "mts",
         "vts10",
+        "mcts-conscrypt",
     ],
     java_resources: [":libcore-expectations-knownfailures"],
 }
