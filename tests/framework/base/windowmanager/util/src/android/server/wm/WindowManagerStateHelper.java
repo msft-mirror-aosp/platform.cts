@@ -852,7 +852,21 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 imeWinState.getDisplayId());
     }
 
-    WindowState getImeWindowState() {
+    public void waitAndAssertImeWindowHiddenOnDisplay(int displayId) {
+        final WindowState imeWinState = Condition.waitForResult("IME window",
+                condition -> condition
+                        .setResultSupplier(this::getImeWindowState)
+                        .setResultValidator(
+                                w -> w != null && !w.isSurfaceShown()
+                                        && w.getDisplayId() == displayId));
+
+        assertNotNull("IME window must exist", imeWinState);
+        assertFalse("IME window must be hidden", imeWinState.isSurfaceShown());
+        assertEquals("IME window must be on the given display", displayId,
+                imeWinState.getDisplayId());
+    }
+
+    public WindowState getImeWindowState() {
         computeState();
         return getInputMethodWindowState();
     }
