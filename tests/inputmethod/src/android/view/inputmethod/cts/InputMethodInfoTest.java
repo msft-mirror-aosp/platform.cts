@@ -54,7 +54,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
-import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PropertyUtil;
 
@@ -184,10 +183,6 @@ public class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
-            assertEquals(mLanguageSettingsActivity,
-                    info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
-        }
         ComponentName component = info.getComponent();
         assertEquals(mClassName, component.getClassName());
         String expectedId = component.flattenToShortString();
@@ -228,28 +223,6 @@ public class InputMethodInfoTest {
         assertEquals(expected.toString(), mInputMethodInfo.loadLabel(pm).toString());
     }
 
-    /**
-     * Verifies the created IME language settings activity intent.
-     */
-    @ApiTest(apis = {
-            "android.view.inputmethod.InputMethodInfo#ACTION_IME_LANGUAGE_SETTINGS",
-            "android.view.inputmethod.InputMethodInfo#createImeLanguageSettingsActivityIntent"
-    })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
-    @Test
-    public void testLanguageSettingsInfo() {
-        final List<InputMethodInfo> imis = mImManager.getInputMethodList();
-
-        final InputMethodInfo mockIme = getImi(imis, MOCK_IME_ID);
-        assertThat(mockIme).isNotNull();
-
-        final Intent languageSettingsIntent = mockIme.createImeLanguageSettingsActivityIntent();
-        assertNotNull(languageSettingsIntent);
-        assertEquals(InputMethodInfo.ACTION_IME_LANGUAGE_SETTINGS,
-                languageSettingsIntent.getAction());
-        assertEquals("language_settings", languageSettingsIntent.getComponent().getClassName());
-    }
-
     @Test
     public void testInputMethodInfoWriteToParcel() {
         final Parcel p = Parcel.obtain();
@@ -261,11 +234,6 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
-            assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
-                            .getClassName(),
-                    imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
-        }
         assertEquals(mInputMethodInfo.getId(), imi.getId());
         assertEquals(mInputMethodInfo.getIsDefaultResourceId(), imi.getIsDefaultResourceId());
         assertEquals(mInputMethodInfo.supportsStylusHandwriting(), imi.supportsStylusHandwriting());
