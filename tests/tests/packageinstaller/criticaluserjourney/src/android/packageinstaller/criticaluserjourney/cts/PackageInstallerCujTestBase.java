@@ -42,6 +42,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.provider.DeviceConfig;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
@@ -108,6 +109,7 @@ public class PackageInstallerCujTestBase {
     private static final String BUTTON_OPEN_LABEL = "Open";
     private static final String BUTTON_SETTINGS_LABEL = "Settings";
     private static final String BUTTON_UPDATE_LABEL = "Update";
+    private static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
     private static final String TOGGLE_ALLOW_LABEL = "allow";
     private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
     private static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
@@ -135,6 +137,7 @@ public class PackageInstallerCujTestBase {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT = 2;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI = 3;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
+    private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
 
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
@@ -297,7 +300,25 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Start the installation via startActivity.
+     * Start the installation via startActivity with ACTION_VIEW.
+     */
+    public static void startInstallationViaIntentActionView() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the test apk from version 1 to version 2
+     * via startActivity with ACTION_VIEW.
+     */
+    public static void startInstallationUpdateViaIntentActionView() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW,
+                /* useV2= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationViaIntent() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT);
@@ -306,7 +327,7 @@ public class PackageInstallerCujTestBase {
 
     /**
      * Start the installation to update the test apk from version 1 to version 2
-     * via startActivity.
+     * via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationUpdateViaIntent() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useV2= */ true);
@@ -483,6 +504,13 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * Assert the content includes the installer label {@link #TEST_INSTALLER_LABEL}.
+     */
+    private static void assertContentIncludesTestInstallerLabel() throws Exception {
+        findPackageInstallerObject(By.textContains(TEST_INSTALLER_LABEL), /* checkNull= */ true);
+    }
+
+    /**
      * Assert the title of the install dialog is {@link #TEST_INSTALLER_LABEL}.
      */
     private static void assertTitleIsTestInstallerLabel() throws Exception {
@@ -504,6 +532,13 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * Assert the Update anyway button of the install dialog exists.
+     */
+    private static void assertUpdateAnywayButton() throws Exception {
+        findPackageInstallerObject(BUTTON_UPDATE_ANYWAY_LABEL);
+    }
+
+    /**
      * Assert the install dialog for installing the test app.
      */
     public static void assertTestAppInstallDialog() throws Exception {
@@ -517,6 +552,15 @@ public class PackageInstallerCujTestBase {
     public static void assertTestAppUpdateDialog() throws Exception {
         assertTitleIsTestApkLabel();
         assertUpdateButton();
+    }
+
+    /**
+     * Assert the update anyway dialog for installing the test app.
+     */
+    public static void assertTestAppUpdateAnywayDialog() throws Exception {
+        assertTitleIsTestApkLabel();
+        assertContentIncludesTestInstallerLabel();
+        assertUpdateAnywayButton();
     }
 
     /**
@@ -603,6 +647,34 @@ public class PackageInstallerCujTestBase {
         }
 
         if (!isUpdatedViaPackageUri && !isTestPackageVersion2Installed()) {
+            allowInstallIfGPPDialogExists();
+        }
+    }
+
+    /**
+     * Click the Update anyway button and wait for the dialog to disappear. Also allow install if
+     * the GPP dialog exists.
+     */
+    public static void clickUpdateAnywayButton() throws Exception {
+        clickUpdateAnywayButton(/* checkInstallingDialog= */ false);
+    }
+
+    /**
+     * Click the Update anyway button, assert the title is {@link #TEST_APK_LABEL} and wait for the
+     * dialog to disappear. If {@code checkInstallingDialog} is true, check the Installing
+     * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
+     * triggers Installing dialog.
+     */
+    public static void clickUpdateAnywayButton(boolean checkInstallingDialog) throws Exception {
+        assertTitleIsTestApkLabel();
+
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_ANYWAY_LABEL));
+
+        if (checkInstallingDialog) {
+            waitForInstallingDialogGone();
+        }
+
+        if (!isTestPackageVersion2Installed()) {
             allowInstallIfGPPDialogExists();
         }
     }
@@ -819,11 +891,42 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * Install the test apk with update-ownership.
+     */
+    public static void installTestPackageWithUpdateOwnership() throws IOException {
+        SystemUtil.runShellCommand("pm install -t  --update-ownership "
+                + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
+        assertTestPackageInstalled();
+    }
+
+    /**
      * Install the test apk.
      */
     public static void installTestPackage() throws IOException {
         installPackage(TEST_APK_NAME);
         assertTestPackageInstalled();
+    }
+
+    /**
+     * Return the value of the device config of the {@code name} in PackageManagerService
+     * namespace.
+     */
+    @Nullable
+    public static String getPackageManagerDeviceProperty(@NonNull String name)
+            throws Exception {
+        return SystemUtil.callWithShellPermissionIdentity(() ->
+                DeviceConfig.getProperty(DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name));
+    }
+
+    /**
+     * Set the {@code value} to the device config with the {@code name} in PackageManagerService
+     * namespace.
+     */
+    public static void setPackageManagerDeviceProperty(@NonNull String name,
+            @Nullable String value) throws Exception {
+        SystemUtil.callWithShellPermissionIdentity(() -> DeviceConfig.setProperty(
+                DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name, value,
+                /* makeDefault= */ false));
     }
 
     private static void installPackage(@NonNull String apkName) throws IOException {

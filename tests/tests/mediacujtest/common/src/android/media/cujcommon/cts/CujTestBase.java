@@ -23,6 +23,8 @@ import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.UserManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ActivityScenario;
@@ -112,6 +114,22 @@ public class CujTestBase {
    */
   public static boolean isTelevisionDevice(final Activity activity) {
     return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+  }
+
+  /**
+   * Whether the given {@code activity} is running as a visible background user.
+   */
+  public static boolean isVisibleBackgroundNonProfileUser(Activity activity) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      return false;
+    }
+
+    UserManager um = activity.getSystemService(UserManager.class);
+    if (!um.isVisibleBackgroundUsersSupported()) {
+      return false;
+    }
+
+    return um.isUserVisible() && !um.isUserForeground() && !um.isProfile();
   }
 
   /**
