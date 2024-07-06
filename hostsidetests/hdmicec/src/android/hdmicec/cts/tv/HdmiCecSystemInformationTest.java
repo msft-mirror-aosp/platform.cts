@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Locale;
 
 /** HDMI CEC system information tests (Section 11.1.6) */
@@ -72,6 +73,27 @@ public final class HdmiCecSystemInformationTest extends BaseHdmiCecCtsTest {
             hdmiCecClient.sendCecMessage(source, CecOperand.GET_MENU_LANGUAGE);
             message = hdmiCecClient.checkExpectedOutput(CecOperand.SET_MENU_LANGUAGE);
             assertThat(CecMessage.getAsciiString(message)).isEqualTo(tvLanguage);
+        }
+    }
+
+    /**
+     * Test HF4-8-11
+     *
+     * <p> Verify that the DUT (TV) sends [RC Profile ID] in {@code <Report Features>} and that its
+     * forwarding behavior matches this declaration.
+     */
+    @Test
+    public void cect_hf4_8_11_SendRcProfileIdReportFeatureMessage() throws Exception {
+        setCec20();
+        List<Integer> rcProfileList = List.of(HdmiCecConstants.RC_PROFILE_TV_NONE,
+                HdmiCecConstants.RC_PROFILE_TV_ONE, HdmiCecConstants.RC_PROFILE_TV_TWO,
+                HdmiCecConstants.RC_PROFILE_TV_THREE, HdmiCecConstants.RC_PROFILE_TV_FOUR);
+        for (int rcProfile : rcProfileList) {
+            setSettingsValue(
+                    HdmiCecConstants.CEC_SETTING_NAME_RC_PROFILE_TV, String.valueOf(rcProfile));
+            String message = hdmiCecClient.checkExpectedOutput(CecOperand.REPORT_FEATURES);
+            // RC profile bytes are located at nibbles 4 and 5
+            assertThat(CecMessage.getParams(message, 4, 6)).isEqualTo(rcProfile);
         }
     }
 }

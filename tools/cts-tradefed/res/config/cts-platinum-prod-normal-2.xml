@@ -378,41 +378,7 @@
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.ZoomControlsTest#testSetOnZoomInClickListener" />
 
     <!-- CtsAccessibilityServiceTestCases -->
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#clear_cacheInvalidated" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#getChild_descendantPrefetched" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#invalidateNode_nodeInCacheInvalidated" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#invalidateNode_subtreeInCacheInvalidated" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#queryNode_nodeIsInCache" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_prefetchWithA11yWindowInfo" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_prefetchWithRootInActiveWindow" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityDragAndDropTest#testStartDrag_eventSentAndActionsUpdated" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityActionRetained" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_checkAdsProperty_bottomUp" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_excludedFromParent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_hiddenFromEventPropagation" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_hiddenFromSearches" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_innerChildHidden" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testActionArgumentScrollAmountFloat" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testDirectAccessibilityConnection_CanDisable" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testDirectAccessibilityConnection_CanPerformAction" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testLabelForReportedToAccessibility" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testOnMotionEvent_ignoresTouchscreenEventWhenTouchExplorationEnabled" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testPackageNameCannotBeFaked" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testPackageNameCannotBeFakedAppWidget" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTooltipTextActionsReportedToAccessibility" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTooltipTextReportedToAccessibility" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeNotificationStateChangedAccessibilityEvent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewClickedAccessibilityEvent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewFocusedAccessibilityEvent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewLongClickedAccessibilityEvent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewTextChangedAccessibilityEvent" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testViewHeadingReportedToAccessibility" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testChangeFocusColor_expectedColorIsChanged" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testInitialStateNoAccessibilityFocus" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testOnlyOneNodeHasAccessibilityFocus" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testScreenReaderFocusableAttribute_reportedToAccessibility" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testClickAt_producesDownThenUp" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testContinuedGesture_nextGestureDoesntContinue_isCancelled" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformActionScreenshot" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionBack" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionDpadCenter" />
@@ -423,45 +389,15 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionNotifications" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionPowerDialog" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionQuickSettings" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionRecents" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testDefaultImplementation" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testInputConnection_requestIme" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testSelectionChange_requestIme" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testCommitText" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testDeleteSurroundingText" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testGetCursorCapsMode" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testPerformEditorAction" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testSetSelection" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityMagnificationTest#testResetCurrentMagnificationRegion_WindowMode_regionIsEmpty" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityMagnificationTest#testSetWindowModeConfig_hasAccessibilityOverlay" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityOverlayTest#testA11yServiceShowsDisplayEmbeddedOverlayWithCallback_shouldAppearAndDisappear" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityOverlayTest#testA11yServiceShowsDisplayEmbeddedOverlayWithoutCallback_shouldAppearAndDisappear" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTakeScreenshotTest#testTakeScreenshotOfWindow_ErrorForServiceWithoutScreenshotCapability" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testExtraRendering_viewGroupShouldNotProvideLayoutParamsWhenNotRequested" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testTextLocations_withRequestPreparer_shouldHoldOffUntilReady" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testUrlSpan_shouldWorkFromAccessibilityService" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityLineOverText" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityLineOverTextExtend" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityParagraphOverText" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityWordOverText" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testSelectionDoesNotMoveFocus" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testAccessibilityImportanceReportingForUnimportantView" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDrawingOrderWithCustomDrawingOrder" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityVolumeTest#testChangeAccessibilityVolume_inAccessibilityService_shouldWork" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testFindPictureInPictureWindow" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testGetWindows_resultIsSortedByLayerDescending" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testNoWindowsAccessIfFlagNotSet" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionClearSelection" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformCustomAction" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseAllWindows" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseWindow" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseWindowFromEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#putWindowInPictureInPicture_generatesEventAndReportsProperty" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#showNotTouchableWindow_activityWindowIsNotVisible" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#testWindowAddedMovedAndRemoved_generatesEventsForAllThree" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.FullScreenMagnificationGestureHandlerTest#testPanning" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.FullScreenMagnificationGestureHandlerTest#testViewportDragging" />
-    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSlowSwipe_initiatesTouchExploration" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchInteractionControllerTest#testRebuildInputFilter_shouldRetainState" />
 
     <!-- CtsMediaMiscTestCases -->
