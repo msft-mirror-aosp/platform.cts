@@ -3443,8 +3443,11 @@ public class TunerTest {
                     builder.setMode(mode);
                     builder.setGuardInterval(guardInterval);
 
-                    if (!TunerVersionChecker.isHigherOrEqualVersionTo(
-                                TunerVersionChecker.TUNER_VERSION_2_0)) {
+                    // Can not use TunerVersionChecker.isHigherOrEqualVersionTo here because this
+                    // static method can't be marked as @Test
+                    boolean isHigherOrEqualToTunerV2 = TunerVersionChecker.getTunerVersion() >=
+                            TunerVersionChecker.TUNER_VERSION_2_0;
+                    if (!isHigherOrEqualToTunerV2) {
                         builder.setModulation(modulation);
                         builder.setCodeRate(codeRate);
                     } else {
