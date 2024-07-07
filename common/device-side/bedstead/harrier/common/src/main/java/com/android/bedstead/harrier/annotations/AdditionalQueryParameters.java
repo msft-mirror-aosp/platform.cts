@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations.enterprise;
 import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ENSURE_HAS_WORK_PROFILE_PRIORITY;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface AdditionalQueryParameters {
 
     /**
