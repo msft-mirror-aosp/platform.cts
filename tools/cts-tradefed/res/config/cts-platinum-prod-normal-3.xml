@@ -128,7 +128,6 @@
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testAppOptOut_topics" />
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_fledgeJoinCustomAudience" />
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_fledgeLeaveCustomAudience" />
-    <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_selectAds_adSelectionConfig" />
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_selectAds_adSelectionFromOutcomesConfig" />
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testWithEnrollment_fledgeJoinCustomAudience" />
@@ -147,7 +146,6 @@
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testCallbackOnMediaButtonEvent" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonBroadcastReceiver_broadcastReceiver" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonReceiver_broadcastReceiver" />
-    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonReceiver_service" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.SystemMediaRouter2Test#testRoutingControllerRelease" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.SystemMediaRouter2Test#testRoutingControllerSelectAndDeselectRoute" />
 
