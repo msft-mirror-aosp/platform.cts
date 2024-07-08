@@ -90,13 +90,14 @@ public class ActivityKeyboardShortcutsTest
     }
 
     private boolean keyboardShortcutsSupported() {
-        // Keyboard shortcuts API is not supported on watches or automotive.
+        // Keyboard shortcuts API is not supported on watches, automotive, embedded and TV.
         // TODO(b/62257073): Provide a more granular feature to check here.
-        // 2017-10-17: Updated to also exclude EMBEDDED
         // TODO(b/286087686): Update this once we start supporting keyboard shortcuts for AAOS
         return !mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
                 && !mActivity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
                 && !mActivity.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_AUTOMOTIVE);
+                PackageManager.FEATURE_AUTOMOTIVE)
+                && !mActivity.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK);
     }
 }
