@@ -53,6 +53,8 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private Context mContext;
     private AudioManager mAudioManager;
 
+    private AudioDeviceConnectionCallback mConnectionListener;
+
     private DuplexAudioManager mDuplexAudioManager;
 
     private AudioSourceProvider mLeftSineSourceProvider;
@@ -123,10 +125,23 @@ class AudioLoopbackCalibrationDialog extends Dialog
         mOutputsSpinner = (Spinner) findViewById(R.id.output_devices_spinner);
         mOutputsSpinner.setOnItemSelectedListener(this);
 
-        mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
+        mConnectionListener = new AudioDeviceConnectionCallback();
 
         mInfoPanel = (WebView) findViewById(R.id.audio_calibration_info);
         mInfoPanel.loadUrl("file:///android_asset/html/AudioCalibrationInfo.html");
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        stopAudio();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
+        super.onStop();
     }
 
     ArrayAdapter fillAdapter(AudioDeviceInfo[] deviceInfos) {
@@ -149,11 +164,6 @@ class AudioLoopbackCalibrationDialog extends Dialog
             }
         }
         return arrayAdapter;
-    }
-
-    @Override
-    public void onStop() {
-        stopAudio();
     }
 
     private static final int CHANNEL_LEFT = 0;

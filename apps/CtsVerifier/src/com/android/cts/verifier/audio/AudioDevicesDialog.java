@@ -23,7 +23,6 @@ import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.audio.Flags;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -38,6 +37,7 @@ import java.util.Set;
 public class AudioDevicesDialog extends Dialog implements OnClickListener {
     private Context mContext;
     private AudioManager mAudioManager;
+    private ConnectionListener mConnectListener;
 
     private WebView mInfoPanel;
 
@@ -52,7 +52,8 @@ public class AudioDevicesDialog extends Dialog implements OnClickListener {
         super.onCreate(savedInstanceState);
 
         mAudioManager = mContext.getSystemService(AudioManager.class);
-        mAudioManager.registerAudioDeviceCallback(new ConnectionListener(), new Handler());
+
+        mConnectListener = new ConnectionListener();
 
         setTitle(mContext.getString(R.string.audio_devicesupport_title));
 
@@ -64,6 +65,18 @@ public class AudioDevicesDialog extends Dialog implements OnClickListener {
         mInfoPanel = (WebView) findViewById(R.id.audio_devices_info);
 
         displayDeviceSupport();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
+        super.onStop();
     }
 
     /**

@@ -97,6 +97,9 @@ public abstract class AudioDataPathsBaseActivity
 
     // Audio I/O
     private AudioManager mAudioManager;
+
+    AudioDeviceConnectionCallback mConnectListener;
+
     private boolean mSupportsMMAP;
     private boolean mSupportsMMAPExclusive;
 
@@ -172,7 +175,7 @@ public abstract class AudioDataPathsBaseActivity
 
         mTestManager.initializeTests();
 
-        mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
+        mConnectListener = new AudioDeviceConnectionCallback();
 
         DisplayUtils.setKeepScreenOn(this, true);
 
@@ -183,8 +186,15 @@ public abstract class AudioDataPathsBaseActivity
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
     public void onStop() {
         stopTest();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         super.onStop();
     }
 

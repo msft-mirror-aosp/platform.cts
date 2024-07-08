@@ -136,7 +136,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                         0f /* pressure */),
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_SCROLL,
                         toWindowX(startPosition.x), toWindowY(startPosition.y), 0 /* buttonState */,
-                        0f /* pressure */, 0f /* relativeX */, 0f /* relativeY */,
+                        0f /* pressure */, 0f /* relativeX */, 0f /* relativeY */, 0f /* hScroll */,
                         1f /* vScroll */)));
     }
 
@@ -157,7 +157,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
                         toWindowX(firstStopPositionX), toWindowY(firstStopPositionY),
                         0 /* buttonState */, 0f /* pressure */, relativeChangeX, relativeChangeY,
-                        0f /* vScroll */)));
+                        0f /* hScroll */, 0f /* vScroll */)));
         final PointF cursorPosition1 = mouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
                 firstStopPositionX, cursorPosition1.x, EPSILON);
@@ -174,7 +174,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_MOVE,
                         toWindowX(secondStopPositionX), toWindowY(secondStopPositionY),
                         0 /* buttonState */, 0f /* pressure */, -relativeChangeX, -relativeChangeY,
-                        0f /* vScroll */)));
+                        0f /* hScroll */, 0f /* vScroll */)));
         final PointF cursorPosition2 = mouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
                 secondStopPositionX, cursorPosition2.x, EPSILON);

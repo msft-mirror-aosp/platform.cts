@@ -47,6 +47,9 @@ public class ProAudioActivity
     private static final String TAG = ProAudioActivity.class.getSimpleName();
     private static final boolean DEBUG = false;
 
+    private AudioManager mAudioManager;
+    private TestAudioDeviceCallback mConnectionListener;
+
     // Flags
     private boolean mClaimsProAudio;
     private boolean mClaimsLowLatencyAudio;    // CDD ProAudio section C-1-1
@@ -55,7 +58,7 @@ public class ProAudioActivity
     private boolean mClaimsUSBPeripheralMode;  // CDD ProAudio section C-1-3
     private boolean mClaimsHDMI;               // CDD ProAudio section C-1-3
 
-    AudioDeviceInfo mHDMIDeviceInfo;
+    private AudioDeviceInfo mHDMIDeviceInfo;
 
     // Widgets
     TextView mHDMISupportLbl;
@@ -228,12 +231,23 @@ public class ProAudioActivity
 
         mTestStatusLbl = (TextView)findViewById(R.id.proAudioTestStatusLbl);
 
-        AudioManager audioManager = getSystemService(AudioManager.class);
-        audioManager.registerAudioDeviceCallback(new TestAudioDeviceCallback(), null);
+        mAudioManager = getSystemService(AudioManager.class);
+        mConnectionListener = new TestAudioDeviceCallback();
 
         displayTestResults();
     }
 
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
+        super.onStop();
+    }
     /**
      * Store test results in log
      */

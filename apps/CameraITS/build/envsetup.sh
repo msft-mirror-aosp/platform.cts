@@ -87,9 +87,9 @@ echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.and
 
 # Rename libtinfo.so.6
 python_paths=$(which python)
-for path in $python_paths
+for python_path in $python_paths
 do
-  env_dir=${path%/python*}"/../../"
+  env_dir=${python_path%/python*}"/../../"
   files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
   for f in $files_to_rename
   do
