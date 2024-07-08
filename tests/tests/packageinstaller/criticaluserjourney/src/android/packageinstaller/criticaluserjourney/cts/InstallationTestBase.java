@@ -434,7 +434,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OPEN_LABEL));
 
         // Assert the activity is launched successfully
-        findObject(By.text(TEST_APK_LABEL).pkg(TEST_APK_PACKAGE_NAME), /* checkNull= */ true);
+        findObject(By.text(TEST_APK_LABEL).pkg(TEST_APP_PACKAGE_NAME), /* checkNull= */ true);
 
         // Press back to leave the test app
         pressBack();
