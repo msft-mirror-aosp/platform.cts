@@ -81,6 +81,7 @@ import static android.scopedstorage.cts.lib.TestUtils.installApp;
 import static android.scopedstorage.cts.lib.TestUtils.installAppWithStoragePermissions;
 import static android.scopedstorage.cts.lib.TestUtils.listAs;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
+import static android.scopedstorage.cts.lib.TestUtils.pollForPermission;
 import static android.scopedstorage.cts.lib.TestUtils.queryAudioFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFile;
 import static android.scopedstorage.cts.lib.TestUtils.queryFileExcludingPending;
@@ -120,6 +121,7 @@ import static junit.framework.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.AppOpsManager;
@@ -128,12 +130,14 @@ import android.content.ContentValues;
 import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.storage.StorageManager;
+import android.os.SystemProperties;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.RedactionTestHelper;
@@ -147,8 +151,6 @@ import androidx.annotation.Nullable;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
-import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.packages.Package;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.cts.install.lib.TestApp;
 import com.android.modules.utils.build.SdkLevel;
@@ -1164,6 +1166,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateLowerCaseDeleteUpperCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCase = new File(getDownloadDir(), "CREATE_LOWER_DELETE_UPPER");
         File lowerCase = new File(getDownloadDir(), "create_lower_delete_upper");
 
@@ -1172,6 +1175,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateUpperCaseDeleteLowerCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCase = new File(getDownloadDir(), "CREATE_UPPER_DELETE_LOWER");
         File lowerCase = new File(getDownloadDir(), "create_upper_delete_lower");
 
@@ -1180,6 +1184,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCreateMixedCaseDeleteDifferentMixedCase() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File mixedCase1 = new File(getDownloadDir(), "CrEaTe_MiXeD_dElEtE_mIxEd");
         File mixedCase2 = new File(getDownloadDir(), "cReAtE_mIxEd_DeLeTe_MiXeD");
 
@@ -1188,6 +1193,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testAndroidDataObbDoesNotForgetMount() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File dataDir = getContext().getExternalFilesDir(null);
         File upperCaseDataDir = new File(dataDir.getPath().replace("Android/data", "ANDROID/DATA"));
 
@@ -1212,6 +1218,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testCacheConsistencyForCaseInsensitivity() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         File upperCaseFile = new File(getDownloadDir(), "CACHE_CONSISTENCY_FOR_CASE_INSENSITIVITY");
         File lowerCaseFile = new File(getDownloadDir(), "cache_consistency_for_case_insensitivity");
 
@@ -1230,6 +1237,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
     @Test
     public void testInsertDefaultPrimaryCaseInsensitiveCheck() throws Exception {
+        assumeTrue(isDeviceInitialSdkIntAtLeastR());
         final File podcastsDir = getPodcastsDir();
         final File podcastsDirLowerCase =
                 new File(getExternalStorageDir(), Environment.DIRECTORY_PODCASTS.toLowerCase());
@@ -1318,6 +1326,7 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 /* permission */ null, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO, /* forWrite */ true);
     }
 
+    @FlakyTest(bugId = 324388050)
     @Test
     public void testAccessMediaLocationInvalidation() throws Exception {
         File imgFile = new File(getDcimDir(), "access_media_location.jpg");
@@ -1341,22 +1350,31 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             installAppWithStoragePermissions(APP_GENERAL_ONLY);
 
             // Grant A_M_L and verify access to sensitive data
-            Package generalPackage = TestApis.packages().find(APP_GENERAL_ONLY.getPackageName());
-            generalPackage.grantPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
-            assertTrue(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
+            grantPermission(APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
             HashMap<String, String> exifFromTestApp =
                     readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
 
             // Revoke A_M_L and verify sensitive data redaction
-            generalPackage.denyPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
-            assertFalse(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
+            revokePermission(
+                    APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            // revokePermission waits for permission status to be updated, but MediaProvider still
+            // needs to get permission change callback and clear its permission cache.
+            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ false);
+            Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMismatch(exifFromTestApp, originalExif);
 
             // Re-grant A_M_L and verify access to sensitive data
-            generalPackage.grantPermission(Manifest.permission.ACCESS_MEDIA_LOCATION);
-            assertTrue(generalPackage.hasPermission(Manifest.permission.ACCESS_MEDIA_LOCATION));
+            grantPermission(APP_GENERAL_ONLY.getPackageName(), Manifest.permission.ACCESS_MEDIA_LOCATION);
+            // grantPermission waits for permission status to be updated, but MediaProvider still
+            // needs to get permission change callback and clear its permission cache.
+            pollForPermission(APP_GENERAL_ONLY.getPackageName(),
+                    Manifest.permission.ACCESS_MEDIA_LOCATION, /* granted */ true);
+            Thread.sleep(500);
             exifFromTestApp = readExifMetadataFromTestApp(APP_GENERAL_ONLY, imgFile.getPath());
             assertExifMetadataMatch(exifFromTestApp, originalExif);
         } finally {
@@ -3584,5 +3602,17 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         // Use a legacy app to delete this directory, since it could be outside shared storage.
         Log.d(TAG, "Deleting directory " + dir);
         deleteRecursivelyAs(APP_D_LEGACY_HAS_RW, dir.getAbsolutePath());
+    }
+
+    /**
+     * @return {@code true} if the initial SDK version of the device is at least Android R
+     */
+    public static boolean isDeviceInitialSdkIntAtLeastR() {
+        // Build.VERSION.DEVICE_INITIAL_SDK_INT is available only Android S onwards.
+        int deviceInitialSdkInt =
+                SdkLevel.isAtLeastS()
+                        ? Build.VERSION.DEVICE_INITIAL_SDK_INT
+                        : SystemProperties.getInt("ro.product.first_api_level", 0);
+        return deviceInitialSdkInt >= Build.VERSION_CODES.R;
     }
 }

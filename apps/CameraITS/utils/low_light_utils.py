@@ -24,6 +24,7 @@ _LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH = 18
 _LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH = 90
 _BOUNDING_BOX_COLOR = (0, 255, 0)
 _BOX_MIN_SIZE = 20
+_BOX_MAX_SIZE_RATIO = 0.5  # 50% of the cropped image width
 _BOX_PADDING_RATIO = 0.2
 _CROP_PADDING = 10
 _EXPECTED_NUM_OF_BOXES = 20  # The captured image must result in 20 detected
@@ -39,6 +40,15 @@ _NUM_CLUSTERS = 8
 _K_MEANS_ITERATIONS = 10
 _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
+
+# pylint: disable=line-too-long
+# Allowed tablets for low light scenes
+# List entries must be entered in lowercase
+TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
+    'gta8wifi',  # Samsung Galaxy Tab A8
+    'gta8',  # Samsung Galaxy Tab A8 LTE
+    'gta9pwifi',  # Samsung Galaxy Tab A9+
+)
 
 
 def _crop(img):
@@ -130,10 +140,15 @@ def _find_boxes(image):
                                  cv2.CHAIN_APPROX_SIMPLE)
   boxes = []
 
+  # Filter out boxes that are too small or too large
+  # and boxes that are not square
+  img_hw_size_max = max(image.shape[0], image.shape[1])
+  box_max_size = int(img_hw_size_max * _BOX_MAX_SIZE_RATIO)
   for c in contours:
     x, y, w, h = cv2.boundingRect(c)
     aspect_ratio = w / h
     if (w > _BOX_MIN_SIZE and h > _BOX_MIN_SIZE and
+        w < box_max_size and h < box_max_size and
         _MIN_ASPECT_RATIO < aspect_ratio < _MAX_ASPECT_RATIO):
       boxes.append((x, y, w, h))
   return boxes
@@ -415,8 +430,10 @@ def analyze_low_light_scene_capture(
   img = _correct_image_rotation(img, sorted_regions)
   cv2.imwrite(f'{file_stem}_rotated.jpg', img)
 
-  # If the orientation of the image has changed then the coordinates of the
-  # squares have changed too. Therefore, recompute the regions and sort again
+  # The orientation of the image may have changed which will affect the
+  # coordinates of the squares. Therefore, locate the squares, recompute the
+  # regions, and sort again
+  boxes = _find_boxes(img)
   regions = _compute_luminance_regions(img, boxes)
   sorted_regions = _sort_by_columns(regions)
 

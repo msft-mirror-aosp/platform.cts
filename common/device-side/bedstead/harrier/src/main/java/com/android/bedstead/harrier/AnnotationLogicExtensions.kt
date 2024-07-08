@@ -27,7 +27,9 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported
 import com.android.bedstead.harrier.annotations.RequireFeature
+import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
@@ -35,6 +37,7 @@ import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsuppor
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
+import com.android.bedstead.nene.TestApis.packages
 import org.hamcrest.CoreMatchers
 import org.junit.Assume
 import org.junit.Assume.assumeTrue
@@ -76,7 +79,7 @@ fun RequireStorageEncryptionUnsupported.logic() {
 fun RequireFeature.logic() {
     checkFailOrSkip(
         "Device must have feature $value",
-        TestApis.packages().features().contains(value),
+        packages().features().contains(value),
         failureMode
     )
 }
@@ -84,7 +87,7 @@ fun RequireFeature.logic() {
 fun RequireDoesNotHaveFeature.logic() {
     checkFailOrSkip(
         "Device must not have feature $value",
-        !TestApis.packages().features().contains(value),
+        !packages().features().contains(value),
         failureMode
     )
 }
@@ -121,5 +124,21 @@ fun RequireUsbDataSignalingCanBeDisabled.logic() {
     assumeTrue(
         "device must be able to control usb data signaling",
         devicePolicy().canUsbDataSignalingBeDisabled()
+    )
+}
+
+fun RequireInstantApp.logic() {
+    checkFailOrSkip(
+        "Test only runs as an instant-app: $reason",
+        packages().instrumented().isInstantApp,
+        failureMode
+    )
+}
+
+fun RequireNotInstantApp.logic() {
+    checkFailOrSkip(
+        "Test does not run as an instant-app: $reason",
+        !packages().instrumented().isInstantApp,
+        failureMode
     )
 }

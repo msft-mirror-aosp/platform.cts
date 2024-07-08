@@ -178,6 +178,9 @@ public class ItsService extends Service implements SensorEventListener {
     // Time given for background requests to warm up pipeline
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
 
+    // Time given PreviewRecorder to record green buffer frames
+    private static final long BUFFER_FRAMES_MS = 600;
+
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
     private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
@@ -3062,6 +3065,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
+        boolean paddedFramesAtEnd = cmdObj.optBoolean("paddedFramesAtEnd", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.
@@ -3113,6 +3117,16 @@ public class ItsService extends Service implements SensorEventListener {
                     recordingResultListener, extraConfigs);
 
             action.execute();
+
+            if (paddedFramesAtEnd) {
+                pr.recordGreenFrames();
+                try {
+                    Thread.sleep(BUFFER_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+            }
+
             // Stop repeating request and ensure frames in flight are sent to MediaRecorder
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
@@ -3184,12 +3198,14 @@ public class ItsService extends Service implements SensorEventListener {
                 sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false, this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            reqBuilder = ItsSerializer.deserialize(reqBuilder,
-                    params.getJSONObject("captureRequest"));
+            JSONObject captureReqJSON = params.getJSONObject("captureRequest");
+            // Create deep copy of the original capture request. The deserialize operation strips
+            // keys. The deep copy preserves the keys.
+            JSONObject threeAReqJSON = new JSONObject(captureReqJSON.toString());
+            reqBuilder = ItsSerializer.deserialize(reqBuilder, captureReqJSON);
             CaptureRequest.Builder threeAReqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder,
-                    params.getJSONObject("captureRequest"));
+            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder, threeAReqJSON);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // Do not send 3A results
             mSend3AResults = false;

@@ -44,15 +44,15 @@ public class MethodProfile {
     // A map of api constructors called by this method with the method signature as the key.
     private final HashMap<String, MethodProfile> mApiConstructorCalls = new HashMap<>();
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
+            List.of("org.junit.*")
+    );
 
     public enum MethodType {
         JUNIT3(1),
         JUNIT4(2),
         /** A non-test method.*/
         COMMON(4),
-        // TODO(slotus): Solve the override case.
         /** A method that is not extended from the super class. */
         DIRECT_MEMBER(8);
 
@@ -106,25 +106,23 @@ public class MethodProfile {
         return mCommonMethodCalls;
     }
 
+    /** Adds a called method. */
+    public void addMethodCall(MethodProfile methodCall) {
+        String methodSignature = methodCall.getMethodSignatureWithClass();
+        if (methodCall.isApiMethod()) {
+            if (methodCall.getMethodName().equals("<init>")) {
+                mApiConstructorCalls.putIfAbsent(methodSignature, methodCall);
+            } else {
+                mApiMethodCalls.putIfAbsent(methodSignature, methodCall);
+            }
+        } else {
+            mCommonMethodCalls.putIfAbsent(methodSignature, methodCall);
+        }
+    }
+
     public String getMethodSignatureWithClass() {
         return Utils.getMethodSignatureWithClass(
                 mClass.getPackageName(), mClass.getClassName(), mMethod, mParams);
-    }
-
-    /** Adds an API method called by the method. **/
-    public void addApiMethodCall(MethodProfile apiMethod) {
-        mApiMethodCalls.putIfAbsent(apiMethod.getMethodSignatureWithClass(), apiMethod);
-    }
-
-    /** Adds an API constructor called by the method. **/
-    public void addApiConstructorCall(MethodProfile apiConstructor) {
-        mApiConstructorCalls.putIfAbsent(
-                apiConstructor.getMethodSignatureWithClass(), apiConstructor);
-    }
-
-    /** Adds a non-API method called by the method. **/
-    public void addCommonMethodCall(MethodProfile method) {
-        mCommonMethodCalls.putIfAbsent(method.getMethodSignatureWithClass(), method);
     }
 
     /** Adds a method type for the method. */
@@ -147,6 +145,16 @@ public class MethodProfile {
             return false;
         }
         return true;
+    }
+
+    /** Returns true if the method is not extended from the super class. */
+    public boolean isDirectMember() {
+        return matchAllTypes(MethodType.DIRECT_MEMBER.getValue());
+    }
+
+    /** Returns true if the method is an API method. */
+    public boolean isApiMethod() {
+        return mClass.isApiClass();
     }
 
     /** Returns true if the method is a JUnit3 test method. */
