@@ -86,6 +86,9 @@ public class NfcAdapterTest {
     public void tearDown() throws NoSuchFieldException {
         if (!supportsHardware()) return;
         // Restore the original service.
+        if (!supportsHardware()) {
+            return;
+        }
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         if (adapter != null) {
             FieldSetter.setField(adapter,
