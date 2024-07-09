@@ -28,9 +28,9 @@ import image_processing_utils
 import its_session_utils
 
 
+_BUSY_SCENE_VARIANCE_ATOL = 0.01  # busy scenes variances > this for [0, 1] img
 _JPEG_EXTENSION = '.jpg'
 _JPEG_QUALITY_SETTING = 100  # set value to max
-_JPEG_MP_SIZE_SCALING = 0.075  # MP --> bytes to ensure busy scene (empirical)
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_STEPS = 8
 _ZOOM_RATIO_MAX = 4  # too high zoom ratios will eventualy reduce entropy
@@ -49,7 +49,6 @@ def _read_files_back_from_disk(log_path):
     jpeg_size_max: int; max size of jpeg files.
   """
   jpeg_files = []
-  jpeg_sizes = []
   for file in sorted(os.listdir(log_path)):
     if _JPEG_EXTENSION in file:
       jpeg_files.append(file)
@@ -60,7 +59,6 @@ def _read_files_back_from_disk(log_path):
   for jpeg_file in jpeg_files:
     jpeg_file_with_log_path = os.path.join(log_path, jpeg_file)
     jpeg_file_size = os.stat(jpeg_file_with_log_path).st_size
-    jpeg_sizes.append(jpeg_file_size)
     logging.debug('Opening file %s', jpeg_file)
     logging.debug('File size %d (bytes)', jpeg_file_size)
     try:
@@ -69,7 +67,6 @@ def _read_files_back_from_disk(log_path):
     except PIL.UnidentifiedImageError as e:
       raise AssertionError(f'Cannot read {jpeg_file_with_log_path}') from e
     logging.debug('Successfully read %s.', jpeg_file)
-  return max(jpeg_sizes)
 
 
 class JpegHighEntropyTest(its_base_test.ItsBaseTest):
@@ -98,7 +95,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
           camera_properties_utils.zoom_ratio_range(props))
 
       # Determine test zoom range
-      zoom_max = float(props['android.control.zoomRatioRange'][1])  # max value
+      zoom_range = props['android.control.zoomRatioRange']
+      zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
       logging.debug('Zoom max value: %.2f', zoom_max)
       if zoom_max < _ZOOM_RATIO_THRESH:
         raise AssertionError(f'Maximum zoom ratio < {_ZOOM_RATIO_THRESH}x')
@@ -108,6 +106,8 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
           (zoom_max - _ZOOM_RATIO_MIN) / (_NUM_STEPS - 1))
       zoom_ratios = np.append(zoom_ratios, zoom_max)
       logging.debug('Testing zoom range: %s', zoom_ratios)
+      camera_properties_utils.skip_unless(
+          zoom_max >= zoom_min * _ZOOM_RATIO_THRESH)
 
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
@@ -115,8 +115,6 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
       out_surface = capture_request_utils.get_largest_jpeg_format(props)
       logging.debug('req W: %d, H: %d',
                     out_surface['width'], out_surface['height'])
-      jpeg_file_size_thresh = (out_surface['width'] * out_surface['height'] *
-                               _JPEG_MP_SIZE_SCALING)
 
       for zoom_ratio in zoom_ratios:
         req['android.control.zoomRatio'] = zoom_ratio
@@ -135,12 +133,19 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
         image_processing_utils.write_image(
             img, f'{test_name_with_log_path}_{zoom_ratio:.2f}{_JPEG_EXTENSION}')
 
+        r_var, b_var, g_var = image_processing_utils.compute_image_variances(
+            img
+        )
+        logging.debug('img vars: %.4f, %.4f, %.4f', r_var, g_var, b_var)
+        if max(r_var, g_var, b_var) < _BUSY_SCENE_VARIANCE_ATOL:
+          raise AssertionError(
+              'Scene is not busy enough! Measured RGB variances: '
+              f'{r_var:.4f}, {g_var:.4f}, {b_var:.4f}, '
+              f'ATOL: {_BUSY_SCENE_VARIANCE_ATOL}'
+          )
+
       # Read JPEG files back to ensure readable encoding
-      jpeg_size_max = _read_files_back_from_disk(log_path)
-      if jpeg_size_max < jpeg_file_size_thresh:
-        raise AssertionError(
-            f'JPEG files are not large enough! max: {jpeg_size_max}, '
-            f'THRESH: {jpeg_file_size_thresh:.1f}')
+      _read_files_back_from_disk(log_path)
 
 if __name__ == '__main__':
   test_runner.main()

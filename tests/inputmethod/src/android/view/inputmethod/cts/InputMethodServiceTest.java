@@ -20,6 +20,7 @@ import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.inputmethodservice.InputMethodService.DISALLOW_INPUT_METHOD_INTERFACE_OVERRIDE;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
+import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE;
 import static android.view.inputmethod.cts.util.ConstantsUtils.DISAPPROVE_IME_PACKAGE_NAME;
@@ -41,11 +42,14 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.showSoftInputMatch
 import static com.android.cts.mockime.ImeEventStreamTestUtils.verificationMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+import static com.google.common.truth.TruthJUnit.assume;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -63,6 +67,7 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.server.wm.DisplayMetricsSession;
 import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
+import android.view.Display;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
@@ -85,6 +90,7 @@ import android.webkit.WebView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -94,6 +100,7 @@ import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -116,6 +123,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Tests for {@link InputMethodService} methods.
@@ -892,13 +900,13 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
      * Here we use {@link WindowLayoutInfoParcelable} to pass {@link WindowLayoutInfo} values
      * between this test process and the MockIME process.
      */
-    @FlakyTest(bugId = 332251465)
     @Test
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testImeListensToWindowLayoutInfo() throws Exception {
         assumeExtensionSupportedDevice();
 
+        final double resizeRatio = 0.8;
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -906,26 +914,24 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
             final ImeEventStream stream = imeSession.openEventStream();
             TestActivity activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+            assertThat(expectEvent(stream, verificationMatcher("windowLayoutComponentLoaded"),
+                    CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue()).isTrue();
+            final Display display = activity.getDisplay();
+            assertThat(display).isNotNull();
 
-            assertTrue(expectEvent(stream, verificationMatcher("windowLayoutComponentLoaded"),
-                    CHECK_EXIT_EVENT_ONLY, TIMEOUT).getReturnBooleanValue());
-
-            try (DisplayMetricsSession displaySession = new DisplayMetricsSession(
-                    activity.getDisplay().getDisplayId())) {
-
-                final double displayResizeRatio = 0.8;
-
+            final int displayId = display.getDisplayId();
+            try (DisplayMetricsSession displaySession = new DisplayMetricsSession(displayId)) {
                 // MockIME has registered addWindowLayoutInfo, it should be emitting the
                 // current location of hinge now.
                 WindowLayoutInfoParcelable windowLayoutInit = verifyReceivedWindowLayout(stream);
+                assertThat(windowLayoutInit).isNotNull();
+                final List<DisplayFeature> featuresInit = windowLayoutInit.getDisplayFeatures();
+                assertThat(featuresInit).isNotNull();
+
                 // Skip the test if the device doesn't support hinges.
-                assertNotNull(windowLayoutInit);
-                assertNotNull(windowLayoutInit.getDisplayFeatures());
-                assumeFalse(windowLayoutInit.getDisplayFeatures().isEmpty());
+                assume().that(featuresInit).isNotEmpty();
 
-                final Rect windowLayoutInitBounds = windowLayoutInit.getDisplayFeatures().get(0)
-                        .getBounds();
-
+                final Rect windowBoundsInit = featuresInit.get(0).getBounds();
                 expectEvent(stream, editorMatcher("onStartInput", mMarker), TIMEOUT);
                 expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
 
@@ -933,59 +939,71 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 final Rect imeBoundsInit = expectCommand(stream,
                         imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
                         .getReturnParcelableValue();
+
                 // Contain first part of the test in a try-block so that the display session
                 // could be restored for the remaining testsuite even if something fails.
                 try {
                     // Shrink the entire display 20% smaller.
-                    displaySession.changeDisplayMetrics(displayResizeRatio /* sizeRatio */,
+                    displaySession.changeDisplayMetrics(resizeRatio /* sizeRatio */,
                             1.0 /* densityRatio */);
 
                     // onConfigurationChanged on WM side triggers a new calculation for
                     // hinge location.
-                    WindowLayoutInfoParcelable windowLayoutSizeChange = verifyReceivedWindowLayout(
-                            stream);
+                    final WindowLayoutInfoParcelable windowLayoutResized =
+                            verifyReceivedWindowLayout(stream);
 
                     // Expect to receive same number of display features in WindowLayoutInfo.
-                    assertEquals(windowLayoutInit.getDisplayFeatures().size(),
-                            windowLayoutSizeChange.getDisplayFeatures().size());
+                    final List<DisplayFeature> featuresResized =
+                            windowLayoutResized.getDisplayFeatures();
+                    assertThat(featuresResized).hasSize(featuresInit.size());
 
-                    Rect windowLayoutSizeChangeBounds =
-                            windowLayoutSizeChange.getDisplayFeatures().get(
-                                    0).getBounds();
-                    Rect imeBoundsShrunk = expectCommand(stream,
+                    final Rect windowBoundsResized = featuresResized.get(0).getBounds();
+                    final Rect imeBoundsResized = expectCommand(stream,
                             imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
                             .getReturnParcelableValue();
 
-                    final Boolean widthsChangedInSameRatio =
-                            (windowLayoutInitBounds.width() * displayResizeRatio
-                                    == windowLayoutSizeChangeBounds.width() && (
-                                    imeBoundsInit.width() * displayResizeRatio
-                                            == imeBoundsShrunk.width()));
-                    final Boolean heightsChangedInSameRatio =
-                            (windowLayoutInitBounds.height() * displayResizeRatio
-                                    == windowLayoutSizeChangeBounds.height() && (
-                                    imeBoundsInit.height() * displayResizeRatio
-                                            == imeBoundsShrunk.height()));
+                    final StringBuilder errorMessage = new StringBuilder();
+                    final Function<Function<Rect, Integer>, Boolean> inSameRatio = getSize -> {
+                        final boolean windowResizedCorrectly = isResizedWithRatio(getSize,
+                                windowBoundsInit, windowBoundsResized, resizeRatio, errorMessage);
+                        final boolean imeResizedCorrectly = isResizedWithRatio(getSize,
+                                imeBoundsInit, imeBoundsResized, resizeRatio, errorMessage);
+                        return windowResizedCorrectly && imeResizedCorrectly;
+                    };
+                    final boolean widthsChangedInSameRatio = inSameRatio.apply(Rect::width);
+                    final boolean heightsChangedInSameRatio = inSameRatio.apply(Rect::height);
+
                     // Expect the hinge dimension to shrink in exactly one direction, the actual
                     // dimension depends on device implementation. Observe hinge dimensions from
                     // IME configuration bounds and from WindowLayoutInfo.
-                    assertTrue(widthsChangedInSameRatio || heightsChangedInSameRatio);
+                    assertWithMessage(
+                            "Expected either width or height to change proportionally.\n"
+                                    + " widthsChangedInSameRatio: "
+                                    + widthsChangedInSameRatio + "\n"
+                                    + " heightsChangedInSameRatio: "
+                                    + heightsChangedInSameRatio + "\n"
+                                    + " Resize ratio: " + String.format("%.1f", resizeRatio) + "\n"
+                                    + " Initial window bounds: " + windowBoundsInit + "\n"
+                                    + " Resized window bounds: " + windowBoundsResized + "\n"
+                                    + " Initial IME bounds: " + imeBoundsInit + "\n"
+                                    + " Resized IME bounds: " + imeBoundsResized + "\n"
+                                    + " Details:" + errorMessage)
+                            .that(widthsChangedInSameRatio || heightsChangedInSameRatio)
+                            .isTrue();
                 } finally {
                     // Restore Display to original size.
                     displaySession.restoreDisplayMetrics();
-
-                    WindowLayoutInfoParcelable windowLayoutRestored = verifyReceivedWindowLayout(
-                            stream);
-
-                    assertEquals(windowLayoutInitBounds,
-                            windowLayoutRestored.getDisplayFeatures().get(0).getBounds());
-
-                    final Rect imeBoundsRestored = expectCommand(stream,
-                            imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
-                            .getReturnParcelableValue();
-
-                    assertEquals(imeBoundsRestored, imeBoundsInit);
                 }
+
+                final WindowLayoutInfoParcelable restored = verifyReceivedWindowLayout(stream);
+                final List<DisplayFeature> features = restored.getDisplayFeatures();
+                assertThat(features).isNotEmpty();
+                assertThat(features.get(0).getBounds()).isEqualTo(windowBoundsInit);
+
+                final Rect imeBoundsRestored = expectCommand(stream,
+                        imeSession.callGetCurrentWindowMetricsBounds(), TIMEOUT)
+                        .getReturnParcelableValue();
+                assertThat(imeBoundsRestored).isEqualTo(imeBoundsInit);
             }
         }
     }
@@ -1125,6 +1143,74 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
 
             expectCommand(stream, imeSession.callSetImeCaptionBarVisible(true), TIMEOUT);
             expectImeVisible(TIMEOUT);
+        }
+    }
+
+    /**
+     * Checks that the IME insets are at least as big as the IME navigation bar (when visible),
+     * even if the IME overrides the insets, or gives an empty input view.
+     */
+    @Test
+    public void testImeNavigationBarInsets() throws Exception {
+        runImeNavigationBarTest(false /* useFullscreenMode */);
+    }
+
+    /**
+     * Checks that the IME insets are not modified to be at least as big as the IME navigation bar,
+     * when the IME is using fullscreen mode.
+     */
+    @Test
+    public void testImeNavigationBarInsets_FullscreenMode() throws Exception {
+        runImeNavigationBarTest(true /* useFullscreenMode */);
+    }
+
+    /**
+     * Test implementation for checking that the IME insets are at least as big as the IME
+     * navigation bar (when visible). When using fullscreen mode, the IME requesting app should
+     * receive zero IME insets.
+     *
+     * @param useFullscreenMode whether the IME should use the fullscreen mode.
+     */
+    private void runImeNavigationBarTest(boolean useFullscreenMode) throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder()
+                        .setZeroInsets(true)
+                        .setDrawsBehindNavBar(true)
+                        .setFullscreenModePolicy(
+                                useFullscreenMode
+                                        ? ImeSettings.FullscreenModePolicy.FORCE_FULLSCREEN
+                                        : ImeSettings.FullscreenModePolicy.NO_FULLSCREEN))) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final var activity = createTestActivity(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            final var decorView = activity.getWindow().getDecorView();
+            int imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
+
+            assertEquals(0, imeHeight);
+
+            imeSession.callRequestShowSelf(0 /* flags */);
+
+            PollingCheck.waitFor(TIMEOUT, () -> decorView.getRootWindowInsets().isVisible(ime()));
+
+            imeHeight = decorView.getRootWindowInsets().getInsets(ime()).bottom;
+            final boolean isFullscreen = expectCommand(stream,
+                    imeSession.callGetOnEvaluateFullscreenMode(), TIMEOUT)
+                    .getReturnBooleanValue();
+            assertEquals(isFullscreen, useFullscreenMode);
+            if (isFullscreen) {
+                // In Fullscreen mode the IME doesn't provide any insets.
+                assertEquals("Height of ime: " + imeHeight + " should be zero in fullscreen mode",
+                        0, imeHeight);
+            } else {
+                final int imeNavBarHeight = expectCommand(stream,
+                        imeSession.callGetImeCaptionBarHeight(), TIMEOUT)
+                        .getReturnIntegerValue();
+                assertTrue("Height of ime: " + imeHeight + " should be at least as big as"
+                                + " the height of the IME navigation bar: " + imeNavBarHeight,
+                        imeHeight >= imeNavBarHeight);
+            }
         }
     }
 
@@ -1396,5 +1482,47 @@ public class InputMethodServiceTest extends EndToEndImeTestBase {
                 TIMEOUT);
         return imeEvent.getArguments()
                 .getParcelable("WindowLayoutInfo", WindowLayoutInfoParcelable.class);
+    }
+
+    /**
+     * Checks if the resizing of a rectangle maintains a specified aspect ratio.
+     * <p>
+     * This function compares the initial and resized dimensions of a rectangle, using a provided
+     * function ({@code getSize}) to extract the relevant dimension (e.g., width or height).
+     * It determines if the resized dimension matches the expected value, calculated as the
+     * initial dimension multiplied by the given ratio.
+     * <p>
+     * If the aspect ratio is not maintained, an error message detailing the discrepancy is
+     * appended to the {@code outErrorMessage} StringBuilder.
+     *
+     * @param getSize a function that extracts the relevant dimension (width or height) from a Rect.
+     * @param initial the initial Rect before resizing.
+     * @param resized the Rect after resizing.
+     * @param ratio the expected resize ratio (e.g., 0.8 for a 20% decrease).
+     * @param outErrorMessage a StringBuilder to which an error message is appended if the aspect
+     *                        ratio is not maintained.
+     * @return {@code true} if the resize maintains the specified ratio, {@code false} otherwise.
+     */
+    private static boolean isResizedWithRatio(@NonNull Function<Rect, Integer> getSize,
+            @NonNull Rect initial, @NonNull Rect resized, double ratio,
+            @NonNull StringBuilder outErrorMessage) {
+        // Align with the rounding approach in DisplayMetricsSession#changeDisplayMetrics.
+        final int expected = (int) (getSize.apply(initial) * ratio);
+        final int actual = getSize.apply(resized);
+        final boolean isCorrect = (expected == actual);
+        if (!isCorrect) {
+            outErrorMessage
+                    .append("\n  isResizedWithRatio(initial=")
+                    .append(initial)
+                    .append(", resized=")
+                    .append(resized)
+                    .append(", ratio=")
+                    .append(ratio)
+                    .append("):\n    expected size: ")
+                    .append(expected)
+                    .append(" but was: ")
+                    .append(actual);
+        }
+        return isCorrect;
     }
 }

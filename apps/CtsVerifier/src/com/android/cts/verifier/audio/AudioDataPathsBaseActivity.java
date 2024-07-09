@@ -97,6 +97,9 @@ public abstract class AudioDataPathsBaseActivity
 
     // Audio I/O
     private AudioManager mAudioManager;
+
+    AudioDeviceConnectionCallback mConnectListener;
+
     private boolean mSupportsMMAP;
     private boolean mSupportsMMAPExclusive;
 
@@ -172,7 +175,7 @@ public abstract class AudioDataPathsBaseActivity
 
         mTestManager.initializeTests();
 
-        mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
+        mConnectListener = new AudioDeviceConnectionCallback();
 
         DisplayUtils.setKeepScreenOn(this, true);
 
@@ -183,8 +186,15 @@ public abstract class AudioDataPathsBaseActivity
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
     public void onStop() {
         stopTest();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         super.onStop();
     }
 
@@ -412,6 +422,8 @@ public abstract class AudioDataPathsBaseActivity
         void clearTestState(int api) {
             mTestStateCode[api] = TESTSTATUS_NOT_RUN;
             mTestResults[api] = null;
+            mTestHasBeenRun = false;
+            mTestCanceled = false;
         }
 
         int getTestState(int api) {
@@ -1090,7 +1102,10 @@ public abstract class AudioDataPathsBaseActivity
             for (TestModule testModule : mTestModules) {
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : outputDevices) {
-                    testModule.mOutDeviceInfo = null;
+                    // Don't invalidate previously validated devices
+                    // Tests that test multiple device instances (like USB headset/interface)
+                    // need to remember what devices are valid after being disconnected
+                    // in order to connect the next device instance.
                     if (testModule.mOutDeviceType == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
                             && !mHasSpeaker) {
                         break;
@@ -1107,7 +1122,8 @@ public abstract class AudioDataPathsBaseActivity
             for (TestModule testModule : mTestModules) {
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : inputDevices) {
-                    testModule.mInDeviceInfo = null;
+                    // Don't invalidate previously validated devices?
+                    // See comment above.
                     if (testModule.mInDeviceType == AudioDeviceInfo.TYPE_BUILTIN_MIC
                             && !mHasMic) {
                         break;
@@ -1268,7 +1284,7 @@ public abstract class AudioDataPathsBaseActivity
         protected boolean calculatePass() {
             int numFailures = countFailures(mApi);
             int numUntested = countValidTestModules() - countTestedTestModules();
-            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested == 0;
+            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested <= 0;
         }
 
         public void completeTest() {
@@ -1289,23 +1305,27 @@ public abstract class AudioDataPathsBaseActivity
                     getPassButton().setEnabled(passEnabled);
 
                     mHtmlFormatter.openParagraph();
-                    if (!mTestCanceled) {
-                        int numFailures = countFailures(mApi);
-                        int numUntested = getNumTestModules() - countTestedTestModules();
-                        mHtmlFormatter.appendText("There were " + numFailures + " failures.");
+                    if (mTestCanceled) {
+                        mHtmlFormatter.openBold();
+                        mHtmlFormatter.appendText("Test Canceled");
+                        mHtmlFormatter.closeBold();
                         mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText(
-                                "There were " + numUntested + " untested paths.");
-
-                        if (numFailures == 0 && numUntested == 0) {
-                            mHtmlFormatter.appendBreak();
-                            mHtmlFormatter.appendText("All tests passed.");
-                        }
-                        mHtmlFormatter.closeParagraph();
-                        mHtmlFormatter.openParagraph();
                     }
+                    int numFailures = countFailures(mApi);
+                    int numUntested = getNumTestModules() - countTestedTestModules();
+                    mHtmlFormatter.appendText("There were " + numFailures + " failures.");
+                    mHtmlFormatter.appendBreak();
+                    mHtmlFormatter.appendText(
+                            "There were " + numUntested + " untested paths.");
 
-                    if (passEnabled) {
+                    if (numFailures == 0 && numUntested == 0) {
+                        mHtmlFormatter.appendBreak();
+                        mHtmlFormatter.appendText("All tests passed.");
+                    }
+                    mHtmlFormatter.closeParagraph();
+                    mHtmlFormatter.openParagraph();
+
+                    if (mIsLessThanV && passEnabled) {
                         mHtmlFormatter.appendText("Although not all test modules passed, "
                                 + "for this OS version you may enter a PASS.");
                         mHtmlFormatter.appendBreak();
@@ -1426,16 +1446,16 @@ public abstract class AudioDataPathsBaseActivity
     private void stopTest() {
         mTestManager.stopTest();
         mTestManager.displayTestDevices();
-
-        enableTestButtons(true, false);
     }
 
     protected boolean calculatePass() {
         return mTestManager.calculatePass();
     }
 
+    protected abstract boolean hasPeripheralSupport();
+
     boolean passBtnEnabled() {
-        return mIsLessThanV || !mIsHandheld || calculatePass();
+        return mIsLessThanV || !mIsHandheld || !hasPeripheralSupport() || calculatePass();
     }
 
     void displayNonHandheldMessage() {
@@ -1490,6 +1510,8 @@ public abstract class AudioDataPathsBaseActivity
         mTestManager.mApi = api;
         mTestManager.validateTestDevices();
         mResultsView.invalidate();
+        mTestHasBeenRun = false;
+        getPassButton().setEnabled(passBtnEnabled());
     }
 
     //
@@ -1502,6 +1524,7 @@ public abstract class AudioDataPathsBaseActivity
             startTest(mActiveTestAPI);
         } else if (id == R.id.audio_datapaths_cancel) {
             mTestCanceled = true;
+            mTestHasBeenRun = false;
             stopTest();
             mTestManager.completeTest();
         } else if (id == R.id.audio_datapaths_clearresults) {
@@ -1539,17 +1562,14 @@ public abstract class AudioDataPathsBaseActivity
     private class AudioDeviceConnectionCallback extends AudioDeviceCallback {
         void stateChangeHandler() {
             mTestManager.validateTestDevices();
-            if (!mTestManager.calculatePass()) {
-                // if we are in a pass state, leave the report on the screen
-                if (!mIsHandheld) {
-                    displayNonHandheldMessage();
-                    getPassButton().setEnabled(true);
-                } else {
-                    showDeviceView();
-                    mTestManager.displayTestDevices();
-                    if (mTestHasBeenRun) {
-                        getPassButton().setEnabled(passBtnEnabled());
-                    }
+            if (!mIsHandheld) {
+                displayNonHandheldMessage();
+                getPassButton().setEnabled(true);
+            } else {
+                showDeviceView();
+                mTestManager.displayTestDevices();
+                if (mTestHasBeenRun) {
+                    getPassButton().setEnabled(passBtnEnabled());
                 }
             }
         }

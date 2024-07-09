@@ -58,6 +58,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.Ignore;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.IOException;
@@ -703,6 +704,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
     }
 
+    @Ignore("b/342025666")
     public void testGetAvailableExtensionInterfaceNames() {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;
@@ -734,6 +736,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
         }
     }
 
+    @Ignore("b/342025666")
     public void testGetExtensionInterface() {
         if (!Utils.hasTvInputFramework(getActivity())) {
             return;

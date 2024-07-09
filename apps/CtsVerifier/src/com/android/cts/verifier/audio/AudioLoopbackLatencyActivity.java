@@ -79,6 +79,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     Context mContext;
     protected AudioManager mAudioManager;
 
+    private ConnectListener mConnectListener;
+
     // UI
     TextView[] mRouteStatus = new TextView[NUM_TEST_ROUTES];
 
@@ -522,13 +524,25 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             enableStartButtons(false);
         }
 
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mConnectListener = new ConnectListener();
 
         showRouteStatus();
         showTestInstructions();
         handleTestCompletion(false);
 
         DisplayUtils.setKeepScreenOn(this, true);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
+        super.onStop();
     }
 
     //

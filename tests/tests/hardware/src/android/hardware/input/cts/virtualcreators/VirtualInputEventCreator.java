@@ -26,7 +26,7 @@ import android.view.MotionEvent;
 public class VirtualInputEventCreator {
 
     public static MotionEvent createMouseEvent(int action, float x, float y, int buttonState,
-            float pressure, float relativeX, float relativeY, float vScroll) {
+            float pressure, float relativeX, float relativeY, float hScroll, float vScroll) {
         final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
         pointerProperties.toolType = MotionEvent.TOOL_TYPE_MOUSE;
         final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
@@ -35,8 +35,8 @@ public class VirtualInputEventCreator {
         pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_X, relativeX);
         pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_Y, relativeY);
         pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure);
+        pointerCoords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         pointerCoords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_HSCROLL, 0 /* value */);
         return MotionEvent.obtain(
                 0 /* downTime */,
                 0 /* eventTime */,
@@ -57,7 +57,7 @@ public class VirtualInputEventCreator {
     public static MotionEvent createMouseEvent(int action, float x, float y, int buttonState,
             float pressure) {
         return createMouseEvent(action, x, y, buttonState, pressure, 0 /* relativeX */,
-                0 /* relativeY */, 0 /* vScroll */);
+                0 /* relativeY */, 0 /* hScroll */, 0 /* vScroll */);
     }
 
     public static MotionEvent createTouchscreenEvent(int action, float x, float y, float pressure,
@@ -116,7 +116,7 @@ public class VirtualInputEventCreator {
                 1f /* yPrecision */,
                 0 /* deviceId */,
                 0 /* edgeFlags */,
-                InputDevice.SOURCE_TOUCH_NAVIGATION,
+                InputDevice.SOURCE_TOUCH_NAVIGATION | InputDevice.SOURCE_TOUCHPAD,
                 0 /* flags */);
     }
 
@@ -177,6 +177,28 @@ public class VirtualInputEventCreator {
                 0 /* edgeFlags */,
                 InputDevice.SOURCE_STYLUS | InputDevice.SOURCE_KEYBOARD
                         | InputDevice.SOURCE_TOUCHSCREEN,
+                0 /* flags */);
+    }
+
+    public static MotionEvent createRotaryEvent(float scrollAmount) {
+        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_UNKNOWN;
+        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
+        pointerCoords.setAxisValue(MotionEvent.AXIS_SCROLL, scrollAmount);
+        return MotionEvent.obtain(
+                0 /* downTime */,
+                0 /* eventTime */,
+                MotionEvent.ACTION_SCROLL,
+                1 /* pointerCount */,
+                new MotionEvent.PointerProperties[]{pointerProperties},
+                new MotionEvent.PointerCoords[]{pointerCoords},
+                0 /* metaState */,
+                0 /* buttonState */,
+                1f /* xPrecision */,
+                1f /* yPrecision */,
+                0 /* deviceId */,
+                0 /* edgeFlags */,
+                InputDevice.SOURCE_ROTARY_ENCODER,
                 0 /* flags */);
     }
 

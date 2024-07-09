@@ -20,6 +20,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Point
 import android.hardware.display.DisplayManager
+import android.os.SystemProperties
 import android.platform.test.annotations.Presubmit
 import android.server.wm.ActivityManagerTestBase
 import android.server.wm.CliIntentExtra
@@ -98,7 +99,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
         val yOnScreen = bounds.height() / 2
         val pointer = touchScreen.touchDown(xOnScreen, yOnScreen)
 
-        val event = waitForMotionEventFromTestJournal(2.seconds)
+        val event = waitForMotionEventFromTestJournal(2.seconds * HW_TIMEOUT_MULTIPLIER)
         /**
          * If the wallpaper touches are enabled, we should receive the motion event. Otherwise, the
          * motion event should not reach the wallpaper.
@@ -164,5 +165,9 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
     companion object {
         private const val TAG = "WallpaperWindowInputTests"
         private val TIME_SLICE = 50.milliseconds
+        private val HW_TIMEOUT_MULTIPLIER: Int = SystemProperties.getInt(
+            "ro.hw_timeout_multiplier",
+            1
+        )
     }
 }

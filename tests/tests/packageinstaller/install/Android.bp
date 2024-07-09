@@ -51,6 +51,8 @@ android_test {
         "general-tests",
     ],
     data: [
+        ":CtsArchiveInstallerApp",
+        ":CtsArchiveTestApp",
         ":CtsEmptyTestApp",
         ":CtsEmptyTestAppV2",
         ":CtsEmptyInstallerApp",
@@ -58,6 +60,8 @@ android_test {
         ":CtsDisabledLauncherActivityApp",
         ":CtsEmptyTestApp_AppMetadataInApk",
         ":CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+        ":CtsEmptyTestApp_RejectedByVerifier",
+        ":CtsSufficientVerifierReject",
     ],
     java_resources: [
         ":HelloWorldSdk1",

@@ -208,7 +208,7 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleExternalListenerAccess(ComponentName listenerComponent, boolean on)
             throws IOException {
         String command = " cmd notification " + (on ? "allow_listener " : "disallow_listener ")
-                + listenerComponent.flattenToString();
+                + listenerComponent.flattenToString() + " " + mContext.getUserId();
         mNotificationHelper.runCommand(command, InstrumentationRegistry.getInstrumentation());
     }
 
@@ -310,11 +310,16 @@ public abstract class BaseNotificationManagerTest {
 
     protected void sendNotification(final int id,
             String groupKey, final int icon) {
-        sendNotification(id, groupKey, icon, false, null);
+        sendNotification(id, groupKey, false, icon, false, null);
+    }
+
+    protected void sendNotification(final int id, String groupKey, final int icon, boolean isCall,
+            Uri phoneNumber) {
+        sendNotification(id, groupKey, false, icon, isCall, phoneNumber);
     }
 
     protected void sendNotification(final int id,
-            String groupKey, final int icon,
+            String groupKey, boolean isSummary, final int icon,
             boolean isCall, Uri phoneNumber) {
         final Intent intent = new Intent(Intent.ACTION_MAIN, Telephony.Threads.CONTENT_URI);
 
@@ -331,7 +336,8 @@ public abstract class BaseNotificationManagerTest {
                 .setContentTitle("notify#" + id)
                 .setContentText("This is #" + id + "notification  ")
                 .setContentIntent(pendingIntent)
-                .setGroup(groupKey);
+                .setGroup(groupKey)
+                .setGroupSummary(isSummary);
 
         if (isCall) {
             nb.setCategory(CATEGORY_CALL);
@@ -370,7 +376,8 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + mContext.getUserId();
 
         mNotificationHelper.runCommand(command, instrumentation);
         AmUtils.waitForBroadcastBarrier();

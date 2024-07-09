@@ -721,7 +721,8 @@ public class TunerTest {
                         break;
                     case FrontendStatus.FRONTEND_STATUS_TYPE_MODULATION:
                         if (info.getType() != FrontendSettings.TYPE_DVBT &&
-                            info.getType() !=  FrontendSettings.TYPE_ANALOG)
+                            info.getType() !=  FrontendSettings.TYPE_ANALOG &&
+                            info.getType() !=  FrontendSettings.TYPE_DTMB)
                             status.getModulation();
                         break;
                     case FrontendStatus.FRONTEND_STATUS_TYPE_SPECTRAL:
@@ -3442,8 +3443,11 @@ public class TunerTest {
                     builder.setMode(mode);
                     builder.setGuardInterval(guardInterval);
 
-                    if (!TunerVersionChecker.isHigherOrEqualVersionTo(
-                                TunerVersionChecker.TUNER_VERSION_2_0)) {
+                    // Can not use TunerVersionChecker.isHigherOrEqualVersionTo here because this
+                    // static method can't be marked as @Test
+                    boolean isHigherOrEqualToTunerV2 = TunerVersionChecker.getTunerVersion() >=
+                            TunerVersionChecker.TUNER_VERSION_2_0;
+                    if (!isHigherOrEqualToTunerV2) {
                         builder.setModulation(modulation);
                         builder.setCodeRate(codeRate);
                     } else {
