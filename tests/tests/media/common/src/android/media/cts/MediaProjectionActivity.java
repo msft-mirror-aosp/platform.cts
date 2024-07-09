@@ -61,8 +61,8 @@ public class MediaProjectionActivity extends Activity {
     public static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     public static final String CANCEL_RESOURCE_ID = "android:id/button2";
     public static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
-    public static final String SPINNER_RESOURCE_ID =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_spinner";
+    public static final String SCREEN_SHARE_OPTIONS_RESOURCE_ID =
+            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
     public static final String ENTIRE_SCREEN_STRING_RES_NAME =
             "screen_share_permission_dialog_option_entire_screen";
     public static final String SINGLE_APP_STRING_RES_NAME =
@@ -190,7 +190,7 @@ public class MediaProjectionActivity extends Activity {
         // If the View is not found on the current screen. Try scrolling around to find it.
         if (obj == null) {
             Log.w(TAG, "Couldn't find " + selector + ", now scrolling to it.");
-            scrollToGivenResource(SPINNER_RESOURCE_ID);
+            scrollToGivenResource(SCREEN_SHARE_OPTIONS_RESOURCE_ID);
             obj = waitForObject(selector);
         }
         if (obj == null) {
@@ -210,12 +210,13 @@ public class MediaProjectionActivity extends Activity {
     }
 
     private static boolean selectEntireScreenOption(String entireScreenString) {
-        UiObject2 spinner = findUiObject(SPINNER_RESOURCE_ID);
-        if (spinner == null) {
-            Log.e(TAG, "Couldn't find spinner to select projection mode, even after scrolling");
+        UiObject2 optionSelector = findUiObject(SCREEN_SHARE_OPTIONS_RESOURCE_ID);
+        if (optionSelector == null) {
+            Log.e(TAG, "Couldn't find option selector to select projection mode, "
+                    + "even after scrolling");
             return false;
         }
-        spinner.click();
+        optionSelector.click();
 
         UiObject2 entireScreenOption = waitForObject(By.text(entireScreenString));
         if (entireScreenOption == null) {
