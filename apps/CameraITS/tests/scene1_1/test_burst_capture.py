@@ -26,7 +26,7 @@ import its_session_utils
 
 _FRAME_TIME_DELTA_RTOL = 0.1  # allow 10% variation from reported value
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NR_MODE_FAST = 1  # burst capture uses noise reducton mode FAST
+_NR_MODE_FAST = 1  # burst capture uses noise reduction mode FAST
 _NUM_TEST_FRAMES = 15
 _PATCH_H = 0.1  # center 10% patch params
 _PATCH_W = 0.1

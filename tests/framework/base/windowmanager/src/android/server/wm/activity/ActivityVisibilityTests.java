@@ -57,7 +57,6 @@ import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -251,8 +250,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-        // TODO(b/348662989): Remove skipping the test for car ui portrait
-        assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         // The activity will be paused first because the flags turn-screen-on and show-when-locked

@@ -45,10 +45,11 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.util.Log;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -207,21 +208,16 @@ public final class ActivityManagerHelperTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @FlakyTest(bugId = 274818424)
     public void testRemoveTask() throws Exception {
         // setup
         ActivityC testActivity = launchTestActivity(ActivityC.class);
         int taskId = testActivity.getTaskId();
         assertThat(doesTaskExist(taskId)).isTrue();
 
-        // execute
-        try {
-            mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
-                    PERMISSION_REMOVE_TASKS);
 
+        // execute
+        try (PermissionContext p = TestApis.permissions().withPermission(PERMISSION_REMOVE_TASKS)) {
             ActivityManagerHelper.removeTask(taskId);
-        } finally {
-            mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         }
 
         // assert

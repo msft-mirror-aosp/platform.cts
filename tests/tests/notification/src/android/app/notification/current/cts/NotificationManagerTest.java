@@ -45,6 +45,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Notification;
@@ -106,6 +107,7 @@ import androidx.test.uiautomator.UiDevice;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
@@ -943,6 +945,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testSuspendPackage() throws Exception {
+        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -1203,6 +1206,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     public void testSuspendedPackageSendsNotification() throws Exception {
+        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
@@ -2227,9 +2231,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         listener.onNotificationRemoved(null);
         listener.onNotificationRemoved(null, null);
 
-        listener.onNotificationChannelGroupModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelGroupModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
-        listener.onNotificationChannelModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
 
         listener.onListenerDisconnected();
@@ -2607,7 +2611,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertNotNull(mListener);
 
         try {
-            mListener.getNotificationChannels(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannels(mContext.getPackageName(), mContext.getUser());
             fail("Shouldn't be able get channels without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2619,7 +2623,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         try {
-            mListener.getNotificationChannelGroups(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannelGroups(mContext.getPackageName(), mContext.getUser());
             fail("Should not be able get groups without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2634,7 +2638,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         NotificationChannel channel = new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT);
         try {
-            mListener.updateNotificationChannel(mContext.getPackageName(), UserHandle.CURRENT,
+            mListener.updateNotificationChannel(mContext.getPackageName(), mContext.getUser(),
                     channel);
             fail("Shouldn't be able to update channel without "
                     + "CompanionDeviceManager#getAssociations()");
@@ -3534,7 +3538,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                     public void onCallNotificationPosted(String packageName, UserHandle userH) {
@@ -3582,7 +3586,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                         public void onCallNotificationPosted(String packageName, UserHandle user) {
@@ -3625,7 +3629,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(), listener);
+                    mContext.getUser(), mContext.getMainExecutor(), listener);
         } catch (SecurityException e) {
             fail("registerCallNotificationListener should succeed " + e);
         }
@@ -3648,6 +3652,13 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             }
         } catch (InterruptedException e) {
         }
+    }
+
+    // TODO(b/340238181): enable the tests for visible background user.
+    private void assumeNotVisibleBackgroundUser() {
+        UserHelper userHelper = new UserHelper(mContext);
+        assumeFalse("Not supported on visible background user",
+                userHelper.isVisibleBackgroundUser());
     }
 
     private static class EventCallback extends Handler {

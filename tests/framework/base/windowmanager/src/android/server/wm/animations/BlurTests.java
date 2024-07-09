@@ -457,31 +457,20 @@ public class BlurTests extends WindowManagerTestBase {
             rootView.setOnApplyWindowInsetsListener((v, insets) -> {
                 Insets systemBarInsets = insets.getInsets(systemBars());
 
-                int bottomLeftCornerRadius = 0;
-                int bottomRightCornerRadius = 0;
-                int topLeftCornerRadius = 0;
-                int topRightCornerRadius = 0;
-                if (insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_LEFT) != null) {
-                    bottomLeftCornerRadius = insets.getRoundedCorner(
-                            RoundedCorner.POSITION_BOTTOM_LEFT).getRadius();
-                }
-                if (insets.getRoundedCorner(RoundedCorner.POSITION_BOTTOM_RIGHT) != null) {
-                    bottomRightCornerRadius = insets.getRoundedCorner(
-                            RoundedCorner.POSITION_BOTTOM_RIGHT).getRadius();
-                }
-                if (insets.getRoundedCorner(RoundedCorner.POSITION_TOP_LEFT) != null) {
-                    topLeftCornerRadius = insets.getRoundedCorner(
-                            RoundedCorner.POSITION_TOP_LEFT).getRadius();
-                }
-                if (insets.getRoundedCorner(RoundedCorner.POSITION_TOP_RIGHT) != null) {
-                    topRightCornerRadius = insets.getRoundedCorner(
-                            RoundedCorner.POSITION_TOP_RIGHT).getRadius();
-                }
-                Insets roundedCornerInsets = Insets.of(
-                        Math.max(bottomLeftCornerRadius, topLeftCornerRadius),
-                        Math.max(topLeftCornerRadius, topRightCornerRadius),
-                        Math.max(topRightCornerRadius, bottomRightCornerRadius),
-                        Math.max(bottomLeftCornerRadius, bottomRightCornerRadius)
+                int bottomLeft = getCornerRadius(insets, RoundedCorner.POSITION_BOTTOM_LEFT);
+                int bottomRight = getCornerRadius(insets, RoundedCorner.POSITION_BOTTOM_RIGHT);
+                int topLeft = getCornerRadius(insets, RoundedCorner.POSITION_TOP_LEFT);
+                int topRight = getCornerRadius(insets, RoundedCorner.POSITION_TOP_RIGHT);
+
+                // For each corner, inset into the apex at 45° so that the corners are excluded
+                // from the screenshot region while preserving the maximum size.
+                final double cornerInset = (1.0 - Math.sqrt(0.5)) + 0.05;
+
+                final Insets roundedCornerInsets = Insets.of(
+                        /* left= */ (int) (cornerInset * Math.max(bottomLeft, topLeft)),
+                        /* top= */ (int) (cornerInset * Math.max(topLeft, topRight)),
+                        /* right= */ (int) (cornerInset * Math.max(topRight, bottomRight)),
+                        /* bottom= */ (int) (cornerInset * Math.max(bottomLeft, bottomRight))
                 );
 
                 mInsetsToBeIgnored = Insets.max(systemBarInsets, roundedCornerInsets);
@@ -491,6 +480,11 @@ public class BlurTests extends WindowManagerTestBase {
 
         Insets getInsetsToBeIgnored() {
             return mInsetsToBeIgnored;
+        }
+
+        private static int getCornerRadius(WindowInsets insets, int position) {
+            final RoundedCorner corner = insets.getRoundedCorner(position);
+            return corner != null ? corner.getRadius() : 0;
         }
     }
 

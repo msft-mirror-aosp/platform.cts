@@ -28,15 +28,16 @@ func Funcs() template.FuncMap {
 	// These function are made available in templates by calling their key values, e.g. {{SnakeCase "HelloWorld"}}.
 	return template.FuncMap{
 		// go/keep-sorted start
-		"Dict":           dict,
-		"KebabCase":      kebabCase,
-		"LowerCamelCase": lowerCamelCase,
-		"LowerCase":      strings.ToLower,
-		"SafeReqID":      safeReqID,
-		"SnakeCase":      snakeCase,
-		"TitleCase":      titleCase,
-		"UpperCamelCase": upperCamelCase,
-		"UpperCase":      strings.ToUpper,
+		"Dict":             dict,
+		"KebabCase":        kebabCase,
+		"LowerCamelCase":   lowerCamelCase,
+		"LowerCase":        strings.ToLower,
+		"SafeReqID":        safeReqID,
+		"SafeTestConfigID": safeTestConfigID,
+		"SnakeCase":        snakeCase,
+		"TitleCase":        titleCase,
+		"UpperCamelCase":   upperCamelCase,
+		"UpperCase":        strings.ToUpper,
 		// go/keep-sorted end
 	}
 }
@@ -120,6 +121,14 @@ func safeReqID(s string) string {
 		return strings.Replace(a, b, c, -1)
 	}
 	return "r" + strings.ToLower(f(f(f(s, "/", "__"), ".", "_"), "-", "_"))
+}
+
+// safeTestConfigID converts a group name to a variable name safe string to append onto a requirement id.
+func safeTestConfigID(s string) string {
+	if s == "" {
+		return ""
+	}
+	return "__" + snakeCase(s)
 }
 
 // dict converts a list of key-value pairs into a map.
