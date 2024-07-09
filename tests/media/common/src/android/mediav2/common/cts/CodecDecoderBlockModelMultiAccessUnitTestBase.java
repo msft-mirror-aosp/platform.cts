@@ -16,7 +16,10 @@
 
 package android.mediav2.common.cts;
 
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecDecoderMultiAccessUnitTestBase.getCompressionRatio;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +35,6 @@ import android.util.Pair;
 
 import androidx.test.filters.SdkSuppress;
 
-import com.android.media.codec.flags.Flags;
-
 import org.junit.Assert;
 
 import java.io.IOException;
@@ -46,7 +47,7 @@ import java.util.Locale;
  * mode
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecDecoderBlockModelMultiAccessUnitTestBase extends CodecDecoderBlockModelTestBase {
     private static final String LOG_TAG =
             CodecDecoderBlockModelMultiAccessUnitTestBase.class.getSimpleName();
