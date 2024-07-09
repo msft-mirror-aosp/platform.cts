@@ -56,6 +56,7 @@ import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
+import com.android.compatibility.common.util.UserHelper
 import com.google.common.truth.Truth.assertWithMessage
 import org.junit.Assert
 import org.junit.Assert.assertEquals
@@ -439,6 +440,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldRedact() {
+        assumeNotVisibleBackgroundUser()
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null
@@ -560,6 +562,15 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
         assertWithMessage("Expected notification text not to contain OTP code, but it did: $text")
                 .that(text).doesNotContain(OTP_CODE)
+    }
+
+    // TODO(b/340238181): enable the tests for visible background user.
+    private fun assumeNotVisibleBackgroundUser() {
+        val userHelper = UserHelper(mContext)
+        assumeFalse(
+            "Not supported on visible background user",
+            userHelper.isVisibleBackgroundUser()
+        )
     }
 
     companion object {

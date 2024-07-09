@@ -208,7 +208,7 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleExternalListenerAccess(ComponentName listenerComponent, boolean on)
             throws IOException {
         String command = " cmd notification " + (on ? "allow_listener " : "disallow_listener ")
-                + listenerComponent.flattenToString();
+                + listenerComponent.flattenToString() + " " + mContext.getUserId();
         mNotificationHelper.runCommand(command, InstrumentationRegistry.getInstrumentation());
     }
 
@@ -370,7 +370,8 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + mContext.getUserId();
 
         mNotificationHelper.runCommand(command, instrumentation);
         AmUtils.waitForBroadcastBarrier();
