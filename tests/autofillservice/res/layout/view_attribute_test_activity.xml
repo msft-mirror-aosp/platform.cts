@@ -15,80 +15,83 @@
  * limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:focusable="true"
-    android:focusableInTouchMode="true"
-    android:id="@+id/rootContainer">
-    <EditText android:id="@+id/editTextNoHint"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-
-    <EditText android:id="@+id/editTextHintCustom"
-        android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+    <LinearLayout android:id="@+id/rootContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:autofillHints="@string/new_password_label" />
-
-    <EditText android:id="@+id/editTextPassword"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:autofillHints="password" />
-
-    <EditText android:id="@+id/editTextPhoneName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:autofillHints=" phone, username     " />
-
-    <EditText android:id="@+id/editTextHintsFromArray"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:autofillHints="@array/cc_expiration_values" />
-
-    <!-- Use px instead of dp to not have to deal with screen resolution -->
-    <LinearLayout android:id="@+id/outerView"
-        android:layout_height="wrap_content"
-        android:layout_width="wrap_content"
-        android:paddingTop="2px"
-        android:paddingBottom="5px"
-        android:paddingLeft="7px"
-        android:paddingRight="3px"
         android:orientation="vertical"
-        android:background="#F00"
-        android:importantForAutofill="yes">
-        <LinearLayout android:id="@+id/nestedView"
+        android:focusable="true"
+        android:focusableInTouchMode="true">
+        <EditText android:id="@+id/editTextNoHint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <EditText android:id="@+id/editTextHintCustom"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autofillHints="@string/new_password_label" />
+
+        <EditText android:id="@+id/editTextPassword"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autofillHints="password" />
+
+        <EditText android:id="@+id/editTextPhoneName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autofillHints=" phone, username     " />
+
+        <EditText android:id="@+id/editTextHintsFromArray"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:autofillHints="@array/cc_expiration_values" />
+
+        <!-- Use px instead of dp to not have to deal with screen resolution -->
+        <LinearLayout android:id="@+id/outerView"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
-            android:paddingTop="11px"
-            android:paddingBottom="17px"
-            android:paddingLeft="19px"
-            android:paddingRight="13px"
+            android:paddingTop="2px"
+            android:paddingBottom="5px"
+            android:paddingLeft="7px"
+            android:paddingRight="3px"
             android:orientation="vertical"
-            android:background="#0F0"
-            android:importantForAutofill="no">
-            <LinearLayout android:id="@+id/doubleNestedView"
+            android:background="#F00"
+            android:importantForAutofill="yes">
+            <LinearLayout android:id="@+id/nestedView"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
-                android:paddingTop="23px"
-                android:paddingBottom="11px"
-                android:paddingLeft="37px"
-                android:paddingRight="29px"
+                android:paddingTop="11px"
+                android:paddingBottom="17px"
+                android:paddingLeft="19px"
+                android:paddingRight="13px"
                 android:orientation="vertical"
-                android:background="#00F"
-                android:importantForAutofill="yes">
-                <EditText android:id="@+id/tripleNestedView"
-                    android:layout_height="11px"
-                    android:layout_width="43px"
-                    android:background="#FF0"
+                android:background="#0F0"
+                android:importantForAutofill="no">
+                <LinearLayout android:id="@+id/doubleNestedView"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:paddingTop="23px"
+                    android:paddingBottom="11px"
+                    android:paddingLeft="37px"
+                    android:paddingRight="29px"
+                    android:orientation="vertical"
+                    android:background="#00F"
+                    android:importantForAutofill="yes">
+                    <EditText android:id="@+id/tripleNestedView"
+                        android:layout_height="11px"
+                        android:layout_width="43px"
+                        android:background="#FF0"
+                        android:importantForAutofill="yes" />
+                </LinearLayout>
+
+                <EditText android:id="@+id/secondDoubleNestedView"
+                    android:layout_height="17px"
+                    android:layout_width="53px"
+                    android:background="#F0F"
                     android:importantForAutofill="yes" />
             </LinearLayout>
-
-            <EditText android:id="@+id/secondDoubleNestedView"
-                android:layout_height="17px"
-                android:layout_width="53px"
-                android:background="#F0F"
-                android:importantForAutofill="yes" />
         </LinearLayout>
     </LinearLayout>
-</LinearLayout>
+</ScrollView>
