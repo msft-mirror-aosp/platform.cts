@@ -27,6 +27,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <thread>
 
 // #define LOG_NDEBUG 0
 
@@ -606,6 +607,48 @@ TEST(AHardwareBufferTest, GetIdSucceed) {
     EXPECT_NE(id2, 0ULL);
 
     EXPECT_NE(id1, id2);
+}
+
+TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
+    constexpr int kNumThreads = 20;
+    std::vector<std::thread> threads;
+
+    for (int job = 0; job < kNumThreads; ++job) {
+        threads.emplace_back([]() {
+            constexpr int kNumIterations = 50000;
+            for (int i = 0; i < kNumIterations; ++i) {
+                // Allocate
+                AHardwareBuffer* ahwb = nullptr;
+                int error = 0;
+                const AHardwareBuffer_Desc desc = {.width = 1,
+                                                   .height = 1,
+                                                   .layers = 1,
+                                                   .format = AHARDWAREBUFFER_FORMAT_BLOB,
+                                                   .usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+                                                           AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                                                           AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER};
+                error = AHardwareBuffer_allocate(&desc, &ahwb);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_allocate failed: " << error;
+                EXPECT_NE(nullptr, ahwb);
+
+                // Lock
+                void* mem = nullptr;
+                error = AHardwareBuffer_lock(ahwb, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1,
+                                             nullptr, &mem);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_lock failed: " << error;
+
+                // Unlock
+                error = AHardwareBuffer_unlock(ahwb, /*fence_file_descriptor*/ nullptr);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_unlock failed: " << error;
+
+                // Release
+                AHardwareBuffer_release(ahwb);
+            }
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
 }
 
 } // namespace android
