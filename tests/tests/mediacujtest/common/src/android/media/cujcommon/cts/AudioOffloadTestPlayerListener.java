@@ -16,23 +16,18 @@
 
 package android.media.cujcommon.cts;
 
-import android.os.Looper;
-
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
-public class MessageNotificationTestPlayerListener extends PlayerListener {
+public class AudioOffloadTestPlayerListener extends PlayerListener {
 
-  private static final int NUM_OF_MESSAGE_NOTIFICATIONS = 2;
-
-  public MessageNotificationTestPlayerListener(long sendMessagePosition) {
+  public AudioOffloadTestPlayerListener() {
     super();
-    this.mSendMessagePosition = sendMessagePosition;
   }
 
   @Override
   public TestType getTestType() {
-    return TestType.MESSAGE_NOTIFICATION_TEST;
+    return TestType.AUDIO_OFFLOAD_TEST;
   }
 
   @Override
@@ -41,25 +36,10 @@ public class MessageNotificationTestPlayerListener extends PlayerListener {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
       mExpectedTotalTime += player.getDuration();
-      mStartTime = System.currentTimeMillis();
-      // Let the ExoPlayer handle audio focus internally
-      mActivity.mPlayer.setAudioAttributes(mActivity.mPlayer.getAudioAttributes(), true);
     }
   }
 
   @Override
   public void onEventsMediaItemTransition(@NonNull Player player) {
-    for (int i = 0; i < NUM_OF_MESSAGE_NOTIFICATIONS; i++) {
-      mActivity.mPlayer.createMessage((messageType, payload) -> {
-            // Place a sample message notification
-            try {
-              NotificationGenerator.createNotification(mActivity);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition * (i + 1))
-          .setDeleteAfterDelivery(true)
-          .send();
-    }
   }
 }
