@@ -26,53 +26,36 @@ import static android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
 
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.app.Activity;
-import android.app.Instrumentation;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.net.Uri;
-import android.provider.DeviceConfig;
-import android.util.DisplayMetrics;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
-import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
-import androidx.test.uiautomator.UiScrollable;
-import androidx.test.uiautomator.UiSelector;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.AppOpsUtils;
-import com.android.compatibility.common.util.DisableAnimationRule;
-import com.android.compatibility.common.util.FeatureUtil;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -84,38 +67,7 @@ import java.util.regex.Pattern;
 /**
  * The test base to test PackageInstaller Installation CUJs
  */
-public class InstallationTestBase {
-    private static final String TAG = "PackageInstallerCujTestBase";
-
-    private static final String CONTENT_AUTHORITY =
-            "android.packageinstaller.criticaluserjourney.cts.fileprovider";
-    private static final String TEST_APK_LABEL = "Installer CUJ Test App";
-    private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
-    private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
-    private static final String TEST_APK_PACKAGE_NAME =
-            "android.packageinstaller.cts.cuj.app";
-    private static final String TEST_INSTALLER_LABEL = "CTS CUJ Installer";
-    private static final String TEST_INSTALLER_PACKAGE_NAME =
-            "android.packageinstaller.cts.cuj.installer";
-    private static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
-    private static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
-    private static final String APP_INSTALLED_LABEL = "App installed";
-    private static final String BUTTON_CANCEL_LABEL = "Cancel";
-    private static final String BUTTON_DONE_LABEL = "Done";
-    private static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
-    private static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
-            "Install without scanning";
-    private static final String BUTTON_INSTALL_LABEL = "Install";
-    private static final String BUTTON_OPEN_LABEL = "Open";
-    private static final String BUTTON_SETTINGS_LABEL = "Settings";
-    private static final String BUTTON_UPDATE_LABEL = "Update";
-    private static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
-    private static final String TOGGLE_ALLOW_LABEL = "allow";
-    private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
-    private static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
-    private static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
-    private static final String INSTALLING_LABEL = "Installing";
-    private static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
+public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     private static final String ACTION_LAUNCH_INSTALLER =
             "android.packageinstaller.cts.cuj.installer.action.LAUNCH_INSTALLER";
@@ -142,54 +94,23 @@ public class InstallationTestBase {
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
 
-    private static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
-    private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
-
-    private static final long TEST_APK_VERSION = 1;
-    private static final long TEST_APK_V2_VERSION = 2;
-
-    @ClassRule
-    public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
-
-    private static Context sContext;
-    private static PackageManager sPackageManager;
     private static InstallerResponseReceiver sInstallerResponseReceiver;
-    private static Instrumentation sInstrumentation;
-    private static UiDevice sUiDevice;
     private static String sToggleLabel = null;
-    private static String sPackageInstallerPackageName = null;
 
     @BeforeClass
-    public static void setUpClass() throws Exception {
-        sInstrumentation = InstrumentationRegistry.getInstrumentation();
-        sContext = sInstrumentation.getTargetContext();
-        sPackageManager = sContext.getPackageManager();
-        sInstallerResponseReceiver = new InstallerResponseReceiver();
-        sPackageInstallerPackageName = getPackageInstallerPackageName();
-        Log.d(TAG, "sPackageInstallerPackageName = " + sPackageInstallerPackageName);
-
+    public static void setUpInstallationClass() throws Exception {
+        setUpClass();
         copyTestFiles();
 
-        // Unblock UI
-        sUiDevice = UiDevice.getInstance(sInstrumentation);
-        if (!sUiDevice.isScreenOn()) {
-            sUiDevice.wakeUp();
-        }
-        sUiDevice.executeShellCommand("wm dismiss-keyguard");
-
+        sInstallerResponseReceiver = new InstallerResponseReceiver();
         sContext.registerReceiver(sInstallerResponseReceiver,
                 new IntentFilter(ACTION_RESPONSE_INSTALLER), Context.RECEIVER_EXPORTED);
     }
 
     @Before
+    @Override
     public void setup() throws Exception {
-        assumeFalse("The device is not supported", isNotSupportedDevice());
-
-        assumeFalse("The device doesn't have package installer",
-                sPackageInstallerPackageName == null);
-
-        uninstallTestPackage();
-        assertTestPackageNotInstalled();
+        super.setup();
 
         uninstallInstallerPackage();
         assertInstallerNotInstalled();
@@ -207,23 +128,18 @@ public class InstallationTestBase {
     }
 
     @After
+    @Override
     public void tearDown() throws Exception {
         requestInstallerCleanUp();
-
-        uninstallTestPackage();
         uninstallInstallerPackage();
-        // to avoid any UI is still on the screen
-        pressBack();
+        super.tearDown();
     }
 
     @AfterClass
-    public static void tearDownClass() throws Exception {
+    public static void tearDownInstallationClass() throws Exception {
         sInstallerResponseReceiver.unregisterReceiver(sContext);
         sInstallerResponseReceiver = null;
-        sPackageManager = null;
-        sContext = null;
-        sUiDevice = null;
-        sInstrumentation = null;
+        tearDownClass();
     }
 
     /**
@@ -235,13 +151,17 @@ public class InstallationTestBase {
     }
 
     private static void copyTestFiles() throws Exception {
-        final File apkFile = new File(TEST_APK_LOCATION, TEST_APK_NAME);
         final File dstFile = new File(sContext.getFilesDir(), TEST_APK_NAME);
-        copyFile(apkFile, dstFile);
+        if (!dstFile.exists()) {
+            final File apkFile = new File(TEST_APK_LOCATION, TEST_APK_NAME);
+            copyFile(apkFile, dstFile);
+        }
 
-        final File apkV2File = new File(TEST_APK_LOCATION, TEST_APK_V2_NAME);
         final File dstV2File = new File(sContext.getFilesDir(), TEST_APK_V2_NAME);
-        copyFile(apkV2File, dstV2File);
+        if (!dstV2File.exists()) {
+            final File apkV2File = new File(TEST_APK_LOCATION, TEST_APK_V2_NAME);
+            copyFile(apkV2File, dstV2File);
+        }
     }
 
     private static void copyFile(File src, File dst) throws Exception {
@@ -429,49 +349,8 @@ public class InstallationTestBase {
         sInstallerResponseReceiver.resetResult();
     }
 
-    /**
-     * Assert the test package that is the version 1 is installed.
-     */
-    public static void assertTestPackageInstalled() {
-        assertThat(isInstalledAndVerifyVersionCode(
-                TEST_APK_PACKAGE_NAME, TEST_APK_VERSION)).isTrue();
-    }
-
-    /**
-     * Assert the test package that is the version 2 is installed.
-     */
-    public static void assertTestPackageVersion2Installed() {
-        assertThat(isTestPackageVersion2Installed()).isTrue();
-    }
-
-    /**
-     * Assert the test package is NOT installed.
-     */
-    public static void assertTestPackageNotInstalled() {
-        assertThat(isTestPackageInstalled()).isFalse();
-    }
-
     private static void assertInstallerNotInstalled() {
         assertThat(isInstallerInstalled()).isFalse();
-    }
-
-    /**
-     * Wait for the device idle.
-     */
-    public static void waitForUiIdle() {
-        sUiDevice.waitForIdle();
-    }
-
-    /**
-     * Press the back key.
-     */
-    public static void pressBack() {
-        sUiDevice.pressBack();
-        waitForUiIdle();
-    }
-
-    private static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
-        uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
     }
 
     private static void allowInstallIfGPPDialogExists() {
@@ -494,27 +373,6 @@ public class InstallationTestBase {
             }
         }
         waitForUiIdle();
-    }
-
-    /**
-     * Assert the title of the install dialog is {@link #TEST_APK_LABEL}.
-     */
-    private static void assertTitleIsTestApkLabel() throws Exception {
-        findPackageInstallerObject(TEST_APK_LABEL);
-    }
-
-    /**
-     * Assert the content includes the installer label {@link #TEST_INSTALLER_LABEL}.
-     */
-    private static void assertContentIncludesTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(By.textContains(TEST_INSTALLER_LABEL), /* checkNull= */ true);
-    }
-
-    /**
-     * Assert the title of the install dialog is {@link #TEST_INSTALLER_LABEL}.
-     */
-    private static void assertTitleIsTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(TEST_INSTALLER_LABEL);
     }
 
     /**
@@ -665,7 +523,7 @@ public class InstallationTestBase {
      * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
      * triggers Installing dialog.
      */
-    public static void clickUpdateAnywayButton(boolean checkInstallingDialog) throws Exception {
+    private static void clickUpdateAnywayButton(boolean checkInstallingDialog) throws Exception {
         assertTitleIsTestApkLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_ANYWAY_LABEL));
@@ -677,13 +535,6 @@ public class InstallationTestBase {
         if (!isTestPackageVersion2Installed()) {
             allowInstallIfGPPDialogExists();
         }
-    }
-
-    /**
-     * Click the Cancel button and wait for the dialog to disappear.
-     */
-    public static void clickCancelButton() throws Exception {
-        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_CANCEL_LABEL));
     }
 
     /**
@@ -719,7 +570,7 @@ public class InstallationTestBase {
         if (uiObjects.size() == 1) {
             UiObject2 toggle = uiObjects.get(0);
             logUiObject(toggle);
-            UiObject2 text = findSiblingTextObject(toggle);
+            UiObject2 text = findAllowFromSourceSiblingTextObject(toggle);
             if (text != null) {
                 sToggleLabel = text.getText();
                 clickAndWaitForNewWindow(text);
@@ -732,7 +583,7 @@ public class InstallationTestBase {
         UiObject2 text = null;
         for (int i = 0; i < uiObjects.size(); i++) {
             UiObject2 toggle = uiObjects.get(i);
-            text = findSiblingTextObject(toggle);
+            text = findAllowFromSourceSiblingTextObject(toggle);
             if (text != null) {
                 break;
             }
@@ -757,15 +608,6 @@ public class InstallationTestBase {
         }
     }
 
-    /**
-     * Touch outside of the PackageInstaller dialog.
-     */
-    public static void touchOutside() {
-        DisplayMetrics displayMetrics = sContext.getResources().getDisplayMetrics();
-        sUiDevice.click(displayMetrics.widthPixels / 3, displayMetrics.heightPixels / 10);
-        waitForUiIdle();
-    }
-
     private static void waitForInstallingDialogGone() {
         BySelector installingSelector =
                 getPackageInstallerBySelector(By.textContains(INSTALLING_LABEL));
@@ -776,7 +618,7 @@ public class InstallationTestBase {
     }
 
     @Nullable
-    private static UiObject2 findSiblingTextObject(@NonNull UiObject2 uiObject) {
+    private static UiObject2 findAllowFromSourceSiblingTextObject(@NonNull UiObject2 uiObject) {
         UiObject2 parent = uiObject.getParent();
         if (parent == null) {
             return null;
@@ -812,166 +654,12 @@ public class InstallationTestBase {
         return null;
     }
 
-    private static void logUiObject(@NonNull UiObject2 uiObject) {
-        Log.d(TAG, "Found bounds: " + uiObject.getVisibleBounds()
-                + " of object: " + uiObject + ", text: " + uiObject.getText()
-                + ", package: " + uiObject.getApplicationPackage() + ", className: "
-                + uiObject.getClassName());
-    }
-
-    private static BySelector getPackageInstallerBySelector(BySelector bySelector) {
-        return bySelector.pkg(sPackageInstallerPackageName);
-    }
-
-    private static UiObject2 findPackageInstallerObject(String name) {
-        final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
-        return findPackageInstallerObject(By.text(namePattern), /* checkNull= */ true);
-    }
-
-    private static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
-        return findObject(getPackageInstallerBySelector(bySelector), checkNull);
-    }
-
-    private static UiObject2 findObject(String name) {
-        final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
-        return findObject(By.text(namePattern), /* checkNull= */ true);
-    }
-
-    @Nullable
-    private static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
-        return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
-    }
-
-    @Nullable
-    private static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
-        waitForUiIdle();
-
-        UiObject2 object = null;
-        long startTime = System.currentTimeMillis();
-        while (startTime + timeoutMs > System.currentTimeMillis()) {
-            try {
-                object = sUiDevice.wait(Until.findObject(bySelector), /* timeout= */ 10 * 1000);
-                if (object != null) {
-                    Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
-                            + " of object: " + bySelector + ", text: " + object.getText()
-                            + " package: " + object.getApplicationPackage());
-                    return object;
-                } else {
-                    // Maybe the screen is small. Scroll forward and attempt to click
-                    new UiScrollable(new UiSelector().scrollable(true)).scrollForward();
-                }
-            } catch (Exception ignored) {
-                // do nothing
-            }
-        }
-        if (checkNull) {
-            assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
-        }
-        return object;
-    }
-
-    private static void waitUntilObjectGone(BySelector bySelector) {
-        if (!sUiDevice.wait(Until.gone(bySelector), WAIT_OBJECT_GONE_TIMEOUT_MS)) {
-            fail("The Object: " + bySelector + "did not disappear within "
-                    + WAIT_OBJECT_GONE_TIMEOUT_MS + " milliseconds");
-        }
-        waitForUiIdle();
-    }
-
-    private static void uninstallPackage(String packageName) {
-        SystemUtil.runShellCommand(String.format("pm uninstall %s", packageName));
-    }
-
-    private static void uninstallTestPackage() {
-        uninstallPackage(TEST_APK_PACKAGE_NAME);
-    }
-
     private static void uninstallInstallerPackage() {
         uninstallPackage(TEST_INSTALLER_PACKAGE_NAME);
     }
 
-    /**
-     * Install the test apk with update-ownership.
-     */
-    public static void installTestPackageWithUpdateOwnership() throws IOException {
-        SystemUtil.runShellCommand("pm install -t  --update-ownership "
-                + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
-        assertTestPackageInstalled();
-    }
-
-    /**
-     * Install the test apk.
-     */
-    public static void installTestPackage() throws IOException {
-        installPackage(TEST_APK_NAME);
-        assertTestPackageInstalled();
-    }
-
-    /**
-     * Return the value of the device config of the {@code name} in PackageManagerService
-     * namespace.
-     */
-    @Nullable
-    public static String getPackageManagerDeviceProperty(@NonNull String name)
-            throws Exception {
-        return SystemUtil.callWithShellPermissionIdentity(() ->
-                DeviceConfig.getProperty(DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name));
-    }
-
-    /**
-     * Set the {@code value} to the device config with the {@code name} in PackageManagerService
-     * namespace.
-     */
-    public static void setPackageManagerDeviceProperty(@NonNull String name,
-                                                       @Nullable String value) throws Exception {
-        SystemUtil.callWithShellPermissionIdentity(() -> DeviceConfig.setProperty(
-                DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name, value,
-                /* makeDefault= */ false));
-    }
-
-    private static void installPackage(@NonNull String apkName) throws IOException {
-        Log.d(TAG, "installPackage(): apkName= " + apkName);
-        SystemUtil.runShellCommand("pm install -t "
-                + new File(TEST_APK_LOCATION, apkName).getCanonicalPath());
-    }
-
-    private static boolean isTestPackageInstalled() {
-        return isInstalled(TEST_APK_PACKAGE_NAME);
-    }
-
     private static boolean isInstallerInstalled() {
         return isInstalled(TEST_INSTALLER_PACKAGE_NAME);
-    }
-
-    private static boolean isInstalled(@NonNull String packageName) {
-        Log.d(TAG, "Testing if package " + packageName + " is installed for user "
-                + sContext.getUser());
-        try {
-            sPackageManager.getPackageInfo(packageName, /* flags= */ 0);
-            return true;
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.v(TAG, "Package " + packageName + " not installed for user "
-                    + sContext.getUser() + ": " + e);
-            return false;
-        }
-    }
-
-    private static boolean isTestPackageVersion2Installed() {
-        return isInstalledAndVerifyVersionCode(TEST_APK_PACKAGE_NAME, TEST_APK_V2_VERSION);
-    }
-
-    private static boolean isInstalledAndVerifyVersionCode(@NonNull String packageName,
-                                                           long versionCode) {
-        Log.d(TAG, "Testing if package " + packageName + " is installed for user "
-                + sContext.getUser() + ", with version code " + versionCode);
-        try {
-            PackageInfo packageInfo = sPackageManager.getPackageInfo(packageName, /* flags= */ 0);
-            return packageInfo.getLongVersionCode() == versionCode;
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.v(TAG, "Package " + packageName + " not installed for user "
-                    + sContext.getUser() + ": " + e);
-            return false;
-        }
     }
 
     private static class InstallerResponseReceiver extends BroadcastReceiver {
@@ -994,21 +682,5 @@ public class InstallationTestBase {
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
         }
-    }
-
-    @Nullable
-    private static String getPackageInstallerPackageName() {
-        final Intent intent = new Intent(
-                Intent.ACTION_INSTALL_PACKAGE).setData(Uri.parse("content:"));
-        final ResolveInfo ri = sPackageManager.resolveActivity(intent, /* flags= */ 0);
-        return ri != null ? ri.activityInfo.packageName : null;
-    }
-
-    private static boolean isNotSupportedDevice() {
-        return FeatureUtil.isArc()
-                || FeatureUtil.isAutomotive()
-                || FeatureUtil.isTV()
-                || FeatureUtil.isWatch()
-                || FeatureUtil.isVrHeadset();
     }
 }
