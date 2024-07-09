@@ -19,6 +19,7 @@ public class GravisGamePadProUsbTest extends InputHidTestCase {
 
     public GravisGamePadProUsbTest() {
         super(R.raw.gravis_gamepadprousb_register);
+        addDelayAfterSetup();
     }
 
     @Test

@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 public class RazerServalTest extends InputHidTestCase {
     public RazerServalTest() {
         super(R.raw.razer_serval_register);
+        addDelayAfterSetup();
     }
 
     /**

@@ -31,6 +31,7 @@ public class MicrosoftXbox2020Test extends InputHidTestCase {
     // Exercises the Bluetooth behavior of the Xbox One S controller
     public MicrosoftXbox2020Test() {
         super(R.raw.microsoft_xbox2020_register);
+        addDelayAfterSetup();
     }
 
     @Test

@@ -64,6 +64,7 @@ public class UsbVoiceCommandTest extends InputHidTestCase {
         mVoiceIntent = new Intent(RecognizerIntent.ACTION_VOICE_SEARCH_HANDS_FREE);
         mVoiceIntent.putExtra(RecognizerIntent.EXTRA_SECURE, true);
         mWebIntent = new Intent(RecognizerIntent.ACTION_WEB_SEARCH);
+        addDelayAfterSetup();
     }
 
     private void setPackageState(boolean enabled) throws Exception {

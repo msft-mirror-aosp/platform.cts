@@ -30,6 +30,7 @@ public class MicrosoftSculpttouchTest extends InputHidTestCase {
 
     public MicrosoftSculpttouchTest() {
         super(R.raw.microsoft_sculpttouch_register);
+        addDelayAfterSetup();
     }
 
     /**
