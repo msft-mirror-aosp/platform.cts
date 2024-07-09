@@ -37,11 +37,6 @@ import org.junit.runner.RunWith;
 public class NintendoSwitchProTest extends InputHidTestCase {
     public NintendoSwitchProTest() {
         super(R.raw.nintendo_switchpro_register);
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
         /**
          * During probe, hid-nintendo sends commands to the joystick and waits for some of those
          * commands to execute. Somewhere in the middle of the commands, the driver will register
@@ -50,7 +45,7 @@ public class NintendoSwitchProTest extends InputHidTestCase {
          * events to uhid, all incoming events are dropped, because probe() still hasn't finished.
          * To ensure that hid-nintendo probe is done, add a delay here.
          */
-        SystemClock.sleep(1000);
+        addDelayAfterSetup();
     }
 
     @Test
