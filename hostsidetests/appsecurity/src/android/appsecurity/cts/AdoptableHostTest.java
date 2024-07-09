@@ -161,7 +161,7 @@ public class AdoptableHostTest extends BaseHostJUnit4Test {
             Assert.assertNotNull("Failed to find APK for ABI " + abi, apk);
 
             // Install simple app on internal
-            new InstallMultiple().useNaturalAbi().addFile(APK).addFile(apk).run();
+            new InstallMultiple().addFile(APK).addFile(apk).run();
             runDeviceTests(PKG, CLASS, "testDataInternal");
             runDeviceTests(PKG, CLASS, "testDataWrite");
             runDeviceTests(PKG, CLASS, "testDataRead");

@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -71,8 +72,12 @@ public final class TestMeasurementUtil {
             Range.closed(1.559e9, 1.591e9);
     private static final Range<Double> BDS_B2A_FREQ_RANGE_HZ =
             Range.closed(1.166e9, 1.186e9);
+    private static final Range<Double> GAL_E1_FREQ_RANGE_HZ =
+            Range.closed(1.563e9, 1.587e9);
     private static final Range<Double> GAL_E5A_FREQ_RANGE_HZ =
             Range.closed(1.166e9, 1.186e9);
+    private static final Range<Double> GAL_E5B_FREQ_RANGE_HZ =
+            Range.closed(1.196e9, 1.217e9);
 
     private enum GnssBand {
         GNSS_L1,
@@ -1033,6 +1038,8 @@ public final class TestMeasurementUtil {
     private static void verifySatellitePvt(GnssMeasurement measurement,
         SoftAssert softAssert, long timeInNs) {
         SatellitePvt satellitePvt = measurement.getSatellitePvt();
+        Range<Double> hardwareCodeBiasMetersRange = getHardwareCodeBiasMetersRange(measurement);
+        Range<Double> clockDriftMpsRange = getClockDriftMpsRange(measurement);
         assertNotNull("SatellitePvt cannot be null when HAS_SATELLITE_PVT is true.", satellitePvt);
 
         if (satellitePvt.hasPositionVelocityClockInfo()){
@@ -1099,11 +1106,11 @@ public final class TestMeasurementUtil {
             softAssert.assertTrue("hardware_code_bias_meters : "
                     + "The satellite hardware code bias of the reported code type "
                     + "w.r.t ionosphere-free measurement in meters.",
-                    timeInNs,
-                    "-17.869 < X < 17.729",
+                    String.format(Locale.ROOT, "%.4f < X < %.4f", hardwareCodeBiasMetersRange.lowerEndpoint(),
+                            hardwareCodeBiasMetersRange.upperEndpoint()),
                     String.valueOf(satellitePvt.getClockInfo().getHardwareCodeBiasMeters()),
-                    satellitePvt.getClockInfo().getHardwareCodeBiasMeters() > -17.869 &&
-                    satellitePvt.getClockInfo().getHardwareCodeBiasMeters() < 17.729);
+                    hardwareCodeBiasMetersRange.contains(
+                            satellitePvt.getClockInfo().getHardwareCodeBiasMeters()));
             softAssert.assertTrue("time_correction_meters : "
                     + "The satellite time correction for ionospheric-free signal measurement "
                     + "(meters)",
@@ -1115,10 +1122,11 @@ public final class TestMeasurementUtil {
             softAssert.assertTrue("clock_drift_mps : "
                     + "The satellite clock drift (meters per second)",
                     timeInNs,
-                    "-1.117 < X < 1.117",
+                    String.format(Locale.ROOT, "%.4f < X < %.4f", clockDriftMpsRange.lowerEndpoint(),
+                            clockDriftMpsRange.upperEndpoint()),
                     String.valueOf(satellitePvt.getClockInfo().getClockDriftMetersPerSecond()),
-                    satellitePvt.getClockInfo().getClockDriftMetersPerSecond() > -1.117 &&
-                    satellitePvt.getClockInfo().getClockDriftMetersPerSecond() < 1.117);
+                    clockDriftMpsRange.contains(
+                        satellitePvt.getClockInfo().getClockDriftMetersPerSecond()));
         }
 
         if (satellitePvt.hasIono()){
@@ -1168,4 +1176,65 @@ public final class TestMeasurementUtil {
                 && measurement.hasCodeType()
                 && "L".equals(measurement.getCodeType());
     }
+
+    /**
+     * Get the HardwareCodeBiasMetersRange from the given GnssMeasurement.
+     * The range is obtained from go/review_hardwarecodebias.
+     *
+     * @param measurement GnssMeasurement
+     * @return HardwareCodeBiasMetersRange where the given measurement in.
+     */
+    private static Range<Double> getHardwareCodeBiasMetersRange(GnssMeasurement measurement) {
+        double frequency = measurement.getCarrierFrequencyHz();
+        switch (measurement.getConstellationType()) {
+            case GnssStatus.CONSTELLATION_GPS:
+            case GnssStatus.CONSTELLATION_SBAS:
+            case GnssStatus.CONSTELLATION_QZSS:
+                if (GPS_L1_QZSS_J1_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-17.869, 17.729);
+                } else if (GPS_L5_QZSS_J5_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-71.484, 71.485);
+                }
+                break;
+            case GnssStatus.CONSTELLATION_GALILEO:
+                if (GAL_E1_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-35.738,35.668);
+                } else if (GAL_E5A_FREQ_RANGE_HZ.contains(frequency)
+                        || GAL_E5B_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-71.467,71.406);
+                }
+                break;
+            case GnssStatus.CONSTELLATION_BEIDOU:
+                if (BDS_B1_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-35.738,35.721);
+                } else if (BDS_B2A_FREQ_RANGE_HZ.contains(frequency)) {
+                    return Range.closed(-71.476,71.441);
+                }
+                break;
+        }
+        // Return maximum range for not listed signal types.
+        return Range.closed(-71.484, 71.485);
+    }
+
+    /**
+     * Get the ClockDriftMpsRange from the given GnssMeasurement.
+     * The range is obtained from go/review_hardwarecodebias.
+     *
+     * @param measurement GnssMeasurement
+     * @return ClockDriftMpsRange where the given measurement in.
+     */
+    private static Range<Double> getClockDriftMpsRange(GnssMeasurement measurement) {
+       switch (measurement.getConstellationType()) {
+           case GnssStatus.CONSTELLATION_GPS:
+           case GnssStatus.CONSTELLATION_SBAS:
+           case GnssStatus.CONSTELLATION_QZSS:
+               return Range.closed(-1.117, 1.117);
+           case GnssStatus.CONSTELLATION_GALILEO:
+               return Range.closed(-4.467, 4.467);
+           case GnssStatus.CONSTELLATION_BEIDOU:
+               return Range.closed(-0.5584, 0.5584);
+       }
+       // Return maximum range for not listed signal types.
+       return Range.closed(-4.467, 4.467);
+   }
 }
