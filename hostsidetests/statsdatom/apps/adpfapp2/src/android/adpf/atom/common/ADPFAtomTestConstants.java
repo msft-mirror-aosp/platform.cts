@@ -18,16 +18,8 @@ package android.adpf.atom.common;
 
 public class ADPFAtomTestConstants {
     public static final String INTENT_ACTION_KEY = "action";
-    public static final String ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND =
-            "action.create_dead_tids";
     public static final String ACTION_CREATE_REGULAR_HINT_SESSIONS =
             "action.create_regular_hint_sessions";
     public static final String ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE =
             "action.create_regular_hint_sessions_multiple";
-    public static final String CONTENT_KEY_RESULT_TIDS = "result_tids";
-    public static final String CONTENT_KEY_UID = "result_uid";
-    public static final String CONTENT_COLUMN_KEY = "key";
-    public static final String CONTENT_COLUMN_VALUE = "value";
-    public static final String CONTENT_AUTHORITY = "android.adpf.atom.app";
-    public static final String CONTENT_URI_STRING = "content://" + CONTENT_AUTHORITY + "/test_data";
 }
