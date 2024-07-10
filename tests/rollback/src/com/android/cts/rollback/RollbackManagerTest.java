@@ -16,6 +16,8 @@
 
 package com.android.cts.rollback;
 
+import static android.crashrecovery.flags.Flags.FLAG_DEPRECATE_FLAGS_AND_SETTINGS_RESETS;
+
 import static com.android.cts.rollback.lib.RollbackInfoSubject.assertThat;
 import static com.android.cts.rollback.lib.RollbackUtils.getRollbackManager;
 
@@ -29,6 +31,7 @@ import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.content.rollback.RollbackInfo;
 import android.content.rollback.RollbackManager;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -378,6 +381,7 @@ public class RollbackManagerTest {
      * Test that flags are cleared when a rollback is committed.
      */
     @Test
+    @RequiresFlagsDisabled(FLAG_DEPRECATE_FLAGS_AND_SETTINGS_RESETS)
     public void testRollbackClearsFlags() throws Exception {
         Install.single(TestApp.A1).commit();
         assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(1);
