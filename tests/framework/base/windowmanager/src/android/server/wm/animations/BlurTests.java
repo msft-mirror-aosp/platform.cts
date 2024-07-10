@@ -461,11 +461,14 @@ public class BlurTests extends WindowManagerTestBase {
                 int bottomRight = getCornerRadius(insets, RoundedCorner.POSITION_BOTTOM_RIGHT);
                 int topLeft = getCornerRadius(insets, RoundedCorner.POSITION_TOP_LEFT);
                 int topRight = getCornerRadius(insets, RoundedCorner.POSITION_TOP_RIGHT);
+
+                // For each corner, inset into the apex at 45° so that the corners are excluded
+                // from the screenshot region while preserving some amount on circular screens.
                 final Insets roundedCornerInsets = Insets.of(
-                        /* left= */ (int) (0.35 * Math.max(bottomLeft, topLeft)),
-                        /* top= */ (int) (0.35 * Math.max(topLeft, topRight)),
-                        /* right= */ (int) (0.35 * Math.max(topRight, bottomRight)),
-                        /* bottom= */ (int) (0.35 * Math.max(bottomLeft, bottomRight))
+                        /* left= */ (int) (0.5 * Math.max(bottomLeft, topLeft)),
+                        /* top= */ (int) (0.5 * Math.max(topLeft, topRight)),
+                        /* right= */ (int) (0.5 * Math.max(topRight, bottomRight)),
+                        /* bottom= */ (int) (0.5 * Math.max(bottomLeft, bottomRight))
                 );
 
                 mInsetsToBeIgnored = Insets.max(systemBarInsets, roundedCornerInsets);
