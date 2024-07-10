@@ -18,12 +18,13 @@ package android.security.cts;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
-import android.platform.test.annotations.SystemUserOnly;
+import android.os.UserManager;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -58,7 +59,6 @@ import java.util.concurrent.TimeoutException;
  *  - Spinning up an app that uses the default TrustManager and checking that
  *    the certificate is correctly blocked, even when added to the KeyStore.
  */
-@SystemUserOnly(reason = "Requires modifying system user settings")
 @RunWith(AndroidJUnit4.class)
 public class CertBlocklistFileTest {
     private static final String TAG = "CertBlocklistFileTest";
@@ -82,6 +82,9 @@ public class CertBlocklistFileTest {
     @Before
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        assumeTrue("Skip test: not system user", userManager.isSystemUser());
+
         ShellUtils.runShellCommand("pm install " + TEST_APP_LOCATION);
         mPreviousPubKey =
           Settings.Secure.getString(mContext.getContentResolver(),
