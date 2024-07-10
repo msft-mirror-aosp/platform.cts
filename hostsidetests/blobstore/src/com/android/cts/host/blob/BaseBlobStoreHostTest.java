@@ -159,15 +159,17 @@ abstract class BaseBlobStoreHostTest extends BaseHostJUnit4Test {
         final Pattern pattern = Pattern.compile(regex, Pattern.MULTILINE | Pattern.DOTALL);
         final String roleHolder = "name=android.app.role.ASSISTANT" + "holders=" + pkgName;
         int checkRoleHolderRetries = 10;
-        while (checkRoleHolderRetries > 0) {
+        while (checkRoleHolderRetries-- > 0) {
             final String roleServiceDump = getDevice().executeShellCommand("dumpsys role");
             final Matcher matcher = pattern.matcher(roleServiceDump);
             if (!matcher.find()) {
                 Thread.sleep(10000);
-                checkRoleHolderRetries--;
                 continue;
             }
-            if (matcher.group(1).replaceAll("\\s+", "").contains(roleHolder)) {
+            String group = matcher.group(1)
+                    .replaceAll("\\s+", "")
+                    .replaceAll("fallback_enabled=(true|false)", "");
+            if (group.contains(roleHolder)) {
                 break;
             }
         }
