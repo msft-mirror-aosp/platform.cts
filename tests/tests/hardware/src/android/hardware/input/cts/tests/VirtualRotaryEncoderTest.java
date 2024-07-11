@@ -23,10 +23,13 @@ import android.hardware.input.VirtualRotaryEncoder;
 import android.hardware.input.VirtualRotaryEncoderScrollEvent;
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -35,7 +38,7 @@ import java.util.Collections;
 
 @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
 @SmallTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 public class VirtualRotaryEncoderTest extends VirtualDeviceTestCase {
 
     private static final String DEVICE_NAME = "CtsVirtualRotaryEncoderTestDevice";
@@ -54,13 +57,38 @@ public class VirtualRotaryEncoderTest extends VirtualDeviceTestCase {
                 () -> mVirtualDevice.createVirtualRotaryEncoder(null));
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
+    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
-    public void sendScrollEvent() {
-        final float scrollAmount = 1.0f;
+    @Parameters(method = "getAllScrollValues")
+    public void sendScrollEvent(float scrollAmount) {
+        verifyScrollEvent(scrollAmount);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_ROTARY, Flags.FLAG_HIGH_RESOLUTION_SCROLL})
+    @Test
+    @Parameters(method = "getAllHighResScrollValues")
+    public void sendHighResScrollEvent(float scrollAmount) {
+        verifyScrollEvent(scrollAmount);
+    }
+
+    private void verifyScrollEvent(float scrollAmount) {
         mVirtualRotary.sendScrollEvent(new VirtualRotaryEncoderScrollEvent.Builder()
                 .setScrollAmount(scrollAmount)
                 .build());
         verifyEvents(Collections.singletonList(
                 VirtualInputEventCreator.createRotaryEvent(scrollAmount)));
+    }
+
+    private static Float[] getAllScrollValues() {
+        return new Float[] {
+                -1f, 1f,
+        };
+    }
+
+    private static Float[] getAllHighResScrollValues() {
+        return new Float[] {
+                0.1f, 0.5f, 1f, -0.1f, -0.5f, -1f,
+        };
     }
 }

@@ -42,6 +42,10 @@ public class DuplexAudioManager {
     private int mPlayerSampleRate = 48000;
     private int mNumPlayerBurstFrames;
 
+    // see Performance Mode Constants in BuilderBase.java
+    private int mPlayerPerformanceMode = BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
+    private int mRecorderPerformanceMode = BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
+
     private Player mPlayer;
     private AudioSourceProvider mSourceProvider;
     private AudioDeviceInfo mPlayerSelectedDevice;
@@ -144,6 +148,28 @@ public class DuplexAudioManager {
     }
 
     /**
+     * Specifies the Performance Mode.
+     */
+    public void setPlayerPerformanceMode(int performanceMode) {
+        mPlayerPerformanceMode = performanceMode;
+    }
+
+    public int getPlayerPerformanceMode() {
+        return mPlayerPerformanceMode;
+    }
+
+    /**
+     * Specifies the Performance Mode.
+     */
+    public void setRecorderPerformanceMode(int performanceMode) {
+        mRecorderPerformanceMode = performanceMode;
+    }
+
+    public int getRecorderPerformanceMode() {
+        return mRecorderPerformanceMode;
+    }
+
+    /**
      * Specifies the input preset to use for the recorder.
      * @param preset
      */
@@ -170,7 +196,8 @@ public class DuplexAudioManager {
                         .setRouteDevice(mRecorderSelectedDevice)
                         .setSampleRate(mRecorderSampleRate)
                         .setChannelCount(mNumRecorderChannels)
-                        .setNumExchangeFrames(mNumRecorderBufferFrames);
+                        .setNumExchangeFrames(mNumRecorderBufferFrames)
+                        .setPerformanceMode(mRecorderPerformanceMode);
                 mRecorder = builder.build();
             } catch (RecorderBuilder.BadStateException ex) {
                 Log.e(TAG, "Recorder - BadStateException" + ex);
@@ -190,7 +217,7 @@ public class DuplexAudioManager {
                         .setSharingMode(mPlayerSharingMode)
                         .setRouteDevice(mPlayerSelectedDevice)
                         .setNumExchangeFrames(mNumPlayerBurstFrames)
-                        .setPerformanceMode(BuilderBase.PERFORMANCE_MODE_LOWLATENCY);
+                        .setPerformanceMode(mPlayerPerformanceMode);
                 if (mNumPlayerChannels == 0) {
                     builder.setChannelMask(mPlayerChannelMask);
                 } else {

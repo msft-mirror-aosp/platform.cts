@@ -32,6 +32,7 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.SystemUtil
 import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
@@ -147,7 +148,7 @@ class IntentTest : PackageInstallerTestBase() {
         assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName
+            getInstallSourceInfo().installingPackageName
         )
     }
 
@@ -167,7 +168,7 @@ class IntentTest : PackageInstallerTestBase() {
         assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName
+            getInstallSourceInfo().installingPackageName
         )
     }
 
@@ -232,6 +233,53 @@ class IntentTest : PackageInstallerTestBase() {
             assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         } finally {
             TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
+        }
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallApps_installFromTrustedSource_installFails() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)
+
+            instrumentation.uiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_PACKAGES
+            )
+            var installation = startInstallationViaIntent()
+
+            assertNotNull(
+                "Error dialog not shown",
+                uiDevice.wait(
+                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    GLOBAL_TIMEOUT
+                )
+            )
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallUnknownSources_installFromTrustedSource_installSucceeds() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
+
+            instrumentation.uiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_PACKAGES
+            )
+            var installation = startInstallationViaIntent()
+
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
         }
     }
 
