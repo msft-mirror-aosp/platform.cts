@@ -188,6 +188,7 @@ import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -299,6 +300,7 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
+    private UserHelper mUserHelper;
 
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
@@ -717,6 +719,7 @@ public abstract class ActivityManagerTestBase {
         // the activities to come in the resumed state.
         mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
                 + "be either empty or resumed");
+        mUserHelper = new UserHelper(mContext);
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -3355,6 +3358,13 @@ public abstract class ActivityManagerTestBase {
                 windowState.getMergedLocalInsetsSources().stream().filter(
                         predicate).findFirst();
         insetsOptional.ifPresent(insets -> insets.insetGivenFrame(inOutBounds));
+    }
+
+    /**
+     * Checks whether the test is enabled on visible background users.
+     */
+    protected void requireRunNotOnVisibleBackgroundNonProfileUser(String message) {
+        assumeFalse(message, mUserHelper.isVisibleBackgroundUser());
     }
 
     /**
