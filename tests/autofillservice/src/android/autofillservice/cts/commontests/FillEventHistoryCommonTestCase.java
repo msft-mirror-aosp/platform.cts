@@ -680,6 +680,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.focusByRelativeId(ID_PASSWORD);
         mUiBot.waitForIdleSync();
         mActivity.onPassword((v) -> v.setText(""));
+        mUiBot.waitForIdleSync();
 
         // Finish the context by login in and it will trigger to check if the save UI should be
         // shown.
