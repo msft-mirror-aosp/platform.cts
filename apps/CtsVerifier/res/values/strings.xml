@@ -4525,6 +4525,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="check_new_user_disclaimer">Check new user disclaimer</string>
     <string name="check_new_user_disclaimer_info">
         Please do the following: \n\n
+        0. Grant a permission to CtsVerifier by running \n
+        adb shell pm grant --user current com.android.cts.verifier android.permission.INTERACT_ACROSS_USERS\n\n
         1. Check persistent notification for managed device \n\n
         a). Open the notification UI, verify that there is a notification saying the device is managed.\n
         b). Tap the notification\n
