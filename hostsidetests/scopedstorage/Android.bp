@@ -28,6 +28,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -44,6 +45,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -60,6 +62,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -76,6 +79,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -108,6 +112,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -124,6 +129,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -140,6 +146,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
 }
@@ -223,6 +230,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
     sdk_version: "test_current",
@@ -249,6 +257,7 @@ android_test_helper_app {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
     sdk_version: "test_current",
@@ -273,6 +282,7 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
     test_config: "CoreTest.xml",
@@ -302,6 +312,7 @@ java_test_host {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
         "gts"
     ],
@@ -378,6 +389,7 @@ android_test {
     test_suites: [
         "general-tests",
         "mts-mediaprovider",
+        "mcts-mediaprovider",
         "cts",
     ],
     sdk_version: "test_current",
