@@ -18,9 +18,12 @@ package android.net.wifi.cts;
 
 import android.app.ActivityManager;
 import android.net.wifi.WifiMigration;
+import android.net.wifi.flags.Flags;
+import android.os.Build;
 import android.os.UserHandle;
-import android.os.UserManager;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import androidx.test.filters.SdkSuppress;
 
 public class WifiMigrationTest extends WifiJUnit3TestBase {
     private static final String TEST_SSID_UNQUOTED = "testSsid1";
@@ -133,6 +136,23 @@ public class WifiMigrationTest extends WifiJUnit3TestBase {
                     WifiMigration.STORE_FILE_USER_NETWORK_SUGGESTIONS,
                     UserHandle.of(ActivityManager.getCurrentUser()));
         } catch (Exception ignore) {
+        }
+    }
+
+    /**
+     * Test that {@link WifiMigration#migrateLegacyKeystoreToWifiBlobstore()}
+     * can be called successfully.
+     *
+     * TODO: Update @SdkSuppress once a version code >V is available
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    public void testMigrateLegacyKeystoreToWifiBlobstore() {
+        try {
+            WifiMigration.migrateLegacyKeystoreToWifiBlobstore();
+        } catch (Exception e) {
+            fail();
         }
     }
 }
