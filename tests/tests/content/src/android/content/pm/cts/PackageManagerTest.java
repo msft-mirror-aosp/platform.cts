@@ -3841,9 +3841,10 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     private void sendIntent(IntentSender intentSender) throws IntentSender.SendIntentException {
         intentSender.sendIntent(mContext, 0 /* code */, null /* intent */,
-                null /* onFinished */, null /* handler */, null /* requiredPermission */,
+                null /* requiredPermission */,
                 ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle());
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle(),
+                null /* handler */, null /* onFinished */);
     }
 
     static String getInstalledState(String packageName, int userId) {

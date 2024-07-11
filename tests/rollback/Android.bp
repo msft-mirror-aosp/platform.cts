@@ -22,6 +22,7 @@ android_test {
     srcs: ["src/**/*.java"],
     static_libs: [
         "android.content.pm.flags-aconfig-java",
+        "android.crashrecovery.flags-aconfig-java",
         "androidx.test.rules",
         "cts-rollback-lib",
         "cts-install-lib",

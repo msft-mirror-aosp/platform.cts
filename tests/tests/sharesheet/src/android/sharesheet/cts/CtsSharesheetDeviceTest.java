@@ -43,12 +43,10 @@ import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.ResultReceiver;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.chooser.ChooserAction;
 import android.service.chooser.ChooserTarget;
-import android.service.chooser.Flags;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -902,7 +900,6 @@ public class CtsSharesheetDeviceTest {
 
     @Test
     @ApiTest(apis = "android.content.Intent#EXTRA_METADATA_TEXT")
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SHARESHEET_METADATA_EXTRA)
     public void textSharesheetMetadata() {
         CharSequence testMetadataText = "Metadata test text";
         Intent shareIntent = createShareIntent(
