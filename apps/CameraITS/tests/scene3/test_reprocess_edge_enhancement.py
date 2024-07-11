@@ -168,7 +168,7 @@ class ReprocessEdgeEnhancementTest(its_base_test.ItsBaseTest):
       if camera_properties_utils.private_reprocess(props):
         reprocess_formats.append('private')
 
-      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      out_surface = capture_request_utils.get_largest_format('jpeg', props)
       logging.debug('image W: %d, H: %d',
                     out_surface['width'], out_surface['height'])
 
