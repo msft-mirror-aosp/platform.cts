@@ -34,6 +34,7 @@ android_test {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     data: [
         ":CtsAppSearchTestHelperA",
@@ -60,6 +61,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     manifest: "helper-app/AndroidManifest.xml",
     aaptflags: [
@@ -87,6 +89,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     manifest: "helper-app/AndroidManifest.xml",
     aaptflags: [
