@@ -22,6 +22,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.BlockedNumberContract;
 import android.util.Log;
 
@@ -32,6 +33,7 @@ import android.util.Log;
 // make cts
 // cts-tradefed
 // run cts -m CtsProviderTestCases --test android.provider.cts.BlockedNumberBackupRestoreTest
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to blockednumber provider.")
 public class BlockedNumberBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
     private static final String TAG = "BlockedNumberBackupRestoreTest";
     private static final String LOCAL_BACKUP_COMPONENT =

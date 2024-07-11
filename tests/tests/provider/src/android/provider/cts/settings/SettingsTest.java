@@ -42,6 +42,7 @@ import android.os.HandlerThread;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.Settings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -83,6 +84,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testSystemTable() throws RemoteException {
         final String[] SYSTEM_PROJECTION = new String[] {
                 Settings.System._ID, Settings.System.NAME, Settings.System.VALUE
@@ -249,6 +251,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testNoStaleValueModifiedFromSameProcess() throws Exception {
         final int initialValue = Settings.System.getInt(getContext().getContentResolver(),
                 Settings.System.VIBRATE_WHEN_RINGING);
@@ -268,6 +271,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testNoStaleValueModifiedFromOtherProcess() throws Exception {
         final int initialValue = Settings.System.getInt(getContext().getContentResolver(),
                 Settings.System.VIBRATE_WHEN_RINGING);
@@ -287,6 +291,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testNoStaleValueModifiedFromMultipleProcesses() throws Exception {
         final int initialValue = Settings.System.getInt(getContext().getContentResolver(),
                 Settings.System.VIBRATE_WHEN_RINGING);
@@ -312,6 +317,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testUriChangesUpdatingFromDifferentProcesses() throws Exception {
         final int initialValue = Settings.System.getInt(getContext().getContentResolver(),
                 Settings.System.VIBRATE_WHEN_RINGING);
@@ -355,6 +361,7 @@ public class SettingsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testCheckWriteSettingsOperation() throws Exception {
         final int myUid = Binder.getCallingUid();
         // Verify write settings permission.

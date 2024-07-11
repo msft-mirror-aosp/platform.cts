@@ -30,6 +30,7 @@ import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.CallLog;
 import android.provider.CallLog.Calls;
@@ -54,6 +55,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to call_log provider.")
 public class CallLogTest extends InstrumentationTestCase {
     private static final String TAG = CallLogTest.class.getSimpleName();
     // Test Call Log Entry
