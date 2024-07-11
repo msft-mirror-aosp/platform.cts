@@ -108,7 +108,7 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
       req['android.jpeg.quality'] = _JPEG_QUALITY_SETTING
-      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      out_surface = capture_request_utils.get_largest_format('jpeg', props)
       logging.debug('req W: %d, H: %d',
                     out_surface['width'], out_surface['height'])
 
