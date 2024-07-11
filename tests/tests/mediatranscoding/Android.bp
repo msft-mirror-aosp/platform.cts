@@ -25,7 +25,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-media",
-        "mcts-media",
         "mts",
     ],
     static_libs: [
