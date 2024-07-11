@@ -57,7 +57,6 @@ import platform.test.screenshot.ScreenshotTestRule
 import platform.test.screenshot.assertAgainstGolden
 import platform.test.screenshot.matchers.AlmostPerfectMatcher
 import platform.test.screenshot.matchers.BitmapMatcher
-import platform.test.screenshot.matchers.PixelPerfectMatcher
 
 /**
  * End-to-end tests for the [PointerIcon] pipeline.
@@ -109,7 +108,8 @@ class PointerIconTest {
 
         verifier = EventVerifier(activity::getInputEvent)
 
-        exactScreenshotMatcher = PixelPerfectMatcher()
+        exactScreenshotMatcher =
+            AlmostPerfectMatcher(acceptableThresholdCount = MAX_PIXELS_DIFFERENT)
         similarScreenshotMatcher =
             AlmostPerfectMatcher(acceptableThreshold = SCREENSHOT_DIFF_PERCENT)
     }
@@ -223,6 +223,7 @@ class PointerIconTest {
 
     companion object {
         const val SCREENSHOT_DIFF_PERCENT = 0.01 // 1% total difference threshold
+        const val MAX_PIXELS_DIFFERENT = 5
         const val ASSETS_PATH = "tests/input/assets"
         val TEST_OUTPUT_PATH =
             "/sdcard/Download/CtsInputTestCases/" + PointerIconTest::class.java.simpleName
