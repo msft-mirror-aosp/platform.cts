@@ -471,7 +471,7 @@ public class BlurTests extends WindowManagerTestBase {
                         /* bottom= */ (int) (0.5 * Math.max(bottomLeft, bottomRight))
                 );
 
-                mInsetsToBeIgnored = Insets.max(systemBarInsets, roundedCornerInsets);
+                mInsetsToBeIgnored = Insets.add(systemBarInsets, roundedCornerInsets);
                 return insets;
             });
         }
