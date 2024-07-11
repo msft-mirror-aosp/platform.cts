@@ -30,6 +30,7 @@ import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
+import android.os.SystemProperties
 import android.view.Display
 import android.view.MotionEvent
 import android.view.PointerIcon
@@ -219,13 +220,14 @@ class PointerIconTest {
 
     // We don't have a way to synchronously know when the requested pointer icon has been drawn
     // to the display, so wait some time (at least one display frame) for the icon to propagate.
-    private fun waitForPointerIconUpdate() = Thread.sleep(100)
+    private fun waitForPointerIconUpdate() = Thread.sleep(500L * HW_TIMEOUT_MULTIPLIER)
 
     companion object {
         const val SCREENSHOT_DIFF_PERCENT = 0.01 // 1% total difference threshold
         const val ASSETS_PATH = "tests/input/assets"
         val TEST_OUTPUT_PATH =
             "/sdcard/Download/CtsInputTestCases/" + PointerIconTest::class.java.simpleName
+        val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
