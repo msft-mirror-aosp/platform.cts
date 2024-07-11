@@ -29,6 +29,7 @@ import static android.view.SurfaceControlViewHost.SurfacePackage;
 import static android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 import static android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+import static android.view.WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -292,12 +293,18 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     private void globalTapOnWindowCorner(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
+        globalTapOnWindow(windowTokenSupplier, 0 /*xOffset*/, 0 /*yOffset*/);
+    }
+
+    private void globalTapOnWindow(@NonNull Supplier<IBinder> windowTokenSupplier, int xOffset,
+            int yOffset) throws InterruptedException {
         Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
         if (bounds == null) {
             fail("Could not get bounds for window!");
         }
 
-        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(bounds.left, bounds.top);
+        UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(bounds.left + xOffset,
+                bounds.top + yOffset);
         pointer.lift();
     }
 
@@ -639,6 +646,38 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         assertTrue(mClicked);
+    }
+
+    @Test
+    public void testReceivesOutsideEvents() throws Throwable {
+        final CountDownLatch outsideEventLatch = new CountDownLatch(1);
+        mEmbeddedView = new Button(mActivity);
+        mEmbeddedView.setOnTouchListener((view, event) -> {
+            if (event.getActionMasked() == MotionEvent.ACTION_OUTSIDE) {
+                outsideEventLatch.countDown();
+            }
+            return true;
+        });
+
+        mEmbeddedLayoutParams = new WindowManager.LayoutParams(mEmbeddedViewWidth,
+                mEmbeddedViewHeight, WindowManager.LayoutParams.TYPE_APPLICATION, 0,
+                PixelFormat.OPAQUE);
+
+        final int marginLeft = 20;
+        final int marginTop = 20;
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT, true /*onTop*/,
+                marginLeft, marginTop);
+        mInstrumentation.waitForIdleSync();
+
+        mActivityRule.runOnUiThread(() -> {
+            mEmbeddedLayoutParams.flags |= FLAG_WATCH_OUTSIDE_TOUCH;
+            mVr.relayout(mEmbeddedLayoutParams);
+        });
+        mInstrumentation.waitForIdleSync();
+
+        // Tap outside the embedded window.
+        globalTapOnWindow(mEmbeddedView::getWindowToken, -10 /*xOffset*/, -10 /*yOffset*/);
+        assertTrue(outsideEventLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS));
     }
 
     @Test
