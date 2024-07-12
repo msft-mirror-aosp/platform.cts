@@ -1,5 +1,4 @@
-//
-// Copyright (C) 2019 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,54 +14,37 @@
 //
 
 package {
-    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
 android_test_helper_app {
-    name: "CtsOverlayTarget",
+    name: "CtsOverlayResApp",
     defaults: ["cts_support_defaults"],
     sdk_version: "test_current",
-    certificate: ":cts-testkey1",
+    srcs: ["src/**/*.java"],
+
+    resource_dirs: ["res"],
+
     static_libs: [
-        "truth",
+        "androidx.annotation_annotation",
         "androidx.test.rules",
+        "androidx.test.core",
         "compatibility-device-util-axt",
+        "ctsdeviceutillegacy-axt",
+        "ctstestserver",
+        "ctstestrunner-axt",
+        "truth",
+        "overlay-app-utils",
     ],
-    srcs: [
-        "src/**/*.java",
+    libs: [
+        "android.test.runner",
+        "android.test.base",
     ],
-    resource_dirs: [
-        "res",
-        "res_overlayable",
-    ],
+    // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-}
 
-android_test_helper_app {
-    name: "CtsOverlayTargetNoOverlayable",
-    defaults: ["cts_support_defaults"],
-    sdk_version: "current",
-    certificate: ":cts-testkey1",
-    resource_dirs: [
-        "res",
-    ],
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
-}
-
-java_library {
-    name: "overlay-app-utils",
-    static_libs: [
-        "truth",
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-    ],
-    srcs: ["src/com/android/cts/overlay/target/Utils.java"],
-    sdk_version: "test_current",
+    manifest: "AndroidManifest.xml",
 }
