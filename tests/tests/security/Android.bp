@@ -86,6 +86,7 @@ android_test {
         ":CtsAppThatRequestCustomCameraPermission",
         ":CtsWallpaperBalTestApp",
         ":CtsEmptyApp",
+        ":UpdatedDynamicPermissionTestAttackerApp",
     ],
 }
 
