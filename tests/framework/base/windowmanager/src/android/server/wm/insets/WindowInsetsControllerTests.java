@@ -254,6 +254,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         PollingCheck.waitFor(TIMEOUT, () -> !rootView.getRootWindowInsets().isVisible(ime()));
     }
 
+    @FlakyTest(bugId = 339380439)
     @Test
     public void testImeForceShowingNavigationBar() throws Exception {
         final Instrumentation instrumentation = getInstrumentation();
@@ -927,6 +928,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         assertEquals(1, dispatchApplyWindowInsetsCount[0]);
     }
 
+    @FlakyTest(bugId = 339380439)
     @Test
     public void testDispatchApplyWindowInsetsCount_ime() throws Exception {
         assumeFalse("Automotive is to skip this test until showing and hiding certain insets "
