@@ -85,37 +85,37 @@ import java.util.regex.Pattern;
  * The test base to test PackageInstaller CUJs.
  */
 public class PackageInstallerCujTestBase {
-    private static final String TAG = "PackageInstallerCujTestBase";
+    public static final String TAG = "PackageInstallerCujTestBase";
 
-    private static final String CONTENT_AUTHORITY =
+    public static final String CONTENT_AUTHORITY =
             "android.packageinstaller.criticaluserjourney.cts.fileprovider";
-    private static final String TEST_APK_LABEL = "Installer CUJ Test App";
-    private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
-    private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
-    private static final String TEST_APK_PACKAGE_NAME =
+    public static final String TEST_APK_LABEL = "Installer CUJ Test App";
+    public static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
+    public static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
+    public static final String TEST_APK_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
-    private static final String TEST_INSTALLER_LABEL = "CTS CUJ Installer";
-    private static final String TEST_INSTALLER_PACKAGE_NAME =
+    public static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
+    public static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
+    public static final String TEST_INSTALLER_LABEL = "CTS CUJ Installer";
+    public static final String TEST_INSTALLER_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.installer";
-    private static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
-    private static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
-    private static final String APP_INSTALLED_LABEL = "App installed";
-    private static final String BUTTON_CANCEL_LABEL = "Cancel";
-    private static final String BUTTON_DONE_LABEL = "Done";
-    private static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
-    private static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
+    public static final String APP_INSTALLED_LABEL = "App installed";
+    public static final String BUTTON_CANCEL_LABEL = "Cancel";
+    public static final String BUTTON_DONE_LABEL = "Done";
+    public static final String BUTTON_GPP_MORE_DETAILS_LABEL = "More details";
+    public static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
             "Install without scanning";
-    private static final String BUTTON_INSTALL_LABEL = "Install";
-    private static final String BUTTON_OPEN_LABEL = "Open";
-    private static final String BUTTON_SETTINGS_LABEL = "Settings";
-    private static final String BUTTON_UPDATE_LABEL = "Update";
-    private static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
-    private static final String TOGGLE_ALLOW_LABEL = "allow";
-    private static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
-    private static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
-    private static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
-    private static final String INSTALLING_LABEL = "Installing";
-    private static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
+    public static final String BUTTON_INSTALL_LABEL = "Install";
+    public static final String BUTTON_OPEN_LABEL = "Open";
+    public static final String BUTTON_SETTINGS_LABEL = "Settings";
+    public static final String BUTTON_UPDATE_LABEL = "Update";
+    public static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
+    public static final String TOGGLE_ALLOW_LABEL = "allow";
+    public static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
+    public static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
+    public static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
+    public static final String INSTALLING_LABEL = "Installing";
+    public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     private static final String ACTION_LAUNCH_INSTALLER =
             "android.packageinstaller.cts.cuj.installer.action.LAUNCH_INSTALLER";
@@ -142,7 +142,7 @@ public class PackageInstallerCujTestBase {
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
 
-    private static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
+    public static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
     private static final long WAIT_OBJECT_GONE_TIMEOUT_MS = 3 * 1000L;
 
     private static final long TEST_APK_VERSION = 1;
@@ -151,13 +151,14 @@ public class PackageInstallerCujTestBase {
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
-    private static Context sContext;
     private static PackageManager sPackageManager;
     private static InstallerResponseReceiver sInstallerResponseReceiver;
     private static Instrumentation sInstrumentation;
-    private static UiDevice sUiDevice;
     private static String sToggleLabel = null;
     private static String sPackageInstallerPackageName = null;
+
+    public static Context sContext;
+    public static UiDevice sUiDevice;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
@@ -470,7 +471,10 @@ public class PackageInstallerCujTestBase {
         waitForUiIdle();
     }
 
-    private static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
+    /**
+     * Click the object and wait for the new window content is changed
+     */
+    public static void clickAndWaitForNewWindow(UiObject2 uiObject2) {
         uiObject2.clickAndWait(Until.newWindow(), WAIT_OBJECT_GONE_TIMEOUT_MS);
     }
 
@@ -499,21 +503,21 @@ public class PackageInstallerCujTestBase {
     /**
      * Assert the title of the install dialog is {@link #TEST_APK_LABEL}.
      */
-    private static void assertTitleIsTestApkLabel() throws Exception {
+    public static void assertTitleIsTestApkLabel() throws Exception {
         findPackageInstallerObject(TEST_APK_LABEL);
     }
 
     /**
      * Assert the content includes the installer label {@link #TEST_INSTALLER_LABEL}.
      */
-    private static void assertContentIncludesTestInstallerLabel() throws Exception {
+    public static void assertContentIncludesTestInstallerLabel() throws Exception {
         findPackageInstallerObject(By.textContains(TEST_INSTALLER_LABEL), /* checkNull= */ true);
     }
 
     /**
      * Assert the title of the install dialog is {@link #TEST_INSTALLER_LABEL}.
      */
-    private static void assertTitleIsTestInstallerLabel() throws Exception {
+    public static void assertTitleIsTestInstallerLabel() throws Exception {
         findPackageInstallerObject(TEST_INSTALLER_LABEL);
     }
 
@@ -812,38 +816,64 @@ public class PackageInstallerCujTestBase {
         return null;
     }
 
-    private static void logUiObject(@NonNull UiObject2 uiObject) {
+    /**
+     * Log some values about the {@code uiObject}
+     */
+    public static void logUiObject(@NonNull UiObject2 uiObject) {
         Log.d(TAG, "Found bounds: " + uiObject.getVisibleBounds()
                 + " of object: " + uiObject + ", text: " + uiObject.getText()
                 + ", package: " + uiObject.getApplicationPackage() + ", className: "
                 + uiObject.getClassName());
     }
 
-    private static BySelector getPackageInstallerBySelector(BySelector bySelector) {
+    /**
+     * Get the new BySelector with the package name is {@link #sPackageInstallerPackageName}.
+     */
+    public static BySelector getPackageInstallerBySelector(BySelector bySelector) {
         return bySelector.pkg(sPackageInstallerPackageName);
     }
 
-    private static UiObject2 findPackageInstallerObject(String name) {
+    /**
+     * Find the UiObject2 with the {@code name} and the object's package name is
+     * {@link #sPackageInstallerPackageName}.
+     */
+    public static UiObject2 findPackageInstallerObject(String name) {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findPackageInstallerObject(By.text(namePattern), /* checkNull= */ true);
     }
 
-    private static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
+    /**
+     * Find the UiObject2 with the {@code name} and the object's package name is
+     * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
+     * is not null.
+     */
+    public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
         return findObject(getPackageInstallerBySelector(bySelector), checkNull);
     }
 
-    private static UiObject2 findObject(String name) {
+    /**
+     * Find the UiObject2 with the {@code name}.
+     */
+    public static UiObject2 findObject(String name) {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findObject(By.text(namePattern), /* checkNull= */ true);
     }
 
+    /**
+     * Find the UiObject2 with the {@code bySelector}. If {@code checkNull} is true, also
+     * check the object is not null.
+     */
     @Nullable
-    private static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
         return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
     }
 
+    /**
+     * Find the UiObject2 with the {@code bySelector}. If {@code checkNull} is true, also
+     * check the object is not null. The {@code timeoutMs} is the value for waiting time.
+     */
     @Nullable
-    private static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
         waitForUiIdle();
 
         UiObject2 object = null;
@@ -870,7 +900,10 @@ public class PackageInstallerCujTestBase {
         return object;
     }
 
-    private static void waitUntilObjectGone(BySelector bySelector) {
+    /**
+     * Wait for the UiObject2 with the {@code bySelector} is gone.
+     */
+    public static void waitUntilObjectGone(BySelector bySelector) {
         if (!sUiDevice.wait(Until.gone(bySelector), WAIT_OBJECT_GONE_TIMEOUT_MS)) {
             fail("The Object: " + bySelector + "did not disappear within "
                     + WAIT_OBJECT_GONE_TIMEOUT_MS + " milliseconds");
@@ -878,11 +911,17 @@ public class PackageInstallerCujTestBase {
         waitForUiIdle();
     }
 
-    private static void uninstallPackage(String packageName) {
+    /**
+     * Uninstall the package with {@code packageName}.
+     */
+    public static void uninstallPackage(String packageName) {
         SystemUtil.runShellCommand(String.format("pm uninstall %s", packageName));
     }
 
-    private static void uninstallTestPackage() {
+    /**
+     * Uninstall the test package {@link #TEST_APK_PACKAGE_NAME}.
+     */
+    public static void uninstallTestPackage() {
         uninstallPackage(TEST_APK_PACKAGE_NAME);
     }
 
@@ -900,7 +939,7 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Install the test apk.
+     * Install the test apk {@link #TEST_APK_NAME}.
      */
     public static void installTestPackage() throws IOException {
         installPackage(TEST_APK_NAME);
@@ -929,13 +968,20 @@ public class PackageInstallerCujTestBase {
                 /* makeDefault= */ false));
     }
 
-    private static void installPackage(@NonNull String apkName) throws IOException {
+    /**
+     * Install the test apk {@code apkName}.
+     */
+    public static void installPackage(@NonNull String apkName) throws IOException {
         Log.d(TAG, "installPackage(): apkName= " + apkName);
         SystemUtil.runShellCommand("pm install -t "
                 + new File(TEST_APK_LOCATION, apkName).getCanonicalPath());
     }
 
-    private static boolean isTestPackageInstalled() {
+    /**
+     * If the test package {@link #TEST_APK_PACKAGE_NAME} is installed, return true. Otherwise,
+     * return false.
+     */
+    public static boolean isTestPackageInstalled() {
         return isInstalled(TEST_APK_PACKAGE_NAME);
     }
 
@@ -943,7 +989,11 @@ public class PackageInstallerCujTestBase {
         return isInstalled(TEST_INSTALLER_PACKAGE_NAME);
     }
 
-    private static boolean isInstalled(@NonNull String packageName) {
+    /**
+     * If the test package {@code packageName} is installed, return true. Otherwise,
+     * return false.
+     */
+    public static boolean isInstalled(@NonNull String packageName) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
                 + sContext.getUser());
         try {
@@ -956,11 +1006,19 @@ public class PackageInstallerCujTestBase {
         }
     }
 
-    private static boolean isTestPackageVersion2Installed() {
+    /**
+     * If the test package {@link #TEST_APK_PACKAGE_NAME} with version {@link #TEST_APK_V2_VERSION}
+     * is installed, return true. Otherwise, return false.
+     */
+    public static boolean isTestPackageVersion2Installed() {
         return isInstalledAndVerifyVersionCode(TEST_APK_PACKAGE_NAME, TEST_APK_V2_VERSION);
     }
 
-    private static boolean isInstalledAndVerifyVersionCode(@NonNull String packageName,
+    /**
+     * If the test package {@code packageName} with version {@code versionCode}
+     * is installed, return true. Otherwise, return false.
+     */
+    public static boolean isInstalledAndVerifyVersionCode(@NonNull String packageName,
             long versionCode) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
                 + sContext.getUser() + ", with version code " + versionCode);
