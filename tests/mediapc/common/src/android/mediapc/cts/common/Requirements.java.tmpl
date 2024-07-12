@@ -113,29 +113,6 @@ public final class Requirements {
       *
       * {{.}}{{end}}
       */
-    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}(
-           PerformanceClassEvaluator pce) {
-        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create());
-    }
-
-    {{- range $v_id, $v := $r.GetVariants }}
-
-    /**
-      * Add a new {{UpperCamelCase $r.GetName}}Requirement for requirement {{ $r.GetId }}
-      * to a {@code PerformanceClassEvaluator} instance
-      * {{$v.GetDescription}}.
-      {{- with $r.GetDescription}}
-      *
-      * {{.}}{{end}}
-      */
-    public static {{UpperCamelCase $r.GetName}}Requirement add{{ SafeReqID $r.GetId | UpperCase}}
-              {{- UpperCamelCase $v_id}}(
-           PerformanceClassEvaluator pce) {
-        return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
-            {{- UpperCamelCase $v_id}}());
-    }
-    {{- end }}{{/* range $v_id, $v */}}
-
     public static {{UpperCamelCase $r.GetName}}Requirement.With add{{ SafeReqID $r.GetId | UpperCase}}() {
         return new {{UpperCamelCase $r.GetName}}Requirement.With();
     }
@@ -228,11 +205,7 @@ public final class Requirements {
         }
 
 
-        {{- $baseCreateNotMethodGenerated := true }}
         {{- range $t := $r.GetTestConfigs }}
-        {{- if eq $t.GetId "" }}
-        {{- $baseCreateNotMethodGenerated = false }}
-        {{- end }}
 
         /**
           * {{ $r.GetId }} {{$r.GetName}}
@@ -266,15 +239,6 @@ public final class Requirements {
                     {{- end}});
         }
         {{- end }}{{/* range $t */}}
-
-        {{/* TODO: remove once code has been migrated to use new creation pattern */}}
-        {{- if $baseCreateNotMethodGenerated }}
-        /** A base create method is needed for old pattern to generate a valid java file */
-        private static {{UpperCamelCase $r.GetName}}Requirement create() {
-            throw new UnsupportedOperationException("
-                    {{- UpperCamelCase $r.GetName}}Requirement has no empty test config");
-        }
-        {{- end }}
 
         {{- range $t := $r.GetTestConfigs }}
         {{- range $v_id, $v := $r.GetVariants }}
