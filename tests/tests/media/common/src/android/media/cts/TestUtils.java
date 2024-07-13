@@ -133,24 +133,37 @@ public final class TestUtils {
 
 
     /**
-     * Reports whether {@code module} is the version shipped with the original system image
-     * or if it has been updated via a mainline update.
+     * Reports whether the APEX mainline module {@code module} has been updated from the
+     * version in the system image. The result is used to decide whether to relax some
+     * test criteria, like software codec performance being improved to run faster
+     * than performance data at initial release.
      *
      * @param module     the apex module name
-     * @return {@code true} if the apex module is the original version shipped with the device.
+     * @return {@code true} {@code module} refers to an apex module which has been updated.
      */
-    public static boolean isMainlineModuleFactoryVersion(String module) {
+    public static boolean isUpdatedMainlineModule(String module) {
         try {
             Context context = ApplicationProvider.getApplicationContext();
             PackageInfo info = context.getPackageManager().getPackageInfo(module,
                     MATCH_APEX);
-            if (info != null) {
-                return (info.applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+            if (info == null) {
+                return false;
             }
+            ApplicationInfo appInfo = info.applicationInfo;
+            if (appInfo == null) {
+                return false;
+            }
+            // FLAG_SYSTEM changes during apex update on <= T; but stays set on >=U
+            // FLAG_UPDATED_SYSTEM_APP always provides desired signalling
+            if ((info.applicationInfo.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0) {
+                return false;
+            }
+            return true;
         } catch (PackageManager.NameNotFoundException e) {
-            // Ignore the exception on devices that do not have this module
+            // doesn't exist, so it can't be upgraded
         }
-        return true;
+        // we don't have information telling us otherwise.
+        return false;
     }
 
     /*

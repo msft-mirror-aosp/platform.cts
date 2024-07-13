@@ -52,7 +52,6 @@ import android.media.MediaRecorder;
 import android.media.codec.Flags;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Requirements.RGBA1010102ColorFormatRequirement;
 import android.mediapc.cts.common.Utils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
@@ -388,7 +387,7 @@ public class VideoCodecRequirementsTest {
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.12/H-1-22")
+    @CddTest(requirement = "5.1/H-1-22")
     public void testPortraitResolutionSupport() throws CameraAccessException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -456,7 +455,8 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        RGBA1010102ColorFormatRequirement colorFormatSupportReq = Requirements.addR5_12__H_1_2(pce);
+        Requirements.RGBA1010102ColorFormatRequirement colorFormatSupportReq =
+                Requirements.addR5_12__H_1_2().to(pce);
         colorFormatSupportReq.setRgba1010102ColorFormat(isSupported);
 
         pce.submitAndCheck();

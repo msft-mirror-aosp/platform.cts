@@ -2567,11 +2567,9 @@
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testDisableSystemApp" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testDisableUpdatedSystemApp" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppPriorities" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppUpgradePrioritiesPreservedOnReboot" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppUpgradeRestricted" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testSystemAppPriorities" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testUninstallDisabledUpdatedSystemApp_remainingDisabled" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testUpdatedSystemAppPreservedOnReboot" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalHiddenSettingsKeysNotReadableWithoutAnnotation" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalHiddenSettingsKeysReadableWhenTestOnly" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalNonHiddenSettingsKeysAreReadable" />

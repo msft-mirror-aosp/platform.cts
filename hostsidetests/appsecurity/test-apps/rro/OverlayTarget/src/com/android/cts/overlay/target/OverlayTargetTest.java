@@ -16,22 +16,19 @@
 
 package com.android.cts.overlay.target;
 
+import static com.android.cts.overlay.target.Utils.setOverlayEnabled;
+
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.UserHandle;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
-
-import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,10 +42,6 @@ import java.util.concurrent.TimeUnit;
 public class OverlayTargetTest {
     // overlay package
     private static final String OVERLAY_ALL_PACKAGE_NAME = "com.android.cts.overlay.all";
-
-    // Overlay states
-    private static final String STATE_DISABLED = "STATE_DISABLED";
-    private static final String STATE_ENABLED = "STATE_ENABLED";
 
     // Default timeout value
     private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
@@ -123,49 +116,10 @@ public class OverlayTargetTest {
         mInstrumentation.waitForIdleSync();
     }
 
-    private static void setOverlayEnabled(String overlayPackage, boolean enabled)
-            throws Exception {
-        final String current = getStateForOverlay(overlayPackage);
-        final String expected = enabled ? STATE_ENABLED : STATE_DISABLED;
-        assertThat(current).isNotEqualTo(expected);
-        SystemUtil.runShellCommand("cmd overlay "
-                + (enabled ? "enable" : "disable")
-                + " --user current "
-                + overlayPackage);
-        PollingCheck.check("Fail to wait overlay enabled state " + expected
-                        + " for " + overlayPackage, TIMEOUT_MS,
-                () -> expected.equals(getStateForOverlay(overlayPackage)));
-    }
-
     private void launchSimpleActivity() {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.setClass(mInstrumentation.getTargetContext(), SimpleActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mInstrumentation.startActivitySync(intent);
-    }
-
-    private static String getStateForOverlay(String overlayPackage) {
-        final String errorMsg = "Fail to parse the state of overlay package " + overlayPackage;
-        final String result = SystemUtil.runShellCommand("cmd overlay dump");
-        final String overlayPackageForCurrentUser = overlayPackage + ":" + UserHandle.myUserId();
-        final int startIndex = result.indexOf(overlayPackageForCurrentUser);
-        assertWithMessage(errorMsg).that(startIndex).isAtLeast(0);
-
-        final int endIndex = result.indexOf('}', startIndex);
-        assertWithMessage(errorMsg).that(endIndex).isGreaterThan(startIndex);
-
-        final int stateIndex = result.indexOf("mState", startIndex);
-        assertWithMessage(errorMsg).that(startIndex).isLessThan(stateIndex);
-        assertWithMessage(errorMsg).that(stateIndex).isLessThan(endIndex);
-
-        final int colonIndex = result.indexOf(':', stateIndex);
-        assertWithMessage(errorMsg).that(stateIndex).isLessThan(colonIndex);
-        assertWithMessage(errorMsg).that(colonIndex).isLessThan(endIndex);
-
-        final int endLineIndex = result.indexOf('\n', colonIndex);
-        assertWithMessage(errorMsg).that(colonIndex).isLessThan(endLineIndex);
-        assertWithMessage(errorMsg).that(endLineIndex).isLessThan(endIndex);
-
-        return result.substring(colonIndex + 2, endLineIndex);
     }
 }

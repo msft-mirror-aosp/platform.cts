@@ -116,7 +116,13 @@ public abstract class RequiredMeasurement<T> {
 
     public void writeValue(ReportLog log) throws IllegalStateException {
 
-        if (!this.measuredValueSet) {
+        if (expectedValues().isEmpty()) {
+            // Some requirements include extra measurements when testing at a higher performance
+            // class. For these measurements, when testing at lower performance classes, the
+            // generated code may produce a correspoding RequiredMeasurement with an empty expected
+            // value map. If so, the measurement should just be ignored.
+            return;
+        } else if (!this.measuredValueSet) {
             throw new IllegalStateException("measured value not set for required measurement "
                 + this.id());
         }

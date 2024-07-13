@@ -25,6 +25,7 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.BlockedNumberContract;
 import android.provider.BlockedNumberContract.BlockedNumbers;
@@ -49,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 // make cts
 // cts-tradefed
 // run cts -m CtsProviderTestCases --test android.provider.cts.BlockedNumberContractTest
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to blockednumber provider.")
 public class BlockedNumberContractTest extends TestCaseThatRunsIfTelephonyIsEnabled {
     private static final String TAG = "BlockedNumberContractTest";
     private static final String TEST_PHONE_NUMBER = "1234567890";

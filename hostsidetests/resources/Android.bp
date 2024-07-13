@@ -20,7 +20,7 @@ package {
 java_test_host {
     name: "CtsResourcesHostTestCases",
     defaults: ["cts_defaults"],
-    srcs: ["src/**/*.java"],
+    srcs: ["src/**/RegisterResourcePathsHostTests.java"],
     libs: [
         "cts-tradefed",
         "tradefed",
@@ -42,4 +42,37 @@ java_test_host {
         ":CtsRegisterResourcePathsTestApp2",
     ],
     per_testcase_directory: true,
+    test_config: "AndroidTest.xml",
+}
+
+java_test_host {
+    name: "CtsResourcesConfigChangeTestCases",
+    defaults: ["cts_defaults"],
+    srcs: ["src/**/CtsHandleConfigChangeHostTests.java"],
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+        "compatibility-host-util",
+    ],
+    static_libs: [
+        "compatibility-host-util-axt",
+        "flag-junit-host",
+        "android.content.res.flags-aconfig-java-host",
+    ],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+    // All APKs required by the tests
+    data: [
+        ":CtsOverlayResApp",
+        ":CtsOverlayResRRO",
+        ":CtsOverlayLayoutRRO",
+        ":CtsOverlayFrameworkResRRO",
+        ":CtsOverlayResApp2",
+        ":CtsOverlayResRRO2",
+    ],
+    per_testcase_directory: true,
+    test_config: "ConfigChangeTests.xml",
 }

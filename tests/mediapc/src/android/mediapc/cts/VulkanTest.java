@@ -82,7 +82,7 @@ public class VulkanTest {
     public void checkVulkanProtectedMemoryAndGlobalPrioritySupport() throws Exception {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        VulkanRequirement req = Requirements.addR7_1_4_1__H_1_3(pce);
+        VulkanRequirement req = Requirements.addR7_1_4_1__H_1_3().to(pce);
 
         var filteredDevices = mVulkanDevices.stream().filter(this::notCpuDevice).toList();
         final boolean extGlobalPriority = filteredDevices.stream().allMatch(

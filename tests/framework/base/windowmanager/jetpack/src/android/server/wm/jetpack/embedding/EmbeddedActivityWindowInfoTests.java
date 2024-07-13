@@ -22,8 +22,6 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 
-import static com.android.window.flags.Flags.FLAG_ACTIVITY_WINDOW_INFO_FLAG;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -31,7 +29,6 @@ import static org.junit.Assert.assertNull;
 import android.app.Activity;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.jetpack.utils.TestActivityWithId2;
@@ -75,7 +72,6 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
      * {@link ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo} is correct for non-embedded
      * activity.
      */
-    @RequiresFlagsEnabled(FLAG_ACTIVITY_WINDOW_INFO_FLAG)
     @ApiTest(apis = {
             "androidx.window.extensions.ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo"
     })
@@ -97,7 +93,6 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
      * {@link ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo} is correct for embedded
      * activities.
      */
-    @RequiresFlagsEnabled(FLAG_ACTIVITY_WINDOW_INFO_FLAG)
     @ApiTest(apis = {
             "androidx.window.extensions.ActivityEmbeddingComponent#getEmbeddedActivityWindowInfo"
     })
@@ -130,7 +125,6 @@ public class EmbeddedActivityWindowInfoTests extends ActivityEmbeddingTestBase {
      * {@link ActivityEmbeddingComponent#setEmbeddedActivityWindowInfoCallback} callback will be
      * triggered whenever the {@link EmbeddedActivityWindowInfo} is changed.
      */
-    @RequiresFlagsEnabled(FLAG_ACTIVITY_WINDOW_INFO_FLAG)
     @ApiTest(apis = {
             "androidx.window.extensions.ActivityEmbeddingComponent"
                     + "#setEmbeddedActivityWindowInfoCallback",

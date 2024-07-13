@@ -88,6 +88,7 @@ java_test_host {
         "flag-junit-host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
+        "cts_adpf_atom_common-host2",
     ],
 
     data: [
@@ -95,6 +96,7 @@ java_test_host {
         ":CtsStatsdApp", //TODO(b/163546661): Remove once migration to new lib is complete.
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",
+        ":CtsStatsdAdpfApp2",
         ":CtsExternalServiceService",
         ":CtsMediaProjectionTestCases",
         ":CtsSimpleApp",

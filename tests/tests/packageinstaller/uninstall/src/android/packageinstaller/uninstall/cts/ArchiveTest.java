@@ -94,13 +94,20 @@ import java.util.concurrent.TimeUnit;
 public class ArchiveTest {
     private static final String LOG_TAG = ArchiveTest.class.getSimpleName();
 
-    private static final String ARCHIVE_APK =
-            "/data/local/tmp/cts/uninstall/CtsArchiveTestApp.apk";
+    private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/uninstall/";
+    private static final String ARCHIVE_APK = SAMPLE_APK_BASE
+            + "CtsArchiveTestApp.apk";
     private static final String ARCHIVE_APK_PACKAGE_NAME =
             "android.packageinstaller.archive.cts.archiveapp";
     private static final String ARCHIVE_APK_ACTIVITY_NAME =
             ARCHIVE_APK_PACKAGE_NAME + ".MainActivity";
     private static final String SYSTEM_PACKAGE_NAME = "android";
+
+    private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
+    private static final String HELLO_WORLD_V1_APK = SAMPLE_APK_BASE
+            + "HelloWorldAppV1.apk";
+    private static final String HELLO_WORLD_V2_APK = SAMPLE_APK_BASE
+            + "HelloWorldAppV2.apk";
 
     private static final long TIMEOUT_MS = 30000;
 
@@ -108,6 +115,7 @@ public class ArchiveTest {
     private static CompletableFuture<String> sUnarchiveReceiverPackageName;
     private static CompletableFuture<Boolean> sUnarchiveReceiverAllUsers;
     private static CompletableFuture<Integer> sInstallResult;
+    private static CompletableFuture<String> sInstallResultMessage;
 
     private Context mContext;
     private UiDevice mUiDevice;
@@ -142,6 +150,7 @@ public class ArchiveTest {
         sUnarchiveReceiverPackageName = new CompletableFuture<>();
         sUnarchiveReceiverAllUsers = new CompletableFuture<>();
         sInstallResult = new CompletableFuture<>();
+        sInstallResultMessage = new CompletableFuture<>();
         mDefaultHome = getDefaultLauncher(instrumentation);
         ArchiveCompatibilityParams options = new ArchiveCompatibilityParams();
         options.setEnableUnarchivalConfirmation(false);
@@ -244,6 +253,7 @@ public class ArchiveTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void unarchiveApp_weakPermissions() throws Exception {
         installPackage(ARCHIVE_APK);
         LocalIntentSender archiveSender = new LocalIntentSender();
@@ -309,6 +319,91 @@ public class ArchiveTest {
         assertThat(sInstallResult.get(10, TimeUnit.SECONDS)).isEqualTo(
                 PackageInstaller.STATUS_SUCCESS);
         assertTrue(isInstalled());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void unarchiveAppWithDowngradeVersion_fail() throws Exception {
+        installPackage(HELLO_WORLD_V2_APK);
+        LocalIntentSender archiveSender = new LocalIntentSender();
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(HELLO_WORLD_PACKAGE_NAME,
+                            archiveSender.getIntentSender());
+                    Intent archiveIntent = archiveSender.getResult();
+                    assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            -100)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+
+        SessionListener sessionListener = new SessionListener();
+        mPackageInstaller.registerSessionCallback(sessionListener,
+                new Handler(Looper.getMainLooper()));
+
+        LocalIntentSender unarchiveSender = new LocalIntentSender();
+        mPackageInstaller.requestUnarchive(HELLO_WORLD_PACKAGE_NAME,
+                unarchiveSender.getIntentSender());
+        Intent unarchiveIntent = unarchiveSender.pollResult(5, TimeUnit.SECONDS);
+        assertThat(unarchiveIntent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)).isEqualTo(
+                HELLO_WORLD_PACKAGE_NAME);
+        assertThat(unarchiveIntent.getIntExtra(PackageInstaller.EXTRA_UNARCHIVE_STATUS,
+                -100)).isEqualTo(
+                PackageInstaller.STATUS_PENDING_USER_ACTION);
+
+        Intent unarchiveExtraIntent = unarchiveIntent.getParcelableExtra(Intent.EXTRA_INTENT,
+                Intent.class);
+        unarchiveExtraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+        prepareDevice();
+        mContext.startActivity(unarchiveExtraIntent);
+        mUiDevice.waitForIdle();
+
+        assertThat(waitFor(Until.findObject(By.textContains("Restore")))).isNotNull();
+
+        UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+        if (clickableView == null) {
+            Assert.fail("Restore button not shown");
+        }
+        clickableView.click();
+
+        // Complete the unarchive request by installing the older version app back. Assert that
+        // the installation goes through without any additional confirmation dialog.
+        final int unarchiveId = sUnarchiveId.get(10, TimeUnit.SECONDS);
+        assertThat(unarchiveId).isGreaterThan(0);
+
+        try {
+            mPackageInstaller.reportUnarchivalState(
+                    PackageInstaller.UnarchivalState.createOkState(unarchiveId));
+            PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                    PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(HELLO_WORLD_PACKAGE_NAME);
+            final int sessionId = mPackageInstaller.createSession(params);
+            assertThat(sessionId).isEqualTo(unarchiveId);
+            PackageInstaller.Session session = mPackageInstaller.openSession(sessionId);
+            File apkFile = new File(HELLO_WORLD_V1_APK);
+            try (OutputStream os = session.openWrite("base.apk", 0, apkFile.length());
+                    InputStream is = new FileInputStream(apkFile)) {
+                writeFullStream(is, os, apkFile.length());
+            }
+
+            // The installation with the downgraded version fails.
+            var installResultReceiver = new InstallResultReceiver();
+            session.commit(installResultReceiver.getIntentSender(mContext));
+            assertThat(sInstallResult.get(10, TimeUnit.SECONDS)).isEqualTo(
+                    PackageInstaller.STATUS_FAILURE_INVALID);
+            assertThat(sInstallResultMessage.get(10, TimeUnit.SECONDS)).contains(
+                    "Downgrade detected");
+            assertFalse(isInstalled(HELLO_WORLD_PACKAGE_NAME));
+        } finally {
+            // Uninstall the hello world package to avoid unexpected errors
+            uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+            // The test app cannot abandon draft sessions
+            try {
+                mPackageInstaller.abandonSession(unarchiveId);
+            } catch (SecurityException ignored) {
+            }
+        }
     }
 
     private static void writeFullStream(InputStream inputStream, OutputStream outputStream,
@@ -435,13 +530,17 @@ public class ArchiveTest {
     }
 
     private boolean isInstalled() {
-        Log.d(LOG_TAG, "Testing if package " + ARCHIVE_APK_PACKAGE_NAME + " is installed for user "
+        return isInstalled(ARCHIVE_APK_PACKAGE_NAME);
+    }
+
+    private boolean isInstalled(String packageName) {
+        Log.d(LOG_TAG, "Testing if package " + packageName + " is installed for user "
                 + mContext.getUser());
         try {
-            mContext.getPackageManager().getPackageInfo(ARCHIVE_APK_PACKAGE_NAME, /* flags= */ 0);
+            mContext.getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
-            Log.v(LOG_TAG, "Package " + ARCHIVE_APK_PACKAGE_NAME + " not installed for user "
+            Log.v(LOG_TAG, "Package " + packageName + " not installed for user "
                     + mContext.getUser() + ": " + e);
             return false;
         }
@@ -510,6 +609,9 @@ public class ArchiveTest {
         public void onReceive(Context context, Intent intent) {
             sInstallResult.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
                     PackageInstaller.STATUS_FAILURE));
+            sInstallResultMessage.complete(intent.getStringExtra(
+                    PackageInstaller.EXTRA_STATUS_MESSAGE));
+
         }
 
         public IntentSender getIntentSender(Context context) {
