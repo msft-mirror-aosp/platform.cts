@@ -31,6 +31,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Process;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Settings.SettingNotFoundException;
 import android.provider.Settings.System;
@@ -78,6 +79,7 @@ public class Settings_SystemTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testSystemSettings() throws SettingNotFoundException {
         /**
          * first query the existing settings in System table, and then insert four
@@ -156,6 +158,7 @@ public class Settings_SystemTest extends StsExtraBusinessLogicTestCase {
      */
     @Test
     @AsbSecurityTest(cveBugId = 156260178)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testSystemSettingsRejectInvalidFontSizeScale() throws SettingNotFoundException {
         final String originalFloatValue = System.getString(mContentResolver, FLOAT_FIELD);
         try {
@@ -247,6 +250,7 @@ public class Settings_SystemTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testLargeSettingExceedsLimit() {
         // Test large value
         expectThrows(IllegalArgumentException.class,
@@ -259,6 +263,7 @@ public class Settings_SystemTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testResetToDefaults() {
         final String oldStringValue = System.getString(mContentResolver, STRING_FIELD);
         final String newStringValue = "tmp";
