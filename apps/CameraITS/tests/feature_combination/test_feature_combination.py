@@ -248,10 +248,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                 test_failures.append(failure_msg)
 
               # Verify FPS by inspecting the result metadata
-              capture_results = recording_obj['captureMetadata'];
+              capture_results = recording_obj['captureMetadata']
               assert len(capture_results) > 1
-              last_t = capture_results[-1]['android.sensor.timestamp'];
-              first_t = capture_results[0]['android.sensor.timestamp'];
+              last_t = capture_results[-1]['android.sensor.timestamp']
+              first_t = capture_results[0]['android.sensor.timestamp']
               average_frame_duration = (last_t - first_t) / (len(capture_results) - 1)
               average_frame_rate_metadata = _SEC_TO_NSEC / average_frame_duration
               logging.debug('Average metadata frame rate for %s is %f', combination_name,
