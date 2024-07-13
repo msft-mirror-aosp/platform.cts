@@ -965,7 +965,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         final List<ProvisionSubscriberId> list = new ArrayList<>(
-                Collections.singleton(new ProvisionSubscriberId("09876543", 12345)));
+                Collections.singleton(new ProvisionSubscriberId("09876543", 12345, "")));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override
