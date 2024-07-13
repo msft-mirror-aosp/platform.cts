@@ -23,7 +23,7 @@ import numpy as np
 _LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH = 18
 _LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH = 90
 _BOUNDING_BOX_COLOR = (0, 255, 0)
-_BOX_MIN_SIZE = 20
+_BOX_MIN_SIZE_RATIO = 0.08  # 8% of the cropped image width
 _BOX_MAX_SIZE_RATIO = 0.5  # 50% of the cropped image width
 _BOX_PADDING_RATIO = 0.2
 _CROP_PADDING = 10
@@ -143,11 +143,15 @@ def _find_boxes(image):
   # Filter out boxes that are too small or too large
   # and boxes that are not square
   img_hw_size_max = max(image.shape[0], image.shape[1])
+  box_min_size = int(round(img_hw_size_max * _BOX_MIN_SIZE_RATIO, 0))
+  if box_min_size == 0:
+    raise AssertionError('Minimum box size calculated was 0. Check cropped '
+                         'image size.')
   box_max_size = int(img_hw_size_max * _BOX_MAX_SIZE_RATIO)
   for c in contours:
     x, y, w, h = cv2.boundingRect(c)
     aspect_ratio = w / h
-    if (w > _BOX_MIN_SIZE and h > _BOX_MIN_SIZE and
+    if (w > box_min_size and h > box_min_size and
         w < box_max_size and h < box_max_size and
         _MIN_ASPECT_RATIO < aspect_ratio < _MAX_ASPECT_RATIO):
       boxes.append((x, y, w, h))

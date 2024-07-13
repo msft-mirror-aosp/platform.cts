@@ -45,7 +45,7 @@ def _circle_and_image_center_offset(cam, props, name_with_log_path):
 
   # Take a single JPEG capture
   logging.debug('Using %s for reference', _FMT)
-  fmt = capture_request_utils.get_largest_jpeg_format(props)
+  fmt = capture_request_utils.get_largest_format('jpeg', props)
   req = capture_request_utils.auto_capture_request()
   cap = cam.do_capture(req, fmt)
   logging.debug('Captured %s %dx%d', _FMT, cap['width'], cap['height'])
