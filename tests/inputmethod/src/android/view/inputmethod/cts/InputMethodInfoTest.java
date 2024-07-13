@@ -184,7 +184,7 @@ public class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
+        if (Flags.imeSwitcherRevampApi()) {
             assertEquals(mLanguageSettingsActivity,
                     info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         }
@@ -235,7 +235,7 @@ public class InputMethodInfoTest {
             "android.view.inputmethod.InputMethodInfo#ACTION_IME_LANGUAGE_SETTINGS",
             "android.view.inputmethod.InputMethodInfo#createImeLanguageSettingsActivityIntent"
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testLanguageSettingsInfo() {
         final List<InputMethodInfo> imis = mImManager.getInputMethodList();
@@ -261,7 +261,7 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
+        if (Flags.imeSwitcherRevampApi()) {
             assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
                             .getClassName(),
                     imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());

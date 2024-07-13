@@ -271,7 +271,8 @@ public class AudioDeviceUtils {
     // USB Device Support
     //
     private static final int USBVENDORID_GOOGLE = 6353;
-    private static final int USBPRODUCTID_GOOGLEADAPTER = 20532;
+    private static final int USBPRODUCTID_GOOGLEADAPTER_A = 0x5025;
+    private static final int USBPRODUCTID_GOOGLEADAPTER_B = 0x5034;
 
     /**
      * Returns the UsbDevice corresponding to any connected USB peripheral.
@@ -306,7 +307,8 @@ public class AudioDeviceUtils {
                                                    boolean displayWarning, Context context) {
         boolean isValid = usbDevice != null
                 && usbDevice.getVendorId() == USBVENDORID_GOOGLE
-                && usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER;
+                && (usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER_A
+                    || usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER_B);
 
         if (!isValid && displayWarning) {
             UsbDeviceWarningDialog warningDialog = new UsbDeviceWarningDialog(context);
