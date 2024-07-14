@@ -40,9 +40,11 @@ android_test {
         "sts",
     ],
     data: [
+        ":CtsArchiveTestApp",
         ":CtsEmptyTestApp",
         ":CtsSelfUninstallingTestApp",
-        ":CtsArchiveTestApp",
+        ":HelloWorldAppV1",
+        ":HelloWorldAppV2",
     ],
     per_testcase_directory: true,
 }
