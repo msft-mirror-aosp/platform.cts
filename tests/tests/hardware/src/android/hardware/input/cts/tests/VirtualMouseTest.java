@@ -19,6 +19,7 @@ package android.hardware.input.cts.tests;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
+import android.companion.virtualdevice.flags.Flags;
 import android.graphics.PointF;
 import android.hardware.input.VirtualMouse;
 import android.hardware.input.VirtualMouseButtonEvent;
@@ -26,12 +27,16 @@ import android.hardware.input.VirtualMouseRelativeEvent;
 import android.hardware.input.VirtualMouseScrollEvent;
 import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.view.MotionEvent;
 
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.input.DefaultPointerSpeedRule;
+
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +45,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
+@RunWith(JUnitParamsRunner.class)
 public class VirtualMouseTest extends VirtualDeviceTestCase {
 
     private static final String DEVICE_NAME = "CtsVirtualMouseTestDevice";
@@ -102,7 +107,8 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
                         firstStopPositionX, firstStopPositionY, 0 /* buttonState */,
-                        0f /* pressure */, relativeChangeX, relativeChangeY, 0f /* vScroll */)));
+                        0f /* pressure */, relativeChangeX, relativeChangeY, 0f /* hScroll */,
+                        0f /* vScroll */)));
         final PointF cursorPosition1 = mVirtualMouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
                 firstStopPositionX, cursorPosition1.x, EPSILON);
@@ -118,7 +124,8 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_MOVE,
                         secondStopPositionX, secondStopPositionY, 0 /* buttonState */,
-                        0f /* pressure */, -relativeChangeX, -relativeChangeY, 0f /* vScroll */)));
+                        0f /* pressure */, -relativeChangeX, -relativeChangeY, 0f /* hScroll */,
+                        0f /* vScroll */)));
         final PointF cursorPosition2 = mVirtualMouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
                 secondStopPositionX, cursorPosition2.x, EPSILON);
@@ -127,20 +134,31 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
     }
 
     @Test
-    public void sendScrollEvent() {
-        final PointF startPosition = mVirtualMouse.getCursorPosition();
-        final float moveX = 0f;
-        final float moveY = 1f;
-        mVirtualMouse.sendScrollEvent(new VirtualMouseScrollEvent.Builder()
-                .setYAxisMovement(moveY)
-                .setXAxisMovement(moveX)
-                .build());
-        verifyEvents(Arrays.asList(
-                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
-                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */),
-                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_SCROLL,
-                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */,
-                        0f /* relativeX */, 0f /* relativeY */, 1f /* vScroll */)));
+    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
+    @Parameters(method = "getAllHighResScrollValues")
+    public void sendHighResScrollEventX(float scroll) {
+        verifyScrollX(scroll);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
+    @Parameters(method = "getAllHighResScrollValues")
+    public void sendHighResScrollEventY(float scroll) {
+        verifyScrollY(scroll);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
+    @Parameters(method = "getAllScrollValues")
+    public void sendScrollEventX(float scroll) {
+        verifyScrollX(scroll);
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
+    @Parameters(method = "getAllScrollValues")
+    public void sendScrollEventY(float scroll) {
+        verifyScrollY(scroll);
     }
 
     @Test
@@ -211,5 +229,47 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
     public void createVirtualMouse_nullArguments_throwsEception() {
         assertThrows(NullPointerException.class,
                 () -> mVirtualDevice.createVirtualMouse(null));
+    }
+
+    private void verifyScrollX(float scroll) {
+        final PointF startPosition = mVirtualMouse.getCursorPosition();
+        mVirtualMouse.sendScrollEvent(new VirtualMouseScrollEvent.Builder()
+                .setYAxisMovement(0f)
+                .setXAxisMovement(scroll)
+                .build());
+        verifyEvents(Arrays.asList(
+                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
+                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */),
+                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_SCROLL,
+                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */,
+                        0f /* relativeX */, 0f /* relativeY */, scroll /* hScroll */,
+                        0f /* vScroll */)));
+    }
+
+    private void verifyScrollY(float scroll) {
+        final PointF startPosition = mVirtualMouse.getCursorPosition();
+        mVirtualMouse.sendScrollEvent(new VirtualMouseScrollEvent.Builder()
+                .setYAxisMovement(scroll)
+                .setXAxisMovement(0f)
+                .build());
+        verifyEvents(Arrays.asList(
+                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
+                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */),
+                VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_SCROLL,
+                        startPosition.x, startPosition.y, 0 /* buttonState */, 0f /* pressure */,
+                        0f /* relativeX */, 0f /* relativeY */, 0f /* hScroll */,
+                        scroll /* vScroll */)));
+    }
+
+    private static Float[] getAllScrollValues() {
+        return new Float[] {
+                -1f, 1f,
+        };
+    }
+
+    private static Float[] getAllHighResScrollValues() {
+        return new Float[] {
+                0.1f, 0.5f, 1f, -0.1f, -0.5f, -1f,
+        };
     }
 }

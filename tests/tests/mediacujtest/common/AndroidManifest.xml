@@ -15,8 +15,8 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="android.media.cujcommon.cts">
+  xmlns:tools="http://schemas.android.com/tools"
+  package="android.media.cujcommon.cts">
 
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -44,6 +44,15 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity
+      android:exported="true"
+      android:name="android.media.cujcommon.cts.AudioOffloadTestActivity"
+      android:theme="@style/Theme.AppCompat">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
     <uses-library android:name="org.apache.http.legacy" />
     <uses-library android:name="android.test.runner" />
     <service
@@ -57,4 +66,3 @@
     </service>
   </application>
 </manifest>
-
