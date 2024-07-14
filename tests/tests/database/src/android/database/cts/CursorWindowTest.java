@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -469,6 +470,22 @@ public class CursorWindowTest {
         } catch (CursorWindowAllocationException exception) {
             assertEquals(exceptionDescription, exception.getMessage());
         }
+    }
+
+    @Test
+    public void putString_null() {
+        CursorWindow cursorWindow = new CursorWindow("test");
+        cursorWindow.allocRow();
+        assertThrows(NullPointerException.class, () -> cursorWindow.putString(null, 0, 0));
+        cursorWindow.close();
+    }
+
+    @Test
+    public void putBlob_null() {
+        CursorWindow cursorWindow = new CursorWindow("test");
+        cursorWindow.allocRow();
+        assertThrows(NullPointerException.class, () -> cursorWindow.putBlob(null, 0, 0));
+        cursorWindow.close();
     }
 
     private class MockCursorWindow extends CursorWindow {

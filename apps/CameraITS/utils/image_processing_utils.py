@@ -1522,3 +1522,24 @@ def p3_img_has_wide_gamut(wide_img):
         return True
 
   return False
+
+
+def compute_patch_noise(yuv_img, patch_region):
+  """Computes the noise statistics of a flat patch region in an image.
+
+  For the patch region, the noise statistics are computed for the luma, chroma
+  U, and chroma V channels.
+
+  Args:
+    yuv_img: The openCV YUV image to compute noise statistics for.
+    patch_region: The (x, y, w, h) region to compute noise statistics for.
+  Returns:
+    A dictionary of noise statistics with keys luma, chroma_u, chroma_v.
+  """
+  x, y, w, h = patch_region
+  patch = yuv_img[y : y + h, x : x + w]
+  return {
+      'luma': numpy.std(patch[:, :, 0]),
+      'chroma_u': numpy.std(patch[:, :, 1]),
+      'chroma_v': numpy.std(patch[:, :, 2]),
+  }
