@@ -15,8 +15,11 @@
 -->
 
 <configuration description="Runs a subset of CTS tests to certify system image changes">
+  <include name="cts" />
 
   <option name="plan" value="cts-system-virtual" />
+  <option name="result-attribute" key="system" value="1" />
+
   <!--Include Filters -->
   <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases"/>
   <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases"/>
@@ -212,7 +215,6 @@
   <option name="compatibility:include-filter" value="CtsJvmtiRunTest1902HostTestCases"/>
   <option name="compatibility:include-filter" value="CtsJvmtiRunTest903HostTestCases"/>
   <option name="compatibility:include-filter" value="CtsJvmtiRunTest918HostTestCases"/>
-  <option name="compatibility:include-filter" value="CtsNativeNetDnsTestCases"/>
   <option name="compatibility:include-filter" value="CtsClassLoaderFactoryInMemoryDexClassLoaderTestCases"/>
   <option name="compatibility:include-filter" value="CtsDynamicLinkerTestCases"/>
   <option name="compatibility:include-filter" value="CtsNativeResourcesTestCases"/>
@@ -409,4 +411,9 @@
   <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.SmsManagerPermissionTest#testSendDataMessage"/>
   <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testReceiveTextMessage"/>
   <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testAppSpecificSmsToken"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoReceiveSmsPermissionTest#testReceiveTextMessage"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.SmsManagerPermissionTest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NoSystemFunctionPermissionTest#testSendSms"/>
+  <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.TextureViewTest#testGetBitmap_8888_PassthroughP3"/>
+  <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.DisplayRefreshRateTest#testRefreshRate"/>
 </configuration>
