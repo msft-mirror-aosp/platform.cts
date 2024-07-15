@@ -232,6 +232,11 @@ public abstract class Step<E> {
         throw new AssertionError("Could not automatically or manually pass test");
     }
 
+    /** Gets the boolean value of an instrumentation argument with a default value. */
+    private static boolean getBooleanArg(String argName, boolean defaultValue) {
+        return TestApis.instrumentation().arguments().getBoolean(argName, defaultValue);
+    }
+
     protected final void pass() {
         try {
             pass((E) Nothing.NOTHING);
@@ -418,25 +423,21 @@ public abstract class Step<E> {
      * instruction view if it's still there.
      */
     protected void close() {
-        if (!mHasTakenScreenshot
-                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+        if (getBooleanArg("TAKE_SCREENSHOT", false) && !mHasTakenScreenshot) {
             mHasTakenScreenshot = true;
-            ScreenshotUtil.captureScreenshot(getClass().getSimpleName());
-        }
-        if (mInstructionView != null) {
-            TestApis.context()
-                    .instrumentationContext()
-                    .getMainExecutor()
-                    .execute(
-                            () -> {
-                                try {
-                                    sWindowManager.removeViewImmediate(mInstructionView);
-                                    mInstructionView = null;
-                                } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
-                                    Log.i(LOG_TAG, "Error removing instruction view", e);
-                                }
-                            });
+            Log.i(LOG_TAG, "Test Name: " + ScreenshotUtil.getTestName());
+            String screenshotName = getClass().getSimpleName();
+            if (getBooleanArg("HIDE_INSTRUCTION", false)) {
+                screenshotName = ScreenshotUtil.getTestName() + "__" + screenshotName;
+                doRemoveInstructionView();
+                ScreenshotUtil.captureScreenshotWithDelay(
+                        screenshotName, /* delayInMillis= */ 500L);
+            } else {
+                ScreenshotUtil.captureScreenshot(screenshotName);
+                removeInstructionView();
+            }
+        } else {
+            removeInstructionView();
         }
     }
 
@@ -451,5 +452,29 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /** Removes the instruction view in the main executor if it's still there. */
+    private void removeInstructionView() {
+        if (mInstructionView != null) {
+            TestApis.context()
+                    .instrumentationContext()
+                    .getMainExecutor()
+                    .execute(() -> doRemoveInstructionView());
+        }
+    }
+
+    /** Removes the instruction view in the main thread immdediately if it's still there. */
+    private void doRemoveInstructionView() {
+        if (mInstructionView != null) {
+            try {
+                mInstructionView.setVisibility(View.INVISIBLE);
+                sWindowManager.removeViewImmediate(mInstructionView);
+                mInstructionView = null;
+            } catch (IllegalArgumentException e) {
+                // This can happen if the view is no longer attached
+                Log.i(LOG_TAG, "Error removing instruction view", e);
+            }
+        }
     }
 }

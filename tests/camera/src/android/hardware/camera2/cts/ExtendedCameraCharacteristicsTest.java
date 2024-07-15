@@ -3860,6 +3860,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     public void testCameraVPerfClassCharacteristics() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.JpegRRequirement jpegRReq = pce.addR7_5__H_1_18();
