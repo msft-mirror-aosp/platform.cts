@@ -158,6 +158,9 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String PERF_METRICS_KEY_DELTA_AVG_LUMA = "delta_avg_luma";
     private static final String PERF_METRICS_KEY_PREFIX_NIGHT = "night_extension";
     private static final String PERF_METRICS_KEY_PREFIX_LOW_LIGHT = "low_light_boost";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_LUMA = "noise_luma";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U = "noise_chroma_u";
+    private static final String PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V = "noise_chroma_v";
 
     private static final Pattern PERF_METRICS_DISTORTION_PATTERN =
             Pattern.compile("test_preview_distortion_.*");
@@ -834,6 +837,15 @@ public class ItsTestActivity extends DialogTestListActivity {
         } else if (resultKey.contains(PERF_METRICS_KEY_AVG_LUMA)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + "_" + PERF_METRICS_KEY_AVG_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_LUMA)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_LUMA, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_U, floatValue);
+        } else if (resultKey.contains(PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V)) {
+            BigDecimal floatValue = new BigDecimal(value);
+            obj.put(keyPrefix + "_" + PERF_METRICS_KEY_PREFIX_NOISE_CHROMA_V, floatValue);
         } else if (resultKey.contains(PERF_METRICS_KEY_RAW)) {
             BigDecimal floatValue = new BigDecimal(value);
             obj.put(keyPrefix + PERF_METRICS_KEY_RAW + PERF_METRICS_KEY_RMS_DIFF, floatValue);
