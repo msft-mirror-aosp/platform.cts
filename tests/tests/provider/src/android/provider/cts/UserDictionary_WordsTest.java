@@ -20,6 +20,7 @@ package android.provider.cts;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.UserDictionary;
 import android.test.AndroidTestCase;
 
@@ -30,6 +31,7 @@ import java.util.Locale;
  * NOTE: user dictionary is now accessible only by the current spellchecker and keyboard, so this
  * test make sure they are not accessible by apps.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to dictionary provider")
 public class UserDictionary_WordsTest extends AndroidTestCase {
 
     private ContentResolver mContentResolver;

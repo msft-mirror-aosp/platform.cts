@@ -20,7 +20,6 @@ import static android.server.wm.second.Components.TEST_ACTIVITY_WITH_SAME_AFFINI
 import static android.server.wm.shareuid.a.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY;
 import static android.server.wm.shareuid.a.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP;
 import static android.server.wm.shareuid.b.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY_SHARE_UID;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -71,12 +70,12 @@ public class ActivityTaskAffinityTests extends ActivityManagerTestBase {
     private void testActivitiesShouldBeInTheSameTask(ComponentName activityA,
             ComponentName activityB, boolean sameTask) {
         launchActivity(activityA);
-        waitAndAssertTopResumedActivity(activityA, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(activityA, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int firstAppTaskId = mWmState.getTaskByActivity(activityA).getTaskId();
 
         launchActivity(activityB);
-        waitAndAssertTopResumedActivity(activityB, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(activityB, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int secondAppTaskId = mWmState.getTaskByActivity(activityB).getTaskId();
 

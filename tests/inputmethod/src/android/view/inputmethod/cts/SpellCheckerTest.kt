@@ -709,7 +709,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         var x = 0
         var y = 0
         runOnMainSync {
-            x = editText.layout.getPrimaryHorizontal(offset).toInt()
+            x = editText.layout.getPrimaryHorizontal(offset).toInt() + editText.compoundPaddingStart
             val line = editText.layout.getLineForOffset(offset)
             y = (editText.layout.getLineTop(line) + editText.layout.getLineBottom(line)) / 2
         }

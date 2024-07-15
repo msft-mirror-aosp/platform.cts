@@ -178,7 +178,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
 
         mSkipRateChecking = TestUtils.isMtsMode();
         mUpdatedSwCodecModule =
-                !TestUtils.isMainlineModuleFactoryVersion("com.google.android.media.swcodec");
+                TestUtils.isUpdatedMainlineModule("com.google.android.media.swcodec");
     }
 
     @After
@@ -214,10 +214,10 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         }
 
         // allow improvements in mainline-updated google-supplied software codecs.
-        boolean fasterIsOk = mUpdatedSwCodecModule & TestUtils.isMainlineCodec(name);
+        boolean fasterAllowed = mUpdatedSwCodecModule & TestUtils.isMainlineCodec(name);
         String error =
             MediaPerfUtils.verifyAchievableFrameRates(name, mime, width, height,
-                           fasterIsOk,  measuredFps);
+                           fasterAllowed, measuredFps);
         if (error != null && MediaUtils.onFrankenDevice()) {
             // not a real device; so note it as a non-fatal assumption failure
             assumeFalse(error, error.startsWith("Failed to get "));
