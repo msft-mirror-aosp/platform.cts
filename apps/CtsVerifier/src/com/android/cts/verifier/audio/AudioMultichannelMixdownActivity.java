@@ -61,8 +61,10 @@ public class AudioMultichannelMixdownActivity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioMultichannelMixdownActivity";
 
-    Context mContext;
+    private Context mContext;
     protected AudioManager mAudioManager;
+
+    AudioDeviceConnectionCallback mConnectionListener;
 
     // UI
     private View mCalibrateAudioButton;
@@ -617,7 +619,7 @@ public class AudioMultichannelMixdownActivity
         mTestManager.displayTestPhases();
 
         mAudioManager = getSystemService(AudioManager.class);
-        mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
+        mConnectionListener = new AudioDeviceConnectionCallback();
 
         enableRouteButtons();
 
@@ -642,8 +644,15 @@ public class AudioMultichannelMixdownActivity
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
     public void onStop() {
         stopTest();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
         super.onStop();
     }
 
