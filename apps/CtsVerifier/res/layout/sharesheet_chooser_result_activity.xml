@@ -13,48 +13,54 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:fitsSystemWindows="@bool/fit_system_windows"
-    android:orientation="vertical"
-    android:padding="8dp"
+    style="@style/RootLayoutPadding"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView android:id="@+id/instructions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#fff"
-        android:textSize="20sp"
-        />
-
     <LinearLayout
-        android:id="@+id/sharesheet_result_test_instructions_after_share"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:visibility="gone"
-        >
-        <Button android:id="@+id/sharesheet_result_test_pressed"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
-        <Button android:id="@+id/sharesheet_result_test_not_found"
+        android:padding="8dp">
+
+        <TextView android:id="@+id/instructions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#fff"
+            android:textSize="20sp"
+            />
+
+        <LinearLayout
+            android:id="@+id/sharesheet_result_test_instructions_after_share"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            >
+            <Button android:id="@+id/sharesheet_result_test_pressed"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+            <Button android:id="@+id/sharesheet_result_test_not_found"
+                android:layout_weight="1"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp" />
+        </LinearLayout>
+
+        <Button android:id="@+id/sharesheet_share_button"
+            android:text="@string/sharesheet_share_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <View
             android:layout_weight="1"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
+            android:layout_height="0dp"
+            />
+
+        <include android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            layout="@layout/pass_fail_buttons" />
     </LinearLayout>
-
-    <Button android:id="@+id/sharesheet_share_button"
-        android:text="@string/sharesheet_share_label"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <View
-        android:layout_weight="1"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        />
-
-    <include android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        layout="@layout/pass_fail_buttons" />
-</LinearLayout>
+</ScrollView>
