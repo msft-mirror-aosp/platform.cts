@@ -2,7 +2,6 @@
 
 package com.android.cts.verifier.camera.fov;
 
-import com.android.cts.verifier.R;
 import android.os.Bundle;
 
 import androidx.fragment.app.FragmentActivity;
@@ -18,7 +17,7 @@ public class CalibrationPreferenceActivity extends FragmentActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setTheme(R.style.Theme_AppCompat);
+    setTheme(androidx.appcompat.R.style.Theme_AppCompat);
     getSupportFragmentManager().beginTransaction().add(android.R.id.content,
             new CalibrationPreferenceFragment()).commit();
   }
