@@ -40,12 +40,16 @@ public class TestNameSaver implements TestRule {
     // packageName + className of a test class.
     private final String mPackageClass;
 
+    // Whether clearing the test name from the context after the execution.
+    private final boolean mClearTestName;
+
     public TestNameSaver(Object testInstance) {
-        this(testInstance.getClass());
+        this(testInstance.getClass(), /* clearTestName= */ true);
     }
 
-    public TestNameSaver(Class<?> testClass) {
+    public TestNameSaver(Class<?> testClass, boolean clearTestName) {
         mPackageClass = testClass.getCanonicalName();
+        mClearTestName = clearTestName;
     }
 
     @Override
@@ -66,10 +70,14 @@ public class TestNameSaver implements TestRule {
                 try {
                     base.evaluate();
                 } finally {
-                    boolean testNameCleared = clearTestName(sharedPref);
-                    Log.i(
-                            LOG_TAG,
-                            "Cleard test name: " + testName + ", result: " + testNameCleared);
+                    if (mClearTestName) {
+                        boolean testNameCleared = clearTestName(sharedPref);
+                        Log.i(
+                                LOG_TAG,
+                                "Cleard test name: " + testName + ", result: " + testNameCleared);
+                    } else {
+                        Log.i(LOG_TAG, "Skip clearing the test name: " + testName);
+                    }
                 }
             }
         };
