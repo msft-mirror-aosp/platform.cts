@@ -1081,7 +1081,6 @@ requirements {
       description: "Frame rate the test was ran at."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_INFO_ONLY
-      is_test_differentiator: true
     }
   }
   measurements: {
@@ -1090,7 +1089,6 @@ requirements {
       description: "Resolution the test was ran at."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_INFO_ONLY
-      is_test_differentiator: true
     }
   }
   specs {
