@@ -1226,12 +1226,74 @@ requirements {
 }
 requirements {
   id: "5.3/H-1-2"
-  description: "- Decoder frame drops"
+  name: "Adaptive Playback Frame Drop"
+  description: "Adaptive playback frame drop"
+  test_configs: {
+    key: "1080p_30fps"
+    value: {
+      id: "1080p_30fps"
+    }
+  }
+  test_configs: {
+    key: "1080p_60fps"
+    value: {
+      id: "1080p_60fps"
+    }
+  }
+  test_configs: {
+    key: "4k_60fps"
+    value: {
+      id: "4k_60fps"
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_30sec"
+    value: {
+      description: "Frame dropped in 30 seconds"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_rate"
+    value: {
+      description: "Frame rate the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_INFO_ONLY
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "Resolution the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_INFO_ONLY
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 30 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128Kbps AAC audio playback."
+      test_config_id: "1080p_30fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1239,6 +1301,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST NOT drop more than 2 frames in 10 seconds during a video resolution change in a 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 6
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1246,6 +1327,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1253,6 +1353,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 60 fps video session under load for a 4K session."
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -1260,6 +1379,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
