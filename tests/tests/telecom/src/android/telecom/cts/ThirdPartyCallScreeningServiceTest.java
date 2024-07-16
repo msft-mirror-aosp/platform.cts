@@ -293,7 +293,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testAllowCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !hasTelephonyFeature(mContext)) {
             return;
         }
 
