@@ -16,15 +16,26 @@
 
 package android.media.decoder.cts;
 
+import static android.media.MediaCodecInfo.CodecProfileLevel.*;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.CameraMetadata;
+import android.hardware.camera2.params.DynamicRangeProfiles;
 import android.media.MediaCodec;
 import android.media.MediaCodec.BufferInfo;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.cts.MediaHeavyPresubmitTest;
@@ -34,7 +45,10 @@ import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.view.Surface;
 
+import androidx.test.platform.app.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.Preconditions;
 
@@ -46,9 +60,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 @MediaHeavyPresubmitTest
 @AppModeFull(reason = "There should be no instant apps specific behavior related to decoders")
@@ -60,6 +78,29 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
     private static final String INVALID_HDR_STATIC_INFO =
             "00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00" +
             "00 00 00 00 00 00 00 00  00                     " ;
+
+    public static final Map<String, Map<Integer, Long>> PROFILE_HDR_MAP = new HashMap<>();
+
+    static {
+        Map<Integer, Long> AV1_PROFILE_MAP = new HashMap<>();
+        AV1_PROFILE_MAP.put(AV1ProfileMain10, DynamicRangeProfiles.HLG10);
+        AV1_PROFILE_MAP.put(AV1ProfileMain10HDR10, DynamicRangeProfiles.HDR10);
+        AV1_PROFILE_MAP.put(AV1ProfileMain10HDR10Plus, DynamicRangeProfiles.HDR10_PLUS);
+
+        Map<Integer, Long> HEVC_PROFILE_MAP = new HashMap<>();
+        HEVC_PROFILE_MAP.put(HEVCProfileMain10, DynamicRangeProfiles.HLG10);
+        HEVC_PROFILE_MAP.put(HEVCProfileMain10HDR10, DynamicRangeProfiles.HDR10);
+        HEVC_PROFILE_MAP.put(HEVCProfileMain10HDR10Plus, DynamicRangeProfiles.HDR10_PLUS);
+
+        Map<Integer, Long> VP9_PROFILE_MAP = new HashMap<>();
+        VP9_PROFILE_MAP.put(VP9Profile2, DynamicRangeProfiles.HLG10);
+        VP9_PROFILE_MAP.put(VP9Profile2HDR, DynamicRangeProfiles.HDR10);
+        VP9_PROFILE_MAP.put(VP9Profile2HDR10Plus, DynamicRangeProfiles.HDR10_PLUS);
+
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_AV1, AV1_PROFILE_MAP);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_HEVC, HEVC_PROFILE_MAP);
+        PROFILE_HDR_MAP.put(MediaFormat.MIMETYPE_VIDEO_VP9, VP9_PROFILE_MAP);
+    }
 
     @Parameterized.Parameter(0)
     public String mCodecName;
@@ -118,11 +159,43 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
                         H265_HDR10PLUS_DYNAMIC_INFO, false},
                 {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HDR10PLUS_RES, VP9_HDR10PLUS_STATIC_INFO,
                         VP9_HDR10PLUS_DYNAMIC_INFO, true},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, AV1_HLG_RES, null, null, false},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, H265_HLG_RES, null, null, false},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, VP9_HLG_RES, null, null, false},
         });
 
         return prepareParamList(exhaustiveArgsList);
     }
 
+    private static Set<Long> getAvailableHDRCaptureProfiles() throws CameraAccessException {
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        CameraManager cm = context.getSystemService(CameraManager.class);
+        String[] cameraIdList = cm.getCameraIdList();
+        for (String cameraId : cameraIdList) {
+            CameraCharacteristics ch = cm.getCameraCharacteristics(cameraId);
+            int[] caps = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+            if (IntStream.of(caps).anyMatch(x -> x
+                    == CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                Set<Long> profiles =
+                        ch.get(CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES)
+                                .getSupportedProfiles();
+                return profiles;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isHardwareAcceleratedCodec(String codecName) {
+        MediaCodecList mcl = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        for (MediaCodecInfo codecInfo : mcl.getCodecInfos()) {
+            if (codecName.equals(codecInfo.getName())) {
+                return codecInfo.isHardwareAccelerated();
+            }
+        }
+        return false;
+    }
+
+    @CddTest(requirements = {"5.12/C-6-6"})
     @Test
     @ApiTest(apis = {"android.media.MediaFormat#KEY_COLOR_TRANSFER_REQUEST"})
     public void testHdrToSdr() throws Exception {
@@ -144,6 +217,13 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
         }
         assumeTrue("Media format of input file is not supported.",
                 MediaUtils.supports(mCodecName, format));
+
+        long requiredHdrProfile =
+                PROFILE_HDR_MAP.get(mMediaType).get(format.getInteger(MediaFormat.KEY_PROFILE));
+        Set<Long> availableProfiles = getAvailableHDRCaptureProfiles();
+        boolean isProfileSupported =
+                availableProfiles != null && availableProfiles.contains(requiredHdrProfile);
+        assumeTrue("HDR capture is not supported for input file profile.", isProfileSupported);
 
         mExtractor.selectTrack(trackIndex);
         Log.v(TAG, "format " + format);
@@ -264,8 +344,14 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
         mDecoder.configure(format, surface, null/*crypto*/, 0/*flags*/);
         int transferRequest = mDecoder.getInputFormat().getInteger(
                 MediaFormat.KEY_COLOR_TRANSFER_REQUEST, 0);
-        assumeFalse(mCodecName + " does not support HDR to SDR tone mapping",
-                transferRequest == 0);
+        if (DecoderTest.isDefaultCodec(mCodecName, mMediaType) && isHardwareAcceleratedCodec(
+                mCodecName)) {
+            assertFalse(mCodecName + " does not support HDR to SDR tone mapping",
+                    transferRequest == 0);
+        } else {
+            assumeFalse(mCodecName + " does not support HDR to SDR tone mapping",
+                    transferRequest == 0);
+        }
         assertEquals("unexpected color transfer request value from input format",
                 MediaFormat.COLOR_TRANSFER_SDR_VIDEO, transferRequest);
         mDecoder.start();

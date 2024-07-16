@@ -116,6 +116,10 @@ public class HDRDecoderTestBase extends MediaTestBase {
             "40 78 13 64 cf 78 ed cc  bf 5a de f9 8e c7 c3 00"
     };
 
+    protected static final String AV1_HLG_RES = "cosmat_520x390_24fps_768kbps_av1_10bit.mkv";
+    protected static final String H265_HLG_RES = "cosmat_520x390_24fps_crf22_hevc_10bit.mkv";
+    protected static final String VP9_HLG_RES = "cosmat_520x390_24fps_crf22_vp9_10bit.mkv";
+
     @Before
     @Override
     public void setUp() throws Throwable {
