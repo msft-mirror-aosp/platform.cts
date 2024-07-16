@@ -146,6 +146,7 @@ message VariantSpec {
 message TestConfig {
   // The id is a field name safe string.
   optional string id = 1;
+  optional string description = 2;
 }
 
 enum Comparison {
