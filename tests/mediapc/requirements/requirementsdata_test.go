@@ -18,6 +18,8 @@ import (
 	"slices"
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
 	"google3/third_party/android/mediapc_requirements/requirements"
 	pb "cts/test/mediapc/requirements/requirements_go_proto"
 	"github.com/google/go-cmp/cmp"
@@ -91,6 +93,37 @@ func TestAllTestConfigsSpecifiedAndUsed(t *testing.T) {
 				func(a, b string) bool { return a < b })); diff != "" {
 				t.Errorf("Specified test configs do not match used test configs (-want +got):\n%s", diff)
 			}
+		})
+	}
+}
+
+func TestConfigMeasurementsValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	for _, req := range reqList.GetRequirements() {
+		if !req.HasName() {
+			continue // Do not check requirements that are not implemented yet
+		}
+
+		t.Run(req.GetName(), func(t *testing.T) {
+			for measurementName, measurement := range req.GetMeasurements() {
+				if measurement.GetComparison() != pb.Comparison_COMPARISON_CONFIG {
+					continue // Do not check measurements that are not config measurements
+				}
+
+				t.Run(measurementName, func(t *testing.T) {
+					measurementValues := make(map[string]*pb.RequiredValue)
+					for _, spec := range req.GetSpecs() {
+						val, ok := measurementValues[spec.GetTestConfigId()]
+						if !ok {
+							measurementValues[spec.GetTestConfigId()] = spec.GetRequiredValues()[measurementName]
+						} else if !proto.Equal(val, spec.GetRequiredValues()[measurementName]) {
+							t.Errorf("Test config [%s] has multiple different values for measurement [%s]: [%v] and [%v]", spec.GetTestConfigId(), measurementName, spec.GetRequiredValues()[measurementName], val)
+						}
+					}
+				})
+			}
+
 		})
 	}
 }
