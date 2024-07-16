@@ -83,7 +83,7 @@ import javax.annotation.Nullable;
 @OptionClass(alias = "pc-veq-test")
 public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     private static final String RES_URL =
-            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-1_2.tar.gz";
+            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-1_3.tar.gz";
 
     // variables related to host-side of the test
     private static final int MEDIA_PERFORMANCE_CLASS_14 = 34;
