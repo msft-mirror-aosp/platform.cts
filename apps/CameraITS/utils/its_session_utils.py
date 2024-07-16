@@ -91,6 +91,7 @@ TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 'not on our allowlist, please refer to '
                                 f'{TABLET_REQUIREMENTS_URL}')
+USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
@@ -122,7 +123,6 @@ _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'
 _TAG_STR = 'tag'
 _CAMERA_ID_STR = 'cameraId'
-_USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
 _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
@@ -249,7 +249,7 @@ class ItsSession(object):
 
   CAP_JPEG = {'format': 'jpeg'}
   CAP_RAW = {'format': 'raw'}
-  CAP_CROPPED_RAW = {'format': 'raw', 'useCase': _USE_CASE_CROPPED_RAW}
+  CAP_CROPPED_RAW = {'format': 'raw', 'useCase': USE_CASE_CROPPED_RAW}
   CAP_YUV = {'format': 'yuv'}
   CAP_RAW_YUV = [{'format': 'raw'}, {'format': 'yuv'}]
 
@@ -1197,7 +1197,7 @@ class ItsSession(object):
     cmd = {
         _CMD_NAME_STR: 'getSupportedExtensionPreviewSizes',
         _CAMERA_ID_STR: camera_id,
-        "extension": extension
+        "extension": extension  # pylint: disable=g-inconsistent-quotes
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
