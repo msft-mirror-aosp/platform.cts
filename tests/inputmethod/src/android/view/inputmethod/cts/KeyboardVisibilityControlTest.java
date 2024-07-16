@@ -632,8 +632,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                 return new LinearLayout(activity);
             });
-            assertTrue("test activity should be in resume state",
-                    getOnMainSync(testActivity::hasWindowFocus));
+            TestUtils.waitOnMainUntil(testActivity::hasWindowFocus, TIMEOUT);
 
             // Launch a test editor activity
             final String marker = getTestMarker();
