@@ -16,8 +16,6 @@
 
 package android.server.wm.activity;
 
-import static android.view.Display.DEFAULT_DISPLAY;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -53,7 +51,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        mPrimaryActivity = startActivity(PrimaryActivity.class, DEFAULT_DISPLAY);
+        mPrimaryActivity = startActivity(PrimaryActivity.class, getMainDisplayId());
     }
 
     @After
@@ -67,7 +65,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         mPrimaryActivity.waitAndAssertCallbackInvokedOnActivity();
     }
 
@@ -83,7 +81,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         mWm.notifyScreenshotListeners(newDisplay.mId);
         mPrimaryActivity.waitAndAssertCallbackInvokedOnActivity();
         secondaryActivity.waitAndAssertCallbackInvokedOnActivity();
@@ -101,7 +99,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         mPrimaryActivity.waitAndAssertCallbackInvokedOnActivity();
         secondaryActivity.waitAndAssertCallbackNotInvoked();
     }
@@ -118,7 +116,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         mWm.notifyScreenshotListeners(newDisplay.mId);
         mPrimaryActivity.waitAndAssertCallbackNotInvoked();
         secondaryActivity.waitAndAssertCallbackInvokedOnActivity();
@@ -128,11 +126,11 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
     @Test
     public void testScreencaptureInvokeCallbackOnVisibleOnly() {
         final SecondaryActivity topActivity =
-                startActivity(SecondaryActivity.class, DEFAULT_DISPLAY);
+                startActivity(SecondaryActivity.class, getMainDisplayId());
         mInstrumentation
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         topActivity.waitAndAssertCallbackInvokedOnActivity();
         mPrimaryActivity.waitAndAssertCallbackNotInvoked();
     }
@@ -144,7 +142,7 @@ public class ActivityCaptureCallbackTests extends WindowManagerTestBase {
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(Manifest.permission.STATUS_BAR_SERVICE);
         mPrimaryActivity.unregisterScreencaptureCallback();
-        mWm.notifyScreenshotListeners(DEFAULT_DISPLAY);
+        mWm.notifyScreenshotListeners(getMainDisplayId());
         mPrimaryActivity.waitAndAssertCallbackNotInvoked();
     }
 
