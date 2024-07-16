@@ -824,31 +824,97 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-20"
+  name: "Video Codec Hgl Editing"
+  description: "Video codec Hgl Editing"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "hlg_editing"
+    value: {
+      description: "Is hdr Editing supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support the Feature_HdrEditing feature for all hardware AV1 and HEVC encoders present on the device at 4K resolution or the largest Camera-supported resolution, whichever is less."
+      required_values: {
+        key: "hlg_editing"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-21"
+  name: "Video Codec Dynamic Color Aspect"
+  description: "Video codec dynamic color aspect"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "dynamic_color_aspects"
+    value: {
+      description: "Is Dynamic Color Aspect supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support FEATURE_DynamicColorAspect for all hardware video decoders (AVC, HEVC, VP9, AV1, or later). Note: This means applications can update the color aspects of the video content during the decoding session. Decoders that support 10-bit and 8-bit content MUST support dynamically switching between 8- and 10-bit content in Surface mode. Decoders that support HDR transfer function MUST support dynamically switching between SDR and HDR content."
+      required_values: {
+        key: "dynamic_color_aspects"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-22"
+  name: "Video Codec Portrait Resolution"
+  description: "Video codec portrait resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "portrait_resolution"
+    value: {
+      description: "Is Portrait Resolution supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support encoding, decoding, GPU-editing and displaying video content in portrait aspect ratio regardless of the rotation metadata for the largest Camera supported resolution or 4K whichever is less. Note: this includes HDR profiles if codec supports HDR. AV1 codecs are only required to support 1080p resolution. This requirement is only for hardware codecs, GPU and the DPU."
+      required_values: {
+        key: "portrait_resolution"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
