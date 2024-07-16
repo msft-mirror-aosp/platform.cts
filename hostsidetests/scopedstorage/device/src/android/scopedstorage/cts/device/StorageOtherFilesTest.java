@@ -68,6 +68,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.install.lib.TestApp;
 
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -114,11 +115,15 @@ public class StorageOtherFilesTest {
 
     @BeforeClass
     public static void init() throws Exception {
-        DeviceTestUtils.checkUISupported();
         pollForPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, true);
         // creating grants only for one
         modifyReadAccess(IMAGE_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
         modifyReadAccess(VIDEO_FILE_READABLE, THIS_PACKAGE_NAME, GRANT);
+    }
+
+    @Before
+    public void setUp() {
+        DeviceTestUtils.checkUISupported();
     }
 
     @Test

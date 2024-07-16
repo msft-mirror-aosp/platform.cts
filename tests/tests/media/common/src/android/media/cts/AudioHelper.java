@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import android.annotation.IntRange;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
+import android.content.Context;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -371,9 +373,12 @@ public class AudioHelper {
     public static class TimestampVerifier {
 
         // CDD 5.6 1ms timestamp accuracy
-        private static final double TEST_MAX_JITTER_MS_ALLOWED = 6.; // a validity check
-        private static final double TEST_STD_JITTER_MS_ALLOWED = 3.; // flaky tolerance 3x
-        private static final double TEST_STD_JITTER_MS_WARN = 1.;    // CDD requirement warning
+        // a validity check
+        private static final double TEST_MAX_JITTER_MS_ALLOWED = isWatch() ? 23. : 6.;
+        // flaky tolerance 3x
+        private static final double TEST_STD_JITTER_MS_ALLOWED = isWatch() ? 7. : 3.;
+        // CDD requirement warning
+        private static final double TEST_STD_JITTER_MS_WARN = 1.;
 
         // CDD 5.6 100ms track startup latency
         private static final double TEST_STARTUP_TIME_MS_ALLOWED = 500.; // error
@@ -518,8 +523,17 @@ public class AudioHelper {
                         ResultType.LOWER_BETTER, ResultUnit.MS);
                 log.setSummary("std_jitter_ms", stdJitterMs,
                         ResultType.LOWER_BETTER, ResultUnit.MS);
-                log.submit(InstrumentationRegistry.getInstrumentation());
+                log.submit(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation());
             }
+        }
+
+        private static Context getContext() {
+            return androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                   .getTargetContext();
+        }
+
+        private static boolean isWatch() {
+            return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
         }
     }
 

@@ -26,6 +26,7 @@ import android.companion.cts.common.CompanionActivity
 import android.companion.cts.multidevice.CallbackUtils.SystemDataTransferCallback
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.HandlerExecutor
 import android.os.HandlerThread
@@ -176,6 +177,11 @@ class CompanionDeviceManagerSnippet : Snippet {
     @Rpc(description = "Remove all sockets.")
     fun detachAllSockets() {
         btConnector.closeAllSockets()
+    }
+
+    @Rpc(description = "Check if device is a watch.")
+    fun isWatch(): Boolean {
+        return context.packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)
     }
 
     companion object {

@@ -289,13 +289,18 @@ public class SimpleSaveActivityTest extends CustomDescriptionWithLinkTestCase<Si
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
         assumeTrue("Device state is not REAR_DISPLAY",
                 !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
+        mUiBot.assumeMinimumResolution(500);
         mUiBot.setScreenOrientation(UiBot.PORTRAIT);
         try {
             saveTest(true);
         } finally {
             try {
-                mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-                cleanUpAfterScreenOrientationIsBackToPortrait();
+                if (!Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED)) {
+                    mUiBot.waitForIdleSync();
+                    mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+                    mUiBot.waitForIdleSync();
+                    cleanUpAfterScreenOrientationIsBackToPortrait();
+                }
             } catch (Exception e) {
                 mSafeCleanerRule.add(e);
             }

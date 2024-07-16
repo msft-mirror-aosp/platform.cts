@@ -640,8 +640,10 @@ public class RoutingTest extends AndroidTestCase {
         // test each device
         AudioDeviceInfo[] deviceList = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
         for (int index = 0; index < deviceList.length; index++) {
-            if (deviceList[index].getType() == AudioDeviceInfo.TYPE_TELEPHONY) {
+            if (deviceList[index].getType() == AudioDeviceInfo.TYPE_TELEPHONY
+                || deviceList[index].getType() == AudioDeviceInfo.TYPE_FM) {
                 // Device with type as TYPE_TELEPHONY requires a privileged permission.
+                // Device with type as FM is non-real device but attached, so skip
                 continue;
             }
             mediaPlayer.pause();

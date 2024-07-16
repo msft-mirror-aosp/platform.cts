@@ -16,5 +16,37 @@
     {
       "name": "CtsTvTestCases"
     }
+  ],
+  "tv-presubmit": [
+    {
+      "name": "CtsTvInputTestCases",
+      "options": [
+        {
+          "include-annotation": "android.platform.test.annotations.Presubmit"
+        },
+        {
+          "exclude-annotation": "android.support.test.filters.FlakyTest"
+        }
+      ]
+    },
+    {
+      "name": "CtsTvTunerTestCases",
+      "options": [
+        {
+          "include-annotation": "android.platform.test.annotations.Presubmit"
+        },
+        {
+          "exclude-annotation": "android.support.test.filters.FlakyTest"
+        }
+      ]
+    }
+  ],
+  "tv-postsubmit": [
+    {
+      "name": "CtsTvInputTestCases"
+    },
+    {
+      "name": "CtsTvTunerTestCases"
+    }
   ]
 }

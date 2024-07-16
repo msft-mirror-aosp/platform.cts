@@ -20,7 +20,6 @@ java_library_static {
     name: "cts_adpf_common",
     host_supported: true,
     srcs: ["src/**/*.java"],
-    sdk_version: "current",
 }
 
 java_library_host {

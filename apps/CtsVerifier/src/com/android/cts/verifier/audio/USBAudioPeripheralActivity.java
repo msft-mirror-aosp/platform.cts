@@ -21,7 +21,6 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -49,7 +48,9 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
     protected PeripheralProfile mSelectedProfile;
 
     // Peripheral
-    AudioManager mAudioManager;
+    private AudioManager mAudioManager;
+    private ConnectListener mConnectionListener;
+
     protected boolean mIsPeripheralAttached;
     protected AudioDeviceInfo mOutputDevInfo;
     protected AudioDeviceInfo mInputDevInfo;
@@ -146,7 +147,19 @@ public abstract class USBAudioPeripheralActivity extends PassFailButtons.Activit
         super.onCreate(savedInstanceState);
 
         mAudioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mConnectionListener = new ConnectListener();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
+        super.onStop();
     }
 
     protected void connectPeripheralStatusWidgets() {

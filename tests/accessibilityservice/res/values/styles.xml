@@ -15,7 +15,7 @@
   ~ limitations under the License
   -->
 <resources>
-    <style name="Theme_NoSwipeDismiss">
+    <style name="Theme_NoSwipeDismiss" parent="AppTheme">
         <item name="android:windowSwipeToDismiss">false</item>
     </style>
 

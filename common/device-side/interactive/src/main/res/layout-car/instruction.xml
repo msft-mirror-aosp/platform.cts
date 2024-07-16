@@ -47,7 +47,7 @@
         android:layout_height="match_parent"
         android:useDefaultMargins="true"
         android:paddingBottom="10dp"
-        android:columnCount="3">
+        android:columnCount="5">
     </GridLayout>
   </LinearLayout>
 </LinearLayout>

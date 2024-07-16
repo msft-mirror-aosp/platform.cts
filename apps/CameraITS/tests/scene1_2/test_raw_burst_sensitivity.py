@@ -19,6 +19,7 @@ import os.path
 import matplotlib
 from matplotlib import pylab
 from mobly import test_runner
+import numpy as np
 
 import its_base_test
 import camera_properties_utils
@@ -29,6 +30,7 @@ import its_session_utils
 _GR_PLANE_IDX = 1  # GR plane index in RGGB data
 _IMG_STATS_GRID = 9  # find used to find the center 11.11%
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
+_NUM_FRAMES = 4
 _NUM_STEPS = 5
 _VAR_THRESH = 1.01  # each shot must be 1% noisier than previous
 
@@ -94,8 +96,9 @@ class RawBurstSensitivityTest(its_base_test.ItsBaseTest):
       for sens in range(sens_min, sens_max, sens_step):
         exp = int(sens_exp_prod / float(sens))
         req = capture_request_utils.manual_capture_request(sens, exp, 0)
-        reqs.append(req)
-        settings.append((sens, exp))
+        for i in range(_NUM_FRAMES):
+          reqs.append(req)
+          settings.append((sens, exp))
 
       # Get rawStats capture format
       fmt = define_raw_stats_fmt(props)
@@ -103,15 +106,15 @@ class RawBurstSensitivityTest(its_base_test.ItsBaseTest):
       # Do captures
       caps = cam.do_capture(reqs, fmt)
 
+      # Find white_level for RawStats normalization & CFA order
+      white_level = float(props['android.sensor.info.whiteLevel'])
+      cfa_idxs = image_processing_utils.get_canonical_cfa_order(props)
+
       # Extract variances from each shot
       variances = []
       for i, cap in enumerate(caps):
-        (sens, exp) = settings[i]
-
-        # Find white_level for RawStats normalization
-        white_level = float(props['android.sensor.info.whiteLevel'])
+        sens, exp = settings[i]
         _, var_image = image_processing_utils.unpack_rawstats_capture(cap)
-        cfa_idxs = image_processing_utils.get_canonical_cfa_order(props)
         var = var_image[_IMG_STATS_GRID//2, _IMG_STATS_GRID//2,
                         cfa_idxs[_GR_PLANE_IDX]]/white_level**2
         variances.append(var)
@@ -129,14 +132,25 @@ class RawBurstSensitivityTest(its_base_test.ItsBaseTest):
       matplotlib.pyplot.savefig(
           f'{name_with_log_path}_variances.png')
 
-      # Assert each shot is noisier than previous and save img on FAIL
-      for i in x[0:-1]:
-        if variances[i] >= variances[i+1] / _VAR_THRESH:
+      # Find average variance at each step
+      vars_step_means = []
+      for i in range(_NUM_STEPS):
+        vars_step = []
+        for j in range(_NUM_FRAMES):
+          vars_step.append(variances[_NUM_FRAMES * i + j])
+        vars_step_means.append(np.mean(vars_step))
+      logging.debug('averaged variances: %s', vars_step_means)
+
+      # Assert each set of shots is noisier than previous and save img on FAIL
+      for variance_idx, variance in enumerate(vars_step_means[:-1]):
+        if variance >= vars_step_means[variance_idx+1] / _VAR_THRESH:
           image_processing_utils.capture_scene_image(
-              cam, props, name_with_log_path)
+              cam, props, name_with_log_path
+          )
           raise AssertionError(
-              f'variances [i]: {variances[i] :.5f}, [i+1]: '
-              f'{variances[i+1]:.5f}, THRESH: {_VAR_THRESH}')
+              f'variances [i]: {variances[variance_idx]:.5f}, '
+              f'[i+1]: {variances[variance_idx+1]:.5f}, THRESH: {_VAR_THRESH}'
+          )
 
 if __name__ == '__main__':
   test_runner.main()

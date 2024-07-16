@@ -32,6 +32,7 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_UNKNOWN_SOURCES
 import com.android.compatibility.common.util.SystemUtil
 import com.android.xts.root.annotations.RequireAdbRoot
 import java.util.concurrent.TimeUnit
@@ -63,6 +64,11 @@ class IntentTest : PackageInstallerTestBase() {
         const val DISABLED_LAUNCHER_ACTIVITY_PKG_NAME =
                 "android.packageinstaller.disabledlauncheractivity.cts"
         const val INSTALL_SUCCESS_TEXT = "App installed."
+        const val TEST_VERIFIER_APK_NAME = "CtsSufficientVerifierReject.apk"
+        const val TEST_VERIFIER_PACKAGE_NAME = "android.packageinstaller.sufficientverifierreject"
+        const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
+        const val TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME =
+            "android.packageinstaller.emptytestapp.rejectedbyverifier.cts"
 
         @JvmField
         @ClassRule
@@ -142,7 +148,7 @@ class IntentTest : PackageInstallerTestBase() {
         assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName
+            getInstallSourceInfo().installingPackageName
         )
     }
 
@@ -162,7 +168,7 @@ class IntentTest : PackageInstallerTestBase() {
         assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(
             getInstallSourceInfo().initiatingPackageName,
-                getInstallSourceInfo().installingPackageName
+            getInstallSourceInfo().installingPackageName
         )
     }
 
@@ -231,13 +237,60 @@ class IntentTest : PackageInstallerTestBase() {
     }
 
     @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallApps_installFromTrustedSource_installFails() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)
+
+            instrumentation.uiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_PACKAGES
+            )
+            var installation = startInstallationViaIntent()
+
+            assertNotNull(
+                "Error dialog not shown",
+                uiDevice.wait(
+                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)),
+                    GLOBAL_TIMEOUT
+                )
+            )
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @Test
+    @RequireAdbRoot(reason = "b/322830652 Required for TestApis to set user restriction")
+    fun disallowInstallUnknownSources_installFromTrustedSource_installSucceeds() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, true)
+
+            instrumentation.uiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.INSTALL_PACKAGES
+            )
+            var installation = startInstallationViaIntent()
+
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_OK, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_UNKNOWN_SOURCES, false)
+            instrumentation.uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @Test
     fun launcherActivityDisabled_cannotLaunchApp() {
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = Uri.fromParts("package", DISABLED_LAUNCHER_ACTIVITY_PKG_NAME, null)
         intent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 
-        installDialogStarter.activity.startActivityForResult(intent)
+        startInstallationViaIntent(intent)
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Wait for success dialog
@@ -251,6 +304,32 @@ class IntentTest : PackageInstallerTestBase() {
             "Open button should not be shown",
             uiDevice.wait(Until.findObject(getBySelector(INSTALL_BUTTON_ID)), 5000)
         )
+    }
+
+    /**
+     * Using a sufficient verifier, test whether InstallFailed dialog is shown when the sufficient
+     * verifier rejects installation of a test app.
+     */
+    @Test
+    fun installRejectedByVerifier_installFailedVisible() {
+        uninstallPackage(TEST_VERIFIER_PACKAGE_NAME)
+        uninstallPackage(TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME)
+
+        installPackage(TEST_VERIFIER_APK_NAME)
+        assertInstalled(TEST_VERIFIER_PACKAGE_NAME)
+
+        // We want the InstallFailed dialog to be visible. Thus, pass EXTRA_RETURN_RESULT as false
+        val installIntent = getInstallationIntent(TEST_REJECTED_BY_VERIFIER_APK_NAME)
+        installIntent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
+
+        val installation = startInstallationViaIntent(installIntent)
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // Click the positive button on the InstallFailed dialog
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+        assertNotInstalled(TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME)
     }
 
     private fun getInstallSourceInfo(): InstallSourceInfo {

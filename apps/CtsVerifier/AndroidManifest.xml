@@ -132,7 +132,6 @@
     <application android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
                  android:icon="@drawable/icon"
-                 android:debuggable="true"
                  android:largeHeap="true"
                  android:requestLegacyExternalStorage="true"
                  android:allowBackup="false"
@@ -2705,7 +2704,7 @@
             android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
+            android:theme="@style/FullscreenTheme" >
             <intent-filter android:label="@string/camera_fov_calibration" >
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -2730,7 +2729,7 @@
         <activity
             android:name=".camera.fov.DetermineFovActivity"
             android:label="@string/camera_fov_calibration"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
+            android:theme="@style/FullscreenTheme" >
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
@@ -3112,7 +3111,7 @@
                        android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="9.8.2/C-0-6,C-3-1,C-3-2,C-3-3" />
+            <meta-data android:name="CddTest" android:value="9.8.2" />
         </activity>
         <service android:name=".notifications.NotificationHidingVerifierActivity$MediaProjectionService"
             android:exported="false"
@@ -5602,7 +5601,7 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioRecord#startRecording|
@@ -5619,7 +5618,7 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioRecord#startRecording|
@@ -5636,7 +5635,7 @@
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output:android.software.webview" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioRecord#startRecording|
@@ -5963,6 +5962,7 @@
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="5.6/C-4-1" />
+            <meta-data android:name="test_required_features" android:value="android.software.webview" />
         </activity>
 
         <service android:name=".tv.MockTvInputService"
@@ -6571,7 +6571,7 @@
         </activity>
 
         <activity android:name=".displaycutout.DisplayCutoutTestActivity"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"
+            android:theme="@style/FullscreenTheme"
             android:exported="true"
             android:label="@string/display_cutout_test">
             <intent-filter>

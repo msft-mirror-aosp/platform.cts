@@ -25,6 +25,7 @@ import android.hardware.input.VirtualDpadConfig;
 import android.hardware.input.VirtualKeyboardConfig;
 import android.hardware.input.VirtualMouseConfig;
 import android.hardware.input.VirtualNavigationTouchpadConfig;
+import android.hardware.input.VirtualRotaryEncoderConfig;
 import android.hardware.input.VirtualStylusConfig;
 import android.hardware.input.VirtualTouchscreenConfig;
 import android.os.Parcel;
@@ -110,6 +111,15 @@ public class VirtualInputDeviceConfigTest {
 
     private VirtualStylusConfig createVirtualStylusConfig() {
         return new VirtualStylusConfig.Builder(WIDTH, HEIGHT)
+                .setInputDeviceName(DEVICE_NAME)
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setAssociatedDisplayId(DISPLAY_ID)
+                .build();
+    }
+
+    private VirtualRotaryEncoderConfig createVirtualRotaryEncoderConfig() {
+        return new VirtualRotaryEncoderConfig.Builder()
                 .setInputDeviceName(DEVICE_NAME)
                 .setVendorId(VENDOR_ID)
                 .setProductId(PRODUCT_ID)
@@ -293,6 +303,33 @@ public class VirtualInputDeviceConfigTest {
                 config.getAssociatedDisplayId());
         assertThat(configFromParcel.getWidth()).isEqualTo(config.getWidth());
         assertThat(configFromParcel.getHeight()).isEqualTo(config.getHeight());
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @Test
+    public void testConstructorAndGetters_virtualRotaryConfig() {
+        VirtualRotaryEncoderConfig config = createVirtualRotaryEncoderConfig();
+        assertThat(config.getInputDeviceName()).isEqualTo(DEVICE_NAME);
+        assertThat(config.getVendorId()).isEqualTo(VENDOR_ID);
+        assertThat(config.getProductId()).isEqualTo(PRODUCT_ID);
+        assertThat(config.getAssociatedDisplayId()).isEqualTo(DISPLAY_ID);
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @Test
+    public void testParcel_virtualRotaryConfig() {
+        VirtualRotaryEncoderConfig config = createVirtualRotaryEncoderConfig();
+        Parcel parcel = Parcel.obtain();
+        config.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        VirtualRotaryEncoderConfig configFromParcel =
+                VirtualRotaryEncoderConfig.CREATOR.createFromParcel(parcel);
+        assertThat(configFromParcel.getInputDeviceName()).isEqualTo(config.getInputDeviceName());
+        assertThat(configFromParcel.getVendorId()).isEqualTo(config.getVendorId());
+        assertThat(configFromParcel.getProductId()).isEqualTo(config.getProductId());
+        assertThat(configFromParcel.getAssociatedDisplayId()).isEqualTo(
+                config.getAssociatedDisplayId());
     }
 
     @Test
@@ -584,5 +621,47 @@ public class VirtualInputDeviceConfigTest {
                 () -> new VirtualStylusConfig.Builder(0, HEIGHT));
         assertThrows(IllegalArgumentException.class,
                 () -> new VirtualStylusConfig.Builder(0, 0));
+    }
+
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @Test
+    public void virtualRotaryConfig_missingName_throwsException() {
+        assertThrows(NullPointerException.class,
+                () -> new VirtualRotaryEncoderConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .build());
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @Test
+    public void virtualRotaryConfig_nameLengthExceedsLimit_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualRotaryEncoderConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .setInputDeviceName(DEVICE_NAME_THAT_IS_TOO_LONG)
+                        .build());
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualRotaryEncoderConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setAssociatedDisplayId(DISPLAY_ID)
+                        .setInputDeviceName(UTF8_DEVICE_NAME_THAT_IS_TOO_LONG)
+                        .build());
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
+    @Test
+    public void virtualRotaryConfig_missingDisplayId_throwsException() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new VirtualRotaryEncoderConfig.Builder()
+                        .setVendorId(VENDOR_ID)
+                        .setProductId(PRODUCT_ID)
+                        .setInputDeviceName(DEVICE_NAME)
+                        .build());
     }
 }
