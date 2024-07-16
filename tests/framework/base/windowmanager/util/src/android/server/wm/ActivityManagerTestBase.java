@@ -3378,7 +3378,7 @@ public abstract class ActivityManagerTestBase {
     /**
      * Checks whether the test is enabled on visible background users.
      */
-    protected void requireRunNotOnVisibleBackgroundNonProfileUser(String message) {
+    protected void assumeRunNotOnVisibleBackgroundNonProfileUser(String message) {
         assumeFalse(message, mUserHelper.isVisibleBackgroundUser());
     }
 
