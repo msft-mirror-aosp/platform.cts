@@ -20,8 +20,12 @@ import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
 import android.os.Environment;
-import android.mediapc.cts.common.Utils;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.RandomReadRequirement;
+import android.mediapc.cts.common.Requirements.RandomReadSRequirement;
+import android.mediapc.cts.common.Requirements.RandomWriteRequirement;
+import android.mediapc.cts.common.Requirements.RandomWriteSRequirement;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -74,10 +78,10 @@ public class RandomRWTest {
         report.submit(getInstrumentation());
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_1_4 = pce.addR8_2__H_1_4();
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_2_4 = pce.addR8_2__H_2_4();
-        r8_2__H_1_4.setFilesystemIoRate(mbps);
-        r8_2__H_2_4.setFilesystemIoRate(mbps);
+        RandomReadRequirement r8_2__H_1_4 = Requirements.addR8_2__H_1_4().to(pce);
+        RandomReadSRequirement r8_2__H_2_4 = Requirements.addR8_2__H_2_4().to(pce);
+        r8_2__H_1_4.setFilesystemIoRateMbps(mbps);
+        r8_2__H_2_4.setFilesystemIoRateMbps(mbps);
 
         pce.submitAndCheck();
     }
@@ -104,10 +108,10 @@ public class RandomRWTest {
         report.submit(getInstrumentation());
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_1_2 = pce.addR8_2__H_1_2();
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_2_2 = pce.addR8_2__H_2_2();
-        r8_2__H_1_2.setFilesystemIoRate(mbps);
-        r8_2__H_2_2.setFilesystemIoRate(mbps);
+        RandomWriteRequirement r8_2__H_1_2 = Requirements.addR8_2__H_1_2().to(pce);
+        RandomWriteSRequirement r8_2__H_2_2 = Requirements.addR8_2__H_2_2().to(pce);
+        r8_2__H_1_2.setFilesystemIoRateMbps(mbps);
+        r8_2__H_2_2.setFilesystemIoRateMbps(mbps);
 
         pce.submitAndCheck();
     }
