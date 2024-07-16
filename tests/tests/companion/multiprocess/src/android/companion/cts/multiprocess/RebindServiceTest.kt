@@ -62,7 +62,7 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary and secondary services should not be bound.
         assertServiceNotBound("PrimaryCompanionService")
         assertServiceNotBound("SecondaryCompanionService")
@@ -93,7 +93,7 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Secondary service should be bound.
         assertServiceBound("SecondaryCompanionService")
         // Primary service should be still bound.
@@ -115,7 +115,7 @@ class RebindServiceTest : TestBase() {
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
         SystemClock.sleep(2000)
-        // Kill the primary process.
+        // Kill both primary and secondary processes.
         killProcess(PRIMARY_PROCESS_NAME)
         killProcess(SECONDARY_PROCESS_NAME)
         // Primary service should be unbound.
@@ -126,6 +126,9 @@ class RebindServiceTest : TestBase() {
             cdm.notifyDeviceAppeared(idA)
             cdm.notifyDeviceAppeared(idB)
         }
+
+        // Wait for the CompanionAppBinder.REBIND_TIMEOUT (and 1 more second for good measure).
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
 
         // Primary service should be bound again.
         assertServiceBound("PrimaryCompanionService")
@@ -149,7 +152,7 @@ class RebindServiceTest : TestBase() {
         assertServiceNotBound("PrimaryCompanionService")
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary service should be still bound.
         assertServiceBound("PrimaryCompanionService")
 
@@ -176,5 +179,9 @@ class RebindServiceTest : TestBase() {
                 fail("Service $component should not bound.")
             }
         }
+    }
+
+    companion object {
+        const val REBIND_WAIT_TIME_MS = 11_000L
     }
 }

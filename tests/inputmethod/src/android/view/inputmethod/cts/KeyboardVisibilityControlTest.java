@@ -79,7 +79,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
-import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -117,6 +116,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
@@ -632,8 +632,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                 return new LinearLayout(activity);
             });
-            assertTrue("test activity should be in resume state",
-                    getOnMainSync(testActivity::hasWindowFocus));
+            TestUtils.waitOnMainUntil(testActivity::hasWindowFocus, TIMEOUT);
 
             // Launch a test editor activity
             final String marker = getTestMarker();

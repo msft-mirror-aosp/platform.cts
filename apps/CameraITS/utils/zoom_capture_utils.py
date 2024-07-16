@@ -23,6 +23,7 @@ from matplotlib import animation
 from matplotlib import ticker
 import matplotlib.pyplot as plt
 import numpy
+from PIL import Image
 
 import camera_properties_utils
 import capture_request_utils
@@ -182,8 +183,7 @@ def find_center_circle(
   # write copy of image for debug purposes
   if debug:
     img_copy_name = img_name.split('.')[0] + '_copy.jpg'
-    image_processing_utils.write_image(numpy.expand_dims(
-        (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
+    Image.fromarray((img_bw).astype(numpy.uint8)).save(img_copy_name)
 
   # check contours and find the best circle candidates
   circles = []

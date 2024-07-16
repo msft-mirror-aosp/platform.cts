@@ -171,7 +171,7 @@ public class SessionLifecycleTest extends AutoFillServiceTestCase.ManualActivity
         final ActivityManager activityManager = (ActivityManager) getContext()
                 .getSystemService(Context.ACTIVITY_SERVICE);
         assumeFalse(activityManager.isLowRamDevice());
-
+        mUiBot.assumeMinimumResolution(500);
         // Set service.
         enableService();
 

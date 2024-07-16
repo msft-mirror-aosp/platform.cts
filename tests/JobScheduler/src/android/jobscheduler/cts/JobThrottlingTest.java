@@ -605,6 +605,7 @@ public class JobThrottlingTest {
 
         setScreenState(false);
         triggerJobIdle();
+        runJob();
         assertTrue("Job didn't start in RESTRICTED bucket when charging + idle",
                 mTestAppInterface.awaitJobStart(3_000));
 

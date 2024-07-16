@@ -38,7 +38,6 @@ import static android.server.wm.app.Components.TestActivity.EXTRA_INTENT;
 import static android.server.wm.app.Components.TestActivity.EXTRA_INTENTS;
 import static android.server.wm.app27.Components.SDK_27_LAUNCHING_ACTIVITY;
 import static android.server.wm.second.Components.SECOND_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -61,7 +60,6 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
-
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -222,7 +220,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession1 =
                 createManagedTestActivitySession();
         activitySession1.launchTestActivityOnDisplaySync(regularActivityName, rootIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final Intent navIntent = new Intent(mContext, Activities.RegularActivity.class);
         verifyNavigateUpTo(activitySession1, navIntent);
@@ -237,7 +235,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.SingleTopActivity> activitySession2 =
                 createManagedTestActivitySession();
         activitySession2.launchTestActivityOnDisplaySync(Activities.SingleTopActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final CommandSession.ActivitySession activitySession3 =
                 createManagedActivityClientSession().startActivity(
@@ -255,7 +253,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         activitySession3.sendCommand(COMMAND_NAVIGATE_UP_TO, data);
 
         waitAndAssertTopResumedActivity(rootActivitySession.getActivity().getComponentName(),
-                DEFAULT_DISPLAY, "navigateUpTo should return to the first activity");
+                getMainDisplayId(), "navigateUpTo should return to the first activity");
         // Make sure the resumed first activity is the original instance.
         assertFalse("The target of navigateUpTo should not be destroyed",
                 rootActivitySession.getActivity().isDestroyed());
@@ -323,8 +321,9 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 // hence, check for its visibility instead.
                 mWmState.assertHomeActivityVisible(/* visible= */ true);
             } else {
-                mWmState.assertFrontStackActivityType(
-                        "The activity type should be same as requested.", type);
+                mWmState.assertFrontStackActivityTypeOnDisplay(
+                        "The activity type should be same as requested.", type,
+                        getMainDisplayId());
             }
             mBroadcastActionTrigger.finishBroadcastReceiverActivity();
             mWmState.waitAndAssertActivityRemoved(BROADCAST_RECEIVER_ACTIVITY);
@@ -380,7 +379,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession =
                 createManagedTestActivitySession();
         activitySession.launchTestActivityOnDisplaySync(regularActivityName, baseIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         mWmState.computeState(baseIntent.getComponent());
         final int taskId = mWmState.getTaskByActivity(baseIntent.getComponent()).getTaskId();
         final Activity baseActivity = activitySession.getActivity();
@@ -444,7 +443,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         final TestActivitySession<Activities.RegularActivity> activitySession =
                 createManagedTestActivitySession();
         activitySession.launchTestActivityOnDisplaySync(regularActivityName, baseIntent,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         mWmState.computeState(baseIntent.getComponent());
         final int taskId = mWmState.getTaskByActivity(baseIntent.getComponent()).getTaskId();
         final Activity baseActivity = activitySession.getActivity();

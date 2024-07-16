@@ -17,8 +17,12 @@
 package android.filesystem.cts;
 
 import android.util.Log;
-import android.mediapc.cts.common.Utils;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.SequentialReadRequirement;
+import android.mediapc.cts.common.Requirements.SequentialReadSRequirement;
+import android.mediapc.cts.common.Requirements.SequentialWriteRequirement;
+import android.mediapc.cts.common.Requirements.SequentialWriteSRequirement;
 
 import static androidx.test.InstrumentationRegistry.getContext;
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
@@ -106,10 +110,10 @@ public class SequentialRWTest {
         report.submit(getInstrumentation());
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_1_1 = pce.addR8_2__H_1_1();
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_2_1 = pce.addR8_2__H_2_1();
-        r8_2__H_1_1.setFilesystemIoRate(stat.mAverage);
-        r8_2__H_2_1.setFilesystemIoRate(stat.mAverage);
+        SequentialWriteRequirement r8_2__H_1_1 = Requirements.addR8_2__H_1_1().to(pce);
+        SequentialWriteSRequirement r8_2__H_2_1 = Requirements.addR8_2__H_2_1().to(pce);
+        r8_2__H_1_1.setFilesystemIoRateMbps(stat.mAverage);
+        r8_2__H_2_1.setFilesystemIoRateMbps(stat.mAverage);
 
         pce.submitAndCheck();
     }
@@ -171,10 +175,10 @@ public class SequentialRWTest {
         report.submit(getInstrumentation());
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_1_3 = pce.addR8_2__H_1_3();
-        PerformanceClassEvaluator.FileSystemRequirement r8_2__H_2_3 = pce.addR8_2__H_2_3();
-        r8_2__H_1_3.setFilesystemIoRate(stat.mAverage);
-        r8_2__H_2_3.setFilesystemIoRate(stat.mAverage);
+        SequentialReadRequirement r8_2__H_1_3 = Requirements.addR8_2__H_1_3().to(pce);
+        SequentialReadSRequirement r8_2__H_2_3 = Requirements.addR8_2__H_2_3().to(pce);
+        r8_2__H_1_3.setFilesystemIoRateMbps(stat.mAverage);
+        r8_2__H_2_3.setFilesystemIoRateMbps(stat.mAverage);
 
         pce.submitAndCheck();
     }
