@@ -17,6 +17,7 @@
     {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GTE
     {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
     {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
+    {{- else if eq $c.String "COMPARISON_CONFIG" -}}INFO
     {{- else }}{{$c}}
     {{- end }}
 {{- end -}}
