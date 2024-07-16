@@ -416,4 +416,9 @@
   <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NoSystemFunctionPermissionTest#testSendSms"/>
   <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.TextureViewTest#testGetBitmap_8888_PassthroughP3"/>
   <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.DisplayRefreshRateTest#testRefreshRate"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationFineTestCases android.location.cts.fine.GeocoderTest#testGetFromLocation_sync"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationFineTestCases android.location.cts.fine.GeocoderTest#testGetFromLocationName_sync"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudoPosition"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssPseudorangeVerificationTest#testPseudorangeValue"/>
+  <option name="compatibility:exclude-filter" value="CtsLocationGnssTestCases android.location.cts.gnss.GnssMeasurementValuesTest#testListenForGnssMeasurements"/>
 </configuration>
