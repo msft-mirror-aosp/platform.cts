@@ -2897,6 +2897,15 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                         PackageManager.PackageInfoFlags.of(MATCH_UNINSTALLED_PACKAGES)));
     }
 
+    @Test
+    public void testUninstallViaApiWithNoPermissionThrowSecurityException() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        assertThrows(SecurityException.class, () -> {
+            mPackageManager.getPackageInstaller().uninstall(HELLO_WORLD_PACKAGE_NAME,
+                    /* statusReceiver= */ null);
+        });
+    }
+
     private void assertDataAppExists(String packageName) throws Exception {
         var packageInfo = mPackageManager.getPackageInfo(packageName, MATCH_KNOWN_PACKAGES);
         assertThat(packageInfo.applicationInfo.dataDir).isNotNull();

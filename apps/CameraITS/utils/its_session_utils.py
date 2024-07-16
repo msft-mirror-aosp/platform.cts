@@ -1197,7 +1197,7 @@ class ItsSession(object):
     cmd = {
         _CMD_NAME_STR: 'getSupportedExtensionPreviewSizes',
         _CAMERA_ID_STR: camera_id,
-        "extension": extension
+        "extension": extension  # pylint: disable=g-inconsistent-quotes
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
