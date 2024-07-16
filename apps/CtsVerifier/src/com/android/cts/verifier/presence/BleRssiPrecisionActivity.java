@@ -16,6 +16,9 @@
 
 package com.android.cts.verifier.presence;
 
+import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
+import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
+
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.AdvertisingSetParameters;
@@ -34,10 +37,10 @@ import android.widget.Toast;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
+import com.android.cts.verifier.presence.ble.BleAdvertiser;
 import com.android.cts.verifier.presence.ble.BleAdvertisingPacket;
 import com.android.cts.verifier.presence.ble.BleScanner;
-import com.android.cts.verifier.presence.ble.BleAdvertiser;
-import com.android.cts.verifier.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -256,6 +259,11 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
 
     private void makeToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public String getReportSectionName() {
+        return setTestNameSuffix(sCurrentDisplayMode, "ble_rssi_precision_activity");
     }
 
     @Override
