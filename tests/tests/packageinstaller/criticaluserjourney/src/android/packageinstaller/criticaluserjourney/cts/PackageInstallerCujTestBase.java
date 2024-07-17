@@ -66,16 +66,17 @@ public class PackageInstallerCujTestBase {
 
     public static final String CONTENT_AUTHORITY =
             "android.packageinstaller.criticaluserjourney.cts.fileprovider";
-    public static final String TEST_APK_LABEL = "Installer CUJ Test App";
+    public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
+    public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
+    public static final String INSTALLER_LABEL = "CTS CUJ Installer";
+    public static final String INSTALLER_PACKAGE_NAME =
+            "android.packageinstaller.cts.cuj.installer";
     public static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
     public static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
     public static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
+    public static final String TEST_APP_LABEL = "Installer CUJ Test App";
     public static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
-    public static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
-    public static final String TEST_INSTALLER_LABEL = "CTS CUJ Installer";
-    public static final String TEST_INSTALLER_PACKAGE_NAME =
-            "android.packageinstaller.cts.cuj.installer";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
@@ -200,24 +201,24 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the title of the install dialog is {@link #TEST_APK_LABEL}.
+     * Assert the title of the install dialog is {@link #TEST_APP_LABEL}.
      */
-    public static void assertTitleIsTestApkLabel() throws Exception {
-        findPackageInstallerObject(TEST_APK_LABEL);
+    public static void assertTitleIsTestAppLabel() throws Exception {
+        findPackageInstallerObject(TEST_APP_LABEL);
     }
 
     /**
-     * Assert the content includes the installer label {@link #TEST_INSTALLER_LABEL}.
+     * Assert the content includes the installer label {@link #INSTALLER_LABEL}.
      */
-    public static void assertContentIncludesTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(By.textContains(TEST_INSTALLER_LABEL), /* checkNull= */ true);
+    public static void assertContentIncludesInstallerLabel() throws Exception {
+        findPackageInstallerObject(By.textContains(INSTALLER_LABEL), /* checkNull= */ true);
     }
 
     /**
-     * Assert the title of the install dialog is {@link #TEST_INSTALLER_LABEL}.
+     * Assert the title of the install dialog is {@link #INSTALLER_LABEL}.
      */
-    public static void assertTitleIsTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(TEST_INSTALLER_LABEL);
+    public static void assertTitleIsInstallerLabel() throws Exception {
+        findPackageInstallerObject(INSTALLER_LABEL);
     }
 
     /**

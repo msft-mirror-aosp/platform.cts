@@ -84,8 +84,6 @@ public class FrameDropTest extends FrameDropTestBase {
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_R.setFrameDropsPer30Sec(framesDropped);
-        r5_3__H_1_1_R.setFrameRate(frameRate);
-        r5_3__H_1_1_R.setResolution(1080);
         pce.submitAndCheck();
     }
 
@@ -111,8 +109,6 @@ public class FrameDropTest extends FrameDropTestBase {
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_ST.setFrameDropsPer30Sec(framesDropped);
-        r5_3__H_1_1_ST.setFrameRate(frameRate);
-        r5_3__H_1_1_ST.setResolution(1080);
         pce.submitAndCheck();
     }
 
@@ -138,8 +134,6 @@ public class FrameDropTest extends FrameDropTestBase {
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
         r5_3__H_1_1_U.setFrameDropsPer30Sec(framesDropped);
-        r5_3__H_1_1_U.setFrameRate(frameRate);
-        r5_3__H_1_1_U.setResolution(2160);
         pce.submitAndCheck();
     }
 }

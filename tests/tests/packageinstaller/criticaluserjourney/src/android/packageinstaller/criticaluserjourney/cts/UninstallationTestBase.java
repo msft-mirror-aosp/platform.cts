@@ -169,7 +169,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      * {@link #UNINSTALL_LABEL}.
      */
     public static void assertUninstallDialog() throws Exception {
-        assertTitleIsTestApkLabel();
+        assertTitleIsTestAppLabel();
         findPackageInstallerObject(By.textContains(UNINSTALL_LABEL), /* checkNull= */ true);
     }
 

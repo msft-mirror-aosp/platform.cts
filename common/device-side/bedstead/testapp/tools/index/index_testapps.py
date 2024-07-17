@@ -16,8 +16,13 @@ import argparse
 from pathlib import Path
 import subprocess
 import queue
-from src.library.main.proto.testapp_protos_pb2 import TestAppIndex, AndroidApp, UsesSdk,\
+try:
+    from src.library.main.proto.testapp_protos_pb2 import TestAppIndex, AndroidApp, UsesSdk,\
     Permission, Activity, ActivityAlias, IntentFilter, Service, Metadata, Receiver
+except ImportError:
+    from google3.third_party.java.bedstead.testapp.src.library.main.proto.testapp_protos_pb2\
+    import TestAppIndex, AndroidApp, UsesSdk,\
+        Permission, Activity, ActivityAlias, IntentFilter, Service, Metadata, Receiver
 
 ELEMENT = "E"
 ATTRIBUTE = "A"

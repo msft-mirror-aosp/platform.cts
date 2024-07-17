@@ -44,6 +44,16 @@
                  android:resource="@xml/method"/>
         </service>
 
+        <activity android:name="com.android.cts.mockime.SettingsActivity"
+            android:label="Mock IME Settings"
+            android:exported="true">
+        </activity>
+
+        <activity android:name="com.android.cts.mockime.LanguageSettingsActivity"
+            android:label="Mock IME Language Settings"
+            android:exported="true">
+        </activity>
+
         <provider android:authorities="${applicationId}.provider"
              android:name="com.android.cts.mockime.SettingsProvider"
              android:exported="true"

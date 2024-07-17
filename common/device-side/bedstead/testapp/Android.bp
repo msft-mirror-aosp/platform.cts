@@ -62,7 +62,7 @@ android_library {
     ],
     manifest: "src/library/main/AndroidManifest.xml",
     min_sdk_version: "29",
-    resource_zips: [":TestApp_Apps"],
+    assets: [":TestApp_Apps"],
     plugins: [
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
@@ -135,35 +135,55 @@ java_genrule {
         ":MultipleActivitiesTestApp",
         ":HeadlessDOSingleUserTestApp",
     ],
-    out: ["TestApp_Apps.res.zip"],
+    out: [
+        "testapps/index.txt",
+        "testapps/EmptyTestApp.apk",
+        "testapps/NotEmptyTestApp.apk",
+        "testapps/DeviceAdminTestApp.apk",
+        "testapps/TestOnlyDeviceAdminTestApp.apk",
+        "testapps/LockTaskApp.apk",
+        "testapps/DelegateTestApp.apk",
+        "testapps/ContentTestApp.apk",
+        "testapps/DevicePolicyManagementRoleHolderTestApp.apk",
+        "testapps/RemoteDPCTestApp.apk",
+        "testapps/RemoteDPCTestAppTargetingV23.apk",
+        "testapps/RemoteDPCTestAppTargetingV24.apk",
+        "testapps/RemoteDPCTestAppTargetingV28.apk",
+        "testapps/RemoteDPCTestAppTargetingV30.apk",
+        "testapps/DialerApp.apk",
+        "testapps/SmsApp.apk",
+        "testapps/AccountManagementApp.apk",
+        "testapps/RemoteAccountAuthenticatorApp.apk",
+        "testapps/MLCTestApp.apk",
+        "testapps/MultipleActivitiesTestApp.apk",
+        "testapps/HeadlessDOSingleUserTestApp.apk",
+    ],
     tools: [
-        "soong_zip",
         "index_testapps",
         "aapt2",
     ],
-    cmd: "mkdir -p $(genDir)/res/raw" +
-        " && cp $(location :EmptyTestApp) $(genDir)/res/raw" +
-        " && cp $(location :NotEmptyTestApp) $(genDir)/res/raw" +
-        " && cp $(location :DeviceAdminTestApp) $(genDir)/res/raw" +
-        " && cp $(location :TestOnlyDeviceAdminTestApp) $(genDir)/res/raw" +
-        " && cp $(location :LockTaskApp) $(genDir)/res/raw" +
-        " && cp $(location :DelegateTestApp) $(genDir)/res/raw" +
-        " && cp $(location :ContentTestApp) $(genDir)/res/raw" +
-        " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV23) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV24) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV28) $(genDir)/res/raw" +
-        " && cp $(location :RemoteDPCTestAppTargetingV30) $(genDir)/res/raw" +
-        " && cp $(location :DialerApp) $(genDir)/res/raw" +
-        " && cp $(location :SmsApp) $(genDir)/res/raw" +
-        " && cp $(location :AccountManagementApp) $(genDir)/res/raw" +
-        " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/res/raw" +
-        " && cp $(location :MLCTestApp) $(genDir)/res/raw" +
-        " && cp $(location :MultipleActivitiesTestApp) $(genDir)/res/raw" +
-        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/res/raw" +
-        " && $(location index_testapps) --directory $(genDir)/res/raw --aapt2 $(location aapt2)" +
-        " && $(location soong_zip) -o $(out) -C $(genDir)/res -D $(genDir)/res/raw",
+    cmd: "mkdir -p $(genDir)/testapps" +
+        " && cp $(location :EmptyTestApp) $(genDir)/testapps" +
+        " && cp $(location :NotEmptyTestApp) $(genDir)/testapps" +
+        " && cp $(location :DeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :TestOnlyDeviceAdminTestApp) $(genDir)/testapps" +
+        " && cp $(location :LockTaskApp) $(genDir)/testapps" +
+        " && cp $(location :DelegateTestApp) $(genDir)/testapps" +
+        " && cp $(location :ContentTestApp) $(genDir)/testapps" +
+        " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV23) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV24) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV28) $(genDir)/testapps" +
+        " && cp $(location :RemoteDPCTestAppTargetingV30) $(genDir)/testapps" +
+        " && cp $(location :DialerApp) $(genDir)/testapps" +
+        " && cp $(location :SmsApp) $(genDir)/testapps" +
+        " && cp $(location :AccountManagementApp) $(genDir)/testapps" +
+        " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/testapps" +
+        " && cp $(location :MLCTestApp) $(genDir)/testapps" +
+        " && cp $(location :MultipleActivitiesTestApp) $(genDir)/testapps" +
+        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/testapps" +
+        " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)"
 }
 
 android_test_helper_app {

@@ -389,11 +389,13 @@ public class MockNetworkService {
         android.hardware.radio.network.OperatorInfo operatorInfo =
                 new android.hardware.radio.network.OperatorInfo();
 
+        MockModemCell cell = null;
         if (mCsRegState == RegState.REG_HOME || mPsRegState == RegState.REG_HOME) {
-            operatorInfo = getCarrierStatus(mHomeCarrierId).getPrimaryCellOperatorInfo();
+            cell = getCarrierStatus(mHomeCarrierId);
         } else if (mCsRegState == RegState.REG_ROAMING || mPsRegState == RegState.REG_ROAMING) {
-            operatorInfo = getCarrierStatus(mRoamingCarrierId).getPrimaryCellOperatorInfo();
+            cell = getCarrierStatus(mRoamingCarrierId);
         }
+        if (cell != null) operatorInfo = cell.getPrimaryCellOperatorInfo();
 
         return operatorInfo;
     }
@@ -402,11 +404,13 @@ public class MockNetworkService {
         android.hardware.radio.network.CellIdentity cellIdentity =
                 android.hardware.radio.network.CellIdentity.noinit(true);
 
+        MockModemCell cell = null;
         if (mCsRegState == RegState.REG_HOME || mPsRegState == RegState.REG_HOME) {
-            cellIdentity = getCarrierStatus(mHomeCarrierId).getPrimaryCellIdentity();
+            cell = getCarrierStatus(mHomeCarrierId);
         } else if (mCsRegState == RegState.REG_ROAMING || mPsRegState == RegState.REG_ROAMING) {
-            cellIdentity = getCarrierStatus(mRoamingCarrierId).getPrimaryCellIdentity();
+            cell = getCarrierStatus(mRoamingCarrierId);
         }
+        if (cell != null) cellIdentity = cell.getPrimaryCellIdentity();
 
         return cellIdentity;
     }
@@ -444,11 +448,13 @@ public class MockNetworkService {
     public int getRegistrationRat() {
         int rat = android.hardware.radio.RadioTechnology.UNKNOWN;
 
+        MockModemCell cell = null;
         if (mCsRegState == RegState.REG_HOME || mPsRegState == RegState.REG_HOME) {
-            rat = getCarrierStatus(mHomeCarrierId).getPrimaryCellRat();
+            cell = getCarrierStatus(mHomeCarrierId);
         } else if (mCsRegState == RegState.REG_ROAMING || mPsRegState == RegState.REG_ROAMING) {
-            rat = getCarrierStatus(mRoamingCarrierId).getPrimaryCellRat();
+            cell = getCarrierStatus(mRoamingCarrierId);
         }
+        if (cell != null) rat = cell.getPrimaryCellRat();
 
         return rat;
     }
@@ -457,13 +463,15 @@ public class MockNetworkService {
         android.hardware.radio.network.SignalStrength signalStrength =
                 new android.hardware.radio.network.SignalStrength();
 
+        MockModemCell cell = null;
         if (mCsRegState == RegState.REG_HOME || mPsRegState == RegState.REG_HOME) {
-            signalStrength = getCarrierStatus(mHomeCarrierId).getPrimaryCellSignalStrength();
+            cell = getCarrierStatus(mHomeCarrierId);
         } else if (mCsRegState == RegState.REG_ROAMING || mPsRegState == RegState.REG_ROAMING) {
-            signalStrength = getCarrierStatus(mRoamingCarrierId).getPrimaryCellSignalStrength();
+            cell = getCarrierStatus(mRoamingCarrierId);
         } else {
             // TODO
         }
+        if (cell != null) signalStrength = cell.getPrimaryCellSignalStrength();
 
         return signalStrength;
     }
@@ -498,6 +506,7 @@ public class MockNetworkService {
 
         if (mCellList.isEmpty()) return;
 
+        Log.i(TAG, "Update SIM Plmn " + mSimPlmn);
         for (MockModemCell mmc : mCellList) {
 
             if (isHomeCellExisted() && isRoamingCellExisted()) break;

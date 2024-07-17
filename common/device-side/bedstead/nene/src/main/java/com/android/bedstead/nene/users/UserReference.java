@@ -194,7 +194,7 @@ public final class UserReference implements AutoCloseable {
 
             try {
                 // Expected success string is "Success: removed user"
-                String unused = ShellCommand.builder("pm remove-user")
+                ShellCommand.builder("pm remove-user")
                         .addOperand("-w") // Wait for remove-user to complete
                         .withTimeout(Duration.ofMinutes(1))
                         .addOperand(mId)
@@ -242,7 +242,7 @@ public final class UserReference implements AutoCloseable {
             // ("Success: user %d removed\n", userId)
             // ("Success: user %d set as ephemeral\n", userId)
             // ("Success: user %d is already being removed\n", userId)
-            String unused = ShellCommand.builder("pm remove-user")
+            ShellCommand.builder("pm remove-user")
                     .addOperand("--set-ephemeral-if-in-use")
                     .addOperand(mId)
                     .validate(ShellCommandUtils::startsWithSuccess)
@@ -372,10 +372,11 @@ public final class UserReference implements AutoCloseable {
      * <p>If the user is a profile, then this will make the parent the foreground user. It will
      * still return the {@link UserReference} of the profile in that case.
      */
+    @CanIgnoreReturnValue
     public UserReference switchTo() {
         UserReference parent = parent();
         if (parent != null) {
-            UserReference unused = parent.switchTo();
+            parent.switchTo();
             return this;
         }
 
@@ -691,12 +692,12 @@ public final class UserReference implements AutoCloseable {
                     .addOption("--user", mId);
 
             if (existingCredential != null) {
-                ShellCommand.Builder unused = commandBuilder.addOption("--old", existingCredential);
+                commandBuilder.addOption("--old", existingCredential);
             } else if (mLockCredential != null) {
-                ShellCommand.Builder unused = commandBuilder.addOption("--old", mLockCredential);
+                commandBuilder.addOption("--old", mLockCredential);
             }
 
-            String unused = commandBuilder.addOperand(lockCredential)
+            commandBuilder.addOperand(lockCredential)
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
@@ -822,7 +823,7 @@ public final class UserReference implements AutoCloseable {
         }
 
         try {
-            String unused = ShellCommand.builder("cmd lock_settings")
+            ShellCommand.builder("cmd lock_settings")
                     .addOperand("clear")
                     .addOption("--old", lockCredential)
                     .addOption("--user", mId)
@@ -891,6 +892,7 @@ public final class UserReference implements AutoCloseable {
      * @return {@code false} if user's credential is needed in order to turn off quiet mode,
      *         {@code true} otherwise.
      */
+    @CanIgnoreReturnValue
     @TargetApi(P)
     @Experimental
     public boolean setQuietMode(boolean enabled) {
@@ -917,7 +919,7 @@ public final class UserReference implements AutoCloseable {
                     .register();
             try {
                 if (mUserManager.requestQuietModeEnabled(enabled, userHandle())) {
-                    Intent unused = r.awaitForBroadcast();
+                    r.awaitForBroadcast();
                     return true;
                 }
                 return false;
@@ -958,7 +960,7 @@ public final class UserReference implements AutoCloseable {
     /** See {@link #remove}. */
     @Override
     public void close() {
-        UserReference unused = remove();
+        remove();
     }
 
     private AdbUser adbUserOrNull() {

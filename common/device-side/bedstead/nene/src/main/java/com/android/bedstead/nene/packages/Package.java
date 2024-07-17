@@ -129,6 +129,7 @@ public final class Package {
      * <p>If you wish to install a package which is not already installed on another user, see
      * {@link Packages#install(UserReference, File)}.
      */
+    @CanIgnoreReturnValue
     public Package installExisting(UserReference user) {
         if (user == null) {
             throw new NullPointerException();

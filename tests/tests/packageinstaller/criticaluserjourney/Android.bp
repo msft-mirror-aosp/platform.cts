@@ -41,6 +41,7 @@ android_test {
         ":CtsInstallerCujTestApp",
         ":CtsInstallerCujTestAppV2",
         ":CtsInstallerCujTestInstaller",
+        ":CtsInstallerCujTestInstallerV2",
     ],
     per_testcase_directory: true,
 }
