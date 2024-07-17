@@ -34,7 +34,6 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.support.test.uiautomator.UiDevice;
 import android.view.MotionEvent;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController.OnControllableInsetsChangedListener;
@@ -53,6 +52,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeSettings;
