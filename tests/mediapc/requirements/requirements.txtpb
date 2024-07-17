@@ -1146,7 +1146,7 @@ requirements {
     value: {
       description: "Frame rate the test was ran at."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
-      comparison: COMPARISON_INFO_ONLY
+      comparison: COMPARISON_CONFIG
     }
   }
   measurements: {
@@ -1154,7 +1154,7 @@ requirements {
     value: {
       description: "Resolution the test was ran at."
       measurement_type: MEASUREMENT_TYPE_INT
-      comparison: COMPARISON_INFO_ONLY
+      comparison: COMPARISON_CONFIG
     }
   }
   specs {
@@ -1323,7 +1323,7 @@ requirements {
     value: {
       description: "Frame rate the test was ran at."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
-      comparison: COMPARISON_INFO_ONLY
+      comparison: COMPARISON_CONFIG
     }
   }
   measurements: {
@@ -1331,7 +1331,7 @@ requirements {
     value: {
       description: "Resolution the test was ran at."
       measurement_type: MEASUREMENT_TYPE_INT
-      comparison: COMPARISON_INFO_ONLY
+      comparison: COMPARISON_CONFIG
     }
   }
   specs {
