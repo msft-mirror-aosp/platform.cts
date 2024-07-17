@@ -16,6 +16,8 @@
 
 package android.cts.statsdatom.batterystats;
 
+import static com.android.server.power.optimization.Flags.FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -23,6 +25,9 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.PowerComponentEnum;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.internal.os.StatsdConfigProto;
 import com.android.os.AtomsProto;
@@ -30,24 +35,35 @@ import com.android.os.AtomsProto.BatteryUsageStatsAtomsProto;
 import com.android.os.AtomsProto.BatteryUsageStatsAtomsProto.BatteryConsumerData;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.function.Function;
 
-public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Override
     public void setBuild(IBuildInfo buildInfo) {
         mCtsBuild = buildInfo;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -55,14 +71,15 @@ public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildRece
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS)
     public void testBatteryUsageStatsSinceReset() throws Exception {
         if (!hasBattery()) {
             return;
@@ -72,6 +89,8 @@ public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildRece
                 atom -> atom.getBatteryUsageStatsSinceReset().getBatteryUsageStats());
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS)
     public void testBatteryUsageStatsSinceResetUsingPowerProfileModel() throws Exception {
         if (!hasBattery()) {
             return;
