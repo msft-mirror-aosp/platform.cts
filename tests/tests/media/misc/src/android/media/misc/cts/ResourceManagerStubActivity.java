@@ -18,6 +18,7 @@ package android.media.misc.cts;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -33,6 +34,12 @@ public class ResourceManagerStubActivity extends Activity {
     public static final int RESULT_CODE_NO_ENCODER = Activity.RESULT_FIRST_USER + 2;
     // Test case was skipped as the device doesn't have any camera available for recording.
     public static final int RESULT_CODE_NO_CAMERA = Activity.RESULT_FIRST_USER + 3;
+
+    // The max concurrent codec instances.
+    private static final int MAX_INSTANCES = 32;
+    // Reduce the max concurrent codec instances on Low Ram Devices
+    // to 8 to avoid getting into low memory issues.
+    private static final int LOW_RAM_DEVICE_MAX_INSTANCES = 8;
 
     private static final String TAG = "ResourceManagerStubActivity";
     private final Object mFinishEvent = new Object();
@@ -212,5 +219,20 @@ public class ResourceManagerStubActivity extends Activity {
             reasons.append(ERROR_INSUFFICIENT_RESOURCES);
             Assert.assertTrue(failMessage + reasons.toString(), result);
         }
+    }
+
+    /**
+     * The max concurrent codec instances allowed to created
+     * by the test activities.
+     * Though we set this to 32 (or 8 on low ram devices), it could be
+     * lesser than that, based on how many concurrent codec instances can be supported
+     * by the oem implementation.
+     */
+    public static int getMaxCodecInstances(Context context) {
+        boolean isLowRamDevice = context.getSystemService(ActivityManager.class).isLowRamDevice();
+        if (isLowRamDevice) {
+            return LOW_RAM_DEVICE_MAX_INSTANCES;
+        }
+        return MAX_INSTANCES;
     }
 }
