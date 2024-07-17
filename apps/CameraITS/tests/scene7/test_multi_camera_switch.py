@@ -103,27 +103,6 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   return uw_img, w_img
 
 
-def _compute_slanted_edge_sharpness(input_img, file_name):
-  """Computes sharpness of the slanted edge image.
-
-  Extracts the slanted edge patch from the input_img and
-  saves it in the file_name path. Computes the sharpness of the
-  slanted edge patch. Larger value means the image is sharper.
-
-  Args:
-    input_img: numpy flat RGB/luma image array.
-    file_name: file name of the saved patch.
-  Returns:
-    sharpness_level: Sharpness estimation value based on the
-    average of gradient magnitude.
-  """
-  slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
-      input_img)
-  image_processing_utils.write_image(
-      slanted_edge_patch/_CH_FULL_SCALE, file_name)
-  return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
-
-
 def _do_ae_check(uw_img, w_img, log_path, suffix):
   """Checks that the luma change is within range.
 
@@ -133,7 +112,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
     log_path: path to save the image.
     suffix: str; patch suffix to be used in file name.
   Returns:
-    Failed AE check messages if any. None otherwise.
+    failed_ae_msg: Failed AE check messages if any. None otherwise.
+    uw_y_avg: y_avg value for UW lens
+    w_y_avg: y_avg value for W lens
   """
   failed_ae_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_{suffix}'
@@ -157,33 +138,33 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
                          f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
-  return failed_ae_msg
+  return failed_ae_msg, uw_y_avg, w_y_avg
 
 
-def _do_af_check(uw_img, w_img, log_path):
+def _do_af_check(uw_img, w_img):
   """Checks the AF behavior between the uw and w img.
 
   Args:
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
-    log_path: path to save the image.
+
   Returns:
-    Failed AF check messages if any. None otherwise.
+    failed_af_msg: Failed AF check messages if any. None otherwise.
+    sharpness_uw: sharpness value for UW lens
+    sharpness_w: sharpness value for W lens
   """
   failed_af_msg = []
-  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
-  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
+  sharpness_uw = image_processing_utils.compute_image_sharpness(uw_img)
   logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
-
-  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
+  sharpness_w = image_processing_utils.compute_image_sharpness(w_img)
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
   if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
-    failed_af_msg.append('Sharpness > threshold value.'
+    failed_af_msg.append('Sharpness difference > threshold value.'
                          f' ATOL: {_AF_ATOL} '
                          f'sharpness_w: {sharpness_w:.4f} '
                          f'sharpness_uw: {sharpness_uw:.4f}')
-  return failed_af_msg
+  return failed_af_msg, sharpness_uw, sharpness_w
 
 
 def _do_awb_check(uw_img, w_img):
@@ -193,7 +174,7 @@ def _do_awb_check(uw_img, w_img):
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
   Returns:
-    Failed AWB check messages if any. None otherwise.
+    failed_awb_msg: Failed AWB check messages if any. None otherwise.
   """
   failed_awb_msg = []
   uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
@@ -340,6 +321,38 @@ def _get_four_quadrant_patches(img, img_path, lens_suffix):
   return four_quadrant_patches
 
 
+def _get_slanted_edge_patch(img, img_path, lens_suffix):
+  """Crops the central slanted edge part of the img and returns the patch.
+
+  Args:
+    img: an openCV image in RGB order.
+    img_path: path to save the image.
+    lens_suffix: str; suffix used to save the image. ie: 'w' or 'uw'.
+
+  Returns:
+    slanted_edge_patch: list of 4 coordinates.
+  """
+  num_rows = 3
+  num_columns = 5
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  slanted_edge_patch = []
+  x = int(round(size_x / num_columns * (num_columns // 2), 0))
+  y = int(round(size_y / num_rows * (num_rows // 2), 0))
+  w = int(round(size_x / num_columns, 0))
+  h = int(round(size_y / num_rows, 0))
+  patch = img[y:y+h, x:x+w]
+  slanted_edge_patch = patch[_PATCH_MARGIN:-_PATCH_MARGIN,
+                             _PATCH_MARGIN:-_PATCH_MARGIN]
+  filename_with_path = img_path.with_name(
+      f'{img_path.stem}_{lens_suffix}_slanted_edge{img_path.suffix}'
+  )
+  image_processing_utils.write_rgb_uint8_image(
+      slanted_edge_patch, filename_with_path
+  )
+  return slanted_edge_patch
+
+
 class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
   """Test that the switch from UW to W lens has similar RGB values.
 
@@ -482,17 +495,37 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       w_four_patches = _get_four_quadrant_patches(
           w_chart_patch, w_path, 'w')
 
+      ae_uw_y_avgs = {}
+      ae_w_y_avgs = {}
+
       for uw_patch, w_patch, color in zip(
           uw_four_patches, w_four_patches, _COLORS):
         logging.debug('Checking for quadrant color: %s', color)
+
         # AE Check: Extract the Y component from rectangle patch
-        failed_ae_msg = _do_ae_check(uw_patch, w_patch, self.log_path, color)
+        failed_ae_msg, uw_y_avg, w_y_avg = _do_ae_check(
+            uw_patch, w_patch, self.log_path, color)
+        ae_uw_y_avgs.update({color: f'{uw_y_avg:.4f}'})
+        ae_w_y_avgs.update({color: f'{w_y_avg:.4f}'})
 
         # AWB Check : Verify that R/G and B/G ratios are within the limits
         failed_awb_msg = _do_awb_check(uw_patch, w_patch)
 
+      # Below print statements are for logging purpose.
+      # Do not replace with logging.
+      print(f'{_NAME}_ae_uw_y_avgs: ', ae_uw_y_avgs)
+      print(f'{_NAME}_ae_w_y_avgs: ', ae_w_y_avgs)
+
       # AF check using slanted edge
-      failed_af_msg = _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
+      uw_slanted_edge_patch = _get_slanted_edge_patch(
+          uw_chart_patch, uw_path, 'uw')
+      w_slanted_edge_patch = _get_slanted_edge_patch(
+          w_chart_patch, w_path, 'w')
+      failed_af_msg, sharpness_uw, sharpness_w = _do_af_check(
+          uw_slanted_edge_patch, w_slanted_edge_patch)
+      print(f'{_NAME}_uw_sharpness: {sharpness_uw:.4f}')
+      print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
+
       if failed_awb_msg or failed_ae_msg or failed_af_msg:
         error_msg = _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'

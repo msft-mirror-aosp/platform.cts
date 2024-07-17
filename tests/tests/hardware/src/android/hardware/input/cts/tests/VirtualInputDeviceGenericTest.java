@@ -92,6 +92,9 @@ public class VirtualInputDeviceGenericTest {
         if (Flags.virtualStylus()) {
             deviceFactories.add(VirtualInputDeviceCreator::createAndPrepareStylus);
         }
+        if (android.companion.virtualdevice.flags.Flags.virtualRotary()) {
+            deviceFactories.add(VirtualInputDeviceCreator::createAndPrepareRotary);
+        }
         return deviceFactories;
     }
 

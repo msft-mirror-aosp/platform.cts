@@ -31,7 +31,7 @@ public class LoginImportantForCredentialManagerActivity extends LoginActivity {
         // Username field is set to credman in xml layout itself.
         // This way we test credman integration from xml as well as dynamically.
         if (useAutofillHint) {
-            findViewById(R.id.password).setAutofillHints("password", "credential");
+            findViewById(R.id.password).setAutofillHints("password");
         } else {
             findViewById(R.id.password).setIsCredential(true);
         }

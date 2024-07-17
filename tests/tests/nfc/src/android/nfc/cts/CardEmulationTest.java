@@ -65,6 +65,7 @@ import org.mockito.internal.util.reflection.FieldReader;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -411,6 +412,43 @@ public class CardEmulationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testCustomFrameToCustomInTwoFullLoops() {
+        WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME,
+                () -> {
+                    NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+                    adapter.notifyHceDeactivated();
+                    CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+                    ComponentName customServiceName = new ComponentName(mContext,
+                            CustomHostApduService.class);
+                    String testName = new Object() {
+                    }.getClass().getEnclosingMethod().getName();
+                    String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+                    Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                            customServiceName,
+                            annotationStringHex, false));
+                    ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+                    frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                            HexFormat.of().parseHex(annotationStringHex)));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_ON));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_A));
+                    frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                            HexFormat.of().parseHex(annotationStringHex)));
+                    frames.add(createFrame(PollingFrame.POLLING_LOOP_TYPE_OFF));
+                    ensurePreferredService(WalletRoleTestUtils.WALLET_HOLDER_SERVICE_DESC);
+                    // Only the frames matching the filter should be delivered.
+                    notifyPollingLoopAndWait(new ArrayList<PollingFrame>(
+                                    Arrays.asList(frames.get(2), frames.get(6))),
+                            CustomHostApduService.class.getName());
+                    adapter.notifyHceDeactivated();
+                });
+    }
+
+    @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAPollingLoopToForeground() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -582,6 +620,126 @@ public class CardEmulationTest {
 
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testTwoCustomPollingLoopToPreferredCustomAndBackgroundDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        Activity activity = createAndResumeActivity();
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext, CustomHostApduService.class)));
+
+            ensurePreferredService(CustomHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+
+            ComponentName backgroundServiceName = new ComponentName(mContext,
+                    BackgroundHostApduService.class);
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            String annotationStringHex1 =
+                    HexFormat.of().toHexDigits((testName + "background").hashCode());
+            Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                    backgroundServiceName, annotationStringHex1, false));
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(2);
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex1)));
+
+            ComponentName customServiceName = new ComponentName(mContext,
+                    CustomHostApduService.class);
+
+            String annotationStringHex2 =
+                    HexFormat.of().toHexDigits((testName + "custom").hashCode());
+            Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                    customServiceName, annotationStringHex2, false));
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex2)));
+
+            sCurrentPollLoopReceiver = new PollLoopReceiver(frames, null);
+            for (PollingFrame frame : frames) {
+                adapter.notifyPollingLoop(frame);
+            }
+            synchronized (sCurrentPollLoopReceiver) {
+                try {
+                    sCurrentPollLoopReceiver.wait(5000);
+                } catch (InterruptedException ie) {
+                    Assert.assertNull(ie);
+                }
+            }
+            Assert.assertEquals(frames.size(), sCurrentPollLoopReceiver.mReceivedFrames.size());
+            Assert.assertEquals(2, sCurrentPollLoopReceiver.mReceivedServiceNames.size());
+            sCurrentPollLoopReceiver = null;
+        } finally {
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+            sCurrentPollLoopReceiver = null;
+            adapter.notifyHceDeactivated();
+        }
+    }
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+    public void testTwoCustomPollingLoopToCustomAndBackgroundDynamic() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        Activity activity = createAndResumeActivity();
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                    new ComponentName(mContext, CtsMyHostApduService.class)));
+
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+
+            ComponentName backgroundServiceName = new ComponentName(mContext,
+                    BackgroundHostApduService.class);
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            String annotationStringHex1 =
+                    HexFormat.of().toHexDigits((testName + "background").hashCode());
+            Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                    backgroundServiceName, annotationStringHex1, false));
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(2);
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex1)));
+
+            ComponentName customServiceName = new ComponentName(mContext,
+                    CustomHostApduService.class);
+
+            String annotationStringHex2 =
+                    HexFormat.of().toHexDigits((testName + "custom").hashCode());
+            Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(
+                    customServiceName, annotationStringHex2, false));
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex2)));
+
+            sCurrentPollLoopReceiver = new PollLoopReceiver(frames, null);
+            for (PollingFrame frame : frames) {
+                adapter.notifyPollingLoop(frame);
+            }
+            synchronized (sCurrentPollLoopReceiver) {
+                try {
+                    sCurrentPollLoopReceiver.wait(5000);
+                } catch (InterruptedException ie) {
+                    Assert.assertNull(ie);
+                }
+            }
+            Assert.assertEquals(frames.size(),
+                    sCurrentPollLoopReceiver.mReceivedFrames.size());
+            android.util.Log.i("PLF-test", String.join(", ",
+                    sCurrentPollLoopReceiver.mReceivedServiceNames));
+            Assert.assertEquals(2, sCurrentPollLoopReceiver.mReceivedServiceNames.size());
+            sCurrentPollLoopReceiver = null;
+        } finally {
+            cardEmulation.unsetPreferredService(activity);
+            activity.finish();
+            sCurrentPollLoopReceiver = null;
+            adapter.notifyHceDeactivated();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
@@ -610,6 +768,7 @@ public class CardEmulationTest {
                 CtsMyHostApduService.class);
         try {
             Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsServiceName));
+            ensurePreferredService(CtsMyHostApduService.class);
             ComponentName customServiceName =
                     new ComponentName(mContext, CustomHostApduService.class);
             String testName = new Object() {
@@ -922,6 +1081,124 @@ public class CardEmulationTest {
         });
     }
 
+    @Test
+    @RequiresFlagsEnabled({com.android.nfc.flags.Flags.FLAG_AUTO_DISABLE_OBSERVE_MODE,
+                           android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+                           Flags.FLAG_NFC_OBSERVE_MODE,
+                           android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
+    public void testAutoDisableObserveMode() throws Exception {
+        runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
+            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+            Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+            assumeTrue(adapter.isObserveModeSupported());
+            adapter.notifyHceDeactivated();
+            String testName = new Object() {
+            }.getClass().getEnclosingMethod().getName();
+            String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+            ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+            frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                    HexFormat.of().parseHex(annotationStringHex)));
+            final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+            try {
+                ensurePreferredService(CtsMyHostApduService.class);
+                Assert.assertTrue(adapter.setObserveModeEnabled(true));
+                Assert.assertTrue(adapter.isObserveModeEnabled());
+                List<PollingFrame> receivedFrames =
+                        notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+                Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
+                PollingCheck.check("Observe mode not disabled", 4000,
+                        () -> !adapter.isObserveModeEnabled());
+                adapter.notifyHceDeactivated();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            } finally {
+                adapter.setObserveModeEnabled(false);
+            }
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled({com.android.nfc.flags.Flags.FLAG_AUTO_DISABLE_OBSERVE_MODE,
+                           android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+                           Flags.FLAG_NFC_OBSERVE_MODE})
+    public void testDontAutoDisableObserveModeInForeground() throws Exception {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        String annotationStringHex = HexFormat.of().toHexDigits(testName.hashCode());
+        ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(1);
+        frames.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex)));
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        final Activity activity = createAndResumeActivity();
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity,
+                new ComponentName(mContext, CtsMyHostApduService.class)));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames, CtsMyHostApduService.class.getName());
+            Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
+            Thread.currentThread().sleep(4000);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        } finally {
+            adapter.setObserveModeEnabled(false);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled({com.android.nfc.flags.Flags.FLAG_AUTO_DISABLE_OBSERVE_MODE,
+                           android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
+                           Flags.FLAG_NFC_OBSERVE_MODE})
+    public void testDontAutoDisableObserveModeInForegroundTwoServices() throws Exception {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        assumeTrue(adapter.isObserveModeSupported());
+        adapter.notifyHceDeactivated();
+        String testName = new Object() {
+        }.getClass().getEnclosingMethod().getName();
+        final CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        String annotationStringHex1 = "5cadc10f";
+        ArrayList<PollingFrame> frames1 = new ArrayList<PollingFrame>(1);
+        frames1.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                HexFormat.of().parseHex(annotationStringHex1)));
+        ComponentName walletServiceName = WalletRoleTestUtils.getWalletRoleHolderService();
+        String annotationStringHex2 = HexFormat.of().toHexDigits((testName).hashCode());
+        ComponentName ctsComponentName = new ComponentName(mContext, CtsMyHostApduService.class);
+        Assert.assertTrue(cardEmulation.registerPollingLoopFilterForService(ctsComponentName,
+                        annotationStringHex2, false));
+        ArrayList<PollingFrame> frames2 = new ArrayList<PollingFrame>(1);
+        frames2.add(createFrameWithData(PollingFrame.POLLING_LOOP_TYPE_UNKNOWN,
+                        HexFormat.of().parseHex(annotationStringHex2)));
+        final Activity activity = createAndResumeActivity();
+        try {
+            Assert.assertTrue(cardEmulation.setPreferredService(activity, ctsComponentName));
+            ensurePreferredService(CtsMyHostApduService.class);
+            Assert.assertTrue(adapter.setObserveModeEnabled(true));
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            List<PollingFrame> receivedFrames =
+                    notifyPollingLoopAndWait(frames1,
+                    WalletRoleTestUtils.getWalletRoleHolderService().getClassName());
+            Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
+            receivedFrames =
+                    notifyPollingLoopAndWait(frames2, CtsMyHostApduService.class.getName());
+            Assert.assertFalse(receivedFrames.get(0).getTriggeredAutoTransact());
+            Thread.currentThread().sleep(5000);
+            Assert.assertTrue(adapter.isObserveModeEnabled());
+            adapter.notifyHceDeactivated();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        } finally {
+            adapter.setObserveModeEnabled(false);
+        }
+    }
 
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
@@ -951,7 +1228,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -986,7 +1263,7 @@ public class CardEmulationTest {
                 PollingCheck.check("Observe mode not disabled", 200,
                         () -> !adapter.isObserveModeEnabled());
                 adapter.notifyHceDeactivated();
-                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+                PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
@@ -1027,7 +1304,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1067,7 +1344,7 @@ public class CardEmulationTest {
             PollingCheck.check("Observe mode not disabled", 200,
                     () -> !adapter.isObserveModeEnabled());
             adapter.notifyHceDeactivated();
-            PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+            PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
         } finally {
             adapter.setObserveModeEnabled(false);
             cardEmulation.unsetPreferredService(activity);
@@ -1124,7 +1401,7 @@ public class CardEmulationTest {
                 PollingCheck.check("Observe mode not disabled", 200,
                         () -> !adapter.isObserveModeEnabled());
                 adapter.notifyHceDeactivated();
-                PollingCheck.check("Observe mode not enabled", 200, adapter::isObserveModeEnabled);
+                PollingCheck.check("Observe mode not enabled", 3000, adapter::isObserveModeEnabled);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             } finally {
@@ -1223,20 +1500,25 @@ public class CardEmulationTest {
 
     static class PollLoopReceiver  {
         int mFrameIndex = 0;
-        List<PollingFrame> mFrames;
+        ArrayList<PollingFrame> mFrames;
         String mServiceName;
-        List<PollingFrame> mReceivedFrames;
+        ArrayList<PollingFrame> mReceivedFrames;
         String mReceivedServiceName;
-
-        PollLoopReceiver(List<PollingFrame> frames, String serviceName) {
+        ArrayList<String> mReceivedServiceNames;
+        PollLoopReceiver(ArrayList<PollingFrame> frames, String serviceName) {
             mFrames = frames;
             mServiceName = serviceName;
-            mReceivedFrames = new ArrayList<PollingFrame>(1);
+            mReceivedFrames = new ArrayList<PollingFrame>();
+            mReceivedServiceNames = new ArrayList<String>();
         }
 
         void notifyPollingLoop(String className, List<PollingFrame> receivedFrames) {
+            if (receivedFrames == null) {
+                return;
+            }
             mReceivedFrames.addAll(receivedFrames);
             mReceivedServiceName = className;
+            mReceivedServiceNames.add(className);
             if (mReceivedFrames.size() < mFrames.size()) {
                 return;
             }
@@ -1246,10 +1528,12 @@ public class CardEmulationTest {
         }
 
         void test() {
+            if (mReceivedFrames.size() > mFrames.size()) {
+                Assert.fail("received more frames than sent");
+            } else if (mReceivedFrames.size() < mFrames.size()) {
+                Assert.fail("received fewer frames than sent");
+            }
             for (PollingFrame receivedFrame : mReceivedFrames) {
-                if (mFrameIndex >= mFrames.size()) {
-                    Assert.fail("received more frames than sent: " + receivedFrame);
-                }
                 Assert.assertEquals(mFrames.get(mFrameIndex).getType(), receivedFrame.getType());
                 Assert.assertEquals(mFrames.get(mFrameIndex).getVendorSpecificGain(),
                         receivedFrame.getVendorSpecificGain());
@@ -1259,11 +1543,13 @@ public class CardEmulationTest {
                         receivedFrame.getData());
                 mFrameIndex++;
             }
-            Assert.assertEquals(mServiceName, mReceivedServiceName);
+            if (mServiceName != null) {
+                Assert.assertEquals(mServiceName, mReceivedServiceName);
+            }
         }
     }
 
-    private List<PollingFrame> notifyPollingLoopAndWait(List<PollingFrame> frames,
+    private List<PollingFrame> notifyPollingLoopAndWait(ArrayList<PollingFrame> frames,
             String serviceName) {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         sCurrentPollLoopReceiver = new PollLoopReceiver(frames, serviceName);

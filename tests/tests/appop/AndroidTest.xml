@@ -36,6 +36,8 @@
     <!-- Create place to store apks -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/appops" />
+        <option name="run-command" value="appops set android.app.appops.cts OP_RESERVED_FOR_TESTING allow" />
+        <option name="run-command" value="appops set com.google.android.packageinstaller OP_RESERVED_FOR_TESTING allow" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts" />
     </target_preparer>
 

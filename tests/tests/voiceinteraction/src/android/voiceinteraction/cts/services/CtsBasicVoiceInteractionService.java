@@ -686,6 +686,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
 
                 private byte[] accumulateAccessibilityStreamedData(byte[] streamedData,
                         byte[] newData) {
+                    if (newData == null) {
+                        return streamedData;
+                    }
                     byte[] newStreamedData = new byte[streamedData.length + newData.length];
                     System.arraycopy(streamedData, 0, newStreamedData, 0,
                             streamedData.length);

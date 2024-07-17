@@ -43,16 +43,12 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         setInfoResources(
                 R.string.audio_datapaths_analog_test, R.string.audio_datapaths_analog_info, -1);
 
-        // Make sure there are devices to test (as in a device without an analog port),
-        // or else enable pass button.
-        if (mTestManager.countValidTestModules() == 0) {
-            getPassButton().setEnabled(calculatePass());
-        }
-
         boolean canRunTest =
                 AudioDeviceUtils.supportsAnalogHeadset(this) != AudioDeviceUtils.SUPPORTSDEVICE_NO;
 
         enableTestButtons(canRunTest);
+
+        getPassButton().setEnabled(passBtnEnabled());
     }
 
     void gatherTestModules(TestManager testManager) {
@@ -111,7 +107,7 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         enableTestButtons(numValidTestModules != 0);
     }
 
-    protected boolean calculatePass() {
-        return !mHeadsetSupport || passBtnEnabled();
+    protected boolean hasPeripheralSupport() {
+        return mHeadsetSupport;
     }
 }

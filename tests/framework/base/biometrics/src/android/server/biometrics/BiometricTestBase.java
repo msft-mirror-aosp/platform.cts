@@ -113,8 +113,6 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected static final String TITLE_VIEW = "title";
     protected static final String SUBTITLE_VIEW = "subtitle";
     protected static final String DESCRIPTION_VIEW = "description";
-    protected static final String CONTENT_VIEW = "customized_view";
-    protected static final String CONTENT_DESCRIPTION_VIEW  = "customized_view_description";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";

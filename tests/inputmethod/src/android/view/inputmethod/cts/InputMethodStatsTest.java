@@ -21,6 +21,8 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -32,7 +34,6 @@ import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.support.test.uiautomator.UiDevice;
 import android.view.MotionEvent;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController.OnControllableInsetsChangedListener;
@@ -51,6 +52,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeSettings;
@@ -101,8 +103,10 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
         mPkgName = mInstrumentation.getContext().getPackageName();
 
         // Finish tracking any pending IME visibility requests from previous tests to avoid issues.
-        mInstrumentation.getContext().getSystemService(InputMethodManager.class)
-                .finishTrackingPendingImeVisibilityRequests();
+        final var imm = mInstrumentation.getContext().getSystemService(InputMethodManager.class);
+        runWithShellPermissionIdentity(() -> {
+            imm.finishTrackingPendingImeVisibilityRequests();
+        });
 
         MetricsRecorder.removeConfig();
         MetricsRecorder.clearReports();

@@ -1325,6 +1325,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     stream,
                     editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
+            addVirtualStylusIdForTestSession();
+
             TestUtils.injectStylusDownEvent(stylus, focusedEditText, x,  y);
             TestUtils.injectStylusUpEvent(stylus);
 

@@ -81,7 +81,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlocked() {
         // SensitiveContentActivity layout has a sensitive view, screen capture should be blocked.
@@ -92,7 +92,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForUsername() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -100,7 +100,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPassword() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -108,7 +108,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardNumber() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -116,7 +116,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardCVV() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -124,7 +124,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardExpirationDate() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -132,7 +132,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCredentials() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint("credential");
@@ -141,7 +141,7 @@ public class ViewSensitiveContentTest {
 
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPasswordAuto() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint("passwordAuto");

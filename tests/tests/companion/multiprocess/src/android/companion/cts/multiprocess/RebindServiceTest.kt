@@ -15,13 +15,9 @@
  */
 package android.companion.cts.multiprocess
 
-import android.Manifest
 import android.Manifest.permission.REQUEST_COMPANION_SELF_MANAGED
-import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
 import android.companion.Flags
-import android.companion.ObservingDevicePresenceRequest
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_A
 import android.companion.cts.common.DEVICE_DISPLAY_NAME_B
 import android.companion.cts.common.PRIMARY_PROCESS_NAME
@@ -66,7 +62,7 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary and secondary services should not be bound.
         assertServiceNotBound("PrimaryCompanionService")
         assertServiceNotBound("SecondaryCompanionService")
@@ -97,7 +93,7 @@ class RebindServiceTest : TestBase() {
         killProcess(SECONDARY_PROCESS_NAME)
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Secondary service should be bound.
         assertServiceBound("SecondaryCompanionService")
         // Primary service should be still bound.
@@ -119,7 +115,7 @@ class RebindServiceTest : TestBase() {
         assertApplicationBinds(cdm)
         // Wait for secondary service to start.
         SystemClock.sleep(2000)
-        // Kill the primary process.
+        // Kill both primary and secondary processes.
         killProcess(PRIMARY_PROCESS_NAME)
         killProcess(SECONDARY_PROCESS_NAME)
         // Primary service should be unbound.
@@ -131,6 +127,9 @@ class RebindServiceTest : TestBase() {
             cdm.notifyDeviceAppeared(idB)
         }
 
+        // Wait for the CompanionAppBinder.REBIND_TIMEOUT (and 1 more second for good measure).
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
+
         // Primary service should be bound again.
         assertServiceBound("PrimaryCompanionService")
     }
@@ -138,15 +137,7 @@ class RebindServiceTest : TestBase() {
     @RequiresFlagsEnabled(Flags.FLAG_DEVICE_PRESENCE)
     @Test
     fun test_ObservingDeviceUuidPresence_rebind() {
-        val request = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
-        ) {
-            cdm.startObservingDevicePresence(request)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         assertApplicationBinds(cdm)
@@ -161,18 +152,11 @@ class RebindServiceTest : TestBase() {
         assertServiceNotBound("PrimaryCompanionService")
 
         // Schedule rebind in 10 seconds but give it 11 seconds.
-        SystemClock.sleep(11000)
+        SystemClock.sleep(REBIND_WAIT_TIME_MS)
         // Primary service should be still bound.
         assertServiceBound("PrimaryCompanionService")
 
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            Manifest.permission.BLUETOOTH_CONNECT,
-            Manifest.permission.BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
     }
 
     private fun assertServiceBound(component: String) {
@@ -195,5 +179,9 @@ class RebindServiceTest : TestBase() {
                 fail("Service $component should not bound.")
             }
         }
+    }
+
+    companion object {
+        const val REBIND_WAIT_TIME_MS = 11_000L
     }
 }

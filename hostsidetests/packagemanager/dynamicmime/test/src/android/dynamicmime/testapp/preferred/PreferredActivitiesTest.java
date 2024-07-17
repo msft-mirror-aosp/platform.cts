@@ -74,6 +74,7 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(60L);
 
     private static final String FEATURE_WEARABLE = "android.hardware.type.watch";
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
 
     private TestStrategy mTest;
 
@@ -310,7 +311,7 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
 
     private void verifyDialogIsShown(boolean shouldBeShown) {
         if (Utils.hasFeature(FEATURE_WEARABLE)) {
-            scrollToSelectorOnWatch(BUTTON_ALWAYS_UI_SELECTOR);
+            scrollToSelector(BUTTON_ALWAYS_UI_SELECTOR);
         }
         UiObject2 buttonAlways = getUiDevice().wait(Until.findObject(BUTTON_ALWAYS), TIMEOUT);
 
@@ -336,26 +337,26 @@ public class PreferredActivitiesTest extends BaseDynamicMimeTest {
     }
 
     private UiObject2 findObjectInDialog(String label) {
-        if (!Utils.hasFeature(FEATURE_WEARABLE)) {
+        if (!Utils.hasFeature(FEATURE_WEARABLE) && !Utils.hasFeature(FEATURE_AUTOMOTIVE)) {
             getUiDevice()
                 .wait(Until.findObject(RESOLVER_DIALOG), TIMEOUT)
                 .swipe(Direction.UP, 1f);
         } else {
-            scrollToSelectorOnWatch(new UiSelector().text(label));
+            scrollToSelector(new UiSelector().text(label));
         }
         return getUiDevice().findObject(By.text(label));
     }
 
     private void chooseUseAlways() {
         if (Utils.hasFeature(FEATURE_WEARABLE)) {
-            scrollToSelectorOnWatch(BUTTON_ALWAYS_UI_SELECTOR);
+            scrollToSelector(BUTTON_ALWAYS_UI_SELECTOR);
         }
         getUiDevice()
                 .wait(Until.findObject(BUTTON_ALWAYS), TIMEOUT)
                 .click();
     }
 
-    private void scrollToSelectorOnWatch(UiSelector selector) {
+    private void scrollToSelector(UiSelector selector) {
         try {
             int resId = Resources.getSystem().getIdentifier(
                     "config_customResolverActivity", "string", "android");

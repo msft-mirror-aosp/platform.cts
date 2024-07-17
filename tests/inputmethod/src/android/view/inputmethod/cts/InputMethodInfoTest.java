@@ -71,6 +71,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodInfoTest {
+    private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
@@ -184,7 +185,7 @@ public class InputMethodInfoTest {
     private void assertInfo(InputMethodInfo info) {
         assertEquals(mPackageName, info.getPackageName());
         assertEquals(mSettingsActivity, info.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
+        if (Flags.imeSwitcherRevampApi()) {
             assertEquals(mLanguageSettingsActivity,
                     info.createImeLanguageSettingsActivityIntent().getComponent().getClassName());
         }
@@ -235,7 +236,7 @@ public class InputMethodInfoTest {
             "android.view.inputmethod.InputMethodInfo#ACTION_IME_LANGUAGE_SETTINGS",
             "android.view.inputmethod.InputMethodInfo#createImeLanguageSettingsActivityIntent"
     })
-    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP_API)
     @Test
     public void testLanguageSettingsInfo() {
         final List<InputMethodInfo> imis = mImManager.getInputMethodList();
@@ -247,7 +248,9 @@ public class InputMethodInfoTest {
         assertNotNull(languageSettingsIntent);
         assertEquals(InputMethodInfo.ACTION_IME_LANGUAGE_SETTINGS,
                 languageSettingsIntent.getAction());
-        assertEquals("language_settings", languageSettingsIntent.getComponent().getClassName());
+        final var component = new ComponentName(MOCK_IME_PACKAGE,
+                "com.android.cts.mockime.LanguageSettingsActivity");
+        assertEquals(component, languageSettingsIntent.getComponent());
     }
 
     @Test
@@ -261,7 +264,7 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodInfo.getPackageName(), imi.getPackageName());
         assertEquals(mInputMethodInfo.getServiceName(), imi.getServiceName());
         assertEquals(mInputMethodInfo.getSettingsActivity(), imi.getSettingsActivity());
-        if (Flags.imeSwitcherRevamp()) {
+        if (Flags.imeSwitcherRevampApi()) {
             assertEquals(mInputMethodInfo.createImeLanguageSettingsActivityIntent().getComponent()
                             .getClassName(),
                     imi.createImeLanguageSettingsActivityIntent().getComponent().getClassName());

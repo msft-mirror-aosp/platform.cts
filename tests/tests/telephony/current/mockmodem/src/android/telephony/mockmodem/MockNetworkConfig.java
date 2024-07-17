@@ -160,6 +160,9 @@ public class MockNetworkConfig {
                     case "EARFCN":
                         lte.cellIdentityLte.earfcn = Integer.parseInt(parser.nextText().trim());
                         break;
+                    case "BANDWIDTH":
+                        lte.cellIdentityLte.bandwidth = Integer.parseInt(parser.nextText().trim());
+                        break;
                     case "OperatorInfo":
                         // lte.cellIdentityLte.operatorNames = new OperatorInfo();
                         break;

@@ -49,6 +49,7 @@ import com.google.common.base.Objects
 import java.util.concurrent.LinkedBlockingQueue
 import com.android.compatibility.common.util.PollingCheck
 import com.google.common.truth.Truth.assertThat
+import org.junit.After
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 import java.util.concurrent.LinkedBlockingDeque
@@ -157,6 +158,11 @@ class AppOpsTest {
         mOpPackageName = mContext.opPackageName
         assertNotNull(mAppOps)
         // Reset app ops state for this test package to the system default.
+        reset(mOpPackageName)
+    }
+
+    @After
+    fun tearDown() {
         reset(mOpPackageName)
     }
 

@@ -178,6 +178,9 @@ public class ItsService extends Service implements SensorEventListener {
     // Time given for background requests to warm up pipeline
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
 
+    // Time given PreviewRecorder to record green buffer frames
+    private static final long BUFFER_FRAMES_MS = 600;
+
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
     private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
@@ -240,11 +243,12 @@ public class ItsService extends Service implements SensorEventListener {
         CAMCORDER_PROFILE_QUALITIES_MAP.put(CamcorderProfile.QUALITY_VGA, "VGA");
     }
 
+    private static final String JPEG_R_FMT = "jpeg_r";
     private static HashMap<Integer, String> sFormatMap = new HashMap<>();
     static {
         sFormatMap.put(ImageFormat.PRIVATE, "priv");
         sFormatMap.put(ImageFormat.JPEG, "jpeg");
-        sFormatMap.put(ImageFormat.JPEG_R, "jpegr");
+        sFormatMap.put(ImageFormat.JPEG_R, JPEG_R_FMT);
         sFormatMap.put(ImageFormat.YUV_420_888, "yuv");
     }
 
@@ -1326,7 +1330,7 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if (format == ImageFormat.JPEG) {
                         jsonSurface.put("format", "jpeg");
                     } else if (format == ImageFormat.JPEG_R) {
-                        jsonSurface.put("format", "jpeg_r");
+                        jsonSurface.put("format", JPEG_R_FMT);
                     } else if (format == ImageFormat.PRIVATE) {
                         jsonSurface.put("format", "priv");
                     } else if (format == ImageFormat.YUV_420_888) {
@@ -1597,9 +1601,9 @@ public class ItsService extends Service implements SensorEventListener {
     private SessionConfiguration getSessionConfiguration(JSONObject params)
             throws ItsException {
         JSONArray jsonOutputSpecs = ItsUtils.getOutputSpecs(params);
-        prepareImageReadersWithOutputSpecs(jsonOutputSpecs, /*inputSize*/null,
-                /*inputFormat*/0, /*maxInputBuffers*/0, /*backgroundRequest*/false,
-                /*reuseSession*/ false);
+        boolean has10bitOutput = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
+                /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                /*backgroundRequest*/false, /*reuseSession*/ false);
         int numSurfaces = mOutputImageReaders.length;
         List<OutputConfiguration> outputConfigs = new ArrayList<>(numSurfaces);
         for (int i = 0; i < numSurfaces; i++) {
@@ -1610,6 +1614,11 @@ public class ItsService extends Service implements SensorEventListener {
             }
             if (mStreamUseCaseMap.get(i) != null) {
                 config.setStreamUseCase(mStreamUseCaseMap.get(i));
+            }
+            boolean hlg10Compatible =
+                    isHlg10Compatible(mOutputImageReaders[i].getImageFormat());
+            if (has10bitOutput && hlg10Compatible) {
+                config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
             }
             outputConfigs.add(config);
         }
@@ -1928,12 +1937,14 @@ public class ItsService extends Service implements SensorEventListener {
         mSocketRunnableObj.sendResponse("camera1080pJpegCaptureMs", Double.toString(jpegCaptureMs));
     }
 
-    private static long getReaderUsage(int format, boolean has10bitOutput) {
+    private static long getReaderUsage(int format, boolean has10bitOutput, int inputFormat) {
         // Private image format camera readers will default to ZSL usage unless
         // explicitly configured to use a common consumer such as display.
-        // We don't support the ZSL use case within the 10-bit use case.
-        return (format == ImageFormat.PRIVATE && has10bitOutput) ?
-                HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
+        // We don't support the ZSL use case for the 10-bit use case, or if the input format
+        // is not PRIVATE.
+        boolean notForZslReprocess = (inputFormat != format);
+        return (format == ImageFormat.PRIVATE && (has10bitOutput || notForZslReprocess))
+                ? HardwareBuffer.USAGE_COMPOSER_OVERLAY : HardwareBuffer.USAGE_CPU_READ_OFTEN;
     }
 
     private List<OutputConfiguration> getCaptureOutputConfigurations(
@@ -1962,7 +1973,9 @@ public class ItsService extends Service implements SensorEventListener {
                     }
                 }
             }
-            if (is10bitOutputPresent) {
+            boolean hlg10Compatible =
+                    isHlg10Compatible(mOutputImageReaders[i].getImageFormat());
+            if (is10bitOutputPresent && hlg10Compatible) {
                 // HLG10 is mandatory for all 10-bit output capable devices
                 config.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
             }
@@ -1992,19 +2005,20 @@ public class ItsService extends Service implements SensorEventListener {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS + maxInputBuffers,
-                        getReaderUsage(outputFormats[i], has10bitOutput));
+                        getReaderUsage(outputFormats[i], has10bitOutput, inputFormat));
                 mInputImageReader = mOutputImageReaders[i];
             } else {
                 mOutputImageReaders[i] = ImageReader.newInstance(outputSizes[i].getWidth(),
                         outputSizes[i].getHeight(), outputFormats[i],
                         MAX_CONCURRENT_READER_BUFFERS, getReaderUsage(outputFormats[i],
-                            has10bitOutput));
+                            has10bitOutput, inputFormat));
             }
         }
 
         if (inputSize != null && mInputImageReader == null) {
             mInputImageReader = ImageReader.newInstance(inputSize.getWidth(), inputSize.getHeight(),
-                    inputFormat, maxInputBuffers, getReaderUsage(inputFormat, has10bitOutput));
+                    inputFormat, maxInputBuffers,
+                    getReaderUsage(inputFormat, has10bitOutput, inputFormat));
         }
         mImageReaderArgs = ImageReaderArgs.valueOf(outputSizes, outputFormats, inputSize,
                 inputFormat, maxInputBuffers, has10bitOutput);
@@ -2074,7 +2088,8 @@ public class ItsService extends Service implements SensorEventListener {
                     mThreeAOutputImageReader = ImageReader.newInstance(
                             size.getWidth(), size.getHeight(), outputFormat,
                             MAX_CONCURRENT_READER_BUFFERS,
-                            getReaderUsage(outputFormat, /*has10bitOutput=*/false));
+                            getReaderUsage(outputFormat, /*has10bitOutput=*/false,
+                                    /*inputFormat*/-1));
                 }
             }
 
@@ -2425,13 +2440,14 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if ("jpg".equals(sformat) || "jpeg".equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
-                    } else if ("jpeg_r".equals(sformat)) {
+                    } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
                         is10bitOutputPresent = true;
                     } else if ("priv".equals(sformat)) {
                         outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
+                        is10bitOutputPresent = surfaceObj.optBoolean("hlg10");
                     } else if ("raw".equals(sformat)) {
                         outputFormats[i] = ImageFormat.RAW_SENSOR;
                         sizes = ItsUtils.getRaw16OutputSizes(cameraCharacteristics);
@@ -3049,6 +3065,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
+        boolean paddedFramesAtEnd = cmdObj.optBoolean("paddedFramesAtEnd", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.
@@ -3100,6 +3117,16 @@ public class ItsService extends Service implements SensorEventListener {
                     recordingResultListener, extraConfigs);
 
             action.execute();
+
+            if (paddedFramesAtEnd) {
+                pr.recordGreenFrames();
+                try {
+                    Thread.sleep(BUFFER_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+            }
+
             // Stop repeating request and ensure frames in flight are sent to MediaRecorder
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
@@ -3171,12 +3198,14 @@ public class ItsService extends Service implements SensorEventListener {
                 sensorOrientation, outputFilePath, mCameraHandler, /*hlg10Enabled*/false, this)) {
             CaptureRequest.Builder reqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            reqBuilder = ItsSerializer.deserialize(reqBuilder,
-                    params.getJSONObject("captureRequest"));
+            JSONObject captureReqJSON = params.getJSONObject("captureRequest");
+            // Create deep copy of the original capture request. The deserialize operation strips
+            // keys. The deep copy preserves the keys.
+            JSONObject threeAReqJSON = new JSONObject(captureReqJSON.toString());
+            reqBuilder = ItsSerializer.deserialize(reqBuilder, captureReqJSON);
             CaptureRequest.Builder threeAReqBuilder = mCamera.createCaptureRequest(
                     CameraDevice.TEMPLATE_PREVIEW);
-            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder,
-                    params.getJSONObject("captureRequest"));
+            threeAReqBuilder = ItsSerializer.deserialize(threeAReqBuilder, threeAReqJSON);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             // Do not send 3A results
             mSend3AResults = false;
@@ -3917,8 +3946,10 @@ public class ItsService extends Service implements SensorEventListener {
                 if (mOutputImageReaders == null) {
                     Logt.i(TAG, "Preparing image readers with output specs in doCapture");
                     is10bitOutputPresent = prepareImageReadersWithOutputSpecs(jsonOutputSpecs,
-                        /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
-                        backgroundRequest, reuseSession);
+                            /*inputSize*/null, /*inputFormat*/0, /*maxInputBuffers*/0,
+                            backgroundRequest, reuseSession);
+                } else {
+                    is10bitOutputPresent = mImageReaderArgs.getHas10bitOutput();
                 }
                 numSurfaces = mOutputImageReaders.length;
                 numCaptureSurfaces = numSurfaces - (backgroundRequest ? 1 : 0)
@@ -3932,8 +3963,8 @@ public class ItsService extends Service implements SensorEventListener {
 
                 List<OutputConfiguration> outputConfigs = getCaptureOutputConfigurations(
                         jsonOutputSpecs, is10bitOutputPresent);
-                if (mSession != null && reuseSession && mOutputImageReaders != null &&
-                        mCaptureOutputConfigs.equals(outputConfigs)) {
+                if (mSession != null && reuseSession
+                        && mCaptureOutputConfigs.equals(outputConfigs)) {
                     Logt.i(TAG, "Reusing camera capture session in doCapture()");
                 } else {
                     Logt.i(TAG, "Need to create new capture session in doCapture()");
@@ -5046,5 +5077,11 @@ public class ItsService extends Service implements SensorEventListener {
         if (!mItsCameraIdList.mCameraIds.contains(cameraId)) {
             throw new ItsException("Invalid cameraId " + cameraId);
         }
+    }
+
+    private boolean isHlg10Compatible(int format) {
+        return (format == ImageFormat.PRIVATE
+                || format == ImageFormat.JPEG_R
+                || format == ImageFormat.YCBCR_P010);
     }
 }
