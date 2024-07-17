@@ -71,6 +71,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodInfoTest {
+    private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
@@ -247,7 +248,9 @@ public class InputMethodInfoTest {
         assertNotNull(languageSettingsIntent);
         assertEquals(InputMethodInfo.ACTION_IME_LANGUAGE_SETTINGS,
                 languageSettingsIntent.getAction());
-        assertEquals("language_settings", languageSettingsIntent.getComponent().getClassName());
+        final var component = new ComponentName(MOCK_IME_PACKAGE,
+                "com.android.cts.mockime.LanguageSettingsActivity");
+        assertEquals(component, languageSettingsIntent.getComponent());
     }
 
     @Test

@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.tile
+package com.android.cts.mockime;
 
-import android.service.quicksettings.TileService
+import android.app.Activity;
 
-/** Helper methods related to quick settings. */
-object QuickSettings {
-
-    /**
-     * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
-     */
-    fun isSupported(): Boolean {
-        return TileService.isQuickSettingsSupported()
-    }
-
+/**
+ * Stub activity to test out the settings for Mock IME.
+ */
+public class SettingsActivity extends Activity {
 }
