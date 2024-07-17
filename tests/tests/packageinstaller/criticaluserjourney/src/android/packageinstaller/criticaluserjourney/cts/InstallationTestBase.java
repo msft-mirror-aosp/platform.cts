@@ -405,7 +405,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertThat(isInstallerInstalled()).isTrue();
     }
 
-    private static void allowInstallIfGPPDialogExists() {
+    private static void allowInstallIfGPPDialogExists() throws Exception {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
         UiObject2 more = sUiDevice.findObject(By.text(morePattern));
@@ -650,7 +650,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     /**
      * Toggle to grant the AppOps permission REQUEST_INSTALL_PACKAGES to the CUJ Installer.
      */
-    public static void toggleToGrantRequestInstallPackagesPermission() {
+    public static void toggleToGrantRequestInstallPackagesPermission() throws Exception {
         // Already know which toggle label on the device, find it and click it directly
         if (sToggleLabel != null) {
             clickAndWaitForNewWindow(findObject(sToggleLabel));
@@ -662,6 +662,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
                 Until.findObjects(By.checkable(true).checked(false)), FIND_OBJECT_TIMEOUT_MS);
 
         if (uiObjects == null || uiObjects.isEmpty()) {
+            // dump window hierarchy for debug
+            dumpWindowHierarchy();
             fail("No toggle to grant permission");
         }
 
@@ -700,7 +702,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     /**
      * Exit the grant permission settings and wait for it to disappear.
      */
-    public static void exitGrantPermissionSettings() {
+    public static void exitGrantPermissionSettings() throws Exception {
         pressBack();
         waitForUiIdle();
         if (sToggleLabel != null) {
@@ -709,7 +711,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
     }
 
-    private static void waitForInstallingDialogGone() {
+    private static void waitForInstallingDialogGone() throws Exception {
         BySelector installingSelector =
                 getPackageInstallerBySelector(By.textContains(INSTALLING_LABEL));
         UiObject2 installing = sUiDevice.findObject(installingSelector);
@@ -719,9 +721,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     @Nullable
-    private static UiObject2 findAllowFromSourceSiblingTextObject(@NonNull UiObject2 uiObject) {
+    private static UiObject2 findAllowFromSourceSiblingTextObject(@NonNull UiObject2 uiObject)
+            throws Exception {
         UiObject2 parent = uiObject.getParent();
         if (parent == null) {
+            // dump window hierarchy for debug
+            dumpWindowHierarchy();
             return null;
         }
 
@@ -730,6 +735,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         while (parent.getChildCount() <= 1) {
             parent = parent.getParent();
             if (parent == null) {
+                // dump window hierarchy for debug
+                dumpWindowHierarchy();
                 return null;
             }
         }
@@ -752,6 +759,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
                 }
             }
         }
+        // dump window hierarchy for debug
+        dumpWindowHierarchy();
         return null;
     }
 
