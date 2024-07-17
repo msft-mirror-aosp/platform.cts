@@ -43,7 +43,6 @@
   <option name="compatibility:include-filter" value="CtsStatsdAtomHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsHostsideNetworkTests"/>
   <option name="compatibility:include-filter" value="CtsMediaCodecTestCases"/>
-  <option name="compatibility:include-filter" value="CtsDeqpTestCases"/>
   <option name="compatibility:include-filter" value="CtsKeystorePerformanceTestCases"/>
   <option name="compatibility:include-filter" value="vm-tests-tf"/>
   <option name="compatibility:include-filter" value="CtsSurfaceControlTests"/>
@@ -409,6 +408,11 @@
   <option name="compatibility:include-filter" value="CtsFingerprintTestCases"/>
   <option name="compatibility:include-filter" value="CtsDynamicMimeRemoveRebootHostTestCases"/>
   <option name="compatibility:include-filter" value="CtsDynamicMimeComplexFilterClearGroupRebootHostTestCases"/>
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.wsi.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES2.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES3.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.api.smoke#*" />
 
    <!--Include Test Filters for the tests excluded in cts-system-virtual test filter  -->
   <option name="compatibility:include-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
