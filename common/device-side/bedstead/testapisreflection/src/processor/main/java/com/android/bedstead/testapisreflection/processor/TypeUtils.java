@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.ArrayType;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
@@ -90,6 +91,11 @@ public final class TypeUtils {
                 return getDeclaredType(type, wrappedTypeQualifiedName, returnNonParameterizedType);
             }
 
+        } else if (typeMirror instanceof ArrayType) {
+            return getDeclaredType(
+                    /* type= */ "kotlin.Array",
+                    /* wrappedTypeQualifiedName= */ type.substring(0, type.length() - 2),
+                    /* returnNonParameterizedType= */ false);
         }
 
         return new ClassName(typePackageName(type), typeSimpleName(type));

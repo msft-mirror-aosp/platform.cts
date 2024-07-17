@@ -66,16 +66,17 @@ public class PackageInstallerCujTestBase {
 
     public static final String CONTENT_AUTHORITY =
             "android.packageinstaller.criticaluserjourney.cts.fileprovider";
-    public static final String TEST_APK_LABEL = "Installer CUJ Test App";
+    public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
+    public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
+    public static final String INSTALLER_LABEL = "CTS CUJ Installer";
+    public static final String INSTALLER_PACKAGE_NAME =
+            "android.packageinstaller.cts.cuj.installer";
     public static final String TEST_APK_LOCATION = "/data/local/tmp/cts/packageinstaller/cuj";
     public static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
-    public static final String TEST_APK_PACKAGE_NAME =
-            "android.packageinstaller.cts.cuj.app";
     public static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
-    public static final String TEST_INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
-    public static final String TEST_INSTALLER_LABEL = "CTS CUJ Installer";
-    public static final String TEST_INSTALLER_PACKAGE_NAME =
-            "android.packageinstaller.cts.cuj.installer";
+    public static final String TEST_APP_LABEL = "Installer CUJ Test App";
+    public static final String TEST_APP_PACKAGE_NAME =
+            "android.packageinstaller.cts.cuj.app";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
@@ -84,6 +85,7 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_GPP_INSTALL_WITHOUT_SCANNING_LABEL =
             "Install without scanning";
     public static final String BUTTON_INSTALL_LABEL = "Install";
+    public static final String BUTTON_OK_LABEL = "OK";
     public static final String BUTTON_OPEN_LABEL = "Open";
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UPDATE_LABEL = "Update";
@@ -93,6 +95,7 @@ public class PackageInstallerCujTestBase {
     public static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
     public static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
     public static final String INSTALLING_LABEL = "Installing";
+    public static final String UNINSTALL_LABEL = "uninstall";
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     public static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
@@ -104,11 +107,11 @@ public class PackageInstallerCujTestBase {
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
-    private static PackageManager sPackageManager;
     private static Instrumentation sInstrumentation;
     private static String sPackageInstallerPackageName = null;
 
     public static Context sContext;
+    public static PackageManager sPackageManager;
     public static UiDevice sUiDevice;
 
     @BeforeClass
@@ -158,7 +161,7 @@ public class PackageInstallerCujTestBase {
      */
     public static void assertTestPackageInstalled() {
         assertThat(isInstalledAndVerifyVersionCode(
-                TEST_APK_PACKAGE_NAME, TEST_APK_VERSION)).isTrue();
+                TEST_APP_PACKAGE_NAME, TEST_APK_VERSION)).isTrue();
     }
 
     /**
@@ -198,24 +201,24 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the title of the install dialog is {@link #TEST_APK_LABEL}.
+     * Assert the title of the install dialog is {@link #TEST_APP_LABEL}.
      */
-    public static void assertTitleIsTestApkLabel() throws Exception {
-        findPackageInstallerObject(TEST_APK_LABEL);
+    public static void assertTitleIsTestAppLabel() throws Exception {
+        findPackageInstallerObject(TEST_APP_LABEL);
     }
 
     /**
-     * Assert the content includes the installer label {@link #TEST_INSTALLER_LABEL}.
+     * Assert the content includes the installer label {@link #INSTALLER_LABEL}.
      */
-    public static void assertContentIncludesTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(By.textContains(TEST_INSTALLER_LABEL), /* checkNull= */ true);
+    public static void assertContentIncludesInstallerLabel() throws Exception {
+        findPackageInstallerObject(By.textContains(INSTALLER_LABEL), /* checkNull= */ true);
     }
 
     /**
-     * Assert the title of the install dialog is {@link #TEST_INSTALLER_LABEL}.
+     * Assert the title of the install dialog is {@link #INSTALLER_LABEL}.
      */
-    public static void assertTitleIsTestInstallerLabel() throws Exception {
-        findPackageInstallerObject(TEST_INSTALLER_LABEL);
+    public static void assertTitleIsInstallerLabel() throws Exception {
+        findPackageInstallerObject(INSTALLER_LABEL);
     }
 
     /**
@@ -330,10 +333,10 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Uninstall the test package {@link #TEST_APK_PACKAGE_NAME}.
+     * Uninstall the test package {@link #TEST_APP_PACKAGE_NAME}.
      */
     public static void uninstallTestPackage() {
-        uninstallPackage(TEST_APK_PACKAGE_NAME);
+        uninstallPackage(TEST_APP_PACKAGE_NAME);
     }
 
     /**
@@ -392,11 +395,11 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * If the test package {@link #TEST_APK_PACKAGE_NAME} is installed, return true. Otherwise,
+     * If the test package {@link #TEST_APP_PACKAGE_NAME} is installed, return true. Otherwise,
      * return false.
      */
     public static boolean isTestPackageInstalled() {
-        return isInstalled(TEST_APK_PACKAGE_NAME);
+        return isInstalled(TEST_APP_PACKAGE_NAME);
     }
 
     /**
@@ -417,11 +420,11 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * If the test package {@link #TEST_APK_PACKAGE_NAME} with version {@link #TEST_APK_V2_VERSION}
+     * If the test package {@link #TEST_APP_PACKAGE_NAME} with version {@link #TEST_APK_V2_VERSION}
      * is installed, return true. Otherwise, return false.
      */
     public static boolean isTestPackageVersion2Installed() {
-        return isInstalledAndVerifyVersionCode(TEST_APK_PACKAGE_NAME, TEST_APK_V2_VERSION);
+        return isInstalledAndVerifyVersionCode(TEST_APP_PACKAGE_NAME, TEST_APK_V2_VERSION);
     }
 
     /**
