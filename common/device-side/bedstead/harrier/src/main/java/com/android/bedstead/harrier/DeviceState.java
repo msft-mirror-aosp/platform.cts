@@ -424,7 +424,7 @@ public final class DeviceState extends HarrierRule {
 
         List<Annotation> testRulesExecutorAnnotations = annotations.stream()
                 .filter(a -> a.annotationType().getAnnotation(UsesTestRuleExecutor.class) != null)
-                .collect(Collectors.toUnmodifiableList());
+                .collect(Collectors.toList());
         prepareExternalRule(description, testRulesExecutorAnnotations);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
