@@ -23,7 +23,6 @@ import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
-import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -35,22 +34,25 @@ import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
-import com.android.bedstead.permissions.CommonPermissions
-import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
-import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
-import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
-import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.FailureDumper
 import com.android.bedstead.nene.utils.Poll
 import com.android.bedstead.nene.utils.Retry
 import com.android.bedstead.nene.utils.ShellCommand
 import com.android.bedstead.nene.utils.ShellCommandUtils
 import com.android.bedstead.nene.utils.Versions
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL
+import com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT
+import com.android.bedstead.permissions.CommonPermissions.NOTIFY_PENDING_SYSTEM_UPDATE
+import com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY
 import com.android.bedstead.permissions.CommonPermissions.READ_NEARBY_STREAMING_POLICY
 import com.google.errorprone.annotations.CanIgnoreReturnValue
 import java.lang.reflect.InvocationTargetException
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.stream.Collectors
 
 /**
@@ -60,6 +62,9 @@ object DevicePolicy {
     private val mParser = AdbDevicePolicyParser.get(Build.VERSION.SDK_INT)
     private var mCachedDeviceOwner: DeviceOwner? = null
     private var mCachedProfileOwners: Map<UserReference, ProfileOwner>? = null
+    private val mDateTimeFormatter by lazy {
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS")
+    }
 
     /**
      * Set the profile owner for a given [UserReference].
@@ -67,6 +72,7 @@ object DevicePolicy {
     @CanIgnoreReturnValue
     fun setProfileOwner(user: UserReference, profileOwnerComponent: ComponentName): ProfileOwner {
         val command = ShellCommand.builderForUser(user, "dpm set-profile-owner")
+                .addProvisioningContext()
                 .addOperand(profileOwnerComponent.flattenToShortString())
                 .validate { ShellCommandUtils.startsWithSuccess(it) }
 
@@ -164,6 +170,7 @@ object DevicePolicy {
                 val command = ShellCommand.builderForUser(
                         user, "dpm set-device-owner --device-owner-only"
                 )
+                        .addProvisioningContext()
                         .addOperand(deviceOwnerComponent.flattenToShortString())
                         .validate { ShellCommandUtils.startsWithSuccess(it) }
                 // TODO(b/187925230): If it fails, we check for terminal failure states - and if not
@@ -332,6 +339,7 @@ object DevicePolicy {
         val command = ShellCommand.builderForUser(
                 user, "dpm set-device-owner"
         )
+                .addProvisioningContext()
                 .addOperand(deviceOwnerComponent.flattenToShortString())
                 .validate { ShellCommandUtils.startsWithSuccess(it) }
         // TODO(b/187925230): If it fails, we check for terminal failure states - and if not
@@ -852,6 +860,21 @@ object DevicePolicy {
 
     private const val LOG_TAG = "DevicePolicy"
 
-    private val devicePolicyManager: DevicePolicyManager by lazy { TestApis.context().instrumentedContext()
-            .getSystemService(DevicePolicyManager::class.java)!! }
+    private val devicePolicyManager: DevicePolicyManager by lazy {
+        TestApis.context().instrumentedContext().getSystemService(DevicePolicyManager::class.java)!!
+    }
+
+    private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+            return this
+        }
+        val testName = FailureDumper.getCurrentTestName()
+        val timestamp = LocalDateTime.now().format(mDateTimeFormatter)
+        val provisioningContext = if (testName.isEmpty()) {
+            timestamp
+        } else {
+            "$timestamp,$testName"
+        }
+        return addOperand("--provisioning-context").addOperand(provisioningContext)
+    }
 }

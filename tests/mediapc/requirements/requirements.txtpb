@@ -668,12 +668,33 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-14"
-  description: "- AV1 hardware decoder\n- Film grain effect"
+  name: "AV1 Hardware Decoder"
+  description: "AV1 hardware decoder\n- Film grain effect"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "av1_decoder_requirement_boolean"
+    value: {
+      description: "Is AV1 hardware decoder supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support AV1 hardware decoder Main 10, Level 4.1."
+      required_values: {
+        key: "av1_decoder_requirement_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -681,6 +702,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support AV1 hardware decoder Main 10, Level 4.1 and film grain."
+      required_values: {
+        key: "av1_decoder_requirement_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -688,6 +715,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support AV1 hardware decoder Main 10, Level 4.1 with film grain effect over GPU composition."
+      required_values: {
+        key: "av1_decoder_requirement_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
@@ -703,12 +736,33 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-15"
-  description: "- Secure hardware decoders"
+  name: "Hardware Decoder 4K60"
+  description: "4K60 hardware decoder"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "number_4k_hw_decoders"
+    value: {
+      description: "Number of 4K60 hardware decoders."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have at least 1 hardware video decoder supporting 4K60."
+      required_values: {
+        key: "number_4k_hw_decoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -716,6 +770,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "number_4k_hw_decoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -723,17 +783,44 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "number_4k_hw_decoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-16"
-  description: "- Secure hardware decoders"
+  name: "Hardware Encoder 4K60"
+  description: "4K60 hardware encoder"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "number_4k_hw_encoders"
+    value: {
+      description: "Number of 4K60 hardware encoders."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have at least 1 hardware video encoder supporting 4K60."
+      required_values: {
+        key: "number_4k_hw_encoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -741,6 +828,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "number_4k_hw_encoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -748,17 +841,44 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "number_4k_hw_encoders"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-17"
-  description: "- AVIF Baseline Profile"
+  name: "AVIF Baseline Profile"
+  description: "AVIF Baseline Profile"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "avif_image_decoder_boolean"
+    value: {
+      description: "has decoder supporting AVIF Baseline Profile supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST have at least 1 hardware image decoder supporting AVIF Baseline Profile."
+      required_values: {
+        key: "avif_image_decoder_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -766,17 +886,72 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "avif_image_decoder_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-18"
-  description: "- AV1 encoder"
+  name: "AV1 Encoder"
+  description: "AV1 encoder"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "av1_encoder_resolution"
+    value: {
+      description: "Resolution of the test."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
+  measurements: {
+    key: "av1_encoder_fps"
+    value: {
+      description: "Achieved FPS."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "av1_encoder_bitrate"
+    value: {
+      description: "Bitrate of the test."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support AV1 encoder which can encode up to 480p resolution at 30fps and 1Mbps."
+      required_values: {
+        key: "av1_encoder_resolution"
+        value {
+          int_value: 480
+        }
+      }
+      required_values: {
+        key: "av1_encoder_fps"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values: {
+        key: "av1_encoder_bitrate"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -784,6 +959,24 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "av1_encoder_resolution"
+        value {
+          int_value: 480
+        }
+      }
+      required_values: {
+        key: "av1_encoder_fps"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values: {
+        key: "av1_encoder_bitrate"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }
@@ -824,8 +1017,8 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-20"
-  name: "Video Codec Hgl Editing"
-  description: "Video codec Hgl Editing"
+  name: "Video Codec Hlg Editing"
+  description: "Video codec Hlg Editing"
   test_configs: {
     key: ""
     value: {
