@@ -24,6 +24,7 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
+import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
@@ -89,6 +90,7 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.multiuser.UserRestrictionsComponent;
@@ -217,6 +219,8 @@ public final class DeviceState extends HarrierRule {
     private final PackageManager mPackageManager = sContext.getPackageManager();
 
     private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
+
+    private final List<TestRuleExecutor> mTestRuleExecutors = new ArrayList<>();
 
     public static final class Builder {
 
@@ -379,6 +383,12 @@ public final class DeviceState extends HarrierRule {
             base.evaluate();
         } finally {
             Log.d(LOG_TAG, "Tearing down state for test " + testName);
+
+            // Teardown any external rule this test depends on.
+            for (TestRuleExecutor externalRuleExecutor : mTestRuleExecutors) {
+                externalRuleExecutor.teardown(/* deviceState= */ this);
+            }
+
             teardownNonShareableState();
             if (!mSkipTestTeardown || THROW_ON_DEVICE_POLICY_LEAKS) {
                 teardownShareableState();
@@ -411,6 +421,11 @@ public final class DeviceState extends HarrierRule {
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
+
+        List<Annotation> testRulesExecutorAnnotations = annotations.stream()
+                .filter(a -> a.annotationType().getAnnotation(UsesTestRuleExecutor.class) != null)
+                .collect(Collectors.toUnmodifiableList());
+        prepareExternalRule(description, testRulesExecutorAnnotations);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
@@ -1912,6 +1927,10 @@ public final class DeviceState extends HarrierRule {
         return mLocator.get(getAnnotationExecutorClass(executorClassName));
     }
 
+    private TestRuleExecutor usesTestRuleExecutor(UsesTestRuleExecutor executorClassName) {
+        return mLocator.get(getTestRuleExecutorClass(executorClassName));
+    }
+
     private void requireSystemServiceAvailable(Class<?> serviceClass, FailureMode failureMode) {
         checkFailOrSkip("Requires " + serviceClass + " to be available",
                 TestApis.services().serviceIsAvailable(serviceClass), failureMode);
@@ -2031,6 +2050,21 @@ public final class DeviceState extends HarrierRule {
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private void prepareExternalRule(Description description,
+            List<Annotation> testRulesExecutorAnnotations) {
+        for (Annotation annotation : testRulesExecutorAnnotations) {
+            Class<? extends Annotation> annotationType = annotation.annotationType();
+            UsesTestRuleExecutor usesTestRuleExecutorAnnotation =
+                    annotationType.getAnnotation(UsesTestRuleExecutor.class);
+            Log.d(LOG_TAG, "Preparing " + usesTestRuleExecutorAnnotation +
+                    " for test " + description.getMethodName());
+            TestRuleExecutor externalRuleExecutor =
+                    usesTestRuleExecutor(usesTestRuleExecutorAnnotation);
+            externalRuleExecutor.applyTestRule(/* deviceState= */ this, annotation, description);
+            mTestRuleExecutors.add(externalRuleExecutor);
         }
     }
 }
