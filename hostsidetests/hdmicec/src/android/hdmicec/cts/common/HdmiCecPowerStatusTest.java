@@ -28,7 +28,6 @@ import android.hdmicec.cts.WakeLockHelper;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -377,7 +376,6 @@ public final class HdmiCecPowerStatusTest extends BaseHdmiCecCtsTest {
      * the standby state.
      */
     @Test
-    @Ignore("b/323793251")
     public void cect_hf4_6_27_standby_action_20() throws Exception {
         ITestDevice device = getDevice();
         /* Make sure the device is not booting up/in standby */
