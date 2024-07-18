@@ -27,6 +27,7 @@ import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
+import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
 import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -95,8 +96,10 @@ import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
+import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
+import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
@@ -105,6 +108,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
+import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
@@ -151,6 +155,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
+
 /**
  * A Junit rule which exposes methods for efficiently changing and querying device state.
  *
@@ -196,6 +202,14 @@ public final class DeviceState extends HarrierRule {
 
     // We allow overriding the limit on a class-by-class basis
     private final Duration mMaxTestDuration;
+    private static final boolean TRACK_DUMPSYS_DEVICE_POLICY_LEAKS = TestApis
+            .instrumentation()
+            .arguments()
+            .getBoolean("track-dumpsys-device-policy-leaks", false);
+    private static final boolean THROW_ON_DEVICE_POLICY_LEAKS = TestApis
+            .instrumentation()
+            .arguments()
+            .getBoolean("throw-on-device-policy-leaks", false);
 
     private ExecutorService mTestExecutor;
     private Thread mTestThread;
@@ -309,6 +323,9 @@ public final class DeviceState extends HarrierRule {
             @Override
             public void evaluate() throws Throwable {
                 Future<Throwable> future = mTestExecutor.submit(() -> {
+                    FailureDumper.Companion.registerCurrentTest(
+                            description.getClassName() + "#" + description.getMethodName()
+                    );
                     try {
                         executeTest(base, description);
                         return null;
@@ -352,6 +369,10 @@ public final class DeviceState extends HarrierRule {
 
     private void executeTest(Statement base, Description description) throws Throwable {
         String testName = description.getMethodName();
+        String devicePolicyDumpBeforeTests = null;
+        if (THROW_ON_DEVICE_POLICY_LEAKS) {
+            devicePolicyDumpBeforeTests = DevicePolicy.INSTANCE.dump();
+        }
 
         try {
             prepareTestState(description);
@@ -359,10 +380,13 @@ public final class DeviceState extends HarrierRule {
         } finally {
             Log.d(LOG_TAG, "Tearing down state for test " + testName);
             teardownNonShareableState();
-            if (!mSkipTestTeardown) {
+            if (!mSkipTestTeardown || THROW_ON_DEVICE_POLICY_LEAKS) {
                 teardownShareableState();
             }
             Log.d(LOG_TAG, "Finished tearing down state for test " + testName);
+            if (devicePolicyDumpBeforeTests != null) {
+                printDevicePolicyDumpDifference(devicePolicyDumpBeforeTests);
+            }
         }
     }
 
@@ -757,6 +781,11 @@ public final class DeviceState extends HarrierRule {
 
                 Log.d(LOG_TAG, "Preparing state for suite " + description.getClassName());
 
+                String devicePolicyDumpBeforeTests = null;
+                if (TRACK_DUMPSYS_DEVICE_POLICY_LEAKS) {
+                    devicePolicyDumpBeforeTests = DevicePolicy.INSTANCE.dump();
+                }
+
                 Tags.clearTags();
                 Tags.addTag(Tags.USES_DEVICESTATE);
                 boolean isInstantApp = TestApis.packages().instrumented().isInstantApp();
@@ -795,7 +824,7 @@ public final class DeviceState extends HarrierRule {
                 } finally {
                     runAnnotatedMethods(testClass, AfterClass.class);
 
-                    if (!mSkipClassTeardown) {
+                    if (!mSkipClassTeardown || TRACK_DUMPSYS_DEVICE_POLICY_LEAKS) {
                         teardownShareableState();
                     }
 
@@ -807,9 +836,29 @@ public final class DeviceState extends HarrierRule {
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.ANY);
 
                     releaseResources();
+
+                    if (devicePolicyDumpBeforeTests != null) {
+                        printDevicePolicyDumpDifference(devicePolicyDumpBeforeTests);
+                    }
                 }
             }
         };
+    }
+
+    private void printDevicePolicyDumpDifference(@Nonnull String devicePolicyDumpBeforeTests) {
+        String currentDump = DevicePolicy.INSTANCE.dump();
+        // TODO (b/348162683) replace StringLinesDiff with a proper diff
+        StringLinesDiff diff = new StringLinesDiff(devicePolicyDumpBeforeTests, currentDump);
+        if (diff.countLinesDifference() > DEVICE_POLICY_STANDARD_LINES_DIFFERENCE) {
+            Log.w(LOG_TAG, "device_policy dump:\n" + currentDump);
+            String message = "device_policy state has changed, probably a " +
+                    "state leak, these are the new lines:\n" + diff.extraLinesString();
+            if (THROW_ON_DEVICE_POLICY_LEAKS) {
+                throw new NeneException(message);
+            } else {
+                Log.w(LOG_TAG, message);
+            }
+        }
     }
 
     private static final Map<String, String>
