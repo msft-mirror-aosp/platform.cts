@@ -79,9 +79,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
             "android.packageinstaller.cts.cuj.installer.action.RESPONSE_INSTALLER";
 
     private static final String EXTRA_EVENT = "extra_event";
+    private static final String EXTRA_INSTALLER_APK_V2_URI = "extra_installer_apk_v2_uri";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
-    private static final String EXTRA_USE_APK_V2 = "extra_use_apk_v2";
+
+    private static final String EXTRA_IS_UPDATE = "extra_is_update";
+    private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
 
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
     private static final int EVENT_REQUEST_INSTALLER_SESSION = 0;
@@ -93,6 +96,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     private static final int STATUS_CUJ_INSTALLER_READY = 1000;
     private static final int STATUS_CUJ_INSTALLER_START_ACTIVITY_READY = 1001;
+
+    private static final long INSTALLER_APK_V2_VERSION = 2;
 
     private static InstallerResponseReceiver sInstallerResponseReceiver;
     private static String sToggleLabel = null;
@@ -119,8 +124,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
         // install the test installer before the test case is running everytime to make sure the
         // AppOps permission mode is the default mode.
-        installPackage(TEST_INSTALLER_APK_NAME);
-        assertThat(isInstalled(TEST_INSTALLER_PACKAGE_NAME)).isTrue();
+        installPackage(INSTALLER_APK_NAME);
+        assertThat(isInstalled(INSTALLER_PACKAGE_NAME)).isTrue();
         startInstallerActivity();
 
         waitForUiIdle();
@@ -146,7 +151,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Grant the REQUEST_INSTALL_PACKAGES AppOps permission to the CUJ Installer.
      */
     public static void grantRequestInstallPackagesPermission() throws Exception {
-        AppOpsUtils.setOpMode(TEST_INSTALLER_PACKAGE_NAME, OPSTR_REQUEST_INSTALL_PACKAGES,
+        AppOpsUtils.setOpMode(INSTALLER_PACKAGE_NAME, OPSTR_REQUEST_INSTALL_PACKAGES,
                 MODE_ALLOWED);
     }
 
@@ -161,6 +166,12 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         if (!dstV2File.exists()) {
             final File apkV2File = new File(TEST_APK_LOCATION, TEST_APK_V2_NAME);
             copyFile(apkV2File, dstV2File);
+        }
+
+        final File dstInstallerApkV2File = new File(sContext.getFilesDir(), INSTALLER_APK_V2_NAME);
+        if (!dstInstallerApkV2File.exists()) {
+            final File installerFile = new File(TEST_APK_LOCATION, INSTALLER_APK_V2_NAME);
+            copyFile(installerFile, dstInstallerApkV2File);
         }
     }
 
@@ -177,19 +188,26 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static void startInstallerActivity() {
         final File apkFile = new File(sContext.getFilesDir(), TEST_APK_NAME);
         final File apkV2File = new File(sContext.getFilesDir(), TEST_APK_V2_NAME);
+        final File installerApkV2File = new File(sContext.getFilesDir(), INSTALLER_APK_V2_NAME);
         final Intent intent = new Intent();
-        intent.setPackage(TEST_INSTALLER_PACKAGE_NAME);
+        intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
         intent.setAction(ACTION_LAUNCH_INSTALLER);
         Uri testApkUri = FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, apkFile);
         Uri testApkV2Uri = FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, apkV2File);
+        Uri installerApkV2Uri =
+                FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, installerApkV2File);
+
         intent.putExtra(EXTRA_TEST_APK_URI, testApkUri.toString());
         intent.putExtra(EXTRA_TEST_APK_V2_URI, testApkV2Uri.toString());
+        intent.putExtra(EXTRA_INSTALLER_APK_V2_URI, installerApkV2Uri.toString());
 
         // grant read uri permission to the installer
-        sContext.grantUriPermission(TEST_INSTALLER_PACKAGE_NAME, testApkUri,
+        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkUri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        sContext.grantUriPermission(TEST_INSTALLER_PACKAGE_NAME, testApkV2Uri,
+        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkV2Uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, installerApkV2Uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
         sContext.startActivity(intent);
     }
@@ -211,12 +229,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * PackageInstaller.Session APIs.
      */
     public static void startInstallationUpdateViaPackageInstallerSession() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION, /* useV2= */ true);
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION, /* updateTestAppV2= */ true);
         assertInstallPendingUserAction();
-    }
-
-    private static void sendRequestInstallerBroadcast(int event) throws Exception {
-        sendRequestInstallerBroadcast(event, /* useV2= */ false);
     }
 
     /**
@@ -233,7 +247,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void startInstallationUpdateViaIntentActionView() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW,
-                /* useV2= */ true);
+                /* updateTestAppV2= */ true);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -250,7 +264,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * via startActivity with ACTION_INSTALL_PACKAGE
      */
     public static void startInstallationUpdateViaIntent() throws Exception {
-        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useV2= */ true);
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* updateTestAppV2= */ true);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -276,7 +290,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void startInstallationUpdateViaIntentForResult() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT_FOR_RESULT,
-                /* useV2= */ true);
+                /* updateTestAppV2= */ true);
         assertCUJInstallerStartActivityReady();
     }
 
@@ -288,12 +302,43 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertCUJInstallerStartActivityReady();
     }
 
-    private static void sendRequestInstallerBroadcast(int event, boolean useV2) throws Exception {
+    /**
+     * Start the installation to update the installer app from version 1 to version 2
+     * via startActivity with ACTION_INSTALL_PACKAGE
+     */
+    public static void startInstallerUpdateItselfViaIntent() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT,
+                /* useTestApp= */ false, /* update= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the installer itself from version 1 to version 2 via
+     * PackageInstaller.Session APIs.
+     */
+    public static void startInstallerUpdateItselfViaPackageInstallerSession() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_SESSION,
+                /* useTestApp= */ false, /* update= */ true);
+        assertInstallPendingUserAction();
+    }
+
+    private static void sendRequestInstallerBroadcast(int event) throws Exception {
+        sendRequestInstallerBroadcast(event, /* updateTestAppV2= */ false);
+    }
+
+    private static void sendRequestInstallerBroadcast(int event, boolean updateTestAppV2)
+            throws Exception {
+        sendRequestInstallerBroadcast(event, /* useTestApp= */ true, updateTestAppV2);
+    }
+
+    private static void sendRequestInstallerBroadcast(int event, boolean useTestApp,
+            boolean update) throws Exception {
         final Intent intent = new Intent(ACTION_REQUEST_INSTALLER);
-        intent.setPackage(TEST_INSTALLER_PACKAGE_NAME);
+        intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         intent.putExtra(EXTRA_EVENT, event);
-        intent.putExtra(EXTRA_USE_APK_V2, useV2);
+        intent.putExtra(EXTRA_USE_TEST_APP, useTestApp);
+        intent.putExtra(EXTRA_IS_UPDATE, update);
         sContext.sendBroadcast(intent);
     }
 
@@ -353,6 +398,13 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         assertThat(isInstallerInstalled()).isFalse();
     }
 
+    /**
+     * Assert the installer that is the version 1 is installed.
+     */
+    public static void assertInstallerInstalled() {
+        assertThat(isInstallerInstalled()).isTrue();
+    }
+
     private static void allowInstallIfGPPDialogExists() {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
@@ -400,7 +452,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Assert the install dialog for installing the test app.
      */
     public static void assertTestAppInstallDialog() throws Exception {
-        assertTitleIsTestApkLabel();
+        assertTitleIsTestAppLabel();
         assertInstallButton();
     }
 
@@ -408,7 +460,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Assert the update dialog for installing the test app.
      */
     public static void assertTestAppUpdateDialog() throws Exception {
-        assertTitleIsTestApkLabel();
+        assertTitleIsTestAppLabel();
         assertUpdateButton();
     }
 
@@ -416,27 +468,47 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * Assert the update anyway dialog for installing the test app.
      */
     public static void assertTestAppUpdateAnywayDialog() throws Exception {
-        assertTitleIsTestApkLabel();
-        assertContentIncludesTestInstallerLabel();
+        assertTitleIsTestAppLabel();
+        assertContentIncludesInstallerLabel();
         assertUpdateAnywayButton();
     }
 
     /**
-     * Assert the install success dialog and launch the test app. Assert the label of test
-     * app is {@link #TEST_APK_LABEL}.
+     * Assert the update dialog for updating the installer app.
+     */
+    public static void assertInstallerUpdateSelfDialog() throws Exception {
+        assertTitleIsInstallerLabel();
+        assertUpdateButton();
+    }
+
+    /**
+     * Assert the install success dialog and launch the test app. Assert the label of the test
+     * app is {@link #TEST_APP_LABEL}.
      */
     public static void assertInstallSuccessDialogAndLaunchTestApp() throws Exception {
+        assertInstallSuccessDialogAndLaunchApp(TEST_APP_PACKAGE_NAME, TEST_APP_LABEL);
+    }
+    /**
+     * Assert the install success dialog and launch the app. Assert the label of the app
+     * is {@link #INSTALLER_LABEL}.
+     */
+    public static void assertInstallSuccessDialogAndLaunchInstallerApp() throws Exception {
+        assertInstallSuccessDialogAndLaunchApp(INSTALLER_PACKAGE_NAME, INSTALLER_LABEL);
+    }
+
+    private static void assertInstallSuccessDialogAndLaunchApp(@NonNull String packageName,
+            @NonNull String label) throws Exception {
         // Assert the label and Done button exists
         findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
         findPackageInstallerObject(BUTTON_DONE_LABEL);
 
-        // Click the Open button to launch the test app
+        // Click the Open button to launch the app
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OPEN_LABEL));
 
         // Assert the activity is launched successfully
-        findObject(By.text(TEST_APK_LABEL).pkg(TEST_APP_PACKAGE_NAME), /* checkNull= */ true);
+        findObject(By.text(label).pkg(packageName), /* checkNull= */ true);
 
-        // Press back to leave the test app
+        // Press back to leave the app
         pressBack();
     }
 
@@ -455,7 +527,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * the Installing dialog.
      */
     public static void clickInstallButton(boolean checkInstallingDialog) throws Exception {
-        assertTitleIsTestApkLabel();
+        assertTitleIsTestAppLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_INSTALL_LABEL));
 
@@ -487,7 +559,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Update button, assert the title is {@link #TEST_APK_LABEL} and wait for the
+     * Click the Update button, assert the title is {@link #TEST_APP_LABEL} and wait for the
      * dialog to disappear. If {@code checkInstallingDialog} is true, check the Installing
      * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
      * triggers Installing dialog. If {@code isUpdatedViaPackageUri} is true, do NOT check the
@@ -495,8 +567,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
      * uri doesn't trigger the GPP dialog.
      */
     public static void clickUpdateButton(boolean checkInstallingDialog,
-                                         boolean isUpdatedViaPackageUri) throws Exception {
-        assertTitleIsTestApkLabel();
+            boolean isUpdatedViaPackageUri) throws Exception {
+        assertTitleIsTestAppLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_LABEL));
 
@@ -518,13 +590,13 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Click the Update anyway button, assert the title is {@link #TEST_APK_LABEL} and wait for the
+     * Click the Update anyway button, assert the title is {@link #TEST_APP_LABEL} and wait for the
      * dialog to disappear. If {@code checkInstallingDialog} is true, check the Installing
      * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
      * triggers Installing dialog.
      */
     private static void clickUpdateAnywayButton(boolean checkInstallingDialog) throws Exception {
-        assertTitleIsTestApkLabel();
+        assertTitleIsTestAppLabel();
 
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_ANYWAY_LABEL));
 
@@ -538,11 +610,40 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
+     * Click the Update button and wait for the dialog to disappear. Also allow install if
+     * the GPP dialog exists.
+     */
+    public static void clickUpdateButtonForInstallerUpdateSelf() throws Exception {
+        clickUpdateButtonForInstallerUpdateSelf(/* checkInstallingDialog= */ false);
+    }
+
+    /**
+     * Click the Update button, assert the title is {@link #INSTALLER_LABEL} and wait for the
+     * dialog to disappear. If {@code checkInstallingDialog} is true, check the Installing
+     * dialog. Otherwise, don't check the Installing dialog. E.g. The installation via intent
+     * triggers Installing dialog.
+     */
+    private static void clickUpdateButtonForInstallerUpdateSelf(boolean checkInstallingDialog)
+            throws Exception {
+        assertTitleIsInstallerLabel();
+
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_UPDATE_LABEL));
+
+        if (checkInstallingDialog) {
+            waitForInstallingDialogGone();
+        }
+
+        if (!isInstallerVersion2Installed()) {
+            allowInstallIfGPPDialogExists();
+        }
+    }
+
+    /**
      * Click the Settings button and wait for the dialog to disappear. Also assert the title of
-     * the dialog is {@link #TEST_INSTALLER_LABEL}.
+     * the dialog is {@link #INSTALLER_LABEL}.
      */
     public static void clickSettingsButton() throws Exception {
-        assertTitleIsTestInstallerLabel();
+        assertTitleIsInstallerLabel();
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_SETTINGS_LABEL));
     }
 
@@ -655,11 +756,23 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void uninstallInstallerPackage() {
-        uninstallPackage(TEST_INSTALLER_PACKAGE_NAME);
+        uninstallPackage(INSTALLER_PACKAGE_NAME);
     }
 
     private static boolean isInstallerInstalled() {
-        return isInstalled(TEST_INSTALLER_PACKAGE_NAME);
+        return isInstalled(INSTALLER_PACKAGE_NAME);
+    }
+
+    private static boolean isInstallerVersion2Installed() {
+        return isInstalledAndVerifyVersionCode(INSTALLER_PACKAGE_NAME,
+                INSTALLER_APK_V2_VERSION);
+    }
+
+    /**
+     * Assert the installer that is the version 2 is installed.
+     */
+    public static void assertInstallerVersion2Installed() {
+        assertThat(isInstallerVersion2Installed()).isTrue();
     }
 
     private static class InstallerResponseReceiver extends BroadcastReceiver {
