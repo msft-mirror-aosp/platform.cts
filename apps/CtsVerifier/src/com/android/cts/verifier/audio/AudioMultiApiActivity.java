@@ -18,10 +18,12 @@ package com.android.cts.verifier.audio;
 
 import android.os.Bundle;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.RadioButton;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
@@ -42,6 +44,11 @@ abstract class AudioMultiApiActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (AudioSystemFlags.isWatch(this)) {
+            ((LinearLayout) findViewById(R.id.audio_api_radiogroup))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
 
         ((RadioButton) findViewById(R.id.audioJavaApiBtn)).setOnClickListener(this);
         RadioButton nativeApiRB = findViewById(R.id.audioNativeApiBtn);
