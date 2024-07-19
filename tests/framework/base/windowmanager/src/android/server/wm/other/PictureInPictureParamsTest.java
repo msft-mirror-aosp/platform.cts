@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 
-package android.app.cts;
+package android.server.wm.other;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
@@ -23,18 +27,35 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.drawable.Icon;
-import android.test.AndroidTestCase;
+import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerTestBase;
 import android.util.Rational;
+
+import androidx.test.filters.SmallTest;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class PictureInPictureParamsTest extends AndroidTestCase {
+/**
+ * Tests the {@link PictureInPictureParams} class.
+ *
+ * Build/Install/Run:
+ * atest CtsWindowManagerDeviceOther:PictureInPictureParamsTest
+ */
+@Presubmit
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public class PictureInPictureParamsTest extends WindowManagerTestBase {
 
     /**
      * Tests that we get the same values back from the public PictureInPicture params getters that
      * were set via the PictureInPictureParams.Builder.
      */
+    @Test
     public void testPictureInPictureParamsGetters() {
         ArrayList<RemoteAction> actions = new ArrayList<>();
         for (int i = 0; i < 4; i++) {
@@ -53,9 +74,82 @@ public class PictureInPictureParamsTest extends AndroidTestCase {
                 true);
     }
 
+    @Test
     public void testPictureInPictureParamsGettersNullValues() {
         assertPictureInPictureParamsGettersMatchValues(null, null, null, null, null, null, null,
                 false, false);
+    }
+
+    @Test
+    public void testIsSameAspectRatio_exactMatch_returnTrue() {
+        final Rect bounds = new Rect(0, 0, 100, 200);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertTrue(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_width1PixelShorter_returnTrue() {
+        final Rect bounds = new Rect(0, 0, 99, 200);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertTrue(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_width1PixelLonger_returnTrue() {
+        final Rect bounds = new Rect(0, 0, 101, 200);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertTrue(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_height1PixelShorter_returnTrue() {
+        final Rect bounds = new Rect(0, 0, 100, 199);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertTrue(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_height1PixelLonger_returnTrue() {
+        final Rect bounds = new Rect(0, 0, 100, 201);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertTrue(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_width5PixelShorter_returnFalse() {
+        final Rect bounds = new Rect(0, 0, 95, 200);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertFalse(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_width5PixelLonger_returnFalse() {
+        final Rect bounds = new Rect(0, 0, 105, 200);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertFalse(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_height5PixelShorter_returnFalse() {
+        final Rect bounds = new Rect(0, 0, 100, 195);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertFalse(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+    }
+
+    @Test
+    public void testIsSameAspectRatio_height5PixelLonger_returnFalse() {
+        final Rect bounds = new Rect(0, 0, 100, 205);
+        final Rational aspectRatio = new Rational(1, 2);
+
+        assertFalse(PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
     }
 
     private void assertPictureInPictureParamsGettersMatchValues(List<RemoteAction> actions,
@@ -83,8 +177,9 @@ public class PictureInPictureParamsTest extends AndroidTestCase {
         assertEquals(closeAction, params.getCloseAction());
         assertEquals(aspectRatio, params.getAspectRatio());
         assertEquals(expandedAspectRatio, params.getExpandedAspectRatio());
-        assertEquals(title, params.getTitle());
-        assertEquals(subtitle, params.getSubtitle());
+        assertEquals(title, params.getTitle() == null ? null : params.getTitle().toString());
+        assertEquals(subtitle,
+                params.getSubtitle() == null ? null : params.getSubtitle().toString());
         assertEquals(sourceRectHint, params.getSourceRectHint());
         assertEquals(isAutoEnterEnabled, params.isAutoEnterEnabled());
         assertEquals(isSeamlessResizeEnabled, params.isSeamlessResizeEnabled());
@@ -96,7 +191,7 @@ public class PictureInPictureParamsTest extends AndroidTestCase {
                 Icon.createWithBitmap(Bitmap.createBitmap(24, 24, Bitmap.Config.ARGB_8888)),
                 "action " + index,
                 "contentDescription " + index,
-                PendingIntent.getBroadcast(getContext(), 0, new Intent(),
+                PendingIntent.getBroadcast(mContext, 0, new Intent(),
                         PendingIntent.FLAG_IMMUTABLE));
     }
 }
