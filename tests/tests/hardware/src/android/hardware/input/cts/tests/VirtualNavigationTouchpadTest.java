@@ -249,7 +249,7 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
 
     private KeyEvent createKeyEvent(int action, int code) {
         KeyEvent event = new KeyEvent(action, code);
-        event.setSource(InputDevice.SOURCE_TOUCH_NAVIGATION | InputDevice.SOURCE_TOUCHPAD);
+        event.setSource(InputDevice.SOURCE_TOUCH_NAVIGATION);
         event.setDisplayId(mVirtualDisplay.getDisplay().getDisplayId());
         return event;
     }
