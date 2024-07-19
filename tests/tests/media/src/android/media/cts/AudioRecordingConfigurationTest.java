@@ -140,8 +140,10 @@ public class AudioRecordingConfigurationTest extends CtsAndroidTestCase {
         mAudioRecord.stop();
         Thread.sleep(SLEEP_AFTER_STOP_FOR_INACTIVITY_MS);
         configs = am.getActiveRecordingConfigurations();
-        assertEquals("Unexpected number of recording configs after stop",
-                configs.size(), 0);
+        // verify our recording does not show as one of the recording configs
+        assertFalse("Test source/session is amongst active record configurations after stop",
+                verifyAudioConfig(TEST_AUDIO_SOURCE, mAudioRecord.getAudioSessionId(),
+                        mAudioRecord.getFormat(), mAudioRecord.getRoutedDevice(), configs));
     }
 
     public void testCallback() throws Exception {
@@ -199,8 +201,10 @@ public class AudioRecordingConfigurationTest extends CtsAndroidTestCase {
             mAudioRecord.stop();
             callback.await(TEST_TIMING_TOLERANCE_MS);
             assertTrue("AudioRecordingCallback not called after stop", callback.mCalled);
-            assertEquals("Should not have found record configurations", callback.mConfigs.size(),
-                    0);
+            // verify our recording does not show as one of the recording configs
+            assertFalse("Test source/session is amongst active record configurations after stop",
+                verifyAudioConfig(mAudioRecord.getAudioSource(), mAudioRecord.getAudioSessionId(),
+                        mAudioRecord.getFormat(), testDevice, callback.mConfigs));
             Thread.sleep(SLEEP_AFTER_STOP_FOR_INACTIVITY_MS);
 
             // unregister callback and start recording again
