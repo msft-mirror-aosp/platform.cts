@@ -13,70 +13,72 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.hardware.input.VirtualMouseRelativeEvent
+import android.os.Parcel
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualMouseRelativeEvent;
-import android.os.Parcel;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class VirtualMouseRelativeEventTest {
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualMouseRelativeEventTest {
 
     @Test
-    public void parcelAndUnparcel_matches() {
-        final float x = 100f;
-        final float y = 4f;
-        final long eventTimeNanos = 5000L;
-        final VirtualMouseRelativeEvent originalEvent = new VirtualMouseRelativeEvent.Builder()
-                .setRelativeX(x)
-                .setRelativeY(y)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualMouseRelativeEvent recreatedEvent =
-                VirtualMouseRelativeEvent.CREATOR.createFromParcel(parcel);
-        assertWithMessage("Recreated event has different x").that(originalEvent.getRelativeX())
-                .isEqualTo(recreatedEvent.getRelativeX());
+    fun parcelAndUnparcel_matches() {
+        val x = 100f
+        val y = 4f
+        val eventTimeNanos = 5000L
+        val originalEvent: VirtualMouseRelativeEvent = VirtualMouseRelativeEvent.Builder()
+            .setRelativeX(x)
+            .setRelativeY(y)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualMouseRelativeEvent =
+            VirtualMouseRelativeEvent.CREATOR.createFromParcel(parcel)
+        assertWithMessage("Recreated event has different x")
+            .that(originalEvent.relativeX)
+            .isEqualTo(recreatedEvent.relativeX)
         assertWithMessage("Recreated event has different y")
-                .that(originalEvent.getRelativeY()).isEqualTo(recreatedEvent.getRelativeY());
+            .that(originalEvent.relativeY)
+            .isEqualTo(recreatedEvent.relativeY)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos)
+            .isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void relativeEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseRelativeEvent.Builder()
+    fun relativeEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseRelativeEvent.Builder()
                 .setRelativeX(50f)
                 .setRelativeY(10f)
                 .setEventTimeNanos(-10L)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void relativeEvent_valid_created() {
-        final float x = -50f;
-        final float y = 83f;
-        final long eventTimeNanos = 5000L;
-        final VirtualMouseRelativeEvent event = new VirtualMouseRelativeEvent.Builder()
-                .setRelativeX(x)
-                .setRelativeY(y)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect x value").that(event.getRelativeX()).isEqualTo(x);
-        assertWithMessage("Incorrect y value").that(event.getRelativeY()).isEqualTo(y);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun relativeEvent_valid_created() {
+        val x = -50f
+        val y = 83f
+        val eventTimeNanos = 5000L
+        val event: VirtualMouseRelativeEvent = VirtualMouseRelativeEvent.Builder()
+            .setRelativeX(x)
+            .setRelativeY(y)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect x value").that(event.relativeX).isEqualTo(x)
+        assertWithMessage("Incorrect y value").that(event.relativeY).isEqualTo(y)
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 }

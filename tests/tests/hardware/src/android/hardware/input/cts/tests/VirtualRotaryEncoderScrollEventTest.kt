@@ -13,83 +13,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
-
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.companion.virtualdevice.flags.Flags;
-import android.hardware.input.VirtualRotaryEncoderScrollEvent;
-import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import android.companion.virtualdevice.flags.Flags
+import android.hardware.input.VirtualRotaryEncoderScrollEvent
+import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
-@RunWith(AndroidJUnit4.class)
-public class VirtualRotaryEncoderScrollEventTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    @Test
-    public void parcelAndUnparcel_matches() {
-        final float scrollAmount = 0.5f;
-        final long eventTimeNanos = 5000L;
-        final VirtualRotaryEncoderScrollEvent originalEvent =
-                new VirtualRotaryEncoderScrollEvent.Builder()
-                        .setScrollAmount(scrollAmount)
-                        .setEventTimeNanos(eventTimeNanos)
-                        .build();
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualRotaryEncoderScrollEvent recreatedEvent =
-                VirtualRotaryEncoderScrollEvent.CREATOR.createFromParcel(parcel);
-        assertWithMessage("Recreated event has different scroll amount")
-                .that(originalEvent.getScrollAmount())
-                .isEqualTo(recreatedEvent.getScrollAmount());
-        assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
-    }
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualRotaryEncoderScrollEventTest {
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
-    public void scrollEvent_scrollAmountOutOfRange_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualRotaryEncoderScrollEvent.Builder().setScrollAmount(1.1f));
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualRotaryEncoderScrollEvent.Builder().setScrollAmount(-1.1f));
-    }
-
-    @Test
-    public void scrollEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualRotaryEncoderScrollEvent.Builder()
-                        .setScrollAmount(1.0f)
-                        .setEventTimeNanos(-10L));
-    }
-
-    @Test
-    public void scrollEvent_valid_created() {
-        final float scrollAmount = 1.0f;
-        final long eventTimeNanos = 5000L;
-        final VirtualRotaryEncoderScrollEvent event = new VirtualRotaryEncoderScrollEvent.Builder()
+    fun parcelAndUnparcel_matches() {
+        val scrollAmount = 0.5f
+        val eventTimeNanos = 5000L
+        val originalEvent: VirtualRotaryEncoderScrollEvent =
+            VirtualRotaryEncoderScrollEvent.Builder()
                 .setScrollAmount(scrollAmount)
                 .setEventTimeNanos(eventTimeNanos)
-                .build();
+                .build()
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualRotaryEncoderScrollEvent =
+            VirtualRotaryEncoderScrollEvent.CREATOR.createFromParcel(parcel)
+        assertWithMessage("Recreated event has different scroll amount")
+            .that(originalEvent.scrollAmount)
+            .isEqualTo(recreatedEvent.scrollAmount)
+        assertWithMessage("Recreated event has different event time")
+            .that(originalEvent.eventTimeNanos)
+            .isEqualTo(recreatedEvent.eventTimeNanos)
+    }
+
+    @Test
+    fun scrollEvent_scrollAmountOutOfRange_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualRotaryEncoderScrollEvent.Builder().setScrollAmount(1.1f)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualRotaryEncoderScrollEvent.Builder().setScrollAmount(-1.1f)
+        }
+    }
+
+    @Test
+    fun scrollEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualRotaryEncoderScrollEvent.Builder()
+                .setScrollAmount(1.0f)
+                .setEventTimeNanos(-10L)
+        }
+    }
+
+    @Test
+    fun scrollEvent_valid_created() {
+        val scrollAmount = 1.0f
+        val eventTimeNanos = 5000L
+        val event: VirtualRotaryEncoderScrollEvent = VirtualRotaryEncoderScrollEvent.Builder()
+            .setScrollAmount(scrollAmount)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
         assertWithMessage("Incorrect scroll direction")
-                .that(event.getScrollAmount())
-                .isEqualTo(scrollAmount);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+            .that(event.scrollAmount)
+            .isEqualTo(scrollAmount)
+        assertWithMessage("Incorrect event time")
+            .that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 }

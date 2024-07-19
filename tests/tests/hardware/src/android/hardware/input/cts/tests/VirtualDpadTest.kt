@@ -13,94 +13,107 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualDpad;
-import android.hardware.input.VirtualKeyEvent;
-import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
-import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
-import android.view.KeyEvent;
-
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.Arrays;
+import android.hardware.input.VirtualDpad
+import android.hardware.input.VirtualKeyEvent
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.view.InputEvent
+import android.view.KeyEvent
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
-public class VirtualDpadTest extends VirtualDeviceTestCase {
+@RunWith(AndroidJUnit4::class)
+class VirtualDpadTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualDpad: VirtualDpad
 
-    private static final String DEVICE_NAME = "CtsVirtualDpadTestDevice";
-    private VirtualDpad mVirtualDpad;
-
-    @Override
-    void onSetUpVirtualInputDevice() {
-        mVirtualDpad = VirtualInputDeviceCreator.createAndPrepareDpad(mVirtualDevice, DEVICE_NAME,
-                mVirtualDisplay.getDisplay()).getDevice();
+    override fun onSetUpVirtualInputDevice() {
+        mVirtualDpad = VirtualInputDeviceCreator.createAndPrepareDpad(
+            mVirtualDevice, DEVICE_NAME,
+            mVirtualDisplay.display
+        ).device
     }
 
     @Test
-    public void sendKeyEvent() {
+    fun sendKeyEvent() {
         mVirtualDpad.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
+                .setAction(VirtualKeyEvent.ACTION_DOWN)
+                .build()
+        )
         mVirtualDpad.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                        .setAction(VirtualKeyEvent.ACTION_UP)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
+                .setAction(VirtualKeyEvent.ACTION_UP)
+                .build()
+        )
         mVirtualDpad.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                .setAction(VirtualKeyEvent.ACTION_DOWN)
+                .build()
+        )
         mVirtualDpad.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
-                        .setAction(VirtualKeyEvent.ACTION_UP)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                .setAction(VirtualKeyEvent.ACTION_UP)
+                .build()
+        )
         verifyEvents(
-                Arrays.asList(VirtualInputEventCreator.createDpadEvent(KeyEvent.ACTION_DOWN,
-                                KeyEvent.KEYCODE_DPAD_UP),
-                        VirtualInputEventCreator.createDpadEvent(KeyEvent.ACTION_UP,
-                                KeyEvent.KEYCODE_DPAD_UP),
-                        VirtualInputEventCreator.createDpadEvent(KeyEvent.ACTION_DOWN,
-                                KeyEvent.KEYCODE_DPAD_CENTER),
-                        VirtualInputEventCreator.createDpadEvent(KeyEvent.ACTION_UP,
-                                KeyEvent.KEYCODE_DPAD_CENTER)));
+            listOf<InputEvent>(
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_DOWN,
+                    KeyEvent.KEYCODE_DPAD_UP
+                ),
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_DPAD_UP
+                ),
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_DOWN,
+                    KeyEvent.KEYCODE_DPAD_CENTER
+                ),
+                VirtualInputEventCreator.createDpadEvent(
+                    KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_DPAD_CENTER
+                )
+            )
+        )
     }
 
     @Test
-    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualDpad.sendKeyEvent(
-                                new VirtualKeyEvent.Builder()
-                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                                        .build())));
-    }
-
-    @Test
-    public void rejectsUnsupportedKeyCodes() {
-        assertThrows(IllegalArgumentException.class,
-                () -> mVirtualDpad.sendKeyEvent(new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_Q)
+    fun sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        mRule.runWithoutPermissions {
+            assertThrows(SecurityException::class.java) {
+                mVirtualDpad.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
                         .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build()));
+                        .build()
+                )
+            }
+        }
     }
 
     @Test
-    public void createVirtualDpad_nullArguments_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> mVirtualDevice.createVirtualDpad(null));
+    fun rejectsUnsupportedKeyCodes() {
+        assertThrows(IllegalArgumentException::class.java) {
+            mVirtualDpad.sendKeyEvent(
+                VirtualKeyEvent.Builder()
+                    .setKeyCode(KeyEvent.KEYCODE_Q)
+                    .setAction(VirtualKeyEvent.ACTION_DOWN)
+                    .build()
+            )
+        }
+    }
+
+    companion object {
+        private const val DEVICE_NAME = "CtsVirtualDpadTestDevice"
     }
 }

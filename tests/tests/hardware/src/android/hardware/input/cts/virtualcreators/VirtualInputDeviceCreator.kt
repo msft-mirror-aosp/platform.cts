@@ -13,239 +13,232 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.virtualcreators
 
-package android.hardware.input.cts.virtualcreators;
-
-import static com.google.common.truth.Truth.assertThat;
-
-import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
-import android.hardware.input.InputManager;
-import android.hardware.input.VirtualDpad;
-import android.hardware.input.VirtualDpadConfig;
-import android.hardware.input.VirtualKeyboard;
-import android.hardware.input.VirtualKeyboardConfig;
-import android.hardware.input.VirtualMouse;
-import android.hardware.input.VirtualMouseConfig;
-import android.hardware.input.VirtualNavigationTouchpad;
-import android.hardware.input.VirtualNavigationTouchpadConfig;
-import android.hardware.input.VirtualRotaryEncoder;
-import android.hardware.input.VirtualRotaryEncoderConfig;
-import android.hardware.input.VirtualStylus;
-import android.hardware.input.VirtualStylusConfig;
-import android.hardware.input.VirtualTouchscreen;
-import android.hardware.input.VirtualTouchscreenConfig;
-import android.os.Handler;
-import android.os.Looper;
-import android.view.Display;
-import android.view.InputDevice;
-
-import androidx.test.platform.app.InstrumentationRegistry;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import android.companion.virtual.VirtualDeviceManager
+import android.hardware.input.InputManager
+import android.hardware.input.VirtualDpad
+import android.hardware.input.VirtualDpadConfig
+import android.hardware.input.VirtualKeyboard
+import android.hardware.input.VirtualKeyboardConfig
+import android.hardware.input.VirtualMouse
+import android.hardware.input.VirtualMouseConfig
+import android.hardware.input.VirtualNavigationTouchpad
+import android.hardware.input.VirtualNavigationTouchpadConfig
+import android.hardware.input.VirtualRotaryEncoder
+import android.hardware.input.VirtualRotaryEncoderConfig
+import android.hardware.input.VirtualStylus
+import android.hardware.input.VirtualStylusConfig
+import android.hardware.input.VirtualTouchscreen
+import android.hardware.input.VirtualTouchscreenConfig
+import android.os.Handler
+import android.os.Looper
+import android.view.Display
+import androidx.test.platform.app.InstrumentationRegistry
+import com.google.common.truth.Truth
+import java.io.Closeable
+import java.io.IOException
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 
 /**
  * Static utilities for creating virtual input devices.
  */
-public final class VirtualInputDeviceCreator {
+object VirtualInputDeviceCreator {
+    const val PRODUCT_ID: Int = 1
+    const val VENDOR_ID: Int = 1
 
-    public static final int PRODUCT_ID = 1;
-    public static final int VENDOR_ID = 1;
-
-    private static <T extends Closeable> InputDeviceHolder<T> prepareInputDevice(
-            Supplier<T> deviceCreator) {
-        return prepareInputDevice(deviceCreator, /* languageTag= */ null, /* layoutType= */ null);
+    private fun <T : Closeable?> prepareInputDevice(
+        deviceCreator: Supplier<T>
+    ): InputDeviceHolder<T> {
+        return prepareInputDevice(deviceCreator, languageTag = null, layoutType = null)
     }
 
-    private static <T extends Closeable> InputDeviceHolder<T> prepareInputDevice(
-            Supplier<T> deviceCreator, String languageTag, String layoutType) {
-        InputManager inputManager = InstrumentationRegistry.getInstrumentation().getTargetContext()
-                .getSystemService(InputManager.class);
-        try (InputDeviceAddedWaiter waiter =
-                     new InputDeviceAddedWaiter(inputManager, languageTag, layoutType)) {
-            return new InputDeviceHolder<T>(deviceCreator.get(), waiter.await());
-        } catch (InterruptedException e) {
-            throw new AssertionError("Virtual input device setup was interrupted", e);
+    private fun <T : Closeable?> prepareInputDevice(
+        deviceCreator: Supplier<T>,
+        languageTag: String?,
+        layoutType: String?
+    ): InputDeviceHolder<T> {
+        val inputManager: InputManager =
+            InstrumentationRegistry.getInstrumentation().getTargetContext()
+                .getSystemService(InputManager::class.java)
+        try {
+            InputDeviceAddedWaiter(inputManager, languageTag, layoutType).use { waiter ->
+                return InputDeviceHolder(deviceCreator.get(), waiter.await())
+            }
+        } catch (e: InterruptedException) {
+            throw AssertionError("Virtual input device setup was interrupted", e)
         }
     }
 
-    public static InputDeviceHolder<VirtualTouchscreen> createAndPrepareTouchscreen(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualTouchscreen(
-                new VirtualTouchscreenConfig.Builder(
-                        display.getMode().getPhysicalWidth(),
-                        display.getMode().getPhysicalHeight())
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()));
+    fun createAndPrepareTouchscreen(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): InputDeviceHolder<VirtualTouchscreen> = prepareInputDevice {
+        virtualDevice.createVirtualTouchscreen(
+            VirtualTouchscreenConfig.Builder(
+                display.mode.physicalWidth,
+                display.mode.physicalHeight
+            )
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualStylus> createAndPrepareStylus(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualStylus(
-                new VirtualStylusConfig.Builder(
-                        display.getMode().getPhysicalWidth(),
-                        display.getMode().getPhysicalHeight())
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()
-        ));
+    fun createAndPrepareStylus(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): InputDeviceHolder<VirtualStylus> = prepareInputDevice {
+        virtualDevice.createVirtualStylus(
+            VirtualStylusConfig.Builder(
+                display.mode.physicalWidth,
+                display.mode.physicalHeight
+            )
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualMouse> createAndPrepareMouse(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualMouse(
-                new VirtualMouseConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()));
+    fun createAndPrepareMouse(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): InputDeviceHolder<VirtualMouse> = prepareInputDevice {
+        virtualDevice.createVirtualMouse(
+            VirtualMouseConfig.Builder()
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualRotaryEncoder> createAndPrepareRotary(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualRotaryEncoder(
-                new VirtualRotaryEncoderConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()));
+    fun createAndPrepareRotary(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): InputDeviceHolder<VirtualRotaryEncoder> = prepareInputDevice {
+        virtualDevice.createVirtualRotaryEncoder(
+            VirtualRotaryEncoderConfig.Builder()
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualKeyboard> createAndPrepareKeyboard(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return createAndPrepareKeyboard(virtualDevice, name, display,
-                VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG,
-                VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE);
+    fun createAndPrepareKeyboard(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display,
+        languageTag: String = VirtualKeyboardConfig.DEFAULT_LANGUAGE_TAG,
+        layoutType: String = VirtualKeyboardConfig.DEFAULT_LAYOUT_TYPE
+    ): InputDeviceHolder<VirtualKeyboard> =
+        prepareInputDevice({
+            virtualDevice.createVirtualKeyboard(
+                VirtualKeyboardConfig.Builder()
+                    .setVendorId(VENDOR_ID)
+                    .setProductId(PRODUCT_ID)
+                    .setInputDeviceName(name)
+                    .setAssociatedDisplayId(display.displayId)
+                    .setLanguageTag(languageTag)
+                    .setLayoutType(layoutType)
+                    .build()
+            )
+        }, languageTag, layoutType)
+
+    fun createAndPrepareDpad(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display
+    ): InputDeviceHolder<VirtualDpad> = prepareInputDevice {
+        virtualDevice.createVirtualDpad(
+            VirtualDpadConfig.Builder()
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualKeyboard> createAndPrepareKeyboard(
-            VirtualDevice virtualDevice, String name, Display display, String languageTag,
-            String layoutType) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualKeyboard(
-                new VirtualKeyboardConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .setLanguageTag(languageTag)
-                        .setLayoutType(layoutType)
-                        .build()), languageTag, layoutType);
+    fun createAndPrepareNavigationTouchpad(
+        virtualDevice: VirtualDeviceManager.VirtualDevice,
+        name: String,
+        display: Display,
+        touchpadWidth: Int = display.mode.physicalWidth,
+        touchpadHeight: Int = display.mode.physicalHeight
+    ): InputDeviceHolder<VirtualNavigationTouchpad> = prepareInputDevice {
+        virtualDevice.createVirtualNavigationTouchpad(
+            VirtualNavigationTouchpadConfig.Builder(touchpadWidth, touchpadHeight)
+                .setVendorId(VENDOR_ID)
+                .setProductId(PRODUCT_ID)
+                .setInputDeviceName(name)
+                .setAssociatedDisplayId(display.displayId)
+                .build()
+        )
     }
 
-    public static InputDeviceHolder<VirtualDpad> createAndPrepareDpad(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualDpad(
-                new VirtualDpadConfig.Builder()
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()));
+    /** Holds a virtual input device along with its input device ID.  */
+    class InputDeviceHolder<T : Closeable?>(val device: T, val deviceId: Int) : Closeable {
+        @Throws(IOException::class)
+        override fun close() {
+            device!!.close()
+        }
     }
 
-    public static InputDeviceHolder<VirtualNavigationTouchpad> createAndPrepareNavigationTouchpad(
-            VirtualDevice virtualDevice, String name, Display display) {
-        return createAndPrepareNavigationTouchpad(virtualDevice, name, display,
-                display.getMode().getPhysicalWidth(), display.getMode().getPhysicalHeight());
-    }
+    /** Utility to verify that an input device with a given parameters has been created.  */
+    private class InputDeviceAddedWaiter(
+        private val mInputManager: InputManager,
+        private val mLanguageTag: String?,
+        private val mLayoutType: String?
+    ) : InputManager.InputDeviceListener, AutoCloseable {
+        private val mLatch = CountDownLatch(1)
+        private var mDeviceId = 0
 
-    public static InputDeviceHolder<VirtualNavigationTouchpad> createAndPrepareNavigationTouchpad(
-            VirtualDevice virtualDevice, String name, Display display, int touchpadWidth,
-            int touchpadHeight) {
-        return prepareInputDevice(() -> virtualDevice.createVirtualNavigationTouchpad(
-                new VirtualNavigationTouchpadConfig.Builder(touchpadWidth, touchpadHeight)
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(name)
-                        .setAssociatedDisplayId(display.getDisplayId())
-                        .build()));
-    }
-
-    private VirtualInputDeviceCreator() {
-    }
-
-    /** Holds a virtual input device along with its input device ID. */
-    public static class InputDeviceHolder<T extends Closeable> implements Closeable {
-        private final T mDevice;
-        private final int mDeviceId;
-
-        public InputDeviceHolder(T device, int deviceId) {
-            mDevice = device;
-            mDeviceId = deviceId;
+        init {
+            mInputManager.registerInputDeviceListener(this, Handler(Looper.getMainLooper()))
         }
 
-        public T getDevice() {
-            return mDevice;
+        override fun onInputDeviceAdded(deviceId: Int) {
+            onInputDeviceChanged(deviceId)
         }
 
-        public int getDeviceId() {
-            return mDeviceId;
+        override fun onInputDeviceRemoved(deviceId: Int) {
         }
 
-        @Override
-        public void close() throws IOException {
-            mDevice.close();
-        }
-    }
-
-    /** Utility to verify that an input device with a given parameters has been created. */
-    private static class InputDeviceAddedWaiter implements InputManager.InputDeviceListener,
-            AutoCloseable {
-
-        private final InputManager mInputManager;
-        private final CountDownLatch mLatch = new CountDownLatch(1);
-        private final String mLanguageTag;
-        private final String mLayoutType;
-        private int mDeviceId;
-
-        InputDeviceAddedWaiter(InputManager inputManager, String languageTag, String layoutType) {
-            mLanguageTag = languageTag;
-            mLayoutType = layoutType;
-            mInputManager = inputManager;
-            mInputManager.registerInputDeviceListener(this, new Handler(Looper.getMainLooper()));
-        }
-
-        @Override
-        public void onInputDeviceAdded(int deviceId) {
-            onInputDeviceChanged(deviceId);
-        }
-
-        @Override
-        public void onInputDeviceRemoved(int deviceId) {
-        }
-
-        @Override
-        public void onInputDeviceChanged(int deviceId) {
-            InputDevice device = mInputManager.getInputDevice(deviceId);
-            if (device != null && device.getProductId() == PRODUCT_ID
-                    && device.getVendorId() == VENDOR_ID
-                    && Objects.equals(mLanguageTag, device.getKeyboardLanguageTag())
-                    && Objects.equals(mLayoutType, device.getKeyboardLayoutType())) {
-                mDeviceId = deviceId;
-                mLatch.countDown();
+        override fun onInputDeviceChanged(deviceId: Int) {
+            val device = mInputManager.getInputDevice(deviceId)
+            if (device != null &&
+                device.productId == PRODUCT_ID &&
+                device.vendorId == VENDOR_ID &&
+                mLanguageTag == device.keyboardLanguageTag &&
+                mLayoutType == device.keyboardLayoutType) {
+                mDeviceId = deviceId
+                mLatch.countDown()
             }
         }
 
-        @Override
-        public void close() {
-            mInputManager.unregisterInputDeviceListener(this);
+        override fun close() {
+            mInputManager.unregisterInputDeviceListener(this)
         }
 
-        /** Returns the device ID of the newly added input device. */
-        public int await() throws InterruptedException {
-            assertThat(mLatch.await(3, TimeUnit.SECONDS)).isTrue();
-            return mDeviceId;
+        /** Returns the device ID of the newly added input device.  */
+        @Throws(InterruptedException::class)
+        fun await(): Int {
+            Truth.assertThat(mLatch.await(3, TimeUnit.SECONDS)).isTrue()
+            return mDeviceId
         }
     }
 }

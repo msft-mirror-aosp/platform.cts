@@ -13,182 +13,207 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.companion.virtual.flags.Flags
+import android.hardware.input.VirtualNavigationTouchpad
+import android.hardware.input.VirtualTouchEvent
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.os.SystemClock
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.InputDevice
+import android.view.InputEvent
+import android.view.KeyEvent
+import android.view.MotionEvent
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.FlakyTest
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static org.junit.Assert.assertThrows;
+@RunWith(AndroidJUnit4::class)
+class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualNavigationTouchpad: VirtualNavigationTouchpad
 
-import android.companion.virtual.flags.Flags;
-import android.hardware.input.VirtualNavigationTouchpad;
-import android.hardware.input.VirtualTouchEvent;
-import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
-import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
-import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.view.InputDevice;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
-
-import androidx.test.filters.FlakyTest;
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.Arrays;
-
-@SmallTest
-@RunWith(AndroidJUnit4.class)
-public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
-
-    private static final String DEVICE_NAME = "CtsVirtualNavigationTouchpadTestDevice";
-    private static final int TOUCHPAD_HEIGHT = 500;
-    private static final int TOUCHPAD_WIDTH = 500;
-
-    private VirtualNavigationTouchpad mVirtualNavigationTouchpad;
-
-    @Override
-    void onSetUpVirtualInputDevice() {
+    override fun onSetUpVirtualInputDevice() {
         mVirtualNavigationTouchpad = VirtualInputDeviceCreator.createAndPrepareNavigationTouchpad(
-                mVirtualDevice, DEVICE_NAME, mVirtualDisplay.getDisplay(), TOUCHPAD_WIDTH,
-                TOUCHPAD_HEIGHT).getDevice();
+            mVirtualDevice, DEVICE_NAME, mVirtualDisplay.display, TOUCHPAD_WIDTH,
+            TOUCHPAD_HEIGHT
+        ).device
     }
 
     @Test
-    public void sendTouchEvent() {
-        final float inputSize = 1f;
-        final float x = 30f;
-        final float y = 30f;
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
+    fun sendTouchEvent() {
+        val axisSize = 1f
+        val x = 30f
+        val y = 30f
+        mVirtualNavigationTouchpad.sendTouchEvent(
+            VirtualTouchEvent.Builder()
                 .setAction(VirtualTouchEvent.ACTION_DOWN)
                 .setPointerId(1)
                 .setX(x)
                 .setY(y)
                 .setPressure(255f)
-                .setMajorAxisSize(inputSize)
+                .setMajorAxisSize(axisSize)
                 .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
+                .build()
+        )
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP)
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
-        final float computedSize = inputSize / (TOUCHPAD_WIDTH - 1f);
+        val size = axisSize / (TOUCHPAD_WIDTH - 1f)
 
-        verifyEvents(Arrays.asList(
+        verifyEvents(
+            listOf<InputEvent>(
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_DOWN, x, y, computedSize /* size */,
-                        inputSize /* axisSize */),
-                VirtualInputEventCreator.createNavigationTouchpadMotionEvent(MotionEvent.ACTION_UP,
-                        x, y, computedSize /* size */, inputSize /* axisSize */)));
+                    MotionEvent.ACTION_DOWN,
+                    x,
+                    y,
+                    size,
+                    axisSize
+                ),
+                VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
+                    MotionEvent.ACTION_UP,
+                    x,
+                    y,
+                    size,
+                    axisSize
+                )
+            )
+        )
     }
 
     @Test
-    public void sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        final float x = 30f;
-        final float y = 30f;
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> sendVirtualNavigationTouchEvent(x, y,
-                                VirtualTouchEvent.ACTION_DOWN)));
+    fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        val x = 30f
+        val y = 30f
+        mRule.runWithoutPermissions {
+            assertThrows(SecurityException::class.java) {
+                sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN)
+            }
+        }
     }
 
     @Test
-    public void createVirtualNavigationTouchpad_nullArguments_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> mVirtualDevice.createVirtualNavigationTouchpad(null));
-    }
+    fun sendTap_motionEventNotConsumed_getsConvertedToDpadCenter() {
+        setConsumeGenericMotionEvents(false)
 
-    @Test
-    public void sendTap_motionEventNotConsumed_getsConvertedToDpadCenter() {
-        setConsumeGenericMotionEvents(false);
+        val x = 30f
+        val y = 30f
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN)
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP)
 
-        final float x = 30f;
-        final float y = 30f;
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN);
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
-
-        verifyEvents(Arrays.asList(
+        verifyEvents(
+            listOf<InputEvent>(
                 createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_CENTER),
-                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)));
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_CENTER)
+            )
+        )
     }
 
-    @FlakyTest(detail = "The test does not reliably simulate a fling action, only way to reliably"
-            + "do it is when uinput supports custom timestamps for virtual input events.",
-            bugId = 277040837)
+    @FlakyTest(
+        detail = "The test does not reliably simulate a fling action, only way to reliably" +
+                "do it is when uinput supports custom timestamps for virtual input events.",
+        bugId = 277040837
+    )
     @Test
-    public void sendFlingUp_motionEventNotConsumed_getsConvertedToDpadUp() {
-        setConsumeGenericMotionEvents(false);
+    fun sendFlingUp_motionEventNotConsumed_getsConvertedToDpadUp() {
+        setConsumeGenericMotionEvents(false)
 
-        sendFlingEvents(30f /* startX */, 30f /* startY */, -10f /* diffX */, -30f /* diffY */);
+        sendFlingEvents(startX = 30f, startY = 30f, diffX = -10f, diffY = -30f)
 
-        verifyEvents(Arrays.asList(
-                        createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP),
-                        createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_UP)));
+        verifyEvents(
+            listOf<InputEvent>(
+                createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_UP),
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_UP)
+            )
+        )
     }
 
-    @FlakyTest(detail = "The test does not reliably simulate a fling action, only way to reliably"
-            + "do it is when uinput supports custom timestamps for virtual input events.",
-            bugId = 277040837)
+    @FlakyTest(
+        detail = "The test does not reliably simulate a fling action, only way to reliably" +
+                "do it is when uinput supports custom timestamps for virtual input events.",
+        bugId = 277040837
+    )
     @Test
-    public void sendFlingDown_motionEventNotConsumed_getsConvertedToDpadDown() {
-        setConsumeGenericMotionEvents(false);
+    fun sendFlingDown_motionEventNotConsumed_getsConvertedToDpadDown() {
+        setConsumeGenericMotionEvents(false)
 
-        sendFlingEvents(30f /* startX */, 10f /* startY */, 10f /* diffX */, 30f /* diffY */);
+        sendFlingEvents(startX = 30f, startY = 10f, diffX = 10f, diffY = 30f)
 
-        verifyEvents(Arrays.asList(
-                        createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN),
-                        createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)));
+        verifyEvents(
+            listOf<InputEvent>(
+                createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN),
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)
+            )
+        )
     }
 
-    @FlakyTest(detail = "The test does not reliably simulate a fling action, only way to reliably"
-            + "do it is when uinput supports custom timestamps for virtual input events.",
-            bugId = 277040837)
+    @FlakyTest(
+        detail = "The test does not reliably simulate a fling action, only way to reliably" +
+                "do it is when uinput supports custom timestamps for virtual input events.",
+        bugId = 277040837
+    )
     @Test
-    public void sendFlingRight_motionEventNotConsumed_getsConvertedToDpadRight() {
-        setConsumeGenericMotionEvents(false);
+    fun sendFlingRight_motionEventNotConsumed_getsConvertedToDpadRight() {
+        setConsumeGenericMotionEvents(false)
 
-        sendFlingEvents(10f /* startX */, 30f /* startY */, 30f /* diffX */, 10f /* diffY */);
+        sendFlingEvents(startX = 10f, startY = 30f, diffX = 30f, diffY = 10f)
 
-        verifyEvents(Arrays.asList(
-                        createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT),
-                        createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT)));
+        verifyEvents(
+            listOf<InputEvent>(
+                createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT),
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT)
+            )
+        )
     }
 
-    @FlakyTest(detail = "The test does not reliably simulate a fling action, only way to reliably"
-            + "do it is when uinput supports custom timestamps for virtual input events.",
-            bugId = 277040837)
+    @FlakyTest(
+        detail = "The test does not reliably simulate a fling action, only way to reliably" +
+                "do it is when uinput supports custom timestamps for virtual input events.",
+        bugId = 277040837
+    )
     @Test
-    public void sendFlingLeft_motionEventNotConsumed_getsConvertedToDpadLeft() {
-        setConsumeGenericMotionEvents(false);
+    fun sendFlingLeft_motionEventNotConsumed_getsConvertedToDpadLeft() {
+        setConsumeGenericMotionEvents(false)
 
-        sendFlingEvents(30f /* startX */, 30f /* startY */, -30f /* diffX */, 10f /* diffY */);
+        sendFlingEvents(startX = 30f, startY = 30f, diffX = -30f, diffY = 10f)
 
-        verifyEvents(Arrays.asList(
-                        createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT),
-                        createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_LEFT)));
+        verifyEvents(
+            listOf<InputEvent>(
+                createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT),
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_LEFT)
+            )
+        )
     }
 
     @Test
-    public void sendLongPress_motionEventNotConsumed_getsIgnored() {
-        setConsumeGenericMotionEvents(false);
+    fun sendLongPress_motionEventNotConsumed_getsIgnored() {
+        setConsumeGenericMotionEvents(false)
 
-        float x = 30f;
-        float y = 30f;
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN);
+        val x = 30f
+        val y = 30f
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_DOWN)
         // TODO(b/277040837): Use custom timestamps for virtual input events instead of sleep.
-        SystemClock.sleep(600);
-        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP);
+        SystemClock.sleep(600)
+        sendVirtualNavigationTouchEvent(x, y, VirtualTouchEvent.ACTION_UP)
 
-        verifyNoKeyEvents();
+        verifyNoKeyEvents()
     }
 
     @Test
-    public void sendSlowScroll_motionEventNotConsumed_getsIgnored() {
-        setConsumeGenericMotionEvents(false);
+    fun sendSlowScroll_motionEventNotConsumed_getsIgnored() {
+        setConsumeGenericMotionEvents(false)
 
-        sendContinuousEvents(30f /* startX */, 30f /* startY */, 2f /* diffX */, 1f /* diffY */,
-                300 /* eventTimeGapMs */);
+        sendContinuousEvents(
+            startX = 30f,
+            startY = 30f,
+            diffX = 2f,
+            diffY = 1f,
+            eventTimeGapMs = 300
+        )
 
-        verifyNoKeyEvents();
+        verifyNoKeyEvents()
     }
 
     // Test case for fling with a set of coordinates that results into negative velocity calculation
@@ -196,61 +221,84 @@ public class VirtualNavigationTouchpadTest extends VirtualDeviceTestCase {
     // navigation (as it internally uses impulse velocity strategy).
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_IMPULSE_VELOCITY_STRATEGY_FOR_TOUCH_NAVIGATION)
-    public void sendFlingDown_withSpecialCoordinates_motionEventNotConsumed_getsConvertedToDpadDown() {
-        setConsumeGenericMotionEvents(false);
+    fun sendFlingDown_withSpecialCoordinates_motionEventNotConsumed_getsConvertedToDpadDown() {
+        setConsumeGenericMotionEvents(false)
 
-        sendVirtualNavigationTouchEvent(1, 98, VirtualTouchEvent.ACTION_DOWN);
-        SystemClock.sleep(5);
-        sendVirtualNavigationTouchEvent(1, 247, VirtualTouchEvent.ACTION_MOVE);
-        SystemClock.sleep(5);
-        sendVirtualNavigationTouchEvent(1, 310, VirtualTouchEvent.ACTION_MOVE);
-        SystemClock.sleep(5);
-        sendVirtualNavigationTouchEvent(1, 324, VirtualTouchEvent.ACTION_MOVE);
-        SystemClock.sleep(5);
-        sendVirtualNavigationTouchEvent(1, 324, VirtualTouchEvent.ACTION_UP);
+        sendVirtualNavigationTouchEvent(1f, 98f, VirtualTouchEvent.ACTION_DOWN)
+        SystemClock.sleep(5)
+        sendVirtualNavigationTouchEvent(1f, 247f, VirtualTouchEvent.ACTION_MOVE)
+        SystemClock.sleep(5)
+        sendVirtualNavigationTouchEvent(1f, 310f, VirtualTouchEvent.ACTION_MOVE)
+        SystemClock.sleep(5)
+        sendVirtualNavigationTouchEvent(1f, 324f, VirtualTouchEvent.ACTION_MOVE)
+        SystemClock.sleep(5)
+        sendVirtualNavigationTouchEvent(1f, 324f, VirtualTouchEvent.ACTION_UP)
 
-        verifyEvents(Arrays.asList(
+        verifyEvents(
+            listOf<InputEvent>(
                 createKeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_DOWN),
-                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)));
+                createKeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_DOWN)
+            )
+        )
     }
 
-    private void sendFlingEvents(float startX, float startY, float diffX, float diffY) {
-        sendContinuousEvents(startX, startY, diffX, diffY, 7 /* eventTimeGapMs */);
+    private fun sendFlingEvents(startX: Float, startY: Float, diffX: Float, diffY: Float) {
+        sendContinuousEvents(startX, startY, diffX, diffY, eventTimeGapMs = 7)
     }
 
-    private void sendContinuousEvents(float startX, float startY, float diffX, float diffY,
-            long eventTimeGapMs) {
-        int eventCount = 4;
+    private fun sendContinuousEvents(
+        startX: Float,
+        startY: Float,
+        diffX: Float,
+        diffY: Float,
+        eventTimeGapMs: Long
+    ) {
+        val eventCount = 4
         // Starts with ACTION_DOWN.
-        sendVirtualNavigationTouchEvent(startX, startY, VirtualTouchEvent.ACTION_DOWN);
-        SystemClock.sleep(eventTimeGapMs);
+        sendVirtualNavigationTouchEvent(startX, startY, VirtualTouchEvent.ACTION_DOWN)
+        SystemClock.sleep(eventTimeGapMs)
 
-        for (int i = 1; i <= eventCount; i++) {
-            sendVirtualNavigationTouchEvent(startX + i * diffX / eventCount,
-                    startY + i * diffY / eventCount, VirtualTouchEvent.ACTION_MOVE);
-            SystemClock.sleep(eventTimeGapMs);
+        for (i in 1..eventCount) {
+            sendVirtualNavigationTouchEvent(
+                startX + i * diffX / eventCount,
+                startY + i * diffY / eventCount,
+                VirtualTouchEvent.ACTION_MOVE
+            )
+            SystemClock.sleep(eventTimeGapMs)
         }
 
         // Ends with ACTION_UP.
-        sendVirtualNavigationTouchEvent(startX + diffX, startY + diffY,
-                VirtualTouchEvent.ACTION_UP);
+        sendVirtualNavigationTouchEvent(
+            startX + diffX,
+            startY + diffY,
+            VirtualTouchEvent.ACTION_UP
+        )
     }
 
-    private void sendVirtualNavigationTouchEvent(float x, float y, int action) {
-        mVirtualNavigationTouchpad.sendTouchEvent(new VirtualTouchEvent.Builder()
+    private fun sendVirtualNavigationTouchEvent(x: Float, y: Float, action: Int) {
+        mVirtualNavigationTouchpad.sendTouchEvent(
+            VirtualTouchEvent.Builder()
                 .setAction(action)
                 .setPointerId(1)
                 .setX(x)
                 .setY(y)
-                .setPressure(action == VirtualTouchEvent.ACTION_UP ? 0f : 255f)
+                .setPressure(if (action == VirtualTouchEvent.ACTION_UP) 0f else 255f)
                 .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                .build());
+                .build()
+        )
     }
 
-    private KeyEvent createKeyEvent(int action, int code) {
-        KeyEvent event = new KeyEvent(action, code);
-        event.setSource(InputDevice.SOURCE_TOUCH_NAVIGATION | InputDevice.SOURCE_TOUCHPAD);
-        event.setDisplayId(mVirtualDisplay.getDisplay().getDisplayId());
-        return event;
+    private fun createKeyEvent(action: Int, code: Int): KeyEvent {
+        val event = KeyEvent(action, code)
+        event.source =
+            InputDevice.SOURCE_TOUCH_NAVIGATION or InputDevice.SOURCE_TOUCHPAD
+        event.displayId = mVirtualDisplay.display.displayId
+        return event
+    }
+
+    companion object {
+        private const val DEVICE_NAME = "CtsVirtualNavigationTouchpadTestDevice"
+        private const val TOUCHPAD_HEIGHT = 500
+        private const val TOUCHPAD_WIDTH = 500
     }
 }

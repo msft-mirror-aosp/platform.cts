@@ -13,217 +13,272 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.virtualcreators
 
-package android.hardware.input.cts.virtualcreators;
-
-import android.view.InputDevice;
-import android.view.KeyEvent;
-import android.view.MotionEvent;
+import android.view.InputDevice
+import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.MotionEvent.PointerCoords
+import android.view.MotionEvent.PointerProperties
 
 /**
  * Static utilities for creating input events to verify the functionality of virtual input devices.
  */
-public class VirtualInputEventCreator {
+@Suppress("ktlint:standard:comment-wrapping")
+object VirtualInputEventCreator {
 
-    public static MotionEvent createMouseEvent(int action, float x, float y, int buttonState,
-            float pressure, float relativeX, float relativeY, float hScroll, float vScroll) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = MotionEvent.TOOL_TYPE_MOUSE;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_X, relativeX);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_Y, relativeY);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
+    fun createMouseEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        buttonState: Int,
+        pressure: Float,
+        relativeX: Float = 0f,
+        relativeY: Float = 0f,
+        hScroll: Float = 0f,
+        vScroll: Float = 0f
+    ): MotionEvent {
+        val pointerProperties = PointerProperties()
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_MOUSE
+        val pointerCoords = PointerCoords()
+        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_X, relativeX)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_RELATIVE_Y, relativeY)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll)
         return MotionEvent.obtain(
-                0 /* downTime */,
-                0 /* eventTime */,
-                action,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                0 /* metaState */,
-                buttonState,
-                1f /* xPrecision */,
-                1f /* yPrecision */,
-                0 /* deviceId */,
-                0 /* edgeFlags */,
-                InputDevice.SOURCE_MOUSE,
-                0 /* flags */);
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            action,
+            /* pointerCount= */ 1,
+            arrayOf(pointerProperties),
+            arrayOf(pointerCoords),
+            /* metaState= */ 0,
+            buttonState,
+            /* xPrecision= */ 1f,
+            /* yPrecision= */ 1f,
+            /* deviceId= */ 0,
+            /* edgeFlags= */ 0,
+            InputDevice.SOURCE_MOUSE,
+            /* flags= */ 0
+        )
     }
 
-    public static MotionEvent createMouseEvent(int action, float x, float y, int buttonState,
-            float pressure) {
-        return createMouseEvent(action, x, y, buttonState, pressure, 0 /* relativeX */,
-                0 /* relativeY */, 0 /* hScroll */, 0 /* vScroll */);
-    }
-
-    public static MotionEvent createTouchscreenEvent(int action, float x, float y, float pressure,
-            float size, float axisSize) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = MotionEvent.TOOL_TYPE_FINGER;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_SIZE, size);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MINOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MINOR, axisSize);
+    fun createTouchscreenEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        pressure: Float,
+        size: Float,
+        axisSize: Float
+    ): MotionEvent {
+        val pointerProperties = PointerProperties()
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_FINGER
+        val pointerCoords = PointerCoords()
+        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_SIZE, size)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MAJOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MINOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MAJOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MINOR, axisSize)
         return MotionEvent.obtain(
-                0 /* downTime */,
-                0 /* eventTime */,
-                action,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                0 /* metaState */,
-                0 /* buttonState */,
-                1f /* xPrecision */,
-                1f /* yPrecision */,
-                0 /* deviceId */,
-                0 /* edgeFlags */,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                0 /* flags */);
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            action,
+            /* pointerCount= */ 1,
+            arrayOf(pointerProperties),
+            arrayOf(pointerCoords),
+            /* metaState= */ 0,
+            /* buttonState= */ 0,
+            /* xPrecision= */ 1f,
+            /* yPrecision= */ 1f,
+            /* deviceId= */ 0,
+            /* edgeFlags= */ 0,
+            InputDevice.SOURCE_TOUCHSCREEN,
+            /* flags= */ 0
+        )
     }
 
-    public static MotionEvent createNavigationTouchpadMotionEvent(int action, float x, float y,
-            float size, float axisSize) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = MotionEvent.TOOL_TYPE_FINGER;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, 1f /* value */);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_SIZE, size);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MINOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MINOR, axisSize);
+    fun createNavigationTouchpadMotionEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        size: Float,
+        axisSize: Float
+    ): MotionEvent {
+        val pointerProperties = PointerProperties()
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_FINGER
+        val pointerCoords = PointerCoords()
+        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, 1f /* value */)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_SIZE, size)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MAJOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MINOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MAJOR, axisSize)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MINOR, axisSize)
         return MotionEvent.obtain(
-                0 /* downTime */,
-                0 /* eventTime */,
-                action,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                0 /* metaState */,
-                0 /* buttonState */,
-                1f /* xPrecision */,
-                1f /* yPrecision */,
-                0 /* deviceId */,
-                0 /* edgeFlags */,
-                InputDevice.SOURCE_TOUCH_NAVIGATION | InputDevice.SOURCE_TOUCHPAD,
-                0 /* flags */);
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            action,
+            /* pointerCount= */ 1,
+            arrayOf(pointerProperties),
+            arrayOf(pointerCoords),
+            /* metaState= */ 0,
+            /* buttonState= */ 0,
+            /* xPrecision= */ 1f,
+            /* yPrecision= */ 1f,
+            /* deviceId= */ 0,
+            /* edgeFlags= */ 0,
+            InputDevice.SOURCE_TOUCH_NAVIGATION or InputDevice.SOURCE_TOUCHPAD,
+            /* flags= */ 0
+        )
     }
 
-    public static MotionEvent createStylusHoverMotionEvent(int action, float x, float y,
-            int toolType) {
-        return createStylusHoverMotionEvent(action, x, y, toolType, 0 /* buttonState */);
+    fun createStylusHoverMotionEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        toolType: Int,
+        buttonState: Int = 0
+    ): MotionEvent {
+        return createStylusEvent(action, toolType, x, y, pressure = 0f, buttonState)
     }
 
-    public static MotionEvent createStylusHoverMotionEvent(int action, float x, float y,
-            int toolType, int buttonState) {
-        return createStylusEvent(action, toolType, x, y, 0f /* pressure */, buttonState);
+    fun createStylusTouchMotionEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        toolType: Int,
+        tilt: Float,
+        orientation: Float
+    ): MotionEvent {
+        return createStylusEvent(
+            action,
+            toolType,
+            x,
+            y,
+            pressure = 1f,
+            buttonState = 0,
+            tilt,
+            orientation
+        )
     }
 
-    public static MotionEvent createStylusTouchMotionEvent(int action, float x, float y,
-            int toolType) {
-        return createStylusTouchMotionEvent(action, x, y, toolType, 0 /* buttonState */);
+    fun createStylusTouchMotionEvent(
+        action: Int,
+        x: Float,
+        y: Float,
+        toolType: Int,
+        buttonState: Int = 0
+    ): MotionEvent {
+        return createStylusEvent(action, toolType, x, y, pressure = 1f, buttonState)
     }
 
-    public static MotionEvent createStylusTouchMotionEvent(int action, float x, float y,
-            int toolType, float tilt, float orientation) {
-        return createStylusEvent(action, toolType, x, y, 1f /* pressure */, 0 /* buttonState */,
-                tilt, orientation);
+    fun createStylusEvent(
+        action: Int,
+        toolType: Int,
+        x: Float,
+        y: Float,
+        pressure: Float,
+        buttonState: Int
+    ): MotionEvent {
+        return createStylusEvent(
+            action,
+            toolType,
+            x,
+            y,
+            pressure,
+            buttonState,
+            tilt = 0f,
+            orientation = 0f
+        )
     }
 
-    public static MotionEvent createStylusTouchMotionEvent(int action, float x, float y,
-            int toolType, int buttonState) {
-        return createStylusEvent(action, toolType, x, y, 1f /* pressure */, buttonState);
-    }
-
-    public static MotionEvent createStylusEvent(int action, int toolType, float x, float y,
-            float pressure, int buttonState) {
-        return createStylusEvent(action, toolType, x, y, pressure, buttonState, 0f /* tilt */,
-                0f /* orientation */);
-    }
-
-    private static MotionEvent createStylusEvent(int action, int toolType, float x, float y,
-            float pressure, int buttonState, float tilt, float orientation) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = toolType;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TILT, tilt);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_ORIENTATION, orientation);
+    private fun createStylusEvent(
+        action: Int,
+        toolType: Int,
+        x: Float,
+        y: Float,
+        pressure: Float,
+        buttonState: Int,
+        tilt: Float,
+        orientation: Float
+    ): MotionEvent {
+        val pointerProperties = PointerProperties()
+        pointerProperties.toolType = toolType
+        val pointerCoords = PointerCoords()
+        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_TILT, tilt)
+        pointerCoords.setAxisValue(MotionEvent.AXIS_ORIENTATION, orientation)
         return MotionEvent.obtain(
-                0 /* downTime */,
-                0 /* eventTime */,
-                action,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                0 /* metaState */,
-                buttonState,
-                1f /* xPrecision */,
-                1f /* yPrecision */,
-                0 /* deviceId */,
-                0 /* edgeFlags */,
-                InputDevice.SOURCE_STYLUS | InputDevice.SOURCE_KEYBOARD
-                        | InputDevice.SOURCE_TOUCHSCREEN,
-                0 /* flags */);
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            action,
+            /* pointerCount= */ 1,
+            arrayOf(pointerProperties),
+            arrayOf(pointerCoords),
+            /* metaState= */ 0,
+            buttonState,
+            /* xPrecision= */ 1f,
+            /* yPrecision= */ 1f,
+            /* deviceId= */ 0,
+            /* edgeFlags= */ 0,
+            InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_KEYBOARD
+                    or InputDevice.SOURCE_TOUCHSCREEN,
+            /* flags= */ 0
+        )
     }
 
-    public static MotionEvent createRotaryEvent(float scrollAmount) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = MotionEvent.TOOL_TYPE_UNKNOWN;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_SCROLL, scrollAmount);
+    fun createRotaryEvent(scrollAmount: Float): MotionEvent {
+        val pointerProperties = PointerProperties()
+        pointerProperties.toolType = MotionEvent.TOOL_TYPE_UNKNOWN
+        val pointerCoords = PointerCoords()
+        pointerCoords.setAxisValue(MotionEvent.AXIS_SCROLL, scrollAmount)
         return MotionEvent.obtain(
-                0 /* downTime */,
-                0 /* eventTime */,
-                MotionEvent.ACTION_SCROLL,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                0 /* metaState */,
-                0 /* buttonState */,
-                1f /* xPrecision */,
-                1f /* yPrecision */,
-                0 /* deviceId */,
-                0 /* edgeFlags */,
-                InputDevice.SOURCE_ROTARY_ENCODER,
-                0 /* flags */);
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            MotionEvent.ACTION_SCROLL,
+            /* pointerCount= */ 1,
+            arrayOf(pointerProperties),
+            arrayOf(pointerCoords),
+            /* metaState= */ 0,
+            /* buttonState= */ 0,
+            /* xPrecision= */ 1f,
+            /* yPrecision= */ 1f,
+            /* deviceId= */ 0,
+            /* edgeFlags= */ 0,
+            InputDevice.SOURCE_ROTARY_ENCODER,
+            /* flags= */ 0
+        )
     }
 
-    public static KeyEvent createKeyboardEvent(int action, int code) {
-        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD);
+    fun createKeyboardEvent(action: Int, code: Int): KeyEvent {
+        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD)
     }
 
-    public static KeyEvent createDpadEvent(int action, int code) {
-        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD | InputDevice.SOURCE_DPAD);
+    fun createDpadEvent(action: Int, code: Int): KeyEvent {
+        return createKeyEvent(action, code, InputDevice.SOURCE_KEYBOARD or InputDevice.SOURCE_DPAD)
     }
 
-    private static KeyEvent createKeyEvent(int action, int code, int source) {
-        return new KeyEvent(
-                0 /* downTime */,
-                0 /* eventTime */,
-                action,
-                code,
-                0 /* repeat */,
-                0 /* metaState */,
-                0 /* deviceId */,
-                0 /* scancode */,
-                0 /* flags */,
-                source);
-    }
-
-    private VirtualInputEventCreator() {
+    private fun createKeyEvent(action: Int, code: Int, source: Int): KeyEvent {
+        return KeyEvent(
+            /* downTime= */ 0,
+            /* eventTime= */ 0,
+            action,
+            code,
+            /* repeat= */ 0,
+            /* metaState= */ 0,
+            /* deviceId= */ 0,
+            /* scancode= */ 0,
+            /* flags= */ 0,
+            source
+        )
     }
 }

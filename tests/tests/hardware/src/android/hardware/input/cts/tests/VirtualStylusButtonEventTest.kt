@@ -13,96 +13,101 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
-
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.companion.virtual.flags.Flags;
-import android.hardware.input.VirtualStylusButtonEvent;
-import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import android.companion.virtual.flags.Flags
+import android.hardware.input.VirtualStylusButtonEvent
+import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
-@RunWith(AndroidJUnit4.class)
-public class VirtualStylusButtonEventTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualStylusButtonEventTest {
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
-    public void parcelAndUnparcel_matches() {
-        final VirtualStylusButtonEvent originalEvent = new VirtualStylusButtonEvent.Builder()
-                .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_PRESS)
-                .setButtonCode(VirtualStylusButtonEvent.BUTTON_PRIMARY)
-                .setEventTimeNanos(5000L)
-                .build();
+    fun parcelAndUnparcel_matches() {
+        val originalEvent: VirtualStylusButtonEvent = VirtualStylusButtonEvent.Builder()
+            .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_PRESS)
+            .setButtonCode(VirtualStylusButtonEvent.BUTTON_PRIMARY)
+            .setEventTimeNanos(5000L)
+            .build()
 
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualStylusButtonEvent recreatedEvent =
-                VirtualStylusButtonEvent.CREATOR.createFromParcel(parcel);
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualStylusButtonEvent =
+            VirtualStylusButtonEvent.CREATOR.createFromParcel(parcel)
 
-        assertWithMessage("Recreated event has different action").that(originalEvent.getAction())
-                .isEqualTo(recreatedEvent.getAction());
+        assertWithMessage("Recreated event has different action")
+            .that(originalEvent.action).isEqualTo(recreatedEvent.action)
         assertWithMessage("Recreated event has different button code")
-                .that(originalEvent.getButtonCode()).isEqualTo(recreatedEvent.getButtonCode());
+            .that(originalEvent.buttonCode).isEqualTo(recreatedEvent.buttonCode)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos).isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void stylusButtonEvent_emptyBuilder_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualStylusButtonEvent.Builder().build());
+    fun stylusButtonEvent_emptyBuilder_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusButtonEvent.Builder().build()
+        }
     }
 
     @Test
-    public void stylusButtonEvent_noButtonCode_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusButtonEvent.Builder()
-                .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_RELEASE).build());
+    fun stylusButtonEvent_noButtonCode_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusButtonEvent.Builder()
+                .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_RELEASE).build()
+        }
     }
 
     @Test
-    public void stylusButtonEvent_noAction_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusButtonEvent.Builder()
-                .setButtonCode(VirtualStylusButtonEvent.BUTTON_SECONDARY).build());
+    fun stylusButtonEvent_noAction_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusButtonEvent.Builder()
+                .setButtonCode(VirtualStylusButtonEvent.BUTTON_SECONDARY).build()
+        }
     }
 
     @Test
-    public void stylusButtonEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusButtonEvent.Builder()
+    fun stylusButtonEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusButtonEvent.Builder()
                 .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_RELEASE)
                 .setButtonCode(VirtualStylusButtonEvent.BUTTON_PRIMARY)
                 .setEventTimeNanos(-10L)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusButtonEvent_valid_created() {
-        final long eventTimeNanos = 5000L;
-        final VirtualStylusButtonEvent event = new VirtualStylusButtonEvent.Builder()
-                .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_PRESS)
-                .setButtonCode(VirtualStylusButtonEvent.BUTTON_PRIMARY)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect button code").that(event.getButtonCode()).isEqualTo(
-                VirtualStylusButtonEvent.BUTTON_PRIMARY);
-        assertWithMessage("Incorrect action").that(event.getAction()).isEqualTo(
-                VirtualStylusButtonEvent.ACTION_BUTTON_PRESS);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun stylusButtonEvent_valid_created() {
+        val eventTimeNanos = 5000L
+        val event: VirtualStylusButtonEvent = VirtualStylusButtonEvent.Builder()
+            .setAction(VirtualStylusButtonEvent.ACTION_BUTTON_PRESS)
+            .setButtonCode(VirtualStylusButtonEvent.BUTTON_PRIMARY)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect button code").that(event.buttonCode).isEqualTo(
+            VirtualStylusButtonEvent.BUTTON_PRIMARY
+        )
+        assertWithMessage("Incorrect action").that(event.action).isEqualTo(
+            VirtualStylusButtonEvent.ACTION_BUTTON_PRESS
+        )
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 }

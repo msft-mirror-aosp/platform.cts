@@ -13,85 +13,95 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.hardware.input.VirtualMouseButtonEvent
+import android.os.Parcel
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualMouseButtonEvent;
-import android.os.Parcel;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class VirtualMouseButtonEventTest {
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualMouseButtonEventTest {
 
     @Test
-    public void parcelAndUnparcel_matches() {
-        final VirtualMouseButtonEvent originalEvent = new VirtualMouseButtonEvent.Builder()
-                .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
-                .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
-                .setEventTimeNanos(5000L)
-                .build();
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualMouseButtonEvent recreatedEvent =
-                VirtualMouseButtonEvent.CREATOR.createFromParcel(parcel);
-        assertWithMessage("Recreated event has different action").that(originalEvent.getAction())
-                .isEqualTo(recreatedEvent.getAction());
+    fun parcelAndUnparcel_matches() {
+        val originalEvent: VirtualMouseButtonEvent = VirtualMouseButtonEvent.Builder()
+            .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
+            .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
+            .setEventTimeNanos(5000L)
+            .build()
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualMouseButtonEvent =
+            VirtualMouseButtonEvent.CREATOR.createFromParcel(parcel)
+        assertWithMessage("Recreated event has different action")
+            .that(originalEvent.action)
+            .isEqualTo(recreatedEvent.action)
         assertWithMessage("Recreated event has different button code")
-                .that(originalEvent.getButtonCode()).isEqualTo(recreatedEvent.getButtonCode());
+            .that(originalEvent.buttonCode)
+            .isEqualTo(recreatedEvent.buttonCode)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos)
+            .isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void buttonEvent_emptyBuilder_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualMouseButtonEvent.Builder().build());
+    fun buttonEvent_emptyBuilder_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseButtonEvent.Builder().build()
+        }
     }
 
     @Test
-    public void buttonEvent_noButtonCode_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseButtonEvent.Builder()
-                .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_RELEASE).build());
+    fun buttonEvent_noButtonCode_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseButtonEvent.Builder()
+                .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_RELEASE).build()
+        }
     }
 
     @Test
-    public void buttonEvent_noAction_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseButtonEvent.Builder()
-                .setButtonCode(VirtualMouseButtonEvent.BUTTON_BACK).build());
+    fun buttonEvent_noAction_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseButtonEvent.Builder()
+                .setButtonCode(VirtualMouseButtonEvent.BUTTON_BACK).build()
+        }
     }
 
     @Test
-    public void buttonEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseButtonEvent.Builder()
+    fun buttonEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseButtonEvent.Builder()
                 .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_RELEASE)
                 .setButtonCode(VirtualMouseButtonEvent.BUTTON_BACK)
                 .setEventTimeNanos(-10L)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void buttonEvent_valid_created() {
-        final long eventTimeNanos = 5000L;
-        final VirtualMouseButtonEvent event = new VirtualMouseButtonEvent.Builder()
-                .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
-                .setButtonCode(VirtualMouseButtonEvent.BUTTON_BACK)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect button code").that(event.getButtonCode()).isEqualTo(
-                VirtualMouseButtonEvent.BUTTON_BACK);
-        assertWithMessage("Incorrect action").that(event.getAction()).isEqualTo(
-                VirtualMouseButtonEvent.ACTION_BUTTON_PRESS);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun buttonEvent_valid_created() {
+        val eventTimeNanos = 5000L
+        val event: VirtualMouseButtonEvent = VirtualMouseButtonEvent.Builder()
+            .setAction(VirtualMouseButtonEvent.ACTION_BUTTON_PRESS)
+            .setButtonCode(VirtualMouseButtonEvent.BUTTON_BACK)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect button code").that(event.buttonCode).isEqualTo(
+            VirtualMouseButtonEvent.BUTTON_BACK
+        )
+        assertWithMessage("Incorrect action").that(event.action).isEqualTo(
+            VirtualMouseButtonEvent.ACTION_BUTTON_PRESS
+        )
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos).isEqualTo(
+            eventTimeNanos
+        )
     }
 }

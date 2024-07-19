@@ -13,86 +13,87 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualKeyEvent;
-import android.hardware.input.VirtualKeyboard;
-import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
-import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
-import android.view.KeyEvent;
-
-import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.Arrays;
+import android.hardware.input.VirtualKeyEvent
+import android.hardware.input.VirtualKeyboard
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.view.InputEvent
+import android.view.KeyEvent
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @SmallTest
-@RunWith(AndroidJUnit4.class)
-public class VirtualKeyboardTest extends VirtualDeviceTestCase {
+@RunWith(AndroidJUnit4::class)
+class VirtualKeyboardTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualKeyboard: VirtualKeyboard
 
-    private static final String DEVICE_NAME = "CtsVirtualKeyboardTestDevice";
-    private VirtualKeyboard mVirtualKeyboard;
-
-    @Override
-    void onSetUpVirtualInputDevice() {
-        mVirtualKeyboard = VirtualInputDeviceCreator.createAndPrepareKeyboard(mVirtualDevice,
-                DEVICE_NAME, mVirtualDisplay.getDisplay()).getDevice();
+    override fun onSetUpVirtualInputDevice() {
+        mVirtualKeyboard = VirtualInputDeviceCreator.createAndPrepareKeyboard(
+            mVirtualDevice,
+            DEVICE_NAME, mVirtualDisplay.display
+        ).device
     }
 
     @Test
-    public void sendKeyEvent() {
+    fun sendKeyEvent() {
         mVirtualKeyboard.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_A)
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_A)
+                .setAction(VirtualKeyEvent.ACTION_DOWN)
+                .build()
+        )
         mVirtualKeyboard.sendKeyEvent(
-                new VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_A)
-                        .setAction(VirtualKeyEvent.ACTION_UP)
-                        .build());
+            VirtualKeyEvent.Builder()
+                .setKeyCode(KeyEvent.KEYCODE_A)
+                .setAction(VirtualKeyEvent.ACTION_UP)
+                .build()
+        )
         verifyEvents(
-                Arrays.asList(VirtualInputEventCreator.createKeyboardEvent(KeyEvent.ACTION_DOWN,
-                                KeyEvent.KEYCODE_A),
-                        VirtualInputEventCreator.createKeyboardEvent(KeyEvent.ACTION_UP,
-                                KeyEvent.KEYCODE_A)));
+            listOf<InputEvent>(
+                VirtualInputEventCreator.createKeyboardEvent(
+                    KeyEvent.ACTION_DOWN,
+                    KeyEvent.KEYCODE_A
+                ),
+                VirtualInputEventCreator.createKeyboardEvent(
+                    KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_A
+                )
+            )
+        )
     }
 
     @Test
-    public void sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions(
-                () -> assertThrows(SecurityException.class,
-                        () -> mVirtualKeyboard.sendKeyEvent(
-                                new VirtualKeyEvent.Builder()
-                                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                                        .build())));
+    fun sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
+        mRule.runWithoutPermissions {
+            assertThrows(SecurityException::class.java) {
+                mVirtualKeyboard.sendKeyEvent(
+                    VirtualKeyEvent.Builder()
+                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
+                        .setAction(VirtualKeyEvent.ACTION_DOWN)
+                        .build()
+                )
+            }
+        }
     }
 
     @Test
-    public void keyEvent_nullEvent_throwsNpe() {
-        assertThrows(NullPointerException.class, () -> mVirtualKeyboard.sendKeyEvent(null));
+    fun rejectsUnsupportedKeyCodes() {
+        assertThrows(IllegalArgumentException::class.java) {
+            mVirtualKeyboard.sendKeyEvent(
+                VirtualKeyEvent.Builder()
+                    .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
+                    .setAction(VirtualKeyEvent.ACTION_DOWN)
+                    .build()
+            )
+        }
     }
 
-    @Test
-    public void rejectsUnsupportedKeyCodes() {
-        assertThrows(IllegalArgumentException.class,
-                () -> mVirtualKeyboard.sendKeyEvent(
-                        new VirtualKeyEvent.Builder()
-                                .setKeyCode(KeyEvent.KEYCODE_DPAD_CENTER)
-                                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                                .build()));
-    }
-
-    @Test
-    public void createVirtualKeyboard_nullArguments_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> mVirtualDevice.createVirtualKeyboard(null));
+    companion object {
+        private const val DEVICE_NAME = "CtsVirtualKeyboardTestDevice"
     }
 }

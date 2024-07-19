@@ -13,245 +13,270 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.companion.virtual.flags.Flags
+import android.hardware.input.VirtualStylusMotionEvent
+import android.os.Parcel
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.companion.virtual.flags.Flags;
-import android.hardware.input.VirtualStylusMotionEvent;
-import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
+@SmallTest
 @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
-@RunWith(AndroidJUnit4.class)
-public class VirtualStylusMotionEventTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+@RunWith(AndroidJUnit4::class)
+class VirtualStylusMotionEventTest {
+    @get:Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
-    public void parcelAndUnparcel_matches() {
-        final int x = 50;
-        final int y = 800;
-        final int pressure = 10;
-        final int tiltX = 10;
-        final int tiltY = 20;
-        final long eventTimeNanos = 5000L;
-        final VirtualStylusMotionEvent originalEvent = new VirtualStylusMotionEvent.Builder()
-                .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                .setX(x)
-                .setY(y)
-                .setPressure(pressure)
-                .setTiltX(tiltX)
-                .setTiltY(tiltY)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
+    fun parcelAndUnparcel_matches() {
+        val x = 50
+        val y = 800
+        val pressure = 10
+        val tiltX = 10
+        val tiltY = 20
+        val eventTimeNanos = 5000L
+        val originalEvent: VirtualStylusMotionEvent = VirtualStylusMotionEvent.Builder()
+            .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
+            .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
+            .setX(x)
+            .setY(y)
+            .setPressure(pressure)
+            .setTiltX(tiltX)
+            .setTiltY(tiltY)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
 
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualStylusMotionEvent recreatedEvent =
-                VirtualStylusMotionEvent.CREATOR.createFromParcel(parcel);
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualStylusMotionEvent =
+            VirtualStylusMotionEvent.CREATOR.createFromParcel(parcel)
 
-        assertWithMessage("Recreated event has different action").that(originalEvent.getAction())
-                .isEqualTo(recreatedEvent.getAction());
+        assertWithMessage("Recreated event has different action")
+            .that(originalEvent.action).isEqualTo(recreatedEvent.action)
         assertWithMessage("Recreated event has different tool type")
-                .that(originalEvent.getToolType()).isEqualTo(recreatedEvent.getToolType());
-        assertWithMessage("Recreated event has different x").that(originalEvent.getX())
-                .isEqualTo(recreatedEvent.getX());
-        assertWithMessage("Recreated event has different y").that(originalEvent.getY())
-                .isEqualTo(recreatedEvent.getY());
+            .that(originalEvent.toolType).isEqualTo(recreatedEvent.toolType)
+        assertWithMessage("Recreated event has different x")
+            .that(originalEvent.x).isEqualTo(recreatedEvent.x)
+        assertWithMessage("Recreated event has different y")
+            .that(originalEvent.y).isEqualTo(recreatedEvent.y)
         assertWithMessage("Recreated event has different x-axis tilt")
-                .that(originalEvent.getTiltX()).isEqualTo(recreatedEvent.getTiltX());
+            .that(originalEvent.tiltX).isEqualTo(recreatedEvent.tiltX)
         assertWithMessage("Recreated event has different y-axis tilt")
-                .that(originalEvent.getTiltY()).isEqualTo(recreatedEvent.getTiltY());
+            .that(originalEvent.tiltY).isEqualTo(recreatedEvent.tiltY)
         assertWithMessage("Recreated event has different pressure")
-                .that(originalEvent.getPressure()).isEqualTo(recreatedEvent.getPressure());
+            .that(originalEvent.pressure).isEqualTo(recreatedEvent.pressure)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos).isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void stylusMotionEvent_emptyBuilder_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualStylusMotionEvent.Builder().build());
+    fun stylusMotionEvent_emptyBuilder_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder().build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_noAction_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_noAction_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setX(0)
                 .setY(1)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidAction_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidAction_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(100)
                 .setX(0)
                 .setY(1)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidToolType_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidToolType_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setToolType(100)
                 .setX(0)
                 .setY(1)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_noX_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_noX_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setY(5)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_noY_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_noY_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(5)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setEventTimeNanos(-10L)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidPressure_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidPressure_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setPressure(-10)
-                .build());
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+                .build()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setPressure(300)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidTiltX_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidTiltX_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setTiltX(-100)
-                .build());
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+                .build()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setTiltX(100)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_invalidTiltY_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+    fun stylusMotionEvent_invalidTiltY_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setTiltY(-100)
-                .build());
-        assertThrows(IllegalArgumentException.class, () -> new VirtualStylusMotionEvent.Builder()
+                .build()
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualStylusMotionEvent.Builder()
                 .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
                 .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
                 .setX(0)
                 .setY(1)
                 .setTiltY(100)
-                .build());
+                .build()
+        }
     }
 
     @Test
-    public void stylusMotionEvent_validWithoutPressureAndTilt_created() {
-        final int x = 50;
-        final int y = 800;
-        final long eventTimeNanos = 5000L;
-        final VirtualStylusMotionEvent event = new VirtualStylusMotionEvent.Builder()
-                .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                .setX(x)
-                .setY(y)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect action").that(event.getAction()).isEqualTo(
-                VirtualStylusMotionEvent.ACTION_DOWN);
-        assertWithMessage("Incorrect tool type").that(event.getToolType()).isEqualTo(
-                VirtualStylusMotionEvent.TOOL_TYPE_STYLUS);
-        assertWithMessage("Incorrect x").that(event.getX()).isEqualTo(x);
-        assertWithMessage("Incorrect y").that(event.getY()).isEqualTo(y);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun stylusMotionEvent_validWithoutPressureAndTilt_created() {
+        val x = 50
+        val y = 800
+        val eventTimeNanos = 5000L
+        val event: VirtualStylusMotionEvent = VirtualStylusMotionEvent.Builder()
+            .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
+            .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
+            .setX(x)
+            .setY(y)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect action").that(event.action).isEqualTo(
+            VirtualStylusMotionEvent.ACTION_DOWN
+        )
+        assertWithMessage("Incorrect tool type").that(event.toolType).isEqualTo(
+            VirtualStylusMotionEvent.TOOL_TYPE_STYLUS
+        )
+        assertWithMessage("Incorrect x").that(event.x).isEqualTo(x)
+        assertWithMessage("Incorrect y").that(event.y).isEqualTo(y)
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 
     @Test
-    public void stylusMotionEvent_validWithPressureAndTilt_created() {
-        final int x = 50;
-        final int y = 800;
-        final int pressure = 10;
-        final int tiltX = 10;
-        final int tiltY = 20;
-        final long eventTimeNanos = 5000L;
-        final VirtualStylusMotionEvent event = new VirtualStylusMotionEvent.Builder()
-                .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
-                .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
-                .setX(x)
-                .setY(y)
-                .setPressure(pressure)
-                .setTiltX(tiltX)
-                .setTiltY(tiltY)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect action").that(event.getAction()).isEqualTo(
-                VirtualStylusMotionEvent.ACTION_DOWN);
-        assertWithMessage("Incorrect tool type").that(event.getToolType()).isEqualTo(
-                VirtualStylusMotionEvent.TOOL_TYPE_STYLUS);
-        assertWithMessage("Incorrect x").that(event.getX()).isEqualTo(x);
-        assertWithMessage("Incorrect y").that(event.getY()).isEqualTo(y);
-        assertWithMessage("Incorrect x-axis tilt").that(event.getTiltX()).isEqualTo(tiltX);
-        assertWithMessage("Incorrect y-axis tilt").that(event.getTiltY()).isEqualTo(tiltY);
-        assertWithMessage("Incorrect pressure").that(event.getPressure()).isEqualTo(pressure);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun stylusMotionEvent_validWithPressureAndTilt_created() {
+        val x = 50
+        val y = 800
+        val pressure = 10
+        val tiltX = 10
+        val tiltY = 20
+        val eventTimeNanos = 5000L
+        val event: VirtualStylusMotionEvent = VirtualStylusMotionEvent.Builder()
+            .setAction(VirtualStylusMotionEvent.ACTION_DOWN)
+            .setToolType(VirtualStylusMotionEvent.TOOL_TYPE_STYLUS)
+            .setX(x)
+            .setY(y)
+            .setPressure(pressure)
+            .setTiltX(tiltX)
+            .setTiltY(tiltY)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect action").that(event.action).isEqualTo(
+            VirtualStylusMotionEvent.ACTION_DOWN
+        )
+        assertWithMessage("Incorrect tool type").that(event.toolType).isEqualTo(
+            VirtualStylusMotionEvent.TOOL_TYPE_STYLUS
+        )
+        assertWithMessage("Incorrect x").that(event.x).isEqualTo(x)
+        assertWithMessage("Incorrect y").that(event.y).isEqualTo(y)
+        assertWithMessage("Incorrect x-axis tilt").that(event.tiltX).isEqualTo(tiltX)
+        assertWithMessage("Incorrect y-axis tilt").that(event.tiltY).isEqualTo(tiltY)
+        assertWithMessage("Incorrect pressure").that(event.pressure).isEqualTo(pressure)
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 }

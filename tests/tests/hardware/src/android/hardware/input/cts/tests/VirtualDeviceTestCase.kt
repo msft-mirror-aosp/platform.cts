@@ -13,62 +13,54 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.app.ActivityOptions
+import android.companion.virtual.VirtualDeviceManager
+import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
+import android.os.Bundle
+import android.server.wm.WindowManagerStateHelper
+import android.virtualdevice.cts.common.VirtualDeviceRule
+import org.junit.Rule
 
-import android.app.ActivityOptions;
-import android.companion.virtual.VirtualDeviceManager;
-import android.hardware.display.DisplayManager;
-import android.hardware.display.VirtualDisplay;
-import android.os.Bundle;
-import android.server.wm.WindowManagerStateHelper;
-import android.virtualdevice.cts.common.VirtualDeviceRule;
+abstract class VirtualDeviceTestCase : InputTestCase() {
+    @get:Rule
+    var mRule: VirtualDeviceRule = VirtualDeviceRule.createDefault()
 
-import androidx.annotation.Nullable;
+    lateinit var mVirtualDevice: VirtualDeviceManager.VirtualDevice
+    lateinit var mVirtualDisplay: VirtualDisplay
 
-import org.junit.Rule;
-
-public abstract class VirtualDeviceTestCase extends InputTestCase {
-
-    @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
-
-    VirtualDeviceManager.VirtualDevice mVirtualDevice;
-    VirtualDisplay mVirtualDisplay;
-
-    @Override
-    void onBeforeLaunchActivity() {
-        mVirtualDevice = mRule.createManagedVirtualDevice();
-        mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
-        mRule.assumeActivityLaunchSupported(mVirtualDisplay.getDisplay().getDisplayId());
+    public override fun onBeforeLaunchActivity() {
+        mVirtualDevice = mRule.createManagedVirtualDevice()
+        mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
+            mVirtualDevice,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+        )!!
+        mRule.assumeActivityLaunchSupported(mVirtualDisplay.display.displayId)
     }
 
-    @Override
-    void onSetUp() {
-        onSetUpVirtualInputDevice();
+    public override fun onSetUp() {
+        onSetUpVirtualInputDevice()
         // Wait for any pending transitions
-        WindowManagerStateHelper windowManagerStateHelper = new WindowManagerStateHelper();
-        windowManagerStateHelper.waitForAppTransitionIdleOnDisplay(mTestActivity.getDisplayId());
-        mInstrumentation.getUiAutomation().syncInputTransactions();
+        val windowManagerStateHelper = WindowManagerStateHelper()
+        windowManagerStateHelper.waitForAppTransitionIdleOnDisplay(mTestActivity.displayId)
+        mInstrumentation.uiAutomation.syncInputTransactions()
     }
 
-    @Override
-    void onTearDown() {
+    public override fun onTearDown() {
         if (mTestActivity != null) {
-            mTestActivity.finish();
+            mTestActivity.finish()
         }
     }
 
-    abstract void onSetUpVirtualInputDevice();
+    abstract fun onSetUpVirtualInputDevice()
 
-    @Override
-    @Nullable
-    Bundle getActivityOptions() {
+    public override fun getActivityOptions(): Bundle? {
         return ActivityOptions.makeBasic()
-                .setLaunchDisplayId(mVirtualDisplay.getDisplay().getDisplayId())
-                .toBundle();
+            .setLaunchDisplayId(mVirtualDisplay.display.displayId)
+            .toBundle()
     }
 }

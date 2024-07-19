@@ -13,86 +13,93 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.hardware.input.VirtualKeyEvent
+import android.os.Parcel
+import android.view.KeyEvent
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualKeyEvent;
-import android.os.Parcel;
-import android.view.KeyEvent;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class VirtualKeyEventTest {
-
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualKeyEventTest {
     @Test
-    public void parcelAndUnparcel_matches() {
-        final VirtualKeyEvent originalEvent = new VirtualKeyEvent.Builder()
-                .setAction(VirtualKeyEvent.ACTION_DOWN)
-                .setKeyCode(KeyEvent.KEYCODE_ENTER)
-                .setEventTimeNanos(5000L)
-                .build();
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualKeyEvent recreatedEvent =
-                VirtualKeyEvent.CREATOR.createFromParcel(parcel);
-        assertWithMessage("Recreated event has different action").that(originalEvent.getAction())
-                .isEqualTo(recreatedEvent.getAction());
-        assertWithMessage("Recreated event has different key code").that(originalEvent.getKeyCode())
-                .isEqualTo(recreatedEvent.getKeyCode());
+    fun parcelAndUnparcel_matches() {
+        val originalEvent: VirtualKeyEvent = VirtualKeyEvent.Builder()
+            .setAction(VirtualKeyEvent.ACTION_DOWN)
+            .setKeyCode(KeyEvent.KEYCODE_ENTER)
+            .setEventTimeNanos(5000L)
+            .build()
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualKeyEvent =
+            VirtualKeyEvent.CREATOR.createFromParcel(parcel)
+        assertWithMessage("Recreated event has different action")
+            .that(originalEvent.action)
+            .isEqualTo(recreatedEvent.action)
+        assertWithMessage("Recreated event has different key code")
+            .that(originalEvent.keyCode)
+            .isEqualTo(recreatedEvent.keyCode)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos)
+            .isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void keyEvent_emptyBuilder_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualKeyEvent.Builder().build());
+    fun keyEvent_emptyBuilder_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualKeyEvent.Builder().build()
+        }
     }
 
     @Test
-    public void keyEvent_noKeyCode_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualKeyEvent.Builder().setAction(VirtualKeyEvent.ACTION_DOWN).build());
+    fun keyEvent_noKeyCode_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualKeyEvent.Builder().setAction(VirtualKeyEvent.ACTION_DOWN).build()
+        }
     }
 
     @Test
-    public void keyEvent_noAction_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualKeyEvent.Builder().setKeyCode(KeyEvent.KEYCODE_A).build());
+    fun keyEvent_noAction_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualKeyEvent.Builder().setKeyCode(KeyEvent.KEYCODE_A).build()
+        }
     }
 
     @Test
-    public void keyEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualKeyEvent.Builder()
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .setKeyCode(KeyEvent.KEYCODE_A)
-                        .setEventTimeNanos(-3L)
-                        .build());
-    }
-
-    @Test
-    public void keyEvent_valid_created() {
-        final long eventTimeNanos = 5000L;
-        final VirtualKeyEvent event = new VirtualKeyEvent.Builder()
+    fun keyEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualKeyEvent.Builder()
                 .setAction(VirtualKeyEvent.ACTION_DOWN)
                 .setKeyCode(KeyEvent.KEYCODE_A)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect key code").that(event.getKeyCode()).isEqualTo(
-                KeyEvent.KEYCODE_A);
-        assertWithMessage("Incorrect action").that(event.getAction()).isEqualTo(
-                VirtualKeyEvent.ACTION_DOWN);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+                .setEventTimeNanos(-3L)
+                .build()
+        }
+    }
+
+    @Test
+    fun keyEvent_valid_created() {
+        val eventTimeNanos = 5000L
+        val event: VirtualKeyEvent = VirtualKeyEvent.Builder()
+            .setAction(VirtualKeyEvent.ACTION_DOWN)
+            .setKeyCode(KeyEvent.KEYCODE_A)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect key code").that(event.keyCode).isEqualTo(
+            KeyEvent.KEYCODE_A
+        )
+        assertWithMessage("Incorrect action").that(event.action).isEqualTo(
+            VirtualKeyEvent.ACTION_DOWN
+        )
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos).isEqualTo(
+            eventTimeNanos
+        )
     }
 }

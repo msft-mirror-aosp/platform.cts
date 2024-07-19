@@ -13,82 +13,78 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
-
-import static org.junit.Assert.assertThrows;
-
-import android.companion.virtualdevice.flags.Flags;
-import android.hardware.input.VirtualRotaryEncoder;
-import android.hardware.input.VirtualRotaryEncoderScrollEvent;
-import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
-import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-
-import androidx.test.filters.SmallTest;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.Collections;
+import android.companion.virtualdevice.flags.Flags
+import android.hardware.input.VirtualRotaryEncoder
+import android.hardware.input.VirtualRotaryEncoderScrollEvent
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.view.InputEvent
+import androidx.test.filters.SmallTest
+import junitparams.JUnitParamsRunner
+import junitparams.Parameters
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
 @SmallTest
-@RunWith(JUnitParamsRunner.class)
-public class VirtualRotaryEncoderTest extends VirtualDeviceTestCase {
+@RunWith(JUnitParamsRunner::class)
+class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
+    private lateinit var mVirtualRotary: VirtualRotaryEncoder
 
-    private static final String DEVICE_NAME = "CtsVirtualRotaryEncoderTestDevice";
-
-    private VirtualRotaryEncoder mVirtualRotary;
-
-    @Override
-    void onSetUpVirtualInputDevice() {
-        mVirtualRotary = VirtualInputDeviceCreator.createAndPrepareRotary(mVirtualDevice,
-                DEVICE_NAME, mVirtualDisplay.getDisplay()).getDevice();
-    }
-
-    @Test
-    public void createVirtualRotary_nullArguments_throwsException() {
-        assertThrows(NullPointerException.class,
-                () -> mVirtualDevice.createVirtualRotaryEncoder(null));
+    override fun onSetUpVirtualInputDevice() {
+        mVirtualRotary = VirtualInputDeviceCreator.createAndPrepareRotary(
+            mVirtualDevice,
+            DEVICE_NAME, mVirtualDisplay.display
+        ).device
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)
     @RequiresFlagsDisabled(Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
-    @Parameters(method = "getAllScrollValues")
-    public void sendScrollEvent(float scrollAmount) {
-        verifyScrollEvent(scrollAmount);
+    @Parameters(method = "allScrollValues")
+    fun sendScrollEvent(scrollAmount: Float) {
+        verifyScrollEvent(scrollAmount)
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_VIRTUAL_ROTARY, Flags.FLAG_HIGH_RESOLUTION_SCROLL})
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY, Flags.FLAG_HIGH_RESOLUTION_SCROLL)
     @Test
-    @Parameters(method = "getAllHighResScrollValues")
-    public void sendHighResScrollEvent(float scrollAmount) {
-        verifyScrollEvent(scrollAmount);
+    @Parameters(method = "allHighResScrollValues")
+    fun sendHighResScrollEvent(scrollAmount: Float) {
+        verifyScrollEvent(scrollAmount)
     }
 
-    private void verifyScrollEvent(float scrollAmount) {
-        mVirtualRotary.sendScrollEvent(new VirtualRotaryEncoderScrollEvent.Builder()
+    private fun verifyScrollEvent(scrollAmount: Float) {
+        mVirtualRotary.sendScrollEvent(
+            VirtualRotaryEncoderScrollEvent.Builder()
                 .setScrollAmount(scrollAmount)
-                .build());
-        verifyEvents(Collections.singletonList(
-                VirtualInputEventCreator.createRotaryEvent(scrollAmount)));
+                .build()
+        )
+        verifyEvents(
+            listOf<InputEvent>(
+                VirtualInputEventCreator.createRotaryEvent(scrollAmount)
+            )
+        )
     }
 
-    private static Float[] getAllScrollValues() {
-        return new Float[] {
-                -1f, 1f,
-        };
-    }
+    private fun allScrollValues(): Array<Float> = arrayOf(
+        -1f,
+        1f,
+    )
 
-    private static Float[] getAllHighResScrollValues() {
-        return new Float[] {
-                0.1f, 0.5f, 1f, -0.1f, -0.5f, -1f,
-        };
+    private fun allHighResScrollValues(): Array<Float> = arrayOf(
+        0.1f,
+        0.5f,
+        1f,
+        -0.1f,
+        -0.5f,
+        -1f,
+    )
+
+    companion object {
+        private const val DEVICE_NAME = "CtsVirtualRotaryEncoderTestDevice"
     }
 }

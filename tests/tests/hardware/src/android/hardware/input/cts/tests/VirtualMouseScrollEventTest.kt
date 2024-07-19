@@ -13,84 +13,89 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package android.hardware.input.cts.tests
 
-package android.hardware.input.cts.tests;
+import android.hardware.input.VirtualMouseScrollEvent
+import android.os.Parcel
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.filters.SmallTest
+import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert.assertThrows
+import org.junit.Test
+import org.junit.runner.RunWith
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
-import static org.junit.Assert.assertThrows;
-
-import android.hardware.input.VirtualMouseScrollEvent;
-import android.os.Parcel;
-
-import androidx.test.runner.AndroidJUnit4;
-
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-@RunWith(AndroidJUnit4.class)
-public class VirtualMouseScrollEventTest {
+@SmallTest
+@RunWith(AndroidJUnit4::class)
+class VirtualMouseScrollEventTest {
 
     @Test
-    public void parcelAndUnparcel_matches() {
-        final float x = 0.5f;
-        final float y = -0.2f;
-        final long eventTimeNanos = 5000L;
-        final VirtualMouseScrollEvent originalEvent = new VirtualMouseScrollEvent.Builder()
-                .setXAxisMovement(x)
-                .setYAxisMovement(y)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        final Parcel parcel = Parcel.obtain();
-        originalEvent.writeToParcel(parcel, /* flags= */ 0);
-        parcel.setDataPosition(0);
-        final VirtualMouseScrollEvent recreatedEvent =
-                VirtualMouseScrollEvent.CREATOR.createFromParcel(parcel);
-        assertWithMessage("Recreated event has different x").that(originalEvent.getXAxisMovement())
-                .isEqualTo(recreatedEvent.getXAxisMovement());
+    fun parcelAndUnparcel_matches() {
+        val x = 0.5f
+        val y = -0.2f
+        val eventTimeNanos = 5000L
+        val originalEvent: VirtualMouseScrollEvent = VirtualMouseScrollEvent.Builder()
+            .setXAxisMovement(x)
+            .setYAxisMovement(y)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        val parcel: Parcel = Parcel.obtain()
+        val flags = 0
+        originalEvent.writeToParcel(parcel, flags)
+        parcel.setDataPosition(0)
+        val recreatedEvent: VirtualMouseScrollEvent =
+            VirtualMouseScrollEvent.CREATOR.createFromParcel(parcel)
+        assertWithMessage("Recreated event has different x")
+            .that(originalEvent.xAxisMovement)
+            .isEqualTo(recreatedEvent.xAxisMovement)
         assertWithMessage("Recreated event has different y")
-                .that(originalEvent.getYAxisMovement())
-                .isEqualTo(recreatedEvent.getYAxisMovement());
+            .that(originalEvent.yAxisMovement)
+            .isEqualTo(recreatedEvent.yAxisMovement)
         assertWithMessage("Recreated event has different event time")
-                .that(originalEvent.getEventTimeNanos())
-                .isEqualTo(recreatedEvent.getEventTimeNanos());
+            .that(originalEvent.eventTimeNanos)
+            .isEqualTo(recreatedEvent.eventTimeNanos)
     }
 
     @Test
-    public void scrollEvent_xOutOfRange_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseScrollEvent.Builder()
+    fun scrollEvent_xOutOfRange_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseScrollEvent.Builder()
                 .setXAxisMovement(1.5f)
-                .setYAxisMovement(1.0f));
+                .setYAxisMovement(1.0f)
+        }
     }
 
     @Test
-    public void scrollEvent_yOutOfRange_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseScrollEvent.Builder()
+    fun scrollEvent_yOutOfRange_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseScrollEvent.Builder()
                 .setXAxisMovement(0.5f)
-                .setYAxisMovement(1.1f));
+                .setYAxisMovement(1.1f)
+        }
     }
 
     @Test
-    public void scrollEvent_invalidEventTime_throwsIae() {
-        assertThrows(IllegalArgumentException.class, () -> new VirtualMouseScrollEvent.Builder()
+    fun scrollEvent_invalidEventTime_throwsIae() {
+        assertThrows(IllegalArgumentException::class.java) {
+            VirtualMouseScrollEvent.Builder()
                 .setXAxisMovement(-1f)
                 .setYAxisMovement(1f)
-                .setEventTimeNanos(-10L));
+                .setEventTimeNanos(-10L)
+        }
     }
 
     @Test
-    public void scrollEvent_valid_created() {
-        final float x = -1f;
-        final float y = 1f;
-        final long eventTimeNanos = 5000L;
-        final VirtualMouseScrollEvent event = new VirtualMouseScrollEvent.Builder()
-                .setXAxisMovement(x)
-                .setYAxisMovement(y)
-                .setEventTimeNanos(eventTimeNanos)
-                .build();
-        assertWithMessage("Incorrect x value").that(event.getXAxisMovement()).isEqualTo(x);
-        assertWithMessage("Incorrect y value").that(event.getYAxisMovement()).isEqualTo(y);
-        assertWithMessage("Incorrect event time").that(event.getEventTimeNanos())
-                .isEqualTo(eventTimeNanos);
+    fun scrollEvent_valid_created() {
+        val x = -1f
+        val y = 1f
+        val eventTimeNanos = 5000L
+        val event: VirtualMouseScrollEvent = VirtualMouseScrollEvent.Builder()
+            .setXAxisMovement(x)
+            .setYAxisMovement(y)
+            .setEventTimeNanos(eventTimeNanos)
+            .build()
+        assertWithMessage("Incorrect x value").that(event.xAxisMovement).isEqualTo(x)
+        assertWithMessage("Incorrect y value").that(event.yAxisMovement).isEqualTo(y)
+        assertWithMessage("Incorrect event time").that(event.eventTimeNanos)
+            .isEqualTo(eventTimeNanos)
     }
 }
