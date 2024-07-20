@@ -16,9 +16,6 @@
 
 package android.car.cts;
 
-import static android.car.CarOccupantZoneManager.OCCUPANT_TYPE_DRIVER;
-import static android.car.cts.utils.ShellPermissionUtils.runWithShellPermissionIdentity;
-
 import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -27,12 +24,8 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
-import android.app.ActivityOptions;
 import android.app.Instrumentation;
-import android.car.Car;
-import android.car.CarOccupantZoneManager;
 import android.car.settings.CarSettings;
-import android.car.test.PermissionsCheckerRule.EnsureHasPermission;
 import android.content.ContentResolver;
 import android.graphics.Color;
 import android.hardware.display.DisplayManager;
@@ -50,34 +43,37 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ActivityScenario;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
-import java.util.List;
-
-@FlakyTest(bugId = 336489418)
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class CarDisplayInputLockTest extends AbstractCarTestCase {
-    private static final String TAG = CarDisplayInputLockTest.class.getSimpleName();
     private static final long INPUT_LOCK_UPDATE_WAIT_TIME_MS = 10_000L;
     private static final long ACTIVITY_WAIT_TIME_OUT_MS = 10_000L;
     private static final String EMPTY_SETTING_VALUE = "";
 
+    @Rule
+    @ClassRule
+    public static final DeviceState sDeviceState = new DeviceState();
+
+    private DisplayManager mDisplayManager;
     private Instrumentation mInstrumentation;
     private ContentResolver mContentResolver;
-    private CarOccupantZoneManager mCarOccupantZoneManager;
     private String mInitialSettingValue;
     private TestActivity mActivity;
 
@@ -87,10 +83,9 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         assumeTrue("This test is enabled only in multi-user/multi-display devices",
                 userManager.isVisibleBackgroundUsersSupported());
 
+        mDisplayManager = mContext.getSystemService(DisplayManager.class);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mContentResolver = mContext.getContentResolver();
-        mCarOccupantZoneManager =
-                (CarOccupantZoneManager) getCar().getCarManager(Car.CAR_OCCUPANT_ZONE_SERVICE);
         mInitialSettingValue = getDisplayInputLockSetting(mContentResolver);
         unlockInputForAllDisplays();
     }
@@ -104,18 +99,41 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
 
     @CddTest(requirements = {"TODO(b/262236403)"})
     @Test
-    public void testDisplayInputLockForEachPassengerDisplay() throws Exception {
-        Display[] displays = getPassengerMainDisplays();
-        for (int i = 0; i < displays.length; i++) {
-            Display display = displays[i];
-            int displayId = display.getDisplayId();
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
+    public void testDisplayInputLockForDriverDisplay() {
+        try (ActivityScenario<TestActivity> scenario =
+                ActivityScenario.launch(TestActivity.class)) {
+            waitForActivityStart(scenario);
+            int displayId = mActivity.getDisplayId();
+            Display display = mDisplayManager.getDisplay(displayId);
+            assertThat(display).isNotNull();
             String displayUniqueId = display.getUniqueId();
 
-            launchActivity(displayId);
+            // Try to lock the driver display
+            lockInputForDisplays(displayUniqueId);
+
+            // Verify that DisplayInputLock ignores the trial to lock the driver display.
+            assertDisplayInputSinkCreated(displayId, /* created= */ false);
+            doTestDisplayInputLock(displayId, /* touchReceived= */ true);
+        }
+    }
+
+    @CddTest(requirements = {"TODO(b/262236403)"})
+    @Test
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    public void testDisplayInputLockForPassengerDisplay() {
+        try (ActivityScenario<TestActivity> scenario =
+                ActivityScenario.launch(TestActivity.class)) {
+            waitForActivityStart(scenario);
+            int displayId = mActivity.getDisplayId();
+            Display display = mDisplayManager.getDisplay(displayId);
+            assertThat(display).isNotNull();
+            String displayUniqueId = display.getUniqueId();
+
             doTestDisplayInputLock(displayId, /* touchReceived= */ true);
 
             lockInputForDisplays(displayUniqueId);
-            assertDisplayInputSinkCreated(displayId);
+            assertDisplayInputSinkCreated(displayId, /* created= */ true);
             doTestDisplayInputLock(displayId, /* touchReceived= */ false);
 
             unlockInputForAllDisplays();
@@ -124,68 +142,14 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         }
     }
 
-    @CddTest(requirements = {"TODO(b/262236403)"})
-    @Test
-    public void testDisplayInputLockForTwoPassengerDisplaysAtOnce() throws Exception {
-        Display[] displays = getPassengerMainDisplays();
-        assumeTrue("Two passenger displays doesn't exist.", displays.length >= 2);
-
-        // Pick the first two passenger displays.
-        Display first = displays[0];
-        Display second = displays[1];
-        int firstDisplayId = first.getDisplayId();
-        int secondDisplayId = second.getDisplayId();
-
-        launchActivity(firstDisplayId);
-        doTestDisplayInputLock(firstDisplayId, /* touchReceived= */ true);
-        launchActivity(secondDisplayId);
-        doTestDisplayInputLock(secondDisplayId, /* touchReceived= */ true);
-
-        // Lock both displays at once.
-        lockInputForDisplays(first.getUniqueId() + "," + second.getUniqueId());
-        assertDisplayInputSinkCreated(firstDisplayId);
-        assertDisplayInputSinkCreated(secondDisplayId);
-        launchActivity(firstDisplayId);
-        doTestDisplayInputLock(firstDisplayId, /* touchReceived= */ false);
-        launchActivity(secondDisplayId);
-        doTestDisplayInputLock(secondDisplayId, /* touchReceived= */ false);
-
-        // Unlock both displays at once.
-        unlockInputForAllDisplays();
-        assertAllDisplayInputSinksRemoved();
-        launchActivity(firstDisplayId);
-        doTestDisplayInputLock(firstDisplayId, /* touchReceived= */ true);
-        launchActivity(secondDisplayId);
-        doTestDisplayInputLock(secondDisplayId, /* touchReceived= */ true);
-    }
-
-    @CddTest(requirements = {"TODO(b/262236403)"})
-    @Test
-    @EnsureHasPermission(Car.ACCESS_PRIVATE_DISPLAY_ID)
-    public void testPassengerDisplayInputLockDoesNotAffectDriverDisplay() throws Exception {
-        int driverDisplayId = mCarOccupantZoneManager.getDisplayIdForDriver(
-                CarOccupantZoneManager.DISPLAY_TYPE_MAIN);
-        DisplayManager dm = mContext.getSystemService(DisplayManager.class);
-        Display driverDisplay = dm.getDisplay(driverDisplayId);
-        assertThat(driverDisplay).isNotNull();
-        Display[] passengerDisplays = getPassengerMainDisplays();
-        assumeTrue("At least one passenger display should exist.", passengerDisplays.length >= 1);
-
-        // Pick the first passenger display.
-        Display passengerDisplay = passengerDisplays[0];
-        int passengerDisplayId = passengerDisplay.getDisplayId();
-
-        // Lock passengerDisplay, check driverDisplay.
-        launchActivity(driverDisplayId);
-        doTestDisplayInputLock(driverDisplayId, /* touchReceived= */ true);
-        lockInputForDisplays(passengerDisplay.getUniqueId());
-        assertDisplayInputSinkCreated(passengerDisplayId);
-        doTestDisplayInputLock(driverDisplayId, /* touchReceived= */ true);
-
-        launchActivity(passengerDisplayId);
-        doTestDisplayInputLock(passengerDisplayId, /* touchReceived= */ false);
-        unlockInputForAllDisplays();
-        assertAllDisplayInputSinksRemoved();
+    private void waitForActivityStart(ActivityScenario<TestActivity> scenario) {
+        ConditionVariable activityReferenceObtained = new ConditionVariable();
+        scenario.onActivity(activity -> {
+            mActivity = activity;
+            activityReferenceObtained.open();
+        });
+        activityReferenceObtained.block(ACTIVITY_WAIT_TIME_OUT_MS);
+        assertWithMessage("Failed to acquire activity reference.").that(mActivity).isNotNull();
     }
 
     private void doTestDisplayInputLock(int displayId, boolean touchReceived) {
@@ -198,14 +162,14 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         mActivity.resetTouchesReceived();
     }
 
-    private void assertDisplayInputSinkCreated(int displayId) throws Exception {
+    private void assertDisplayInputSinkCreated(int displayId, boolean created) {
         PollingCheck.waitFor(INPUT_LOCK_UPDATE_WAIT_TIME_MS, () -> {
             String cmdOut = runShellCommand("dumpsys input");
-            return cmdOut.contains("DisplayInputSink-" + displayId);
+            return cmdOut.contains("DisplayInputSink-" + displayId) == created;
         });
     }
 
-    private void assertAllDisplayInputSinksRemoved() throws Exception {
+    private void assertAllDisplayInputSinksRemoved() {
         PollingCheck.waitFor(INPUT_LOCK_UPDATE_WAIT_TIME_MS, () -> {
             String cmdOut = runShellCommand("dumpsys input");
             return !cmdOut.contains("DisplayInputSink");
@@ -218,50 +182,17 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
                 CarSettings.Global.DISPLAY_INPUT_LOCK);
     }
 
-    private void lockInputForDisplays(String displayUniqueIds) throws Exception {
+    private void lockInputForDisplays(String displayUniqueIds) {
         writeDisplayInputLockSetting(mContentResolver, displayUniqueIds);
     }
 
-    private void unlockInputForAllDisplays() throws Exception {
+    private void unlockInputForAllDisplays() {
         writeDisplayInputLockSetting(mContentResolver, EMPTY_SETTING_VALUE);
     }
 
     private void writeDisplayInputLockSetting(@NonNull ContentResolver resolver,
             @NonNull String value) {
         Settings.Global.putString(resolver, CarSettings.Global.DISPLAY_INPUT_LOCK, value);
-    }
-
-    private void launchActivity(int displayId) {
-        mActivity = null;
-        ConditionVariable activityReferenceObtained = new ConditionVariable();
-        // Uses ShellPermisson to launch an Activitiy on the different displays.
-        runWithShellPermissionIdentity(()-> {
-            ActivityScenario<TestActivity> scenario = ActivityScenario
-                    .launch(TestActivity.class, createLaunchActivityOptionsBundle(displayId));
-            scenario.onActivity(activity -> {
-                mActivity = activity;
-                activityReferenceObtained.open();
-            });
-        });
-        activityReferenceObtained.block(ACTIVITY_WAIT_TIME_OUT_MS);
-        assertWithMessage("Failed to acquire activity reference.").that(mActivity).isNotNull();
-    }
-
-    private Display[] getPassengerMainDisplays() {
-        List<CarOccupantZoneManager.OccupantZoneInfo> zonelist =
-                mCarOccupantZoneManager.getAllOccupantZones();
-        ArrayList<Display> displayList = new ArrayList<>();
-        for (CarOccupantZoneManager.OccupantZoneInfo zone : zonelist) {
-            if (zone.occupantType == OCCUPANT_TYPE_DRIVER) {
-                continue;
-            }
-            Display display = mCarOccupantZoneManager.getDisplayForOccupant(zone,
-                    CarOccupantZoneManager.DISPLAY_TYPE_MAIN);
-            if (display != null) {
-                displayList.add(display);
-            }
-        }
-        return displayList.toArray(new Display[0]);
     }
 
     private void tapOnDisplay(int displayId) {
@@ -302,10 +233,6 @@ public class CarDisplayInputLockTest extends AbstractCarTestCase {
         event.setSource(source);
         event.setDisplayId(displayId);
         return event;
-    }
-
-    private static Bundle createLaunchActivityOptionsBundle(int displayId) {
-        return ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle();
     }
 
     public static class TestActivity extends Activity {

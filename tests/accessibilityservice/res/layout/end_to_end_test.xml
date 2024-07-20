@@ -26,6 +26,18 @@
               android:layout_height="wrap_content">
     </ListView>
 
+    <TextView android:id="@+id/labelOne"
+        android:text="@string/text_input_blah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    </TextView>
+
+    <TextView android:id="@+id/labelTwo"
+        android:text="@string/text_input_blah"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+    </TextView>
+
     <EditText android:id="@+id/edittext"
               android:text="@string/text_input_blah"
               android:layout_height="wrap_content"
