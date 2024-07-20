@@ -510,12 +510,50 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-9"
-  description: "- AV1 hardware decoder\n- Secure hardware decoders"
+  name: "Secure Video Decoder Sessions"
+  description: "Secure hardware decoders"
+  test_configs: {
+    key: "1080p"
+    value: {
+      id: "1080p"
+      description: "Test config for 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      id: "4k"
+      description: "Test config for 4k"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "Achieved FPS"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "Number of frame drops per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30 fps."
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
     }
   }
   specs {
@@ -523,6 +561,13 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
     }
   }
   specs {
@@ -530,17 +575,68 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-10"
-  description: "- AV1 hardware decoder\n- Secure hardware decoders"
+  name: "Video Decoder Sessions"
+  description: "hardware decoders, secure with non-secure hardware decoders"
+  test_configs: {
+    key: "1080p"
+    value: {
+      id: "1080p"
+      description: "Test config for 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      id: "4k"
+      description: "Test config for 4k"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "Achieved FPS"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "Number of frame drops per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30fps."
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
     }
   }
   specs {
@@ -548,6 +644,13 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions at 4K resolution@30 fps (unless AV1) which includes one secure decoder session and 1 nn-secure session at 1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
     }
   }
   specs {
@@ -555,6 +658,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 3 instances of non-secure hardware video decoder sessions together with 1 instance of secure hardware video decoder session (4 instances total) (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 4K resolution@30fps (unless AV1) which includes one secure decoder session and 1 nn-secure session at 1080p resolution@30fps where at most 2 sessions can be in 10-bit HDR. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
     }
   }
 }
