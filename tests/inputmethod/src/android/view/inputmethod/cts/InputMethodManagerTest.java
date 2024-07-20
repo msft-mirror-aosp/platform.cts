@@ -34,6 +34,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -271,6 +272,8 @@ public class InputMethodManagerTest {
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testShowInputMethodPicker() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
