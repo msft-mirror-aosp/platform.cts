@@ -42,6 +42,7 @@ public class UpdateOwnershipTestBase extends InstallationTestBase {
     }
 
     @After
+    @Override
     public void tearDown() throws Exception {
         setPackageManagerDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE,
                 mIsUpdateOwnershipEnforcementAvailable);

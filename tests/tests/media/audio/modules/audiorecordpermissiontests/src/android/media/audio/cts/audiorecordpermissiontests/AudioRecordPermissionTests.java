@@ -188,7 +188,6 @@ public class AudioRecordPermissionTests {
     @Test
     public void testRecordAudioNoRuntimePermission_fails() throws Exception {
         assertThrows(UnsupportedOperationException.class, this::buildRecord);
-        runWithShellPermissionIdentity(this::buildRecord, Manifest.permission.RECORD_AUDIO);
     }
 
     private void buildRecord() throws Exception {

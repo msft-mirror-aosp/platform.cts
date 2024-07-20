@@ -229,7 +229,6 @@ class SensitiveNotificationAppHidingTest {
         val mediaProjection = mediaProjectionHelper.startMediaProjection()
         Truth.assertThat(mediaProjection).isNotNull()
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
-            verifyScreenCaptureProtected(activityScenario)
             try {
                 ToastVerifier.verifyToastShowsAndGoes()
                 // Stop and Resume the Activity (hides and re-shows window).
@@ -239,6 +238,9 @@ class SensitiveNotificationAppHidingTest {
             } finally {
                 ToastVerifier.waitForNoToast()
             }
+            // This must come after verifying the Toast, since the window can take a bit of time to
+            // update.
+            verifyScreenCaptureProtected(activityScenario)
         }
     }
 
@@ -271,7 +273,6 @@ class SensitiveNotificationAppHidingTest {
         ActivityScenario.launch(SimpleActivity::class.java).use { activityScenario ->
             verifyScreenCaptureNotProtected(activityScenario)
             sendSensitiveNotification()
-            verifyScreenCaptureProtected(activityScenario)
             try {
                 ToastVerifier.verifyToastShowsAndGoes()
                 // Stop and Resume the Activity (hides and re-shows window).
@@ -281,6 +282,9 @@ class SensitiveNotificationAppHidingTest {
             } finally {
                 ToastVerifier.waitForNoToast()
             }
+            // This must come after verifying the Toast, since the window can take a bit of time to
+            // update.
+            verifyScreenCaptureProtected(activityScenario)
         }
     }
 

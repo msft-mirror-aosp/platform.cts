@@ -431,7 +431,7 @@ public abstract class Step<E> {
                 screenshotName = ScreenshotUtil.getTestName() + "__" + screenshotName;
                 doRemoveInstructionView();
                 ScreenshotUtil.captureScreenshotWithDelay(
-                        screenshotName, /* delayInMillis= */ 500L);
+                        screenshotName, /* delayInMillis= */ 50L);
             } else {
                 ScreenshotUtil.captureScreenshot(screenshotName);
                 removeInstructionView();

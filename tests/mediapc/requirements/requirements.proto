@@ -107,10 +107,7 @@ message RequiredMeasurement {
   optional MeasurementType measurement_type = 3;
   optional Comparison comparison = 4;
 
-  // Whether this measurement is used to differentiate between tests. Some
-  // requirements have multiple tests that test for different performance
-  // classes. ex: 5.1/H-1-2.
-  optional bool is_test_differentiator = 5 [default = false];
+  reserved 5;  // is_test_differentiator
 }
 
 // A required value for a RequiredMeasurement at a given MPC level.
@@ -146,6 +143,7 @@ message VariantSpec {
 message TestConfig {
   // The id is a field name safe string.
   optional string id = 1;
+  optional string description = 2;
 }
 
 enum Comparison {
@@ -156,6 +154,7 @@ enum Comparison {
   COMPARISON_GREATER_THAN = 4;
   COMPARISON_GREATER_THAN_OR_EQUAL = 5;
   COMPARISON_INFO_ONLY = 6;
+  COMPARISON_CONFIG = 7;
 }
 
 enum MeasurementType {

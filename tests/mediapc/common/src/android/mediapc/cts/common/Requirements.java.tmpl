@@ -14,9 +14,10 @@
     {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
     {{- else if eq $c.String "COMPARISON_LESS_THAN" -}}LT
     {{- else if eq $c.String "COMPARISON_LESS_THAN_OR_EQUAL" -}}LTE
-    {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GTE
+    {{- else if eq $c.String "COMPARISON_GREATER_THAN" -}}GT
     {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
     {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
+    {{- else if eq $c.String "COMPARISON_CONFIG" -}}INFO
     {{- else }}{{$c}}
     {{- end }}
 {{- end -}}
@@ -232,11 +233,29 @@ public final class Requirements {
                     {{- end}}
                     .build();
             {{- end }}
-            return new {{UpperCamelCase $r.GetName}}Requirement(
+
+            {{UpperCamelCase $r.GetName}}Requirement req =
+                new {{UpperCamelCase $r.GetName}}Requirement(
                     "{{SafeReqID $r.GetId }}"
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
+            {{- range $m_id, $m := $r.GetMeasurements }}
+            {{- $mt := $m.GetMeasurementType}}
+            {{- $c := $m.GetComparison}}
+            {{- if eq $c.String "COMPARISON_CONFIG" }}
+            {{- range $s := $r.GetSpecs }}
+            {{- if eq $s.GetTestConfigId $t.GetId }}
+            {{- with index $s.GetRequiredValues $m_id}}
+            req.set{{UpperCamelCase $m_id}}(
+                {{- template "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}});
+            {{- break }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            return req;
         }
         {{- end }}{{/* range $t */}}
 

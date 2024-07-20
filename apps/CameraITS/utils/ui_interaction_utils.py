@@ -30,8 +30,8 @@ ACTION_ITS_DO_JCA_CAPTURE = (
 )
 ACTIVITY_WAIT_TIME_SECONDS = 5
 AGREE_BUTTON = 'Agree and continue'
-CAMERA_FILES_PATHS = ['/sdcard/DCIM/Camera',
-                      '/storage/emulated/0/Pictures']
+CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
+                      '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
 DONE_BUTTON_TXT = 'Done'
 FLASH_MODE_TO_CLICKS = types.MappingProxyType({
