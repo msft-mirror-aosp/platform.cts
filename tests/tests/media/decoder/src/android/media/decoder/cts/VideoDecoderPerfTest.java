@@ -181,7 +181,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         mSkipRateChecking = TextUtils.equals("true", bundle.getString("mts-media"));
 
         mUpdatedSwCodec =
-                !TestUtils.isMainlineModuleFactoryVersion("com.google.android.media.swcodec");
+                TestUtils.isUpdatedMainlineModule("com.google.android.media.swcodec");
     }
 
     @After
@@ -217,10 +217,10 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         }
 
         // allow improvements in mainline-updated google-supplied software codecs.
-        boolean fasterIsOk = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
+        boolean fasterAllowed = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
         String error =
             MediaPerfUtils.verifyAchievableFrameRates(name, mime, width, height,
-                           fasterIsOk,  measuredFps);
+                           fasterAllowed,  measuredFps);
         // Performance numbers only make sense on real devices, so skip on non-real devices
         if ((MediaUtils.onFrankenDevice() || mSkipRateChecking) && error != null) {
             if (TestUtils.isMtsMode() && TestUtils.isMainlineCodec(name)) {

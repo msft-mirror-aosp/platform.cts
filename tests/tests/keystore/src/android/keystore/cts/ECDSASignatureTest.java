@@ -79,6 +79,15 @@ public class ECDSASignatureTest {
     private void assertNONEwithECDSATruncatesInputToFieldSize(KeyPair keyPair)
             throws Exception {
         int keySizeBits = TestUtils.getKeySizeBits(keyPair.getPublic());
+        if (keySizeBits == 521) {
+            // The message truncation for ECDSA P521 was broken on some old devices/chipsets for
+            // Keymaster implementations, as per the Bug 338340302. Therefore, this test is skipped
+            // on older devices with VSR <= 29.
+            if (TestUtils.getVendorApiLevel() <= 29) {
+                Log.i(TAG, "This test is skipped for the P521 curve on chipsets with VSR <= 29");
+                return;
+            }
+        }
         byte[] message = new byte[(keySizeBits * 3) / 8];
         for (int i = 0; i < message.length; i++) {
             message[i] = (byte) (i + 1);

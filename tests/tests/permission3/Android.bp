@@ -73,6 +73,7 @@ android_test {
         "sts",
         "general-tests",
         "mts-permission",
+        "mcts-permission",
         "automotive-tests",
         "automotive-general-tests",
     ],

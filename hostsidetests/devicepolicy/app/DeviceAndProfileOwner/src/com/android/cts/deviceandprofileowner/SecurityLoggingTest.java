@@ -253,8 +253,19 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
     }
 
     private void forceSecurityLogs() throws Exception {
+        mOnSecurityLogsAvailableCalled = new CountDownLatch(1);
+
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .executeShellCommand("dpm force-security-logs");
+
+        //Wait for merging security log
+        try {
+            assertTrue("Did not receive security log callback in time",
+                mOnSecurityLogsAvailableCalled.await(60, TimeUnit.SECONDS));
+        }
+        finally {
+            mOnSecurityLogsAvailableCalled = null;
+        }
     }
 
     private void verifyAutomaticEventsPresent(List<SecurityEvent> events) {

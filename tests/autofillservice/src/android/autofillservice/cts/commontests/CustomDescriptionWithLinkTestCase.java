@@ -103,8 +103,10 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
                     PostSaveLinkTappedAction.ROTATE_THEN_TAP_BACK_BUTTON);
         } finally {
             try {
-                mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-                cleanUpAfterScreenOrientationIsBackToPortrait();
+                if (!Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED)) {
+                    mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+                    cleanUpAfterScreenOrientationIsBackToPortrait();
+                }
             } catch (Exception e) {
                 mSafeCleanerRule.add(e);
             } finally {
@@ -137,8 +139,9 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
      */
     @Test
     public final void testTapLink_tapBack_thenStartOverByTouchOutsideAndFocus()
-            throws Exception {
-        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, false);
+              throws Exception {
+      mUiBot.assumeMinimumResolution(500);
+      tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, false);
     }
 
     /**
@@ -150,7 +153,8 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
     @Test
     public void testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest()
             throws Exception {
-        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, true);
+      mUiBot.assumeMinimumResolution(500);
+      tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, true);
     }
 
     /**

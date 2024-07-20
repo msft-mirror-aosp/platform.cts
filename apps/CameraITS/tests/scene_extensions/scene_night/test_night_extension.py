@@ -33,9 +33,14 @@ import opencv_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
 _TABLET_BRIGHTNESS = '12'  # Highest minimum brightness on a supported tablet
+_TABLET_TURN_OFF_TIME_SEC = 2
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
 _MIN_AREA = 0.001  # Circle must be >= 0.1% of image size
+_PATCH_H = 0.5  # center 50% to focus on tablet area
+_PATCH_W = 0.5
+_PATCH_X = 0.5 - _PATCH_W/2
+_PATCH_Y = 0.5 - _PATCH_H/2
 _WHITE = 255
 
 _IMAGE_FORMATS_TO_CONSTANTS = (('yuv', 35), ('jpeg', 256))
@@ -156,8 +161,14 @@ def _check_overall_intensity(night_img, no_night_img):
   Returns:
     True if intensity has increased enough to waive the edge noise check.
   """
-  night_mean = np.mean(night_img)
-  no_night_mean = np.mean(no_night_img)
+  night_patch = image_processing_utils.get_image_patch(
+      night_img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
+  )
+  no_night_patch = image_processing_utils.get_image_patch(
+      no_night_img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H
+  )
+  night_mean = np.mean(night_patch)
+  no_night_mean = np.mean(no_night_patch)
   overall_intensity_ratio = night_mean / no_night_mean
   logging.debug('Night mode ON overall mean: %.2f', night_mean)
   logging.debug('Night mode OFF overall mean: %.2f', no_night_mean)
@@ -266,6 +277,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Check that tablet is connected and turn it off to validate lighting
       if self.tablet:
         lighting_control_utils.turn_off_device(self.tablet)
+        time.sleep(_TABLET_TURN_OFF_TIME_SEC)
       else:
         raise AssertionError('Test must be run with tablet.')
 

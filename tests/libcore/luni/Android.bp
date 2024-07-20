@@ -60,6 +60,7 @@ android_test {
     test_suites: [
         "cts",
         "mts-art",
+        "mcts-art",
         "general-tests",
         "automotive-general-tests",
     ],

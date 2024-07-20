@@ -2993,6 +2993,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * same.
      */
     public void testSoftApConfigurationGetPersistentRandomizedMacAddress() throws Exception {
+	if (!WifiFeature.isWifiSupported(getContext())) {
+            // skip the test if WiFi is not supported
+            return;
+        }
         SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
                 mWifiManager::getSoftApConfiguration);
         final String ssid = currentConfig.getSsid().length() <= 28
@@ -6553,6 +6557,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertEquals(protocol, downlinkParams.getProtocol());
         assertEquals(dstPort, downlinkParams.getDestinationPort());
         assertArrayEquals(flowLabel, downlinkParams.getFlowLabel());
+
+        if (ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Uplink policies were not tested, since they are not supported before V");
+            return;
+        }
 
         // Valid uplink parameters
         QosPolicyParams uplinkParams =

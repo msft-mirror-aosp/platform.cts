@@ -348,9 +348,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerDisplayName() getter returns the correct object.
      */
     public void testCallerDisplayName() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
 
         assertThat(mCall.getDetails().getCallerDisplayName(), instanceOf(String.class));
         assertEquals(CALLER_DISPLAY_NAME, mCall.getDetails().getCallerDisplayName());
@@ -411,9 +413,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerPhotoUri() getter returns the correct object.
      */
     public void testContactPhotoUri() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
         String phoneNumber = getTestNumber().getSchemeSpecificPart();
 
         Uri contactRef = PhoneLookup.ENTERPRISE_CONTENT_FILTER_URI.buildUpon()
@@ -457,9 +461,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerDisplayNamePresentation() getter returns the correct object.
      */
     public void testCallerDisplayNamePresentation() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
 
         assertThat(mCall.getDetails().getCallerDisplayNamePresentation(), instanceOf(Integer.class));
         assertEquals(CALLER_DISPLAY_NAME_PRESENTATION, mCall.getDetails().getCallerDisplayNamePresentation());
@@ -469,7 +475,8 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Test the contacts display name.
      */
     public void testContactDisplayName() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
 

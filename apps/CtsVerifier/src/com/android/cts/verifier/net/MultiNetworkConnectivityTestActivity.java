@@ -20,14 +20,10 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET;
 import static android.net.NetworkCapabilities.TRANSPORT_CELLULAR;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 
-import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState
-        .COMPLETED;
-import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState
-        .NOT_STARTED;
-import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState
-        .STARTED;
-import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState
-        .WAITING_FOR_USER_INPUT;
+import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState.COMPLETED;
+import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState.NOT_STARTED;
+import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState.STARTED;
+import static com.android.cts.verifier.net.MultiNetworkConnectivityTestActivity.ValidatorState.WAITING_FOR_USER_INPUT;
 
 import android.app.ActivityManager;
 import android.app.AlertDialog;
@@ -44,7 +40,6 @@ import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.net.NetworkSpecifier;
 import android.net.wifi.SupplicantState;
-import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiNetworkSpecifier;
@@ -70,7 +65,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A CTS verifier to ensure that when an app calls WifiManager#enableNetwork,
+ * A CTS verifier to ensure that when device connect to a new Wi-Fi network,
  * - When the wifi network does not have internet connectivity, the device should
  * not disable other forms or connectivity, for example cellular.
  * - When the wifi network that the phone connects to loses connectivity, then
@@ -212,7 +207,6 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
     protected void onDestroy() {
         super.onDestroy();
         destroyBroadcastReceivers();
-        restoreOriginalWifiState();
     }
 
     private void recordCurrentWifiState() {
@@ -243,12 +237,6 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
           }
         }
         return result;
-    }
-
-    private void restoreOriginalWifiState() {
-        if (mRecordedWifiConfiguration >= 0) {
-            mWifiManager.enableNetwork(mRecordedWifiConfiguration, true);
-        }
     }
 
     private boolean requestSystemAlertWindowPerimissionIfRequired() {
@@ -295,6 +283,23 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
             .setNegativeButton(R.string.multinetwork_connectivity_turn_wifi_negative,
                 (a, b) -> callback.onComplete(/* isSuccess = */ false))
             .create();
+        alertDialog.show();
+    }
+
+    private void requestUserConnectToApAsync(ConnectApCallback callback) {
+        if (isConnectedToExpectedWifiNetwork()) {
+            callback.onComplete(/* isSuccess = */ true);
+            return;
+        }
+
+        AlertDialog alertDialog = new AlertDialog.Builder(this)
+                .setMessage(getString(R.string.multinetwork_connectivity_connect_to_target_ap,
+                        mAccessPointSsid))
+                .setPositiveButton(R.string.multinetwork_connectivity_turn_wifi_positive,
+                        (a, b) -> requestUserConnectToApAsync(callback))
+                .setNegativeButton(R.string.multinetwork_connectivity_turn_wifi_negative,
+                        (a, b) -> callback.onComplete(/* isSuccess = */ false))
+                .create();
         alertDialog.show();
     }
 
@@ -489,31 +494,6 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
         }
     }
 
-    private WifiConfiguration buildWifiConfiguration() {
-        WifiConfiguration wifiConfiguration = new WifiConfiguration();
-        wifiConfiguration.SSID = "\"" + mAccessPointSsid + "\"";
-        wifiConfiguration.preSharedKey = "\"" + mPskValue + "\"";
-        wifiConfiguration.status = WifiConfiguration.Status.ENABLED;
-        wifiConfiguration.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
-        wifiConfiguration.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
-        wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
-        wifiConfiguration.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
-        wifiConfiguration.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
-        wifiConfiguration.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
-        return wifiConfiguration;
-    }
-
-    private int getOrAddLegacyNetwork() {
-        List<WifiConfiguration> availableConfigurations = mWifiManager.getConfiguredNetworks();
-        for (WifiConfiguration configuration : availableConfigurations) {
-            if (mAccessPointSsid.equals(configuration.SSID)) {
-                return configuration.networkId;
-            }
-        }
-        int newNetwork = mWifiManager.addNetwork(buildWifiConfiguration());
-        return newNetwork;
-    }
-
     private boolean isConnectedToExpectedWifiNetwork() {
         WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
         DhcpInfo dhcpInfo = mWifiManager.getDhcpInfo();
@@ -601,15 +581,7 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
             }
         }
 
-        private void legacyConnectToWifiNetwork(boolean requireInternet) {
-            // If device is not connected to the expected WifiNetwork, connect to the wifi Network.
-            // Timeout with failure if it can't connect.
-            if (!isConnectedToExpectedWifiNetwork()) {
-                int network = getOrAddLegacyNetwork();
-                WifiManager wifiManager = (WifiManager) getApplicationContext()
-                        .getSystemService(Context.WIFI_SERVICE);
-                wifiManager.enableNetwork(network, true);
-            }
+        private void requestNetwork(boolean requireInternet) {
             startTimerDisplay(WIFI_NETWORK_CONNECT_TIMEOUT_MS / 1000);
             NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder()
                     .addTransportType(TRANSPORT_WIFI);
@@ -750,6 +722,9 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
 
         /** Called when cellular network is connected. */
         void onCellularNetworkConnected(Network network) {
+            if (mValidatorState != NOT_STARTED) {
+                return;
+            }
             onContinuePreWifiConnect();
         }
 
@@ -855,7 +830,14 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
 
         void connectToWifi() {
             mTestCallback.testProgress(R.string.multinetwork_connectivity_test_connect_wifi);
-            mConnectivityState.legacyConnectToWifiNetwork(false);
+            requestUserConnectToApAsync((isSuccess) -> {
+                if (isSuccess) {
+                    // Request network
+                    mConnectivityState.requestNetwork(false);
+                } else {
+                    endTest(false, R.string.multinetwork_status_wifi_connect_wrong_ap);
+                }
+            });
         }
     }
 
@@ -898,7 +880,14 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
 
         void connectToWifi() {
             mTestCallback.testProgress(R.string.multinetwork_connectivity_test_connect_wifi);
-            mConnectivityState.legacyConnectToWifiNetwork(true);
+            requestUserConnectToApAsync((isSuccess) -> {
+                if (isSuccess) {
+                    // Request network
+                    mConnectivityState.requestNetwork(true);
+                } else {
+                    endTest(false, R.string.multinetwork_status_unable_to_toggle_wifi);
+                }
+            });
         }
 
         @Override
@@ -1040,6 +1029,10 @@ public class MultiNetworkConnectivityTestActivity extends PassFailButtons.Activi
     }
 
     private interface SetWifiCallback {
+        void onComplete(boolean isSuccess);
+    }
+
+    private interface ConnectApCallback {
         void onComplete(boolean isSuccess);
     }
 }

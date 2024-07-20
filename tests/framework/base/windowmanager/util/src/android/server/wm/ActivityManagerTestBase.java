@@ -1793,6 +1793,10 @@ public abstract class ActivityManagerTestBase {
             }
             sleepDevice();
             wakeUpDevice();
+            /*Press the Home Button on Wear devices to ensure that the keyguard is showing.*/
+            if(isWatch())
+                pressHomeButton();
+
             if (showWhenLockedActivities.length == 0) {
                 mWmState.waitForKeyguardShowingAndNotOccluded();
             } else {
