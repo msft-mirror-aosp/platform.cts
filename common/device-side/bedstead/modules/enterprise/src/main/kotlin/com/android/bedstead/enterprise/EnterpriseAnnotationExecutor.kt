@@ -43,7 +43,6 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
     private val testAppsComponent: TestAppsComponent by locator
     private val usersComponent: UsersComponent by locator
 
-    @Suppress("DEPRECATION")
     override fun applyAnnotation(annotation: Annotation) {
         when (annotation) {
             is EnsureHasDelegate -> enterpriseComponent.ensureHasDelegate(annotation)
