@@ -69,7 +69,7 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
       cam.do_3a(do_af=True, lock_ae=True, lock_awb=True,
                 mono_camera=mono_camera)
 
-      fmt = capture_request_utils.get_largest_yuv_format(props)
+      fmt = capture_request_utils.get_largest_format('yuv', props)
 
       # After 3A has converged, lock AE+AWB for the duration of the test.
       logging.debug('Locking AE & AWB')

@@ -76,6 +76,8 @@ android_test {
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
         "android.companion.virtual.flags-aconfig-java",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     jni_libs: [
         "libctshardware_jni",

@@ -35,6 +35,7 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
+import android.content.pm.PackageManager;
 import android.hardware.input.InputManager;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -195,6 +196,9 @@ public class BrailleDisplayControllerTest {
     @Before
     public void setup() throws Exception {
         assumeTrue(SystemProperties.getBoolean("ro.accessibility.support_hidraw", true));
+        PackageManager pm = sInstrumentation.getContext().getPackageManager();
+        assumeFalse(pm.hasSystemFeature(PackageManager.FEATURE_WATCH));
+
         mService = mServiceRule.getService();
         assertThat(mService).isNotNull();
         mController = mService.getBrailleDisplayController();

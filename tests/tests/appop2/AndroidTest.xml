@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
     <!-- TODO(b/245579250): update to Sdk34 once sdk finalized -->
@@ -31,9 +32,10 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="appops set android.app.appops2.cts REQUEST_INSTALL_PACKAGES allow" />
+        <option name="test-user-token" value="%TEST_USER%"/>
+        <option name="run-command" value="appops set --user %TEST_USER% android.app.appops2.cts REQUEST_INSTALL_PACKAGES allow" />
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/appops2" />
-        <option name="teardown-command" value="pm uninstall android.app.appops.cts.apptoblame" />
+        <option name="teardown-command" value="pm uninstall --user %TEST_USER% android.app.appops.cts.apptoblame" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts" />
     </target_preparer>
 

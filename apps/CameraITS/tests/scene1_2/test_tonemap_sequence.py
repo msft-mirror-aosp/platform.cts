@@ -97,7 +97,7 @@ class TonemapSequenceTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # define formats
-      largest_yuv = capture_request_utils.get_largest_yuv_format(props)
+      largest_yuv = capture_request_utils.get_largest_format('yuv', props)
       match_ar = (largest_yuv['width'], largest_yuv['height'])
       fmt = capture_request_utils.get_near_vga_yuv_format(
           props, match_ar=match_ar)

@@ -15,7 +15,6 @@
 """
 
 import cv2
-import fnmatch
 import logging
 import os
 import threading
@@ -274,17 +273,11 @@ def verify_preview_stabilization(recording_obj, gyro_events,
         f'THRESH: {preview_stabilization_factor}.')
   # Delete saved frames if the format is a PASS
   else:
-    try:
-      tmpdir = os.listdir(log_path)
-    except FileNotFoundError:
-      logging.debug('Tmp directory: %s not found', log_path)
-    for file in tmpdir:
-      if fnmatch.fnmatch(file, f'*_{video_size}_stabilized_frame_*'):
-        file_to_remove = os.path.join(log_path, file)
-        try:
-          os.remove(file_to_remove)
-        except FileNotFoundError:
-          logging.debug('File Not Found: %s', str(file))
+    for file in file_list:
+      try:
+        os.remove(os.path.join(log_path, file))
+      except FileNotFoundError:
+        logging.debug('File Not Found: %s', str(file))
     logging.debug('Format %s passes, frame images removed', video_size)
 
   return {'gyro': max_gyro_angle, 'cam': max_camera_angle,
