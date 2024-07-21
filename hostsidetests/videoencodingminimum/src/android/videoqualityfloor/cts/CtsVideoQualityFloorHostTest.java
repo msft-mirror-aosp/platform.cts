@@ -68,7 +68,7 @@ import javax.annotation.Nullable;
 @OptionClass(alias = "pc-veq-test")
 public class CtsVideoQualityFloorHostTest implements IDeviceTest {
     private static final String RES_URL =
-            "https://storage.googleapis.com/android_media/cts/hostsidetests/videoqualityfloor/tests-1.0.tar.gz";
+            "https://storage.googleapis.com/android_media/cts/hostsidetests/videoqualityfloor/tests-1.1.tar.gz";
 
     // variables related to host-side of the test
     private static final int MINIMUM_VALID_SDK = 31;
