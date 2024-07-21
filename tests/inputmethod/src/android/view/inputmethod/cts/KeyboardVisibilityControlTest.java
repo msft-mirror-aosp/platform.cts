@@ -79,7 +79,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
-import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
@@ -110,13 +109,14 @@ import android.window.OnBackInvokedDispatcher;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.CtsTouchUtils;

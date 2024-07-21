@@ -59,7 +59,6 @@
     <option name="compatibility:include-filter" value="CtsPackageSchemeTestsWithVisibility android.packageinstaller.packagescheme.cts.withvisibility.WithVisibilityPackageSchemeTest#whenTargetAppIsNotInstalled_TestCantFindIt" />
 
     <!-- CtsAdServicesNotInAllowListEndToEndTests -->
-    <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_fledgeFetchAndJoinCustomAudience" />
     <option name="compatibility:include-filter" value="CtsAdServicesNotInAllowListEndToEndTests com.android.adservices.tests.permissions.NotInAllowListTest#testNotInAllowList_selectAds_adSelectionFromOutcomesConfig" />
 
     <!-- CtsWallpaperSdk33TestCases -->
@@ -343,7 +342,6 @@
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedActivityContextTest#testAutofill_manualRequest" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedActivityContextTest#testAutofill_none" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedActivityContextTest#testAutofill_oneField" />
-    <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedActivityContextTest#testAutofill_twoFields" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedApplicationContextTest#testAutofill_manualRequest" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedApplicationContextTest#testAutofill_none" />
     <option name="compatibility:include-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.augmented.AugmentedNotImportantForAutofillWrappedApplicationContextTest#testAutofill_twoFields" />

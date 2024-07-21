@@ -631,8 +631,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }
     }
 
+    /** Asserts the front stack activity type for the given display id. */
+    public void assertFrontStackActivityTypeOnDisplay(String msg, int activityType, int displayId) {
+        assertEquals(msg, activityType, getFrontRootTaskActivityType(displayId));
+    }
+
     public void assertFrontStackActivityType(String msg, int activityType) {
-        assertEquals(msg, activityType, getFrontRootTaskActivityType(DEFAULT_DISPLAY));
+        assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
     public void assertFocusedRootTask(String msg, int taskId) {

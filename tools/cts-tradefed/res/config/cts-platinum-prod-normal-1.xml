@@ -981,9 +981,6 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.layout.WindowLayoutComponentLetterboxTest#testWindowLayoutComponent_providesWindowLayoutFromLetterboxLandscapeActivity" />
     <option name="compatibility:include-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.layout.WindowLayoutComponentLetterboxTest#testWindowLayoutComponent_providesWindowLayoutFromLetterboxPortraitActivity" />
 
-    <!-- CtsScopedStorageDeviceOnlyTest -->
-    <option name="compatibility:include-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.PackageNameVisibilityTest#testOwnerPackageNameInSort" />
-
     <!-- CtsMediaRecorderTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testGetActiveMicrophones" />
     <option name="compatibility:include-filter" value="CtsMediaRecorderTestCases android.media.recorder.cts.MediaRecorderTest#testRecorderMPEG2TS" />

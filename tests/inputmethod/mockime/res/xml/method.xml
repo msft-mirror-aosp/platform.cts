@@ -21,6 +21,7 @@
               android:configChanges="fontScale"
               android:supportsStylusHandwriting="true"
               android:supportsConnectionlessStylusHandwriting="true"
-              android:languageSettingsActivity="language_settings"
+              android:settingsActivity="com.android.cts.mockime.SettingsActivity"
+              android:languageSettingsActivity="com.android.cts.mockime.LanguageSettingsActivity"
               android:stylusHandwritingSettingsActivity="handwriting_settings">
 </input-method>
