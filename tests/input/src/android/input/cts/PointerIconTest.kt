@@ -29,6 +29,7 @@ import android.graphics.Color
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
+import android.os.SystemProperties
 import android.util.Log
 import android.view.MotionEvent
 import android.view.PointerIcon
@@ -266,12 +267,13 @@ class PointerIconTest {
 
     // We don't have a way to synchronously know when the requested pointer icon has been drawn
     // to the display, so wait some time (at least one display frame) for the icon to propagate.
-    private fun waitForPointerIconUpdate() = Thread.sleep(100)
+    private fun waitForPointerIconUpdate() = Thread.sleep(500L * HW_TIMEOUT_MULTIPLIER)
 
     private companion object {
         const val VENDOR_ID = 1
         const val PRODUCT_ID = 11
         const val NAME = "Pointer Icon Test Mouse"
         const val TAG = "PointerIconTest"
+        val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
     }
 }
