@@ -112,7 +112,7 @@ public class VideoEncoderQualityRegressionBFrameTest extends VideoEncoderQuality
         }
         Predicate<Double> predicate = bdRate -> bdRate < 0.000001d;
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, null, true, predicate);
+                FRAME_RATE, null, true, predicate, false);
     }
 
     @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE",
