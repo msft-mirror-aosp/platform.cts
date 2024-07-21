@@ -374,6 +374,12 @@ public class LauncherAppsTest {
                 mLauncherApps.getAppMarketActivityIntent(
                         PACKAGE_NAME, UserHandle.of(UserHandle.myUserId()));
         assertThat(intentSender).isNotNull();
+
+        // No errors if the package is not installed
+        intentSender =
+                mLauncherApps.getAppMarketActivityIntent(
+                        "not.installed.package", UserHandle.of(UserHandle.myUserId()));
+        assertThat(intentSender).isNotNull();
     }
 
     @Test
