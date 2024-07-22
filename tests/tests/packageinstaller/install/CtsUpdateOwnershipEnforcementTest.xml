@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2017 The Android Open Source Project
+<!-- Copyright (C) 2024 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<configuration description="Config for CTS Packageinstaller Session test cases">
+<configuration description="Config for CTS UpdateOwnershipEnforcement test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="packagemanager" />
     <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
@@ -54,22 +54,15 @@
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
+        <option name="push" value="CtsArchiveInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveInstallerApp.apk" />
+        <option name="push" value="CtsArchiveTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveTestApp.apk" />
         <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp.apk" />
-        <option name="push" value="CtsEmptyTestAppV2.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestAppV2.apk" />
-        <option name="push" value="CtsEmptyTestApp_pl.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_pl.apk" />
         <option name="push" value="CtsEmptyInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyInstallerApp.apk" />
-        <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
-        <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
-        <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
-        <option name="push" value="CtsEmptyTestApp_RejectedByVerifier.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_RejectedByVerifier.apk" />
-        <option name="push" value="CtsSufficientVerifierReject.apk->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk" />
-        <option name="push" value="CtsSufficientVerifierReject.apk.idsig->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk.idsig" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsPackageInstallTestCases.apk" />
-        <option name="test-file-name" value="CtsDisabledLauncherActivityApp.apk" />
+        <option name="test-file-name" value="CtsUpdateOwnershipEnforcementTestCases.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
@@ -81,26 +74,6 @@
         <option name="device-setting" value="hide_error_dialogs"/>
         <option name="setting-type" value="global"/>
         <option name="set-value" value="1"/>
-    </target_preparer>
-
-    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="pm uninstall com.android.cts.install.lib.testapp.A" />
-        <option name="run-command" value="pm uninstall com.android.cts.install.lib.testapp.B" />
-        <option name="run-command" value="pm uninstall com.android.cts.install.lib.testapp.S" />
-        <option name="run-command" value="pm uninstall com.test.sdk.user" />
-        <option name="run-command" value="pm uninstall com.test.sdk1_1" />
-        <option name="teardown-command" value="pm uninstall com.android.cts.install.lib.testapp.A" />
-        <option name="teardown-command" value="pm uninstall com.android.cts.install.lib.testapp.B" />
-        <option name="teardown-command" value="pm uninstall com.android.cts.install.lib.testapp.S" />
-        <option name="teardown-command" value="pm uninstall com.test.sdk.user" />
-        <option name="teardown-command" value="pm uninstall com.test.sdk1_1" />
-        <option name="teardown-command" value="pm uninstall android.packageinstaller.disabledlauncheractivity.cts" />
-        <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
-        <option name="run-command" value="wm dismiss-keyguard" />
-        <!-- Collapse notifications -->
-        <option name="run-command" value="cmd statusbar collapse" />
-        <!-- dismiss all system dialogs before launch test -->
-        <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
 
     <!-- Ensures that screen recording is captured -->
