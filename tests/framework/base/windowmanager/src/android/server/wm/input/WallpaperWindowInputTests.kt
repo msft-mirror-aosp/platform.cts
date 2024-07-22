@@ -36,11 +36,10 @@ import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
-import java.util.concurrent.TimeUnit
-import java.util.function.Predicate
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.junit.After
@@ -94,7 +93,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
                 enableWallpaperTouch
             )
         )
-        val found = waitForWindowOnTop(5, TimeUnit.SECONDS)
+        val found = waitForWindowOnTop(5.seconds.toJavaDuration())
             { windowInfo: WindowInfosListenerForTest.WindowInfo ->
                 windowInfo.name.contains(Components.WALLPAPER_TARGET_ACTIVITY.className)
             }
