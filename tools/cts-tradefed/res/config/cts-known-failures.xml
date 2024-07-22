@@ -319,4 +319,8 @@
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
 
+    <!-- b/330018295 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+
 </configuration>
