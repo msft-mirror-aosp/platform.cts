@@ -77,7 +77,6 @@ android_test {
         "cts-wm-util",
         "ctstestrunner-axt",
         "flag-junit",
-        "keystore2_flags_java",
         "guava",
         "hamcrest-library",
         "junit",

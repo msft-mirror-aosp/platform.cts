@@ -22,6 +22,8 @@ import static android.graphics.Paint.CURSOR_AT_OR_AFTER;
 import static android.graphics.Paint.CURSOR_AT_OR_BEFORE;
 import static android.graphics.Paint.CURSOR_BEFORE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -51,6 +53,7 @@ import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannedString;
@@ -2304,5 +2307,25 @@ public class PaintTest {
     public void testSetShadowLayerUnknown() {
         Paint p = new Paint();
         p.setShadowLayer(10.0f, 1.0f, 1.0f, -1L);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_CLEAR_FONT_VARIATION_SETTINGS)
+    @Test
+    public void testSetTypefaceClearPaint() {
+        Paint p = new Paint();
+        Context context = InstrumentationRegistry.getTargetContext();
+        Typeface typeface = Typeface.createFromAsset(context.getAssets(),
+                "fonts/var_fonts/multiaxis.ttf");
+        p.setTypeface(typeface);
+
+        // multiaxis.ttf supports "wght", "PRIV", "PR12" axes.
+        p.setFontVariationSettings("'wght' 500");
+
+        // setFontVariationSettings mutates Typeface instance
+        assertThat(p.getTypeface()).isNotEqualTo(typeface);
+
+        // setTypeface clears font variation settings.
+        p.setTypeface(typeface);
+        assertThat(p.getFontVariationSettings()).isNull();
     }
 }

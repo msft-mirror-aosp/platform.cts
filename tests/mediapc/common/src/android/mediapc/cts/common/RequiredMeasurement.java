@@ -59,6 +59,14 @@ public abstract class RequiredMeasurement<T> {
         this.measuredValue = measuredValue;
     }
 
+    T getMeasuredValue() {
+        if (!measuredValueSet) {
+            throw new IllegalStateException(
+                    "tried to get measured value before it was set for measurement " + id());
+        }
+        return measuredValue;
+    }
+
     @AutoValue.Builder
     public static abstract class Builder<T> {
 

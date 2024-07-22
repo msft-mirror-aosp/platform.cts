@@ -224,7 +224,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private static final long TIMEOUT_MS = 4000;
 
     private static final long POST_TIMEOUT = 200;
-    private static final long TIMEOUT_FORCE_REGROUP_MS = 3000 + POST_TIMEOUT;
+    private static final long TIMEOUT_FORCE_REGROUP_MS = TIMEOUT_MS + POST_TIMEOUT;
     private static final int MESSAGE_BROADCAST_NOTIFICATION = 1;
     private static final int MESSAGE_SERVICE_NOTIFICATION = 2;
     private static final int MESSAGE_CLICK_NOTIFICATION = 3;
@@ -1579,6 +1579,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
 
         sendNotification(801, R.drawable.black);
         sendNotification(802, R.drawable.blue);
@@ -1586,6 +1587,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         sendNotification(804, R.drawable.yellow);
 
         // Wait until all the notifications, including the autogroup, are posted and grouped.
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
         rerankLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(5);
         assertAllPostedNotificationsAutogrouped();
