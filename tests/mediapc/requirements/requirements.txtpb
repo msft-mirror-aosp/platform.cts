@@ -1527,18 +1527,21 @@ requirements {
     key: "1080p_30fps"
     value: {
       id: "1080p_30fps"
+      description: "Tests frame drop at 1080p resolution and 30fps"
     }
   }
   test_configs: {
     key: "1080p_60fps"
     value: {
       id: "1080p_60fps"
+      description: "Tests frame drop at 1080p resolution and 60fps"
     }
   }
   test_configs: {
     key: "4k_60fps"
     value: {
       id: "4k_60fps"
+      description: "Tests frame drop at 4k resolution and 60fps"
     }
   }
   measurements: {
@@ -1704,18 +1707,21 @@ requirements {
     key: "1080p_30fps"
     value: {
       id: "1080p_30fps"
+      description: "Tests adaptive playback at 1080p resolution and 30fps"
     }
   }
   test_configs: {
     key: "1080p_60fps"
     value: {
       id: "1080p_60fps"
+      description: "Tests adaptive playback at 1080p resolution and 60fps"
     }
   }
   test_configs: {
     key: "4k_60fps"
     value: {
       id: "4k_60fps"
+      description: "Tests adaptive playback at 4k resolution and 60fps"
     }
   }
   measurements: {
