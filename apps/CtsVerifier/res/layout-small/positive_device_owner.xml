@@ -43,7 +43,7 @@
             <ListView
                 android:id="@+id/android:list"
                 android:layout_width="match_parent"
-                android:layout_height="1200dp"/>
+                android:layout_height="1400dp"/>
 
         </LinearLayout>
     </ScrollView>
