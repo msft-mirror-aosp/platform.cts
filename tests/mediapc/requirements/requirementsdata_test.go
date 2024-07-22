@@ -128,6 +128,45 @@ func TestConfigMeasurementsValid(t *testing.T) {
 	}
 }
 
+func TestConfigVariantsValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	for _, req := range reqList.GetRequirements() {
+		if !req.HasName() {
+			continue // Do not check requirements that are not implemented yet
+		}
+
+		t.Run(req.GetName(), func(t *testing.T) {
+			for configID := range req.GetTestConfigs() {
+
+				// Check that all test configs have the same variants
+				t.Run(configID, func(t *testing.T) {
+					specToVariants := make(map[int64][]string)
+					for mpc, spec := range req.GetSpecs() {
+						if spec.GetTestConfigId() == configID {
+							specToVariants[mpc] = []string{}
+							for variantID := range spec.GetVariantSpecs() {
+								specToVariants[mpc] = append(specToVariants[mpc], variantID)
+							}
+						}
+					}
+
+					prev := []string{}
+					for _, variants := range specToVariants {
+						if len(prev) > 0 {
+							if diff := cmp.Diff(prev, variants, cmpopts.SortSlices(
+								func(a, b string) bool { return a < b })); diff != "" {
+								t.Errorf("Test config [%s] missing variants (-want +got):\n%s", configID, diff)
+							}
+						}
+						prev = variants
+					}
+				})
+			}
+		})
+	}
+}
+
 func mustUnmarshalRequirementList(t *testing.T) *pb.RequirementList {
 	t.Helper()
 	reqList, err := requirements.UnmarshalRequirementList(reqBinary)
