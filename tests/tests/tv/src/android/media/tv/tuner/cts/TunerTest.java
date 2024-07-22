@@ -2155,6 +2155,42 @@ public class TunerTest {
     }
 
     @Test
+    public void testRequestFrontendNoFrontendAvailableAndResourceHolderRetain() throws Exception {
+        prepTRMCustomFeResourceMapTest();
+
+        // Use try block to ensure restoring the TunerResourceManager
+        // Note: the handles will be changed from the original value, but should be OK
+        try {
+            TunerFrontendInfo[] infos = new TunerFrontendInfo[1];
+            // tunerFrontendInfo(handle, FrontendSettings.TYPE_*, exclusiveGroupId
+            infos[0] = tunerFrontendInfo(1, FrontendSettings.TYPE_DVBT, 1);
+            mTunerResourceManager.setFrontendInfoList(infos);
+
+            Tuner tunerA = new Tuner(mContext, null, 100);
+            Tuner tunerB = new Tuner(mContext, null, 100);
+
+            // let B hold resource
+            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
+                    true /* expectedResult */, 1 /* expectedHandle */);
+            // Requester says holder should not hold resource
+            tunerA.setResourceHolderRetain(false);
+            // Resource Challenger Situation
+            assignFeResource(tunerA.getClientId(), FrontendSettings.TYPE_DVBT,
+                    true /* expectedResult */, 1 /* expectedHandle */);
+            // Requester says holder should hold resource
+            tunerB.setResourceHolderRetain(true);
+            assignFeResource(tunerB.getClientId(), FrontendSettings.TYPE_DVBT,
+                    false /* expectedResult */, -1 /* expectedHandle */);
+            tunerB.close();
+            tunerA.close();
+        } catch (Exception e) {
+            throw(e);
+        } finally {
+            cleanupTRMCustomFeResourceMapTest();
+        }
+    }
+
+    @Test
     public void testTransferOwner() throws Exception {
         testTransferFeOwnershipSingleTuner();
         testTransferFeAndCiCamOwnership();
