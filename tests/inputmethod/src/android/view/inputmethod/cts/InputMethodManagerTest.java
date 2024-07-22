@@ -294,6 +294,8 @@ public class InputMethodManagerTest {
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testInputMethodPickerSwitchIme() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID);
@@ -326,6 +328,8 @@ public class InputMethodManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
     @Test
     public void testInputMethodPickerOpenLanguageSettings() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         try (MockImeSession imeSession = MockImeSession.create(
