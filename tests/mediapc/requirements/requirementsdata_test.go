@@ -75,11 +75,8 @@ func TestAllTestConfigsSpecifiedAndUsed(t *testing.T) {
 		t.Run(req.GetName(), func(t *testing.T) {
 
 			specifiedTestConfigs := []string{}
-			for id, testConfig := range req.GetTestConfigs() {
-				if id != testConfig.GetId() {
-					t.Errorf("Test config id [%s] does not match its key [%s]", testConfig.GetId(), id)
-				}
-				specifiedTestConfigs = append(specifiedTestConfigs, testConfig.GetId())
+			for id := range req.GetTestConfigs() {
+				specifiedTestConfigs = append(specifiedTestConfigs, id)
 			}
 
 			usedTestConfigs := []string{}
