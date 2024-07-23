@@ -150,7 +150,7 @@ protected:
         return AAUDIO_CALLBACK_RESULT_CONTINUE;
     }
 
-    static constexpr int kProcessTimeSeconds = 2;
+    static constexpr int kProcessTimeSeconds = 5;
     static constexpr int kMinimumElapsedTimeSeconds = 1;
     static constexpr double kSampleRateToleranceRatio = .05;
     // Number of callbacks to ignore initially to let the callbacks stabilize.
