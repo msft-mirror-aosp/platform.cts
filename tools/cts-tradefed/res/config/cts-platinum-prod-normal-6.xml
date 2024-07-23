@@ -372,17 +372,6 @@
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceInsets android.server.wm.insets.WindowInsetsPolicyTest#testWindowInsets_dispatched" />
     <option name="compatibility:include-filter" value="CtsWindowManagerDeviceInsets android.server.wm.insets.WindowInsetsPolicyTest#testWindowInsets_root" />
 
-    <!-- MicrodroidHostTestCases -->
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#UpgradedPackageIsAcceptedWithSecretkeeper[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#protectedVmRunsPvmfw[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidBoots[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidRamUsage[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTelemetryPushedAtoms[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedUponUserspaceCrash[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashConfig[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashPayload[protectedVm=true,gki=null]" />
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreNotGeneratedIfNotExportedUponUserspaceCrash[protectedVm=true,gki=null]" />
-
     <!-- CtsPackageManagerTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandMultiUserTest#testDeleteSystemAppMultiuser" />
     <option name="compatibility:include-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandMultiUserTest#testListPackageDefaultAllUsers" />
@@ -464,7 +453,6 @@
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.metrics.cts.MediaMetricsAtomTests#testTrackChangeEvent_default" />
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.metrics.cts.MediaMetricsAtomTests#testTrackChangeEvent_text" />
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.metrics.cts.MediaMetricsAtomTests#testTrackChangeEvent_video" />
-    <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#getSystemController_withoutBTPermissions_returnsDefaultRoute" />
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#newRouteListingPreference_withInvalidCustomSubtext_throws" />
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#requestScan_withOnScreenScan_withScreenOff_doesNotScan" />
     <option name="compatibility:include-filter" value="CtsMediaHostTestCases android.media.router.cts.MediaRouter2HostSideTest#selfScanOnlyProvider_notScannedByAnotherApp" />
