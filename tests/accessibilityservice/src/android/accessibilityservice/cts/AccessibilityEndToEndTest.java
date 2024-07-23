@@ -24,6 +24,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.findWin
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.getActivityTitle;
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.RunOnMainUtils.getOnMain;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_HIDE_TOOLTIP;
 import static android.view.accessibility.AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_TOOLTIP;
@@ -39,6 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -433,11 +435,8 @@ public class AccessibilityEndToEndTest {
                     " - Watches have different notification system.");
             return;
         }
-        if (pm.hasSystemFeature(pm.FEATURE_AUTOMOTIVE)) {
-            Log.i(LOG_TAG, "Skipping: testTypeNotificationStateChangedAccessibilityEvent" +
-                    " - Automotive handle notifications differently.");
-            return;
-        }
+        assumeFalse("Skipping - Automotive handle notifications differently.",
+                isAutomotive(sInstrumentation.getTargetContext()));
 
         String message = mActivity.getString(R.string.notification_message);
 
@@ -858,6 +857,13 @@ public class AccessibilityEndToEndTest {
     public void testTouchDelegateWithEbtBetweenView_ReHoverDelegate_FocusTargetAgain()
             throws Throwable {
         mActivity.waitForEnterAnimationComplete();
+
+        if (isAutomotive(sInstrumentation.getTargetContext())) {
+            // Add some more delay before reading the coordinates of views as in MultiWindow,
+            // transitions and resize of DA requires some xtra time that affect this it final
+            // position. waitForStableGeometry is not available on Android S.
+            SystemClock.sleep(1000);
+        }
 
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.button);

@@ -17,6 +17,7 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchActivityAndWaitForItToBeOnscreen;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -26,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyFloat;
 import static org.mockito.Mockito.eq;
@@ -102,6 +104,9 @@ public class AccessibilityMagnificationTest {
 
     @Before
     public void setUp() throws Exception {
+        mInstrumentation = getInstrumentation();
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(mInstrumentation.getTargetContext()));
         ShellCommandBuilder.create(getInstrumentation())
                 .deleteSecureSetting(ACCESSIBILITY_DISPLAY_MAGNIFICATION_ENABLED)
                 .run();

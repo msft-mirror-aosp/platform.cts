@@ -16,12 +16,17 @@
 
 package android.os.cts
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_TOP_SLEEPING
 import android.app.Instrumentation
 import android.app.UiAutomation
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.graphics.Point
 import android.os.ParcelFileDescriptor
 import android.os.Process
@@ -33,6 +38,7 @@ import android.support.test.uiautomator.UiObject2
 import android.support.test.uiautomator.UiScrollable
 import android.support.test.uiautomator.UiSelector
 import android.support.test.uiautomator.Until
+import android.util.Log
 import androidx.test.InstrumentationRegistry
 import com.android.compatibility.common.util.ExceptionUtils.wrappingExceptions
 import com.android.compatibility.common.util.FeatureUtil
@@ -50,7 +56,17 @@ import org.hamcrest.Matcher
 import org.hamcrest.Matchers
 import org.junit.Assert
 import org.junit.Assert.assertThat
+import org.junit.Assert.assertTrue
 import java.io.InputStream
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+private const val BROADCAST_TIMEOUT_MS = 60000L
+
+const val HIBERNATION_BOOT_RECEIVER_CLASS_NAME =
+    "com.android.permissioncontroller.hibernation.HibernationOnBootReceiver"
+const val ACTION_SET_UP_HIBERNATION =
+    "com.android.permissioncontroller.action.SET_UP_HIBERNATION"
 
 const val SYSUI_PKG_NAME = "com.android.systemui"
 const val NOTIF_LIST_ID = "com.android.systemui:id/notification_stack_scroller"
@@ -70,6 +86,42 @@ const val APK_PATH_R_APP = "/data/local/tmp/cts/os/CtsAutoRevokeRApp.apk"
 const val APK_PACKAGE_NAME_R_APP = "android.os.cts.autorevokerapp"
 const val APK_PATH_Q_APP = "/data/local/tmp/cts/os/CtsAutoRevokeQApp.apk"
 const val APK_PACKAGE_NAME_Q_APP = "android.os.cts.autorevokeqapp"
+
+fun runBootCompleteReceiver(context: Context, testTag: String) {
+    val pkgManager = context.packageManager
+    val permissionControllerPkg = pkgManager.permissionControllerPackageName
+    var permissionControllerSetupIntent = Intent(ACTION_SET_UP_HIBERNATION).apply {
+        setPackage(permissionControllerPkg)
+        setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+    }
+    val receivers = pkgManager.queryBroadcastReceivers(
+        permissionControllerSetupIntent, /* flags= */ 0)
+    if (receivers.size == 0) {
+        // May be on an older, pre-built PermissionController. In this case, try sending directly.
+        permissionControllerSetupIntent = Intent().apply {
+            setPackage(permissionControllerPkg)
+            setClassName(permissionControllerPkg, HIBERNATION_BOOT_RECEIVER_CLASS_NAME)
+            setFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+        }
+    }
+    val countdownLatch = CountDownLatch(1)
+    Log.d(testTag, "Sending boot complete broadcast directly to $permissionControllerPkg")
+    context.sendOrderedBroadcast(
+        permissionControllerSetupIntent,
+        /* receiverPermission= */ null,
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                countdownLatch.countDown()
+                Log.d(testTag, "Broadcast received by $permissionControllerPkg")
+            }
+        },
+        Handler.createAsync(Looper.getMainLooper()),
+        Activity.RESULT_OK,
+        /* initialData= */ null,
+        /* initialExtras= */ null)
+    assertTrue("Timed out while waiting for boot receiver broadcast to be received",
+        countdownLatch.await(BROADCAST_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+}
 
 fun runAppHibernationJob(context: Context, tag: String) {
     val logcat = Logcat()
