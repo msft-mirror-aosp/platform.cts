@@ -66,10 +66,16 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
   """
 
   def test_feature_combination(self):
+    # Use a pool of threads to execute calls asynchronously
     with concurrent.futures.ThreadPoolExecutor() as executor:
       self._test_feature_combination(executor)
 
   def _test_feature_combination(self, executor):
+    """Tests features using an injected ThreadPoolExecutor for analysis.
+
+    Args:
+      executor: a ThreadPoolExecutor to analyze recordings asynchronously.
+    """
     rot_rig = {}
     log_path = self.log_path
 
