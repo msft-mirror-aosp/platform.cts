@@ -200,9 +200,10 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                 }
             }
         }
-        // P010 support was added in Android T, hence limit the following tests to Android T and
-        // above
-        if (CodecTestBase.IS_AT_LEAST_T) {
+        // P010 support was added in Android T and on some devices with vendor
+        // partition older than T these tests are failing hence limit the
+        // following tests to vndk Android T and above
+        if (CodecTestBase.VNDK_IS_AT_LEAST_T) {
             int[] colorFormatsHbd = {COLOR_FormatSurface, COLOR_FormatYUVP010};
             for (Object[] arg : argsHighBitDepth) {
                 final String mediaType = (String) arg[0];

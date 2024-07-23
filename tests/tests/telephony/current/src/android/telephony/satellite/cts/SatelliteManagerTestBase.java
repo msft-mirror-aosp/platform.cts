@@ -710,7 +710,7 @@ public class SatelliteManagerTestBase {
                         return false;
                     }
                 } catch (Exception ex) {
-                    loge("onNtnSignalStrengthChanged: Got exception=" + ex);
+                    loge("onSatelliteCommunicationAllowedStateChanged: Got exception=" + ex);
                     return false;
                 }
             }

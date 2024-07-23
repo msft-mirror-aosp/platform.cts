@@ -116,6 +116,15 @@ public class MainActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mRequestInstallerReceiver != null) {
+            getApplicationContext().unregisterReceiver(mRequestInstallerReceiver);
+            mRequestInstallerReceiver = null;
+        }
+    }
+
     private void cleanUp() {
         cleanUpSessions();
         getApplicationContext().unregisterReceiver(mRequestInstallerReceiver);

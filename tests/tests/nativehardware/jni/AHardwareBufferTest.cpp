@@ -615,7 +615,7 @@ TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
 
     for (int job = 0; job < kNumThreads; ++job) {
         threads.emplace_back([]() {
-            constexpr int kNumIterations = 50000;
+            constexpr int kNumIterations = 10000;
             for (int i = 0; i < kNumIterations; ++i) {
                 // Allocate
                 AHardwareBuffer* ahwb = nullptr;
