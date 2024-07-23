@@ -458,6 +458,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumLength_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_NUMERIC is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_NUMERIC);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumLength(DPC_COMPONENT_NAME, 4);
 
@@ -504,6 +508,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumUpperCase_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumUpperCase(DPC_COMPONENT_NAME, 1);
 
@@ -550,6 +558,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumLowerCase_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumLowerCase(DPC_COMPONENT_NAME, 1);
 
@@ -572,6 +584,7 @@ public final class ResetPasswordWithTokenTest {
             // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
             sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
                     DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             setComplexPasswordRestrictions(/* minLength */ 0,
                     /* minSymbols */ 0,
                     /* minNonLetter */ 0,
@@ -594,6 +607,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumLetters_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumLetters(DPC_COMPONENT_NAME, 1);
 
@@ -638,6 +655,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumNumeric_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumNumeric(DPC_COMPONENT_NAME, 1);
 
@@ -682,6 +703,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumSymbols_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumSymbols(DPC_COMPONENT_NAME, 1);
 
@@ -729,6 +754,10 @@ public final class ResetPasswordWithTokenTest {
     public void setPasswordMinimumNonLetter_success() {
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
+            // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+            sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                    DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
+
             sDeviceState.dpc().devicePolicyManager()
                     .setPasswordMinimumNonLetter(DPC_COMPONENT_NAME, 1);
 
@@ -953,6 +982,9 @@ public final class ResetPasswordWithTokenTest {
     public void testPasswordMinimumLength_featureUnsupported_ignored() {
         int valueBefore = sDeviceState.dpc().devicePolicyManager().getPasswordMinimumLength(
                 DPC_COMPONENT_NAME);
+        // The restriction is only imposed if PASSWORD_QUALITY_NUMERIC is set
+        sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                DPC_COMPONENT_NAME, PASSWORD_QUALITY_NUMERIC);
 
         sDeviceState.dpc().devicePolicyManager().setPasswordMinimumLength(DPC_COMPONENT_NAME, 42);
 
@@ -969,6 +1001,9 @@ public final class ResetPasswordWithTokenTest {
     public void testPasswordMinimumNumeric_ignored() {
         int valueBefore = sDeviceState.dpc().devicePolicyManager().getPasswordMinimumNumeric(
                 DPC_COMPONENT_NAME);
+        // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+        sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
 
         sDeviceState.dpc().devicePolicyManager().setPasswordMinimumNumeric(DPC_COMPONENT_NAME, 42);
 
@@ -985,6 +1020,9 @@ public final class ResetPasswordWithTokenTest {
     public void testPasswordMinimumLowerCase_ignored() {
         int valueBefore = sDeviceState.dpc().devicePolicyManager().getPasswordMinimumLowerCase(
                 DPC_COMPONENT_NAME);
+        // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+        sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
 
         sDeviceState.dpc().devicePolicyManager().setPasswordMinimumLowerCase(DPC_COMPONENT_NAME,
                 42);
@@ -1002,6 +1040,9 @@ public final class ResetPasswordWithTokenTest {
     public void testPasswordMinimumUpperCase_ignored() {
         int valueBefore = sDeviceState.dpc().devicePolicyManager().getPasswordMinimumUpperCase(
                 DPC_COMPONENT_NAME);
+        // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+        sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
 
         sDeviceState.dpc().devicePolicyManager().setPasswordMinimumUpperCase(DPC_COMPONENT_NAME,
                 42);
@@ -1019,6 +1060,9 @@ public final class ResetPasswordWithTokenTest {
     public void testPasswordMinimumLetters_ignored() {
         int valueBefore = sDeviceState.dpc().devicePolicyManager().getPasswordMinimumLetters(
                 DPC_COMPONENT_NAME);
+        // The restriction is only imposed if PASSWORD_QUALITY_COMPLEX is set
+        sDeviceState.dpc().devicePolicyManager().setPasswordQuality(
+                DPC_COMPONENT_NAME, PASSWORD_QUALITY_COMPLEX);
 
         sDeviceState.dpc().devicePolicyManager().setPasswordMinimumLetters(DPC_COMPONENT_NAME, 42);
 
@@ -1077,8 +1121,6 @@ public final class ResetPasswordWithTokenTest {
                 DPC_COMPONENT_NAME, PASSWORD_QUALITY_UNSPECIFIED);
         sDeviceState.dpc().devicePolicyManager().setRequiredPasswordComplexity(
                 PASSWORD_COMPLEXITY_NONE);
-        setComplexPasswordRestrictions(/* minLength */ 0, /* minSymbols */ 0, /* minNonLetter */ 0,
-                /* minNumeric */ 0, /* minLetters */ 0, /* minLowerCase */ 0, /* minUpperCase */ 0);
     }
 
     private void setComplexPasswordRestrictions(int minLength, int minSymbols, int minNonLetter,
