@@ -182,4 +182,10 @@
     <!-- b/236205588#comment26 -->
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
+
+    <!-- b/349776686 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_StrongBox" />
 </configuration>
