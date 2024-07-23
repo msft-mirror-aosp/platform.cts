@@ -27,17 +27,16 @@ import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
+import static com.android.bedstead.nene.users.Users.users;
+import static com.android.bedstead.nene.utils.Versions.U;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 import static com.android.bedstead.permissions.CommonPermissions.MODIFY_QUIET_MODE;
 import static com.android.bedstead.permissions.CommonPermissions.QUERY_USERS;
-import static com.android.bedstead.nene.users.Users.users;
-import static com.android.bedstead.nene.utils.Versions.U;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.content.Intent;
 import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
@@ -53,14 +52,14 @@ import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
-import com.android.bedstead.permissions.CommonPermissions;
-import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommand.Builder;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.Versions;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.CommonPermissions;
+import com.android.bedstead.permissions.PermissionContext;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
@@ -701,7 +700,7 @@ public final class UserReference implements AutoCloseable {
                     .validate(s -> s.startsWith(lockTypeSentenceCase + " set to"))
                     .execute();
         } catch (AdbException e) {
-            if (e.output().contains("null or empty")) {
+            if (e.output().contains("old credential was not provided")) {
                 throw new NeneException("Error attempting to set lock credential when there is "
                         + "already one set. Use the version which takes the existing credential");
             }
