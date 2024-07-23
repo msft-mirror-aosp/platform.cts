@@ -2396,6 +2396,8 @@ public class ItsService extends Service implements SensorEventListener {
             Size inputSize, int inputFormat, int maxInputBuffers,
             boolean backgroundRequest, boolean reuseSession)
             throws ItsException {
+        final int TEN_BIT_CAPABILITY =
+            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
@@ -2443,7 +2445,10 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
-                        is10bitOutputPresent = true;
+                        int[] actualCapabilities = cameraCharacteristics.get(
+                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                        is10bitOutputPresent = Arrays.asList(CameraTestUtils.toObject(
+                                    actualCapabilities)).contains(TEN_BIT_CAPABILITY);
                     } else if ("priv".equals(sformat)) {
                         outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
