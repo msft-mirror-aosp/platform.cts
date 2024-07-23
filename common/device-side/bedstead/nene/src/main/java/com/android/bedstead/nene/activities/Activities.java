@@ -16,11 +16,10 @@
 
 package com.android.bedstead.nene.activities;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.getDisplayId;
 import static android.Manifest.permission.REAL_GET_TASKS;
 import static android.os.Build.VERSION_CODES.Q;
-import static android.os.Build.VERSION_CODES.S;
 
-import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY_STACKS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY_TASKS;
 
 import android.annotation.TargetApi;
@@ -30,7 +29,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.testapisreflection.ActivityTaskManagerProxy;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
@@ -70,7 +68,7 @@ public final class Activities {
     private static final int ACTIVITY_TYPE_DREAM = 5;
 
     /** Proxy class to access inaccessible TestApi methods. */
-    private static final ActivityTaskManagerProxy sProxyInstance =
+    private static final ActivityTaskManagerProxy sActivityTaskManagerProxy =
             new ActivityTaskManagerProxy();
 
     private static final String TAG = "BedsteadActivities";
@@ -109,15 +107,15 @@ public final class Activities {
                     TestApis.context().instrumentedContext().getSystemService(
                             ActivityManager.class);
             return activityManager.getRunningTasks(100).stream()
-                    .filter(r -> getDisplayId(r) == Display.DEFAULT_DISPLAY)
+                    .filter(r -> getDisplayIdInternal(r) == Display.DEFAULT_DISPLAY)
                     .map(r -> new ComponentReference(r.topActivity))
                     .collect(Collectors.toList());
         }
     }
 
-    private int getDisplayId(ActivityManager.RunningTaskInfo task) {
+    private int getDisplayIdInternal(ActivityManager.RunningTaskInfo task) {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            return TestApisReflectionKt.getDisplayId(task);
+            return getDisplayId(task);
         }
 
         return Display.DEFAULT_DISPLAY;
@@ -181,16 +179,9 @@ public final class Activities {
     }
 
     private void removeRootTasksWithActivityTypes(int[] activityTypes) {
-        if (Versions.meetsMinimumSdkVersionRequirement(S)) {
-            try (PermissionContext p = TestApis.permissions().withPermission(
-                    MANAGE_ACTIVITY_TASKS)) {
-                sProxyInstance.removeRootTasksWithActivityTypes(activityTypes);
-            }
-        } else {
-            try (PermissionContext p = TestApis.permissions().withPermission(
-                    MANAGE_ACTIVITY_STACKS)) {
-                sProxyInstance.removeStacksWithActivityTypes(activityTypes);
-            }
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                MANAGE_ACTIVITY_TASKS)) {
+            sActivityTaskManagerProxy.removeRootTasksWithActivityTypes(activityTypes);
         }
     }
 
