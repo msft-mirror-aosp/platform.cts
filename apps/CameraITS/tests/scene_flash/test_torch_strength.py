@@ -48,7 +48,7 @@ _PATCH_Y = 0.5-_PATCH_H/2
 _SINGLE_STRENGTH_CONTROL_THRESHOLD = 1
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
-_TESTING_AE_MODES = (0, 1, 2)
+_TESTING_AE_MODES = (0, 1)
 _TORCH_MODE = 2
 _TORCH_STRENGTH_CONTROL_THRESHOLD = 1
 _TORCH_STRENGTH_MIN = 0
@@ -94,7 +94,7 @@ def _take_captures(
 
   # Take multiple still captures with torch strength
   else:
-    cam.do_3a(do_af=False)
+    cam.do_3a(do_af=False, lock_awb=True, flash_mode=_TORCH_MODE)
     # turn OFF lights to darken scene
     lighting_control_utils.set_lighting_state(
         arduino_serial_port, self.lighting_ch, 'OFF'
