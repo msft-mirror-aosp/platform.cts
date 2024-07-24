@@ -27,6 +27,7 @@ cc_library_shared {
         "test_aaudio_attributes.cpp",
         "test_aaudio_basic.cpp",
         "test_aaudio_callback.cpp",
+        "test_aaudio_frames_processed.cpp",
         "test_aaudio_mmap.cpp",
         "test_aaudio_misc.cpp",
         "test_aaudio_stream_builder.cpp",

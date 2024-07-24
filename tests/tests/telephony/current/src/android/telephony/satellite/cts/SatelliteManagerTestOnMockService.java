@@ -3611,6 +3611,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .registerForCommunicationAllowedStateChanged(
                         getContext().getMainExecutor(), allowStatecallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        if (Flags.geofenceEnhancementForBetterUx()) {
+            assertTrue(allowStatecallback.waitUntilResult(1));
+            assertFalse(allowStatecallback.isAllowed);
+        }
 
         /*
         // Test access controller using cached country codes
