@@ -218,6 +218,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String TRIGGER_AF_KEY = "af";
     public static final String VIB_PATTERN_KEY = "pattern";
     public static final String EVCOMP_KEY = "evComp";
+    public static final String FLASH_MODE_KEY = "flashMode";
     public static final String AUTO_FLASH_KEY = "autoFlash";
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
@@ -2167,6 +2168,11 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, String.format("Running 3A with AE exposure compensation value: %d", evComp));
             }
 
+            int flashMode = params.optInt(FLASH_MODE_KEY, CaptureRequest.FLASH_MODE_OFF);
+            if (flashMode != 0) {
+                Logt.i(TAG, String.format("Running 3A with FLASH_MODE: %d", flashMode));
+            }
+
             // Auto flash can be specified as part of AE convergence.
             boolean autoFlash = params.optBoolean(AUTO_FLASH_KEY, false);
             if (autoFlash == true) {
@@ -2264,6 +2270,10 @@ public class ItsService extends Service implements SensorEventListener {
 
                         if (evComp != 0) {
                             req.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, evComp);
+                        }
+
+                        if (flashMode != CaptureRequest.FLASH_MODE_OFF) {
+                            req.set(CaptureRequest.FLASH_MODE, flashMode);
                         }
 
                         if (autoFlash == false) {
