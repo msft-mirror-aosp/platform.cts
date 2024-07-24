@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import android.app.role.RoleManager;
 import android.content.Intent;
 import android.os.Process;
 import android.telecom.Call;
@@ -27,6 +28,7 @@ import android.util.Log;
 
 public class MissedCallTest extends BaseTelecomTestWithMockServices {
 
+    private RoleManager mRoleManager;
     TestUtils.InvokeCounter mShowMissedCallNotificationIntentCounter =
             new TestUtils.InvokeCounter("ShowMissedCallNotificationIntent");
 
@@ -36,6 +38,7 @@ public class MissedCallTest extends BaseTelecomTestWithMockServices {
     protected void setUp() throws Exception {
         super.setUp();
         mContext = getInstrumentation().getContext();
+        mRoleManager = mContext.getSystemService(RoleManager.class);
 
         MockMissedCallNotificationReceiver.setIntentListener(new IntentListener() {
             @Override
@@ -74,9 +77,12 @@ public class MissedCallTest extends BaseTelecomTestWithMockServices {
         connection.setDisconnected(new DisconnectCause(DisconnectCause.MISSED));
         connection.destroy();
         mShowMissedCallNotificationIntentCounter.waitForCount(1);
-        assertTrue("After missing a call, if the default dialer is handling the missed call "
-                + "notification, then it must be in the temporary power exemption list.",
-                isOnTemporaryPowerExemption());
+        if (mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+            assertTrue("After missing a call, if the default dialer is handling the missed call "
+                            + "notification, then it must be in the temporary power exemption "
+                            + "list.",
+                    isOnTemporaryPowerExemption());
+        }
     }
 
     private boolean isOnTemporaryPowerExemption() throws Exception {
