@@ -17,6 +17,7 @@
 import logging
 import math
 
+_AE_MODE_OFF = 0
 _AE_MODE_ON_AUTO_FLASH = 2
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
@@ -554,21 +555,27 @@ def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
       * metadata: the capture result object
   """
   preview_req_start = auto_capture_request()
-  preview_req_start[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_start['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_start[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_start[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
+  preview_req_start[
+      'android.flash.strengthLevel'] = strength
   # Repeat preview requests with aePrecapture set to IDLE
   # until AE is converged.
   preview_req_idle = auto_capture_request()
-  preview_req_idle[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_idle['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_idle[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_idle[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  preview_req_idle[
+      'android.flash.strengthLevel'] = strength
   # Single still capture request.
   still_capture_req = auto_capture_request()
   still_capture_req[
