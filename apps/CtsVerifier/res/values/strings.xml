@@ -7173,6 +7173,7 @@ You should be prompted to select credentials; choose the ones you just installed
     devices on the lock screen as part of their intent extras.\n\n
     For this test, you will need to have set up a screen lock.</string>
     <string name="controls_panel_settings_test_open_lockscreen_settings">Open Settings</string>
+    <string name="controls_panel_settings_test_dreams_not_supported_message">Dreams are not supported on this device. Test passed automatically.</string>
     <string name="controls_panel_setting_test_instructions">Using the button below, open Settings.
         Find the setting that allows you to control external devices from the lockscreen
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
