@@ -179,7 +179,7 @@ public class ItsService extends Service implements SensorEventListener {
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
 
     // Time given PreviewRecorder to record green buffer frames
-    private static final long BUFFER_FRAMES_MS = 600;
+    private static final long PADDED_FRAMES_MS = 600;
 
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
@@ -3065,7 +3065,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
-        boolean paddedFramesAtEnd = cmdObj.optBoolean("paddedFramesAtEnd", false);
+        boolean paddedFrames = cmdObj.optBoolean("paddedFrames", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.
@@ -3111,17 +3111,42 @@ public class ItsService extends Service implements SensorEventListener {
             long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
                     DynamicRangeProfiles.STANDARD;
             pr.startRecording();
+            if (paddedFrames) {
+                Logt.v(TAG, "Record Green frames at the beginning of the video");
+                pr.overrideCameraFrames(true);
+
+                // MediaRecorder APIs don't specify whether they're synchronous or asynchronous,
+                // and different vendors seem to have interpret this differently. This delay
+                // allows for MediaRecorder to complete the `startRecording` routine before
+                // streaming frames from the camera. b/348332718
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare", e);
+                }
+            }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener, extraConfigs);
+            if (paddedFrames) {
+                Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+
+                Logt.v(TAG, "Record Camera frames after green frames");
+                pr.overrideCameraFrames(false);
+            }
 
             action.execute();
 
-            if (paddedFramesAtEnd) {
-                pr.recordGreenFrames();
+            if (paddedFrames) {
+                pr.overrideCameraFrames(true);
                 try {
-                    Thread.sleep(BUFFER_FRAMES_MS);
+                    Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
                     Logt.e(TAG, "Interrupted while waiting for green frames", e);
                 }
