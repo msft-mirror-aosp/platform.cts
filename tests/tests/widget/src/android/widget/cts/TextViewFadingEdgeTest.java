@@ -183,6 +183,7 @@ public class TextViewFadingEdgeTest {
                 ViewGroup.LayoutParams.MATCH_PARENT);
         layout.setLayoutParams(layoutParams);
         layout.addView(textView);
+        layout.setFitsSystemWindows(true);
 
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, layout,
                 () -> mActivity.setContentView(layout));
