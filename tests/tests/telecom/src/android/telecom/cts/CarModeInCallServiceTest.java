@@ -53,10 +53,12 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || TestUtils.hasAutomotiveFeature()) {
+            //all the tests here are assuming a non-auto device since
+            //expected value from uiModemanger is UI_MODE_TYPE_NORMAL
+            //In the future, we can add new testcases for auto, but skip for now
             return;
         }
-
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
             return;
         }
@@ -81,7 +83,7 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void tearDown() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || TestUtils.hasAutomotiveFeature()) {
             return;
         }
         if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
