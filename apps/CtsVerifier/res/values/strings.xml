@@ -7454,11 +7454,12 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
         \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
         \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+        \n\n* Screenshots can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
-        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n3. Press \"Send notification\".
         \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
