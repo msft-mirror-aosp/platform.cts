@@ -134,13 +134,29 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     mContentView.getViewTreeObserver().removeOnPreDrawListener(this);
                     Display d = mContentView.getDisplay();
                     Point displayPoint = new Point();
+                    // The voice interaction window layer is higher than keyguard, status bar,
+                    // nav bar now. So we should take both status bar, nav bar into consideration.
+                    // The voice interaction hide the nav bar, so the height only need to consider
+                    // status bar. The status bar may contain display cutout but the display cutout
+                    // is device specific, we need to check it.
                     WindowManager wm = mContext.getSystemService(WindowManager.class);
                     WindowMetrics windowMetrics = wm.getCurrentWindowMetrics();
+                    Rect bound = windowMetrics.getBounds();
                     WindowInsets windowInsets = windowMetrics.getWindowInsets();
-                    Rect bounds = new Rect(windowMetrics.getBounds());
-                    bounds.inset(windowInsets.getInsets(statusBars() | displayCutout()));
-                    displayPoint.y = bounds.height();
-                    displayPoint.x = bounds.width();
+                    android.graphics.Insets statusBarInsets =
+                            windowInsets.getInsets(statusBars());
+                    android.graphics.Insets displayCutoutInsets =
+                            windowInsets.getInsets(displayCutout());
+                    android.graphics.Insets min =
+                            android.graphics.Insets.min(statusBarInsets, displayCutoutInsets);
+                    boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
+                    Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
+                    displayPoint.y = statusBarContainsCutout
+                            ? bound.height() - min.top - min.bottom :
+                            bound.height() - displayCutoutInsets.top - displayCutoutInsets.bottom;
+                    displayPoint.x = statusBarContainsCutout ?
+                            bound.width() - min.left - min.right :
+                            bound.width() - displayCutoutInsets.left - displayCutoutInsets.right;
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area
