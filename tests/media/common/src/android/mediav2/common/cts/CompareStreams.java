@@ -17,6 +17,7 @@
 package android.mediav2.common.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
+import static android.mediav2.common.cts.DecodeStreamToYuv.findDecoderForFormat;
 import static android.mediav2.common.cts.DecodeStreamToYuv.findDecoderForStream;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getFormatInStream;
 import static android.mediav2.common.cts.DecodeStreamToYuv.getImage;
@@ -25,8 +26,10 @@ import static android.mediav2.common.cts.VideoErrorManager.computePSNR;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -42,7 +45,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Wrapper class for storing YUV Planes of an image
@@ -69,12 +73,14 @@ public class CompareStreams extends CodecDecoderTestBase {
     private final ArrayList<MediaCodec.BufferInfo> mStreamBufferInfos;
     private final boolean mAllowRefResize;
     private final boolean mAllowRefLoopBack;
-    private final double[] mGlobalMSE;
-    private final double[] mMinimumMSE;
-    private final double[] mGlobalPSNR;
-    private final double[] mMinimumPSNR;
-    private final double[] mAvgPSNR;
-    private final ArrayList<double[]> mFramesPSNR;
+    private final Map<Long, List<Rect>> mFrameCropRects;
+    private final double[] mGlobalMSE = {0.0, 0.0, 0.0};
+    private final double[] mMinimumMSE = {Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE};
+    private final double[] mGlobalPSNR = new double[3];
+    private final double[] mMinimumPSNR = new double[3];
+    private final double[] mAvgPSNR = {0.0, 0.0, 0.0};
+    private final ArrayList<double[]> mFramesPSNR = new ArrayList<>();
+    private final List<List<double[]>> mFramesCropRectPSNR = new ArrayList<>();
 
     private final ArrayList<String> mTmpFiles = new ArrayList<>();
     private boolean mGenerateStats;
@@ -83,39 +89,38 @@ public class CompareStreams extends CodecDecoderTestBase {
     private int mFrameSize;
     private byte[] mInputData;
 
-    private CompareStreams(RawResource refYuv, String testMediaType, String testFile,
-            MediaFormat testFormat, ByteBuffer testBuffer,
+    private CompareStreams(RawResource refYuv, MediaFormat testFormat, ByteBuffer testBuffer,
             ArrayList<MediaCodec.BufferInfo> testBufferInfos, boolean allowRefResize,
-            boolean allowRefLoopBack) throws IOException {
-        super(findDecoderForStream(testMediaType, testFile), testMediaType, testFile, LOG_TAG);
+            boolean allowRefLoopBack) {
+        super(findDecoderForFormat(testFormat), testFormat.getString(MediaFormat.KEY_MIME), null,
+                LOG_TAG);
         mRefYuv = refYuv;
         mStreamFormat = testFormat;
         mStreamBuffer = testBuffer;
         mStreamBufferInfos = testBufferInfos;
         mAllowRefResize = allowRefResize;
         mAllowRefLoopBack = allowRefLoopBack;
-        mMinimumMSE = new double[3];
-        Arrays.fill(mMinimumMSE, Float.MAX_VALUE);
-        mGlobalMSE = new double[3];
-        Arrays.fill(mGlobalMSE, 0.0);
-        mGlobalPSNR = new double[3];
-        mMinimumPSNR = new double[3];
-        mAvgPSNR = new double[3];
-        Arrays.fill(mAvgPSNR, 0.0);
-        mFramesPSNR = new ArrayList<>();
+        mFrameCropRects = null;
     }
 
     public CompareStreams(RawResource refYuv, String testMediaType, String testFile,
             boolean allowRefResize, boolean allowRefLoopBack) throws IOException {
-        this(refYuv, testMediaType, testFile, null, null, null, allowRefResize, allowRefLoopBack);
+        super(findDecoderForStream(testMediaType, testFile), testMediaType, testFile, LOG_TAG);
+        mRefYuv = refYuv;
+        mStreamFormat = null;
+        mStreamBuffer = null;
+        mStreamBufferInfos = null;
+        mAllowRefResize = allowRefResize;
+        mAllowRefLoopBack = allowRefLoopBack;
+        mFrameCropRects = null;
     }
 
     public CompareStreams(MediaFormat refFormat, ByteBuffer refBuffer,
             ArrayList<MediaCodec.BufferInfo> refBufferInfos, MediaFormat testFormat,
             ByteBuffer testBuffer, ArrayList<MediaCodec.BufferInfo> testBufferInfos,
-            boolean allowRefResize, boolean allowRefLoopBack) throws IOException {
-        this(new DecodeStreamToYuv(refFormat, refBuffer, refBufferInfos).getDecodedYuv(), null,
-                null, testFormat, testBuffer, testBufferInfos, allowRefResize, allowRefLoopBack);
+            boolean allowRefResize, boolean allowRefLoopBack) {
+        this(new DecodeStreamToYuv(refFormat, refBuffer, refBufferInfos).getDecodedYuv(),
+                testFormat, testBuffer, testBufferInfos, allowRefResize, allowRefLoopBack);
         mTmpFiles.add(mRefYuv.mFileName);
     }
 
@@ -124,6 +129,19 @@ public class CompareStreams extends CodecDecoderTestBase {
         this(new DecodeStreamToYuv(refMediaType, refFile).getDecodedYuv(), testMediaType, testFile,
                 allowRefResize, allowRefLoopBack);
         mTmpFiles.add(mRefYuv.mFileName);
+    }
+
+    public CompareStreams(RawResource refYuv, String testMediaType, String testFile,
+            Map<Long, List<Rect>> frameCropRects, boolean allowRefResize, boolean allowRefLoopBack)
+            throws IOException {
+        super(findDecoderForStream(testMediaType, testFile), testMediaType, testFile, LOG_TAG);
+        mRefYuv = refYuv;
+        mStreamFormat = null;
+        mStreamBuffer = null;
+        mStreamBufferInfos = null;
+        mAllowRefResize = allowRefResize;
+        mAllowRefLoopBack = allowRefLoopBack;
+        mFrameCropRects = frameCropRects;
     }
 
     static YUVImage fillByteArray(int tgtFrameWidth, int tgtFrameHeight,
@@ -202,9 +220,12 @@ public class CompareStreams extends CodecDecoderTestBase {
                 if (mAllowRefLoopBack && mFileOffset == mFileSize) mFileOffset = 0;
                 YUVImage yuvRefImage = fillByteArray(width, height, mRefYuv.mBytesPerSample,
                         mRefYuv.mWidth, mRefYuv.mHeight, mInputData);
+                List<Rect> frameCropRects =
+                        mFrameCropRects != null ? mFrameCropRects.get(info.presentationTimeUs) :
+                                null;
                 updateErrorStats(yuvRefImage.mData.get(0), yuvRefImage.mData.get(1),
                         yuvRefImage.mData.get(2), yuvImage.mData.get(0), yuvImage.mData.get(1),
-                        yuvImage.mData.get(2));
+                        yuvImage.mData.get(2), width, height, frameCropRects);
 
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -223,23 +244,67 @@ public class CompareStreams extends CodecDecoderTestBase {
         mCodec.releaseOutputBuffer(bufferIndex, false);
     }
 
+    private int clamp(int val, int min, int max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
     private void updateErrorStats(byte[] yRef, byte[] uRef, byte[] vRef, byte[] yTest,
-            byte[] uTest, byte[] vTest) {
-        double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample);
-        mGlobalMSE[0] += curYMSE;
-        mMinimumMSE[0] = Math.min(mMinimumMSE[0], curYMSE);
+            byte[] uTest, byte[] vTest, int imgWidth, int imgHeight, List<Rect> cropRectList) {
+        if (cropRectList == null || cropRectList.isEmpty()) {
+            cropRectList = new ArrayList<>();
+            cropRectList.add(new Rect(0, 0, imgWidth, imgHeight));
+        }
+        double sumYMSE = 0;
+        double sumUMSE = 0;
+        double sumVMSE = 0;
+        Rect frameRect = new Rect(0, 0, imgWidth, imgHeight);
+        ArrayList<double[]> frameCropRectPSNR = new ArrayList<>();
 
-        double curUMSE = computeMSE(uRef, uTest, mRefYuv.mBytesPerSample);
-        mGlobalMSE[1] += curUMSE;
-        mMinimumMSE[1] = Math.min(mMinimumMSE[1], curUMSE);
+        for (int i = 0; i < cropRectList.size(); i++) {
+            Rect cropRect = new Rect(cropRectList.get(i));
+            cropRect.left = clamp(cropRect.left, 0, imgWidth);
+            cropRect.top = clamp(cropRect.top, 0, imgHeight);
+            cropRect.right = clamp(cropRect.right, 0, imgWidth);
+            cropRect.bottom = clamp(cropRect.bottom, 0, imgHeight);
+            assertTrue("invalid cropRect, " + cropRect,
+                    IS_AT_LEAST_T ? cropRect.isValid()
+                            : cropRect.left <= cropRect.right && cropRect.top <= cropRect.bottom);
+            assertTrue(String.format("cropRect %s exceeds frameRect %s", cropRect, frameRect),
+                    frameRect.contains(cropRect));
+            double curYMSE = computeMSE(yRef, yTest, mRefYuv.mBytesPerSample, imgWidth, imgHeight,
+                    cropRect);
+            sumYMSE += curYMSE;
 
-        double curVMSE = computeMSE(vRef, vTest, mRefYuv.mBytesPerSample);
-        mGlobalMSE[2] += curVMSE;
-        mMinimumMSE[2] = Math.min(mMinimumMSE[2], curVMSE);
+            cropRect.left = cropRect.left / 2;   // for uv
+            cropRect.top = cropRect.top / 2;
+            cropRect.right = cropRect.right / 2;
+            cropRect.bottom = cropRect.bottom / 2;
 
-        double yFramePSNR = computePSNR(curYMSE, mRefYuv.mBytesPerSample);
-        double uFramePSNR = computePSNR(curUMSE, mRefYuv.mBytesPerSample);
-        double vFramePSNR = computePSNR(curVMSE, mRefYuv.mBytesPerSample);
+            double curUMSE = computeMSE(uRef, uTest, mRefYuv.mBytesPerSample, imgWidth / 2,
+                    imgHeight / 2, cropRect);
+            sumUMSE += curUMSE;
+
+            double curVMSE = computeMSE(vRef, vTest, mRefYuv.mBytesPerSample, imgWidth / 2,
+                    imgHeight / 2, cropRect);
+            sumVMSE += curVMSE;
+
+            double yCurrCropRectPSNR = computePSNR(curYMSE, mRefYuv.mBytesPerSample);
+            double uCurrCropRectPSNR = computePSNR(curUMSE, mRefYuv.mBytesPerSample);
+            double vCurrCropRectPSNR = computePSNR(curVMSE, mRefYuv.mBytesPerSample);
+
+            frameCropRectPSNR.add(new double[]{yCurrCropRectPSNR, uCurrCropRectPSNR,
+                    vCurrCropRectPSNR});
+        }
+        mFramesCropRectPSNR.add(frameCropRectPSNR);
+        mGlobalMSE[0] += sumYMSE;
+        mGlobalMSE[1] += sumUMSE;
+        mGlobalMSE[2] += sumVMSE;
+        mMinimumMSE[0] = Math.min(mMinimumMSE[0], sumYMSE);
+        mMinimumMSE[1] = Math.min(mMinimumMSE[1], sumUMSE);
+        mMinimumMSE[2] = Math.min(mMinimumMSE[2], sumVMSE);
+        double yFramePSNR = computePSNR(sumYMSE, mRefYuv.mBytesPerSample);
+        double uFramePSNR = computePSNR(sumUMSE, mRefYuv.mBytesPerSample);
+        double vFramePSNR = computePSNR(sumVMSE, mRefYuv.mBytesPerSample);
         mAvgPSNR[0] += yFramePSNR;
         mAvgPSNR[1] += uFramePSNR;
         mAvgPSNR[2] += vFramePSNR;
@@ -320,6 +385,11 @@ public class CompareStreams extends CodecDecoderTestBase {
     public double[] getAvgPSNR() throws IOException, InterruptedException {
         generateErrorStats();
         return mAvgPSNR;
+    }
+
+    public List<List<double[]>> getFramesPSNRForRect() throws IOException, InterruptedException {
+        generateErrorStats();
+        return mFramesCropRectPSNR;
     }
 
     public void cleanUp() {

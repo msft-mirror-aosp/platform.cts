@@ -591,13 +591,6 @@ public class ImportWrappedKeyTest {
         DERTaggedObject keySize =
                 new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new DERInteger(size));
 
-        DEREncodableVector allBlockModes = new DEREncodableVector();
-        allBlockModes.add(new DERInteger(KM_MODE_ECB));
-        allBlockModes.add(new DERInteger(KM_MODE_CBC));
-        DERSet blockModeSet = new DERSet(allBlockModes);
-        DERTaggedObject blockMode =
-                new DERTaggedObject(true, removeTagType(KM_TAG_BLOCK_MODE), blockModeSet);
-
         DEREncodableVector allDigests = new DEREncodableVector();
         allDigests.add(new DERInteger(KM_DIGEST_NONE));
         allDigests.add(new DERInteger(KM_DIGEST_MD5));
@@ -629,7 +622,6 @@ public class ImportWrappedKeyTest {
         allItems.add(purpose);
         allItems.add(algorithm);
         allItems.add(keySize);
-        allItems.add(blockMode);
         allItems.add(digest);
         allItems.add(padding);
         allItems.add(noAuthRequired);

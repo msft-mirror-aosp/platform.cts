@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -17,6 +18,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/testapps/main/java/**/*.java",
+        "src/testapps/main/java/**/*.kt",
     ],
     static_libs: [
         "EventLib",
@@ -32,6 +34,9 @@ android_library {
         "ConnectedAppsSDK_Processor",
         "TestApp_Processor",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
 }
 
 android_library {
@@ -39,6 +44,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/library/main/java/**/*.java",
+        "src/library/main/java/**/*.kt",
     ],
     static_libs: [
         "Nene",
@@ -67,6 +73,7 @@ android_test {
     name: "TestAppTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",
@@ -125,6 +132,7 @@ java_genrule {
         ":RemoteAccountAuthenticatorApp",
         ":MLCTestApp",
         ":MultipleActivitiesTestApp",
+        ":HeadlessDOSingleUserTestApp"
     ],
     out: ["TestApp_Apps.res.zip"],
     tools: [
@@ -152,6 +160,7 @@ java_genrule {
         " && cp $(location :RemoteAccountAuthenticatorApp) $(genDir)/res/raw" +
         " && cp $(location :MLCTestApp) $(genDir)/res/raw" +
         " && cp $(location :MultipleActivitiesTestApp) $(genDir)/res/raw" +
+        " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/res/raw" +
         " && $(location index_testapps) --directory $(genDir)/res/raw --aapt2 $(location aapt2)" +
         " && $(location soong_zip) -o $(out) -C $(genDir)/res -D $(genDir)/res/raw",
 }
@@ -187,6 +196,19 @@ android_test_helper_app {
     defaults: ["mts-target-sdk-version-current"],
     resource_dirs: ["src/testapps/main/res/device_admin"],
     manifest: "manifests/DeviceAdminManifest.xml",
+    additional_manifests: ["CommonManifest.xml"],
+    min_sdk_version: "29",
+    sdk_version: "test_current",
+}
+
+android_test_helper_app {
+    name: "HeadlessDOSingleUserTestApp",
+    static_libs: [
+        "TestApp_TestApps",
+    ],
+    defaults: ["mts-target-sdk-version-current"],
+    resource_dirs: ["src/testapps/main/res/device_admin"],
+    manifest: "manifests/HeadlessDOSingleUserManifest.xml",
     additional_manifests: ["CommonManifest.xml"],
     min_sdk_version: "29",
     sdk_version: "test_current",
@@ -402,6 +424,7 @@ java_library {
     sdk_version: "core_current",
     srcs: [
         "src/processor/main/java/com/android/bedstead/testapp/processor/annotations/*.java",
+        "src/processor/main/java/com/android/bedstead/testapp/processor/annotations/*.kt",
     ],
     host_supported: true,
 }

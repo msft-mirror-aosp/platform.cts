@@ -15,6 +15,9 @@
  */
 package com.android.compatibility.common.deviceinfo;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+
 import android.icu.util.ULocale;
 import android.icu.util.VersionInfo;
 import android.util.Log;
@@ -35,9 +38,9 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -60,8 +63,8 @@ public final class LocaleDeviceInfo extends DeviceInfo {
         store.addListResult("locale", locales);
 
         List<String> icuLocales = Arrays.stream(ULocale.getAvailableLocales())
-            .map((uLocale -> uLocale.toLanguageTag()))
-            .collect(Collectors.toList());
+                .map((uLocale -> uLocale.toLanguageTag()))
+                .collect(toList());
         if (icuLocales.isEmpty()) {
             // default locale
             icuLocales.add(ULocale.US.toLanguageTag());
@@ -82,7 +85,7 @@ public final class LocaleDeviceInfo extends DeviceInfo {
                         return matcher.find() ? Strings.nullToEmpty(matcher.group(1)) : "";
                     })
                     .sorted()
-                    .collect(Collectors.toList());
+                    .collect(toList());
         } catch (IOException e) {
             Log.w(TAG,"Hyphenation binary folder is not exist" , e);
         }
@@ -92,16 +95,27 @@ public final class LocaleDeviceInfo extends DeviceInfo {
     }
 
     /**
-     * Collect the fingerprints of ICU data files. On AOSP build, there are only 2 data files.
-     * The example paths are /apex/com.android.tzdata/etc/icu/icu_tzdata.dat and
+     * Collect the fingerprints of ICU data files. On AOSP build, there are 5 data files.
+     * The example paths are /apex/com.android.tzdata/etc/icu/zoneinfo64.res and
      * /apex/com.android.i18n/etc/icu/icudt65l.dat
      */
     private void collectLocaleDataFilesInfo(DeviceInfoStore store) throws IOException {
         int icuVersion = VersionInfo.ICU_VERSION.getMajor();
-        File[] fixedDatPaths = new File[] {
-                new File("/apex/com.android.tzdata/etc/icu/icu_tzdata.dat"),
-                new File("/apex/com.android.i18n/etc/icu/icudt" + icuVersion + "l.dat"),
-        };
+
+        String icuDatFilePath = "/apex/com.android.i18n/etc/icu/icudt" + icuVersion + "l.dat";
+        Stream<String> tzdataModuleResFiles =
+                Stream.of(
+                    "metaZones.res",
+                    "zoneinfo64.res",
+                    "timezoneTypes.res",
+                    "windowsZones.res")
+                .map(fileName -> "/apex/com.android.tzdata/etc/icu/" + fileName);
+        Set<File> fixedIcuFilesPaths =
+                Stream.concat(
+                    Stream.of(icuDatFilePath),
+                    tzdataModuleResFiles)
+                .map(File::new)
+                .collect(toSet());
 
         // This property has been deprecated since Android 12. The property will not work if this
         // app targets SDK level 31 or higher. Thus, we add the above fixedDatPaths in case that
@@ -110,38 +124,42 @@ public final class LocaleDeviceInfo extends DeviceInfo {
         String prop = System.getProperty("android.icu.impl.ICUBinary.dataPath");
         store.startArray("icu_data_file_info");
 
-        List<File> datFiles = new ArrayList<>();
+        List<File> icuFiles = new ArrayList<>();
         if (prop != null) {
             String[] dataDirs = prop.split(":");
             // List all ".dat" files in the directories.
-            datFiles = Arrays.stream(dataDirs)
+            icuFiles = Arrays.stream(dataDirs)
                 .filter((dir) -> dir != null && !dir.isEmpty())
                 .map((dir) -> new File(dir))
                 .filter((f) -> f.canRead() && f.isDirectory())
                 .map((f) -> f.listFiles())
                 .filter((files) -> files != null)
                 .flatMap(files -> Stream.of(files))
-                .collect(Collectors.toList());
+                .collect(toList());
         }
 
-        datFiles.addAll(Arrays.asList(fixedDatPaths));
+        icuFiles.addAll(fixedIcuFilesPaths);
 
         // Keep the readable paths only.
-        datFiles = datFiles.stream()
+        icuFiles = icuFiles.stream()
             .distinct()
-            .filter((f) -> f != null && f.canRead() && f.getName().endsWith(".dat"))
-            .collect(Collectors.toList());
+            .filter((f) -> f != null && f.canRead() && isIcuFile(f))
+            .collect(toList());
 
-        for (File datFile : datFiles) {
-            String sha256Hash = sha256(datFile);
+        for (File icuFile : icuFiles) {
+            String sha256Hash = sha256(icuFile);
 
             store.startGroup();
-            store.addResult("file_path", datFile.getPath());
+            store.addResult("file_path", icuFile.getPath());
             // Still store the null hash to indicate an error occurring when obtaining the hash.
             store.addResult("file_sha256", sha256Hash);
             store.endGroup();
         }
         store.endArray();
+    }
+
+    private static boolean isIcuFile(File file) {
+        return file.getName().endsWith(".dat") || file.getName().endsWith(".res");
     }
 
     public static @Nullable String sha256(File file) {

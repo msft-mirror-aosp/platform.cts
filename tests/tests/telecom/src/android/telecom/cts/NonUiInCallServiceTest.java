@@ -19,6 +19,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 
 import java.util.Arrays;
 
@@ -46,6 +47,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
         waitOnAllHandlers(getInstrumentation());
     }
 
+    @FlakyTest
     public void testMidCallComponentEnablement() throws Exception {
         if (!mShouldTestTelecom) {
             return;
@@ -99,6 +101,7 @@ public class NonUiInCallServiceTest extends BaseTelecomTestWithMockServices {
      * enablement.
      * @throws Exception
      */
+    @FlakyTest
     public void testMidCallComponentEnablementWithNoneAvailableAtStart() throws Exception {
         if (!mShouldTestTelecom) {
             return;

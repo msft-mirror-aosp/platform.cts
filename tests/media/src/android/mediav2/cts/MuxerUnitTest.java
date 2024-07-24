@@ -28,6 +28,7 @@ import android.media.MediaMuxer;
 import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -56,6 +57,7 @@ public class MuxerUnitTest {
     // duplicate definitions of hide fields of MediaMuxer.OutputFormat.
     private static final int MUXER_OUTPUT_LAST = MediaMuxer.OutputFormat.MUXER_OUTPUT_OGG;
 
+    @FrameworkSpecificTest
     @NonMainlineTest
     @SmallTest
     public static class TestApi {
@@ -757,6 +759,7 @@ public class MuxerUnitTest {
         }
     }
 
+    @FrameworkSpecificTest
     @NonMainlineTest
     @SmallTest
     public static class TestApiNative {

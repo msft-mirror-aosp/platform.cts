@@ -16,7 +16,6 @@
 
 package android.view.surfacecontrol.cts;
 
-import static android.server.wm.WindowManagerState.getLogicalDisplaySize;
 import static android.view.cts.util.ASurfaceControlTestUtils.TransactionCompleteListener;
 import static android.view.cts.util.ASurfaceControlTestUtils.applyAndDeleteSurfaceTransaction;
 import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceControl_createFromWindow;
@@ -30,20 +29,19 @@ import static android.view.cts.util.ASurfaceControlTestUtils.nSurfaceTransaction
 import static android.view.cts.util.ASurfaceControlTestUtils.reparent;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.test.suitebuilder.annotation.LargeTest;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.cts.surfacevalidator.CapturedActivity;
 import android.view.cts.surfacevalidator.MultiFramePixelChecker;
 import android.view.cts.surfacevalidator.SurfaceControlTestCase;
 
+import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiObjectNotFoundException;
 
 import org.junit.After;
 import org.junit.Before;
@@ -92,8 +90,6 @@ public class ASurfaceControlBackPressureTest {
     @Before
     public void setup() {
         mActivity = mActivityRule.getActivity();
-        mActivity.setLogicalDisplaySize(getLogicalDisplaySize());
-        assumeFalse(mActivity.isOnWatch());
     }
 
     @After

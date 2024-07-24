@@ -26,6 +26,7 @@ android_test_helper_app {
         "CtsWriteExternalStorageWriteGiftLib",
         "androidx.appcompat_appcompat",
         "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
         "compatibility-device-util-axt",
     ],
     libs: [

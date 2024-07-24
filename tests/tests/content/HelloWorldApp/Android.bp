@@ -49,12 +49,35 @@ android_test {
 
 //-----------------------------------------------------------
 android_test {
+    name: "HelloWorld5NonDefaultFlags",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    manifest: "AndroidManifestNonDefaultFlags.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorld5DifferentSigner",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    certificate: ":cts-testkey1",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
     name: "HelloWorld5Profileable",
     defaults: ["hello_world_defaults"],
     srcs: ["src5/**/*.java"],
     manifest: "AndroidManifestProfileable.xml",
     test_suites: [
-        "vts10",
         "general-tests",
     ],
     v4_signature: true,
@@ -65,6 +88,18 @@ android_test {
     name: "HelloWorld7",
     defaults: ["hello_world_defaults"],
     srcs: ["src7/**/*.java"],
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSystemUserOnly",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src_system_user_only/**/*.java"],
+    manifest: "AndroidManifestSystemUserOnly.xml",
     test_suites: [
         "general-tests",
     ],
@@ -108,15 +143,52 @@ android_test {
 
 //-----------------------------------------------------------
 android_test {
-    name: "HelloWorldShell",
+    name: "HelloWorldSystem",
     defaults: ["hello_world_defaults"],
     srcs: ["src_shell/**/*.java"],
-    manifest: "AndroidManifestShell.xml",
+    manifest: "AndroidManifestSystem.xml",
     test_suites: [
-        "vts10",
         "general-tests",
     ],
     v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSharedUid",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src_shell/**/*.java"],
+    manifest: "AndroidManifestSharedUid.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSettings",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src_shell/**/*.java"],
+    manifest: "AndroidManifestSettings.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+    certificate: "platform",
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSettings2",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src_shell/**/*.java"],
+    manifest: "AndroidManifestSettings2.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+    certificate: "platform",
 }
 
 //-----------------------------------------------------------
@@ -226,6 +298,32 @@ android_test {
 
 //-----------------------------------------------------------
 android_test {
+    name: "HelloWorldUsingSdk1OptionalSdk2",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk_user/**/*.java"],
+    manifest: "AndroidManifestUsingSdk1OptionalSdk2.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldUsingSdk1Optional",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk_user/**/*.java"],
+    manifest: "AndroidManifestUsingSdk1Optional.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
     name: "HelloWorldUsingSdk1",
     defaults: ["hello_world_defaults"],
     srcs: ["sdk_user/**/*.java"],
@@ -294,6 +392,18 @@ android_test {
     defaults: ["hello_world_defaults"],
     srcs: ["src5/**/*.java"],
     manifest: "AndroidManifestWithSufficient.xml",
+    test_suites: [
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldNonUpdatableSystem",
+    defaults: ["hello_world_defaults"],
+    srcs: ["src5/**/*.java"],
+    manifest: "AndroidManifestWithNonUpdatableSystem.xml",
     test_suites: [
         "general-tests",
     ],

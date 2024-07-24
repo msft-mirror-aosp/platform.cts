@@ -30,6 +30,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.Property;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -48,6 +49,7 @@ import java.util.Objects;
 
 @RunWith(JUnit4.class)
 @AppModeFull(reason = "Instant applications cannot install other packages")
+@AppModeNonSdkSandbox(reason = "Sandboxed SDKs cannot install other packages")
 public class PackageManagerGetPropertyTest {
     private static PackageManager sPackageManager;
     private static final String PROPERTY_APP1_PACKAGE_NAME = "com.android.cts.packagepropertyapp1";
@@ -68,7 +70,8 @@ public class PackageManagerGetPropertyTest {
                 .getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
-                        Manifest.permission.INSTALL_PACKAGES, Manifest.permission.DELETE_PACKAGES);
+                        Manifest.permission.INSTALL_PACKAGES, Manifest.permission.DELETE_PACKAGES,
+                        Manifest.permission.USE_SYSTEM_DATA_LOADERS);
     }
 
     private static void dropShellPermissions() {
@@ -341,6 +344,8 @@ public class PackageManagerGetPropertyTest {
     @Test
     public void testPackageRemoval() throws Exception {
         adoptShellPermissions();
+        Uninstall.packages(PROPERTY_APP1_PACKAGE_NAME, PROPERTY_APP2_PACKAGE_NAME,
+                PROPERTY_APP3_PACKAGE_NAME);
         Install.single(PROPERTY_APP3).commit();
         dropShellPermissions();
 

@@ -22,7 +22,9 @@ import android.os.health.HealthStats;
 import android.os.health.HealthStatsParceler;
 import android.os.health.HealthStatsWriter;
 import android.os.health.TimerStat;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.platform.test.annotations.AppModeSdkSandbox;
+
+import androidx.test.filters.SmallTest;
 
 import junit.framework.Assert;
 import junit.framework.TestCase;
@@ -32,6 +34,7 @@ import java.util.Map;
 /**
  * Provides test cases for android.os.health.HealthStats and HealthStatsWriter.
  */
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class HealthStatsTest extends TestCase {
     @HealthKeys.Constant(type=HealthKeys.TYPE_TIMER)
     public static final int TIMER_0 = 10;

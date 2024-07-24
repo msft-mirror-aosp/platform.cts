@@ -26,6 +26,7 @@ import android.app.appsearch.AppSearchSchema;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.Migrator;
 import android.app.appsearch.PackageIdentifier;
+import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SetSchemaRequest;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.util.ArrayMap;
@@ -213,6 +214,43 @@ public class SetSchemaRequestCtsTest {
                                                 new PackageIdentifier(
                                                         "com.foo.package",
                                                         /*sha256Certificate=*/ new byte[] {}))
+                                        .build());
+        assertThat(expected).hasMessageThat().contains("referenced, but were not added");
+    }
+
+    @Test
+    public void testInvalidSchemaReferences_fromPubliclyVisible() {
+        IllegalArgumentException expected =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new SetSchemaRequest.Builder()
+                                        .setPubliclyVisibleSchema(
+                                                "InvalidSchema",
+                                                new PackageIdentifier(
+                                                        "com.foo.package",
+                                                        /*sha256Certificate=*/ new byte[] {}))
+                                        .build());
+        assertThat(expected).hasMessageThat().contains("referenced, but were not added");
+    }
+
+    @Test
+    public void testInvalidSchemaReferences_fromVisibleToConfigs() {
+        byte[] sha256cert1 = new byte[32];
+        PackageIdentifier packageIdentifier1 = new PackageIdentifier("Email", sha256cert1);
+        SchemaVisibilityConfig config =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier1)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(SetSchemaRequest.READ_HOME_APP_SEARCH_DATA))
+                        .build();
+
+        IllegalArgumentException expected =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () ->
+                                new SetSchemaRequest.Builder()
+                                        .addSchemaTypeVisibleToConfig("InvalidSchema", config)
                                         .build());
         assertThat(expected).hasMessageThat().contains("referenced, but were not added");
     }
@@ -414,6 +452,151 @@ public class SetSchemaRequestCtsTest {
     }
 
     @Test
+    public void testPubliclyVisibleSchemaType() {
+        AppSearchSchema schema = new AppSearchSchema.Builder("Schema").build();
+
+        PackageIdentifier packageIdentifier =
+                new PackageIdentifier("com.package.foo", /*sha256Certificate=*/ new byte[] {});
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier)
+                        .build();
+        assertThat(request.getPubliclyVisibleSchemas())
+                .containsExactly("Schema", packageIdentifier);
+    }
+
+    @Test
+    public void testPubliclyVisibleSchemaType_removal() {
+        AppSearchSchema schema = new AppSearchSchema.Builder("Schema").build();
+
+        PackageIdentifier packageIdentifier =
+                new PackageIdentifier("com.package.foo", /*sha256Certificate=*/ new byte[] {});
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier)
+                        .build();
+        assertThat(request.getPubliclyVisibleSchemas())
+                .containsExactly("Schema", packageIdentifier);
+
+        // Removed Schema
+        request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier)
+                        .setPubliclyVisibleSchema("Schema", null)
+                        .build();
+        assertThat(request.getPubliclyVisibleSchemas()).isEmpty();
+    }
+
+    @Test
+    public void testPubliclyVisibleSchemaType_deduped() {
+        AppSearchSchema schema = new AppSearchSchema.Builder("Schema").build();
+
+        PackageIdentifier packageIdentifier =
+                new PackageIdentifier("com.package.foo", /*sha256Certificate=*/ new byte[] {});
+        PackageIdentifier packageIdentifier2 =
+                new PackageIdentifier("com.package.bar", /*sha256Certificate=*/ new byte[] {});
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier)
+                        .build();
+        assertThat(request.getPubliclyVisibleSchemas())
+                .containsExactly("Schema", packageIdentifier);
+
+        // Deduped schema
+        request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier2)
+                        .setPubliclyVisibleSchema("Schema", packageIdentifier)
+                        .build();
+        assertThat(request.getPubliclyVisibleSchemas())
+                .containsExactly("Schema", packageIdentifier);
+    }
+
+    @Test
+    public void testSetSchemaTypeVisibleForConfigs() {
+        AppSearchSchema schema = new AppSearchSchema.Builder("Schema").build();
+
+        PackageIdentifier packageIdentifier1 =
+                new PackageIdentifier("com.package.foo", new byte[] {100});
+        PackageIdentifier packageIdentifier2 =
+                new PackageIdentifier("com.package.bar", new byte[] {100});
+
+        SchemaVisibilityConfig config1 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier1)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(SetSchemaRequest.READ_HOME_APP_SEARCH_DATA))
+                        .build();
+        SchemaVisibilityConfig config2 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier2)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(
+                                        SetSchemaRequest.READ_HOME_APP_SEARCH_DATA,
+                                        SetSchemaRequest.READ_CALENDAR))
+                        .build();
+
+        SetSchemaRequest request =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .addSchemaTypeVisibleToConfig("Schema", config1)
+                        .addSchemaTypeVisibleToConfig("Schema", config2)
+                        .build();
+
+        assertThat(request.getSchemasVisibleToConfigs())
+                .containsExactly("Schema", ImmutableSet.of(config1, config2));
+    }
+
+    @Test
+    public void testClearSchemaTypeVisibleForConfigs() {
+        AppSearchSchema schema = new AppSearchSchema.Builder("Schema").build();
+
+        PackageIdentifier packageIdentifier1 =
+                new PackageIdentifier("com.package.foo", new byte[] {100});
+        PackageIdentifier packageIdentifier2 =
+                new PackageIdentifier("com.package.bar", new byte[] {100});
+
+        SchemaVisibilityConfig config1 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier1)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(SetSchemaRequest.READ_HOME_APP_SEARCH_DATA))
+                        .build();
+        SchemaVisibilityConfig config2 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier2)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(
+                                        SetSchemaRequest.READ_HOME_APP_SEARCH_DATA,
+                                        SetSchemaRequest.READ_CALENDAR))
+                        .build();
+
+        SetSchemaRequest.Builder builder =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema)
+                        .addSchemaTypeVisibleToConfig("Schema", config1)
+                        .addSchemaTypeVisibleToConfig("Schema", config2);
+
+        SetSchemaRequest original = builder.build();
+        assertThat(original.getSchemasVisibleToConfigs())
+                .containsExactly("Schema", ImmutableSet.of(config1, config2));
+
+        builder.clearSchemaTypeVisibleToConfigs("Schema");
+        SetSchemaRequest rebuild = builder.build();
+
+        // rebuild has empty visible to configs
+        assertThat(rebuild.getSchemasVisibleToConfigs()).isEmpty();
+        // original keep in the same state
+        assertThat(original.getSchemasVisibleToConfigs())
+                .containsExactly("Schema", ImmutableSet.of(config1, config2));
+    }
+
+    @Test
     public void testSetVersion() {
         IllegalArgumentException exception =
                 assertThrows(
@@ -548,6 +731,110 @@ public class SetSchemaRequestCtsTest {
     }
 
     @Test
+    public void testRebuild_visibleConfigs() {
+        byte[] sha256cert1 = new byte[32];
+        byte[] sha256cert2 = new byte[32];
+        Arrays.fill(sha256cert1, (byte) 1);
+        Arrays.fill(sha256cert2, (byte) 2);
+        PackageIdentifier packageIdentifier1 = new PackageIdentifier("Email", sha256cert1);
+        PackageIdentifier packageIdentifier2 = new PackageIdentifier("Email", sha256cert2);
+
+        SchemaVisibilityConfig config1 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier1)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(SetSchemaRequest.READ_HOME_APP_SEARCH_DATA))
+                        .build();
+        SchemaVisibilityConfig config2 =
+                new SchemaVisibilityConfig.Builder()
+                        .addAllowedPackage(packageIdentifier2)
+                        .addRequiredPermissions(
+                                ImmutableSet.of(
+                                        SetSchemaRequest.READ_HOME_APP_SEARCH_DATA,
+                                        SetSchemaRequest.READ_CALENDAR))
+                        .build();
+
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email1")
+                        .addProperty(
+                                new AppSearchSchema.StringPropertyConfig.Builder("subject")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email2")
+                        .addProperty(
+                                new AppSearchSchema.StringPropertyConfig.Builder("subject")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(
+                                                AppSearchSchema.StringPropertyConfig
+                                                        .TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest.Builder builder =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema1)
+                        .addSchemaTypeVisibleToConfig("Email1", config1);
+
+        SetSchemaRequest original = builder.build();
+        SetSchemaRequest rebuild =
+                builder.addSchemas(schema2).addSchemaTypeVisibleToConfig("Email2", config2).build();
+
+        assertThat(original.getSchemas()).containsExactly(schema1);
+        assertThat(original.getSchemasVisibleToConfigs())
+                .containsExactly("Email1", ImmutableSet.of(config1));
+
+        assertThat(rebuild.getSchemas()).containsExactly(schema1, schema2);
+        assertThat(rebuild.getSchemasVisibleToConfigs())
+                .containsExactly(
+                        "Email1", ImmutableSet.of(config1),
+                        "Email2", ImmutableSet.of(config2));
+    }
+
+    @Test
+    public void testSetVisibility_publicVisibility_rebuild() {
+        byte[] sha256cert1 = new byte[32];
+        byte[] sha256cert2 = new byte[32];
+        Arrays.fill(sha256cert1, (byte) 1);
+        Arrays.fill(sha256cert2, (byte) 2);
+        PackageIdentifier packageIdentifier1 = new PackageIdentifier("Email", sha256cert1);
+        PackageIdentifier packageIdentifier2 = new PackageIdentifier("Email", sha256cert2);
+        AppSearchSchema schema1 = new AppSearchSchema.Builder("Email1").build();
+        AppSearchSchema schema2 = new AppSearchSchema.Builder("Email2").build();
+
+        SetSchemaRequest.Builder builder =
+                new SetSchemaRequest.Builder()
+                        .addSchemas(schema1)
+                        .setPubliclyVisibleSchema("Email1", packageIdentifier1);
+
+        SetSchemaRequest original = builder.build();
+        SetSchemaRequest rebuild =
+                builder.addSchemas(schema2)
+                        .setPubliclyVisibleSchema("Email2", packageIdentifier2)
+                        .build();
+
+        assertThat(original.getSchemas()).containsExactly(schema1);
+        assertThat(original.getPubliclyVisibleSchemas())
+                .containsExactly("Email1", packageIdentifier1);
+
+        assertThat(rebuild.getSchemas()).containsExactly(schema1, schema2);
+        assertThat(original.getPubliclyVisibleSchemas())
+                .containsExactly("Email1", packageIdentifier1);
+    }
+
+    @Test
     public void getAndModify() {
         byte[] sha256cert1 = new byte[32];
         byte[] sha256cert2 = new byte[32];
@@ -587,7 +874,8 @@ public class SetSchemaRequestCtsTest {
                         .build();
 
         // get the visibility setting and modify the output object.
-        // skip getSchemasNotDisplayedBySystem since it returns an unmodifiable object.
+        // skip getSchemasNotDisplayedBySystem and getPubliclyVisibleSchemas since they return
+        // unmodifiable objects.
         request.getSchemasVisibleToPackages().put("Email2", ImmutableSet.of(packageIdentifier2));
         request.getRequiredPermissionsForSchemaTypeVisibility()
                 .put("Email2", ImmutableSet.of(ImmutableSet.of(SetSchemaRequest.READ_CALENDAR)));

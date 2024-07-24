@@ -16,14 +16,20 @@
 
 package android.media.cujsmalltest.cts;
 
+import android.media.AudioFormat;
+import android.media.cujcommon.cts.AudioOffloadTestPlayerListener;
 import android.media.cujcommon.cts.CujTestBase;
 import android.media.cujcommon.cts.CujTestParam;
+import android.media.cujcommon.cts.DeviceLockTestPlayerListener;
+import android.media.cujcommon.cts.LockPlaybackControllerTestPlayerListener;
 import android.media.cujcommon.cts.OrientationTestPlayerListener;
 import android.media.cujcommon.cts.PinchToZoomTestPlayerListener;
 import android.media.cujcommon.cts.PipModeTestPlayerListener;
 import android.media.cujcommon.cts.PlaybackTestPlayerListener;
+import android.media.cujcommon.cts.PlayerListener.TestType;
 import android.media.cujcommon.cts.ScrollTestPlayerListener;
 import android.media.cujcommon.cts.SeekTestPlayerListener;
+import android.media.cujcommon.cts.SplitScreenTestPlayerListener;
 import android.media.cujcommon.cts.SwitchAudioTrackTestPlayerListener;
 import android.media.cujcommon.cts.SwitchSubtitleTrackTestPlayerListener;
 import android.platform.test.annotations.PlatinumTest;
@@ -46,6 +52,8 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CtsMediaShortFormPlaybackTest extends CujTestBase {
 
+  private static final String MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/sine1khzs40dblong";
   private static final String MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/ForBiggerJoyrides_720p_hevc_15s";
   private static final String MP4_FORBIGGERMELTDOWN_ASSET_720P_HEVC_URI_STRING =
@@ -78,6 +86,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       "android.resource://android.media.cujsmalltest.cts/raw/tearsofsteel_srt_subtitles_eng_fre_5sec";
   private static final String MKV_TEARS_OF_STEEL_ASSET_SSA_SUBTITLES_ENG_FRENCH_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/tearsofsteel_ssa_subtitles_eng_fre_5sec";
+  private static final String MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/ElephantsDream_2ch_48Khz_15s";
 
   CujTestParam mCujTestParam;
   private final String mTestType;
@@ -115,8 +125,8 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setPlayerListener(new OrientationTestPlayerListener(3000)).build(),
             "Avc_360x640_5sec_OrientationTest"},
         {CujTestParam.builder().setMediaUrls(prepareHevc_480p_15secVideoListForScrollTest())
-            .setTimeoutMilliSeconds(90000)
-            .setPlayerListener(new ScrollTestPlayerListener(2, 5000)).build(),
+            .setTimeoutMilliSeconds(40000)
+            .setPlayerListener(new ScrollTestPlayerListener(2, 2000)).build(),
             "Avc_360x640_15sec_ScrollTest"},
         {CujTestParam.builder().setMediaUrls(prepare_Aac_2ch_44khz_Aac_1ch_44khz_5secVideoList())
             .setTimeoutMilliSeconds(45000)
@@ -138,6 +148,26 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setTimeoutMilliSeconds(45000)
             .setPlayerListener(new PipModeTestPlayerListener(5000)).build(),
             "Hevc_720p_15sec_PipModeTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
+            .setTimeoutMilliSeconds(45000)
+            .setPlayerListener(new SplitScreenTestPlayerListener(5000)).build(),
+            "Hevc_720p_15sec_SplitScreenTest"},
+        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_15sec_SingleVideoList())
+            .setTimeoutMilliSeconds(50000)
+            .setPlayerListener(new DeviceLockTestPlayerListener(3000, false)).build(),
+            "Hevc_720p_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
+            .setTimeoutMilliSeconds(45000)
+            .setPlayerListener(new DeviceLockTestPlayerListener(3000, true)).build(),
+            "Mp3_15sec_DeviceLockTest"},
+        {CujTestParam.builder().setMediaUrls(prepareMp3_15secAudioListForDeviceLockTest())
+            .setTimeoutMilliSeconds(50000)
+            .setPlayerListener(new LockPlaybackControllerTestPlayerListener(6000)).build(),
+            "Hevc_720p_15sec_LockPlaybackTest"},
+        {CujTestParam.builder().setMediaUrls(prepareSineWaveAudioList())
+            .setTimeoutMilliSeconds(100000)
+            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            "Mp3_Sine_AudioOffloadTest"},
     }));
     return exhaustiveArgsList;
   }
@@ -251,6 +281,24 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     return videoInput;
   }
 
+  /**
+   * Prepare Mp3 15sec audio list for Device Lock Test.
+   */
+  public static List<String> prepareMp3_15secAudioListForDeviceLockTest() {
+    List<String> audioInput = Arrays.asList(
+        MP3_ELEPHANTSDREAM_2CH_48KHZ_URI_STRING);
+    return audioInput;
+  }
+
+  /**
+   * Prepare sine wave audio list.
+   */
+  public static List<String> prepareSineWaveAudioList() {
+    List<String> audioInput = Arrays.asList(
+        MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING);
+    return audioInput;
+  }
+
 
   // Test to Verify video playback with and without seek
   @ApiTest(apis = {"android.media.MediaCodec#configure",
@@ -261,13 +309,13 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
   @Test
   @PlatinumTest(focusArea = "media")
   public void testVideoPlayback() throws Exception {
+    /* TODO(b/339628718, b/338342633) */
+    Assume.assumeFalse("Split screen test is skipped",
+        mCujTestParam.playerListener().isSplitScreenTest());
     if (mCujTestParam.playerListener().isOrientationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation.",
-          supportOrientationRequest(mActivity));
-    }
-    if (mCujTestParam.playerListener().isCallNotificationTest()) {
-      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
-          deviceSupportPhoneCall(mActivity));
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support orientation change.",
+          !OrientationTestPlayerListener.getIgnoreOrientationRequest()
+              && supportOrientationRequest(mActivity));
     }
     if (mCujTestParam.playerListener().isPinchToZoomTest()) {
       Assume.assumeFalse("Skipping " + mTestType + " as watch doesn't support zoom behaviour yet",
@@ -277,6 +325,30 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       Assume.assumeFalse(
           "Skipping " + mTestType + " as watch doesn't support picture-in-picture mode yet",
           isWatchDevice(mActivity));
+      Assume.assumeTrue(
+          "Skipping " + mTestType + " as device doesn't support picture-in-picture feature",
+          deviceSupportPipMode(mActivity));
+    }
+    if (mCujTestParam.playerListener().isSplitScreenTest()) {
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support split screen feature",
+          deviceSupportSplitScreenMode(mActivity));
+    }
+    if (mCujTestParam.playerListener().getTestType()
+        .equals(TestType.LOCK_PLAYBACK_CONTROLLER_TEST)) {
+      Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
+    }
+    if (mCujTestParam.playerListener().getTestType().equals(TestType.DEVICE_LOCK_TEST)) {
+      Assume.assumeFalse("Skipping " + mTestType + " on watch", isWatchDevice(mActivity));
+      Assume.assumeFalse("Skipping " + mTestType + " on television", isTelevisionDevice(mActivity));
+      // Skipping DEVICE_LOCK_TEST for secondary_user_on_secondary_display, because currently
+      // there is no way to send a "press sleep/wake button" event to a secondary display.
+      Assume.assumeFalse("Skipping " + mTestType + " for a visible background user"
+              + " as individual lock/unlock on a secondary screen is not supported.",
+              isVisibleBackgroundNonProfileUser(mActivity));
+    }
+    if (mCujTestParam.playerListener().isAudioOffloadTest()) {
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio offloading",
+          deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

@@ -95,21 +95,13 @@ public class ScrollTestActivity extends AppCompatActivity {
   }
 
   /**
-   * Prepare the player and play the first player.
-   */
-  public void run() {
-    mFirstPlayer.prepare();
-    mSecondPlayer.prepare();
-    mIsFirstSurfaceActive = true;
-    mFirstPlayer.play();
-  }
-
-  /**
-   * Resume the first player.
+   * Prepare both players, and start the first player.
    */
   @Override
-  protected void onResume() {
-    super.onResume();
+  protected void onStart() {
+    super.onStart();
+    mFirstPlayer.prepare();
+    mSecondPlayer.prepare();
     mIsFirstSurfaceActive = true;
     mFirstPlayer.play();
   }
@@ -119,9 +111,9 @@ public class ScrollTestActivity extends AppCompatActivity {
    */
   @Override
   protected void onStop() {
+    mFirstPlayer.stop();
+    mSecondPlayer.stop();
     super.onStop();
-    mFirstPlayer.pause();
-    mSecondPlayer.pause();
   }
 
   /**

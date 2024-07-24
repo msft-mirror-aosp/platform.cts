@@ -34,6 +34,7 @@ android_test {
     ],
     platform_apis: true,
     host_required: ["cts-dalvik-host-test-runner"],
+    sdk_version: "test_current",
 }
 
 java_test_host {

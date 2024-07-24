@@ -20,11 +20,13 @@ import static org.testng.Assert.assertThrows;
 
 import android.media.AudioFormat;
 import android.os.Parcel;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import com.android.compatibility.common.util.CtsAndroidTestCase;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 @NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioFormatTest extends CtsAndroidTestCase {
 
     // -----------------------------------------------------------------
@@ -350,7 +352,12 @@ public class AudioFormatTest extends CtsAndroidTestCase {
         });
 
         // Sample rate out of bounds. These cases caught in AudioFormat.
-        for (int sampleRate : new int[] {-BIGNUM, -1, BIGNUM}) {
+        for (int sampleRate : new int[] {
+                -BIGNUM,
+                -1,
+                BIGNUM,
+                AudioFormat.SAMPLE_RATE_HZ_MIN - 1,
+                AudioFormat.SAMPLE_RATE_HZ_MAX + 1}) {
             assertThrows(IllegalArgumentException.class, () -> {
                 new AudioFormat.Builder()
                         .setSampleRate(sampleRate)

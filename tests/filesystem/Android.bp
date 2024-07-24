@@ -24,6 +24,7 @@ android_test {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
@@ -32,4 +33,5 @@ android_test {
         "general-tests",
     ],
     min_sdk_version: "30",
+    sdk_version: "test_current",
 }

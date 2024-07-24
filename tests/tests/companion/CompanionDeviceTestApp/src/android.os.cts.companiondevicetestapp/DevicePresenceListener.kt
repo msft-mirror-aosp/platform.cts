@@ -17,6 +17,7 @@
 package android.os.cts.companiondevicetestapp
 
 import android.companion.CompanionDeviceService
+import android.companion.DevicePresenceEvent
 
 class DevicePresenceListener : CompanionDeviceService() {
 
@@ -26,5 +27,14 @@ class DevicePresenceListener : CompanionDeviceService() {
 
     override fun onDeviceDisappeared(address: String) {
         toast("Device disappeared: $address")
+    }
+
+    override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
+        if (event.uuid != null) {
+            toast("onDeviceEvent: uuid: ${event.uuid} event: ${event.event}")
+        } else {
+            toast("onDeviceEvent: association id: ${event.associationId} event: ${event.event}")
+        }
+        super.onDevicePresenceEvent(event)
     }
 }

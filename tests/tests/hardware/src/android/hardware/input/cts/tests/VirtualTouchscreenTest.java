@@ -16,16 +16,14 @@
 
 package android.hardware.input.cts.tests;
 
-import static android.view.Display.DEFAULT_DISPLAY;
+import static android.view.InputDevice.SOURCE_TOUCHSCREEN;
 
 import static org.junit.Assert.assertThrows;
 
-import android.graphics.Point;
-import android.hardware.display.VirtualDisplay;
 import android.hardware.input.VirtualTouchEvent;
 import android.hardware.input.VirtualTouchscreen;
-import android.hardware.input.VirtualTouchscreenConfig;
-import android.view.InputDevice;
+import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
+import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
@@ -49,34 +47,15 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
 
     @Override
     void onSetUpVirtualInputDevice() {
-        mVirtualTouchscreen = createVirtualTouchscreen(mVirtualDisplay.getDisplay().getDisplayId());
+        mVirtualTouchscreen = VirtualInputDeviceCreator.createAndPrepareTouchscreen(
+                mVirtualDevice, DEVICE_NAME, mVirtualDisplay.getDisplay()).getDevice();
     }
-
-    VirtualTouchscreen createVirtualTouchscreen(int displayId) {
-        final Point size = new Point();
-        mVirtualDisplay.getDisplay().getSize(size);
-        final VirtualTouchscreenConfig touchscreenConfig =
-                new VirtualTouchscreenConfig.Builder(size.x, size.y)
-                        .setVendorId(VENDOR_ID)
-                        .setProductId(PRODUCT_ID)
-                        .setInputDeviceName(DEVICE_NAME)
-                        .setAssociatedDisplayId(displayId)
-                        .build();
-        return mVirtualDevice.createVirtualTouchscreen(touchscreenConfig);
-    }
-
-    @Override
-    void onTearDownVirtualInputDevice() {
-        if (mVirtualTouchscreen != null) {
-            mVirtualTouchscreen.close();
-        }
-    }
-
     @Test
     public void sendTouchEvent() {
         final float inputSize = 1f;
         // Convert the input axis size to its equivalent fraction of the total screen.
-        final float computedSize = inputSize / (DISPLAY_WIDTH - 1f);
+        final float computedSize = inputSize
+                / (mVirtualDisplay.getDisplay().getMode().getPhysicalWidth() - 1f);
         final float x = 50f;
         final float y = 50f;
 
@@ -98,7 +77,13 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                 .setPressure(255f)
                 .build());
         expectedEvents.add(
-                createMotionEvent(MotionEvent.ACTION_DOWN, x, y, 1.0f, computedSize, inputSize));
+                VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_DOWN, x, y,
+                        1f /* pressure */, computedSize, inputSize));
+
+        // We expect to get the exact coordinates in the view that were injected into the
+        // touchscreen. Touch resampling could result in the generation of additional "fake" touch
+        // events. To disable resampling, request unbuffered dispatch.
+        mTestActivity.getWindow().getDecorView().requestUnbufferedDispatch(SOURCE_TOUCHSCREEN);
 
         // Next we send a bunch of ACTION_MOVE events. Each one with a different x and y coordinate.
         // If no property changes (i.e. the same VirtualTouchEvent is sent multiple times) then the
@@ -110,8 +95,8 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                     .setPressure(255f);
             mVirtualTouchscreen.sendTouchEvent(builder.build());
             expectedEvents.add(
-                    createMotionEvent(MotionEvent.ACTION_MOVE, x + i, y + i, 1.0f, computedSize,
-                            inputSize));
+                    VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_MOVE,
+                            x + i, y + i, 1f /* pressure */, computedSize, inputSize));
         }
 
         mVirtualTouchscreen.sendTouchEvent(builder
@@ -120,8 +105,9 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
                 .setY(y + moveEventCount)
                 .build());
         expectedEvents.add(
-                createMotionEvent(MotionEvent.ACTION_UP, x + moveEventCount, y + moveEventCount,
-                        1.0f, computedSize, inputSize));
+                VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_UP,
+                        x + moveEventCount, y + moveEventCount, 1f /* pressure */,
+                        computedSize, inputSize));
 
         verifyEvents(expectedEvents);
     }
@@ -149,19 +135,17 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
         final float inputSize = 1f;
         final float x = 50f;
         final float y = 50f;
-
-        try (DropShellPermissionsTemporarily drop = new DropShellPermissionsTemporarily()) {
-            assertThrows(SecurityException.class,
-                    () -> mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
-                            .setAction(VirtualTouchEvent.ACTION_DOWN)
-                            .setPointerId(1)
-                            .setX(x)
-                            .setY(y)
-                            .setPressure(255f)
-                            .setMajorAxisSize(inputSize)
-                            .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
-                            .build()));
-        }
+        mRule.runWithoutPermissions(
+                () -> assertThrows(SecurityException.class,
+                        () -> mVirtualTouchscreen.sendTouchEvent(new VirtualTouchEvent.Builder()
+                                .setAction(VirtualTouchEvent.ACTION_DOWN)
+                                .setPointerId(1)
+                                .setX(x)
+                                .setY(y)
+                                .setPressure(255f)
+                                .setMajorAxisSize(inputSize)
+                                .setToolType(VirtualTouchEvent.TOOL_TYPE_FINGER)
+                                .build())));
     }
 
     private void sendHoverEvent(int action, float x, float y) {
@@ -176,50 +160,13 @@ public class VirtualTouchscreenTest extends VirtualDeviceTestCase {
     }
 
     private MotionEvent createMotionEvent(int action, float x, float y) {
-        return createMotionEvent(action, x, y, /* pressure= */ 0f, /* size= */ 0f,
-                /* axisSize= */ 0f);
-    }
-
-    private MotionEvent createMotionEvent(int action, float x, float y, float pressure, float size,
-            float axisSize) {
-        final MotionEvent.PointerProperties pointerProperties = new MotionEvent.PointerProperties();
-        pointerProperties.toolType = MotionEvent.TOOL_TYPE_MOUSE;
-        final MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-        pointerCoords.setAxisValue(MotionEvent.AXIS_X, x);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_Y, y);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_PRESSURE, pressure);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_SIZE, size);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOUCH_MINOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MAJOR, axisSize);
-        pointerCoords.setAxisValue(MotionEvent.AXIS_TOOL_MINOR, axisSize);
-        return MotionEvent.obtain(
-                /* downTime= */ 0,
-                /* eventTime= */ 0,
-                action,
-                /* pointerCount= */ 1,
-                new MotionEvent.PointerProperties[]{pointerProperties},
-                new MotionEvent.PointerCoords[]{pointerCoords},
-                /* metaState= */ 0,
-                /* buttonState= */ 0,
-                /* xPrecision= */ 1f,
-                /* yPrecision= */ 1f,
-                /* deviceId= */ 0,
-                /* edgeFlags= */ 0,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                /* flags= */ 0);
+        return VirtualInputEventCreator.createTouchscreenEvent(action, x, y, 0f /* pressure */,
+                0f /* size */, 0f /* axisSize */);
     }
 
     @Test
-    public void createVirtualTouchscreen_defaultDisplay_throwsException() {
-        assertThrows(SecurityException.class, () -> createVirtualTouchscreen(DEFAULT_DISPLAY));
-    }
-
-    @Test
-    public void createVirtualTouchscreen_unownedDisplay_throwsException() {
-        VirtualDisplay unownedDisplay = createUnownedVirtualDisplay();
-        assertThrows(SecurityException.class,
-                () -> createVirtualTouchscreen(unownedDisplay.getDisplay().getDisplayId()));
-        unownedDisplay.release();
+    public void createVirtualTouchscreen_nullArguments_throwsException() {
+        assertThrows(NullPointerException.class,
+                () -> mVirtualDevice.createVirtualTouchscreen(null));
     }
 }

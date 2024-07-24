@@ -18,7 +18,11 @@ package {
 
 android_library {
     name: "CtsTvTestCases_lib",
-    srcs: ["src/**/*.java", "src/**/*.aidl"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.aidl",
+        ":tuner_cts_configuration_v1",
+    ],
     libs: [
         "platform-test-annotations",
         "android.test.runner",
@@ -53,6 +57,7 @@ android_test {
     // sdk_version: "test_current",
     platform_apis: true,
     resource_dirs: [],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {

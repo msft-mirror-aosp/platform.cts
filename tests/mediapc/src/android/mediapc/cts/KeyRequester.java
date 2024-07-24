@@ -39,7 +39,7 @@ public class KeyRequester {
     private int mKeyType;
     private byte[] mSessionId;
     private final byte[] mEmeInitData;
-    private static String mMime = null;
+    private static String mMediaType = null;
     private static final String TAG = "KeyRequester";
     private static final UUID PLAYREADY_UUID = new UUID(0x9A04F07998404286L, 0xAB92E65BE0885F95L);
     private static final UUID WIDEVINE_UUID = new UUID(0xEDEF8BA979D64ACEL, 0xA3C827DCD51D21EDL);
@@ -57,18 +57,18 @@ public class KeyRequester {
             MediaDrm drm,
             byte[] sessionId,
             int keyType,
-            String mimeType,
+            String mediaType,
             byte[] emeInitData,
             String initialServerUrl) {
 
-        this(drm, sessionId, keyType, mimeType, emeInitData, initialServerUrl, WIDEVINE_UUID);
+        this(drm, sessionId, keyType, mediaType, emeInitData, initialServerUrl, WIDEVINE_UUID);
     }
 
     public KeyRequester(
             MediaDrm drm,
             byte[] sessionId,
             int keyType,
-            String mimeType,
+            String mediaType,
             byte[] emeInitData,
             String initialServerUrl,
             UUID cryptoScheme) {
@@ -76,7 +76,7 @@ public class KeyRequester {
         mDrm = drm;
         mSessionId = sessionId;
         mKeyType = keyType;
-        mMime = mimeType;
+        mMediaType = mediaType;
         mEmeInitData = emeInitData;
         mServerUrl = initialServerUrl;
         mCryptoScheme = cryptoScheme;
@@ -112,7 +112,7 @@ public class KeyRequester {
                     keyRequest = mDrm.getKeyRequest(
                             mSessionId,
                             mEmeInitData,
-                            mMime,
+                            mMediaType,
                             mKeyType,
                             optionalKeyRequestParameters);
                 }

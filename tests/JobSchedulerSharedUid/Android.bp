@@ -44,4 +44,5 @@ android_test {
         ":CtsJobSharedUidTestApp",
     ],
     per_testcase_directory: true,
+    sdk_version: "test_current",
 }

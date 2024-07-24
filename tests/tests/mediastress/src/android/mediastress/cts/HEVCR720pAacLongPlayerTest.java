@@ -16,6 +16,9 @@
 
 package android.mediastress.cts;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
+@FrameworkSpecificTest
 public class HEVCR720pAacLongPlayerTest extends MediaPlayerStressTest {
     private static final String VIDEO_PATH_MIDDLE = "bbb_full/1280x720/mp4_libx265_libfaac/";
     private final String[] mMedias = {

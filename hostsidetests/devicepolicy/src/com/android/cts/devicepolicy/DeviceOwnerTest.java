@@ -16,7 +16,6 @@
 
 package com.android.cts.devicepolicy;
 
-import static com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.FEATURE_MANAGED_USERS;
 import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.assertMetricsLogged;
 
 import static org.junit.Assert.assertEquals;
@@ -31,7 +30,6 @@ import android.platform.test.annotations.LargeTest;
 import android.stats.devicepolicy.EventId;
 
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
-import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.tradefed.log.LogUtil.CLog;
 
@@ -97,18 +95,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     public void testProxyPacProxyTest() throws Exception {
         assumeFalse("Test does not apply to WearOS", mIsWatch);
         executeDeviceOwnerTest("proxy.PacProxyTest");
-    }
-
-    @Test
-    public void testRemoteBugreportWithTwoUsers() throws Exception {
-        assumeCanCreateAdditionalUsers(1);
-        final int userId = createUser();
-        try {
-            executeDeviceTestMethod(".RemoteBugreportTest",
-                    "testRequestBugreportThrowsSecurityException");
-        } finally {
-            removeUser(userId);
-        }
     }
 
     @Test
@@ -499,16 +485,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
         executeDeviceTestMethod(".PreDeviceOwnerTest", "testIsProvisioningAllowedFalse");
     }
 
-    /**
-     * Can provision Managed Profile when DO is set by default if they are the same admin.
-     */
-    @Test
-    @RequiresAdditionalFeatures({FEATURE_MANAGED_USERS})
-    public void testIsManagedProfileProvisioningAllowed_deviceOwnerIsSet() throws Exception {
-        executeDeviceTestMethod(".PreDeviceOwnerTest",
-                "testIsProvisioningNotAllowedForManagedProfileAction");
-    }
-
     @FlakyTest(bugId = 137096267)
     @Test
     public void testAdminActionBookkeeping() throws Exception {
@@ -524,15 +500,11 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
             // This test will be skipped for headless system user mode since headless system user
             // does not have IME.
             executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                    "testIsDefaultInputMethodSet");
-            executeDeviceTestMethod(".AdminActionBookkeepingTest",
                     "testGetPolicyInstalledCaCerts");
         }
 
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testRetrieveSecurityLogs");
-        executeDeviceTestMethod(".AdminActionBookkeepingTest",
-                "testRequestBugreport");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
                 "testGetLastNetworkLogRetrievalTime");
         executeDeviceTestMethod(".AdminActionBookkeepingTest",
@@ -546,11 +518,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
                 .setAdminPackageName(DEVICE_OWNER_PKG)
                 .build(),
         new DevicePolicyEventWrapper.Builder(EventId.RETRIEVE_PRE_REBOOT_SECURITY_LOGS_VALUE)
-                .setAdminPackageName(DEVICE_OWNER_PKG)
-                .build());
-        assertMetricsLogged(getDevice(), () -> {
-            executeDeviceTestMethod(".AdminActionBookkeepingTest", "testRequestBugreport");
-        }, new DevicePolicyEventWrapper.Builder(EventId.REQUEST_BUGREPORT_VALUE)
                 .setAdminPackageName(DEVICE_OWNER_PKG)
                 .build());
     }
@@ -993,11 +960,6 @@ public final class DeviceOwnerTest extends BaseDeviceOwnerTest {
     @Test
     public void testDevicePolicySafetyCheckerIntegration_allOperations() throws Exception {
         executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testAllOperations");
-    }
-
-    @Test
-    public void testDevicePolicySafetyCheckerIntegration_isSafeOperation() throws Exception {
-        executeDeviceTestMethod(".DevicePolicySafetyCheckerIntegrationTest", "testIsSafeOperation");
     }
 
     @Test

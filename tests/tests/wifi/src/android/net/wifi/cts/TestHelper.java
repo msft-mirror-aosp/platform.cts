@@ -134,6 +134,31 @@ public class TestHelper {
     }
 
     /**
+     * Find the first saved network available in the scan results with specific capabilities
+     * support.
+     *
+     * @param wifiManager WifiManager service
+     * @param savedNetworks List of saved networks on the device.
+     * @param capabilities Network capabilities to be matched. This parameter is ignored if set
+     *                     to 0. See AP_CAPABILITIES_BIT_XXX for the supported capabilities.
+     * @return WifiConfiguration for the network
+     */
+    public static WifiConfiguration findFirstAvailableSavedNetwork(@NonNull WifiManager wifiManager,
+            @NonNull List<WifiConfiguration> savedNetworks,
+            long capabilities) {
+        if (savedNetworks.isEmpty()) return null;
+        List<WifiConfiguration> matchingNetworks = new ArrayList<>();
+        Map<Integer, List<WifiConfiguration>> networksMap =
+                findMatchingSavedNetworksWithBssidByBand(wifiManager, savedNetworks,
+                        capabilities, 1);
+        for (List<WifiConfiguration> configs : networksMap.values()) {
+            matchingNetworks.addAll(configs);
+        }
+        if (matchingNetworks.isEmpty()) return null;
+        return matchingNetworks.get(0);
+    }
+
+    /**
      * Loops through all the saved networks available in the scan results. Returns a list of
      * WifiConfiguration with the matching bssid filled in {@link WifiConfiguration#BSSID}.
      *
@@ -152,11 +177,36 @@ public class TestHelper {
         List<WifiConfiguration> matchingNetworksWithBssids = new ArrayList<>();
         Map<Integer, List<WifiConfiguration>> networksMap =
                 findMatchingSavedNetworksWithBssidByBand(wifiManager, savedNetworks,
-                        numberOfApRequested);
+                        0, numberOfApRequested);
         for (List<WifiConfiguration> configs : networksMap.values()) {
             matchingNetworksWithBssids.addAll(configs);
         }
         return matchingNetworksWithBssids;
+    }
+
+    public static final long AP_CAPABILITY_BIT_WIFI7 = 1 << 0;
+    public static final long AP_CAPABILITY_BIT_TWT_RESPONDER = 1 << 1;
+
+    /**
+     * Check whether scan result matches with the capabilities provided.
+     *
+     * @param scanResult Scan result
+     * @param capabilities Capabilities to be matched. See AP_CAPABILITY_BIT_XXX for the
+     *                     available bits.
+     * @return true if the scan result matches or capabilities is 0 , otherwise false.
+     */
+    public static boolean isMatchedScanResult(ScanResult scanResult, long capabilities) {
+        if (capabilities == 0) return true;
+        if ((capabilities & AP_CAPABILITY_BIT_WIFI7) == AP_CAPABILITY_BIT_WIFI7 && (
+                scanResult.getWifiStandard()
+                        != ScanResult.WIFI_STANDARD_11BE)) {
+            return false;
+        }
+        if ((capabilities & AP_CAPABILITY_BIT_TWT_RESPONDER) == AP_CAPABILITY_BIT_TWT_RESPONDER
+                && !scanResult.isTwtResponder()) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -169,11 +219,15 @@ public class TestHelper {
      *
      * @param wifiManager   WifiManager service
      * @param savedNetworks List of saved networks on the device.
+     * @param  capabilities AP capabilities to be matched. See AP_CAPABILITY_BIT_XXX for the
+     *                     supported capabilities. This parameter is ignored if set to 0.
+     *
+     * @param numberOfApRequested Number of APs requested
      * @return Map from band to the list of WifiConfiguration with matching bssid.
      */
     public static Map<Integer, List<WifiConfiguration>> findMatchingSavedNetworksWithBssidByBand(
             @NonNull WifiManager wifiManager, @NonNull List<WifiConfiguration> savedNetworks,
-            int numberOfApRequested) {
+            long capabilities, int numberOfApRequested) {
         if (savedNetworks.isEmpty()) return Collections.emptyMap();
         Set<String> bssidSet = new HashSet<>();
         Map<Integer, List<WifiConfiguration>> matchingNetworksWithBssids = new ArrayMap<>();
@@ -194,7 +248,8 @@ public class TestHelper {
             sScanResults = wifiManager.getScanResults();
             if (sScanResults == null || sScanResults.isEmpty()) continue;
             for (ScanResult scanResult : sScanResults) {
-                if (bssidSet.contains(scanResult.BSSID)) {
+                if (!isMatchedScanResult(scanResult, capabilities) || bssidSet.contains(
+                        scanResult.BSSID)) {
                     continue;
                 }
                 WifiConfiguration matchingNetwork = savedNetworks.stream()
@@ -673,6 +728,7 @@ public class TestHelper {
         @Override
         public void onUserSelectionCallbackRegistration(
                 WifiManager.NetworkRequestUserSelectionCallback userSelectionCallback) {
+            Log.d(TAG, "onUserSelectionCallbackRegistration");
             synchronized (mLock) {
                 onRegistrationCalled = true;
                 this.userSelectionCallback = userSelectionCallback;
@@ -682,6 +738,7 @@ public class TestHelper {
 
         @Override
         public void onAbort() {
+            Log.d(TAG, "onAbort");
             synchronized (mLock) {
                 onAbortCalled = true;
                 mLock.notify();
@@ -690,6 +747,7 @@ public class TestHelper {
 
         @Override
         public void onMatch(List<ScanResult> scanResults) {
+            Log.d(TAG, "onMatch");
             synchronized (mLock) {
                 // This can be invoked multiple times. So, ignore after the first one to avoid
                 // disturbing the rest of the test sequence.
@@ -702,6 +760,7 @@ public class TestHelper {
 
         @Override
         public void onUserSelectionConnectSuccess(WifiConfiguration config) {
+            Log.d(TAG, "onUserSelectionConnectSuccess");
             synchronized (mLock) {
                 onConnectSuccessCalled = true;
                 mLock.notify();
@@ -710,6 +769,7 @@ public class TestHelper {
 
         @Override
         public void onUserSelectionConnectFailure(WifiConfiguration config) {
+            Log.d(TAG, "onUserSelectionConnectFailure");
             synchronized (mLock) {
                 onConnectFailureCalled = true;
                 mLock.notify();
@@ -821,6 +881,7 @@ public class TestHelper {
             Thread.sleep(1_000);
             // Start the UI interactions.
             uiThread.start();
+            assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
             // now wait for callback
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
@@ -840,7 +901,6 @@ public class TestHelper {
                         assertThat(wifiInfo.isPrimary()).isTrue();
                     }
                 }
-                assertThat(localOnlyListener.await(DURATION_NETWORK_CONNECTION_MILLIS)).isFalse();
                 assertThat(localOnlyListener.onFailureCalled).isFalse();
             }
         } catch (Throwable e /* catch assertions & exceptions */) {

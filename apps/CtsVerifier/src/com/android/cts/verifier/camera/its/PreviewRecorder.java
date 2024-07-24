@@ -17,6 +17,7 @@
 package com.android.cts.verifier.camera.its;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.media.CamcorderProfile;
 import android.media.EncoderProfiles;
@@ -37,6 +38,7 @@ import android.util.Size;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -54,6 +56,9 @@ class PreviewRecorder implements AutoCloseable {
 
     // Default bitrate to use for recordings when querying CamcorderProfile fails.
     private static final int DEFAULT_RECORDING_BITRATE = 25_000_000; // 25 Mbps
+
+    // Frame capture timeout duration in milliseconds.
+    private static final int FRAME_CAPTURE_TIMEOUT_MS = 2000; // 2 seconds
 
     // Simple Vertex Shader that rotates the texture before passing it to Fragment shader.
     private static final String VERTEX_SHADER = String.join(
@@ -124,6 +129,7 @@ class PreviewRecorder implements AutoCloseable {
     private volatile boolean mIsRecording = false;
 
     private final Size mPreviewSize;
+    private final int mMaxFps;
     private final Handler mHandler;
 
     private Surface mRecorderSurface; // MediaRecorder source. EGL writes to this surface
@@ -146,12 +152,14 @@ class PreviewRecorder implements AutoCloseable {
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
 
+    private int mNumFrames = 0;
+
     /**
      * Initializes MediaRecorder and EGL context. The result of recorded video will be stored in
      * {@code outputFile}.
      */
-    PreviewRecorder(int cameraId, Size previewSize, int sensorOrientation, String outputFile,
-            Handler handler, Context context) throws ItsException {
+    PreviewRecorder(int cameraId, Size previewSize, int maxFps, int sensorOrientation,
+            String outputFile, Handler handler, Context context) throws ItsException {
         // Ensure that we can record the given size
         int maxSupportedResolution = mResolutionToCamcorderProfile
                                         .stream()
@@ -166,6 +174,7 @@ class PreviewRecorder implements AutoCloseable {
 
         mHandler = handler;
         mPreviewSize = previewSize;
+        mMaxFps = maxFps;
         // rotate the texture as needed by the sensor orientation
         mTexRotMatrix = getRotationMatrix(sensorOrientation);
 
@@ -217,7 +226,10 @@ class PreviewRecorder implements AutoCloseable {
                     return;
                 }
                 try {
+                    Logt.i(TAG, "Recorded frame# " + mNumFrames + " timestamp = "
+                            + surfaceTexture.getTimestamp());
                     copyFrameToRecorder();
+                    mNumFrames++;
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);
                     throw new ItsRuntimeException("Failed to copy texture to recorder.", e);
@@ -240,7 +252,7 @@ class PreviewRecorder implements AutoCloseable {
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
         mMediaRecorder.setVideoEncodingBitRate(calculateBitrate(cameraId));
         mMediaRecorder.setInputSurface(mRecorderSurface);
-        mMediaRecorder.setVideoFrameRate(30);
+        mMediaRecorder.setVideoFrameRate(mMaxFps);
         mMediaRecorder.setOutputFile(outputFile);
 
         try {
@@ -431,8 +443,16 @@ class PreviewRecorder implements AutoCloseable {
             List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
             for (EncoderProfiles.VideoProfile profile : videoProfiles) {
                 if (profile == null) continue;
-                Logt.i(TAG, "Recording bitrate: " + profile.getBitrate());
-                return  profile.getBitrate();
+            }
+
+            // Find a profile which can achieve the requested max frame rate
+            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
+                if (profile == null) continue;
+                if (profile.getFrameRate() >= mMaxFps) {
+                    Logt.i(TAG, "Recording bitrate: " + profile.getBitrate()
+                            + ", fps " + profile.getFrameRate());
+                    return  profile.getBitrate();
+                }
             }
         }
 
@@ -450,8 +470,11 @@ class PreviewRecorder implements AutoCloseable {
             CamcorderProfile profile = CamcorderProfile.get(cameraId, entry.second);
             if (profile == null) continue;
 
-            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate);
-            return profile.videoBitRate;
+            int profileFrameRate = profile.videoFrameRate;
+            float bitRateScale = (profileFrameRate < mMaxFps) ?
+                    1.0f * mMaxFps / profileFrameRate : 1.0f;
+            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate + " * " + bitRateScale);
+            return (int)(profile.videoBitRate * bitRateScale);
         }
 
         // Ideally, we should always find a Camcorder/Encoder Profile corresponding
@@ -527,32 +550,93 @@ class PreviewRecorder implements AutoCloseable {
         return mCameraSurface;
     }
 
+    int getNumFrames() {
+        synchronized(mRecorderLock) {
+            return mNumFrames;
+        }
+    }
+
     /**
-     * Records frames from mCameraSurface for the specified {@code durationMs}. This method should
+     * Copies a frame encoded as a texture by {@code mCameraTexture} to a Bitmap by running our
+     * simple shader program for one frame and then convert the frame to a JPEG and write to
+     * the JPEG bytes to the {@code outputStream}.
+     *
+     * This method should not be called while recording.
+     *
+     * @param outputStream The stream to which the captured JPEG image bytes are written to
+     */
+    void getFrame(OutputStream outputStream) throws ItsException {
+        synchronized (mRecorderLock) {
+            if (mIsRecording) {
+                throw new ItsException("Attempting to get frame while recording is active is an "
+                        + "invalid combination.");
+            }
+
+            ConditionVariable cv = new ConditionVariable();
+            cv.close();
+            // GL copy texture to JPEG should happen on the thread EGL Context was bound to
+            mHandler.post(() -> {
+                try {
+                    copyFrameToRecorder();
+
+                    ByteBuffer frameBuffer = ByteBuffer.allocateDirect(
+                            mPreviewSize.getWidth() * mPreviewSize.getHeight() * 4);
+                    frameBuffer.order(ByteOrder.nativeOrder());
+
+                    GLES20.glReadPixels(
+                            0,
+                            0,
+                            mPreviewSize.getWidth(),
+                            mPreviewSize.getHeight(),
+                            GLES20.GL_RGBA,
+                            GLES20.GL_UNSIGNED_BYTE,
+                            frameBuffer);
+                    Bitmap frame = Bitmap.createBitmap(
+                            mPreviewSize.getWidth(),
+                            mPreviewSize.getHeight(),
+                            Bitmap.Config.ARGB_8888);
+                    frame.copyPixelsFromBuffer(frameBuffer);
+                    frame.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                } catch (ItsException e) {
+                    Logt.e(TAG, "Could not get frame from texture", e);
+                    throw new ItsRuntimeException("Failed to get frame from texture", e);
+                } finally {
+                    cv.open();
+                }
+            });
+
+            // Wait for up to two seconds for jpeg frame capture.
+            if (!cv.block(FRAME_CAPTURE_TIMEOUT_MS)) {
+                throw new ItsException("Frame capture timed out");
+            }
+        }
+    }
+
+    /**
+     * Starts recording frames from mCameraSurface. This method should
      * only be called once. Throws {@link ItsException} on subsequent calls.
      */
-    void recordPreview(long durationMs) throws ItsException {
+    void startRecording() throws ItsException {
         if (mMediaRecorderConsumed) {
             throw new ItsException("Attempting to record on a stale PreviewRecorder. "
                     + "Create a new instance instead.");
         }
         mMediaRecorderConsumed = true;
+        Logt.i(TAG, "Starting Preview Recording.");
+        synchronized (mRecorderLock) {
+            mIsRecording = true;
+            mMediaRecorder.start();
+        }
+    }
 
-        try {
-            Logt.i(TAG, "Starting Preview Recording.");
-            synchronized (mRecorderLock) {
-                mIsRecording = true;
-                mMediaRecorder.start();
-            }
-            Thread.sleep(durationMs);
-        } catch (InterruptedException e) {
-            throw new ItsException("Recording interrupted.", e);
-        } finally {
-            Logt.i(TAG, "Stopping Preview Recording.");
-            synchronized (mRecorderLock) {
-                mIsRecording = false;
-                mMediaRecorder.stop();
-            }
+    /**
+     * Stops recording frames.
+     */
+    void stopRecording() {
+        Logt.i(TAG, "Stopping Preview Recording.");
+        synchronized (mRecorderLock) {
+            mIsRecording = false;
+            mMediaRecorder.stop();
         }
     }
 
@@ -560,6 +644,11 @@ class PreviewRecorder implements AutoCloseable {
     public void close() {
         // synchronized to prevent reads and writes to surfaces while they are being released.
         synchronized (mRecorderLock) {
+            if (mIsRecording) {
+                Logt.e(TAG, "Preview recording was not stopped before closing.");
+                mIsRecording = false;
+                mMediaRecorder.stop();
+            }
             mCameraSurface.release();
             mCameraTexture.release();
             mMediaRecorder.release();

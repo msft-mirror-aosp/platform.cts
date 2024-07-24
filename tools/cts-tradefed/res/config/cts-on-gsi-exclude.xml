@@ -76,12 +76,6 @@
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases" />
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases" />
 
-    <!-- b/183985653 -->
-    <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />
-    <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES2.functional.prerequisite#*" />
-    <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES3.functional.prerequisite#*" />
-    <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.api.smoke#*" />
-
     <!-- b/183636777 Remove CtsShortcutManagerPackage4 from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerPackage4" />
 
@@ -96,13 +90,16 @@
     <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest android.scopedstorage.cts.host.AppCloningHostTest#testCreateCloneUserFile" />
 
     <!-- b/194146521 -->
-    <option name="compatibility:exclude-filter" value="CtsPermission3TestCases android.permission3.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
+    <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest23#testNoResidualPermissionsOnUninstall" />
 
       <!-- b/199996926 - No UWB stack support in AOSP for Android S -->
     <option name="compatibility:exclude-filter" value="CtsUwbTestCases" />
 
     <!-- b/183653612: CtsTransitionTestCases -->
     <option name="compatibility:exclude-filter" value="CtsTransitionTestCases" />
+
+    <!-- b/272163895 mediapc tests are disabled in GSI builds -->
+    <option name="compatibility:exclude-filter" value="CtsMediaPerformanceClassTestCases" />
 
     <!-- b/198226244 -->
     <!-- b/259733096 Performance tests are disabled in GSI builds -->
@@ -134,6 +131,9 @@
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Udp4UdpEncap" />
     <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.IpSecManagerTest#testChaCha20Poly1305Tcp4UdpEncap" />
 
+    <!-- b/335351293 Remove ApfIntegrationTest running against broken vendor images on GSI -->
+    <option name="compatibility:exclude-filter" value="CtsNetTestCases android.net.cts.ApfIntegrationTest" />
+
     <!-- b/285247534 Remove WM Extension tests on GSI -->
     <option name="compatibility:exclude-filter" value="CtsWindowManagerJetpackTestCases android.server.wm.jetpack.SdkAvailabilityTest" />
 
@@ -162,6 +162,10 @@
     <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
     <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
     <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_nonPreferredIndex" />
 
     <!-- b/298915013 Remove CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey_StrongBox" />
@@ -172,6 +176,16 @@
     <!-- b/318588433 Remove CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testNfcFeatures" />
 
-    <!-- b/319046794 -->
-    <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest" />
+    <!-- b/310810735 Remove CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndPrivate from cts-on-gsi -->
+    <option name="compatibility:exclude-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testImageReaderYuvAndPrivate" />
+
+    <!-- b/236205588#comment26 -->
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
+
+    <!-- b/349776686 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_StrongBox" />
 </configuration>

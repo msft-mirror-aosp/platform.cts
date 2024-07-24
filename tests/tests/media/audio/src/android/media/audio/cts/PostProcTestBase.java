@@ -37,7 +37,7 @@ public class PostProcTestBase {
     protected Looper mLooper = null;
     protected final Object mLock = new Object();
     protected int mChangedParameter = -1;
-    protected final static String BUNDLE_VOLUME_EFFECT_UUID =
+    protected static final String BUNDLE_VOLUME_EFFECT_UUID =
             "119341a0-8469-11df-81f9-0002a5d5c51b";
 
     @Rule
@@ -72,7 +72,7 @@ public class PostProcTestBase {
         AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         assertNotNull("could not get AudioManager", am);
         int sessionId = am.generateAudioSessionId();
-        assertTrue("Could not generate session id", sessionId>0);
+        assertTrue("Could not generate session id", sessionId > 0);
         return sessionId;
     }
 

@@ -22,6 +22,9 @@ import android.accounts.RemoteAccountManagerWrapper;
 import android.app.NotificationManager;
 import android.app.RemoteNotificationManager;
 import android.app.RemoteNotificationManagerWrapper;
+import android.app.RemoteWallpaperManager;
+import android.app.RemoteWallpaperManagerWrapper;
+import android.app.WallpaperManager;
 import android.app.admin.DevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManager;
 import android.app.admin.RemoteDevicePolicyManagerWrapper;
@@ -59,10 +62,15 @@ import android.telecom.RemoteTelecomManager;
 import android.telecom.RemoteTelecomManagerWrapper;
 import android.telephony.RemoteSmsManager;
 import android.telephony.RemoteSmsManagerWrapper;
+import android.telephony.RemoteTelephonyManager;
+import android.telephony.RemoteTelephonyManagerWrapper;
+import android.telephony.euicc.RemoteEuiccManager;
+import android.telephony.euicc.RemoteEuiccManagerWrapper;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.appops.AppOps;
 import com.android.bedstead.nene.exceptions.NeneException;
+import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.packages.ProcessReference;
 import com.android.bedstead.nene.users.UserReference;
 
@@ -143,6 +151,13 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      */
     public UserReference user() {
         return mUser;
+    }
+
+    /**
+     * The {@link Package} of the {@link TestApp} this instance refers to.
+     */
+    public Package pkg() {
+        return Package.of(packageName());
     }
 
     /**
@@ -445,6 +460,33 @@ public class TestAppInstance implements AutoCloseable, ConnectionListener {
      */
     public RemoteRestrictionsManager restrictionsManager() {
         return new RemoteRestrictionsManagerWrapper(mConnector, mUser, mTestApp.pkg());
+    }
+
+    /**
+     * Access {@link WallpaperManager} using this test app.
+     *
+     * <p>Almost all methods are available. Those that are not will be missing from the interface.
+     */
+    public RemoteWallpaperManager wallpaperManager() {
+        return new RemoteWallpaperManagerWrapper(mConnector, mUser, mTestApp.pkg());
+    }
+
+    /**
+     * Access the {@link android.telephony.TelephonyManager} using this test app.
+     *
+     * <p>Almost all methods are available. Those that are not will be missing from the interface.
+     */
+    public RemoteTelephonyManager telephonyManager() {
+        return new RemoteTelephonyManagerWrapper(mConnector, mUser, mTestApp.pkg());
+    }
+
+    /**
+     * Access the {@link android.telephony.euicc.EuiccManager} using this test app.
+     *
+     * <p> Almost all methods are available. Those that are not will be missing from the interface.
+     */
+    public RemoteEuiccManager euiccManager() {
+        return new RemoteEuiccManagerWrapper(mConnector, mUser, mTestApp.pkg());
     }
 
     /**

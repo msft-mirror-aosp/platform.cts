@@ -342,7 +342,9 @@ public class CodecEncoderSurfaceTestBase {
                     mTrackID = mMuxer.addTrack(mEncoder.getOutputFormat());
                     mMuxer.start();
                 }
-                mMuxer.writeSampleData(mTrackID, buf, info);
+                if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    mMuxer.writeSampleData(mTrackID, buf, info);
+                }
             }
             if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                 mOutputBuff.saveOutPTS(info.presentationTimeUs);
@@ -515,13 +517,12 @@ public class CodecEncoderSurfaceTestBase {
                 0 != mEncOutputCount);
         assertEquals("Decoder output count is not equal to decoder input count \n"
                 + mTestConfig + mTestEnv, mDecInputCount, mDecOutputCount);
-        /* TODO(b/153127506) - Currently disabling all encoder output checks */
-        /*assertEquals("Encoder output count is not equal to Decoder input count \n"
+        assertEquals("Encoder output count is not equal to Decoder input count \n"
                 + mTestConfig + mTestEnv, mDecInputCount, mEncOutputCount);
         if (!mOutputBuff.isOutPtsListIdenticalToInpPtsList((mEncCfgParams.mMaxBFrames != 0))) {
             fail("Input pts list and Output pts list are not identical \n" + mTestConfig
                     + mTestEnv + mOutputBuff.getErrMsg());
-        }*/
+        }
         if (mEncCfgParams.mMaxBFrames == 0 && !mOutputBuff.isPtsStrictlyIncreasing(
                 Long.MIN_VALUE)) {
             fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
@@ -547,6 +548,14 @@ public class CodecEncoderSurfaceTestBase {
     protected void encodeToMemory(boolean isAsync, boolean signalEOSWithLastFrame,
             boolean saveToMem, OutputManager outBuff, boolean muxOutput, String outPath)
             throws IOException, InterruptedException {
+        encodeToMemory(isAsync, signalEOSWithLastFrame, saveToMem, outBuff, muxOutput, outPath,
+                Integer.MAX_VALUE);
+    }
+
+    @TargetApi(33)
+    protected void encodeToMemory(boolean isAsync, boolean signalEOSWithLastFrame,
+            boolean saveToMem, OutputManager outBuff, boolean muxOutput, String outPath,
+            int frameLimit) throws IOException, InterruptedException {
         mSaveToMem = saveToMem;
         mOutputBuff = outBuff;
         mOutputBuff.reset();
@@ -566,7 +575,7 @@ public class CodecEncoderSurfaceTestBase {
         }
         mEncoder.start();
         mDecoder.start();
-        doWork(Integer.MAX_VALUE);
+        doWork(frameLimit);
         queueEOS();
         waitForAllEncoderOutputs();
         if (muxOutput) {

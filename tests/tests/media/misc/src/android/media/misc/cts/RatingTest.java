@@ -36,6 +36,7 @@ import android.os.Parcel;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -47,6 +48,7 @@ import org.junit.runner.RunWith;
  * TODO: Tests for applying invalid method (e.g. heartRating.getPercentRating()).
  * TODO: Tests for methods inherited from Parcelable
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 @SmallTest
 @RunWith(AndroidJUnit4.class)

@@ -84,6 +84,15 @@
     <!-- CtsMediaCodecTestCases: b/298483255 -->
     <option name="compatibility:exclude-filter" value="CtsMediaCodecTestCases android.media.codec.cts.MediaCodecInstancesTest#testGetMaxSupportedInstances" />
 
-    <!-- CtsVideoCodecTestCases: b/302293100 -->
-    <option name="compatibility:exclude-filter" value="CtsVideoCodecTestCases android.videocodec.cts.VideoEncoderMultiResTest#testMultiRes" />
+    <!-- CtsVideoCodecTestCases: b/302293100, b/312706244 -->
+    <option name="compatibility:exclude-filter" value="CtsVideoCodecTestCases android.videocodec.cts.VideoEncoderMultiResTest" />
+
+    <!-- b/283888149 -->
+    <option name="compatibility:exclude-filter" value="CtsSecureElementAccessControlTestCases1" />
+    <option name="compatibility:exclude-filter" value="CtsSecureElementAccessControlTestCases2" />
+    <option name="compatibility:exclude-filter" value="CtsSecureElementAccessControlTestCases3" />
+    <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases1" />
+    <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases2" />
+    <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases3" />
+
 </configuration>

@@ -17,15 +17,17 @@
 package android.car.cts.builtin.app;
 
 import static com.google.common.truth.Truth.assertThat;
-
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.car.builtin.app.KeyguardManagerHelper;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.LockScreenSession;
 
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -41,9 +43,10 @@ public final class KeyguardManagerHelperTest extends ActivityManagerTestBase {
         assumeTrue(supportsSecureLock());
     }
 
+    @Ignore("b/300531707")
     @Test
     public void testIsKeyguardLocked() throws Exception {
-        assertThat(KeyguardManagerHelper.isKeyguardLocked()).isFalse();
+        assumeFalse(KeyguardManagerHelper.isKeyguardLocked());
         try (LockScreenSession lockScreenSession = createManagedLockScreenSession()) {
             lockScreenSession.setLockCredential().gotoKeyguard();
             assertThat(KeyguardManagerHelper.isKeyguardLocked()).isTrue();

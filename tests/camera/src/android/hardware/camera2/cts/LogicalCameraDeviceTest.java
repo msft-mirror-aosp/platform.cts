@@ -128,7 +128,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testInvalidPhysicalCameraIdInOutputConfiguration() throws Exception {
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
                 if (mAllStaticInfo.get(id).isHardwareLevelLegacy()) {
@@ -188,7 +188,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     @Test
     public void testBasicPhysicalStreaming() throws Exception {
         Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -231,7 +231,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     @Test
     public void testBasicLogicalPhysicalStreamCombination() throws Exception {
         Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -348,6 +348,10 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                     mSession.close();
                 }
 
+                // Image readers need to be referenced so that they aren't garbage collected
+                // before the function exit.
+                CameraTestUtils.closeImageReader(yuvTargetPhysical);
+                CameraTestUtils.closeImageReader(yuvTargetLogical);
             } finally {
                 closeDevice();
             }
@@ -360,7 +364,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     @Test
     public void testBasicPhysicalRequests() throws Exception {
         Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -485,6 +489,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                 if (mSession != null) {
                     mSession.close();
                 }
+                physicalTargets.clear();
 
             } finally {
                 closeDevice();
@@ -498,7 +503,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     @Test
     public void testInvalidPhysicalCameraRequests() throws Exception {
         Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -589,6 +594,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                 if (mSession != null) {
                     mSession.close();
                 }
+                imageReaders.clear();
             } finally {
                 closeDevice();
             }
@@ -606,7 +612,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     @Test
     public void testLogicalCameraZoomSwitch() throws Exception {
 
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -733,6 +739,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                 if (mSession != null) {
                     mSession.close();
                 }
+                CameraTestUtils.closeImageReader(imageReader);
 
             } finally {
                 closeDevice();
@@ -775,7 +782,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
     public void testActivePhysicalId() throws Exception {
         Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
 
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -867,7 +874,7 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
         if (!isHandheldDevice()) {
             return;
         }
-        for (String id : mCameraIdsUnderTest) {
+        for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
 
@@ -1330,6 +1337,10 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
         if (mSession != null) {
             mSession.close();
         }
+        // Image readers need to be referenced so that they aren't garbage collected
+        // before the function exit.
+        CameraTestUtils.closeImageReader(logicalTarget);
+        physicalTargets.clear();
     }
 
     /**

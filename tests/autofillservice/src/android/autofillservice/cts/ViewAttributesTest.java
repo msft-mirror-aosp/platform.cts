@@ -185,9 +185,6 @@ public class ViewAttributesTest
 
     @Test
     public void checkViewLocationInAssistStructure() throws Exception {
-        // If screen is not large enough to contain child, the height/weight will be the residual
-        // space instead of the specific size.
-        mUiBot.assumeMinimumResolution(500);
         onAssistStructure(false, (structure) -> {
                     // check size of outerView
                     AssistStructure.ViewNode outerView = findNodeByResourceId(structure,
@@ -243,7 +240,7 @@ public class ViewAttributesTest
                             2              // outerView.top
                                     + 11); // nestedView.top
 
-                    // The location of the tripleNestedView should be relative to it's parent
+                    // The location of the tripleNestedView should be relative to its parent
                     assertThat(doubleNestedView.getChildCount()).isEqualTo(1);
                     AssistStructure.ViewNode tripleNestedView = doubleNestedView.getChildAt(0);
                     assertThat(doubleNestedView.getIdEntry()).isEqualTo("doubleNestedView");

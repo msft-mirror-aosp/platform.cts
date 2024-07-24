@@ -33,17 +33,18 @@ import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
 import android.platform.test.annotations.AppModeFull;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.platform.test.annotations.RequiresDevice;
 import android.util.SparseArray;
 
 import androidx.test.filters.SdkSuppress;
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import java.util.concurrent.Executor;
 
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
 @SmallTest
-@VirtualDeviceNotSupported
+@RequiresDevice
 public class EasyConnectStatusCallbackTest extends WifiJUnit3TestBase {
     private static final String TEST_SSID = "\"testSsid\"";
     private static final String TEST_PASSPHRASE = "\"testPassword\"";

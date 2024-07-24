@@ -44,6 +44,7 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FileCopyHelper;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.Preconditions;
@@ -59,6 +60,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 
 @Presubmit
+@FrameworkSpecificTest
 @NonMainlineTest
 @SmallTest
 @RequiresDevice

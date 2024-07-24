@@ -307,8 +307,8 @@ void SurfaceTransaction_releaseBuffer(JNIEnv* /*env*/, jclass, jlong buffer) {
 void SurfaceTransaction_setVisibility(JNIEnv* /*env*/, jclass,
                                       jlong surfaceControl,
                                       jlong surfaceTransaction, jboolean show) {
-    int8_t visibility = (show) ? ASURFACE_TRANSACTION_VISIBILITY_SHOW :
-                                 ASURFACE_TRANSACTION_VISIBILITY_HIDE;
+    auto visibility = (show) ? ASURFACE_TRANSACTION_VISIBILITY_SHOW :
+                               ASURFACE_TRANSACTION_VISIBILITY_HIDE;
     ASurfaceTransaction_setVisibility(
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction),
             reinterpret_cast<ASurfaceControl*>(surfaceControl), visibility);
@@ -318,7 +318,7 @@ void SurfaceTransaction_setBufferOpaque(JNIEnv* /*env*/, jclass,
                                         jlong surfaceControl,
                                         jlong surfaceTransaction,
                                         jboolean opaque) {
-    int8_t transparency = (opaque) ? ASURFACE_TRANSACTION_TRANSPARENCY_OPAQUE :
+    auto transparency = (opaque) ? ASURFACE_TRANSACTION_TRANSPARENCY_OPAQUE :
                                    ASURFACE_TRANSACTION_TRANSPARENCY_TRANSPARENT;
     ASurfaceTransaction_setBufferTransparency(
             reinterpret_cast<ASurfaceTransaction*>(surfaceTransaction),
@@ -602,6 +602,15 @@ void SurfaceTransaction_setExtendedRangeBrightness(JNIEnv* /*env*/, jclass, jlon
                                                    currentRatio, desiredRatio);
 }
 
+void SurfaceTransaction_setDesiredHdrHeadroom(JNIEnv* /*env*/, jclass, jlong surfaceControl,
+                                                   jlong surfaceTransaction, jfloat desiredRatio) {
+    ASurfaceTransaction_setDesiredHdrHeadroom(reinterpret_cast<ASurfaceTransaction*>(
+                                                           surfaceTransaction),
+                                                   reinterpret_cast<ASurfaceControl*>(
+                                                           surfaceControl),
+                                                   desiredRatio);
+}
+
 void SurfaceTransaction_setDataSpace(JNIEnv* /*env*/, jclass, jlong surfaceControl,
                                      jlong surfaceTransaction, jint dataspace) {
     ASurfaceTransaction_setBufferDataSpace(reinterpret_cast<ASurfaceTransaction*>(
@@ -730,6 +739,8 @@ static const JNINativeMethod JNI_METHODS[] = {
          (void*)SurfaceTransaction_setFrameTimeline},
         {"nSurfaceTransaction_setExtendedRangeBrightness", "(JJFF)V",
          (void*)SurfaceTransaction_setExtendedRangeBrightness},
+        {"nSurfaceTransaction_setDesiredHdrHeadroom", "(JJF)V",
+         (void*)SurfaceTransaction_setDesiredHdrHeadroom},
         {"nSurfaceTransaction_setDataSpace", "(JJI)V", (void*)SurfaceTransaction_setDataSpace},
         {"getSolidBuffer", "(III)Landroid/hardware/HardwareBuffer;", (void*)Utils_getSolidBuffer},
         {"getQuadrantBuffer", "(IIIIII)Landroid/hardware/HardwareBuffer;",

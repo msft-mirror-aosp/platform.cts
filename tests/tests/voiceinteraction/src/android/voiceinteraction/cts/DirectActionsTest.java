@@ -21,12 +21,14 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import android.app.ActivityManager;
 import android.app.DirectAction;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.RemoteCallback;
+import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.voiceinteraction.common.Utils;
@@ -255,9 +257,16 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
             Log.v(TAG, "startActivity: " + intent);
             mContext.startActivity(intent);
 
-            if (!latch.await(Utils.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
+            if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
                 throw new TimeoutException(
-                        "activity not started in " + Utils.OPERATION_TIMEOUT_MS + "ms");
+                        "activity not started in " + timeoutMs + "ms");
+            }
+            if (isLowRamDevice()) {
+                // After the activity has started, sleep for a short duration to allow the
+                // `VoiceInteractionManagerService` to start before any `VoiceInteractionService`
+                // is started.
+                SystemClock.sleep(2000);
             }
         }
 
@@ -325,9 +334,10 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
                 }
             }
 
-            if (!latch.await(Utils.OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
+            final long timeoutMs = Utils.getAdjustedOperationTimeoutMs();
+            if (!latch.await(timeoutMs, TimeUnit.MILLISECONDS)) {
                 throw new TimeoutException(
-                        "result not received in " + Utils.OPERATION_TIMEOUT_MS + "ms");
+                        "result not received in " + timeoutMs + "ms");
             }
             return result;
         }
@@ -364,6 +374,10 @@ public class DirectActionsTest extends AbstractVoiceInteractionTestCase {
         final String status = bundle.getString(Utils.DIRECT_ACTIONS_KEY_RESULT);
         assertWithMessage("assertActionCancelled(%s)", Utils.toBundleString(result))
                 .that(Utils.DIRECT_ACTIONS_RESULT_CANCELLED).isEqualTo(status);
+    }
+
+    private boolean isLowRamDevice() {
+        return mContext.getSystemService(ActivityManager.class).isLowRamDevice();
     }
 }
 

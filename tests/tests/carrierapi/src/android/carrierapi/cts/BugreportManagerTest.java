@@ -41,9 +41,9 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
-import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.compatibility.common.util.UiAutomatorUtils2;
 
 import org.junit.After;
 import org.junit.Before;
@@ -296,11 +296,10 @@ public class BugreportManagerTest extends BaseCarrierApiTest {
         assertExceptionThrownForMode(-1, IllegalArgumentException.class);
     }
 
-    @ApiTest(apis = {"android.os.BugreportParams#getMode"})
     @Test
     public void startBugreport_invalidMode() throws Exception {
-        // Current max is BUGREPORT_MODE_ONBOARDING (7) as defined by the AIDL.
-        assertExceptionThrownForMode(8, IllegalArgumentException.class);
+        assertExceptionThrownForMode(BugreportParams.BUGREPORT_MODE_MAX_VALUE + 1,
+                IllegalArgumentException.class);
     }
 
     /* Implementatiion of {@link BugreportCallback} that offers wrappers around execution result */
@@ -397,11 +396,21 @@ public class BugreportManagerTest extends BaseCarrierApiTest {
         switch (consentReply) {
             case ALLOW:
                 Log.d(TAG, "Allow the consent dialog");
-                replySelector = By.res("android", "button1");
+                if (isWear()) {
+                    replySelector = By.desc(
+                            getContext().getResources().getString(android.R.string.ok));
+                } else {
+                    replySelector = By.res("android", "button1");
+                }
                 break;
             case DENY:
                 Log.d(TAG, "Deny the consent dialog");
-                replySelector = By.res("android", "button2");
+                if (isWear()) {
+                    replySelector = By.desc(
+                            getContext().getResources().getString(android.R.string.cancel));
+                } else {
+                    replySelector = By.res("android", "button2");
+                }
                 break;
             case NONE_TIMEOUT:
             default:
@@ -411,12 +420,16 @@ public class BugreportManagerTest extends BaseCarrierApiTest {
         }
 
         UiObject2 replyButton;
-        UiObject2 scrollable =
-                device.findObject(By.res("android:id/scrollView").scrollable(true));
-        while ((replyButton = device.findObject(replySelector)) == null) {
-            // Need to scroll the screen to get to the buttons on some form factors
-            // (e.g. on a watch).
-            scrollable.scroll(Direction.DOWN, 100);
+        if (isWear()) {
+            replyButton = UiAutomatorUtils2.waitFindObject(replySelector);
+        } else {
+            UiObject2 scrollable =
+                    device.findObject(By.res("android:id/scrollView").scrollable(true));
+            while ((replyButton = device.findObject(replySelector)) == null) {
+                // Need to scroll the screen to get to the buttons on some form factors
+                // (e.g. on a watch).
+                scrollable.scroll(Direction.DOWN, 100);
+            }
         }
 
         assertWithMessage("The button of consent dialog is not found")

@@ -26,6 +26,7 @@ import android.os.Process
 import android.os.UserHandle
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.provider.CalendarContract
 import android.provider.ContactsContract
 import android.util.ArraySet
@@ -34,12 +35,16 @@ import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.atomic.AtomicReference
 import org.junit.Assert.assertThrows
+import org.junit.Rule
 import org.junit.Test
 import org.junit.function.ThrowingRunnable
 import org.mockito.Mockito
 import org.mockito.Mockito.`when`
 
 class RenouncedPermissionsTest {
+
+    @get:Rule
+    public val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
     @Throws(Exception::class)
@@ -83,12 +88,11 @@ class RenouncedPermissionsTest {
 
     @Test(expected = IllegalArgumentException::class)
     fun testCannotRequestRenouncePermissions() {
-        val renouncedPermissions = ArraySet<String>()
-        renouncedPermissions.add(Manifest.permission.READ_CONTACTS)
-        val activity =
-            createActivityWithAttributionSource(
-                AttributionSource(
-                    Process.myUid(), context.packageName, null, renouncedPermissions, null))
+        val renouncedPermissions = arrayOf(Manifest.permission.READ_CONTACTS)
+        val attributionSource = AttributionSource(
+                Process.myUid(), context.packageName, null,
+                ArraySet<String>(renouncedPermissions), null)
+        val activity = createActivityWithAttributionSource(attributionSource)
 
         // Requesting renounced permissions throws
         activity.requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 1)

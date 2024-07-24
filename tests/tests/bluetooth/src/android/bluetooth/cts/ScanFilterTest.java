@@ -17,6 +17,7 @@
 package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -32,6 +33,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.TransportBlockFilter;
+import android.bluetooth.test_utils.Permissions;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Parcel;
@@ -48,6 +50,8 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.List;
 
 /**
  * Unit test cases for Bluetooth LE scan filters.
@@ -337,16 +341,31 @@ public class ScanFilterTest {
                 .setTdsFlags(tdsFlag, tdsFlagMask)
                 .setTransportData(transportData, transportDataMask).build();
 
-        if (mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported()
-                != FEATURE_SUPPORTED) {
-            assertThrows(IllegalArgumentException.class,
-                    () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter));
-            return;
+        Permissions.enforceEachPermissions(
+                () -> mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported(),
+                List.of(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED));
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            if (mBluetoothAdapter.getOffloadedTransportDiscoveryDataScanSupported()
+                    != FEATURE_SUPPORTED) {
+                assertThrows(IllegalArgumentException.class,
+                        () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter));
+                // Ignore test when device does not support the feature
+                Assume.assumeTrue(false);
+                return;
+            }
         }
 
-        final ScanFilter filter = mFilterBuilder
-                .setTransportBlockFilter(transportBlockFilter)
-                .build();
+        Permissions.enforceEachPermissions(
+                () -> mFilterBuilder.setTransportBlockFilter(transportBlockFilter),
+                List.of(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED));
+
+        final ScanFilter filter;
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            filter = mFilterBuilder
+                    .setTransportBlockFilter(transportBlockFilter)
+                    .build();
+        }
 
         final TransportBlockFilter returnedTransportBlockFilter = filter.getTransportBlockFilter();
         assertNotNull(returnedTransportBlockFilter);

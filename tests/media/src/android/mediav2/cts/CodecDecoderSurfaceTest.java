@@ -23,16 +23,21 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo.CodecCapabilities;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.codec.Flags;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestActivity;
 import android.mediav2.common.cts.OutputManager;
+import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
+import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
@@ -247,6 +252,104 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
                 if (!(mIsInterlaced ? ref.equalsDequeuedOutput(test) : ref.equals(test))) {
                     fail("Decoder output in surface mode does not match with output in bytebuffer "
                             + "mode \n" + mTestConfig + mTestEnv + test.getErrMsg());
+                }
+            }
+            mCodec.release();
+            mExtractor.release();
+        }
+    }
+
+    /**
+     * Checks if the component under test can decode the test file to surface, while that
+     * surface is repeatedly detached and reattached. The test runs mediacodec in both
+     * synchronous and asynchronous mode.
+     *
+     * TODO: actually verify that the correct buffers are rendered to the surface
+     * TODO: expand this test to use 2 output surfaces
+     */
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_DetachedSurface",
+                     "android.media.MediaCodec#detachOutputSurface",
+                     "android.media.MediaCodec#CONFIGURE_FLAG_DETACHED_SURFACE"})
+    @LargeTest
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    @RequiresFlagsEnabled(Flags.FLAG_NULL_OUTPUT_SURFACE)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    public void testDetachAndReattachSurface() throws IOException, InterruptedException {
+        boolean[] boolStates = {true, false};
+        final long pts = 0;
+        final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
+        {
+            mOutputBuff = new OutputManager();
+            MediaFormat format = setUpSource(mTestFile);
+            mCodec = MediaCodec.createByCodecName(mCodecName);
+            CodecCapabilities caps = mCodec.getCodecInfo()
+                    .getCapabilitiesForType(format.getString(MediaFormat.KEY_MIME));
+            boolean detachable = caps.isFeatureSupported(CodecCapabilities.FEATURE_DetachedSurface);
+
+            mActivity.setScreenParams(getWidth(format), getHeight(format), true);
+            for (boolean isAsync : boolStates) {
+                for (boolean startDetached : boolStates) {
+                    mOutputBuff.reset();
+                    mExtractor.seekTo(pts, mode);
+                    if (startDetached) {
+                        try {
+                            configureCodecInDetachedMode(
+                                    format, isAsync,
+                                    isAsync /* cryptoCallAndSignalEosWithLastFrame */);
+                            if (!detachable) {
+                                fail("configure with CONFIGURE_FLAG_DETACHED_SURFACE did not throw "
+                                        + "even though FEATURE_DetachedSurface is not advertised\n"
+                                        + mTestConfig + mTestEnv);
+                            }
+                        } catch (IllegalArgumentException e) {
+                            if (!detachable) {
+                                // we got the exception that we expected and we can end this run
+                                continue;
+                            }
+                            // we got the exception that we expected and we can and this run
+                            fail("configure with CONFIGURE_FLAG_DETACHED_SURFACE failed even "
+                                    + "though FEATURE_DetachedSurface is advertised\n"
+                                    + "Exception is" + e
+                                    + mTestConfig + mTestEnv);
+                        }
+                    } else {
+                        configureCodec(
+                                format, isAsync, isAsync /* cryptoCallAndSignalEosWithLastFrame */,
+                                false /* isEncoder */);
+                    }
+                    mCodec.start();
+
+                    // TODO: test various burst size of frame outputs on and off the surface
+                    // TODO: switch surface based on number of frames output vs input
+                    final int toggleSequenceLength = 30; // number of frames before surface change
+                    while (!mSawInputEOS) {
+                        doWork(toggleSequenceLength);
+                        try {
+                            mCodec.detachOutputSurface();
+                            if (!detachable) {
+                                fail("detachOutputSurface() did not throw even though "
+                                        + "FEATURE_DetachedSurface is not advertised\n"
+                                        + mTestConfig + mTestEnv);
+                            }
+                        } catch (IllegalStateException e) {
+                            if (!detachable) {
+                                // we got the exception that we expected and we can end this run
+                                break;
+                            }
+                            fail("detachOutputSurface() failed even though "
+                                    + "FEATURE_DetachedSurface is advertised\n"
+                                    + "Exception is" + e
+                                    + mTestConfig + mTestEnv);
+                        }
+                        if (!mSawInputEOS) {
+                            doWork(toggleSequenceLength);
+                        }
+                        mCodec.setOutputSurface(mSurface);
+                    }
+                    queueEOS();
+                    waitForAllOutputs();
+                    endCodecSession(mCodec);
                 }
             }
             mCodec.release();

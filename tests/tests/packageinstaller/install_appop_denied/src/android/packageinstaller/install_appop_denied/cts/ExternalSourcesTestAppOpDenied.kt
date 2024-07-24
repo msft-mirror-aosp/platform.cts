@@ -16,20 +16,25 @@
 package android.packageinstaller.install_appop_denied.cts
 
 import android.app.AppOpsManager.MODE_ERRORED
+import android.content.pm.Flags
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.MediumTest
 import androidx.test.runner.AndroidJUnit4
-import android.support.test.uiautomator.By
-import android.support.test.uiautomator.BySelector
-import android.support.test.uiautomator.UiDevice
-import android.support.test.uiautomator.Until
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
+import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.AppOpsUtils
 import com.google.common.truth.Truth.assertThat
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -40,6 +45,10 @@ private const val ALERT_DIALOG_MESSAGE_ID = "android:id/message"
 @MediumTest
 @AppModeFull
 class ExternalSourcesTest : PackageInstallerTestBase() {
+    @JvmField
+    @Rule
+    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     private val context = InstrumentationRegistry.getTargetContext()
     private val pm = context.packageManager
     private val packageName = context.packageName
@@ -77,6 +86,7 @@ class ExternalSourcesTest : PackageInstallerTestBase() {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun blockedSourceTestViaSession() {
         blockedSourceTest { startInstallationViaSession() }
     }

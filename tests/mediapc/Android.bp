@@ -25,6 +25,10 @@ android_test {
         "ctsmediav2common",
         "ctstestrunner-axt",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
+    ],
+    jni_libs: [
+        "libctsmediapc_vulkan_jni",
     ],
     platform_apis: true,
     srcs: ["src/**/*.java"],

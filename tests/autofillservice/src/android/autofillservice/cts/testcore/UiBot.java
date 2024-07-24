@@ -165,7 +165,7 @@ public class UiBot {
 
     private static final boolean DUMP_ON_ERROR = true;
 
-    private static final int MAX_UIOBJECT_RETRY_COUNT = 3;
+    protected static final int MAX_UIOBJECT_RETRY_COUNT = 3;
 
     /**
      * Pass to {@link #setScreenOrientation(int)} to change the display to portrait mode.
@@ -514,8 +514,12 @@ public class UiBot {
      * Selects a view by id.
      */
     public UiObject2 selectByRelativeId(String id) throws Exception {
-        Log.v(TAG, "selectByRelativeId(): " + id);
-        UiObject2 object = waitForObject(By.res(mPackageName, id));
+        return selectByRelativeId(mPackageName, id);
+    }
+
+    public UiObject2 selectByRelativeId(String packageName, String id) throws Exception {
+        Log.v(TAG, "selectByRelativeId(): " + packageName + ":/" + id);
+        UiObject2 object = waitForObject(By.res(packageName, id));
         object.click();
         return object;
     }
@@ -623,6 +627,24 @@ public class UiBot {
      */
     public void setTextByRelativeId(String id, String newText) throws Exception {
         waitForObject(By.res(mPackageName, id)).setText(newText);
+    }
+
+    /**
+     * Sets a new text on a view.
+     *
+     * <p><b>Note:</b> First clear the view to the first character of the old string, then clear to
+     * empty. This is to accommodate the fix for the bug where views are reset to empty, causing
+     * save dialog to not show. The fix for this bug is to ignore sudden resets to empty, therefore
+     * CTS tests simulating field clearing have to progressively clear the field instead of
+     * resetting to empty at once.
+     */
+    public void clearTextByRelativeId(String id) throws Exception {
+        final UiObject2 object = waitForObject(By.res(mPackageName, id));
+        String oldText = object.getText();
+        if (!oldText.isEmpty()) {
+            object.setText(String.valueOf(oldText.charAt(0)));
+            object.setText("");
+        }
     }
 
     /**
@@ -1188,13 +1210,31 @@ public class UiBot {
     }
 
     /**
+     * Trys to set the orientation, if possible. No-op if the device does not support rotation
+     *
+     * @return True if the device orientation matches the requested orientation, else false
+     */
+    public boolean maybeSetScreenOrientation(int orientation) {
+        mAutoman.setRotation(orientation);
+        final int currentRotation =
+                InstrumentationRegistry.getInstrumentation()
+                        .getContext()
+                        .getSystemService(DisplayManager.class)
+                        .getDisplay(Display.DEFAULT_DISPLAY)
+                        .getRotation();
+        return orientation == currentRotation;
+    }
+
+    /**
      * Sets the screen orientation.
      *
      * @param orientation typically {@link #LANDSCAPE} or {@link #PORTRAIT}.
-     *
+     * @throws org.junit.AssumptionViolatedException if device does not support rotation.
      * @throws RetryableException if value didn't change.
      */
     public void setScreenOrientation(int orientation) throws Exception {
+        assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
+
         // Use the platform API instead of mDevice.getDisplayRotation(), which is slow due to
         // waitForIdle(). waitForIdle() is not needed here because in AutoFillServiceTestCase we
         // always use UiBot#setScreenOrientation() to change the screen rotation, which blocks until

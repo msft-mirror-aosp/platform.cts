@@ -22,9 +22,16 @@ import android.content.pm.InstallSourceInfo
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
 import androidx.test.runner.AndroidJUnit4
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
+import com.android.bedstead.harrier.annotations.RequireAdbRoot
+import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_INSTALL_APPS
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -38,6 +45,8 @@ class IntentTest : PackageInstallerTestBase() {
                 "27jEBRNRG3ozwBsGr1sVIM9U0bVTI2TdyIyeRkZgW4JrJefwNIBAmCg4AzqXiCvG6JjqA0u" +
                 "TCWSFu2YqAVxVdiRKAay19k5VFlSaM7QW9uhvlrLQqsTW01ofFzxNDbp2QfIFHZR6rebKzK" +
                 "Bz6byQFM0DYQnYMwFWXjWkMPNdqkRLykoFLyBup53G68k2n8wl27jEBRNRG3ozwBsGr"
+        const val NO_INSTALL_APPS_RESTRICTION_TEXT = "This user is not allowed to install apps"
+        const val TIMEOUT = 60000L
     }
 
     @After
@@ -92,6 +101,7 @@ class IntentTest : PackageInstallerTestBase() {
      * Install an app via a package-installer intent, but assign another package as installer
      * package name.
      */
+    @Ignore("b/317736655")
     @Test
     fun installWithAnotherInstallerPackageName() {
         val intent = getInstallationIntent()
@@ -161,6 +171,29 @@ class IntentTest : PackageInstallerTestBase() {
             assertNotInstalled()
         } finally {
             setSecureFrp(false)
+        }
+    }
+
+    @Test
+    @RequireAdbRoot
+    @Ignore("b/322830652: Test suite runs on non-rooted devices only.")
+    fun disallowInstallApps_installFails() {
+        try {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, true)
+
+            val installation = startInstallationViaIntent()
+
+            assertNotNull(
+                "Error dialog not shown", uiDevice.wait(
+                    Until.findObject(By.text(NO_INSTALL_APPS_RESTRICTION_TEXT)), TIMEOUT
+                )
+            )
+            clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+            assertEquals(RESULT_CANCELED, installation.get(TIMEOUT, TimeUnit.MILLISECONDS))
+
+        } finally {
+            TestApis.devicePolicy().userRestrictions().set(DISALLOW_INSTALL_APPS, false)
         }
     }
 

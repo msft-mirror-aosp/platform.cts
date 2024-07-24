@@ -257,6 +257,39 @@ public abstract class DatasetFilteringTest extends AbstractLoginActivityTestCase
     }
 
     @Test
+    public void testFilter_noSuggestionShownAfterUserTypesThreeCharacters() throws Exception {
+        final String fake_username = "ABCDEFG";
+
+        enableService();
+
+        // Set fill response
+        sReplier.addResponse(new CannedFillResponse.Builder()
+                .addDataset(new CannedDataset.Builder()
+                        .setField(ID_USERNAME, "abcdefg")
+                        .setPresentation(fake_username, isInlineMode())
+                        .build())
+                .build());
+
+        // Trigger auto-fill.
+        mUiBot.selectByRelativeId(ID_USERNAME);
+        mUiBot.waitForIdle();
+        sReplier.getNextFillRequest();
+
+        // With no input the dataset should show
+        mUiBot.assertDatasets(fake_username);
+
+        // Input 3 characters, the suggestion still shows
+        changeUsername("abc");
+        mUiBot.assertDatasets(fake_username);
+
+        // Input more than 3 characters, the suggestion should hide
+        changeUsername("abcd");
+
+        // Assert now there are no datasets
+        mUiBot.assertNoDatasets();
+    }
+
+    @Test
     @AppModeFull(reason = "testFilter() is enough")
     public void testFilter_nullValuesAlwaysMatched() throws Exception {
         final String aa = "Two A's";
@@ -540,6 +573,7 @@ public abstract class DatasetFilteringTest extends AbstractLoginActivityTestCase
     @Test
     @AppModeFull(reason = "testFilter_usingKeyboard() is enough")
     public void testFilter_mixPlainAndRegex_usingKeyboard() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         final String plain = "Plain";
         final String regexPlain = "RegexPlain";
         final String authRegex = "AuthRegex";

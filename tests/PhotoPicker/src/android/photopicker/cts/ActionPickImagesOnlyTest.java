@@ -87,7 +87,7 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
 
             mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
 
-            UiAssertionUtils.assertThatShowsPickerUi();
+            UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
             sDevice.pressBack();
         }
     }
@@ -178,5 +178,60 @@ public class ActionPickImagesOnlyTest extends PhotoPickerBaseTest {
         mActivity.startActivityForResult(intent, REQUEST_CODE);
         final GetResultActivity.Result res = mActivity.getResult();
         assertThat(res.resultCode).isEqualTo(Activity.RESULT_CANCELED);
+    }
+
+    @Test
+    public void testExtraPickerLaunchTabOptions() throws Exception {
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+
+        for (int launchOption: new int [] {
+                MediaStore.PICK_IMAGES_TAB_ALBUMS,
+                MediaStore.PICK_IMAGES_TAB_IMAGES
+        }) {
+            intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, launchOption);
+            mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+            UiAssertionUtils.assertThatShowsPickerUi(
+                    intent.getType(), intent.getExtras().getInt(
+                            MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB), sDevice);
+            sDevice.pressBack();
+        }
+    }
+
+    @Test
+    public void testExtraPickerLaunchTabInvalidOption() throws Exception {
+        final Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, -1);
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        final GetResultActivity.Result res = mActivity.getResult();
+        assertThat(res.resultCode).isEqualTo(Activity.RESULT_CANCELED);
+
+    }
+
+    @Test
+    public void testExtraPickerAccentColorValidColor() throws Exception {
+        long accentColor = 0xFFFF5A5F;
+        final Intent intent = new Intent(ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_ACCENT_COLOR, accentColor);
+
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        // Assert that the photopicker works as expected with the added new accent color extra
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+        sDevice.pressBack();
+    }
+
+    @Test
+    public void testExtraPickerAccentColorInvalidColorInput() throws Exception {
+        String accentColor = "red";
+        final Intent intent = new Intent(ACTION_PICK_IMAGES);
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_ACCENT_COLOR, accentColor);
+
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        // Assert that the photopicker UI still shows up
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+        sDevice.pressBack();
     }
 }

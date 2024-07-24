@@ -310,7 +310,7 @@ public class PerAlignedUtils {
    * Encodes an Asn1Object into a  Open type field (X.691-0207, 10.2), used
    * mostly for encoding Sequence and SetOf extension additions. A decode method
    * hasn't been added as the extension additions should decoded
-   * by their relevent Asn1Object decoders.
+   * by their relevant Asn1Object decoders.
    */
   public static Iterable<BitStream> encodeOpenTypeField(
                                                     Asn1Object object){

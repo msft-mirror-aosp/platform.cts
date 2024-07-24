@@ -47,6 +47,7 @@ java_test_host {
         "src/**/perfetto/*.java",
         "src/**/performancehintmanager/*.java",
         "src/**/permissionstate/*.java",
+        "src/**/powermanager/*.java",
         "src/**/settingsstats/*.java",
         "src/**/sizecompatrestartbutton/*.java",
         "src/**/statsd/*.java",
@@ -77,7 +78,10 @@ java_test_host {
     ],
 
     static_libs: [
+        "android.hardware.usb.flags-aconfig-java-host",
+        "android.os.flags-aconfig-java-host",
         "cts-statsd-atom-host-test-utils",
+        "flag-junit-host",
         "perfetto_config-full",
     ],
 

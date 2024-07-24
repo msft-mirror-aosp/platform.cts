@@ -16,27 +16,28 @@
 
 package android.content.res.cts;
 
-import org.xmlpull.v1.XmlPullParser;
-
+import android.content.cts.R;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.content.res.Resources.Theme;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
-import android.test.suitebuilder.annotation.SmallTest;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.util.Xml;
 import android.view.View;
 
-import android.content.cts.R;
+import androidx.test.filters.SmallTest;
+
+import org.xmlpull.v1.XmlPullParser;
 
 import java.util.Locale;
 
-
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class Resources_ThemeTest extends AndroidTestCase {
 
     private Resources.Theme mResTheme;

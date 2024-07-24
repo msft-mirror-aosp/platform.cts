@@ -24,6 +24,12 @@ java_library {
     name: "tagging-common-devicesidelib",
     srcs: ["src/**/*.java"],
     sdk_version: "current",
+    static_libs: [
+        "ctstestrunner-axt",
+        "androidx.test.rules",
+        "androidx.test.core",
+        "androidx.test.ext.junit",
+    ],
 }
 
 cc_test_library {

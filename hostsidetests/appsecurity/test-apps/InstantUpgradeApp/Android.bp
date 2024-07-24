@@ -46,4 +46,5 @@ android_test_helper_app {
         enabled: false,
     },
     min_sdk_version: "25",
+    sdk_version: "test_current",
 }

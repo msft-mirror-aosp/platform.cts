@@ -17,10 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
+
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -36,9 +38,9 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.media.codec.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -47,7 +49,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Tests audio decoders support for feature MultipleFrames.
@@ -64,7 +68,7 @@ import java.util.List;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnitTestBase {
     private static final String LOG_TAG = CodecDecoderMultiAccessUnitTest.class.getSimpleName();
@@ -76,239 +80,98 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             {100, 100},
             {40, 100}
     };
+    static final Map<String, String> RECONFIG_FILE_MEDIA_TYPE_MAP = new HashMap<>();
+
+    static {
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_24kHz.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MPEG,
+                "bbb_2ch_44kHz_lame_crc.mp3");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_WB,
+                "audio/bbb_mono_16kHz_15.85kbps_amrwb.3gp");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AMR_NB,
+                "audio/bbb_mono_8kHz_7.40kbps_amrnb.3gp");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_FLAC,
+                "audio/bbb_1ch_32kHz_lvl4_flac.mka");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_ALAW,
+                "bbb_1ch_8kHz_alaw.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_G711_MLAW,
+                "bbb_1ch_8kHz_mulaw.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_VORBIS,
+                "audio/bbb_1ch_32kHz_q10_vorbis.ogg");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_OPUS,
+                "audio/bbb_1ch_32kHz_opus.ogg");
+        RECONFIG_FILE_MEDIA_TYPE_MAP.put(MediaFormat.MIMETYPE_AUDIO_AAC,
+                "audio/bbb_1ch_32kHz_aac_lc.m4a");
+    }
+
+    static final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_8kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_16kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_44kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_48kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/sd_2ch_48kHz.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s32le.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s24le.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_192kHz.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_8kHz_lame_cbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_16kHz_lame_vbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_cbr.mp3"},
+            {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3.mp3"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_6.6kbps_amrwb.3gp"},
+            {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_12.2kbps_amrnb.3gp"},
+            {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
+
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_8kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_16kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_44kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_48kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/sd_2ch_48kHz_lvl4_flac.mka"},
+            {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_192kHz_lvl4_flac.mka"},
+
+            {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_1ch_8kHz_alaw.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_2ch_8kHz_alaw.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_1ch_8kHz_mulaw.wav"},
+            {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_2ch_8kHz_mulaw.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav"},
+
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_8kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_16kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_48kHz_q10_vorbis.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_2ch_96kHz_q10_vorbis.ogg"},
+
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_8kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_16kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_48kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_48kHz_opus.ogg"},
+            {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_48kHz_opus.ogg"},
+
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
+            {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
+    }));
+
+
+    private final String mReconfigFile;
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}")
     public static Collection<Object[]> input() {
-        final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_1ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "bbb_2ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_8kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_22kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_24kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_32kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_1ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_8kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_16kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_22kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_24kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_32kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_44kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bbb_2ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_96kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_96kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/sd_2ch_48kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s32le.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/bellezza_2ch_48kHz_s24le.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_176kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_1ch_192kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_176kHz.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_RAW, "audio/highres_2ch_192kHz.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_8kHz_lame_cbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_cbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_vbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_1ch_16kHz_lame_vbr.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_2ch_44kHz_lame_crc.mp3"},
-                {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3.mp3"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_1ch_16kHz_16kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "bbb_1ch_16kHz_23kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_6.6kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_8.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_12.65kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_14.25kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_15.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_18.25kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_19.85kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.05kbps_amrwb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_WB, "audio/bbb_mono_16kHz_23.85kbps_amrwb.3gp"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_1ch_8kHz_10kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "bbb_1ch_8kHz_8kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_12.2kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_10.2kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_7.95kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_7.40kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_6.70kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_5.90kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_5.15kbps_amrnb.3gp"},
-                {MediaFormat.MIMETYPE_AUDIO_AMR_NB, "audio/bbb_mono_8kHz_4.75kbps_amrnb.3gp"},
-
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_1ch_16kHz_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "bbb_2ch_44kHz_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_8kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_12kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_16kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_22kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_24kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_32kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_44kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_1ch_48kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_8kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_12kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_16kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_22kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_24kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_32kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_44kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/bbb_2ch_48kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_96kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_176kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_1ch_192kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_96kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_176kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/highres_2ch_192kHz_lvl4_flac.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_FLAC, "audio/sd_2ch_48kHz_lvl4_flac.mka"},
-
-                {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_1ch_8kHz_alaw.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_G711_ALAW, "bbb_2ch_8kHz_alaw.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_1ch_8kHz_mulaw.wav"},
-                {MediaFormat.MIMETYPE_AUDIO_G711_MLAW, "bbb_2ch_8kHz_mulaw.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_MSGSM, "bbb_1ch_8kHz_gsm.wav"},
-
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_1ch_16kHz_vorbis.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "bbb_2ch_44kHz_vorbis.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_8kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_12kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_16kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_24kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_32kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_1ch_48kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_8kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_12kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_16kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_24kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_32kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/bbb_2ch_48kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_1ch_96kHz_q10_vorbis.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_VORBIS, "audio/highres_2ch_96kHz_q10_vorbis.ogg"},
-
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_2ch_48kHz_opus.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_1ch_48kHz_opus.mka"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_1ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_2ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_5ch_48kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_8kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_12kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_16kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_24kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_32kHz_opus.ogg"},
-                {MediaFormat.MIMETYPE_AUDIO_OPUS, "audio/bbb_6ch_48kHz_opus.ogg"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_1ch_16kHz_aac.mp4"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "bbb_2ch_44kHz_aac.mp4"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_8kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_12kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_16kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_22kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_24kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_32kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_44kHz_aac_lc.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_lc.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_5ch_48kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_16kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_22kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_24kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_32kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_44kHz_aac_he.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_6ch_48kHz_aac_he.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_hev2.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_hev2.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_aac_eld.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_aac_eld.m4a"},
-
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_8kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_16kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_22kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_24kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_32kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_44kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_1ch_48kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_8kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_16kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_22kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_24kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_32kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_44kHz_usac.m4a"},
-                {MediaFormat.MIMETYPE_AUDIO_AAC, "audio/bbb_2ch_48kHz_usac.m4a"},
-        }));
-        return prepareParamList(exhaustiveArgsList, false, true, false, true);
+        return prepareParamList(exhaustiveArgsList, false, true, false, true, ComponentClass.ALL,
+                new String[]{FEATURE_MultipleFrames});
     }
 
     public CodecDecoderMultiAccessUnitTest(String decoder, String mediaType, String testFile,
             String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
+        mReconfigFile = MEDIA_DIR + RECONFIG_FILE_MEDIA_TYPE_MAP.get(mediaType);
     }
 
     @Before
@@ -336,10 +199,7 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
             "android.media.MediaCodec.Callback#onOutputBuffersAvailable"})
     @LargeTest
     @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testMultipleAccessUnits() throws IOException, InterruptedException {
-        assumeTrue(mCodecName + " does not support FEATURE_MultipleFrames",
-                isFeatureSupported(mCodecName, mMediaType, FEATURE_MultipleFrames));
-
+    public void testSimpleDecode() throws IOException, InterruptedException {
         CodecDecoderTestBase cdtb = new CodecDecoderTestBase(mCodecName, mMediaType, null,
                 mAllTestParams);
         cdtb.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
@@ -356,10 +216,10 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
         for (int[] outSizeInMs : OUT_SIZE_IN_MS) {
             configureKeysForLargeAudioFrameMode(format, maxSampleSize, outSizeInMs[0],
                     outSizeInMs[1]);
-            for (boolean eosType : boolStates) {
-                mOutputBuff = eosType ? testA : testB;
+            for (boolean signalEosWithLastFrame : boolStates) {
+                mOutputBuff = signalEosWithLastFrame ? testA : testB;
                 mOutputBuff.reset();
-                configureCodec(format, true, eosType, false);
+                configureCodec(format, true, signalEosWithLastFrame, false);
                 mMaxInputLimitMs = outSizeInMs[0];
                 mCodec.start();
                 mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
@@ -381,5 +241,247 @@ public class CodecDecoderMultiAccessUnitTest extends CodecDecoderMultiAccessUnit
         }
         mCodec.release();
         mExtractor.release();
+    }
+
+    /**
+     * Verifies component and framework behaviour to flush API when the codec is operating in
+     * multiple frame mode.
+     * <p>
+     * While the component is decoding the test clip, mediacodec flush() is called. The flush API
+     * is called at various points :-
+     * <ul>
+     *     <li>In running state but before queueing any input (might have to resubmit csd as they
+     *     may not have been processed).</li>
+     *     <li>In running state, after queueing 1 frame.</li>
+     *     <li>In running state, after queueing n frames.</li>
+     *     <li>In eos state.</li>
+     * </ul>
+     * <p>
+     * In all situations (pre-flush or post-flush), the test expects the output timestamps to be
+     * strictly increasing. The flush call makes the output received non-deterministic even for a
+     * given input. Hence, besides timestamp checks, no additional validation is done for outputs
+     * received before flush. Post flush, the decode begins from a sync frame. So the test
+     * expects consistent output and this needs to be identical to the reference
+     * (single access unit mode)
+     * <p>
+     */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE",
+            "android.media.MediaFormat#KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE",
+            "android.media.MediaCodec.Callback#onOutputBuffersAvailable",
+            "android.media.MediaCodec#flush"})
+    @LargeTest
+    @Ignore("TODO(b/147576107)")
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testFlush() throws IOException, InterruptedException {
+        MediaFormat format = setUpSource(mTestFile);
+        final long pts = 250000;
+        mExtractor.release();
+        mCsdBuffers.clear();
+        for (int i = 0; ; i++) {
+            String csdKey = "csd-" + i;
+            if (format.containsKey(csdKey)) {
+                mCsdBuffers.add(format.getByteBuffer(csdKey));
+            } else break;
+        }
+
+        OutputManager ref = null, test;
+        if (isMediaTypeOutputUnAffectedBySeek(mMediaType)) {
+            CodecDecoderTestBase cdtb = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                    mAllTestParams);
+            cdtb.decodeToMemory(mTestFile, mCodecName, pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                    Integer.MAX_VALUE);
+            ref = cdtb.getOutputManager();
+            test = new OutputManager(ref.getSharedErrorLogs());
+        } else {
+            test = new OutputManager();
+        }
+        mOutputBuff = test;
+        setUpSource(mTestFile);
+        int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
+        configureKeysForLargeAudioFrameMode(format, maxSampleSize, OUT_SIZE_IN_MS[0][0],
+                OUT_SIZE_IN_MS[0][1]);
+        mMaxInputLimitMs = OUT_SIZE_IN_MS[0][0];
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        configureCodec(format, true, true, false);
+        mCodec.start();
+
+        /* test flush in running state before queuing input */
+        flushCodec();
+
+        mCodec.start();
+        queueCodecConfig(); /* flushed codec too soon after start, resubmit csd */
+        doWork(1);
+        flushCodec();
+        mCodec.start();
+        queueCodecConfig(); /* flushed codec too soon after start, resubmit csd */
+
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        test.reset();
+        doWork(23);
+        if (!test.isPtsStrictlyIncreasing(mPrevOutputPts)) {
+            fail("Output timestamps are not strictly increasing \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test flush in running state */
+        flushCodec();
+        mCodec.start();
+        mSaveToMem = true;
+        test.reset();
+        mExtractor.seekTo(pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        if (ref != null && !ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test flush in eos state */
+        flushCodec();
+        mCodec.start();
+        test.reset();
+        mExtractor.seekTo(pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (ref != null && !ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        mSaveToMem = false;
+        mCodec.release();
+        mExtractor.release();
+    }
+
+    /**
+     * Verifies component and framework behaviour for format change in multiple frame mode.
+     * The format change is not seamless (AdaptivePlayback) but done via reconfigure.
+     * <p>
+     * The reconfiguring of media codec component happens at various points :-
+     * <ul>
+     *     <li>After initial configuration (stopped state).</li>
+     *     <li>In running state, before queueing any input.</li>
+     *     <li>In running state, after queuing n frames.</li>
+     *     <li>In eos state.</li>
+     * </ul>
+     * In all above mentioned states,
+     * <ul>
+     *     <li>reconfigure with same clip.</li>
+     *     <li>reconfigure with different clip (different resolution).</li>
+     * </ul>
+     * <p>
+     * In all situations (pre-reconfigure or post-reconfigure), the test expects the output
+     * timestamps to be strictly increasing. The reconfigure call makes the output received
+     * non-deterministic even for a given input. Hence, besides timestamp checks, no additional
+     * validation is done for outputs received before reconfigure. Post reconfigure, the decode
+     * begins from a sync frame. So the test expects consistent output and this needs to be
+     * identical to the reference (single access unit mode).
+     * <p>
+     */
+    @ApiTest(apis = {"android.media.MediaFormat#KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE",
+            "android.media.MediaFormat#KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE",
+            "android.media.MediaCodec.Callback#onOutputBuffersAvailable",
+            "android.media.MediaCodec#configure"})
+    @LargeTest
+    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
+    public void testReconfigure() throws IOException, InterruptedException {
+        MediaFormat format = setUpSource(mTestFile);
+        mExtractor.release();
+        MediaFormat newFormat = setUpSource(mReconfigFile);
+        mExtractor.release();
+        final long pts = 250000;
+
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(newFormat);
+        checkFormatSupport(mCodecName, mMediaType, false, formatList, null, CODEC_OPTIONAL);
+
+        CodecDecoderTestBase cdtb1 = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                mAllTestParams);
+        cdtb1.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                Integer.MAX_VALUE);
+        OutputManager ref = cdtb1.getOutputManager();
+        OutputManager test = new OutputManager(ref.getSharedErrorLogs());
+
+        CodecDecoderTestBase cdtb2 = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                mAllTestParams);
+        cdtb2.decodeToMemory(mReconfigFile, mCodecName, pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
+                Integer.MAX_VALUE);
+        OutputManager configRef = cdtb2.getOutputManager();
+        OutputManager configTest = new OutputManager(configRef.getSharedErrorLogs());
+        int maxSampleSize = getMaxSampleSizeForMediaType(mTestFile, mMediaType);
+        configureKeysForLargeAudioFrameMode(format, maxSampleSize, OUT_SIZE_IN_MS[0][0],
+                OUT_SIZE_IN_MS[0][1]);
+        maxSampleSize = getMaxSampleSizeForMediaType(mReconfigFile, mMediaType);
+        configureKeysForLargeAudioFrameMode(newFormat, maxSampleSize, OUT_SIZE_IN_MS[0][0],
+                OUT_SIZE_IN_MS[0][1]);
+        mMaxInputLimitMs = OUT_SIZE_IN_MS[0][0];
+        mCodec = MediaCodec.createByCodecName(mCodecName);
+        mOutputBuff = test;
+        setUpSource(mTestFile);
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        configureCodec(format, true, true, false);
+
+        /* test reconfigure in stopped state */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+
+        /* test reconfigure in running state before queuing input */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+        doWork(23);
+
+        /* test reconfigure codec in running state */
+        reConfigureCodec(format, true, true, false);
+        mCodec.start();
+        mSaveToMem = true;
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+
+        /* test reconfigure codec at eos state */
+        reConfigureCodec(format, true, false, false);
+        mCodec.start();
+        test.reset();
+        mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!ref.equalsByteOutput(test)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + test.getErrMsg());
+        }
+        mExtractor.release();
+
+        /* test reconfigure codec for new file */
+        mOutputBuff = configTest;
+        setUpSource(mReconfigFile);
+        reConfigureCodec(newFormat, true, false, false);
+        mCodec.start();
+        configTest.reset();
+        mExtractor.seekTo(pts, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
+        doWork(Integer.MAX_VALUE);
+        queueEOS();
+        waitForAllOutputs();
+        mCodec.stop();
+        if (!configRef.equalsByteOutput(configTest)) {
+            fail("Decoder output is not consistent across runs \n" + mTestConfig + mTestEnv
+                    + configTest.getErrMsg());
+        }
+        mSaveToMem = false;
+        mExtractor.release();
+        mCodec.release();
     }
 }

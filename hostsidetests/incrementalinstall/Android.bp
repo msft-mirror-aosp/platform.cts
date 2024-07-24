@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsIncrementalInstallHostTestCases",
+    team: "trendy_team_incremental",
     srcs: ["src/**/*.java"],
     libs: [
         "compatibility-host-util",

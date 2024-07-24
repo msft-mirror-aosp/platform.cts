@@ -281,13 +281,22 @@ public final class DeviceUtils {
             throws DeviceNotAvailableException {
         String uidLine = device.executeShellCommand("cmd package list packages -U --user "
                 + userId + " " + pkgName);
-        String[] uidLineArr = uidLine.split(":");
 
-        // Package uid is located at index 2.
-        assertThat(uidLineArr.length).isGreaterThan(2);
-        int appUid = Integer.parseInt(uidLineArr[2].trim());
-        assertThat(appUid).isGreaterThan(10000);
-        return appUid;
+        // Split package list by lines
+        // Sample packages response:
+        // package:com.android.server.cts.device.statsd.host uid:1010033
+        // package:com.android.server.cts.device.statsd uid:1010034
+        final String[] lines = uidLine.split("\\R+");
+        for (final String line : lines) {
+            if (line.startsWith("package:" + pkgName + " ")) {
+                final int uidIndex = line.lastIndexOf(":") + 1;
+                final int uid = Integer.parseInt(line.substring(uidIndex).trim());
+                assertThat(uid).isGreaterThan(10_000);
+                return uid;
+            }
+        }
+        throw new Error(
+                String.format("Could not find installed package: %s", pkgName));
     }
 
     /**
@@ -470,24 +479,63 @@ public final class DeviceUtils {
 
     /**
      * Runs a (background) service to perform the given action.
+     * @param testPackage the test package that contains the background service.
+     * @param service the service name
+     * @param actionValue the action code constants indicating the desired action to perform.
+     */
+    public static void executeBackgroundService(ITestDevice device, String testPackage,
+            String service, String actionValue) throws Exception {
+        executeServiceAction(device, testPackage, service, actionValue);
+    }
+
+
+    /**
+     * Runs a (background) service to perform the given action.
      * @param actionValue the action code constants indicating the desired action to perform.
      */
     public static void executeBackgroundService(ITestDevice device, String actionValue)
             throws Exception {
-        executeServiceAction(device, "StatsdCtsBackgroundService", actionValue);
+        executeServiceAction(device, STATSD_ATOM_TEST_PKG,
+                "StatsdCtsBackgroundService", actionValue);
     }
 
     /**
      * Runs the specified statsd package service to perform the given action.
      * @param actionValue the action code constants indicating the desired action to perform.
      */
-    public static void executeServiceAction(ITestDevice device, String service, String actionValue)
-            throws Exception {
+    public static void executeServiceAction(ITestDevice device, String testPackage,
+            String service, String actionValue) throws Exception {
         allowBackgroundServices(device);
         device.executeShellCommand(String.format(
                 "am startservice -n '%s/.%s' -e %s %s",
-                STATSD_ATOM_TEST_PKG, service,
+                testPackage, service,
                 KEY_ACTION, actionValue));
+    }
+
+    public static void rebootDeviceAndWaitUntilReady(ITestDevice device) throws Exception {
+        device.rebootUntilOnline();
+        // Wait for 3 mins.
+        assertWithMessage("Device failed to boot")
+            .that(device.waitForBootComplete(180_000)).isTrue();
+        assertWithMessage("Stats service failed to start")
+            .that(waitForStatsServiceStart(device, 60_000)).isTrue();
+        RunUtil.getDefault().sleep(2_000);
+    }
+
+    private static boolean waitForStatsServiceStart(ITestDevice device, long waitTime)
+            throws Exception {
+        LogUtil.CLog.i("Waiting %d ms for stats service to start", waitTime);
+        int counter = 1;
+        long startTime = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - startTime) < waitTime) {
+            if ("running".equals(getProperty(device, "init.svc.statsd"))) {
+                return true;
+            }
+            RunUtil.getDefault().sleep(Math.min(200 * counter, 2_000));
+            counter++;
+        }
+        LogUtil.CLog.w("Stats service did not start after %d ms", waitTime);
+        return false;
     }
 
     /**
@@ -517,6 +565,16 @@ public final class DeviceUtils {
         return kernelVersion.first > version.first
                 || (Objects.equals(kernelVersion.first, version.first)
                 && kernelVersion.second >= version.second);
+    }
+
+    // Gets whether "Always on Display" setting is enabled.
+    // In rare cases, this is different from whether the device can enter SCREEN_STATE_DOZE.
+    public static String getAodState(ITestDevice device) throws Exception {
+        return device.executeShellCommand("settings get secure doze_always_on");
+    }
+
+    public static void setAodState(ITestDevice device, String state) throws Exception {
+        device.executeShellCommand("settings put secure doze_always_on " + state);
     }
 
     private DeviceUtils() {}

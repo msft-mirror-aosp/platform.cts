@@ -19,14 +19,15 @@ package android.media.tv.tuner.cts;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.media.tv.tuner.dvr.DvrPlayback;
 import android.media.tv.tuner.Tuner;
 import android.media.tv.tuner.cts.ISharedFilterTestServer;
+import android.media.tv.tuner.dvr.OnPlaybackStatusChangedListener;
 import android.media.tv.tuner.filter.Filter;
 import android.media.tv.tuner.filter.FilterCallback;
 import android.media.tv.tuner.filter.FilterEvent;
 import android.media.tv.tuner.filter.SharedFilter;
 import android.media.tv.tuner.filter.SharedFilterCallback;
-import android.media.tv.tuner.frontend.FrontendInfo;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -37,8 +38,8 @@ public class SharedFilterTestService extends Service {
     private static final String TAG = "SharedFilterTestService";
     private Context mContext = null;
     private Tuner mTuner = null;
+    private DvrPlayback mDvrPlayback = null;
     private Filter mFilter = null;
-    private boolean mTuning = false;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -60,19 +61,17 @@ public class SharedFilterTestService extends Service {
             mFilter = TunerTest.createTsSectionFilter(
                     mTuner, getExecutor(), getFilterCallback());
 
-            // Tune a frontend before start the filter
-            List<FrontendInfo> infos = mTuner.getAvailableFrontendInfos();
-            mTuner.tune(TunerTest.createFrontendSettings(infos.get(0)));
-            mTuning = true;
+            // Open dvr playback as data source
+            mDvrPlayback = mTuner.openDvrPlayback(188, getExecutor(), getPlaybackListener());
 
             return mFilter.acquireSharedFilterToken();
         }
 
         @Override
         public void closeFilter() {
-            if (mTuning) {
-                mTuner.cancelTuning();
-                mTuning = false;
+            if (mDvrPlayback != null) {
+                mDvrPlayback.close();
+                mDvrPlayback = null;
             }
             mFilter.close();
             mFilter = null;
@@ -80,10 +79,6 @@ public class SharedFilterTestService extends Service {
 
         @Override
         public void freeSharedFilterToken(String token) {
-            if (mTuning) {
-                mTuner.cancelTuning();
-                mTuning = false;
-            }
             mFilter.freeSharedFilterToken(token);
         }
 
@@ -144,4 +139,11 @@ public class SharedFilterTestService extends Service {
     }
 
     private Executor getExecutor() { return Runnable::run; }
+
+    private OnPlaybackStatusChangedListener getPlaybackListener() {
+        return new OnPlaybackStatusChangedListener() {
+            @Override
+            public void onPlaybackStatusChanged(int status) {}
+        };
+    }
 }

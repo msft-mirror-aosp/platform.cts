@@ -65,6 +65,12 @@
                 <action android:name="android.media.browse.MediaBrowserService"/>
             </intent-filter>
         </service>
+        <service android:name="android.media.bettertogether.cts.SimpleMediaBrowserService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService"/>
+            </intent-filter>
+        </service>
         <service android:name="android.media.bettertogether.cts.StubMediaSession2Service"
              android:permission="android.media.bettertogether.cts"
              android:exported="true">
@@ -98,8 +104,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.media.bettertogether.cts"
          android:label="CTS tests of android.media">
-        <meta-data android:name="listener"
-             android:value="com.android.cts.runner.CtsTestRunListener"/>
     </instrumentation>
 
 </manifest>

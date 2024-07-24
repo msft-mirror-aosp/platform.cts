@@ -336,6 +336,27 @@ public class AudioRecordTest {
                 AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_FLOAT);
     }
 
+    // Test audio record stereo float with maximum supported sample rate.
+    @Test
+    public void testAudioRecordStereoFloatMaxSampleRate() throws Exception {
+        doTest("stereo_float", false /*localRecord*/, false /*customHandler*/,
+                2 /*periodsPerSecond*/, 2 /*markerPeriodsPerSecond*/,
+                false /*useByteBuffer*/, false /*blocking*/,
+                false /*auditRecording*/, false /*isChannelIndex*/, AudioSystem.SAMPLE_RATE_HZ_MAX,
+                AudioFormat.CHANNEL_IN_STEREO, AudioFormat.ENCODING_PCM_FLOAT);
+    }
+
+    // Test audio record stereo 16 bits with minimum supported sample rate.
+    @Test
+    public void testAudioRecordStereo16BitMinSampleRate() throws Exception {
+        doTest("stereo_16bit", true /*localRecord*/, true /*customHandler*/,
+                2 /*periodsPerSecond*/, 0 /*markerPeriodsPerSecond*/,
+                false /*useByteBuffer*/, false /*blocking*/,
+                false /*auditRecording*/, true /*isChannelIndex*/, AudioSystem.SAMPLE_RATE_HZ_MIN,
+                AudioFormat.CHANNEL_IN_STEREO,
+                AudioFormat.ENCODING_PCM_16BIT);
+    }
+
     @Test
     public void testAudioRecordLocalNonblockingStereoFloat() throws Exception {
         doTest("local_nonblocking_stereo_float", true /*localRecord*/, true /*customHandler*/,
@@ -708,8 +729,9 @@ public class AudioRecordTest {
             final int BUFFER_FRAMES = 512;
             final int BUFFER_SAMPLES = BUFFER_FRAMES * numChannels;
 
-            final int tries = 2;
+            final int tries = 4;
             for (int i = 0; i < tries; ++i) {
+                Log.d(TEST_NAME, "try " + i);
                 final long trackStartTimeNs = System.nanoTime();
                 final long trackStartTimeBootNs = android.os.SystemClock.elapsedRealtimeNanos();
 
@@ -750,11 +772,6 @@ public class AudioRecordTest {
                         record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC));
                 assertEquals(AudioRecord.SUCCESS,
                         record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME));
-
-                // printTimestamp("timestamp Monotonic", ts);
-                // printTimestamp("timestamp Boottime", tsBoot);
-                // Log.d(TEST_NAME, "startTime Monotonic " + startTime);
-                // Log.d(TEST_NAME, "startTime Boottime " + startTimeBoot);
 
                 assertEquals(stopTs.framePosition, stopTsBoot.framePosition);
                 assertTrue(stopTs.framePosition >= targetFrames);
@@ -999,8 +1016,8 @@ public class AudioRecordTest {
         if (!hasMicrophone()) {
             return;
         }
-        AudioRecordingConfigurationTest.MyAudioRecordingCallback callback =
-                new AudioRecordingConfigurationTest.MyAudioRecordingCallback(
+        AudioTestUtil.AudioRecordingCallbackUtil callback =
+                new AudioTestUtil.AudioRecordingCallbackUtil(
                         mAudioRecord.getAudioSessionId(), MediaRecorder.AudioSource.DEFAULT);
         mAudioRecord.registerAudioRecordingCallback(mExec, callback);
         mAudioRecord.startRecording();
@@ -1790,13 +1807,18 @@ public class AudioRecordTest {
 
             // Sample rate out of bounds.
             // System levels caught on AudioFormat.
-            assertThrows(IllegalArgumentException.class, () -> {
-                audioRecord[0] = new AudioRecord.Builder()
-                        .setAudioFormat(new AudioFormat.Builder()
-                                .setSampleRate(BIGNUM)
-                                .build())
-                        .build();
-            });
+            for (int sampleRate : new int[] {
+                    BIGNUM,
+                    AudioSystem.SAMPLE_RATE_HZ_MIN - 1,
+                    AudioSystem.SAMPLE_RATE_HZ_MAX + 1}) {
+                assertThrows(IllegalArgumentException.class, () -> {
+                    audioRecord[0] = new AudioRecord.Builder()
+                            .setAudioFormat(new AudioFormat.Builder()
+                                    .setSampleRate(sampleRate)
+                                    .build())
+                            .build();
+                });
+            }
 
             // Invalid channel mask
             // This is a UOE for AudioRecord vs IAE for AudioTrack.

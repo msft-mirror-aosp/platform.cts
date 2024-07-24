@@ -18,6 +18,7 @@ package android.bluetooth.cts;
 
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
+import static android.Manifest.permission.BLUETOOTH_SCAN;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,8 +28,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.mock;
 
-import android.annotation.NonNull;
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothActivityEnergyInfo;
 import android.bluetooth.BluetoothAdapter;
@@ -38,6 +39,7 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -74,9 +76,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * Very basic test, just of the static methods of {@link BluetoothAdapter}.
- */
+/** Very basic test, just of the static methods of {@link BluetoothAdapter}. */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class BluetoothAdapterTest {
@@ -416,9 +416,14 @@ public class BluetoothAdapterTest {
         TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertThrows(IllegalArgumentException.class, () -> mAdapter.setDiscoverableTimeout(
                 Duration.ofDays(25000)));
-        assertEquals(BluetoothStatusCodes.SUCCESS,
-                mAdapter.setDiscoverableTimeout(minutes));
-        assertEquals(minutes, mAdapter.getDiscoverableTimeout());
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.setDiscoverableTimeout(minutes),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_SCAN));
+        try (var p = Permissions.withPermissions(BLUETOOTH_SCAN, BLUETOOTH_PRIVILEGED)) {
+            assertEquals(BluetoothStatusCodes.SUCCESS,
+                    mAdapter.setDiscoverableTimeout(minutes));
+            assertEquals(minutes, mAdapter.getDiscoverableTimeout());
+        }
     }
 
     @Test
@@ -497,13 +502,7 @@ public class BluetoothAdapterTest {
 
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.BluetoothConnectionCallback callback =
-                new BluetoothAdapter.BluetoothConnectionCallback() {
-                    @Override
-                    public void onDeviceConnected(@NonNull BluetoothDevice device) {}
-                    @Override
-                    public void onDeviceDisconnected(BluetoothDevice device, int reason) {}
-
-                };
+                mock(BluetoothAdapter.BluetoothConnectionCallback.class);
 
         // placeholder call for coverage
         callback.onDeviceConnected(null);
@@ -514,18 +513,10 @@ public class BluetoothAdapterTest {
         assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, null));
         assertFalse(mAdapter.unregisterBluetoothConnectionCallback(null));
 
-        assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-
-        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class,
-                () -> mAdapter.registerBluetoothConnectionCallback(executor, callback));
-
-        mUiAutomation.dropShellPermissionIdentity();
-        // Verify throws SecurityException without permission.BLUETOOTH_CONNECT
-        assertThrows(SecurityException.class, () ->
-                mAdapter.registerBluetoothConnectionCallback(executor, callback));
-        assertThrows(SecurityException.class, () ->
-                mAdapter.unregisterBluetoothConnectionCallback(callback));
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertTrue(mAdapter.registerBluetoothConnectionCallback(executor, callback));
+            assertTrue(mAdapter.unregisterBluetoothConnectionCallback(callback));
+        }
     }
 
     @Test

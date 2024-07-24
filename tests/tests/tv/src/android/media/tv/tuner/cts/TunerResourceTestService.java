@@ -69,6 +69,9 @@ public class TunerResourceTestService extends Service {
         mFeInfo = infos.get(frontendIndex);
         mFeSettings = TunerTest.createFrontendSettings(mFeInfo);
 
+        // apply target frontend only, for case when there are multiple instances in frontend type
+        mTuner.applyFrontend(mFeInfo);
+
         // tune
         return  mTuner.tune(mFeSettings);
     }

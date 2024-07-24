@@ -88,7 +88,7 @@ public abstract class ListScenario extends Activity {
     }
 
     /**
-     * Better way to pass in optional params than a honkin' paramater list :)
+     * Better way to pass in optional params than a honkin' parameter list :)
      */
     public static class Params {
         private int mNumItems = 4;
@@ -266,7 +266,7 @@ public abstract class ListScenario extends Activity {
      * more importantly, that {@link android.widget.AdapterView.OnItemSelectedListener} has
      * been triggered).
      */
-    protected void positionSelected(int positon) {
+    protected void positionSelected(int position) {
     }
 
     /**
@@ -348,7 +348,7 @@ public abstract class ListScenario extends Activity {
             });
         }
 
-        // set the fading edge length porportionally to the screen
+        // set the fading edge length proportionally to the screen
         // height for test stability
         if (params.mFadingEdgeScreenSizeFactor != null) {
             mListView.setFadingEdgeLength((int) (params.mFadingEdgeScreenSizeFactor * mScreenHeight));
@@ -563,7 +563,7 @@ public abstract class ListScenario extends Activity {
     }
 
     /**
-     * Return an the number of types created by the adapter. Override if your
+     * Return the number of types created by the adapter. Override if your
      * adapter creates more than one type.
      */
     public int getViewTypeCount() {

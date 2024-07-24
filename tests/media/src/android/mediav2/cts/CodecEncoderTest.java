@@ -18,6 +18,7 @@ package android.mediav2.cts;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -76,8 +77,10 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     private static final String LOG_TAG = CodecEncoderTest.class.getSimpleName();
     private static final ArrayList<String> ABR_MEDIATYPE_LIST = new ArrayList<>();
 
+    private boolean mGotCSD;
     private int mNumSyncFramesReceived;
     private final ArrayList<Integer> mSyncFramesPos = new ArrayList<>();
+    private final int mFrameLimit;
 
     static {
         System.loadLibrary("ctsmediav2codecenc_jni");
@@ -92,16 +95,22 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     public CodecEncoderTest(String encoder, String mediaType, EncoderConfigParams[] cfgParams,
             String allTestParams) {
         super(encoder, mediaType, cfgParams, allTestParams);
+        mFrameLimit = Math.max(cfgParams[0].mFrameRate, 30);
     }
 
     @Override
     protected void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
         super.resetContext(isAsync, signalEOSWithLastFrame);
+        mGotCSD = false;
         mNumSyncFramesReceived = 0;
         mSyncFramesPos.clear();
     }
 
+    @Override
     protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+        if (info.size > 0 && ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0)) {
+            mGotCSD = true;
+        }
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
             mNumSyncFramesReceived += 1;
             mSyncFramesPos.add(mOutputCount);
@@ -277,6 +286,35 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 + mTestEnv, mActiveRawRes);
     }
 
+    private void validateCSD() {
+        boolean requireCSD = false;
+        if (mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_VP9)) {
+            if (!IS_AT_LEAST_V) {
+                assertFalse("components that support mediaType: " + mMediaType
+                        + " must not generate CodecPrivateData before Android V\n"
+                        + mTestConfig + mTestEnv, mGotCSD);
+            } else if (BOARD_FIRST_SDK_IS_AT_LEAST_202404) {
+                // For devices launching with Android V, CSD is mandated for VP9 encoders
+                requireCSD = true;
+            } else {
+                // For devices upgrading to Android V, CSD is not mandated for VP9 encoders
+                requireCSD = false;
+            }
+        } else if (mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_AAC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_OPUS)
+                || mMediaType.equals(MediaFormat.MIMETYPE_AUDIO_FLAC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_MPEG4)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
+                || mMediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)) {
+            requireCSD = true;
+        }
+
+        if (requireCSD) {
+            assertTrue("components that support mediaType: " + mMediaType
+                    + " must generate CodecPrivateData \n" + mTestConfig + mTestEnv, mGotCSD);
+        }
+    }
+
     /**
      * Checks if the component under test can encode the test file correctly. The encoding
      * happens in synchronous, asynchronous mode, eos flag signalled with last raw frame and
@@ -288,7 +326,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
      * parameters, the test checks for consistency across runs. Although the test collects the
      * output in a byte buffer, no analysis is done that checks the integrity of the bitstream.
      */
-    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.1", "5.2/C-1-1"})
+    @CddTest(requirements = {"2.2.2", "2.3.2", "2.5.2", "5.1.1", "5.2/C-1-1", "5.2.4/C-1-3"})
     @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#COLOR_FormatYUV420Flexible",
             "android.media.AudioFormat#ENCODING_PCM_16BIT"})
     @LargeTest
@@ -316,10 +354,11 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                         validateMetrics(mCodecName);
                         configureCodec(format, isAsync, eosType, true);
                         mCodec.start();
-                        doWork(Integer.MAX_VALUE);
+                        doWork(mFrameLimit);
                         queueEOS();
                         waitForAllOutputs();
                         validateMetrics(mCodecName, format);
+                        validateCSD();
                         /* TODO(b/147348711) */
                         if (false) mCodec.stop();
                         else mCodec.reset();
@@ -336,7 +375,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     }
 
     private native boolean nativeTestSimpleEncode(String encoder, String file, String mediaType,
-            String cfgParams, String separator, StringBuilder retMsg);
+            String cfgParams, String separator, StringBuilder retMsg, int frameLimit);
 
     /**
      * Test is similar to {@link #testSimpleEncode()} but uses ndk api
@@ -357,7 +396,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         }
         boolean isPass = nativeTestSimpleEncode(mCodecName, mActiveRawRes.mFileName, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
+                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
     }
 
@@ -401,12 +440,12 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
             OutputManager configRef = null;
             OutputManager configTest = null;
             if (mEncCfgParams.length > 1) {
-                encodeToMemory(mCodecName, mEncCfgParams[1], mActiveRawRes, Integer.MAX_VALUE,
+                encodeToMemory(mCodecName, mEncCfgParams[1], mActiveRawRes, mFrameLimit,
                         saveToMem, mMuxOutput);
                 configRef = mOutputBuff;
                 configTest = new OutputManager(configRef.getSharedErrorLogs());
             }
-            encodeToMemory(mCodecName, mEncCfgParams[0], mActiveRawRes, Integer.MAX_VALUE,
+            encodeToMemory(mCodecName, mEncCfgParams[0], mActiveRawRes, mFrameLimit,
                     saveToMem, mMuxOutput);
             OutputManager ref = mOutputBuff;
             OutputManager test = new OutputManager(ref.getSharedErrorLogs());
@@ -432,7 +471,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 mCodec.start();
                 mSaveToMem = saveToMem;
                 test.reset();
-                doWork(Integer.MAX_VALUE);
+                doWork(mFrameLimit);
                 queueEOS();
                 waitForAllOutputs();
                 /* TODO(b/147348711) */
@@ -447,7 +486,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                 reConfigureCodec(format, !isAsync, false, true);
                 mCodec.start();
                 test.reset();
-                doWork(Integer.MAX_VALUE);
+                doWork(mFrameLimit);
                 queueEOS();
                 waitForAllOutputs();
                 /* TODO(b/147348711) */
@@ -464,7 +503,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
                     reConfigureCodec(mEncCfgParams[1].getFormat(), isAsync, false, true);
                     mCodec.start();
                     configTest.reset();
-                    doWork(Integer.MAX_VALUE);
+                    doWork(mFrameLimit);
                     queueEOS();
                     waitForAllOutputs();
                     /* TODO(b/147348711) */
@@ -482,7 +521,8 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
     }
 
     private native boolean nativeTestReconfigure(String encoder, String file, String mediaType,
-            String cfgParams, String cfgReconfigParams, String separator, StringBuilder retMsg);
+            String cfgParams, String cfgReconfigParams, String separator, StringBuilder retMsg,
+            int frameLimit);
 
     /**
      * Test is similar to {@link #testReconfigure()} but uses ndk api
@@ -507,7 +547,7 @@ public class CodecEncoderTest extends CodecEncoderTestBase {
         boolean isPass = nativeTestReconfigure(mCodecName, mActiveRawRes.mFileName, mMediaType,
                 EncoderConfigParams.serializeMediaFormat(format), reconfigFormat == null ? null :
                         EncoderConfigParams.serializeMediaFormat(reconfigFormat),
-                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig);
+                EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
     }
 

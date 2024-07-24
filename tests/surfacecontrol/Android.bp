@@ -45,10 +45,16 @@ android_test {
         "junit-params",
         "mockito-target-minus-junit4",
         "platform-test-annotations",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "truth",
         "CtsSurfaceValidatorLib",
         "cts-wm-util",
+        "CtsMockInputMethodLib",
+        "CtsCrossProcessSurfaceControlViewHostTestService",
+        "flag-junit",
+        "com.android.window.flags.window-aconfig-java",
+        "hwui_flags_java_lib",
+        "ui-trace-collector",
     ],
 
     jni_libs: [
@@ -58,6 +64,12 @@ android_test {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.aidl",
+    ],
+
+    data: [
+        ":CtsCrossProcessSurfaceControlViewHostTestService",
+        ":CtsMockInputMethod",
     ],
 
     sdk_version: "test_current",

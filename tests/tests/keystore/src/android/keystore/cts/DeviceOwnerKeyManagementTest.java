@@ -49,7 +49,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.security.AttestedKeyPair;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
@@ -88,6 +87,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DeviceOwnerKeyManagementTest {
     private static final Context sContext = TestApis.context().instrumentedContext();
@@ -141,10 +141,6 @@ public class DeviceOwnerKeyManagementTest {
     void verifySignatureOverData(String algoIdentifier, KeyPair keyPair) throws Exception {
         verifySignature(algoIdentifier, keyPair.getPublic(),
                 signDataWithKey(algoIdentifier, keyPair.getPrivate()));
-    }
-
-    int getDeviceFirstSdkLevel() {
-        return SystemProperties.getInt("ro.board.first_api_level", 0);
     }
 
     private void validateDeviceIdAttestationData(Certificate[] certs,
@@ -220,10 +216,10 @@ public class DeviceOwnerKeyManagementTest {
          * * Other KeyMint implementations must not include anything in this tag.
          */
         final boolean isKeyMintV3 =
-                TestUtils.getFeatureVersionKeystore(sContext, useStrongbox) >= 300;
+                TestUtils.hasKeystoreVersion(useStrongbox, Attestation.KM_VERSION_KEYMINT_3);
         final boolean emptySecondImei = TextUtils.isEmpty(expectedSecondImei);
         final boolean deviceShippedWithKeyMint3 =
-                getDeviceFirstSdkLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+                TestUtils.getVendorApiLevel() >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
         if (!isKeyMintV3) {
             // Earlier versions of KeyMint must not attest to second IMEI values as they are not
@@ -255,7 +251,10 @@ public class DeviceOwnerKeyManagementTest {
                                                             boolean useStrongbox)
             throws CertificateParsingException, IOException {
         ParsedAttestationRecord parsedAttestationRecord =
-                createParsedAttestationRecord(Arrays.asList((X509Certificate[]) certs));
+                createParsedAttestationRecord(
+                    Arrays.stream(certs)
+                    .map(certificate -> (X509Certificate) certificate)
+                    .collect(Collectors.toList()));
 
         com.google.android.attestation.AuthorizationList teeAttestation =
                 parsedAttestationRecord.teeEnforced;
@@ -418,7 +417,7 @@ public class DeviceOwnerKeyManagementTest {
             List<Certificate> attestation = generated.getAttestationRecord();
             validateAttestationRecord(attestation, attestationChallenge);
             validateSignatureChain(attestation, keyPair.getPublic());
-            return (Certificate[]) attestation.toArray();
+            return attestation.toArray(new Certificate[0]);
         } catch (UnsupportedOperationException ex) {
             assertWithMessage(
                     String.format(
@@ -458,7 +457,10 @@ public class DeviceOwnerKeyManagementTest {
                     .isNotNull();
             imei = telephonyService.getImei(0);
             secondImei = telephonyService.getImei(1);
-            meid = telephonyService.getMeid(0);
+            if (sContext.getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CDMA)) {
+                meid = telephonyService.getMeid(0);
+            }
             // If the device has a valid IMEI it must support attestation for it.
             if (imei != null) {
                 modesToTest.add(ID_TYPE_IMEI);
@@ -527,7 +529,7 @@ public class DeviceOwnerKeyManagementTest {
                     assertThat(isDeviceIdAttestationSupported()).isFalse();
                 } catch (StrongBoxUnavailableException expected) {
                     // This exception must only be thrown if StrongBox attestation was requested.
-                    assertThat(useStrongBox && !hasStrongBox()).isTrue();
+                    assertThat(useStrongBox && !TestUtils.hasStrongBox(sContext)).isTrue();
                 }
             }
         }
@@ -567,13 +569,14 @@ public class DeviceOwnerKeyManagementTest {
         return false;
     }
 
-    private boolean checkDeviceLocked() throws Exception {
+    private boolean checkDeviceLocked(boolean useStrongBox) throws Exception {
         String keystoreAlias = "check_device_state";
         KeyGenParameterSpec.Builder builder =
                 new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
                         .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
                         .setAttestationChallenge(new byte[128])
-                        .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512);
+                        .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512)
+                        .setIsStrongBoxBacked(useStrongBox);
 
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM_EC,
                 "AndroidKeyStore");
@@ -584,7 +587,7 @@ public class DeviceOwnerKeyManagementTest {
 
         try {
             Certificate []certificates = keyStore.getCertificateChain(keystoreAlias);
-            verifyCertificateChain(certificates, false);
+            verifyCertificateChain(certificates, useStrongBox);
 
             X509Certificate attestationCert = (X509Certificate) certificates[0];
 
@@ -603,6 +606,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestation() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties
@@ -610,9 +614,9 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
+        final boolean isDeviceLocked = checkDeviceLocked(false /* useStrongBox */);
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(false /* useStrongBox */);
         } catch (NeneException e) {
@@ -634,6 +638,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestationUsingStrongBox() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties
@@ -641,9 +646,9 @@ public class DeviceOwnerKeyManagementTest {
         // hence skipping this test for such scenario.
         assumeFalse("This test is not applicable for device running GSI image and"
                 + " first_api_level < 14", TestUtils.isGsiImage()
-                && getDeviceFirstSdkLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
+                && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
+        final boolean isDeviceLocked = checkDeviceLocked(true /* useStrongBox */);
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(true  /* useStrongBox */);
         } catch (NeneException e) {
@@ -655,10 +660,5 @@ public class DeviceOwnerKeyManagementTest {
                     && TestUtils.isGsiImage() && !isDeviceLocked));
             throw new Exception(e);
         }
-    }
-
-    boolean hasStrongBox() {
-        return sContext.getPackageManager()
-                .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE);
     }
 }

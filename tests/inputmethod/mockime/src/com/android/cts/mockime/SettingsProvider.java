@@ -16,6 +16,7 @@
 
 package com.android.cts.mockime;
 
+import android.content.ComponentName;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -25,6 +26,7 @@ import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 /**
@@ -33,14 +35,16 @@ import androidx.annotation.Nullable;
  */
 public class SettingsProvider extends ContentProvider {
 
+    public static final String SET_INLINE_SUGGESTION_EXTRAS_COMMAND = "setInlineSuggestionsExtras";
     private static final String TAG = "SettingsProvider";
-    static final String AUTHORITY = "com.android.cts.mockime.provider";
 
     static final String SET_ADDITIONAL_SUBTYPES_COMMAND = "setAdditionalSubtypes";
     static final String SET_ADDITIONAL_SUBTYPES_KEY = "subtypes";
 
     @Nullable
     private static ImeSettings sSettings = null;
+    @Nullable
+    private static Bundle sInlineSuggestionsExtras;
 
     @Override
     public boolean onCreate() {
@@ -73,6 +77,12 @@ public class SettingsProvider extends ContentProvider {
         return 0;
     }
 
+    @NonNull
+    private String getMockImeId() {
+        return new ComponentName(getContext().getPackageName(), MockIme.class.getName())
+                .flattenToShortString();
+    }
+
     @Override
     public Bundle call(String authority, String method, String arg, Bundle extras) {
         Log.i(TAG, String.format("SettingsProvider.call(): instance=%s, method=%s", this, method));
@@ -91,14 +101,24 @@ public class SettingsProvider extends ContentProvider {
                 additionalSubtypes = new InputMethodSubtype[0];
             }
             getContext().getSystemService(InputMethodManager.class)
-                    .setAdditionalInputMethodSubtypes(MockIme.getImeId(), additionalSubtypes);
+                    .setAdditionalInputMethodSubtypes(getMockImeId(), additionalSubtypes);
         } else if ("delete".equals(method)) {
+            if (sSettings != null) {
+                sSettings.close();
+            }
             sSettings = null;
+            sInlineSuggestionsExtras = null;
+        } else if (SET_INLINE_SUGGESTION_EXTRAS_COMMAND.equals(method)) {
+            sInlineSuggestionsExtras = extras;
         }
         return Bundle.EMPTY;
     }
 
     static ImeSettings getSettings() {
         return sSettings;
+    }
+
+    static Bundle getInlineSuggestionsExtras() {
+        return sInlineSuggestionsExtras;
     }
 }

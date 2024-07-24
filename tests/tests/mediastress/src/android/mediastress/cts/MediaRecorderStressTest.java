@@ -24,10 +24,12 @@ import android.media.MediaRecorder;
 import android.os.Handler;
 import android.os.Looper;
 import android.test.ActivityInstrumentationTestCase2;
-import android.test.suitebuilder.annotation.LargeTest;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
+import androidx.test.filters.LargeTest;
+
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.io.BufferedWriter;
@@ -38,6 +40,7 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<MediaFrameworkTest> {
 

@@ -15,8 +15,11 @@
  */
 package android.jobscheduler.cts;
 
+import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD;
 import static android.app.ActivityManager.getCapabilitiesSummary;
 import static android.app.ActivityManager.procStateToString;
+import static android.jobscheduler.cts.BaseJobSchedulerTest.HW_TIMEOUT_MULTIPLIER;
 import static android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver.ACTION_JOB_SCHEDULE_RESULT;
 import static android.jobscheduler.cts.jobtestapp.TestJobSchedulerReceiver.EXTRA_REQUEST_JOB_UID_STATE;
 import static android.jobscheduler.cts.jobtestapp.TestJobService.ACTION_JOB_STARTED;
@@ -29,10 +32,12 @@ import static android.jobscheduler.cts.jobtestapp.TestJobService.JOB_PROC_STATE_
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.app.AppOpsManager;
+import android.app.compat.CompatChanges;
 import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
 import android.content.BroadcastReceiver;
@@ -54,13 +59,17 @@ import com.android.compatibility.common.util.AppStandbyUtils;
 import com.android.compatibility.common.util.CallbackAsserter;
 import com.android.compatibility.common.util.SystemUtil;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Common functions to interact with the test app.
  */
 class TestAppInterface implements AutoCloseable {
     private static final String TAG = TestAppInterface.class.getSimpleName();
+
+    public static final long ENFORCE_MINIMUM_TIME_WINDOWS = 311402873L;
 
     static final String TEST_APP_PACKAGE = "android.jobscheduler.cts.jobtestapp";
     private static final String TEST_APP_ACTIVITY = TEST_APP_PACKAGE + ".TestActivity";
@@ -69,13 +78,16 @@ class TestAppInterface implements AutoCloseable {
 
     private final Context mContext;
     private final int mJobId;
+    private final int mTestPackageUid;
 
     /* accesses must be synchronized on itself */
     private final SparseArray<TestJobState> mTestJobStates = new SparseArray();
 
-    TestAppInterface(Context ctx, int jobId) {
+    TestAppInterface(Context ctx, int jobId) throws Exception {
         mContext = ctx;
         mJobId = jobId;
+
+        mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
 
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ACTION_JOB_STARTED);
@@ -92,6 +104,15 @@ class TestAppInterface implements AutoCloseable {
             // Force the test app out of the never bucket.
             SystemUtil.runShellCommand("am set-standby-bucket " + TEST_APP_PACKAGE + " rare");
         }
+        // Remove the app from the whitelist.
+        SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
+        if (isTestAppTempWhitelisted()) {
+            Log.w(TAG, "Test package already in temp whitelist");
+            if (!removeTestAppFromTempWhitelist()) {
+                // Don't block the test, but log in case it's an issue.
+                Log.w(TAG, "Test package wasn't removed from the temp whitelist");
+            }
+        }
     }
 
     void cleanup() throws Exception {
@@ -103,8 +124,18 @@ class TestAppInterface implements AutoCloseable {
         stopFgs();
         mContext.unregisterReceiver(mReceiver);
         AppOpsUtils.reset(TEST_APP_PACKAGE);
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> CompatChanges.removePackageOverrides(
+                        TestAppInterface.TEST_APP_PACKAGE,
+                        Set.of(ENFORCE_MINIMUM_TIME_WINDOWS)),
+                OVERRIDE_COMPAT_CHANGE_CONFIG_ON_RELEASE_BUILD, INTERACT_ACROSS_USERS_FULL);
         SystemUtil.runShellCommand("am compat reset-all " + TEST_APP_PACKAGE);
+        // Remove the app from the whitelist.
+        SystemUtil.runShellCommand("cmd deviceidle whitelist -" + TEST_APP_PACKAGE);
+        removeTestAppFromTempWhitelist();
         mTestJobStates.clear();
+        SystemUtil.runShellCommand(
+                "cmd jobscheduler reset-execution-quota -u current " + TEST_APP_PACKAGE);
         forceStopApp(); // Clean up as much internal/temporary system state as possible
     }
 
@@ -132,7 +163,7 @@ class TestAppInterface implements AutoCloseable {
     }
 
     private Intent generateScheduleJobIntent(Map<String, Boolean> booleanExtras,
-            Map<String, Integer> intExtras) {
+            Map<String, Integer> intExtras, Map<String, Long> longExtras) {
         final Intent scheduleJobIntent = new Intent(TestJobSchedulerReceiver.ACTION_SCHEDULE_JOB);
         scheduleJobIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         if (!intExtras.containsKey(TestJobSchedulerReceiver.EXTRA_JOB_ID_KEY)) {
@@ -140,13 +171,20 @@ class TestAppInterface implements AutoCloseable {
         }
         booleanExtras.forEach(scheduleJobIntent::putExtra);
         intExtras.forEach(scheduleJobIntent::putExtra);
+        longExtras.forEach(scheduleJobIntent::putExtra);
         scheduleJobIntent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
         return scheduleJobIntent;
     }
 
     void scheduleJob(Map<String, Boolean> booleanExtras, Map<String, Integer> intExtras)
             throws Exception {
-        final Intent scheduleJobIntent = generateScheduleJobIntent(booleanExtras, intExtras);
+        scheduleJob(booleanExtras, intExtras, Collections.emptyMap());
+    }
+
+    void scheduleJob(Map<String, Boolean> booleanExtras, Map<String, Integer> intExtras,
+            Map<String, Long> longExtras) throws Exception {
+        final Intent scheduleJobIntent =
+                generateScheduleJobIntent(booleanExtras, intExtras, longExtras);
 
         final CallbackAsserter resultBroadcastAsserter = CallbackAsserter.forBroadcast(
                 new IntentFilter(TestJobSchedulerReceiver.ACTION_JOB_SCHEDULE_RESULT));
@@ -157,7 +195,8 @@ class TestAppInterface implements AutoCloseable {
 
     void postUiInitiatingNotification(Map<String, Boolean> booleanExtras,
             Map<String, Integer> intExtras) throws Exception {
-        final Intent intent = generateScheduleJobIntent(booleanExtras, intExtras);
+        final Intent intent =
+                generateScheduleJobIntent(booleanExtras, intExtras, Collections.emptyMap());
         intent.setAction(TestJobSchedulerReceiver.ACTION_POST_UI_INITIATING_NOTIFICATION);
 
         final CallbackAsserter resultBroadcastAsserter = CallbackAsserter.forBroadcast(
@@ -167,6 +206,7 @@ class TestAppInterface implements AutoCloseable {
                 15 /* 15 seconds */);
     }
 
+    /** Post an alarm that will start an FGS in the test app. */
     void postFgsStartingAlarm() throws Exception {
         AppOpsUtils.setOpMode(TEST_APP_PACKAGE,
                 AppOpsManager.OPSTR_SCHEDULE_EXACT_ALARM, AppOpsManager.MODE_ALLOWED);
@@ -183,8 +223,17 @@ class TestAppInterface implements AutoCloseable {
 
     /** Asks (not forces) JobScheduler to run the job if constraints are met. */
     void runSatisfiedJob() throws Exception {
+        runSatisfiedJob(mJobId);
+    }
+
+    void runSatisfiedJob(int jobId) throws Exception {
+        if (HW_TIMEOUT_MULTIPLIER > 1) {
+            // Device has increased HW multiplier. Wait a short amount of time before sending the
+            // run command since there's a higher chance JobScheduler's processing is delayed.
+            Thread.sleep(1_000L);
+        }
         SystemUtil.runShellCommand("cmd jobscheduler run -s"
-                + " -u " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE + " " + mJobId);
+                + " -u " + UserHandle.myUserId() + " " + TEST_APP_PACKAGE + " " + jobId);
     }
 
     /** Forces JobScheduler to run the job */
@@ -243,6 +292,29 @@ class TestAppInterface implements AutoCloseable {
         }
     }
 
+    boolean isTestAppTempWhitelisted() {
+        final String output = SystemUtil.runShellCommand("cmd deviceidle tempwhitelist").trim();
+        final String expectedText = "UID=" + UserHandle.getAppId(mTestPackageUid);
+        for (String line : output.split("\n")) {
+            if (line.contains(expectedText)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean removeTestAppFromTempWhitelist() throws Exception {
+        SystemUtil.runShellCommand("cmd deviceidle tempwhitelist"
+                + " -u " + UserHandle.myUserId()
+                + " -r " + TEST_APP_PACKAGE);
+        final boolean removed = waitUntilTrue(3_000, () -> !isTestAppTempWhitelisted());
+        if (!removed) {
+            Log.e(TAG, "Test app wasn't removed from temp whitelist");
+        }
+        return removed;
+    }
+
+    /** Directly start the FGS in the test app. */
     void startFgs() throws Exception {
         final Intent intent = new Intent(TestJobSchedulerReceiver.ACTION_START_FGS);
         intent.setComponent(new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER));
@@ -332,6 +404,17 @@ class TestAppInterface implements AutoCloseable {
                 return jobState != null && !jobState.running;
             }
         });
+    }
+
+    private String getJobState(int jobId) throws Exception {
+        return SystemUtil.runShellCommand(
+                "cmd jobscheduler get-job-state --user cur " + TEST_APP_PACKAGE + " " + jobId)
+                .trim();
+    }
+
+    void assertJobNotReady(int jobId) throws Exception {
+        String state = getJobState(jobId);
+        assertTrue("Job unexpectedly ready, in state: " + state, !state.contains("ready"));
     }
 
     void assertJobUidState(int procState, int capabilities, int oomScoreAdj) {

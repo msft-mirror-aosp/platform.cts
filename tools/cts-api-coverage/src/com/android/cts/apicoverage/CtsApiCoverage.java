@@ -21,6 +21,10 @@ import static com.google.common.io.MoreFiles.getFileExtension;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ReadElf;
+import com.android.cts.apicommon.ApiClass;
+import com.android.cts.apicommon.ApiCoverage;
+import com.android.cts.apicommon.ApiPackage;
+import com.android.cts.apicommon.ApiXmlHandler;
 import com.android.tools.smali.dexlib2.DexFileFactory;
 import com.android.tools.smali.dexlib2.Opcodes;
 import com.android.tools.smali.dexlib2.iface.Annotation;
@@ -270,7 +274,7 @@ public class CtsApiCoverage {
     private static ApiCoverage getEmptyApiCoverage(String apiXmlPath)
             throws SAXException, IOException {
         XMLReader xmlReader = XMLReaderFactory.createXMLReader();
-        CurrentXmlHandler currentXmlHandler = new CurrentXmlHandler();
+        ApiXmlHandler currentXmlHandler = new ApiXmlHandler();
         xmlReader.setContentHandler(currentXmlHandler);
 
         File currentXml = new File(apiXmlPath);

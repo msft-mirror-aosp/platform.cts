@@ -41,7 +41,7 @@ ImageReaderHelper::~ImageReaderHelper() {
 
 int ImageReaderHelper::initImageReader() {
   if (mImgReader != nullptr || mImgReaderAnw != nullptr) {
-    ALOGE("Cannot re-initalize image reader, mImgReader=%p, mImgReaderAnw=%p",
+    ALOGE("Cannot reinitialize image reader, mImgReader=%p, mImgReaderAnw=%p",
           mImgReader, mImgReaderAnw);
     return -1;
   }
@@ -84,9 +84,9 @@ int ImageReaderHelper::getBufferFromCurrentImage(AHardwareBuffer **outBuffer) {
     if (ret != AMEDIA_OK || outImage == nullptr) {
       // When the BufferQueue is in async mode, it is still possible that
       // AImageReader_acquireNextImage returns nothing after onFrameAvailable.
-      ALOGW("Failed to acquire image, ret=%d, outIamge=%p.", ret, outImage);
+      ALOGW("Failed to acquire image, ret=%d, outImage=%p.", ret, outImage);
     } else {
-      // Any exisitng in mAcquiredImage will be deleted and released
+      // Any existing in mAcquiredImage will be deleted and released
       // automatically.
       mAcquiredImage.reset(outImage);
     }

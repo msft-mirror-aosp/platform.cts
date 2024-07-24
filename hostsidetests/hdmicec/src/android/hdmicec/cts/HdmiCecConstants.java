@@ -30,6 +30,7 @@ public final class HdmiCecConstants {
     public static final int REBOOT_TIMEOUT = 60000;
     public static final int TIMEOUT_CEC_REINIT_SECONDS = 5;
     public static final int TIMEOUT_SAFETY_MS = 500;
+    public static final long TIMEOUT_UI_AND_STANDBY_AFTER_ACTIVE_SOURCE_LOST_SECONDS = 35;
 
     public static final int INVALID_VENDOR_ID = 0xFFFFFF;
 
@@ -227,4 +228,39 @@ public final class HdmiCecConstants {
     public static final int DEVICE_VOLUME_BEHAVIOR_FULL = 1;
     public static final int DEVICE_VOLUME_BEHAVIOR_FIXED = 2;
     public static final int DEVICE_VOLUME_BEHAVIOR_ABSOLUTE = 3;
+
+    // TV RcProfile constants
+    public static final String CEC_SETTING_NAME_RC_PROFILE_TV = "rc_profile_tv";
+    public static final int RC_PROFILE_TV_NONE = 0x0;
+    public static final int RC_PROFILE_TV_ONE = 0x2;
+    public static final int RC_PROFILE_TV_TWO = 0x6;
+    public static final int RC_PROFILE_TV_THREE = 0xA;
+    public static final int RC_PROFILE_TV_FOUR = 0xE;
+
+    // RcProfile Constants
+    public static final String CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_ROOT_MENU =
+            "rc_profile_source_handles_root_menu";
+
+    public static final String CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_SETUP_MENU =
+            "rc_profile_source_handles_setup_menu";
+
+    public static final String CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_CONTENTS_MENU =
+            "rc_profile_source_handles_contents_menu";
+
+    public static final String CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_TOP_MENU =
+            "rc_profile_source_handles_top_menu";
+
+    public static final String
+            CEC_SETTING_NAME_RC_PROFILE_SOURCE_HANDLES_MEDIA_CONTEXT_SENSITIVE_MENU =
+                    "rc_profile_source_handles_media_context_sensitive_menu";
+
+    public static final int RC_PROFILE_SOURCE_MENU_HANDLED = 1;
+
+    public static final int RC_PROFILE_SOURCE_MENU_NOT_HANDLED = 0;
+
+    public static final int RC_PROFILE_SOURCE_HANDLES_ROOT_MENU = 4;
+    public static final int RC_PROFILE_SOURCE_HANDLES_SETUP_MENU = 3;
+    public static final int RC_PROFILE_SOURCE_HANDLES_CONTENTS_MENU = 2;
+    public static final int RC_PROFILE_SOURCE_HANDLES_TOP_MENU = 1;
+    public static final int RC_PROFILE_SOURCE_HANDLES_MEDIA_CONTEXT_SENSITIVE_MENU = 0;
 }

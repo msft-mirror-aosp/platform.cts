@@ -19,6 +19,10 @@ package {
 
 android_test {
     name: "CtsAppOps2TestCases",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
 
     srcs: ["src/**/*.kt"],
 
@@ -33,11 +37,11 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-permission",
         "vts10",
     ],
     data: [
         ":CtsAppToBlame1",
     ],
     per_testcase_directory: true,
+    sdk_version: "test_current",
 }

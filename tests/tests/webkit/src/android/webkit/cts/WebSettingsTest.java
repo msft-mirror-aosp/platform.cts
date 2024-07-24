@@ -497,34 +497,34 @@ public class WebSettingsTest extends SharedWebViewTest {
         final SettableFuture<Void> createWindowFuture = SettableFuture.create();
 
         try {
-          mOnUiThread.setWebChromeClient(new WebChromeClient() {
-              @Override
-              public boolean onCreateWindow(
-                      WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
-                  WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                  transport.setWebView(childWebView);
-                  resultMsg.sendToTarget();
-                  createWindowFuture.set(null);
-                  return true;
-              }
-          });
+            mOnUiThread.setWebChromeClient(new WebChromeClient() {
+                @Override
+                public boolean onCreateWindow(
+                        WebView view, boolean isDialog, boolean isUserGesture, Message resultMsg) {
+                    WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                    transport.setWebView(childWebView);
+                    resultMsg.sendToTarget();
+                    createWindowFuture.set(null);
+                    return true;
+                }
+            });
 
-          mSettings.setJavaScriptCanOpenWindowsAutomatically(false);
-          assertFalse(mSettings.getJavaScriptCanOpenWindowsAutomatically());
-          mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.POPUP_URL));
-          new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
-              @Override
-              protected boolean check() {
-                  return "Popup blocked".equals(mOnUiThread.getTitle());
-              }
-          }.run();
-          assertFalse("onCreateWindow should not have been called yet",
-              createWindowFuture.isDone());
+            mSettings.setJavaScriptCanOpenWindowsAutomatically(false);
+            assertFalse(mSettings.getJavaScriptCanOpenWindowsAutomatically());
+            mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.POPUP_URL));
+            new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+                @Override
+                protected boolean check() {
+                    return "Popup blocked".equals(mOnUiThread.getTitle());
+                }
+            }.run();
+            assertFalse("onCreateWindow should not have been called yet",
+                    createWindowFuture.isDone());
 
-          mSettings.setJavaScriptCanOpenWindowsAutomatically(true);
-          assertTrue(mSettings.getJavaScriptCanOpenWindowsAutomatically());
-          mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.POPUP_URL));
-          WebkitUtils.waitForFuture(createWindowFuture);
+            mSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+            assertTrue(mSettings.getJavaScriptCanOpenWindowsAutomatically());
+            mOnUiThread.loadUrl(mWebServer.getAssetUrl(TestHtmlConstants.POPUP_URL));
+            WebkitUtils.waitForFuture(createWindowFuture);
         } finally {
             WebkitUtils.onMainThreadSync(() -> {
                 ViewParent parent = childWebView.getParent();
@@ -1155,7 +1155,14 @@ public class WebSettingsTest extends SharedWebViewTest {
         new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
             @Override
             protected boolean check() {
-                return !EMPTY_IMAGE_HEIGHT.equals(mOnUiThread.getTitle());
+                try {
+                    int value = Integer.parseInt(mOnUiThread.getTitle());
+                    return value > 0;
+                } catch (NumberFormatException e) {
+                    // Page title cannot be parsed as an integer. This probably means the page title
+                    // hasn't been updated yet, so keep polling.
+                    return false;
+                }
             }
         }.run();
     }

@@ -28,7 +28,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
     ],
@@ -40,6 +40,7 @@ android_test_helper_app {
         "mts-permission",
     ],
     manifest: "sharingapp1/AndroidManifest.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -54,7 +55,7 @@ android_test_helper_app {
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
-        "ub-uiautomator",
+        "androidx.test.uiautomator_uiautomator",
         "cts-security-test-support-library",
         "androidx.legacy_legacy-support-v4",
     ],
@@ -66,4 +67,5 @@ android_test_helper_app {
         "mts-permission",
     ],
     manifest: "sharingapp2/AndroidManifest.xml",
+    sdk_version: "test_current",
 }

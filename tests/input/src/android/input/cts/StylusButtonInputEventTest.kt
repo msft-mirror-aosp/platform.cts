@@ -18,9 +18,6 @@ package android.input.cts
 
 import android.app.StatusBarManager
 import android.graphics.Point
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
-import android.util.Size
 import android.view.InputDevice.SOURCE_KEYBOARD
 import android.view.InputDevice.SOURCE_STYLUS
 import android.view.InputDevice.SOURCE_TOUCHSCREEN
@@ -31,6 +28,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
+import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputDevice
 import com.android.cts.input.UinputTouchDevice
 import org.junit.After
@@ -38,6 +36,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TestName
 import org.junit.runner.RunWith
 
 /**
@@ -60,7 +59,8 @@ class StylusButtonInputEventTest {
 
         val INITIAL_SYSTEM_KEY = KeyEvent.KEYCODE_UNKNOWN
         val LINUX_TO_ANDROID_KEYCODE_MAP =
-            mapOf<Int /* Linux keycode */, Int /* Android keycode */>(
+            // map from Linux keycode to Android keycode
+            mapOf<Int, Int>(
                 0x14b to KeyEvent.KEYCODE_STYLUS_BUTTON_PRIMARY, // BTN_STYLUS
                 0x14c to KeyEvent.KEYCODE_STYLUS_BUTTON_SECONDARY, // BTN_STYLUS2
                 0x149 to KeyEvent.KEYCODE_STYLUS_BUTTON_TERTIARY, // BTN_STYLUS3
@@ -72,7 +72,10 @@ class StylusButtonInputEventTest {
             )
     }
 
-    @get:Rule val virtualDisplayRule = VirtualDisplayActivityScenarioRule()
+    @get:Rule val debugInputRule = DebugInputRule()
+    @get:Rule val testName = TestName()
+    @get:Rule val virtualDisplayRule =
+        VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var statusBarManager: StatusBarManager
     private lateinit var initialStylusButtonsEnabledSetting: String
@@ -144,23 +147,26 @@ class StylusButtonInputEventTest {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 288321659)
     @Test
     fun testStylusButtonsEnabledMotionEvents() {
         enableStylusButtons()
         UinputTouchDevice(
                 instrumentation,
                 virtualDisplayRule.virtualDisplay.display,
-                Size(WIDTH, HEIGHT),
                 R.raw.test_capacitive_stylus_register,
                 SOURCE_TOUCHSCREEN or SOURCE_STYLUS,
+                useDisplaySize = true,
         ).use { uinputStylus ->
             val pointer = Point(100, 100)
             for (button in LINUX_KEYCODE_TO_MOTIONEVENT_BUTTON.entries.iterator()) {
                 pointer.offset(1, 1)
 
                 uinputStylus.sendBtnTouch(true)
+                uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
                 uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sync()
 
                 assertNextMotionEventEquals(
                         MotionEvent.ACTION_DOWN,
@@ -179,7 +185,9 @@ class StylusButtonInputEventTest {
 
                 uinputStylus.sendBtnTouch(false)
                 uinputStylus.sendBtn(button.key, false)
+                uinputStylus.sendPressure(0)
                 uinputStylus.sendUp(0)
+                uinputStylus.sync()
 
                 assertNextMotionEventEquals(
                         MotionEvent.ACTION_BUTTON_RELEASE,
@@ -199,23 +207,26 @@ class StylusButtonInputEventTest {
         }
     }
 
+    @DebugInputRule.DebugInput(bug = 288321659)
     @Test
     fun testStylusButtonsDisabledMotionEvents() {
         disableStylusButtons()
         UinputTouchDevice(
                 instrumentation,
                 virtualDisplayRule.virtualDisplay.display,
-                Size(WIDTH, HEIGHT),
                 R.raw.test_capacitive_stylus_register,
                 SOURCE_TOUCHSCREEN or SOURCE_STYLUS,
+                useDisplaySize = true,
         ).use { uinputStylus ->
             val pointer = Point(100, 100)
             for (button in LINUX_KEYCODE_TO_MOTIONEVENT_BUTTON.entries.iterator()) {
                 pointer.offset(1, 1)
 
                 uinputStylus.sendBtnTouch(true)
+                uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
                 uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sync()
 
                 assertNextMotionEventEquals(
                         MotionEvent.ACTION_DOWN,
@@ -226,8 +237,10 @@ class StylusButtonInputEventTest {
                 )
 
                 uinputStylus.sendBtnTouch(false)
+                uinputStylus.sendPressure(0)
                 uinputStylus.sendBtn(button.key, false)
                 uinputStylus.sendUp(0)
+                uinputStylus.sync()
 
                 assertNextMotionEventEquals(
                         MotionEvent.ACTION_UP,

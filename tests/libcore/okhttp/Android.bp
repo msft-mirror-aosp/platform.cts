@@ -52,9 +52,11 @@ android_test {
         "cts",
         "general-tests",
         "mts-conscrypt",
+        "mcts-conscrypt",
     ],
     host_required: ["cts-dalvik-host-test-runner"],
     test_config: "CtsLibcoreOkHttpTestCases.xml",
+    sdk_version: "test_current",
 }
 
 // Tests used in ART MTS.

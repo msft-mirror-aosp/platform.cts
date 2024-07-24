@@ -17,7 +17,6 @@
 package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.homeScreenOrBust;
-import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.isHomeScreenShowing;
 
 import static org.junit.Assert.assertTrue;
 
@@ -28,11 +27,15 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CddTest;
 
@@ -54,15 +57,21 @@ public class AccessibilityGlobalActionsTest {
 
     private static Instrumentation sInstrumentation;
     private static UiAutomation sUiAutomation;
+    private static UiDevice sUiDevice;
 
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
+
     @BeforeClass
     public static void oneTimeSetup() {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation();
+        sUiDevice = UiDevice.getInstance(sInstrumentation);
         AccessibilityServiceInfo info = sUiAutomation.getServiceInfo();
         info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
         sUiAutomation.setServiceInfo(info);
@@ -83,23 +92,7 @@ public class AccessibilityGlobalActionsTest {
         //     making it untestable to a device-agnostic CTS test like this.
         // So instead of waiting for any specific condition, we repeatedly try to get to the home
         // screen to clean up before starting the next test.
-
-        // Arbitrary number of retries. Each attempt may wait at most
-        // AsyncUtils.DEFAULT_TIMEOUT_MS ms before failing, so keep this small.
-        final int numAttempts = 3;
-        for (int attempt = 1; attempt <= numAttempts; attempt++) {
-            if (isHomeScreenShowing(sInstrumentation.getContext(), sUiAutomation)) {
-                break;
-            }
-            try {
-                homeScreenOrBust(sInstrumentation.getContext(), sUiAutomation);
-            } catch (AssertionError e) {
-                if (attempt == numAttempts) {
-                    // Fail if the last attempt still couldn't get to a clean home screen.
-                    throw e;
-                }
-            }
-        }
+        sUiDevice.pressHome();
     }
 
     @MediumTest
@@ -114,7 +107,7 @@ public class AccessibilityGlobalActionsTest {
         assertTrue(sUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME));
     }
 
-    @MediumTest
+    @LargeTest
     @Test
     public void testPerformGlobalActionRecents() {
         // Not all devices support GLOBAL_ACTION_RECENTS, but there is no current feature flag for
@@ -186,5 +179,21 @@ public class AccessibilityGlobalActionsTest {
     public void testPerformGlobalActionDpadCenter() {
         assertTrue(sUiAutomation.performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_DPAD_CENTER));
+    }
+
+    @MediumTest
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MENU)
+    public void testPerformGlobalActionMenu() {
+        assertTrue(sUiAutomation.performGlobalAction(
+                AccessibilityService.GLOBAL_ACTION_MENU));
+    }
+
+    @MediumTest
+    @Test
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MEDIA_PLAY_PAUSE)
+    public void testPerformGlobalActionMediaPlayPause() {
+        assertTrue(sUiAutomation.performGlobalAction(
+                AccessibilityService.GLOBAL_ACTION_MEDIA_PLAY_PAUSE));
     }
 }

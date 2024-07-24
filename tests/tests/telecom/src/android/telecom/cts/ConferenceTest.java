@@ -96,6 +96,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
+
         final Call conf = mInCallService.getLastConferenceCall();
         assertCallState(conf, Call.STATE_ACTIVE);
 

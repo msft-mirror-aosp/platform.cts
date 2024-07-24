@@ -61,6 +61,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
     private String mTestName;
     private View mContentView;
     private RemoteCallback mRemoteCallback;
+    private Bundle mOnShowArgs;
 
     MainInteractionSession(Context context) {
         super(context);
@@ -119,6 +120,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
             Log.e(TAG, "onshow() received null args");
             return;
         }
+        mOnShowArgs = args;
         mScreenshotNeeded = (showFlags & SHOW_WITH_SCREENSHOT) != 0;
         mTestName = args.getString(Utils.TESTCASE_TYPE, "");
         mCurColor = args.getInt(Utils.SCREENSHOT_COLOR_KEY);
@@ -153,8 +155,11 @@ public class MainInteractionSession extends VoiceInteractionSession {
                     boolean statusBarContainsCutout = !android.graphics.Insets.NONE.equals(min);
                     Log.d(TAG, "statusBarContainsCutout=" + statusBarContainsCutout);
                     displayPoint.y = statusBarContainsCutout
-                            ? bound.height() - min.top - min.bottom : bound.height();
-                    displayPoint.x = bound.width();
+                            ? bound.height() - min.top - min.bottom :
+                            bound.height() - displayCutoutInsets.top - displayCutoutInsets.bottom;
+                    displayPoint.x = statusBarContainsCutout ?
+                            bound.width() - min.left - min.right :
+                            bound.width() - displayCutoutInsets.left - displayCutoutInsets.right;
                     DisplayCutout dc = d.getCutout();
                     if (dc != null) {
                         // Means the device has a cutout area
@@ -300,6 +305,7 @@ public class MainInteractionSession extends VoiceInteractionSession {
         } else {
             Bundle bundle = new Bundle();
             bundle.putString(Utils.EXTRA_REMOTE_CALLBACK_ACTION, Utils.BROADCAST_ASSIST_DATA_INTENT);
+            bundle.putBundle(Utils.ON_SHOW_ARGS_KEY, mOnShowArgs);
             bundle.putAll(mAssistData);
             mRemoteCallback.sendResult(bundle);
 

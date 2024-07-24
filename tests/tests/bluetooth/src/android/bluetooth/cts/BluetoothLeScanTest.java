@@ -31,11 +31,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.ParcelUuid;
 import android.os.SystemClock;
-import android.test.suitebuilder.annotation.MediumTest;
 import android.util.Log;
 import android.util.SparseArray;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
@@ -56,7 +56,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 
 /**
  * Test cases for Bluetooth LE scans.
@@ -122,6 +121,8 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void basicBleScan() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
         long scanStartMillis = SystemClock.elapsedRealtime();
         Collection<ScanResult> scanResults = scan();
         long scanEndMillis = SystemClock.elapsedRealtime();
@@ -138,6 +139,10 @@ public class BluetoothLeScanTest {
     @MediumTest
     @Test
     public void scanFilter() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.BLUETOOTH_CONNECT,
+                        android.Manifest.permission.BLUETOOTH_SCAN);
         List<ScanFilter> filters = new ArrayList<ScanFilter>();
         ScanFilter filter = createScanFilter();
         if (filter == null) {
@@ -167,6 +172,7 @@ public class BluetoothLeScanTest {
                 .adoptShellPermissionIdentity(
                         android.Manifest.permission.BLUETOOTH_CONNECT,
                         android.Manifest.permission.BLUETOOTH_PRIVILEGED,
+                        android.Manifest.permission.BLUETOOTH_SCAN,
                         android.Manifest.permission.UPDATE_DEVICE_STATS
                 );
         BleScanCallback filterLeScanCallback = new BleScanCallback();
@@ -188,6 +194,7 @@ public class BluetoothLeScanTest {
                 .adoptShellPermissionIdentity(
                         android.Manifest.permission.BLUETOOTH_CONNECT,
                         android.Manifest.permission.BLUETOOTH_PRIVILEGED,
+                        android.Manifest.permission.BLUETOOTH_SCAN,
                         android.Manifest.permission.UPDATE_DEVICE_STATS
                 );
         BleScanCallback filterLeScanCallback = new BleScanCallback();
@@ -294,6 +301,10 @@ public class BluetoothLeScanTest {
     @Test
     public void batchScan() {
         Assume.assumeTrue(isBleBatchScanSupported());
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.BLUETOOTH_CONNECT,
+                        android.Manifest.permission.BLUETOOTH_SCAN);
 
         ScanSettings batchScanSettings = new ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
@@ -325,6 +336,10 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent_nullnull() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.BLUETOOTH_CONNECT,
+                        android.Manifest.permission.BLUETOOTH_SCAN);
 
         Intent broadcastIntent = new Intent();
         broadcastIntent.setClass(mContext, BluetoothScanReceiver.class);
@@ -345,6 +360,10 @@ public class BluetoothLeScanTest {
     @Test
     public void startScanPendingIntent() throws Exception {
         Assume.assumeTrue(isBleBatchScanSupported());
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.BLUETOOTH_CONNECT,
+                        android.Manifest.permission.BLUETOOTH_SCAN);
 
         ScanSettings batchScanSettings = new ScanSettings.Builder()
                 .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)

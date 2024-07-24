@@ -30,12 +30,12 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
-import android.test.suitebuilder.annotation.SmallTest;
 import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;

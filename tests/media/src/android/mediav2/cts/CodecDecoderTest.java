@@ -416,12 +416,14 @@ public class CodecDecoderTest extends CodecDecoderTestBase {
             }
             mCodec.release();
             mExtractor.release();
-            if (IS_AT_LEAST_R && mSaveToMem && mIsAudio) {
+            // The following part of the test was added after Android U and is not guaranteed
+            // to work on versions before that, hence limit it to Android V and above.
+            if (IS_AT_LEAST_V && mSaveToMem && mIsAudio) {
                 test.reset();
                 CodecDecoderBlockModelTestBase cdbmtb = new CodecDecoderBlockModelTestBase(
                         mCodecName, mMediaType, null, mAllTestParams);
                 cdbmtb.decodeToMemory(mTestFile, mCodecName, test, 0,
-                        MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
+                        MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE, true, false);
                 if (!ref.equals(test)) {
                     fail("Output in block model mode is not same as output in normal mode. \n"
                             + mTestConfig + mTestEnv + test.getErrMsg());

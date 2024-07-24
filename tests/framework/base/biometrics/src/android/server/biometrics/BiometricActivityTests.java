@@ -27,6 +27,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.hardware.biometrics.BiometricPrompt;
@@ -40,6 +41,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.ApiTest;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -50,6 +53,11 @@ import org.junit.Test;
 public class BiometricActivityTests extends BiometricTestBase {
     private static final String TAG = "BiometricTests/Activity";
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_authenticateFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -93,16 +101,15 @@ public class BiometricActivityTests extends BiometricTestBase {
         assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
 
         // Auth and check again now
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 0, callbackState.mNumAuthRejected);
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_rejectThenErrorFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -170,6 +177,11 @@ public class BiometricActivityTests extends BiometricTestBase {
                 (int) callbackState.mErrorsReceived.get(0));
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_rejectThenAuthenticate() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -228,18 +240,19 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
 
         // Accept authentication and end
-        successfullyAuthenticate(session, userId);
-
-        mInstrumentation.waitForIdleSync();
-        callbackState = getCallbackState(journal);
-        assertTrue(callbackState.toString(), callbackState.mErrorsReceived.isEmpty());
-        assertTrue(callbackState.toString(), callbackState.mAcquiredReceived.isEmpty());
-        assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
+        successfullyAuthenticate(session, userId, journal);
         assertEquals(callbackState.toString(), 1, callbackState.mNumAuthRejected);
     }
 
     // TODO(b/236763921): fix this test and unignore.
     @Ignore
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setNegativeButton",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOnly_negativeButtonInvoked() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -290,6 +303,11 @@ public class BiometricActivityTests extends BiometricTestBase {
 
     // TODO(b/236763921): fix this test and unignore.
     @Ignore
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_biometricEnrolled()
             throws Exception {
@@ -314,6 +332,11 @@ public class BiometricActivityTests extends BiometricTestBase {
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_biometricNotEnrolled()
             throws Exception {
@@ -322,27 +345,35 @@ public class BiometricActivityTests extends BiometricTestBase {
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             for (SensorProperties prop : mSensorProperties) {
-                try (BiometricTestSession session =
-                             mBiometricManager.createTestSession(prop.getSensorId());
-                     ActivitySession activitySession =
-                             new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
-                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(
-                            session, prop.getSensorId(), false /* shouldEnrollBiometric */,
-                            activitySession);
+                try (
+                        BiometricTestSession session = mBiometricManager.createTestSession(
+                                prop.getSensorId());
+                        ActivitySession activitySession = new ActivitySession(this,
+                                CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)
+                ) {
+                    testBiometricOrCredential_credentialButtonInvoked_forConfiguration(session,
+                            prop.getSensorId(), false /* shouldEnrollBiometric */, activitySession);
                 }
             }
         }
     }
 
+    @ApiTest(apis = {
+            "android.hardware.biometrics."
+                    + "BiometricPrompt.Builder#setAllowedAuthenticators",
+            "android.hardware.biometrics."
+                    + "BiometricPrompt#authenticate"})
     @Test
     public void testBiometricOrCredential_credentialButtonInvoked_noBiometricSensor()
             throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         assumeTrue(mSensorProperties.isEmpty());
+        //TODO: b/331955301 need to update Auto biometric UI
+        assumeFalse(isCar());
         try (CredentialSession credentialSession = new CredentialSession()) {
             credentialSession.setCredential();
             try (ActivitySession activitySession =
-                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)){
+                         new ActivitySession(this, CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY)) {
                 testBiometricOrCredential_credentialButtonInvoked_forConfiguration(null,
                         0 /* sensorId */, false /* shouldEnrollBiometric */, activitySession);
             }

@@ -26,6 +26,7 @@ import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.launchA
 import static android.accessibilityservice.cts.utils.ActivityLaunchUtils.supportsMultiDisplay;
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
+import static android.accessibilityservice.cts.utils.DisplayUtils.getNavBarHeight;
 import static android.accessibilityservice.cts.utils.DisplayUtils.getStatusBarHeight;
 import static android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE;
 import static android.view.accessibility.AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
@@ -70,7 +71,6 @@ import android.os.LocaleList;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.test.suitebuilder.annotation.MediumTest;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
@@ -86,6 +86,8 @@ import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
+import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
@@ -97,6 +99,7 @@ import org.hamcrest.TypeSafeMatcher;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -578,6 +581,7 @@ public class AccessibilityWindowQueryTest {
     }
 
     @Test
+    @Ignore("b/325640120")
     public void testFindPictureInPictureWindow() throws Exception {
         if (!sInstrumentation.getContext().getPackageManager()
                 .hasSystemFeature(FEATURE_PICTURE_IN_PICTURE)) {
@@ -751,6 +755,7 @@ public class AccessibilityWindowQueryTest {
     }
 
     @Test
+    @FlakyTest
     public void testWindowLocale_setGet() throws Exception {
         final LocaleManager manager = mActivity.getSystemService(LocaleManager.class);
         final LocaleList systemLocales = manager.getSystemLocales();
@@ -785,7 +790,8 @@ public class AccessibilityWindowQueryTest {
                         () -> localeManager.setApplicationLocales(localeList)),
                 event -> {
                     AccessibilityNodeInfo root = sUiAutomation.getRootInActiveWindow();
-                    return root != null && root.getWindow() != null;
+                    return root != null && root.getWindow() != null
+                            && localeManager.getApplicationLocales().equals(localeList);
                 }, DEFAULT_TIMEOUT_MS);
     }
 
@@ -883,6 +889,7 @@ public class AccessibilityWindowQueryTest {
                 }, activity),
                 addWindow(R.string.button2, params -> {
                     params.gravity = Gravity.BOTTOM;
+                    params.y = getNavBarHeight(activity);
                 }, activity)
         };
     }

@@ -16,6 +16,8 @@
 
 package android.provider.cts.settings;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -27,9 +29,14 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.provider.Settings.SettingNotFoundException;
+import android.support.test.uiautomator.UiDevice;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.ApiTest;
+
+import com.android.compatibility.common.util.FeatureUtil;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +57,7 @@ public class Settings_SecureTest {
 
     @Before
     public void setUp() throws Exception {
-        cr = InstrumentationRegistry.getTargetContext().getContentResolver();
+        cr = InstrumentationRegistry.getInstrumentation().getTargetContext().getContentResolver();
         assertNotNull(cr);
         assertSettingsForTests();
     }
@@ -192,8 +199,12 @@ public class Settings_SecureTest {
 
     @Test
     public void testUnknownSourcesOnByDefault() throws SettingNotFoundException {
-        assertEquals("install_non_market_apps is deprecated. Should be set to 1 by default.",
-                1, Settings.Secure.getInt(cr, Settings.Global.INSTALL_NON_MARKET_APPS));
+        // automotive vendors set the new user restriction 'no_install_unknown_sources'
+        // which causes the obsolete 'install_non_market_apps' setting to flip to 0
+        if (!FeatureUtil.isAutomotive()) {
+            assertEquals("install_non_market_apps is deprecated. Should be set to 1 by default.",
+                    1, Settings.Secure.getInt(cr, Settings.Global.INSTALL_NON_MARKET_APPS));
+        }
     }
 
     private static final String BLUETOOTH_MAC_ADDRESS_SETTING_NAME = "bluetooth_address";
@@ -226,5 +237,26 @@ public class Settings_SecureTest {
                 fail("Settings.Secure contains " + name + ": " + c.getString(2));
             }
         }
+    }
+
+    // Test inserting and retrieving a setting that is not predefined in the Settings class
+    @Test
+    @ApiTest(apis = {"android.provider.Setting.Secure#getString"})
+    public void testUnsetSetting() {
+        final UiDevice uiDevice = UiDevice.getInstance(
+                InstrumentationRegistry.getInstrumentation());
+        final String unsetSetting = "some_random_setting";
+        String value = Settings.Secure.getString(cr, unsetSetting);
+        assertNull(value);
+        runWithShellPermissionIdentity(
+                () -> Settings.Secure.putString(cr, unsetSetting, "1"));
+        uiDevice.waitForIdle();
+        value = Settings.Secure.getString(cr, unsetSetting);
+        assertEquals("1", value);
+        runWithShellPermissionIdentity(
+                () -> Settings.Secure.putString(cr, unsetSetting, "0"));
+        uiDevice.waitForIdle();
+        value = Settings.Secure.getString(cr, unsetSetting);
+        assertEquals("0", value);
     }
 }

@@ -56,8 +56,10 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mts-webviewbootstrap",
     ],
     // uncomment when dalvik.annotation.Test* are removed or part of SDK
     //sdk_version: "current"
     platform_apis: true,
+    sdk_version: "test_current",
 }

@@ -39,7 +39,7 @@ import android.hardware.devicestate.DeviceStateRequest;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
-import android.server.wm.jetpack.utils.ExtensionUtil;
+import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.utils.TestRearDisplayActivity;
 import android.server.wm.jetpack.utils.WindowExtensionTestRule;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
@@ -49,6 +49,7 @@ import android.view.WindowMetrics;
 
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.window.extensions.area.WindowAreaComponent;
 import androidx.window.extensions.area.WindowAreaComponent.WindowAreaSessionState;
@@ -95,6 +96,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     private int mCurrentDeviceState;
     private int mCurrentDeviceBaseState;
     private int[] mSupportedDeviceStates;
+    private int[] mDeviceStatesToSleep;
     @WindowAreaStatus
     private Integer mWindowAreaStatus;
     @WindowAreaSessionState
@@ -137,6 +139,9 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
                 .getInteger(Resources.getSystem()
                         .getIdentifier("config_deviceStateRearDisplay", "integer", "android"));
         mRearDisplayAddress = getRearDisplayAddress();
+        mDeviceStatesToSleep = getInstrumentation().getTargetContext().getResources()
+                .getIntArray(Resources.getSystem()
+                        .getIdentifier("config_deviceStatesOnWhichToSleep", "array", "android"));
         assumeTrue(mRearDisplayState != INVALID_DEVICE_STATE);
         mDeviceStateManager.registerCallback(Runnable::run, this);
         mWindowAreaComponent.addRearDisplayStatusListener(mStatusListener);
@@ -148,16 +153,12 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
 
     @After
     @Override
-    public void tearDown() {
+    public void tearDown() throws Throwable {
         super.tearDown();
         if (mWindowAreaComponent != null) {
             mWindowAreaComponent.removeRearDisplayStatusListener(mStatusListener);
-            try {
-                DeviceStateUtils.runWithControlDeviceStatePermission(
-                        () -> mDeviceStateManager.cancelStateRequest());
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
+            DeviceStateUtils.runWithControlDeviceStatePermission(
+                    () -> mDeviceStateManager.cancelStateRequest());
         }
     }
 
@@ -259,9 +260,28 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         if (!rearDisplayWindowMetrics.getBounds().equals(initialWindowMetrics.getBounds())) {
             waitAndAssert(() -> mActivity.mConfigurationChanged);
         }
-        assertTrue(isActivityVisible(mActivity));
+
+        // If transitioning back to the original device state doesn't put the device to sleep, we
+        // should verify that the Activity is visible again.
+        if (!intArrayContains(mDeviceStatesToSleep, mCurrentDeviceState)) {
+            assertTrue(isActivityVisible(mActivity));
+        }
 
         verifyCallbacks();
+    }
+
+    /**
+     * Tests that attempting to end a rear display session that isn't active, operates as a no-op
+     * instead of throwing an {@link Exception}.
+     */
+    @ApiTest(apis = {
+            "androidx.window.extensions.area.WindowAreaComponent#endRearDisplaySession"})
+    @Test
+    public void testEndRearDisplaySession_noActiveSession() {
+        assumeTrue(mWindowAreaStatus != WindowAreaComponent.STATUS_ACTIVE);
+        assumeTrue(mCurrentDeviceState != mRearDisplayState);
+
+        mWindowAreaComponent.endRearDisplaySession();
     }
 
     /**
@@ -272,8 +292,9 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @ApiTest(apis = {
             "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
     @Test
+    @FlakyTest(bugId = 295869141)
     public void testGetRearDisplayMetrics() throws Throwable {
-        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        ExtensionsUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
         assumeTrue(mRearDisplayAddress != INVALID_DISPLAY_ADDRESS);
 
         DisplayMetrics originalMetrics = mWindowAreaComponent.getRearDisplayMetrics();
@@ -315,8 +336,9 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
     @ApiTest(apis = {
             "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
     @Test
+    @FlakyTest(bugId = 295869141)
     public void testGetRearDisplayMetrics_afterRotation() throws Throwable {
-        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        ExtensionsUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
         assumeTrue(mRearDisplayAddress != INVALID_DISPLAY_ADDRESS);
         DisplayMetrics originalMetricsApi = mWindowAreaComponent.getRearDisplayMetrics();
         assertNotNull(originalMetricsApi);
@@ -370,7 +392,7 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
             "androidx.window.extensions.area.WindowAreaComponent#getRearDisplayMetrics"})
     @Test
     public void testGetRearDisplayMetrics_invalidRearDisplayAddress() {
-        ExtensionUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
+        ExtensionsUtil.assumeVendorApiLevelAtLeast(3 /* vendorApiLevel */);
         assumeTrue(mRearDisplayAddress == INVALID_DISPLAY_ADDRESS);
         DisplayMetrics expectedDisplayMetrics = new DisplayMetrics();
         DisplayMetrics actualDisplayMetrics = mWindowAreaComponent.getRearDisplayMetrics();
@@ -432,12 +454,17 @@ public class ExtensionRearDisplayTest extends WindowManagerJetpackTestBase imple
         }
     }
 
-    private boolean isKeyguardLocked() {
-        return mKeyguardManager != null && mKeyguardManager.isKeyguardLocked();
-    }
-
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
         waitFor(TIMEOUT, condition);
+    }
+
+    private boolean intArrayContains(int[] array, int value) {
+        for (int i : array) {
+            if (i == value) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
