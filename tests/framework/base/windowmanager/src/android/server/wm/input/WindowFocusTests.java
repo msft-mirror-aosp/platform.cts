@@ -77,8 +77,8 @@ import com.android.cts.input.DebugInputRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.concurrent.GuardedBy;
 
@@ -401,7 +401,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         final AutoEngagePointerCaptureActivity primaryActivity =
                 startActivity(AutoEngagePointerCaptureActivity.class, DEFAULT_DISPLAY);
         assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
+                waitForStableWindowGeometry(Duration.ofSeconds(5)));
 
         // Assert primary activity can have pointer capture before we have multiple focused windows.
         primaryActivity.waitAndAssertPointerCaptureState(true /* hasCapture */);
@@ -487,7 +487,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
             primaryActivity.getWindowManager().addView(view, p);
         });
         assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
+                waitForStableWindowGeometry(Duration.ofSeconds(5)));
 
         tapOn(primaryActivity);
         // Ensure secondary activity still has focus

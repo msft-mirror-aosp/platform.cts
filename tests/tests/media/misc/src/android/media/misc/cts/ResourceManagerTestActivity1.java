@@ -16,6 +16,7 @@
 
 package android.media.misc.cts;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -33,7 +34,10 @@ public class ResourceManagerTestActivity1 extends ResourceManagerTestActivityBas
             mWaitForReclaim = extras.getBoolean("wait-for-reclaim", mWaitForReclaim);
         }
 
-        if (allocateCodecs(MAX_INSTANCES) == MAX_INSTANCES) {
+        Context context = getApplicationContext();
+        int maxCodecInstances = ResourceManagerStubActivity.getMaxCodecInstances(context);
+
+        if (allocateCodecs(maxCodecInstances) == maxCodecInstances) {
             // haven't reached the limit with MAX_INSTANCES, no need to wait for reclaim exception.
             mWaitForReclaim = false;
         }

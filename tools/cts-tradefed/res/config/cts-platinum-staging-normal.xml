@@ -2465,8 +2465,6 @@
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmInstantInstallationFails" />
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#sessionWithImmutablePendingIntent" />
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#withPrivilegedPermissions_canAccessResolvedPath" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified" />
 
     <!-- CtsPackageManagerHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserGrant" />
@@ -2985,6 +2983,10 @@
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewOffscreenDoesNotPeekThrough" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsAttachmentWithOverlaps" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#testMovingWhiteSurfaceView" />
+
+    <!-- CtsUpdateOwnershipEnforcementTestCases -->
+    <option name="compatibility:include-filter" value="CtsUpdateOwnershipEnforcementTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership" />
+    <option name="compatibility:include-filter" value="CtsUpdateOwnershipEnforcementTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified" />
 
     <!-- CtsUwbTestCases -->
     <option name="compatibility:include-filter" value="CtsUwbTestCases android.uwb.cts.UwbManagerTest#testFiraRangingSessionPauseResume" />

@@ -70,6 +70,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -305,7 +306,7 @@ public class MediaProjectionMirroringTest {
                 /* waitForDeviceRotation=*/ true);
         waitForLatestScreenshot();
         try {
-            waitForStableWindowGeometry(SCREENSHOT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            waitForStableWindowGeometry(Duration.ofMillis(SCREENSHOT_TIMEOUT_MS));
         } catch (InterruptedException e) {
             Log.e(TAG, "Unable to wait for window to stabilize after rotation: " + e.getMessage());
         }
@@ -384,7 +385,7 @@ public class MediaProjectionMirroringTest {
         Supplier<IBinder> taskWindowTokenSupplier =
                 activity.getWindow().getDecorView()::getWindowToken;
         try {
-            boolean condition = waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
+            boolean condition = waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
                     taskWindowTokenSupplier, virtualDisplayId);
             assertAndDumpWindowState(TAG,
                     "Mirrored activity isn't the expected size of " + expectedWindowSize,

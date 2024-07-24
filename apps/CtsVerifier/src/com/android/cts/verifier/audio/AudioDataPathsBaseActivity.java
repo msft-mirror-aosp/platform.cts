@@ -218,6 +218,7 @@ public abstract class AudioDataPathsBaseActivity
         mWaveView.setVisibility(View.GONE);
 
         mResultsView.setVisibility(View.VISIBLE);
+        mResultsView.invalidate();
     }
 
     void enableTestButtons(boolean startEnabled, boolean stopEnabled) {
@@ -1067,6 +1068,7 @@ public abstract class AudioDataPathsBaseActivity
 
         public void initializeTests() {
             // Get the test modules from the sub-class
+            clearTestModules();
             gatherTestModules(this);
 
             validateTestDevices();
@@ -1077,6 +1079,10 @@ public abstract class AudioDataPathsBaseActivity
             for (TestModule module: mTestModules) {
                 module.clearTestState(mApi);
             }
+        }
+
+        public void clearTestModules() {
+            mTestModules.clear();
         }
 
         public void addTestModule(TestModule module) {
@@ -1108,8 +1114,9 @@ public abstract class AudioDataPathsBaseActivity
 
             //
             // MMAP Modes - BuilderBase.PERFORMANCE_MODE_LOWLATENCY
+            // Note: Java API doesn't support MMAP Modes
             //
-            if (mSupportsMMAP) {
+            if (mSupportsMMAP && mApi == TEST_API_NATIVE) {
                 try {
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
@@ -1117,12 +1124,14 @@ public abstract class AudioDataPathsBaseActivity
                     moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     mTestModules.add(moduleMMAP);
+                    moduleMMAP.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_SHARED");
                 }
             }
 
-            if (mSupportsMMAPExclusive) {
+            // Note: Java API doesn't support MMAP Modes
+            if (mSupportsMMAPExclusive && mApi == TEST_API_NATIVE) {
                 try {
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
@@ -1130,6 +1139,7 @@ public abstract class AudioDataPathsBaseActivity
                     moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                     mTestModules.add(moduleExclusive);
+                    moduleExclusive.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_EXCLUSIVE");
                 }
@@ -1450,6 +1460,11 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         HtmlFormatter generateReport(HtmlFormatter htmlFormatter) {
+            htmlFormatter.openHeading(3);
+            htmlFormatter.appendText("Test API: ");
+            htmlFormatter.appendText(mApi == TEST_API_JAVA ? "Java" : "Native");
+            htmlFormatter.closeHeading(3);
+
             for (TestModule module : mTestModules) {
                 module.generateReport(mApi, htmlFormatter);
             }
@@ -1553,6 +1568,8 @@ public abstract class AudioDataPathsBaseActivity
         mResultsView.invalidate();
         mTestHasBeenRun = false;
         getPassButton().setEnabled(passBtnEnabled());
+
+        mTestManager.initializeTests();
     }
 
     //

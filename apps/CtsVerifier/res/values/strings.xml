@@ -5631,8 +5631,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
     <string name="perf_mode_none_abreviation">None</string>
-    <string name="perf_mode_lowlatency_abreviation">LwLt</string>
-    <string name="perf_mode_powersave_abreviation">PwSv</string>
+    <string name="perf_mode_lowlatency_abreviation">LowLat</string>
+    <string name="perf_mode_powersave_abreviation">PowSav</string>
     <string name="perf_mode_unknown_abreviation">/?/?/?</string>
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
@@ -7173,6 +7173,7 @@ You should be prompted to select credentials; choose the ones you just installed
     devices on the lock screen as part of their intent extras.\n\n
     For this test, you will need to have set up a screen lock.</string>
     <string name="controls_panel_settings_test_open_lockscreen_settings">Open Settings</string>
+    <string name="controls_panel_settings_test_dreams_not_supported_message">Dreams are not supported on this device. Test passed automatically.</string>
     <string name="controls_panel_setting_test_instructions">Using the button below, open Settings.
         Find the setting that allows you to control external devices from the lockscreen
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
@@ -7459,11 +7460,12 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
         \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
         \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+        \n\n* Screenshots can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
-        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n3. Press \"Send notification\".
         \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>
