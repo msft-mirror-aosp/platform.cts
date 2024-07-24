@@ -529,6 +529,9 @@ def analyze_low_light_scene_capture(
       sorted_regions[9],
       sorted_regions[5],
   ]
+
+  test_name = os.path.basename(file_stem)
+
   _plot_results(hilbert_ordered, file_stem)
   _plot_successive_difference(hilbert_ordered, file_stem)
   _plot_noise(hilbert_ordered, file_stem, img, test_name)
@@ -538,7 +541,6 @@ def analyze_low_light_scene_capture(
 
   avg = _compute_avg(hilbert_ordered)
   delta_avg = _compute_avg_delta_of_successive_boxes(hilbert_ordered)
-  test_name = os.path.basename(file_stem)
 
   # the following print statements are necessary for telemetry
   # do not convert to logging.debug
