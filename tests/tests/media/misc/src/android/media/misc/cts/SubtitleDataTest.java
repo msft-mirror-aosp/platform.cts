@@ -19,6 +19,7 @@ package android.media.misc.cts;
 import android.media.SubtitleData;
 import android.test.AndroidTestCase;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 /**
  * Tests for SubtitleData.
  */
+@FrameworkSpecificTest
 @NonMainlineTest
 public class SubtitleDataTest extends AndroidTestCase {
     private static final String SUBTITLE_RAW_DATA = "RAW_DATA";

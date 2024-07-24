@@ -52,6 +52,8 @@ import static android.appenumeration.cts.Constants.EXTRA_INPUT_METHOD_INFO;
 import static android.appenumeration.cts.Constants.EXTRA_PENDING_INTENT;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_CALLBACK;
 import static android.appenumeration.cts.Constants.EXTRA_REMOTE_READY_CALLBACK;
+import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_RESULT;
+import static android.appenumeration.cts.Constants.EXTRA_SEGMENT_SIZE;
 import static android.appenumeration.cts.Constants.SERVICE_CLASS_DUMMY_SERVICE;
 import static android.content.Intent.EXTRA_COMPONENT_NAME;
 import static android.content.Intent.EXTRA_PACKAGES;
@@ -128,7 +130,7 @@ public class TestActivity extends Activity {
      * receiving callbacks in time on some common low-end platforms and
      * do not affect the situation that callback can be received in advance.
      */
-    private final static long EXTENDED_TIMEOUT_MS = 5000;
+    private final static long EXTENDED_TIMEOUT_MS = 7000;
 
     SparseArray<RemoteCallback> callbacks = new SparseArray<>();
 
@@ -356,6 +358,13 @@ public class TestActivity extends Activity {
                         .getString(EXTRA_AUTHORITY);
                 sendCheckUriPermission(remoteCallback, sourceAuthority, targetPackageName,
                         targetUid);
+            } else if (Constants.ACTION_CHECK_CONTENT_URI_PERMISSION_FULL.equals(action)) {
+                final String targetPackageName = intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME);
+                final int targetUid = intent.getIntExtra(EXTRA_UID, INVALID_UID);
+                final String sourceAuthority = intent.getBundleExtra(EXTRA_DATA)
+                        .getString(EXTRA_AUTHORITY);
+                sendCheckContentUriPermissionFull(remoteCallback, sourceAuthority,
+                        targetPackageName, targetUid);
             } else if (Constants.ACTION_TAKE_PERSISTABLE_URI_PERMISSION.equals(action)) {
                 final Uri uri = intent.getData();
                 final int modeFlags = intent.getFlags() & (Intent.FLAG_GRANT_WRITE_URI_PERMISSION
@@ -807,13 +816,36 @@ public class TestActivity extends Activity {
         final AppWidgetManager appWidgetManager = getSystemService(AppWidgetManager.class);
         final List<AppWidgetProviderInfo> providers = appWidgetManager.getInstalledProviders();
         final ArrayList<Parcelable> parcelables = new ArrayList<>();
+        final int segmentSize = 10;
+
+        // In order to avoid RemoteCallback receiving a large amount of data at one time,
+        // we transmit 10 items at a time.
         for (AppWidgetProviderInfo info : providers) {
             parcelables.add(info);
+            if (parcelables.size() == segmentSize) {
+                sendSegmentAppWidgetProviders(remoteCallback, parcelables,
+                        (short) providers.size());
+                parcelables.clear();
+            }
         }
-        final Bundle result = new Bundle();
-        result.putParcelableArrayList(EXTRA_RETURN_RESULT, parcelables);
-        remoteCallback.sendResult(result);
+        // When the size of providers is less than segmentSize (E.g. 8 < 10) or
+        // the size % segmentSize is not zero (E.g. 56 % 10 = 6), send the result
+        // to complete it.
+        if (parcelables.size() > 0) {
+            sendSegmentAppWidgetProviders(remoteCallback, parcelables, (short) providers.size());
+        }
         finish();
+    }
+
+    private void sendSegmentAppWidgetProviders(RemoteCallback remoteCallback,
+            List<Parcelable> parcelables, short providerSize) {
+        final Bundle result = new Bundle();
+        final ArrayList<Parcelable> segment = new ArrayList<>(parcelables);
+        result.putParcelableArrayList(EXTRA_SEGMENT_RESULT, segment);
+        // Transmit total size of the AppWidgetProviderInfo list,
+        // so RemoteCallback knows when to stop receiving.
+        result.putShort(EXTRA_SEGMENT_SIZE, providerSize);
+        remoteCallback.sendResult(result);
     }
 
     private void sendSyncAdapterPackagesForAuthorityAsUser(RemoteCallback remoteCallback,
@@ -982,10 +1014,28 @@ public class TestActivity extends Activity {
 
     private void sendCheckUriPermission(RemoteCallback remoteCallback, String sourceAuthority,
             String targetPackageName, int targetUid) {
-        final Uri uri = Uri.parse("content://" + sourceAuthority);
-        grantUriPermission(targetPackageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        Uri uri = getContentUriAndGrantRead(sourceAuthority, targetPackageName);
         final int permissionResult = checkUriPermission(uri, 0 /* pid */, targetUid,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        revokeReadFromUriAndSendPermissionResult(uri, permissionResult, remoteCallback);
+    }
+
+    private void sendCheckContentUriPermissionFull(RemoteCallback remoteCallback,
+            String sourceAuthority, String targetPackageName, int targetUid) {
+        Uri uri = getContentUriAndGrantRead(sourceAuthority, targetPackageName);
+        final int permissionResult = checkContentUriPermissionFull(uri, 0 /* pid */, targetUid,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        revokeReadFromUriAndSendPermissionResult(uri, permissionResult, remoteCallback);
+    }
+
+    private Uri getContentUriAndGrantRead(String sourceAuthority, String targetPackageName) {
+        final Uri uri = Uri.parse("content://" + sourceAuthority);
+        grantUriPermission(targetPackageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        return uri;
+    }
+
+    private void revokeReadFromUriAndSendPermissionResult(Uri uri, int permissionResult,
+            RemoteCallback remoteCallback) {
         revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
         final Bundle result = new Bundle();
         result.putInt(EXTRA_RETURN_RESULT, permissionResult);

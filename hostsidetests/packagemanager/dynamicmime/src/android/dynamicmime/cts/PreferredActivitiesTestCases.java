@@ -16,7 +16,10 @@
 
 package android.dynamicmime.cts;
 
+import static org.junit.Assume.assumeTrue;
+
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
@@ -39,8 +42,17 @@ import org.junit.runner.RunWith;
 public class PreferredActivitiesTestCases extends BaseHostJUnit4Test {
     private static final String PACKAGE_TEST_APP = "android.dynamicmime.testapp";
 
+    private boolean isShippedAtLeastS() {
+        try {
+            return PropertyUtil.getFirstApiLevel(getDevice()) > 30 /* BUILD.VERSION_CODES.R */;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     @Before
     public void setUp() throws DeviceNotAvailableException {
+        assumeTrue("The device shipped at least OS S", isShippedAtLeastS());
         // wake up and unlock device
         getDevice().executeShellCommand("input keyevent KEYCODE_WAKEUP");
         getDevice().disableKeyguard();

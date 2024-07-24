@@ -89,7 +89,6 @@ public class JobThrottlingTest {
     private NetworkingHelper mNetworkingHelper;
     private PowerManager mPowerManager;
     private int mTestJobId;
-    private int mTestPackageUid;
     private boolean mDeviceIdleEnabled;
     private boolean mDeviceLightIdleEnabled;
     private boolean mAppStandbyEnabled;
@@ -121,10 +120,9 @@ public class JobThrottlingTest {
         mNetworkingHelper =
                 new NetworkingHelper(InstrumentationRegistry.getInstrumentation(), mContext);
         mPowerManager = mContext.getSystemService(PowerManager.class);
-        mTestPackageUid = mContext.getPackageManager().getPackageUid(TEST_APP_PACKAGE, 0);
         mTestJobId = (int) (SystemClock.uptimeMillis() / 1000);
         mTestAppInterface = new TestAppInterface(mContext, mTestJobId);
-        assertFalse("Test package already in temp whitelist", isTestAppTempWhitelisted());
+
         makeTestPackageIdle();
         mDeviceIdleEnabled = isDeviceIdleEnabled(mUiDevice);
         mDeviceLightIdleEnabled = isDeviceLightIdleEnabled(mUiDevice);
@@ -149,7 +147,12 @@ public class JobThrottlingTest {
         mDeviceConfigStateHelper.set(
                 new DeviceConfig.Properties.Builder(DeviceConfig.NAMESPACE_JOB_SCHEDULER)
                         .setInt("min_ready_non_active_jobs_count", 0)
-                        .setBoolean("fc_enable_flexibility", false).build());
+                        // Disable batching behavior.
+                        .setInt("min_ready_cpu_only_jobs_count", 0)
+                        .setInt("min_ready_non_active_jobs_count", 0)
+                        .setString("conn_transport_batch_threshold", "")
+                        // Disable flex behavior.
+                        .setInt("fc_applied_constraints", 0).build());
         mActivityManagerDeviceConfigStateHelper =
                 new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER);
         mTareDeviceConfigStateHelper = new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_TARE);
@@ -286,6 +289,24 @@ public class JobThrottlingTest {
                 mTestAppInterface.awaitJobStop(55_000L));
         assertTrue("Job did not stop after grace period ended",
                 mTestAppInterface.awaitJobStop(15_000L));
+        assertEquals(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION,
+                mTestAppInterface.getLastParams().getStopReason());
+    }
+
+    @Test
+    public void testRestrictedJobAllowedInPowerAllowlist() throws Exception {
+        setTestPackageRestricted(true);
+        sendScheduleJobBroadcast(false);
+        assertFalse("Job started for restricted app",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        setPowerAllowlistState(true);
+        assertTrue("Job did not start when app was in the power allowlist",
+                mTestAppInterface.awaitJobStart(DEFAULT_WAIT_TIMEOUT));
+
+        setPowerAllowlistState(false);
+        assertTrue("Job did not stop when the app was removed from the power allowlist",
+                mTestAppInterface.awaitJobStop(DEFAULT_WAIT_TIMEOUT));
         assertEquals(JobParameters.STOP_REASON_BACKGROUND_RESTRICTION,
                 mTestAppInterface.getLastParams().getStopReason());
     }
@@ -436,6 +457,7 @@ public class JobThrottlingTest {
         try (TestNotificationListener.NotificationHelper notificationHelper =
                      new TestNotificationListener.NotificationHelper(
                              mContext, TestAppInterface.TEST_APP_PACKAGE)) {
+            mNetworkingHelper.setAllNetworksEnabled(true);
             mTestAppInterface.postUiInitiatingNotification(
                     Map.of(TestJobSchedulerReceiver.EXTRA_AS_USER_INITIATED, true),
                     Map.of(TestJobSchedulerReceiver.EXTRA_REQUIRED_NETWORK_TYPE, NETWORK_TYPE_ANY));
@@ -590,6 +612,7 @@ public class JobThrottlingTest {
 
         setScreenState(false);
         triggerJobIdle();
+        runJob();
         assertTrue("Job didn't start in RESTRICTED bucket when charging + idle",
                 mTestAppInterface.awaitJobStart(3_000));
 
@@ -645,7 +668,6 @@ public class JobThrottlingTest {
         assumeTrue("device doesn't have battery", BatteryUtils.hasBattery());
         assumeFalse("not testable, since ethernet is connected", hasEthernetConnection());
         assumeTrue(mNetworkingHelper.hasWifiFeature());
-        mNetworkingHelper.ensureSavedWifiNetwork();
 
         // This test is designed for the old quota system.
         mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
@@ -1074,7 +1096,6 @@ public class JobThrottlingTest {
 
         assumeTrue(BatteryUtils.hasBattery());
         assumeTrue(mNetworkingHelper.hasWifiFeature());
-        mNetworkingHelper.ensureSavedWifiNetwork();
 
         // This test is designed for the old quota system.
         mTareDeviceConfigStateHelper.set("enable_tare_mode", "0");
@@ -1344,7 +1365,7 @@ public class JobThrottlingTest {
         BatteryUtils.resetBatterySaver();
         Settings.Global.putString(mContext.getContentResolver(),
                 Settings.Global.BATTERY_STATS_CONSTANTS, mInitialBatteryStatsConstants);
-        removeTestAppFromTempWhitelist();
+        setPowerAllowlistState(false);
 
         mNetworkingHelper.tearDown();
         mDeviceConfigStateHelper.restoreOriginalValues();
@@ -1370,16 +1391,6 @@ public class JobThrottlingTest {
     private void toggleAutoRestrictedBucketOnBgRestricted(boolean enable) {
         mActivityManagerDeviceConfigStateHelper.set("bg_auto_restricted_bucket_on_bg_restricted",
                 Boolean.toString(enable));
-    }
-
-    private boolean isTestAppTempWhitelisted() throws Exception {
-        final String output = mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist").trim();
-        for (String line : output.split("\n")) {
-            if (line.contains("UID=" + UserHandle.getAppId(mTestPackageUid))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private void sendScheduleJobBroadcast(boolean allowWhileIdle) throws Exception {
@@ -1415,6 +1426,11 @@ public class JobThrottlingTest {
         mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist -d " + duration
                 + " -u " + UserHandle.myUserId()
                 + " " + TEST_APP_PACKAGE);
+    }
+
+    private void setPowerAllowlistState(boolean add) throws Exception {
+        mUiDevice.executeShellCommand("cmd deviceidle whitelist " + (add ? "+" : "-")
+                + TEST_APP_PACKAGE);
     }
 
     private void makeTestPackageIdle() throws Exception {
@@ -1453,22 +1469,23 @@ public class JobThrottlingTest {
                 + " " + bucketName);
     }
 
-    private boolean removeTestAppFromTempWhitelist() throws Exception {
-        mUiDevice.executeShellCommand("cmd deviceidle tempwhitelist"
-                + " -u " + UserHandle.myUserId()
-                + " -r " + TEST_APP_PACKAGE);
-        return waitUntilTrue(SHELL_TIMEOUT, () -> !isTestAppTempWhitelisted());
-    }
-
     /**
      * Set the screen state.
      */
     private void setScreenState(boolean on) throws Exception {
+        setScreenState(mUiDevice, on);
+    }
+
+    static void setScreenState(UiDevice uiDevice, boolean on) throws Exception {
+        PowerManager powerManager =
+                InstrumentationRegistry.getContext().getSystemService(PowerManager.class);
         if (on) {
-            mUiDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
-            mUiDevice.executeShellCommand("wm dismiss-keyguard");
+            uiDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
+            uiDevice.executeShellCommand("wm dismiss-keyguard");
+            waitUntil("Device not interactive", () -> powerManager.isInteractive());
         } else {
-            mUiDevice.executeShellCommand("input keyevent KEYCODE_SLEEP");
+            uiDevice.executeShellCommand("input keyevent KEYCODE_SLEEP");
+            waitUntil("Device still interactive", () -> !powerManager.isInteractive());
         }
         // Wait a little bit to make sure the screen state has changed.
         Thread.sleep(4_000);

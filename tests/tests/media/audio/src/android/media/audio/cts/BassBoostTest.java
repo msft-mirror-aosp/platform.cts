@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 import android.media.audiofx.AudioEffect;
 import android.media.audiofx.BassBoost;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.Log;
 
 import androidx.test.runner.AndroidJUnit4;
@@ -35,6 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @NonMainlineTest
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class BassBoostTest extends PostProcTestBase {
 

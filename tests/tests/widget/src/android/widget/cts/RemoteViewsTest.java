@@ -16,8 +16,12 @@
 
 package android.widget.cts;
 
+import static android.appwidget.flags.Flags.drawDataParcel;
+import static android.graphics.Bitmap.Config.ARGB_8888;
 import static android.util.TypedValue.COMPLEX_UNIT_DIP;
 import static android.util.TypedValue.COMPLEX_UNIT_PX;
+import static android.view.View.MeasureSpec.makeMeasureSpec;
+import static android.view.inputmethod.Flags.FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR;
 import static android.widget.RemoteViews.MARGIN_BOTTOM;
 import static android.widget.RemoteViews.MARGIN_END;
 import static android.widget.RemoteViews.MARGIN_LEFT;
@@ -26,6 +30,7 @@ import static android.widget.RemoteViews.MARGIN_START;
 import static android.widget.RemoteViews.MARGIN_TOP;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
+import static com.android.compatibility.common.util.TestUtils.waitUntil;
 
 import static junit.framework.Assert.fail;
 
@@ -49,6 +54,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BlendMode;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Icon;
@@ -56,11 +62,16 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.SizeF;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsoluteLayout;
@@ -117,8 +128,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -140,6 +154,10 @@ public class RemoteViewsTest {
 
     @Rule
     public ExpectedException mExpectedException = ExpectedException.none();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Instrumentation mInstrumentation;
 
@@ -462,6 +480,125 @@ public class RemoteViewsTest {
                 .getResources().getDrawable(R.drawable.testimage);
         WidgetTestUtils.assertEquals(d.getBitmap(),
                 ((BitmapDrawable) image.getDrawable()).getBitmap());
+    }
+
+    @Test
+    public void testDrawInstructionsVersion() {
+        if (!drawDataParcel()) {
+            return;
+        }
+        assertTrue(RemoteViews.DrawInstructions.getSupportedVersion() >= 1L);
+    }
+
+    @Test
+    public void testApplyWithDrawInstructions() throws Throwable {
+        if (!drawDataParcel()) {
+            return;
+        }
+        final RemoteViews.DrawInstructions drawInstructions = getDrawInstructions();
+        final String key = "mykey";
+        final String action = "myaction";
+        final MockBroadcastReceiver receiver = new MockBroadcastReceiver();
+        mContext.registerReceiver(receiver, new IntentFilter(action), Context.RECEIVER_EXPORTED);
+
+        final Intent intent = new Intent(action).setPackage(mContext.getPackageName());
+        final PendingIntent pendingIntent =
+                PendingIntent.getBroadcast(
+                        mContext,
+                        0,
+                        intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+        final Intent[] intents = new Intent[]{
+                new Intent().putExtra(key, 1),
+                new Intent().putExtra(key, 2),
+                new Intent().putExtra(key, 3),
+                new Intent().putExtra(key, 4)
+        };
+        final ActivityMonitor am = mInstrumentation.addMonitor(
+                MockURLSpanTestActivity.class.getName(), null, false);
+        Activity newActivity = am.waitForActivityWithTimeout(TEST_TIMEOUT);
+        assertNull(newActivity);
+        final int width = 100;
+        final int height = 100;
+        final int offset = 2;
+        final Bitmap bitmap1 = Bitmap.createBitmap(width, height, ARGB_8888);
+        final Bitmap bitmap2 = Bitmap.createBitmap(width, height, ARGB_8888);
+        mRemoteViews = new RemoteViews(drawInstructions);
+        for (int i = 0; i < 4; i++) {
+            mRemoteViews.setPendingIntentTemplate(i + 1, pendingIntent);
+            mRemoteViews.setOnClickFillInIntent(i + 1, intents[i]);
+        }
+        applyNightModeThenApplyAndTest(false /* nightMode */, () -> {});
+        mActivityRule.runOnUiThread(() -> {
+            mResult.measure(makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    makeMeasureSpec(height, View.MeasureSpec.EXACTLY));
+            mResult.layout(0, 0, width, height);
+            mResult.draw(new Canvas(bitmap1));
+        });
+        verifyColorsOnFourCorners(Color.WHITE, bitmap1);
+        bitmap1.recycle();
+
+        // Switch to night mode
+        applyNightModeThenReapplyAndTest(true /* nightMode */, () -> {});
+        mActivityRule.runOnUiThread(() -> {
+            mResult.draw(new Canvas(bitmap2));
+        });
+        verifyColorsOnFourCorners(Color.BLACK, bitmap2);
+        bitmap2.recycle();
+
+        // Verify clicks
+        mActivityRule.runOnUiThread(() -> {
+            final ViewGroup root = (ViewGroup) mActivityRule.getActivity().findViewById(
+                    R.id.remoteView_host);
+            root.removeAllViews();
+            root.addView(mResult);
+        });
+        verifyClick(receiver, offset, offset, 1);
+        verifyClick(receiver, width - offset, offset, 2);
+        verifyClick(receiver, offset, height - offset, 3);
+        verifyClick(receiver, width - offset, height - offset, 4);
+    }
+
+    private RemoteViews.DrawInstructions getDrawInstructions() throws IOException {
+        try (InputStream is = mContext.getResources().openRawResource(R.raw.widget)
+        ) {
+            final byte[] bytes = new byte[(int) is.available()];
+            final int result = is.read(bytes);
+            return new RemoteViews.DrawInstructions.Builder(
+                    Collections.singletonList(bytes)).build();
+        }
+    }
+
+    private static void verifyColorsOnFourCorners(final int expectedColor, final Bitmap bitmap) {
+        final int w = bitmap.getWidth();
+        final int h = bitmap.getHeight();
+        final int offset = 2;
+        assertEquals(expectedColor, bitmap.getPixel(offset, offset));
+        assertEquals(expectedColor, bitmap.getPixel(w - offset, offset));
+        assertEquals(expectedColor, bitmap.getPixel(offset, h - offset));
+        assertEquals(expectedColor, bitmap.getPixel(w - offset, h - offset));
+    }
+
+    private void verifyClick(final MockBroadcastReceiver receiver, final int x, final int y,
+            final int expectedValue) throws Throwable {
+        mActivityRule.runOnUiThread(() -> performClick(mResult, x, y));
+        final Intent intent = receiver.awaitIntent();
+        assertNotNull(intent);
+        assertEquals(expectedValue, intent.getIntExtra("mykey", 0));
+    }
+
+    private static void performClick(final View v, final int x, final int y) {
+        final long ts = SystemClock.uptimeMillis();
+        final MotionEvent down = MotionEvent.obtain(
+                ts,
+                ts + 100,
+                MotionEvent.ACTION_DOWN, x, y, 0);
+        final MotionEvent up = MotionEvent.obtain(
+                ts + 200,
+                ts + 300,
+                MotionEvent.ACTION_UP, x, y, 0);
+        v.dispatchTouchEvent(down);
+        v.dispatchTouchEvent(up);
     }
 
     @Test
@@ -835,6 +972,48 @@ public class RemoteViewsTest {
         assertNotNull(newActivity);
         assertTrue(newActivity instanceof MockURLSpanTestActivity);
         newActivity.finish();
+    }
+
+    @LargeTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR)
+    public void testSetOnStylusHandwritingPendingIntent() throws Throwable {
+        ActivityMonitor am = mInstrumentation.addMonitor(MockURLSpanTestActivity.class.getName(),
+                null, false);
+
+        Uri uri = Uri.parse("ctstest://RemoteView/test");
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, pendingIntent);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+        View view = mResult.findViewById(R.id.remoteView_image);
+        mActivityRule.runOnUiThread(view.getHandwritingDelegatorCallback());
+
+        Activity newActivity = am.waitForActivityWithTimeout(TEST_TIMEOUT);
+        assertNotNull(newActivity);
+        assertTrue(newActivity instanceof MockURLSpanTestActivity);
+        newActivity.finish();
+    }
+
+    @LargeTest
+    @Test
+    @RequiresFlagsEnabled(FLAG_HOME_SCREEN_HANDWRITING_DELEGATOR)
+    public void testSetOnStylusHandwritingPendingIntent_null() throws Throwable {
+        ActivityMonitor am = mInstrumentation.addMonitor(MockURLSpanTestActivity.class.getName(),
+                null, false);
+
+        Uri uri = Uri.parse("ctstest://RemoteView/test");
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        PendingIntent pendingIntent =
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, pendingIntent);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+        mRemoteViews.setOnStylusHandwritingPendingIntent(R.id.remoteView_image, null);
+        mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult));
+
+        View view = mResult.findViewById(R.id.remoteView_image);
+        assertNull(view.getHandwritingDelegatorCallback());
     }
 
     @Test
@@ -1981,9 +2160,48 @@ public class RemoteViewsTest {
 
         Intent mIntent;
 
+        private CountDownLatch mCountDownLatch;
+
         @Override
-        public void onReceive(Context context, Intent intent) {
+        public synchronized void onReceive(Context context, Intent intent) {
             mIntent = intent;
+            if (mCountDownLatch != null) {
+                mCountDownLatch.countDown();
+                mCountDownLatch = null;
+            }
+        }
+
+        /** Waits for an intent to be received and returns it. */
+        public Intent awaitIntent() {
+            CountDownLatch countDownLatch;
+            synchronized (this) {
+                // If we already have an intent, don't wait and just return it now.
+                if (mIntent != null) return getIntentAndResetLocked();
+
+                countDownLatch = new CountDownLatch(1);
+                mCountDownLatch = countDownLatch;
+            }
+
+            try {
+                // Note: if the latch already counted down, this will return true immediately.
+                countDownLatch.await(20, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
+            synchronized (this) {
+                if (mIntent == null) {
+                    Assert.fail("Expected to receive a broadcast within 20 seconds");
+                }
+
+                return getIntentAndResetLocked();
+            }
+        }
+
+        private Intent getIntentAndResetLocked() {
+            final Intent intent = mIntent;
+            mIntent = null;
+            return intent;
         }
     }
 
@@ -1997,15 +2215,25 @@ public class RemoteViewsTest {
                 () -> mActivityRule.runOnUiThread(() -> mRemoteViews.reapply(mContext, mResult)));
     }
 
-    // Change the night mode and return the previous mode
-    private String changeNightMode(boolean nightMode) {
+    private String getCurrentNightMode() {
         final String nightModeText = runShellCommand("cmd uimode night");
         final String[] nightModeSplit = nightModeText.split(":");
         if (nightModeSplit.length != 2) {
             fail("Failed to get initial night mode value from " + nightModeText);
         }
-        String previousMode = nightModeSplit[1].trim();
-        runShellCommand("cmd uimode night " + (nightMode ? "yes" : "no"));
+        return nightModeSplit[1].trim();
+    }
+
+    // Change the night mode and return the previous mode
+    private String changeNightMode(boolean nightMode) throws Exception {
+        String previousMode = getCurrentNightMode();
+        String wantedNightMode = nightMode ? "yes" : "no";
+        runShellCommand("cmd uimode night " + wantedNightMode);
+        waitUntil(
+                /* message= */ "Night mode did not change to " + wantedNightMode,
+                /* timeoutSecond= */ 5,
+                /* predicate= */ () -> wantedNightMode.equals(getCurrentNightMode())
+        );
         return previousMode;
     }
 

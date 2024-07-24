@@ -64,6 +64,7 @@ import android.view.KeyEvent;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -80,6 +81,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
@@ -567,10 +569,20 @@ public class MediaSessionTest {
         simulateMediaKeyInput(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE);
     }
 
+    @Test
+    public void testSetMediaButtonReceiver_withNull_doesNotThrow() {
+        try {
+            mSession.setMediaButtonReceiver(null);
+        } finally {
+            mSession.release();
+        }
+    }
+
     /**
      * Test whether media button receiver can be a explicit broadcast receiver via
      * MediaSession.setMediaButtonBroadcastReceiver(ComponentName)
      */
+    @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     public void testSetMediaButtonBroadcastReceiver_broadcastReceiver() throws Exception {
         // Play a sound so this session can get the priority.

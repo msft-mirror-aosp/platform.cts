@@ -26,9 +26,6 @@ public final class ShellCommandUtils {
     // This is utility class, can't instantiate.
     private ShellCommandUtils() {}
 
-    // Copied from android.content.pm.PackageManager#FEATURE_INPUT_METHODS.
-    public static final String FEATURE_INPUT_METHODS = "android.software.input_methods";
-
     public static final String FEATURE_TV_OPERATOR_TIER = "com.google.android.tv.operator_tier";
 
     private static final String SETTING_DEFAULT_IME = "secure default_input_method";
@@ -188,17 +185,6 @@ public final class ShellCommandUtils {
      */
     public static String showImePicker() {
         return "input keyevent KEYCODE_SYM";
-    }
-
-    /**
-     * Command to enable app-compat change for a package .
-     *
-     * @param compatChange name of the app-compat change.
-     * @param packageName name of the package to enable the change for.
-     * @return the command to be passed to shell command.
-     */
-    public static String enableCompatChange(String compatChange, String packageName) {
-        return "am compat enable " + compatChange + " " + packageName;
     }
 
     /** Command to wait until all broadcast queues have passed barrier. */

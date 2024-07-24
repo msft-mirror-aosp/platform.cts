@@ -38,14 +38,21 @@ import android.os.Looper;
 import android.os.OutcomeReceiver;
 import android.provider.Settings;
 import android.telephony.Rlog;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
+import android.telephony.satellite.EnableRequestAttributes;
+import android.telephony.satellite.NtnSignalStrength;
+import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.SatelliteCapabilities;
+import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
-import android.telephony.satellite.SatelliteStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
 import android.util.Log;
@@ -74,6 +81,7 @@ public class SatelliteManagerTestBase {
      * radio power state change should be greater than 10 seconds.
      */
     protected static final long EXTERNAL_DEPENDENT_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
+
     protected static SatelliteManager sSatelliteManager;
     protected static TelephonyManager sTelephonyManager = null;
 
@@ -396,7 +404,7 @@ public class SatelliteManagerTestBase {
         }
     }
 
-    protected static class SatelliteStateCallbackTest implements SatelliteStateCallback {
+    protected static class SatelliteModemStateCallbackTest implements SatelliteModemStateCallback {
         public int modemState = SatelliteManager.SATELLITE_MODEM_STATE_OFF;
         private List<Integer> mModemStates = new ArrayList<>();
         private final Object mModemStatesLock = new Object();
@@ -497,6 +505,7 @@ public class SatelliteManagerTestBase {
 
     protected static class SatelliteDatagramCallbackTest implements SatelliteDatagramCallback {
         public SatelliteDatagram mDatagram;
+        public long mDatagramId;
         private final Semaphore mSemaphore = new Semaphore(0);
 
         @Override
@@ -505,6 +514,7 @@ public class SatelliteManagerTestBase {
             logd("onSatelliteDatagramReceived: datagramId=" + datagramId + ", datagram="
                     + datagram + ", pendingCount=" + pendingCount);
             mDatagram = datagram;
+            mDatagramId = datagramId;
             if (callback != null) {
                 logd("onSatelliteDatagramReceived: callback.accept() datagramId=" + datagramId);
                 callback.accept(null);
@@ -528,6 +538,72 @@ public class SatelliteManagerTestBase {
                     }
                 } catch (Exception ex) {
                     loge("onSatelliteDatagramReceived: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    protected static class NtnSignalStrengthCallbackTest implements NtnSignalStrengthCallback {
+        public NtnSignalStrength mNtnSignalStrength;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onNtnSignalStrengthChanged(@NonNull NtnSignalStrength ntnSignalStrength) {
+            logd("onNtnSignalStrengthChanged: ntnSignalStrength=" + ntnSignalStrength);
+            mNtnSignalStrength = new NtnSignalStrength(ntnSignalStrength);
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onNtnSignalStrengthChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onNtnSignalStrengthChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onNtnSignalStrengthChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    protected static class SatelliteCapabilitiesCallbackTest implements
+            SatelliteCapabilitiesCallback {
+        public SatelliteCapabilities mSatelliteCapabilities;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteCapabilitiesChanged(
+                @NonNull SatelliteCapabilities satelliteCapabilities) {
+            logd("onSatelliteCapabilitiesChanged: satelliteCapabilities=" + satelliteCapabilities);
+            mSatelliteCapabilities = satelliteCapabilities;
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteCapabilitiesChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteCapabilitiesChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSatelliteCapabilitiesChanged: Got exception=" + ex);
                     return false;
                 }
             }
@@ -629,7 +705,7 @@ public class SatelliteManagerTestBase {
         String mText = "This is test provision data.";
         byte[] testProvisionData = mText.getBytes();
 
-        sSatelliteManager.provisionSatelliteService(
+        sSatelliteManager.provisionService(
                 TOKEN, testProvisionData, null, getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
@@ -638,7 +714,7 @@ public class SatelliteManagerTestBase {
             loge("provisionSatellite ex=" + ex);
             return false;
         }
-        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             loge("provisionSatellite failed with errorCode=" + errorCode);
             return false;
         }
@@ -648,7 +724,7 @@ public class SatelliteManagerTestBase {
     protected static boolean deprovisionSatellite() {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
 
-        sSatelliteManager.deprovisionSatelliteService(
+        sSatelliteManager.deprovisionService(
                 TOKEN, getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
@@ -657,7 +733,7 @@ public class SatelliteManagerTestBase {
             loge("deprovisionSatellite ex=" + ex);
             return false;
         }
-        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_ERROR_NONE) {
+        if (errorCode == null || errorCode != SatelliteManager.SATELLITE_RESULT_SUCCESS) {
             loge("deprovisionSatellite failed with errorCode=" + errorCode);
             return false;
         }
@@ -683,7 +759,7 @@ public class SatelliteManagerTestBase {
                     }
                 };
 
-        sSatelliteManager.requestIsSatelliteProvisioned(
+        sSatelliteManager.requestIsProvisioned(
                 getContext().getMainExecutor(), receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
@@ -724,7 +800,7 @@ public class SatelliteManagerTestBase {
                 };
 
 
-        sSatelliteManager.requestIsSatelliteEnabled(
+        sSatelliteManager.requestIsEnabled(
                 getContext().getMainExecutor(), receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
@@ -787,8 +863,8 @@ public class SatelliteManagerTestBase {
 
     protected static void requestSatelliteEnabled(boolean enabled) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.requestSatelliteEnabled(
-                enabled, false, getContext().getMainExecutor(), error::offer);
+        sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
+                getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -797,13 +873,13 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
 
     protected static void requestSatelliteEnabled(boolean enabled, long timeoutMillis) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.requestSatelliteEnabled(
-                enabled, false, getContext().getMainExecutor(), error::offer);
+        sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
+                getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(timeoutMillis, TimeUnit.MILLISECONDS);
@@ -812,14 +888,28 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
 
+    protected static int requestSatelliteEnabledWithResult(boolean enabled, long timeoutMillis) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled).build(),
+                getContext().getMainExecutor(), error::offer);
+        Integer errorCode = null;
+        try {
+            errorCode = error.poll(timeoutMillis, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("requestSatelliteEnabled failed with ex=" + ex);
+        }
+        assertNotNull(errorCode);
+        return errorCode;
+    }
 
     protected static void requestSatelliteEnabledForDemoMode(boolean enabled) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.requestSatelliteEnabled(
-                enabled, true, getContext().getMainExecutor(), error::offer);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled).setDemoMode(true).build(),
+                getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -828,14 +918,15 @@ public class SatelliteManagerTestBase {
             return;
         }
         assertNotNull(errorCode);
-        assertEquals(SatelliteManager.SATELLITE_ERROR_NONE, (long) errorCode);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
 
     protected static void requestSatelliteEnabled(boolean enabled, boolean demoEnabled,
             int expectedError) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
-        sSatelliteManager.requestSatelliteEnabled(
-                enabled, demoEnabled, getContext().getMainExecutor(), error::offer);
+        sSatelliteManager.requestEnabled(
+                new EnableRequestAttributes.Builder(enabled).setDemoMode(demoEnabled).build(),
+                getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {
             errorCode = error.poll(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -866,7 +957,7 @@ public class SatelliteManagerTestBase {
                     }
                 };
 
-        sSatelliteManager.requestIsSatelliteSupported(getContext().getMainExecutor(),
+        sSatelliteManager.requestIsSupported(getContext().getMainExecutor(),
                 receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
@@ -1166,5 +1257,37 @@ public class SatelliteManagerTestBase {
                 logd("waitFor: delayTimeout ex=" + ex);
             }
         }
+    }
+
+    // Get default active subscription ID.
+    protected int getActiveSubIDForCarrierSatelliteTest() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getActiveSubscriptionInfoList);
+
+        int defaultSubId = SubscriptionManager.getDefaultVoiceSubscriptionId();
+        if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                && isSubIdInInfoList(infos, defaultSubId)) {
+            return defaultSubId;
+        }
+
+        defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
+        if (defaultSubId != SubscriptionManager.INVALID_SUBSCRIPTION_ID
+                && isSubIdInInfoList(infos, defaultSubId)) {
+            return defaultSubId;
+        }
+
+        // Couldn't resolve a default. We can try to resolve a default using the active
+        // subscriptions.
+        if (!infos.isEmpty()) {
+            return infos.get(0).getSubscriptionId();
+        }
+        // There must be at least one active subscription.
+        return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
+        return infos.stream().anyMatch(info -> info.getSubscriptionId() == subId);
     }
 }

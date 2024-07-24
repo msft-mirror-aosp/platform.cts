@@ -61,6 +61,7 @@ import android.os.Bundle;
 import android.os.Process;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.filters.FlakyTest;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -107,6 +108,7 @@ public class SyncAdapterEnumerationTests extends AppEnumerationTestsBase {
                 this::getSyncAdapterTypes);
     }
 
+    @FlakyTest(bugId = 328849197)
     @Test
     public void queriesNothingSharedUser_getSyncAdapterTypes_canSeeSyncAdapterSharedUserTarget()
             throws Exception {
@@ -161,7 +163,7 @@ public class SyncAdapterEnumerationTests extends AppEnumerationTestsBase {
                 is(true));
     }
 
-    @Test
+    @FlakyTest(bugId = 328849197)
     public void queriesNothingSharedUser_requestSync_canSeeSyncAdapterSharedUserTarget()
             throws Exception {
         assertThat(requestSyncAndAwaitStatus(QUERIES_NOTHING_SHARED_USER,

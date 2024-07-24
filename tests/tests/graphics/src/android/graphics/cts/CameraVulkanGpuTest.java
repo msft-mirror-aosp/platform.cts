@@ -18,19 +18,19 @@ package android.graphics.cts;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraCharacteristics;
-import android.test.suitebuilder.annotation.SmallTest;
+import android.hardware.camera2.CameraManager;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.PropertyUtil;
 
-import java.util.ArrayList;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.ArrayList;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -75,7 +75,9 @@ public class CameraVulkanGpuTest {
         }
 
         loadCameraAndVerifyFrameImport(InstrumentationRegistry.getContext().getAssets());
+        loadCameraAndVerifyFrameImportWithAIMAGE_FORMAT_YUV_420_888(InstrumentationRegistry.getContext().getAssets());
     }
 
     private static native void loadCameraAndVerifyFrameImport(AssetManager assetManager);
+    private static native void loadCameraAndVerifyFrameImportWithAIMAGE_FORMAT_YUV_420_888(AssetManager assetManager);
 }

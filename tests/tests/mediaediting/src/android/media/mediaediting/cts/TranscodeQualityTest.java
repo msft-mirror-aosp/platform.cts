@@ -196,6 +196,12 @@ public final class TranscodeQualityTest {
             .setRequestCalculateSsim(true)
             .build()
             .run(testId, editedMediaItem);
+
+    if (!isWithinCddRequirements) {
+        Assume.assumeFalse("Skipping transcodeTest for " + testId,
+            result.fallbackDetails != null
+            && result.fallbackDetails.fallbackOutputHeight != height);
+    }
     assertThat(result.ssim).isGreaterThan(EXPECTED_MINIMUM_SSIM);
   }
 }

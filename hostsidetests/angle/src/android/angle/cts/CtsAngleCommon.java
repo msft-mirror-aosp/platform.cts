@@ -29,7 +29,6 @@ class CtsAngleCommon {
 
     static final String PERSIST_DRIVER_SUFFIX_PROPERTY = "persist.graphics.egl";
     static final String RO_DRIVER_SUFFIX_PROPERTY = "ro.hardware.egl";
-    static final String RO_ANGLE_SUPPORTED_PROPERTY = "ro.gfx.angle.supported";
 
     // Settings.Global
     static final String SETTINGS_GLOBAL_ALL_USE_ANGLE = "angle_gl_driver_all_angle";
@@ -123,15 +122,8 @@ class CtsAngleCommon {
         return info != null && info.isSystemApp();
     }
 
-    static boolean isSystemAngleSupported(ITestDevice device) throws Exception {
-        final boolean supported = device.getBooleanProperty(RO_ANGLE_SUPPORTED_PROPERTY, false);
-
-        return supported;
-    }
-
     static boolean isAnglePresentAsNonDefault(ITestDevice device) throws Exception {
-        return isAngleApkInstalled(device)
-                || (isSystemAngleSupported(device) && !isAngleDefaultDriver(device));
+        return isAngleApkInstalled(device) || !isAngleDefaultDriver(device);
     }
 
     static boolean isAngleDefaultDriver(ITestDevice device) throws Exception {

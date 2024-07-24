@@ -60,7 +60,10 @@ cc_test_library {
 
 android_test {
     name: "CtsAppOpsTestCases",
-
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
     compile_multilib: "both",
 
     srcs: ["src/**/*.kt"],
@@ -76,6 +79,9 @@ android_test {
         "platform-test-annotations",
         "truth",
         "androidx.test.uiautomator_uiautomator",
+        "flag-junit",
+        "android.permission.flags-aconfig-java",
+        "CtsVirtualDeviceCommonLib",
     ],
 
     jni_libs: [
@@ -116,7 +122,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts",
     ],
     data: [
         ":AppWithLongAttributionTag",
@@ -133,6 +138,7 @@ android_test {
         ":AppInBackground",
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
+        ":AppInstalledOnMultipleUsers",
     ],
     per_testcase_directory: true,
 }

@@ -18,6 +18,7 @@ package android.accessibilityservice.cts;
 
 import static android.accessibilityservice.cts.utils.AsyncUtils.await;
 import static android.accessibilityservice.cts.utils.AsyncUtils.waitOn;
+import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.dispatchGesture;
@@ -39,6 +40,7 @@ import static android.view.MotionEvent.ACTION_UP;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
@@ -46,7 +48,7 @@ import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.AccessibilityGestureDispatchTest.GestureDispatchActivity;
-import android.accessibilityservice.cts.utils.EventCapturingTouchListener;
+import android.accessibilityservice.cts.utils.EventCapturingMotionEventListener;
 import android.app.Instrumentation;
 import android.content.pm.PackageManager;
 import android.graphics.PointF;
@@ -83,7 +85,8 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     private InstrumentedAccessibilityService mService;
     private Instrumentation mInstrumentation;
-    private EventCapturingTouchListener mTouchListener = new EventCapturingTouchListener();
+    private EventCapturingMotionEventListener mTouchListener =
+            new EventCapturingMotionEventListener();
     float mCurrentScale = 1f;
     PointF mCurrentZoomCenter = null;
     PointF mTapLocation;
@@ -119,6 +122,8 @@ public class FullScreenMagnificationGestureHandlerTest {
         mHasTouchscreen = pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN)
                 || pm.hasSystemFeature(PackageManager.FEATURE_FAKETOUCH);
         if (!mHasTouchscreen) return;
+        assumeFalse("Magnification is not supported on Automotive.",
+                isAutomotive(mInstrumentation.getTargetContext()));
 
         // Backup and reset magnification settings.
         mOriginalIsMagnificationCapabilities = getSecureSettingInt(

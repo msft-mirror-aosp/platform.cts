@@ -29,7 +29,9 @@ import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
 import android.app.appsearch.GetSchemaResponse;
 import android.app.appsearch.GlobalSearchSessionShim;
+import android.app.appsearch.PackageIdentifier;
 import android.app.appsearch.PutDocumentsRequest;
+import android.app.appsearch.SchemaVisibilityConfig;
 import android.app.appsearch.SearchResultsShim;
 import android.app.appsearch.SearchSpec;
 import android.app.appsearch.SetSchemaRequest;
@@ -185,6 +187,75 @@ public class AppSearchTestService extends Service {
             return false;
         }
 
+        /**
+         * Set A schema and index a document with specific visible to config setting to the
+         * given database.
+         *
+         * @param databaseName       The name of database to set the schema.
+         * @param namespace          The namespace of the indexed document
+         * @param id                 The id of the indexed document
+         * @param packageBundles     The VisibleToPackage settings in VisibleToConfig
+         * @param permissionBundles  The VisibleToPermission settings in VisibleToConfig
+         * @param publicAclPackage   The target public acl settings in VisibleToConfig
+         * @return whether this operation is successful.
+         */
+        @Override
+        public boolean indexGloballySearchableDocumentVisibleToConfig(
+                String databaseName, String namespace, String id, List<Bundle> packageBundles,
+                List<Bundle> permissionBundles, Bundle publicAclPackage) {
+            try {
+                AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                        AppSearchTestService.this,
+                                new AppSearchManager.SearchContext.Builder(databaseName).build(),
+                                Executors.newCachedThreadPool())
+                        .get();
+
+                // By default, schemas/documents are globally searchable. We don't purposely set
+                // setSchemaTypeDisplayedBySystem(false) for this schema
+                SchemaVisibilityConfig.Builder configBuilder = new SchemaVisibilityConfig.Builder();
+                for (int i = 0; i < packageBundles.size(); i++) {
+                    configBuilder.addAllowedPackage(
+                            new PackageIdentifier(
+                                    packageBundles.get(i).getString("packageName"),
+                                    packageBundles.get(i).getByteArray("sha256Cert")));
+                }
+                for (int i = 0; i < permissionBundles.size(); i++) {
+                    configBuilder.addRequiredPermissions(
+                            new ArraySet<>(permissionBundles.get(i)
+                                    .getIntegerArrayList("permission")));
+                }
+                if (publicAclPackage != null) {
+                    configBuilder.setPubliclyVisibleTargetPackage(
+                            new PackageIdentifier(
+                                    publicAclPackage.getString("packageName"),
+                                    publicAclPackage.getByteArray("sha256Cert")));
+                }
+                db.setSchemaAsync(new SetSchemaRequest.Builder()
+                        .setForceOverride(true)
+                        .addSchemas(AppSearchEmail.SCHEMA)
+                        .addSchemaTypeVisibleToConfig(AppSearchEmail.SCHEMA_TYPE,
+                                configBuilder.build())
+                        .build()).get();
+
+                AppSearchEmail emailDocument =
+                        new AppSearchEmail.Builder(namespace, id)
+                                .setFrom("from@example.com")
+                                .setTo("to1@example.com", "to2@example.com")
+                                .setSubject("subject")
+                                .setBody("this is the body of the email")
+                                .build();
+                checkIsBatchResultSuccess(
+                        db.putAsync(
+                                new PutDocumentsRequest.Builder()
+                                        .addGenericDocuments(emailDocument)
+                                        .build()));
+                return true;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to index globally searchable document.", e);
+            }
+            return false;
+        }
+
         @Override
         public boolean indexNotGloballySearchableDocument(
                 String databaseName, String namespace, String id) {
@@ -278,6 +349,65 @@ public class AppSearchTestService extends Service {
             } catch (Exception e) {
                 Log.e(TAG, "Failed to index " + (globallySearchable ? "" : "non-")
                         + "globally searchable action document.", e);
+            }
+            return false;
+        }
+
+        @Override
+        public boolean setUpPubliclyVisibleDocuments(String targetPackageNameA,
+                byte[] targetPackageCertA, String targetPackageNameB, byte[] targetPackageCertB) {
+            // We need two schemas, with two different target packages. This way we can test public
+            // visibility.
+
+            try {
+                AppSearchSessionShim db = AppSearchSessionShimImpl.createSearchSessionAsync(
+                                AppSearchTestService.this,
+                                new AppSearchManager.SearchContext.Builder("database").build(),
+                                Executors.newCachedThreadPool())
+                        .get();
+
+                String schemaNameA = targetPackageNameA + "Schema";
+                String schemaNameB = targetPackageNameB + "Schema";
+
+                AppSearchSchema schemaA = new AppSearchSchema.Builder(schemaNameA)
+                        .addProperty(new StringPropertyConfig.Builder("searchable")
+                                .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                .build()).build();
+
+                AppSearchSchema schemaB = new AppSearchSchema.Builder(schemaNameB)
+                        .addProperty(new StringPropertyConfig.Builder("searchable")
+                                .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                .setIndexingType(StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                .build()).build();
+
+                // Index schemas in the cts package
+                db.setSchemaAsync(new SetSchemaRequest.Builder()
+                        .addSchemas(schemaA, schemaB)
+                        .setForceOverride(true)
+                        .setPubliclyVisibleSchema(schemaNameA,
+                                new PackageIdentifier(targetPackageNameA, targetPackageCertA))
+                        .setPubliclyVisibleSchema(schemaNameB,
+                                new PackageIdentifier(targetPackageNameB, targetPackageCertB))
+                        .build()).get();
+
+                GenericDocument docA =
+                        new GenericDocument.Builder<>("namespace", "id1", schemaNameA)
+                                .setCreationTimestampMillis(0L)
+                                .setPropertyString("searchable",
+                                        "pineapple from " + targetPackageNameA).build();
+                GenericDocument docB =
+                        new GenericDocument.Builder<>("namespace", "id2", schemaNameB)
+                                .setCreationTimestampMillis(0L)
+                                .setPropertyString("searchable",
+                                        "pineapple from " + targetPackageNameB).build();
+                checkIsBatchResultSuccess(db.putAsync(new PutDocumentsRequest.Builder()
+                        .addGenericDocuments(docA, docB).build()));
+                return true;
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to index publicly searchable document.", e);
             }
             return false;
         }

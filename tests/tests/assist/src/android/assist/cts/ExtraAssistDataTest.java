@@ -16,18 +16,24 @@
 package android.assist.cts;
 
 import static android.assist.common.Utils.SHOW_SESSION_FLAGS_TO_SET;
+import static android.service.voice.VoiceInteractionSession.KEY_FOREGROUND_ACTIVITIES;
 
+import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assume.assumeFalse;
 
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExtraAssistDataTest extends AssistTestBase {
     private static final String TAG = "ExtraAssistDataTest";
@@ -68,6 +74,17 @@ public class ExtraAssistDataTest extends AssistTestBase {
         int actualUid = mAssistBundle.getInt(Intent.EXTRA_ASSIST_UID);
         assertWithMessage("Wrong value for EXTRA_ASSIST_UID").that(actualUid)
                 .isEqualTo(expectedUid);
+
+        // Verify KEY_FOREGROUND_ACTIVITIES was correctly provided in onShow args
+        assertThat(mOnShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isTrue();
+        ArrayList<ComponentName> foregroundApps =
+                mOnShowArgs.getParcelableArrayList(KEY_FOREGROUND_ACTIVITIES);
+        Log.i(TAG, "ForegroundActivityComponent:  " + foregroundApps);
+        assertWithMessage("Foregrounded apps").that(foregroundApps).isNotEmpty();
+        List<String> foregroundAppPackageNames = foregroundApps.stream()
+                .map(ComponentName::getPackageName).toList();
+        assertWithMessage("Foregrounded test assistant app")
+                .that(foregroundAppPackageNames).contains("android.assist.testapp");
     }
 
     @Test
@@ -89,6 +106,7 @@ public class ExtraAssistDataTest extends AssistTestBase {
 
         verifyActivityIdNullness(/* isActivityIdNull = */ false);
         verifyAssistDataNullness(true, true, true, true);
+        assertThat(mOnShowArgs.containsKey(KEY_FOREGROUND_ACTIVITIES)).isFalse();
     }
 
     private void assumeIsNotAutomotive() {

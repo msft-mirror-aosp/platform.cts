@@ -4,7 +4,7 @@
       "name": "CtsOsTestCases",
       "options": [
         {
-          "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          "exclude-annotation": "androidx.test.filters.LargeTest"
         },
         {
           "exclude-filter": "android.os.cts.BuildTest#testSdkInt"
@@ -20,7 +20,7 @@
       "name": "CtsOsTestCases",
       "options": [
         {
-          "exclude-annotation": "android.platform.test.annotations.LargeTest"
+          "exclude-annotation": "androidx.test.filters.LargeTest"
         },
         {
           "exclude-annotation": "android.platform.test.annotations.RestrictedBuildTest"
@@ -65,10 +65,6 @@
           "exclude-filter": "android.os.cts.BuildTest#testSdkInt"
         },
         {
-          // TODO(b/221873359)
-          "exclude-filter": "android.os.cts.CompanionDeviceManagerTest#testProfiles"
-        },
-        {
           // Requires a discoverable bluetooth device nearby
           "exclude-filter": "android.os.cts.CompanionDeviceManagerTest#testRequestNotifications"
         },
@@ -92,10 +88,6 @@
           "exclude-filter": "android.os.cts.FileObserverTest#testFileObserver_multipleFilesFull"
         },
         {
-          // TODO(b/180726379)
-          "exclude-filter": "android.os.cts.SeccompTest#testKernelPrecedenceTests"
-        },
-        {
           // TODO(b/214271070)
           "exclude-filter": "android.os.storage.cts.StorageManagerTest#testAttemptMountNonObb"
         },
@@ -114,6 +106,12 @@
           "exclude-filter": "android.os.cts.VibratorTest"
         }
       ]
+    }
+  ],
+  "ravenwood-presubmit": [
+    {
+      "name": "CtsOsTestCasesRavenwood",
+      "host": true
     }
   ]
 }

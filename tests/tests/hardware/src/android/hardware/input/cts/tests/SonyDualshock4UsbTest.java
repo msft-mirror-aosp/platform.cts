@@ -18,6 +18,7 @@ package android.hardware.input.cts.tests;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.hardware.cts.R;
 
@@ -36,6 +37,10 @@ public class SonyDualshock4UsbTest extends InputHidTestCase {
     // Simulates the behavior of PlayStation DualShock4 gamepad (model CUH-ZCT1U)
     public SonyDualshock4UsbTest() {
         super(R.raw.sony_dualshock4_usb_register);
+        // The sony driver intermittently crash at sony_led_get_brightness to uninitialized memory
+        // access. This is likely due to test triggering before driver is fully initialized.
+        // Adding a delay here to allow for initialization to complete see b/317902298
+        addDelayAfterSetup();
     }
 
     @Test
@@ -67,6 +72,8 @@ public class SonyDualshock4UsbTest extends InputHidTestCase {
 
     @Test
     public void testVibrator() throws Exception {
+        assumeFalse("b/337286136 - Broken since kernel 6.2 from driver changes",
+                KernelInfo.isKernelVersionGreaterThan("6.2"));
         // hid-generic and older HID_SONY drivers don't support vibration
         assumeTrue(KernelInfo.isKernelVersionGreaterThan("4.19"));
         testInputVibratorEvents(R.raw.sony_dualshock4_usb_vibratortests);

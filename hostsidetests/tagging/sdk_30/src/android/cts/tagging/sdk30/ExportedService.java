@@ -18,10 +18,8 @@ package android.cts.tagging.sdk30;
 
 import android.cts.tagging.TestingService;
 import android.cts.tagging.Utils;
-import android.util.Log;
 
 public class ExportedService extends TestingService {
-
     protected int runTests() {
         Utils.accessMistaggedPointer();
         return RESULT_TEST_SUCCESS;

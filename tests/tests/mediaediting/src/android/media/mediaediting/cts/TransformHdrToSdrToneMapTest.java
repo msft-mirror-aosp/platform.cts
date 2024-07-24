@@ -37,6 +37,7 @@ import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.transformer.ExportException;
 import androidx.media3.transformer.TransformationRequest;
+import androidx.media3.transformer.Composition;
 import androidx.media3.transformer.Transformer;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -124,7 +125,7 @@ public final class TransformHdrToSdrToneMapTest {
     return new Transformer.Builder(context)
         .setTransformationRequest(
             new TransformationRequest.Builder()
-                .setHdrMode(TransformationRequest.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
+                .setHdrMode(Composition.HDR_MODE_TONE_MAP_HDR_TO_SDR_USING_MEDIACODEC)
                 .build())
         .addListener(
             new Transformer.Listener() {

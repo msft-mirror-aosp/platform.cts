@@ -52,6 +52,7 @@ import android.telephony.TelephonyManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FileUtils;
+import com.android.server.telecom.flags.Flags;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -348,9 +349,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerDisplayName() getter returns the correct object.
      */
     public void testCallerDisplayName() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
 
         assertThat(mCall.getDetails().getCallerDisplayName(), instanceOf(String.class));
         assertEquals(CALLER_DISPLAY_NAME, mCall.getDetails().getCallerDisplayName());
@@ -411,9 +414,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerPhotoUri() getter returns the correct object.
      */
     public void testContactPhotoUri() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
         String phoneNumber = getTestNumber().getSchemeSpecificPart();
 
         Uri contactRef = PhoneLookup.ENTERPRISE_CONTENT_FILTER_URI.buildUpon()
@@ -457,9 +462,11 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Tests whether the getCallerDisplayNamePresentation() getter returns the correct object.
      */
     public void testCallerDisplayNamePresentation() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
+
 
         assertThat(mCall.getDetails().getCallerDisplayNamePresentation(), instanceOf(Integer.class));
         assertEquals(CALLER_DISPLAY_NAME_PRESENTATION, mCall.getDetails().getCallerDisplayNamePresentation());
@@ -469,7 +476,8 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
      * Test the contacts display name.
      */
     public void testContactDisplayName() {
-        if (!mShouldTestTelecom) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || mWatchDevice) {
             return;
         }
 
@@ -487,6 +495,17 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertThat(mCall.getDetails().getCallProperties(), instanceOf(Integer.class));
 
         assertEquals(CALL_PROPERTIES, mCall.getDetails().getCallProperties());
+    }
+
+    /**
+     * Tests whether the getId() getter returns the correct object.
+     */
+    public void testCallId() {
+        if (!mShouldTestTelecom || !Flags.callDetailsIdChanges()) {
+            return;
+        }
+
+        assertThat(mCall.getDetails().getId(), instanceOf(String.class));
     }
 
     /**
@@ -715,6 +734,23 @@ public class CallDetailsTest extends BaseTelecomTestWithMockServices {
         assertFalse(callExtras.containsKey("cna"));
         assertFalse(callExtras.containsKey("oir"));
         assertFalse(callExtras.containsKey("cnap"));
+    }
+
+    /**
+     * Verify the {@link  android.telecom.Call#EXTRA_IS_BUSINESS_CALL} and the
+     * {@link android.telecom.Call#EXTRA_ASSERTED_DISPLAY_NAME} can be set and fetched
+     * via the {@link android.telecom.Connection#setExtras(Bundle)} method.
+     */
+    public void testBusinessComposerExtras() {
+        if (!mShouldTestTelecom || !Flags.businessCallComposer()) {
+            return;
+        }
+        Bundle exampleExtras = new Bundle();
+        exampleExtras.putBoolean(Call.EXTRA_IS_BUSINESS_CALL, true);
+        exampleExtras.putString(Call.EXTRA_ASSERTED_DISPLAY_NAME, "Google");
+        mConnection.setExtras(exampleExtras);
+        assertCallExtras(mCall, Call.EXTRA_IS_BUSINESS_CALL);
+        assertCallExtras(mCall, Call.EXTRA_ASSERTED_DISPLAY_NAME);
     }
 
     /**

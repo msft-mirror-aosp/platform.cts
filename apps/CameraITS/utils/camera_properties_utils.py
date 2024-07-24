@@ -16,14 +16,15 @@
 
 import logging
 import math
+import types
+
 from mobly import asserts
 import numpy as np
+
 import capture_request_utils
 
 FD_CAL_RTOL = 0.20
-LENS_FACING_FRONT = 0
-LENS_FACING_BACK = 1
-LENS_FACING_EXTERNAL = 2
+LENS_FACING = types.MappingProxyType({'FRONT': 0, 'BACK': 1, 'EXTERNAL': 2})
 MULTI_CAMERA_SYNC_CALIBRATED = 1
 NUM_DISTORTION_PARAMS = 5  # number of terms in lens.distortion
 NUM_INTRINSIC_CAL_PARAMS = 5  # number of terms in intrinsic calibration
@@ -42,6 +43,24 @@ COLOR_SPACES = [
     'CIE_XYZ', 'CIE_LAB', 'BT2020_HLG', 'BT2020_PQ'
 ]
 SETTINGS_OVERRIDE_ZOOM = 1
+STABILIZATION_MODE_OFF = 0
+STABILIZATION_MODE_PREVIEW = 2
+LENS_OPTICAL_STABILIZATION_MODE_ON = 1
+
+
+def check_front_or_rear_camera(props):
+  """Raises an error if not LENS_FACING FRONT or BACK.
+
+  Args:
+    props: Camera properties object.
+
+  Raises:
+    assertionError if not front or rear camera.
+  """
+  facing = props['android.lens.facing']
+  if not (facing == camera_properties_utils.LENS_FACING['BACK']
+      or facing == camera_properties_utils.LENS_FACING['FRONT']):
+    raise AssertionError('Unknown lens facing: {facing}.')
 
 
 def legacy(props):
@@ -416,6 +435,7 @@ def zoom_ratio_range(props):
   return 'android.control.zoomRatioRange' in props and props[
       'android.control.zoomRatioRange'] is not None
 
+
 def low_latency_zoom(props):
   """Returns whether a device supports low latency zoom via settings override.
 
@@ -426,7 +446,8 @@ def low_latency_zoom(props):
     Boolean. True if device supports SETTINGS_OVERRIDE_ZOOM.
   """
   return ('android.control.availableSettingsOverrides') in props and (
-      SETTINGS_OVERRIDE_ZOOM in props['android.control.availableSettingsOverrides'])
+      SETTINGS_OVERRIDE_ZOOM in props[
+          'android.control.availableSettingsOverrides'])
 
 
 def sync_latency(props):
@@ -564,6 +585,25 @@ def distortion_correction(props):
       'android.lens.distortion'] is not None
 
 
+def distortion_correction_mode(props, mode):
+  """Returns whether a device supports a distortionCorrection mode.
+
+  Args:
+    props: Camera properties object
+    mode: Integer indicating distortion correction mode
+
+  Returns:
+    Boolean. True if device supports distortion correction mode(s).
+  """
+  if 'android.distortionCorrection.availableModes' in props:
+    logging.debug('distortionCorrection.availableModes: %s',
+                  props['android.distortionCorrection.availableModes'])
+  else:
+    logging.debug('distortionCorrection.availableModes not in props!')
+  return ('android.distortionCorrection.availableModes' in props and
+          mode in props['android.distortionCorrection.availableModes'])
+
+
 def freeform_crop(props):
   """Returns whether a device supports freefrom cropping.
 
@@ -629,17 +669,17 @@ def edge_mode(props, mode):
 
 
 def tonemap_mode(props, mode):
-    """Returns whether a device supports the tonemap mode.
+  """Returns whether a device supports the tonemap mode.
 
-    Args:
-        props: Camera properties object.
-        mode: Integer, indicating the tonemap mode to check for availability.
+  Args:
+    props: Camera properties object.
+    mode: Integer, indicating the tonemap mode to check for availability.
 
-    Return:
-        Boolean.
-    """
-    return 'android.tonemap.availableToneMapModes' in props and mode in props[
-        'android.tonemap.availableToneMapModes']
+  Return:
+    Boolean.
+  """
+  return 'android.tonemap.availableToneMapModes' in props and mode in props[
+      'android.tonemap.availableToneMapModes']
 
 
 def yuv_reprocess(props):
@@ -680,6 +720,7 @@ def stream_use_case(props):
   return 'android.request.availableCapabilities' in props and 19 in props[
       'android.request.availableCapabilities']
 
+
 def cropped_raw_stream_use_case(props):
   """Returns whether a device supports the CROPPED_RAW stream use case.
 
@@ -689,7 +730,8 @@ def cropped_raw_stream_use_case(props):
   Returns:
      Boolean. True if the device supports the CROPPED_RAW stream use case.
   """
-  return stream_use_case(props) and 6 in props['android.scaler.availableStreamUseCases']
+  return stream_use_case(props) and 6 in props[
+      'android.scaler.availableStreamUseCases']
 
 
 def intrinsic_calibration(props):
@@ -857,7 +899,7 @@ def sensor_fusion_capable(props):
   """Determine if test_sensor_fusion is run."""
   return all([sensor_fusion(props),
               manual_sensor(props),
-              props['android.lens.facing'] != LENS_FACING_EXTERNAL])
+              props['android.lens.facing'] != LENS_FACING['EXTERNAL']])
 
 
 def continuous_picture(props):
@@ -993,4 +1035,30 @@ def autoframing(props):
     Boolean. True if android.control.autoframing is supported.
   """
   return 'android.control.autoframingAvailable' in props and props[
-    'android.control.autoframingAvailable'] == 1
+      'android.control.autoframingAvailable'] == 1
+
+
+def ae_regions(props):
+  """Returns whether a device supports CONTROL_AE_REGIONS.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.control.aeRegions is supported.
+  """
+  return 'android.control.maxRegionsAe' in props and props[
+      'android.control.maxRegionsAe'] != 0
+
+
+def awb_regions(props):
+  """Returns whether a device supports CONTROL_AWB_REGIONS.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if android.control.awbRegions is supported.
+  """
+  return 'android.control.maxRegionsAwb' in props and props[
+      'android.control.maxRegionsAwb'] != 0

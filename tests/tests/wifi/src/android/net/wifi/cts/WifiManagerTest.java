@@ -27,14 +27,23 @@ import static android.net.wifi.WifiConfiguration.INVALID_NETWORK_ID;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_SOFTAP;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_AWARE;
 import static android.net.wifi.WifiManager.COEX_RESTRICTION_WIFI_DIRECT;
+import static android.net.wifi.WifiManager.WIFI_AP_STATE_FAILED;
 import static android.net.wifi.WifiScanner.WIFI_BAND_24_GHZ;
+import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.annotation.NonNull;
 import android.app.UiAutomation;
@@ -56,11 +65,17 @@ import android.net.NetworkRequest;
 import android.net.TetheringManager;
 import android.net.Uri;
 import android.net.wifi.CoexUnsafeChannel;
+import android.net.wifi.MloLink;
+import android.net.wifi.MscsParams;
+import android.net.wifi.OuiKeyedData;
+import android.net.wifi.QosCharacteristics;
 import android.net.wifi.QosPolicyParams;
 import android.net.wifi.ScanResult;
 import android.net.wifi.SoftApCapability;
 import android.net.wifi.SoftApConfiguration;
 import android.net.wifi.SoftApInfo;
+import android.net.wifi.SoftApState;
+import android.net.wifi.UriParserResults;
 import android.net.wifi.WifiAvailableChannel;
 import android.net.wifi.WifiClient;
 import android.net.wifi.WifiConfiguration;
@@ -74,17 +89,22 @@ import android.net.wifi.WifiNetworkSelectionConfig;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.net.wifi.WifiScanner;
 import android.net.wifi.WifiSsid;
+import android.net.wifi.WifiUriParser;
 import android.net.wifi.hotspot2.ConfigParser;
 import android.net.wifi.hotspot2.OsuProvider;
 import android.net.wifi.hotspot2.PasspointConfiguration;
 import android.net.wifi.hotspot2.ProvisioningCallback;
 import android.net.wifi.hotspot2.pps.Credential;
 import android.net.wifi.hotspot2.pps.HomeSp;
+import android.net.wifi.twt.TwtRequest;
+import android.net.wifi.twt.TwtSession;
+import android.net.wifi.twt.TwtSessionCallback;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerExecutor;
 import android.os.HandlerThread;
+import android.os.PersistableBundle;
 import android.os.PowerManager;
 import android.os.Process;
 import android.os.SystemClock;
@@ -92,6 +112,10 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.platform.test.annotations.RequiresDevice;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.support.test.uiautomator.UiDevice;
@@ -102,10 +126,12 @@ import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.PropertyUtil;
@@ -114,8 +140,16 @@ import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.net.module.util.MacAddressUtils;
+import com.android.wifi.flags.Flags;
 
 import com.google.common.collect.Range;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -147,30 +181,34 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 import java.util.stream.Collectors;
 
+@RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Cannot get WifiManager in instant app mode")
-public class WifiManagerTest extends WifiJUnit3TestBase {
+public class WifiManagerTest extends WifiJUnit4TestBase {
+    private static Context sContext;
+    private static boolean sShouldRunTest = false;
+
     private static class MySync {
         int expectedState = STATE_NULL;
     }
 
-    private WifiManager mWifiManager;
-    private ConnectivityManager mConnectivityManager;
-    private TetheringManager mTetheringManager;
-    private WifiLock mWifiLock;
-    private static MySync mMySync;
-    private List<ScanResult> mScanResults = null;
-    private NetworkInfo mNetworkInfo =
+    private static WifiManager sWifiManager;
+    private static ConnectivityManager sConnectivityManager;
+    private static TetheringManager sTetheringManager;
+    private static MySync sMySync;
+    private static List<ScanResult> sScanResults = null;
+    private static NetworkInfo sNetworkInfo =
             new NetworkInfo(ConnectivityManager.TYPE_WIFI, TelephonyManager.NETWORK_TYPE_UNKNOWN,
                     "wifi", "unknown");
     private final Object mLock = new Object();
-    private UiDevice mUiDevice;
-    private boolean mWasVerboseLoggingEnabled;
-    private boolean mWasScanThrottleEnabled;
-    private SoftApConfiguration mOriginalSoftApConfig = null;
-    private PowerManager mPowerManager;
-    private PowerManager.WakeLock mWakeLock;
+    private static UiDevice sUiDevice;
+    private static boolean sWasVerboseLoggingEnabled;
+    private static boolean sWasScanThrottleEnabled;
+    private static SoftApConfiguration sOriginalSoftApConfig = null;
+    private static PowerManager sPowerManager;
+    private static PowerManager.WakeLock sWakeLock;
     // Please refer to WifiManager
     private static final int MIN_RSSI = -100;
     private static final int MAX_RSSI = -55;
@@ -236,64 +274,76 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     private static final SparseArray<Integer> TEST_FREQUENCY_WEIGHTS = new SparseArray<>();
 
     private IntentFilter mIntentFilter;
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+    private static final BroadcastReceiver sReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
             if (action.equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
-
-                synchronized (mMySync) {
+                synchronized (sMySync) {
                     if (intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)) {
-                        mScanResults = mWifiManager.getScanResults();
+                        sScanResults = sWifiManager.getScanResults();
                     } else {
-                        mScanResults = null;
+                        sScanResults = null;
                     }
-                    mMySync.expectedState = STATE_SCAN_DONE;
-                    mMySync.notifyAll();
+                    sMySync.expectedState = STATE_SCAN_DONE;
+                    sMySync.notifyAll();
                 }
             } else if (action.equals(WifiManager.WIFI_STATE_CHANGED_ACTION)) {
                 int newState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,
                         WifiManager.WIFI_STATE_UNKNOWN);
-                synchronized (mMySync) {
+                synchronized (sMySync) {
                     if (newState == WifiManager.WIFI_STATE_ENABLED) {
                         Log.d(TAG, "*** New WiFi state is ENABLED ***");
-                        mMySync.expectedState = STATE_WIFI_ENABLED;
-                        mMySync.notifyAll();
+                        sMySync.expectedState = STATE_WIFI_ENABLED;
+                        sMySync.notifyAll();
                     } else if (newState == WifiManager.WIFI_STATE_DISABLED) {
                         Log.d(TAG, "*** New WiFi state is DISABLED ***");
-                        mMySync.expectedState = STATE_WIFI_DISABLED;
-                        mMySync.notifyAll();
+                        sMySync.expectedState = STATE_WIFI_DISABLED;
+                        sMySync.notifyAll();
                     }
                 }
             } else if (action.equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
-                synchronized (mMySync) {
-                    mNetworkInfo =
+                synchronized (sMySync) {
+                    sNetworkInfo =
                             (NetworkInfo) intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-                    if (mNetworkInfo.getState() == NetworkInfo.State.CONNECTED)
-                        mMySync.notifyAll();
+                    if (sNetworkInfo.getState() == NetworkInfo.State.CONNECTED) {
+                        sMySync.notifyAll();
+                    }
                 }
             }
         }
     };
-    // Initialize with an invalid status value (0)
-    private int mProvisioningStatus = 0;
-    // Initialize with an invalid status value (0)
-    private int mProvisioningFailureStatus = 0;
-    private boolean mProvisioningComplete = false;
-    private ProvisioningCallback mProvisioningCallback = new ProvisioningCallback() {
+
+    private static class TestProvisioningCallback extends ProvisioningCallback {
+        private final Object mObject;
+        // Initialize with an invalid status value (0)
+        public int mProvisioningStatus = 0;
+        // Initialize with an invalid status value (0)
+        public int mProvisioningFailureStatus = 0;
+        public boolean mProvisioningComplete = false;
+
+
+        TestProvisioningCallback(Object lock) {
+            mObject = lock;
+        }
+
         @Override
         public void onProvisioningFailure(int status) {
-            synchronized (mLock) {
+            synchronized (mObject) {
                 mProvisioningFailureStatus = status;
-                mLock.notify();
+                mObject.notify();
             }
         }
 
         @Override
         public void onProvisioningStatus(int status) {
-            synchronized (mLock) {
+            synchronized (mObject) {
                 mProvisioningStatus = status;
-                mLock.notify();
+                mObject.notify();
             }
         }
 
@@ -301,26 +351,35 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         public void onProvisioningComplete() {
             mProvisioningComplete = true;
         }
-    };
-    private int mSubsystemRestartStatus = 0; // 0: nada, 1: restarting, 2: restarted
-    private SubsystemRestartTrackingCallback mSubsystemRestartTrackingCallback =
-            new SubsystemRestartTrackingCallback() {
-                @Override
-                public void onSubsystemRestarting() {
-                    synchronized (mLock) {
-                        mSubsystemRestartStatus = 1;
-                        mLock.notify();
-                    }
-                }
+    }
 
-                @Override
-                public void onSubsystemRestarted() {
-                    synchronized (mLock) {
-                        mSubsystemRestartStatus = 2;
-                        mLock.notify();
-                    }
-                }
-            };
+    private static class TestSubsystemRestartTrackingCallback
+            extends SubsystemRestartTrackingCallback {
+        private final Object mObject;
+
+        public int mSubsystemRestartStatus = 0; // 0: nada, 1: restarting, 2: restarted
+
+        TestSubsystemRestartTrackingCallback(Object lock) {
+            mObject = lock;
+        }
+        @Override
+        public void onSubsystemRestarting() {
+            synchronized (mObject) {
+                mSubsystemRestartStatus = 1;
+                mObject.notify();
+            }
+        }
+
+        @Override
+        public void onSubsystemRestarted() {
+            synchronized (mObject) {
+                mSubsystemRestartStatus = 2;
+                mObject.notify();
+
+            }
+        }
+    }
+
     private static final String TEST_SSID = "TEST SSID";
     private static final String TEST_FRIENDLY_NAME = "Friendly Name";
     private static final Map<String, String> TEST_FRIENDLY_NAMES = new HashMap<>();
@@ -361,118 +420,123 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        if (!WifiFeature.isWifiSupported(getContext())) {
+    @BeforeClass
+    public static void setUpClass() throws Exception {
+        sContext = InstrumentationRegistry.getInstrumentation().getContext();
+        if (!WifiFeature.isWifiSupported(sContext)) {
             // skip the test if WiFi is not supported
             return;
         }
-        mPowerManager = mContext.getSystemService(PowerManager.class);
-        mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
-        mMySync = new MySync();
-        mIntentFilter = new IntentFilter();
-        mIntentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
-        mIntentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        mIntentFilter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
-        mIntentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
-        mIntentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
-        mIntentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
-        mIntentFilter.addAction(WifiManager.NETWORK_IDS_CHANGED_ACTION);
-        mIntentFilter.addAction(WifiManager.ACTION_PICK_WIFI_NETWORK);
-        mIntentFilter.setPriority(999);
+        sShouldRunTest = true;
+        sPowerManager = sContext.getSystemService(PowerManager.class);
+        sWakeLock = sPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, TAG);
+        sMySync = new MySync();
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
+        intentFilter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
+        intentFilter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.RSSI_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.NETWORK_IDS_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.ACTION_PICK_WIFI_NETWORK);
+        intentFilter.setPriority(999);
 
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)) {
-            mContext.registerReceiver(mReceiver, mIntentFilter, RECEIVER_EXPORTED);
+            sContext.registerReceiver(sReceiver, intentFilter, RECEIVER_EXPORTED);
         } else {
-            mContext.registerReceiver(mReceiver, mIntentFilter);
+            sContext.registerReceiver(sReceiver, intentFilter);
         }
-        mWifiManager = (WifiManager) getContext().getSystemService(Context.WIFI_SERVICE);
-        mConnectivityManager = getContext().getSystemService(ConnectivityManager.class);
-        mTetheringManager = getContext().getSystemService(TetheringManager.class);
-        assertNotNull(mWifiManager);
-        assertNotNull(mTetheringManager);
+        sWifiManager =  sContext.getSystemService(WifiManager.class);
+        sConnectivityManager = sContext.getSystemService(ConnectivityManager.class);
+        sTetheringManager = sContext.getSystemService(TetheringManager.class);
+        assertThat(sWifiManager).isNotNull();
+        assertThat(sTetheringManager).isNotNull();
 
         // turn on verbose logging for tests
-        mWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.isVerboseLoggingEnabled());
+        sWasVerboseLoggingEnabled = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.isVerboseLoggingEnabled());
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setVerboseLoggingEnabled(true));
+                () -> sWifiManager.setVerboseLoggingEnabled(true));
         // Disable scan throttling for tests.
-        mWasScanThrottleEnabled = ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.isScanThrottleEnabled());
+        sWasScanThrottleEnabled = ShellIdentityUtils.invokeWithShellPermissions(
+                () -> sWifiManager.isScanThrottleEnabled());
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setScanThrottleEnabled(false));
+                () -> sWifiManager.setScanThrottleEnabled(false));
 
-        mWifiLock = mWifiManager.createWifiLock(TAG);
-        mWifiLock.acquire();
-        // enable Wifi
-        if (!mWifiManager.isWifiEnabled()) setWifiEnabled(true);
-        PollingCheck.check("Wifi not enabled", TEST_WAIT_DURATION_MS,
-                () -> mWifiManager.isWifiEnabled());
-
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        sUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         turnScreenOnNoDelay();
 
-        synchronized (mMySync) {
-            mMySync.expectedState = STATE_NULL;
+        synchronized (sMySync) {
+            sMySync.expectedState = STATE_NULL;
         }
 
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConfiguredNetworks);
-        assertFalse("Need at least one saved network", savedNetworks.isEmpty());
+                sWifiManager::getConfiguredNetworks);
+        assertThat(savedNetworks.isEmpty()).isFalse();
 
         // Get original config for restore
-        mOriginalSoftApConfig = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getSoftApConfiguration);
+        sOriginalSoftApConfig = ShellIdentityUtils.invokeWithShellPermissions(
+                sWifiManager::getSoftApConfiguration);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            super.tearDown();
+    @AfterClass
+    public static void tearDownClass() throws Exception {
+        if (!sShouldRunTest) {
             return;
         }
-        if (!mWifiManager.isWifiEnabled())
+        if (!sWifiManager.isWifiEnabled()) {
             setWifiEnabled(true);
-        mWifiLock.release();
-        mContext.unregisterReceiver(mReceiver);
+        }
+        sContext.unregisterReceiver(sReceiver);
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setScanThrottleEnabled(mWasScanThrottleEnabled));
+                () -> sWifiManager.setScanThrottleEnabled(sWasScanThrottleEnabled));
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setVerboseLoggingEnabled(mWasVerboseLoggingEnabled));
+                () -> sWifiManager.setVerboseLoggingEnabled(sWasVerboseLoggingEnabled));
         // restore original softap config
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setSoftApConfiguration(mOriginalSoftApConfig));
+                () -> sWifiManager.setSoftApConfiguration(sOriginalSoftApConfig));
         Thread.sleep(TEST_WAIT_DURATION_MS);
-        super.tearDown();
-        if (mWakeLock.isHeld()) {
-            mWakeLock.release();
+        if (sWakeLock.isHeld()) {
+            sWakeLock.release();
         }
     }
 
-    private void setWifiEnabled(boolean enable) throws Exception {
-        synchronized (mMySync) {
-            if (mWifiManager.isWifiEnabled() != enable) {
+    @Before
+    public void setUp() throws Exception {
+        assumeTrue(sShouldRunTest);
+        // enable Wifi
+        if (!sWifiManager.isWifiEnabled()) {
+            setWifiEnabled(true);
+            startScan();
+        }
+        PollingCheck.check("Wifi not enabled", TEST_WAIT_DURATION_MS,
+                () -> sWifiManager.isWifiEnabled());
+
+        waitForConnection();
+    }
+
+    private static void setWifiEnabled(boolean enable) throws Exception {
+        synchronized (sMySync) {
+            if (sWifiManager.isWifiEnabled() != enable) {
                 // the new state is different, we expect it to change
-                mMySync.expectedState = STATE_WIFI_CHANGING;
+                sMySync.expectedState = STATE_WIFI_CHANGING;
             } else {
-                mMySync.expectedState = (enable ? STATE_WIFI_ENABLED : STATE_WIFI_DISABLED);
+                sMySync.expectedState = (enable ? STATE_WIFI_ENABLED : STATE_WIFI_DISABLED);
             }
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setWifiEnabled(enable));
+                    () -> sWifiManager.setWifiEnabled(enable));
             waitForExpectedWifiState(enable);
         }
     }
 
-    private void waitForExpectedWifiState(boolean enabled) throws InterruptedException {
-        synchronized (mMySync) {
+    private static void waitForExpectedWifiState(boolean enabled) throws InterruptedException {
+        synchronized (sMySync) {
             long timeout = System.currentTimeMillis() + TEST_WAIT_DURATION_MS;
             int expected = (enabled ? STATE_WIFI_ENABLED : STATE_WIFI_DISABLED);
             while (System.currentTimeMillis() < timeout
-                    && mMySync.expectedState != expected) {
-                mMySync.wait(WAIT_MSEC);
+                    && sMySync.expectedState != expected) {
+                sMySync.wait(WAIT_MSEC);
             }
         }
     }
@@ -481,7 +545,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     private boolean isScanCurrentlyAvailable() {
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(WifiManager.ACTION_WIFI_SCAN_AVAILABILITY_CHANGED);
-        Intent intent = mContext.registerReceiver(null, intentFilter);
+        Intent intent = sContext.registerReceiver(null, intentFilter);
         assertNotNull(intent);
         if (intent.getAction().equals(WifiManager.ACTION_WIFI_SCAN_AVAILABILITY_CHANGED)) {
             return intent.getBooleanExtra(WifiManager.EXTRA_SCAN_AVAILABLE, false);
@@ -490,25 +554,27 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void startScan() throws Exception {
-        synchronized (mMySync) {
-            mMySync.expectedState = STATE_SCANNING;
-            mScanResults = null;
-            assertTrue(mWifiManager.startScan());
+        synchronized (sMySync) {
+            sMySync.expectedState = STATE_SCANNING;
+            sScanResults = null;
+            assertTrue(sWifiManager.startScan());
             long timeout = System.currentTimeMillis() + SCAN_TEST_WAIT_DURATION_MS;
-            while (System.currentTimeMillis() < timeout && mMySync.expectedState == STATE_SCANNING)
-                mMySync.wait(WAIT_MSEC);
+            while (System.currentTimeMillis() < timeout
+                    && sMySync.expectedState == STATE_SCANNING) {
+                sMySync.wait(WAIT_MSEC);
+            }
         }
     }
 
     private void waitForNetworkInfoState(NetworkInfo.State state, int timeoutMillis)
             throws Exception {
-        synchronized (mMySync) {
-            if (mNetworkInfo.getState() == state) return;
+        synchronized (sMySync) {
+            if (sNetworkInfo.getState() == state) return;
             long timeout = System.currentTimeMillis() + timeoutMillis;
             while (System.currentTimeMillis() < timeout
-                    && mNetworkInfo.getState() != state)
-                mMySync.wait(WAIT_MSEC);
-            assertEquals(state, mNetworkInfo.getState());
+                    && sNetworkInfo.getState() != state)
+                sMySync.wait(WAIT_MSEC);
+            assertEquals(state, sNetworkInfo.getState());
         }
     }
 
@@ -525,11 +591,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void ensureNotNetworkInfoState(NetworkInfo.State state) throws Exception {
-        synchronized (mMySync) {
+        synchronized (sMySync) {
             long timeout = System.currentTimeMillis() + TEST_WAIT_DURATION_MS + WAIT_MSEC;
             while (System.currentTimeMillis() < timeout) {
-                assertNotEquals(state, mNetworkInfo.getState());
-                mMySync.wait(WAIT_MSEC);
+                assertNotEquals(state, sNetworkInfo.getState());
+                sMySync.wait(WAIT_MSEC);
             }
         }
     }
@@ -543,7 +609,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private boolean existSSID(String ssid) {
-        for (final WifiConfiguration w : mWifiManager.getConfiguredNetworks()) {
+        for (final WifiConfiguration w : sWifiManager.getConfiguredNetworks()) {
             if (w.SSID.equals(ssid))
                 return true;
         }
@@ -561,24 +627,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Test creation of WifiManager Lock.
      */
+    @Test
     public void testWifiManagerLock() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         final String TAG = "Test";
-        assertNotNull(mWifiManager.createWifiLock(TAG));
-        assertNotNull(mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, TAG));
+        assertNotNull(sWifiManager.createWifiLock(TAG));
+        assertNotNull(sWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, TAG));
     }
 
     /**
      * Test wifi scanning when Wifi is off and location scanning is turned on.
      */
+    @Test
     public void testWifiManagerScanWhenWifiOffLocationTurnedOn() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         if (!hasLocationFeature()) {
             Log.d(TAG, "Skipping test as location is not supported");
             return;
@@ -591,31 +651,28 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             setWifiEnabled(false);
             Thread.sleep(TEST_WAIT_DURATION_MS);
             startScan();
-            if (mWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
+            if (sWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
                 // Make sure at least one AP is found.
-                assertNotNull("mScanResult should not be null!", mScanResults);
-                assertFalse("empty scan results!", mScanResults.isEmpty());
+                assertNotNull("mScanResult should not be null!", sScanResults);
+                assertFalse("empty scan results!", sScanResults.isEmpty());
             } else {
                 // Make sure no scan results are available.
-                assertNull("mScanResult should be null!", mScanResults);
+                assertNull("mScanResult should be null!", sScanResults);
             }
             final String TAG = "Test";
-            assertNotNull(mWifiManager.createWifiLock(TAG));
-            assertNotNull(mWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, TAG));
+            assertNotNull(sWifiManager.createWifiLock(TAG));
+            assertNotNull(sWifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL, TAG));
         }, true /* run with enabled*/);
     }
 
     /**
      * Restart WiFi subsystem - verify that privileged call fails.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testRestartWifiSubsystemShouldFailNoPermission() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         try {
-            mWifiManager.restartWifiSubsystem();
+            sWifiManager.restartWifiSubsystem();
             fail("The restartWifiSubsystem should not succeed - privileged call");
         } catch (SecurityException e) {
             // expected
@@ -625,35 +682,31 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Restart WiFi subsystem and verify transition through states.
      */
+    @Test
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     public void testRestartWifiSubsystem() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mSubsystemRestartStatus = 0; // 0: uninitialized
+        TestSubsystemRestartTrackingCallback callback =
+                new TestSubsystemRestartTrackingCallback(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.registerSubsystemRestartTrackingCallback(mExecutor,
-                    mSubsystemRestartTrackingCallback);
+            sWifiManager.registerSubsystemRestartTrackingCallback(mExecutor, callback);
             synchronized (mLock) {
-                mWifiManager.restartWifiSubsystem();
+                sWifiManager.restartWifiSubsystem();
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
-            assertEquals(mSubsystemRestartStatus, 1); // 1: restarting
+            assertEquals(callback.mSubsystemRestartStatus, 1); // 1: restarting
             waitForExpectedWifiState(false);
-            assertFalse(mWifiManager.isWifiEnabled());
+            assertFalse(sWifiManager.isWifiEnabled());
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
-                assertEquals(mSubsystemRestartStatus, 2); // 2: restarted
+                assertEquals(callback.mSubsystemRestartStatus, 2); // 2: restarted
             }
             waitForExpectedWifiState(true);
-            assertTrue(mWifiManager.isWifiEnabled());
+            assertTrue(sWifiManager.isWifiEnabled());
         } finally {
             // cleanup
-            mWifiManager.unregisterSubsystemRestartTrackingCallback(
-                    mSubsystemRestartTrackingCallback);
+            sWifiManager.unregisterSubsystemRestartTrackingCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -665,18 +718,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * 3.wifi state
      * 4.ConnectionInfo
      */
+    @Test
     public void testWifiManagerProperties() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         setWifiEnabled(true);
-        assertTrue(mWifiManager.isWifiEnabled());
-        assertNotNull(mWifiManager.getDhcpInfo());
-        assertEquals(WifiManager.WIFI_STATE_ENABLED, mWifiManager.getWifiState());
-        mWifiManager.getConnectionInfo();
+        assertTrue(sWifiManager.isWifiEnabled());
+        assertNotNull(sWifiManager.getDhcpInfo());
+        assertEquals(WifiManager.WIFI_STATE_ENABLED, sWifiManager.getWifiState());
+        sWifiManager.getConnectionInfo();
         setWifiEnabled(false);
-        assertFalse(mWifiManager.isWifiEnabled());
+        assertFalse(sWifiManager.isWifiEnabled());
     }
 
     /**
@@ -685,12 +735,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * To run this test in cts-tradefed:
      * run cts --class android.net.wifi.cts.WifiManagerTest --method testWifiScanTimestamp
      */
-    @VirtualDeviceNotSupported
+    @Test
+    @RequiresDevice
     public void testWifiScanTimestamp() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            Log.d(TAG, "Skipping test as WiFi is not supported");
-            return;
-        }
         if (!hasLocationFeature()) {
             Log.d(TAG, "Skipping test as location is not supported");
             return;
@@ -699,7 +746,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             fail("Please enable location for this test - since Marshmallow WiFi scan results are"
                     + " empty when location is disabled!");
         }
-        if (!mWifiManager.isWifiEnabled()) {
+        if (!sWifiManager.isWifiEnabled()) {
             setWifiEnabled(true);
         }
         // Make sure the scan timestamps are consistent with the device timestamp within the range
@@ -707,24 +754,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         startScan();
         // Make sure at least one AP is found.
         assertTrue("mScanResult should not be null. This may be due to a scan timeout",
-                   mScanResults != null);
-        assertFalse("empty scan results!", mScanResults.isEmpty());
+                   sScanResults != null);
+        assertFalse("empty scan results!", sScanResults.isEmpty());
         long nowMillis = SystemClock.elapsedRealtime();
         // Keep track of how many APs are fresh in one scan.
         int numFreshAps = 0;
-        for (ScanResult result : mScanResults) {
+        for (ScanResult result : sScanResults) {
             long scanTimeMillis = TimeUnit.MICROSECONDS.toMillis(result.timestamp);
             if (Math.abs(nowMillis - scanTimeMillis)  < WIFI_SCAN_TEST_CACHE_DELAY_MILLIS) {
                 numFreshAps++;
             }
         }
         // At least half of the APs in the scan should be fresh.
-        int numTotalAps = mScanResults.size();
+        int numTotalAps = sScanResults.size();
         String msg = "Stale AP count: " + (numTotalAps - numFreshAps) + ", fresh AP count: "
                 + numFreshAps;
-        assertTrue(msg, numFreshAps * 2 >= mScanResults.size());
+        assertTrue(msg, numFreshAps * 2 >= sScanResults.size());
     }
 
+    @Test
     public void testConvertBetweenChannelFrequencyMhz() throws Exception {
         int[] testFrequency_2G = {2412, 2437, 2462, 2484};
         int[] testFrequency_5G = {5180, 5220, 5540, 5745};
@@ -747,34 +795,31 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
     // Return true if location is enabled.
     private boolean isLocationEnabled() {
-        return Settings.Secure.getInt(getContext().getContentResolver(),
+        return Settings.Secure.getInt(sContext.getContentResolver(),
                 Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_OFF) !=
                 Settings.Secure.LOCATION_MODE_OFF;
     }
 
     // Returns true if the device has location feature.
     private boolean hasLocationFeature() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION);
+        return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LOCATION);
     }
 
     private boolean hasAutomotiveFeature() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
+        return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private boolean hasWifiDirect() {
-        return getContext().getPackageManager().hasSystemFeature(
+        return sContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WIFI_DIRECT);
     }
 
     private boolean hasWifiAware() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
+        return sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE);
     }
 
+    @Test
     public void testSignal() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         final int numLevels = 9;
         int expectLevel = 0;
         assertEquals(expectLevel, WifiManager.calculateSignalLevel(MIN_RSSI, numLevels));
@@ -797,17 +842,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * [0, {@link WifiManager#getMaxSignalLevel()}], and its value is monotonically increasing as
      * the RSSI increases.
      */
+    @Test
     public void testCalculateSignalLevel() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
-        int maxSignalLevel = mWifiManager.getMaxSignalLevel();
+        int maxSignalLevel = sWifiManager.getMaxSignalLevel();
 
         int prevSignalLevel = 0;
         for (int rssi = -150; rssi <= 50; rssi++) {
-            int signalLevel = mWifiManager.calculateSignalLevel(rssi);
+            int signalLevel = sWifiManager.calculateSignalLevel(rssi);
 
             // between [0, maxSignalLevel]
             assertWithMessage("For RSSI=%s", rssi).that(signalLevel).isAtLeast(0);
@@ -832,7 +873,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     public class TestSoftApCallback implements WifiManager.SoftApCallback {
-        Object softApLock;
+        final Object mSoftApLock;
+        SoftApState mCurrentSoftApState;
         int currentState;
         int currentFailureReason;
         List<SoftApInfo> apInfoList = new ArrayList<>();
@@ -843,6 +885,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         MacAddress lastBlockedClientMacAddress;
         int lastBlockedClientReason;
         boolean onStateChangedCalled = false;
+        boolean mOnSoftApStateChangedCalled = false;
         boolean onSoftApCapabilityChangedCalled = false;
         boolean onConnectedClientCalled = false;
         boolean onConnectedClientChangedWithInfoCalled = false;
@@ -851,102 +894,120 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         int onSoftapInfoChangedWithListCalledCount = 0;
 
         TestSoftApCallback(Object lock) {
-            softApLock = lock;
+            mSoftApLock = lock;
         }
 
         public boolean getOnStateChangedCalled() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onStateChangedCalled;
             }
         }
 
+        /**
+         * Returns {@code true} if #onStateChanged(SoftApstate) was called, else {@code false}.
+         */
+        public boolean getOnSoftApStateChangedCalled() {
+            synchronized (mSoftApLock) {
+                return mOnSoftApStateChangedCalled;
+            }
+        }
+
         public int getOnSoftapInfoChangedCalledCount() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onSoftapInfoChangedCalledCount;
             }
         }
 
         public int getOnSoftApInfoChangedWithListCalledCount() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onSoftapInfoChangedWithListCalledCount;
             }
         }
 
         public boolean getOnSoftApCapabilityChangedCalled() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onSoftApCapabilityChangedCalled;
             }
         }
 
         public boolean getOnConnectedClientChangedWithInfoCalled() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onConnectedClientChangedWithInfoCalled;
             }
         }
 
         public boolean getOnConnectedClientCalled() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onConnectedClientCalled;
             }
         }
 
         public boolean getOnBlockedClientConnectingCalled() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return onBlockedClientConnectingCalled;
             }
         }
 
+        /**
+         * Returns the latest SoftApState passed into #onStateChanged(SoftApState).
+         */
+        public SoftApState getCurrentSoftApState() {
+            synchronized (mSoftApLock) {
+                return mCurrentSoftApState;
+            }
+        }
+
         public int getCurrentState() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return currentState;
             }
         }
 
         public int getCurrentStateFailureReason() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return currentFailureReason;
             }
         }
 
         public List<WifiClient> getCurrentClientList() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return new ArrayList<>(currentClientList);
             }
         }
 
         public SoftApInfo getCurrentSoftApInfo() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return apInfoOnSingleApMode;
             }
         }
 
         public List<SoftApInfo> getCurrentSoftApInfoList() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return new ArrayList<>(apInfoList);
             }
         }
 
         public SoftApCapability getCurrentSoftApCapability() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return currentSoftApCapability;
             }
         }
 
         public MacAddress getLastBlockedClientMacAddress() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return lastBlockedClientMacAddress;
             }
         }
 
         public int getLastBlockedClientReason() {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 return lastBlockedClientReason;
             }
         }
 
         @Override
         public void onStateChanged(int state, int failureReason) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 currentState = state;
                 currentFailureReason = failureReason;
                 onStateChangedCalled = true;
@@ -954,8 +1015,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
 
         @Override
+        public void onStateChanged(SoftApState state) {
+            synchronized (mSoftApLock) {
+                mCurrentSoftApState = state;
+                mOnSoftApStateChangedCalled = true;
+                onStateChanged(state.getState(),
+                        state.getState() == WIFI_AP_STATE_FAILED ? state.getFailureReason() : 0);
+            }
+        }
+
+        @Override
         public void onConnectedClientsChanged(List<WifiClient> clients) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 currentClientList = new ArrayList<>(clients);
                 onConnectedClientCalled = true;
             }
@@ -963,7 +1034,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onConnectedClientsChanged(SoftApInfo info, List<WifiClient> clients) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 apInfoClients.put(info, clients);
                 onConnectedClientChangedWithInfoCalled = true;
             }
@@ -971,7 +1042,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onInfoChanged(List<SoftApInfo> infoList) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 apInfoList = new ArrayList<>(infoList);
                 onSoftapInfoChangedWithListCalledCount++;
             }
@@ -979,7 +1050,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onInfoChanged(SoftApInfo softApInfo) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 apInfoOnSingleApMode = softApInfo;
                 onSoftapInfoChangedCalledCount++;
             }
@@ -987,7 +1058,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onCapabilityChanged(SoftApCapability softApCapability) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 currentSoftApCapability = softApCapability;
                 onSoftApCapabilityChangedCalled = true;
             }
@@ -995,7 +1066,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onBlockedClientConnecting(WifiClient client, int blockedReason) {
-            synchronized(softApLock) {
+            synchronized (mSoftApLock) {
                 lastBlockedClientMacAddress = client.getMacAddress();
                 lastBlockedClientReason = blockedReason;
                 onBlockedClientConnectingCalled = true;
@@ -1044,24 +1115,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
     private List<Integer> getSupportedSoftApBand(SoftApCapability capability) {
         List<Integer> supportedApBands = new ArrayList<>();
-        if (mWifiManager.is24GHzBandSupported() &&
-                capability.areFeaturesSupported(
-                        SoftApCapability.SOFTAP_FEATURE_BAND_24G_SUPPORTED)) {
+        if (sWifiManager.is24GHzBandSupported() && capability.areFeaturesSupported(
+                SoftApCapability.SOFTAP_FEATURE_BAND_24G_SUPPORTED)) {
             supportedApBands.add(SoftApConfiguration.BAND_2GHZ);
         }
-        if (mWifiManager.is5GHzBandSupported() &&
-                capability.areFeaturesSupported(
-                        SoftApCapability.SOFTAP_FEATURE_BAND_5G_SUPPORTED)) {
+        if (sWifiManager.is5GHzBandSupported() && capability.areFeaturesSupported(
+                SoftApCapability.SOFTAP_FEATURE_BAND_5G_SUPPORTED)) {
             supportedApBands.add(SoftApConfiguration.BAND_5GHZ);
         }
-        if (mWifiManager.is6GHzBandSupported() &&
-                capability.areFeaturesSupported(
-                        SoftApCapability.SOFTAP_FEATURE_BAND_6G_SUPPORTED)) {
+        if (sWifiManager.is6GHzBandSupported() && capability.areFeaturesSupported(
+                SoftApCapability.SOFTAP_FEATURE_BAND_6G_SUPPORTED)) {
             supportedApBands.add(SoftApConfiguration.BAND_6GHZ);
         }
-        if (mWifiManager.is60GHzBandSupported() &&
-                capability.areFeaturesSupported(
-                        SoftApCapability.SOFTAP_FEATURE_BAND_60G_SUPPORTED)) {
+        if (sWifiManager.is60GHzBandSupported() && capability.areFeaturesSupported(
+                SoftApCapability.SOFTAP_FEATURE_BAND_60G_SUPPORTED)) {
             supportedApBands.add(SoftApConfiguration.BAND_60GHZ);
         }
         return supportedApBands;
@@ -1091,7 +1158,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
         synchronized (mLock) {
             try {
-                mWifiManager.startLocalOnlyHotspot(callback, null);
+                sWifiManager.startLocalOnlyHotspot(callback, null);
                 // now wait for callback
                 mLock.wait(TEST_WAIT_DURATION_MS);
             } catch (InterruptedException e) {
@@ -1121,18 +1188,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void stopLocalOnlyHotspot(TestLocalOnlyHotspotCallback callback, boolean wifiEnabled) {
-       synchronized (mMySync) {
-           // we are expecting a new state
-           mMySync.expectedState = STATE_WIFI_CHANGING;
+        synchronized (sMySync) {
+            // we are expecting a new state
+            sMySync.expectedState = STATE_WIFI_CHANGING;
 
-           // now shut down LocalOnlyHotspot
-           if (callback.reservation != null) {
-               callback.reservation.close();
-           }
+            // now shut down LocalOnlyHotspot
+            if (callback.reservation != null) {
+                callback.reservation.close();
+            }
 
-           try {
-               waitForExpectedWifiState(wifiEnabled);
-           } catch (InterruptedException e) {}
+            try {
+                waitForExpectedWifiState(wifiEnabled);
+            } catch (InterruptedException e) { }
         }
     }
 
@@ -1141,27 +1208,24 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      *
      * Note: Location mode must be enabled for this test.
      */
+    @Test
     public void testStartLocalOnlyHotspotSuccess() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
         runWithScanning(() -> {
-            boolean wifiEnabled = mWifiManager.isWifiEnabled();
+            boolean wifiEnabled = sWifiManager.isWifiEnabled();
             if (wifiEnabled) {
                 // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
                 // no STA+AP concurrency.
                 ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        mWifiManager.setWifiEnabled(false));
+                        sWifiManager.setWifiEnabled(false));
                 PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !mWifiManager.isWifiEnabled());
+                        () -> !sWifiManager.isWifiEnabled());
                 SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
                 PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> mWifiManager.isWifiEnabled());
+                        () -> sWifiManager.isWifiEnabled());
             }
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
 
@@ -1174,76 +1238,64 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             stopLocalOnlyHotspot(callback, wifiEnabled);
 
             // wifi should either stay on, or come back on
-            assertEquals(wifiEnabled, mWifiManager.isWifiEnabled());
+            assertEquals(wifiEnabled, sWifiManager.isWifiEnabled());
         }, false);
     }
 
     /**
      * Verify calls to deprecated API's all fail for non-settings apps targeting >= Q SDK.
      */
+    @Test
     public void testDeprecatedApis() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        setWifiEnabled(true);
-        waitForConnection(); // ensures that there is at-least 1 saved network on the device.
-
         WifiConfiguration wifiConfiguration = new WifiConfiguration();
         wifiConfiguration.SSID = SSID1;
         wifiConfiguration.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
 
         assertEquals(INVALID_NETWORK_ID,
-                mWifiManager.addNetwork(wifiConfiguration));
+                sWifiManager.addNetwork(wifiConfiguration));
         assertEquals(INVALID_NETWORK_ID,
-                mWifiManager.updateNetwork(wifiConfiguration));
-        assertFalse(mWifiManager.enableNetwork(0, true));
-        assertFalse(mWifiManager.disableNetwork(0));
-        assertFalse(mWifiManager.removeNetwork(0));
-        assertFalse(mWifiManager.disconnect());
-        assertFalse(mWifiManager.reconnect());
-        assertFalse(mWifiManager.reassociate());
-        assertTrue(mWifiManager.getConfiguredNetworks().isEmpty());
+                sWifiManager.updateNetwork(wifiConfiguration));
+        assertFalse(sWifiManager.enableNetwork(0, true));
+        assertFalse(sWifiManager.disableNetwork(0));
+        assertFalse(sWifiManager.removeNetwork(0));
+        assertFalse(sWifiManager.disconnect());
+        assertFalse(sWifiManager.reconnect());
+        assertFalse(sWifiManager.reassociate());
+        assertTrue(sWifiManager.getConfiguredNetworks().isEmpty());
 
-        boolean wifiEnabled = mWifiManager.isWifiEnabled();
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
         // now we should fail to toggle wifi state.
-        assertFalse(mWifiManager.setWifiEnabled(!wifiEnabled));
+        assertFalse(sWifiManager.setWifiEnabled(!wifiEnabled));
         Thread.sleep(TEST_WAIT_DURATION_MS);
-        assertEquals(wifiEnabled, mWifiManager.isWifiEnabled());
+        assertEquals(wifiEnabled, sWifiManager.isWifiEnabled());
     }
 
     /**
      * Test the WifiManager APIs that return whether a feature is supported.
      */
+    @Test
     public void testGetSupportedFeatures() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
-        mWifiManager.isMakeBeforeBreakWifiSwitchingSupported();
-        mWifiManager.isStaBridgedApConcurrencySupported();
-        mWifiManager.isDualBandSimultaneousSupported();
-        mWifiManager.isTidToLinkMappingNegotiationSupported();
+        sWifiManager.isMakeBeforeBreakWifiSwitchingSupported();
+        sWifiManager.isStaBridgedApConcurrencySupported();
+        sWifiManager.isDualBandSimultaneousSupported();
+        sWifiManager.isTidToLinkMappingNegotiationSupported();
     }
 
     /**
      * Verify non DO apps cannot call removeNonCallerConfiguredNetworks.
      */
+    @Test
     public void testRemoveNonCallerConfiguredNetworksNotAllowed() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
         try {
-            mWifiManager.removeNonCallerConfiguredNetworks();
+            sWifiManager.removeNonCallerConfiguredNetworks();
             fail("Expected security exception for non DO app");
         } catch (SecurityException e) {
         }
@@ -1271,12 +1323,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify the invalid and valid usages of {@code WifiManager#setNetworkSelectionConfig}.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetNetworkSelectionConfig() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         AtomicReference<WifiNetworkSelectionConfig> config = new AtomicReference<>();
         Consumer<WifiNetworkSelectionConfig> listener = new Consumer<WifiNetworkSelectionConfig>() {
             @Override
@@ -1290,7 +1338,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         // cache current WifiNetworkSelectionConfig
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+                () -> sWifiManager.getNetworkSelectionConfig(mExecutor, listener));
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
         }
@@ -1312,16 +1360,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     nsConfig.getRssiThresholds(ScanResult.WIFI_BAND_6_GHZ));
             assertTrue(TEST_FREQUENCY_WEIGHTS.contentEquals(nsConfig.getFrequencyWeights()));
             assertThrows(SecurityException.class,
-                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+                    () -> sWifiManager.setNetworkSelectionConfig(nsConfig));
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+                    () -> sWifiManager.setNetworkSelectionConfig(nsConfig));
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setNetworkSelectionConfig(
+                    () -> sWifiManager.setNetworkSelectionConfig(
                             new WifiNetworkSelectionConfig.Builder().build()));
         } finally {
             // restore WifiNetworkSelectionConfig
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setNetworkSelectionConfig(currentConfig));
+                    () -> sWifiManager.setNetworkSelectionConfig(currentConfig));
         }
     }
 
@@ -1329,12 +1377,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify the invalid and valid usages of {@code WifiManager#getNetworkSelectionConfig}.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU, codeName = "Tiramisu")
+    @Test
     public void testGetNetworkSelectionConfig() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         AtomicReference<WifiNetworkSelectionConfig> config = new AtomicReference<>();
         Consumer<WifiNetworkSelectionConfig> listener = new Consumer<WifiNetworkSelectionConfig>() {
             @Override
@@ -1348,7 +1392,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         // cache current WifiNetworkSelectionConfig
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+                () -> sWifiManager.getNetworkSelectionConfig(mExecutor, listener));
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
         }
@@ -1357,20 +1401,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         try {
             // Test invalid inputs trigger IllegalArgumentException
             assertThrows("null executor should trigger exception", NullPointerException.class,
-                    () -> mWifiManager.getNetworkSelectionConfig(null, listener));
+                    () -> sWifiManager.getNetworkSelectionConfig(null, listener));
             assertThrows("null listener should trigger exception", NullPointerException.class,
-                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, null));
+                    () -> sWifiManager.getNetworkSelectionConfig(mExecutor, null));
 
             // Test caller with no permission triggers SecurityException.
             assertThrows("No permission should trigger SecurityException", SecurityException.class,
-                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+                    () -> sWifiManager.getNetworkSelectionConfig(mExecutor, listener));
 
             // Test get/set WifiNetworkSelectionConfig
             WifiNetworkSelectionConfig nsConfig = buildTestNetworkSelectionConfig();
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setNetworkSelectionConfig(nsConfig));
+                    () -> sWifiManager.setNetworkSelectionConfig(nsConfig));
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.getNetworkSelectionConfig(mExecutor, listener));
+                    () -> sWifiManager.getNetworkSelectionConfig(mExecutor, listener));
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
@@ -1378,7 +1422,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         } finally {
             // restore WifiNetworkSelectionConfig
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setNetworkSelectionConfig(currentConfig));
+                    () -> sWifiManager.setNetworkSelectionConfig(currentConfig));
         }
     }
 
@@ -1386,32 +1430,26 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify setting the screen-on connectivity scan delay.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetOneShotScreenOnConnectivityScanDelayMillis() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         assertThrows(SecurityException.class,
-                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(100));
+                () -> sWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(100));
         assertThrows(IllegalArgumentException.class, () -> {
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(-1));
+                    () -> sWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(-1));
         });
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(10000));
+                () -> sWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(10000));
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(0));
+                () -> sWifiManager.setOneShotScreenOnConnectivityScanDelayMillis(0));
     }
 
     /**
      * Verify setting the scan schedule.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetScreenOnScanSchedule() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         List<WifiManager.ScreenOnScanSchedule> schedules = new ArrayList<>();
         schedules.add(new WifiManager.ScreenOnScanSchedule(Duration.ofSeconds(20),
                 WifiScanner.SCAN_TYPE_HIGH_ACCURACY));
@@ -1422,9 +1460,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertEquals(WifiScanner.SCAN_TYPE_HIGH_ACCURACY, schedules.get(0).getScanType());
         assertEquals(WifiScanner.SCAN_TYPE_LOW_LATENCY, schedules.get(1).getScanType());
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setScreenOnScanSchedule(schedules));
+                () -> sWifiManager.setScreenOnScanSchedule(schedules));
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setScreenOnScanSchedule(null));
+                () -> sWifiManager.setScreenOnScanSchedule(null));
 
         // Creating an invalid ScanSchedule should throw an exception
         assertThrows(IllegalArgumentException.class, () -> new WifiManager.ScreenOnScanSchedule(
@@ -1435,23 +1473,17 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify a normal app cannot set the scan schedule.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetScreenOnScanScheduleNoPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        assertThrows(SecurityException.class, () -> mWifiManager.setScreenOnScanSchedule(null));
+        assertThrows(SecurityException.class, () -> sWifiManager.setScreenOnScanSchedule(null));
     }
 
     /**
      * Test coverage for the constructor of AddNetworkResult.
      */
+    @Test
     public void testAddNetworkResultCreation() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
@@ -1467,29 +1499,26 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify {@link WifiManager#setSsidsAllowlist(Set)} can be called with sufficient
      * privilege.
      */
+    @Test
     public void testGetAndSetSsidsAllowlist() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         Set<WifiSsid> ssids = new ArraySet<>();
         ssids.add(WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8)));
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setSsidsAllowlist(ssids));
+                () -> sWifiManager.setSsidsAllowlist(ssids));
 
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> assertEquals("Ssids should match", ssids,
-                        mWifiManager.getSsidsAllowlist()));
+                        sWifiManager.getSsidsAllowlist()));
 
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setSsidsAllowlist(Collections.EMPTY_SET));
+                () -> sWifiManager.setSsidsAllowlist(Collections.EMPTY_SET));
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> assertEquals("Should equal to empty set",
                         Collections.EMPTY_SET,
-                        mWifiManager.getSsidsAllowlist()));
+                        sWifiManager.getSsidsAllowlist()));
 
         try {
-            mWifiManager.setSsidsAllowlist(Collections.EMPTY_SET);
+            sWifiManager.setSsidsAllowlist(Collections.EMPTY_SET);
             fail("Expected SecurityException when called without permission");
         } catch (SecurityException e) {
             // expect the exception
@@ -1505,26 +1534,26 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         @Override
         public void onScanResultsAvailable(List<ScanResult> scanResults) {
-            latch.countDown();
             mScanResults = scanResults;
+            latch.countDown();
         }
 
         @Override
         public void onRegisterSuccess() {
-            latch.countDown();
             mRegisterSuccess = true;
+            latch.countDown();
         }
 
         @Override
         public void onRegisterFailed(int reason) {
-            latch.countDown();
             mRegisterFailedReason = reason;
+            latch.countDown();
         }
 
         @Override
         public void onRemoved(int reason) {
-            latch.countDown();
             mRemovedReason = reason;
+            latch.countDown();
         }
 
         public boolean isRegisterSuccess() {
@@ -1549,11 +1578,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * WifiManager.PnoScanResultsCallback)} can be called with proper permissions.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetExternalPnoScanRequestSuccess() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestPnoScanResultsCallback callback = new TestPnoScanResultsCallback();
         List<WifiSsid> ssids = new ArrayList<>();
         ssids.add(WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8)));
@@ -1561,11 +1587,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         assertFalse("Callback should be initialized unregistered", callback.isRegisterSuccess());
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setExternalPnoScanRequest(
+                () -> sWifiManager.setExternalPnoScanRequest(
                         ssids, frequencies, Executors.newSingleThreadExecutor(), callback));
 
         callback.latch.await(TEST_WAIT_DURATION_MS, TimeUnit.MILLISECONDS);
-        if (mWifiManager.isPreferredNetworkOffloadSupported()) {
+        if (sWifiManager.isPreferredNetworkOffloadSupported()) {
             assertTrue("Expect register success or failed due to resource busy",
                     callback.isRegisterSuccess()
                     || callback.getRegisterFailedReason() == WifiManager.PnoScanResultsCallback
@@ -1575,7 +1601,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     WifiManager.PnoScanResultsCallback.REGISTER_PNO_CALLBACK_PNO_NOT_SUPPORTED,
                     callback.getRegisterFailedReason());
         }
-        mWifiManager.clearExternalPnoScanRequest();
+        sWifiManager.clearExternalPnoScanRequest();
     }
 
     /**
@@ -1583,19 +1609,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * WifiManager.PnoScanResultsCallback)} can be called with null frequency.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetExternalPnoScanRequestSuccessNullFrequency() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestPnoScanResultsCallback callback = new TestPnoScanResultsCallback();
         List<WifiSsid> ssids = new ArrayList<>();
         ssids.add(WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8)));
 
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setExternalPnoScanRequest(
+                () -> sWifiManager.setExternalPnoScanRequest(
                         ssids, null, Executors.newSingleThreadExecutor(), callback));
-        mWifiManager.clearExternalPnoScanRequest();
+        sWifiManager.clearExternalPnoScanRequest();
     }
 
     /**
@@ -1603,11 +1626,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * WifiManager.PnoScanResultsCallback)} throws an Exception if called with too many SSIDs.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetExternalPnoScanRequestTooManySsidsException() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestPnoScanResultsCallback callback = new TestPnoScanResultsCallback();
         List<WifiSsid> ssids = new ArrayList<>();
         ssids.add(WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8)));
@@ -1617,7 +1637,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertFalse("Callback should be initialized unregistered", callback.isRegisterSuccess());
         assertThrows(IllegalArgumentException.class, () -> {
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setExternalPnoScanRequest(
+                    () -> sWifiManager.setExternalPnoScanRequest(
                             ssids, null, Executors.newSingleThreadExecutor(), callback));
         });
     }
@@ -1627,11 +1647,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * WifiManager.PnoScanResultsCallback)} throws an Exception if called with too many frequencies.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetExternalPnoScanRequestTooManyFrequenciesException() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestPnoScanResultsCallback callback = new TestPnoScanResultsCallback();
         List<WifiSsid> ssids = new ArrayList<>();
         ssids.add(WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8)));
@@ -1641,7 +1658,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertFalse("Callback should be initialized unregistered", callback.isRegisterSuccess());
         assertThrows(IllegalArgumentException.class, () -> {
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setExternalPnoScanRequest(
+                    () -> sWifiManager.setExternalPnoScanRequest(
                             ssids, frequencies, Executors.newSingleThreadExecutor(), callback));
         });
     }
@@ -1651,11 +1668,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * WifiManager.PnoScanResultsCallback)} cannot be called without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetExternalPnoScanRequestNoPermission() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestExecutor executor = new TestExecutor();
         TestPnoScanResultsCallback callback = new TestPnoScanResultsCallback();
         List<WifiSsid> ssids = new ArrayList<>();
@@ -1663,17 +1677,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         assertFalse("Callback should be initialized unregistered", callback.isRegisterSuccess());
         assertThrows(SecurityException.class,
-                () -> mWifiManager.setExternalPnoScanRequest(ssids, null, executor, callback));
+                () -> sWifiManager.setExternalPnoScanRequest(ssids, null, executor, callback));
     }
 
     /**
      * Verify the invalid and valid usages of {@code WifiManager#getLastCallerInfoForApi}.
      */
+    @Test
     public void testGetLastCallerInfoForApi() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         AtomicReference<String> packageName = new AtomicReference<>();
         AtomicBoolean enabled = new AtomicBoolean(false);
         BiConsumer<String, Boolean> listener = new BiConsumer<String, Boolean>() {
@@ -1688,25 +1699,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         };
         // Test invalid inputs trigger IllegalArgumentException
         assertThrows("Invalid apiType should trigger exception", IllegalArgumentException.class,
-                () -> mWifiManager.getLastCallerInfoForApi(-1, mExecutor, listener));
+                () -> sWifiManager.getLastCallerInfoForApi(-1, mExecutor, listener));
         assertThrows("null executor should trigger exception", IllegalArgumentException.class,
-                () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP, null,
+                () -> sWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP, null,
                         listener));
         assertThrows("null listener should trigger exception", IllegalArgumentException.class,
-                () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP, mExecutor,
+                () -> sWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP, mExecutor,
                         null));
 
         // Test caller with no permission triggers SecurityException.
         assertThrows("No permission should trigger SecurityException", SecurityException.class,
-                () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP,
+                () -> sWifiManager.getLastCallerInfoForApi(WifiManager.API_SOFT_AP,
                         mExecutor, listener));
 
         String expectedPackage = "android.net.wifi.cts";
-        boolean isEnabledBefore = mWifiManager.isWifiEnabled();
+        boolean isEnabledBefore = sWifiManager.isWifiEnabled();
         // toggle wifi and verify getting last caller
         setWifiEnabled(!isEnabledBefore);
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_WIFI_ENABLED, mExecutor,
+                () -> sWifiManager.getLastCallerInfoForApi(WifiManager.API_WIFI_ENABLED, mExecutor,
                         listener));
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
@@ -1719,7 +1730,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         packageName.set(null);
         setWifiEnabled(isEnabledBefore);
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.getLastCallerInfoForApi(WifiManager.API_WIFI_ENABLED, mExecutor,
+                () -> sWifiManager.getLastCallerInfoForApi(WifiManager.API_WIFI_ENABLED, mExecutor,
                         listener));
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
@@ -1732,19 +1743,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that {@link WifiManager#addNetworkPrivileged(WifiConfiguration)} throws a
      * SecurityException when called by a normal app.
      */
+    @Test
     public void testAddNetworkPrivilegedNotAllowedForNormalApps() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
         try {
             WifiConfiguration newOpenNetwork = new WifiConfiguration();
             newOpenNetwork.SSID = "\"" + TEST_SSID_UNQUOTED + "\"";
-            mWifiManager.addNetworkPrivileged(newOpenNetwork);
+            sWifiManager.addNetworkPrivileged(newOpenNetwork);
             fail("A normal app should not be able to call this API.");
         } catch (SecurityException e) {
         }
@@ -1754,19 +1762,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify {@link WifiManager#addNetworkPrivileged(WifiConfiguration)} throws an exception when
      * null is the input.
      */
+    @Test
     public void testAddNetworkPrivilegedBadInput() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.addNetworkPrivileged(null);
+            sWifiManager.addNetworkPrivileged(null);
             fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException e) {
         } finally {
@@ -1778,23 +1783,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify {@link WifiManager#getPrivilegedConnectedNetwork()} returns the currently
      * connected WifiConfiguration with randomized MAC address filtered out.
      */
+    @Test
     public void testGetPrivilegedConnectedNetworkSuccess() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        setWifiEnabled(true);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.startScan();
-            waitForConnection(); // ensures that there is at-least 1 saved network on the device.
+            sWifiManager.startScan();
 
-            WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
+            WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
             int curNetworkId = wifiInfo.getNetworkId();
             assertNotEquals("Should be connected to valid networkId", INVALID_NETWORK_ID,
                     curNetworkId);
-            WifiConfiguration curConfig = mWifiManager.getPrivilegedConnectedNetwork();
+            WifiConfiguration curConfig = sWifiManager.getPrivilegedConnectedNetwork();
             assertEquals("NetworkId should match", curNetworkId, curConfig.networkId);
             assertEquals("SSID should match", wifiInfo.getSSID(), curConfig.SSID);
             assertEquals("Randomized MAC should be filtered out", WifiInfo.DEFAULT_MAC_ADDRESS,
@@ -1808,12 +1808,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify {@link WifiManager#addNetworkPrivileged(WifiConfiguration)} works properly when the
      * calling app has permissions.
      */
+    @Test
     public void testAddNetworkPrivilegedSuccess() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
@@ -1823,10 +1820,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             uiAutomation.adoptShellPermissionIdentity();
             WifiConfiguration newOpenNetwork = new WifiConfiguration();
             newOpenNetwork.SSID = "\"" + TEST_SSID_UNQUOTED + "\"";
-            result = mWifiManager.addNetworkPrivileged(newOpenNetwork);
+            result = sWifiManager.addNetworkPrivileged(newOpenNetwork);
             assertEquals(WifiManager.AddNetworkResult.STATUS_SUCCESS, result.statusCode);
             assertTrue(result.networkId >= 0);
-            List<WifiConfiguration> configuredNetworks = mWifiManager.getConfiguredNetworks();
+            List<WifiConfiguration> configuredNetworks = sWifiManager.getConfiguredNetworks();
             boolean found = false;
             for (WifiConfiguration config : configuredNetworks) {
                 if (config.networkId == result.networkId
@@ -1839,7 +1836,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     + "but the network is not found in getConfiguredNetworks", found);
 
             List<WifiConfiguration> privilegedConfiguredNetworks =
-                    mWifiManager.getPrivilegedConfiguredNetworks();
+                    sWifiManager.getPrivilegedConfiguredNetworks();
             found = false;
             for (WifiConfiguration config : privilegedConfiguredNetworks) {
                 if (config.networkId == result.networkId
@@ -1852,7 +1849,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     + "but the network is not found in getPrivilegedConfiguredNetworks", found);
 
             List<WifiConfiguration> callerConfiguredNetworks =
-                    mWifiManager.getCallerConfiguredNetworks();
+                    sWifiManager.getCallerConfiguredNetworks();
             found = false;
             for (WifiConfiguration config : callerConfiguredNetworks) {
                 if (config.networkId == result.networkId
@@ -1865,7 +1862,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     + "but the network is not found in getCallerConfiguredNetworks", found);
         } finally {
             if (null != result) {
-                mWifiManager.removeNetwork(result.networkId);
+                sWifiManager.removeNetwork(result.networkId);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -1914,12 +1911,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify {@link WifiManager#addNetworkPrivileged(WifiConfiguration)} works
      * with merging types properly when the calling app has permissions.
      */
+    @Test
     public void testAddNetworkPrivilegedMergingTypeSuccess() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext)) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
@@ -1936,19 +1930,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            final int originalConfiguredNetworksNumber = mWifiManager.getConfiguredNetworks().size();
+            final int originalConfiguredNetworksNumber =
+                    sWifiManager.getConfiguredNetworks().size();
             final int originalPrivilegedConfiguredNetworksNumber =
-                    mWifiManager.getPrivilegedConfiguredNetworks().size();
+                    sWifiManager.getPrivilegedConfiguredNetworks().size();
             final int originalCallerConfiguredNetworksNumber =
-                mWifiManager.getCallerConfiguredNetworks().size();
+                    sWifiManager.getCallerConfiguredNetworks().size();
             for (WifiConfiguration c: baseConfigs) {
-                WifiManager.AddNetworkResult result = mWifiManager.addNetworkPrivileged(c);
+                WifiManager.AddNetworkResult result = sWifiManager.addNetworkPrivileged(c);
                 assertEquals(WifiManager.AddNetworkResult.STATUS_SUCCESS, result.statusCode);
                 assertTrue(result.networkId >= 0);
                 c.networkId = result.networkId;
             }
             for (WifiConfiguration c: upgradeConfigs) {
-                WifiManager.AddNetworkResult result = mWifiManager.addNetworkPrivileged(c);
+                WifiManager.AddNetworkResult result = sWifiManager.addNetworkPrivileged(c);
                 assertEquals(WifiManager.AddNetworkResult.STATUS_SUCCESS, result.statusCode);
                 assertTrue(result.networkId >= 0);
                 c.networkId = result.networkId;
@@ -1967,19 +1962,19 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 numAddedConfigs += upgradeConfigs.size();
                 expectedConfigs.addAll(upgradeConfigs);
             }
-            List<WifiConfiguration> configuredNetworks = mWifiManager.getConfiguredNetworks();
+            List<WifiConfiguration> configuredNetworks = sWifiManager.getConfiguredNetworks();
             assertEquals(originalConfiguredNetworksNumber + numAddedConfigs,
                     configuredNetworks.size());
             assertConfigsAreFound(expectedConfigs, configuredNetworks);
 
             List<WifiConfiguration> privilegedConfiguredNetworks =
-                    mWifiManager.getPrivilegedConfiguredNetworks();
+                    sWifiManager.getPrivilegedConfiguredNetworks();
             assertEquals(originalPrivilegedConfiguredNetworksNumber + numAddedConfigs,
                     privilegedConfiguredNetworks.size());
             assertConfigsAreFound(expectedConfigs, privilegedConfiguredNetworks);
 
             List<WifiConfiguration> callerConfiguredNetworks =
-                    mWifiManager.getCallerConfiguredNetworks();
+                    sWifiManager.getCallerConfiguredNetworks();
             assertEquals(originalCallerConfiguredNetworksNumber + numAddedConfigs,
                     callerConfiguredNetworks.size());
             assertConfigsAreFound(expectedConfigs, callerConfiguredNetworks);
@@ -1987,7 +1982,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         } finally {
             for (WifiConfiguration c: baseConfigs) {
                 if (c.networkId >= 0) {
-                    mWifiManager.removeNetwork(c.networkId);
+                    sWifiManager.removeNetwork(c.networkId);
                 }
             }
             uiAutomation.dropShellPermissionIdentity();
@@ -1999,29 +1994,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      *
      * Note: Location mode must be enabled for this test.
      */
+    @Test
     public void testStartLocalOnlyHotspotSingleRequestByApps() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
-            return;
-        }
+        assumeTrue(sWifiManager.isPortableHotspotSupported());
+
 
         runWithScanning(() -> {
             boolean caughtException = false;
-            boolean wifiEnabled = mWifiManager.isWifiEnabled();
+            boolean wifiEnabled = sWifiManager.isWifiEnabled();
             if (wifiEnabled) {
                 // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
                 // no STA+AP concurrency.
                 ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        mWifiManager.setWifiEnabled(false));
+                        sWifiManager.setWifiEnabled(false));
                 PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !mWifiManager.isWifiEnabled());
+                        () -> !sWifiManager.isWifiEnabled());
                 SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
                 PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> mWifiManager.isWifiEnabled());
+                        () -> sWifiManager.isWifiEnabled());
             }
 
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
@@ -2029,7 +2020,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // now make a second request - this should fail.
             TestLocalOnlyHotspotCallback callback2 = new TestLocalOnlyHotspotCallback(mLock);
             try {
-                mWifiManager.startLocalOnlyHotspot(callback2, null);
+                sWifiManager.startLocalOnlyHotspot(callback2, null);
             } catch (IllegalStateException e) {
                 Log.d(TAG, "Caught the IllegalStateException we expected: called startLOHS twice");
                 caughtException = true;
@@ -2056,7 +2047,6 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             stopLocalOnlyHotspot(callback, wifiEnabled);
         }, false);
     }
-
 
     private static class TestExecutor implements Executor {
         private ConcurrentLinkedQueue<Runnable> tasks = new ConcurrentLinkedQueue<>();
@@ -2094,21 +2084,17 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
     private void unregisterLocalOnlyHotspotSoftApCallback(TestSoftApCallback lohsSoftApCallback) {
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            mWifiManager.unregisterLocalOnlyHotspotSoftApCallback(lohsSoftApCallback);
+            sWifiManager.unregisterLocalOnlyHotspotSoftApCallback(lohsSoftApCallback);
         } else {
-            mWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
+            sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
         }
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testStartLocalOnlyHotspotWithSupportedBand() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
 
@@ -2116,7 +2102,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         TestSoftApCallback lohsSoftApCallback = new TestSoftApCallback(mLock);
         setWifiEnabled(false);
         Thread.sleep(TEST_WAIT_DURATION_MS);
-        boolean wifiEnabled = mWifiManager.isWifiEnabled();
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
@@ -2132,7 +2118,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // is mandatory for 5GHz/6GHz band, skip the softap operation on 5GHz & 6GHz only band.
             boolean skip5g6gBand = false;
             String wifiCountryCode = ShellIdentityUtils.invokeWithShellPermissions(
-                    mWifiManager::getCountryCode);
+                    sWifiManager::getCountryCode);
             if (wifiCountryCode == null) {
                 skip5g6gBand = true;
                 Log.e(TAG, "Country Code is not available - Skip 5GHz and 6GHz test");
@@ -2157,7 +2143,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     }
                 }
                 customConfigBuilder.setBand(testBand);
-                mWifiManager.startLocalOnlyHotspot(customConfigBuilder.build(), executor, callback);
+                sWifiManager.startLocalOnlyHotspot(customConfigBuilder.build(), executor, callback);
                 // now wait for callback
                 Thread.sleep(DURATION_SOFTAP_START_MS);
 
@@ -2182,18 +2168,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
         } finally {
             // clean up
-            mWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
+            sWifiManager.unregisterSoftApCallback(lohsSoftApCallback);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
 
+    @Test
     public void testStartLocalOnlyHotspotWithConfigBssid() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
 
@@ -2201,7 +2184,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
         TestSoftApCallback lohsSoftApCallback = new TestSoftApCallback(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        boolean wifiEnabled = mWifiManager.isWifiEnabled();
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             verifyLohsRegisterSoftApCallback(executor, lohsSoftApCallback);
@@ -2219,7 +2202,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
             SoftApConfiguration customConfig = customConfigBuilder.build();
 
-            mWifiManager.startLocalOnlyHotspot(customConfig, executor, callback);
+            sWifiManager.startLocalOnlyHotspot(customConfig, executor, callback);
             // now wait for callback
             Thread.sleep(TEST_WAIT_DURATION_MS);
 
@@ -2244,13 +2227,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     public void testStartLocalOnlyHotspotWithNullBssidConfig() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
         SoftApConfiguration customConfig =
@@ -2261,11 +2241,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         TestExecutor executor = new TestExecutor();
         TestLocalOnlyHotspotCallback callback = new TestLocalOnlyHotspotCallback(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        boolean wifiEnabled = mWifiManager.isWifiEnabled();
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
         try {
             uiAutomation.adoptShellPermissionIdentity();
 
-            mWifiManager.startLocalOnlyHotspot(customConfig, executor, callback);
+            sWifiManager.startLocalOnlyHotspot(customConfig, executor, callback);
             // now wait for callback
             Thread.sleep(TEST_WAIT_DURATION_MS);
 
@@ -2307,11 +2287,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Verify that changing the mac randomization setting of a Passpoint configuration.
      */
+    @Test
     public void testMacRandomizationSettingPasspoint() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         String configStr = loadResourceFile(PASSPOINT_INSTALLATION_FILE_WITH_CA_CERT);
         PasspointConfiguration config =
                 ConfigParser.parsePasspointConfig(TYPE_WIFI_CONFIG, configStr.getBytes());
@@ -2321,22 +2298,22 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         try {
             uiAutomation.adoptShellPermissionIdentity();
 
-            mWifiManager.addOrUpdatePasspointConfiguration(config);
+            sWifiManager.addOrUpdatePasspointConfiguration(config);
             PasspointConfiguration passpointConfig = getTargetPasspointConfiguration(
-                    mWifiManager.getPasspointConfigurations(), uniqueId);
+                    sWifiManager.getPasspointConfigurations(), uniqueId);
             assertNotNull("The installed passpoint profile is missing", passpointConfig);
             assertTrue("Mac randomization should be enabled for passpoint networks by default.",
                     passpointConfig.isMacRandomizationEnabled());
 
-            mWifiManager.setMacRandomizationSettingPasspointEnabled(fqdn, false);
+            sWifiManager.setMacRandomizationSettingPasspointEnabled(fqdn, false);
             passpointConfig = getTargetPasspointConfiguration(
-                    mWifiManager.getPasspointConfigurations(), uniqueId);
+                    sWifiManager.getPasspointConfigurations(), uniqueId);
             assertNotNull("The installed passpoint profile is missing", passpointConfig);
             assertFalse("Mac randomization should be disabled by the API call.",
                     passpointConfig.isMacRandomizationEnabled());
         } finally {
             // Clean up
-            mWifiManager.removePasspointConfiguration(fqdn);
+            sWifiManager.removePasspointConfiguration(fqdn);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -2347,12 +2324,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * No apps should <em>ever</em> attempt to acquire this permission, since it would give those
      * apps extremely broad access to connectivity functionality.
      */
+    @Test
     public void testNetworkStackPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final List<PackageInfo> holding = pm.getPackagesHoldingPermissions(new String[] {
                 android.Manifest.permission.NETWORK_STACK
@@ -2372,12 +2346,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * functionality.  The permission is intended to be granted to only those apps with direct user
      * access and no others.
      */
+    @Test
     public void testNetworkSettingsPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final ArraySet<String> allowedPackages = new ArraySet();
         final ArraySet<Integer> allowedUIDs = new ArraySet();
@@ -2440,14 +2411,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * permission, since it would give those apps extremely broad access to connectivity
      * functionality.  The permission is intended to be granted to only the device setup wizard.
      */
+    @Test
     public void testNetworkSetupWizardPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         final ArraySet<String> allowedPackages = new ArraySet();
 
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(Intent.CATEGORY_SETUP_WIZARD);
@@ -2501,12 +2469,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * functionality.  The permission is intended to be granted to only the device managed
      * provisioning.
      */
+    @Test
     public void testNetworkManagedProvisioningPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         // TODO(b/115980767): Using hardcoded package name. Need a better mechanism to find the
         // managed provisioning app.
@@ -2520,7 +2485,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
         String dpmHolderName = null;
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            DevicePolicyManager dpm = getContext().getSystemService(DevicePolicyManager.class);
+            DevicePolicyManager dpm = sContext.getSystemService(DevicePolicyManager.class);
             if (dpm != null) {
                 dpmHolderName = dpm.getDevicePolicyManagementRoleHolderPackage();
             }
@@ -2543,12 +2508,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that the {@link android.Manifest.permission#WIFI_SET_DEVICE_MOBILITY_STATE} permission
      * is held by at most one application.
      */
+    @Test
     public void testWifiSetDeviceMobilityStatePermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final List<PackageInfo> holding = pm.getPackagesHoldingPermissions(new String[] {
                 android.Manifest.permission.WIFI_SET_DEVICE_MOBILITY_STATE
@@ -2571,12 +2533,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that the {@link android.Manifest.permission#NETWORK_CARRIER_PROVISIONING} permission
      * is held by at most one application.
      */
+    @Test
     public void testNetworkCarrierProvisioningPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final List<PackageInfo> holding = pm.getPackagesHoldingPermissions(new String[] {
                 android.Manifest.permission.NETWORK_CARRIER_PROVISIONING
@@ -2599,12 +2558,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that the {@link android.Manifest.permission#WIFI_UPDATE_USABILITY_STATS_SCORE}
      * permission is held by at most two applications.
      */
+    @Test
     public void testUpdateWifiUsabilityStatsScorePermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        final PackageManager pm = getContext().getPackageManager();
+        final PackageManager pm = sContext.getPackageManager();
 
         final List<PackageInfo> holding = pm.getPackagesHoldingPermissions(new String[] {
                 android.Manifest.permission.WIFI_UPDATE_USABILITY_STATS_SCORE
@@ -2632,10 +2588,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
     }
 
-    private void turnScreenOnNoDelay() throws Exception {
-        if (mWakeLock.isHeld()) mWakeLock.release();
-        mUiDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
-        mUiDevice.executeShellCommand("wm dismiss-keyguard");
+    private static void turnScreenOnNoDelay() throws Exception {
+        if (sWakeLock.isHeld()) sWakeLock.release();
+        sUiDevice.executeShellCommand("input keyevent KEYCODE_WAKEUP");
+        sUiDevice.executeShellCommand("wm dismiss-keyguard");
     }
 
     private void turnScreenOn() throws Exception {
@@ -2645,27 +2601,27 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void turnScreenOffNoDelay() throws Exception {
-        mUiDevice.executeShellCommand("input keyevent KEYCODE_SLEEP");
+        sUiDevice.executeShellCommand("input keyevent KEYCODE_SLEEP");
     }
 
     private void turnScreenOff() throws Exception {
-        if (!mWakeLock.isHeld()) mWakeLock.acquire();
+        if (!sWakeLock.isHeld()) sWakeLock.acquire();
         turnScreenOffNoDelay();
         // Since the screen on/off intent is ordered, they will not be sent right now.
         Thread.sleep(DURATION_SCREEN_TOGGLE);
     }
 
     private void assertWifiScanningIsOn() {
-        if (!mWifiManager.isScanAlwaysAvailable()) {
+        if (!sWifiManager.isScanAlwaysAvailable()) {
             fail("Wi-Fi scanning should be on.");
         }
     }
 
     private void runWithScanning(ThrowingRunnable r, boolean isEnabled) throws Exception {
         boolean scanModeChangedForTest = false;
-        if (mWifiManager.isScanAlwaysAvailable() != isEnabled) {
+        if (sWifiManager.isScanAlwaysAvailable() != isEnabled) {
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setScanAlwaysAvailable(isEnabled));
+                    () -> sWifiManager.setScanAlwaysAvailable(isEnabled));
             scanModeChangedForTest = true;
         }
         try {
@@ -2673,7 +2629,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         } finally {
             if (scanModeChangedForTest) {
                 ShellIdentityUtils.invokeWithShellPermissions(
-                        () -> mWifiManager.setScanAlwaysAvailable(!isEnabled));
+                        () -> sWifiManager.setScanAlwaysAvailable(!isEnabled));
             }
         }
     }
@@ -2683,16 +2639,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * but location is on.
      * @throws Exception
      */
+    @Test
     public void testScreenOffDoesNotTurnOffWifiScanningWhenWifiDisabled() throws Exception {
         if (FeatureUtil.isTV() || FeatureUtil.isAutomotive()) {
             // TV and auto do not support the setting options of WIFI scanning and Bluetooth
             // scanning
             return;
         }
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
+
         if (!hasLocationFeature()) {
             // skip the test if location is not supported
             return;
@@ -2717,16 +2671,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that Wi-Fi scanning is not turned off when the screen turns off while wifi is enabled.
      * @throws Exception
      */
+    @Test
     public void testScreenOffDoesNotTurnOffWifiScanningWhenWifiEnabled() throws Exception {
         if (FeatureUtil.isTV() || FeatureUtil.isAutomotive()) {
             // TV and auto do not support the setting options of WIFI scanning and Bluetooth
             // scanning
             return;
         }
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
+
         if (!hasLocationFeature()) {
             // skip the test if location is not supported
             return;
@@ -2751,19 +2703,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that the platform supports a reasonable number of suggestions per app.
      * @throws Exception
      */
+    @Test
     public void testMaxNumberOfNetworkSuggestionsPerApp() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        assertTrue(mWifiManager.getMaxNumberOfNetworkSuggestionsPerApp()
+        assertTrue(sWifiManager.getMaxNumberOfNetworkSuggestionsPerApp()
                 > ENFORCED_NUM_NETWORK_SUGGESTIONS_PER_APP);
     }
 
     private void verifyRegisterSoftApCallback(TestExecutor executor, TestSoftApCallback callback)
             throws Exception {
         // Register callback to get SoftApCapability
-        mWifiManager.registerSoftApCallback(executor, callback);
+        sWifiManager.registerSoftApCallback(executor, callback);
         PollingCheck.check(
                 "SoftAp register failed!", 5_000,
                 () -> {
@@ -2780,9 +2729,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             TestSoftApCallback callback) throws Exception {
         // Register callback to get SoftApCapability
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.TIRAMISU)) {
-            mWifiManager.registerLocalOnlyHotspotSoftApCallback(executor, callback);
+            sWifiManager.registerLocalOnlyHotspotSoftApCallback(executor, callback);
         } else {
-            mWifiManager.registerSoftApCallback(executor, callback);
+            sWifiManager.registerSoftApCallback(executor, callback);
         }
         PollingCheck.check(
                 "SoftAp register failed!", 5_000,
@@ -2797,10 +2746,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void verifySetGetSoftApConfig(SoftApConfiguration targetConfig) {
-        assertTrue(mWifiManager.validateSoftApConfiguration(targetConfig));
-        mWifiManager.setSoftApConfiguration(targetConfig);
+        assertTrue(sWifiManager.validateSoftApConfiguration(targetConfig));
+        sWifiManager.setSoftApConfiguration(targetConfig);
         // Bssid set dodesn't support for tethered hotspot
-        SoftApConfiguration currentConfig = mWifiManager.getSoftApConfiguration();
+        SoftApConfiguration currentConfig = sWifiManager.getSoftApConfiguration();
         compareSoftApConfiguration(targetConfig, currentConfig);
         if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S)) {
             assertTrue(currentConfig.isUserConfiguration());
@@ -2812,8 +2761,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             SoftApConfiguration oldSsidConfig = new SoftApConfiguration.Builder(targetConfig)
                     .setWifiSsid(null)
                     .setSsid(targetConfig.getSsid()).build();
-            mWifiManager.setSoftApConfiguration(oldSsidConfig);
-            currentConfig = mWifiManager.getSoftApConfiguration();
+            sWifiManager.setSoftApConfiguration(oldSsidConfig);
+            currentConfig = sWifiManager.getSoftApConfiguration();
             compareSoftApConfiguration(oldSsidConfig, currentConfig);
         }
     }
@@ -2870,23 +2819,27 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 assertEquals(currentConfig.getMaxChannelBandwidth(),
                         testSoftApConfig.getMaxChannelBandwidth());
             }
+            if (Flags.androidVWifiApi()
+                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
+                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                assertTrue(Objects.equals(
+                        currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
+            }
         }
     }
 
     private void turnOffWifiAndTetheredHotspotIfEnabled() throws Exception {
-        if (mWifiManager.isWifiEnabled()) {
+        if (sWifiManager.isWifiEnabled()) {
             Log.d(TAG, "Turn off WiFi");
-            mWifiManager.setWifiEnabled(false);
-            PollingCheck.check(
-                    "Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                () -> mWifiManager.isWifiEnabled() == false);
+            sWifiManager.setWifiEnabled(false);
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiEnabled());
         }
-        if (mWifiManager.isWifiApEnabled()) {
-            mTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
+        if (sWifiManager.isWifiApEnabled()) {
+            sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
             Log.d(TAG, "Turn off tethered Hotspot");
-            PollingCheck.check(
-                    "SoftAp turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                () -> mWifiManager.isWifiApEnabled() == false);
+            PollingCheck.check("SoftAp turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiApEnabled());
         }
     }
 
@@ -2935,20 +2888,21 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         return testBandsAndChannels;
     }
 
+    @Test
     public void testLastConfiguredPassphraseIsKeepInSoftApConfigurationWhenChangingToNone()
             throws Exception {
         final SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getSoftApConfiguration);
+                sWifiManager::getSoftApConfiguration);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             Mutable<String> lastPassphrase = new Mutable<>();
             final String testPassphrase = "testPassphrase";
-            mWifiManager.setSoftApConfiguration(
+            sWifiManager.setSoftApConfiguration(
                     new SoftApConfiguration.Builder(currentConfig)
                             .setPassphrase(testPassphrase,
                                     SoftApConfiguration.SECURITY_TYPE_WPA2_PSK).build());
-            mWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
+            sWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
                     new Consumer<String>() {
                     @Override
                     public void accept(String value) {
@@ -2963,11 +2917,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
             assertEquals(lastPassphrase.value, testPassphrase);
 
-            mWifiManager.setSoftApConfiguration(
+            sWifiManager.setSoftApConfiguration(
                     new SoftApConfiguration.Builder(currentConfig)
                             .setPassphrase(null,
                                     SoftApConfiguration.SECURITY_TYPE_OPEN).build());
-            mWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
+            sWifiManager.queryLastConfiguredTetheredApPassphraseSinceBoot(mExecutor,
                     new Consumer<String>() {
                     @Override
                     public void accept(String value) {
@@ -2983,8 +2937,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             assertEquals(lastPassphrase.value, testPassphrase);
         } finally {
             // Restore SoftApConfiguration
-            ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.setSoftApConfiguration(currentConfig));
+            sWifiManager.setSoftApConfiguration(currentConfig);
+            uiAutomation.dropShellPermissionIdentity();
         }
     }
 
@@ -2994,7 +2948,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      */
     private boolean shouldSkipCountryCodeDependentTest() {
         String countryCode = SystemProperties.get(BOOT_DEFAULT_WIFI_COUNTRY_CODE);
-        return TextUtils.isEmpty(countryCode) && !WifiFeature.isTelephonySupported(getContext());
+        return TextUtils.isEmpty(countryCode) && !WifiFeature.isTelephonySupported(sContext);
     }
 
     /**
@@ -3005,26 +2959,27 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * 2. configure A then B then A (SSIDs) and verify that the 1st and 3rd MAC addresses are the
      * same.
      */
+    @Test
     public void testSoftApConfigurationGetPersistentRandomizedMacAddress() throws Exception {
         SoftApConfiguration currentConfig = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getSoftApConfiguration);
+                sWifiManager::getSoftApConfiguration);
         final String ssid = currentConfig.getSsid().length() <= 28
                 ? currentConfig.getSsid() + "test"
                 : "AndroidTest";
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setSoftApConfiguration(new SoftApConfiguration.Builder()
+                () -> sWifiManager.setSoftApConfiguration(new SoftApConfiguration.Builder()
                 .setSsid(ssid).build()));
         SoftApConfiguration changedSsidConfig = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getSoftApConfiguration);
+                sWifiManager::getSoftApConfiguration);
         assertNotEquals(currentConfig.getPersistentRandomizedMacAddress(),
                 changedSsidConfig.getPersistentRandomizedMacAddress());
 
         // set currentConfig
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.setSoftApConfiguration(currentConfig));
+                () -> sWifiManager.setSoftApConfiguration(currentConfig));
 
         SoftApConfiguration changedSsidBackConfig = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getSoftApConfiguration);
+                sWifiManager::getSoftApConfiguration);
 
         assertEquals(currentConfig.getPersistentRandomizedMacAddress(),
                 changedSsidBackConfig.getPersistentRandomizedMacAddress());
@@ -3036,28 +2991,24 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * @throws Exception
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testTetheredBridgedAp() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // check that softap bridged mode is supported by the device
-        if (!mWifiManager.isBridgedApConcurrencySupported()) {
+        if (!sWifiManager.isBridgedApConcurrencySupported()) {
             return;
         }
         runWithScanning(() -> {
-            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation();
             TestExecutor executor = new TestExecutor();
             TestSoftApCallback callback = new TestSoftApCallback(mLock);
             try {
                 uiAutomation.adoptShellPermissionIdentity();
                 // Off/On Wifi to make sure that we get the supported channel
                 turnOffWifiAndTetheredHotspotIfEnabled();
-                mWifiManager.setWifiEnabled(true);
-                PollingCheck.check(
-                        "Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                    () -> mWifiManager.isWifiEnabled() == true);
+                sWifiManager.setWifiEnabled(true);
+                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                        () -> sWifiManager.isWifiEnabled());
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 verifyRegisterSoftApCallback(executor, callback);
                 if (!callback.getCurrentSoftApCapability()
@@ -3080,7 +3031,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 verifySetGetSoftApConfig(testSoftApConfig);
 
                 // start tethering which used to verify startTetheredHotspot
-                mTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
+                sTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
                     new TetheringManager.StartTetheringCallback() {
                         @Override
                         public void onTetheringFailed(final int result) {
@@ -3089,11 +3040,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 verifyBridgedModeSoftApCallback(executor, callback,
                         shouldFallbackToSingleAp, true /* enabled */);
                 // stop tethering which used to verify stopSoftAp
-                mTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
+                sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
                 verifyBridgedModeSoftApCallback(executor, callback,
                         shouldFallbackToSingleAp, false /* disabled */);
             } finally {
-                mWifiManager.unregisterSoftApCallback(callback);
+                sWifiManager.unregisterSoftApCallback(callback);
                 uiAutomation.dropShellPermissionIdentity();
             }
         }, false /* run with disabled */);
@@ -3105,28 +3056,24 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * @throws Exception
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testTetheredBridgedApWifiForcedChannel() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // check that softap bridged mode is supported by the device
-        if (!mWifiManager.isBridgedApConcurrencySupported()) {
+        if (!sWifiManager.isBridgedApConcurrencySupported()) {
             return;
         }
         runWithScanning(() -> {
-            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation();
             TestExecutor executor = new TestExecutor();
             TestSoftApCallback callback = new TestSoftApCallback(mLock);
             try {
                 uiAutomation.adoptShellPermissionIdentity();
                 // Off/On Wifi to make sure that we get the supported channel
                 turnOffWifiAndTetheredHotspotIfEnabled();
-                mWifiManager.setWifiEnabled(true);
-                PollingCheck.check(
-                        "Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                    () -> mWifiManager.isWifiEnabled() == true);
+                sWifiManager.setWifiEnabled(true);
+                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                        () -> sWifiManager.isWifiEnabled());
                 turnOffWifiAndTetheredHotspotIfEnabled();
                 verifyRegisterSoftApCallback(executor, callback);
 
@@ -3146,14 +3093,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                             .getSupportedChannelList(SoftApConfiguration.BAND_5GHZ)[0]);
                     SoftApConfiguration testSoftApConfig =
                             generateSoftApConfigBuilderWithSsid(TEST_SSID_UNQUOTED)
-                            .setPassphrase(TEST_PASSPHRASE, SoftApConfiguration.SECURITY_TYPE_WPA2_PSK)
+                            .setPassphrase(TEST_PASSPHRASE,
+                                    SoftApConfiguration.SECURITY_TYPE_WPA2_PSK)
                             .setChannels(dual_channels)
                             .build();
 
                     verifySetGetSoftApConfig(testSoftApConfig);
 
                     // start tethering which used to verify startTetheredHotspot
-                    mTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
+                    sTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
                         new TetheringManager.StartTetheringCallback() {
                             @Override
                             public void onTetheringFailed(final int result) {
@@ -3162,12 +3110,72 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     verifyBridgedModeSoftApCallback(executor, callback,
                             shouldFallbackToSingleAp, true /* enabled */);
                     // stop tethering which used to verify stopSoftAp
-                    mTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
+                    sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
                     verifyBridgedModeSoftApCallback(executor, callback,
                             shouldFallbackToSingleAp, false /* disabled */);
                 }
             } finally {
-                mWifiManager.unregisterSoftApCallback(callback);
+                sWifiManager.unregisterSoftApCallback(callback);
+                uiAutomation.dropShellPermissionIdentity();
+            }
+        }, false /* run with disabled */);
+    }
+
+    /**
+     * Test startTetheringRequest() starts a soft AP and relays the TetheringRequest object back via
+     * SoftApCallback.
+     * @throws Exception
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @Test
+    public void testStartTetheredHotspotWithTetheringRequest() throws Exception {
+        // check that softap  is supported by the device
+        if (!sWifiManager.isPortableHotspotSupported()) {
+            return;
+        }
+        runWithScanning(() -> {
+            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation();
+            TestExecutor executor = new TestExecutor();
+            TestSoftApCallback callback = new TestSoftApCallback(mLock);
+            try {
+                uiAutomation.adoptShellPermissionIdentity();
+
+                // start tethering which used to verify startTetheredHotspot
+                TetheringManager.TetheringRequest request =
+                        new TetheringManager.TetheringRequest.Builder(
+                                TetheringManager.TETHERING_WIFI).build();
+                sWifiManager.startTetheredHotspot(request, executor, callback);
+                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
+                        () -> {
+                            executor.runAll();
+                            return callback.getOnSoftApStateChangedCalled()
+                                    && callback.getCurrentSoftApState().getState()
+                                    == WifiManager.WIFI_AP_STATE_ENABLED;
+                        });
+                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
+                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
+                            .isEqualTo(request);
+                } else {
+                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
+                }
+
+                // stop tethering which used to verify stopSoftAp
+                sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
+                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
+                        () -> {
+                            executor.runAll();
+                            return callback.getOnSoftApStateChangedCalled()
+                                    && callback.getCurrentSoftApState().getState()
+                                    == WifiManager.WIFI_AP_STATE_DISABLED;
+                        });
+                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
+                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
+                            .isEqualTo(request);
+                } else {
+                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
+                }
+            } finally {
                 uiAutomation.dropShellPermissionIdentity();
             }
         }, false /* run with disabled */);
@@ -3179,14 +3187,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * configuration.
      * @throws Exception
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
+    @Test
     public void testSetGetSoftApConfigurationAndSoftApCapabilityCallback() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
         if (shouldSkipCountryCodeDependentTest()) {
@@ -3286,7 +3291,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
 
         } finally {
-            mWifiManager.unregisterSoftApCallback(callback);
+            sWifiManager.unregisterSoftApCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -3295,15 +3300,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that startTetheredHotspot with specific channel config.
      * @throws Exception
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
+    @Test
     public void testStartTetheredHotspotWithChannelConfigAndSoftApStateAndInfoCallback()
             throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
+        if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
         if (shouldSkipCountryCodeDependentTest()) {
@@ -3316,7 +3318,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // check that tethering is supported by the device
-            if (!mTetheringManager.isTetheringSupported()) {
+            if (!sTetheringManager.isTetheringSupported()) {
                 return;
             }
             turnOffWifiAndTetheredHotspotIfEnabled();
@@ -3345,10 +3347,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
             SoftApConfiguration testSoftApConfig = testSoftApConfigBuilder.build();
 
-            mWifiManager.setSoftApConfiguration(testSoftApConfig);
+            sWifiManager.setSoftApConfiguration(testSoftApConfig);
 
             // start tethering which used to verify startTetheredHotspot
-            mTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
+            sTetheringManager.startTethering(ConnectivityManager.TETHERING_WIFI, executor,
                 new TetheringManager.StartTetheringCallback() {
                     @Override
                     public void onTetheringFailed(final int result) {
@@ -3379,13 +3381,19 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 assertNotEquals(callback.getCurrentSoftApInfo().getWifiStandard(),
                         ScanResult.WIFI_STANDARD_UNKNOWN);
             }
+            if (Flags.androidVWifiApi()
+                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
+                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))
+                    && callback.getOnSoftapInfoChangedCalledCount() > 1) {
+                assertNotNull(callback.getCurrentSoftApInfo().getVendorData());
+            }
 
             if (callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertTrue(callback.getCurrentSoftApInfo().getAutoShutdownTimeoutMillis() > 0);
             }
         } finally {
             // stop tethering which used to verify stopSoftAp
-            mTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
+            sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
 
             // Verify clean up
             PollingCheck.check(
@@ -3401,7 +3409,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 assertEquals(ScanResult.WIFI_STANDARD_UNKNOWN,
                         callback.getCurrentSoftApInfo().getWifiStandard());
             }
-            mWifiManager.unregisterSoftApCallback(callback);
+            sWifiManager.unregisterSoftApCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -3451,11 +3459,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             uiAutomation.adoptShellPermissionIdentity();
             // These below API's only work with privileged permissions (obtained via shell identity
             // for test)
-            savedNetworks = mWifiManager.getConfiguredNetworks();
+            savedNetworks = sWifiManager.getConfiguredNetworks();
 
             // Disable all the saved networks to trigger disconnect & disable autojoin.
             for (WifiConfiguration network : savedNetworks) {
-                assertTrue(mWifiManager.disableNetwork(network.networkId));
+                assertTrue(sWifiManager.disableNetwork(network.networkId));
             }
             waitForDisconnection();
 
@@ -3465,9 +3473,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             synchronized (mLock) {
                 try {
                     if (withNetworkId) {
-                        mWifiManager.connect(savedNetworkToConnect.networkId, actionListener);
+                        sWifiManager.connect(savedNetworkToConnect.networkId, actionListener);
                     } else {
-                        mWifiManager.connect(savedNetworkToConnect, actionListener);
+                        sWifiManager.connect(savedNetworkToConnect, actionListener);
                     }
                     // now wait for callback
                     mLock.wait(TEST_WAIT_DURATION_MS);
@@ -3479,12 +3487,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // Wait for connection to complete & ensure we are connected to the saved network.
             waitForConnection();
             assertEquals(savedNetworkToConnect.networkId,
-                    mWifiManager.getConnectionInfo().getNetworkId());
+                    sWifiManager.getConnectionInfo().getNetworkId());
         } finally {
             // Re-enable all saved networks before exiting.
             if (savedNetworks != null) {
                 for (WifiConfiguration network : savedNetworks) {
-                    mWifiManager.enableNetwork(network.networkId, true);
+                    sWifiManager.enableNetwork(network.networkId, true);
                 }
             }
             uiAutomation.dropShellPermissionIdentity();
@@ -3495,11 +3503,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#connect(int, WifiManager.ActionListener)} to an existing saved
      * network.
      */
+    @Test
     public void testConnectWithNetworkId() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         testConnect(true);
     }
 
@@ -3507,11 +3512,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#connect(WifiConfiguration, WifiManager.ActionListener)} to an
      * existing saved network.
      */
+    @Test
     public void testConnectWithWifiConfiguration() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         testConnect(false);
 
     }
@@ -3545,8 +3547,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     private void waitForNetworkCallbackAndCheckForMeteredness(boolean expectMetered) {
-        TestNetworkCallback networkCallbackListener = new TestNetworkCallback(mLock);
-        synchronized (mLock) {
+        Object lock = new Object();
+        TestNetworkCallback networkCallbackListener = new TestNetworkCallback(lock);
+        synchronized (lock) {
             try {
                 NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder()
                         .addTransportType(TRANSPORT_WIFI);
@@ -3556,10 +3559,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                     networkRequestBuilder.addCapability(NET_CAPABILITY_NOT_METERED);
                 }
                 // File a request for wifi network.
-                mConnectivityManager.registerNetworkCallback(
+                sConnectivityManager.registerNetworkCallback(
                         networkRequestBuilder.build(), networkCallbackListener);
                 // now wait for callback
-                mLock.wait(TEST_WAIT_DURATION_MS);
+                lock.wait(TEST_WAIT_DURATION_MS);
             } catch (InterruptedException e) {
             }
         }
@@ -3570,12 +3573,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#save(WifiConfiguration, WifiManager.ActionListener)} by marking
      * an existing saved network metered.
      */
+    @Test
     public void testSave() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        TestActionListener actionListener = new TestActionListener(mLock);
+        Object lock = new Object();
+        TestActionListener actionListener = new TestActionListener(lock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         List<WifiConfiguration> savedNetworks = null;
         WifiConfiguration currentConfig = null;
@@ -3584,12 +3585,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // These below API's only work with privileged permissions (obtained via shell identity
             // for test)
 
-            // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
-            waitForConnection();
-
-            WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
-            savedNetworks = mWifiManager.getConfiguredNetworks();
+            WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
+            savedNetworks = sWifiManager.getConfiguredNetworks();
 
             // find the current network's WifiConfiguration
             currentConfig = savedNetworks
@@ -3607,7 +3604,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // wrong network after later setting the current network as metered.
             for (WifiConfiguration network : savedNetworks) {
                 if (network.networkId != currentConfig.networkId) {
-                    assertTrue(mWifiManager.disableNetwork(network.networkId));
+                    assertTrue(sWifiManager.disableNetwork(network.networkId));
                 }
             }
 
@@ -3615,13 +3612,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             waitForNetworkCallbackAndCheckForMeteredness(false);
 
             // Now mark the network metered and save.
-            synchronized (mLock) {
+            synchronized (lock) {
                 try {
                     WifiConfiguration modSavedNetwork = new WifiConfiguration(currentConfig);
                     modSavedNetwork.meteredOverride = WifiConfiguration.METERED_OVERRIDE_METERED;
-                    mWifiManager.save(modSavedNetwork, actionListener);
+                    sWifiManager.save(modSavedNetwork, actionListener);
                     // now wait for callback
-                    mLock.wait(TEST_WAIT_DURATION_MS);
+                    lock.wait(TEST_WAIT_DURATION_MS);
                 } catch (InterruptedException e) {
                 }
             }
@@ -3636,12 +3633,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         } finally {
             // Restore original network config (restore the meteredness back);
             if (currentConfig != null) {
-                mWifiManager.updateNetwork(currentConfig);
+                sWifiManager.updateNetwork(currentConfig);
             }
             // re-enable all networks
             if (savedNetworks != null) {
                 for (WifiConfiguration network : savedNetworks) {
-                    mWifiManager.enableNetwork(network.networkId, true);
+                    sWifiManager.enableNetwork(network.networkId, true);
                 }
             }
             uiAutomation.dropShellPermissionIdentity();
@@ -3653,11 +3650,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * network.
      */
     @AsbSecurityTest(cveBugId = 159373687)
+    @Test
     public void testForget() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestActionListener actionListener = new TestActionListener(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         int newNetworkId = INVALID_NETWORK_ID;
@@ -3665,22 +3659,22 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             uiAutomation.adoptShellPermissionIdentity();
             // These below API's only work with privileged permissions (obtained via shell identity
             // for test)
-            List<WifiConfiguration> savedNetworks = mWifiManager.getConfiguredNetworks();
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
 
             WifiConfiguration newOpenNetwork = new WifiConfiguration();
             newOpenNetwork.SSID = "\"" + TEST_SSID_UNQUOTED + "\"";
-            newNetworkId = mWifiManager.addNetwork(newOpenNetwork);
+            newNetworkId = sWifiManager.addNetwork(newOpenNetwork);
             assertNotEquals(INVALID_NETWORK_ID, newNetworkId);
 
             // Multi-type configurations might be converted to more than 1 configuration.
-            assertThat(savedNetworks.size() < mWifiManager.getConfiguredNetworks().size()).isTrue();
+            assertThat(savedNetworks.size() < sWifiManager.getConfiguredNetworks().size()).isTrue();
 
             // Need an effectively-final holder because we need to modify inner Intent in callback.
             class IntentHolder {
                 Intent intent;
             }
             IntentHolder intentHolder = new IntentHolder();
-            mContext.registerReceiver(new BroadcastReceiver() {
+            sContext.registerReceiver(new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     Log.i(TAG, "Received CONFIGURED_NETWORKS_CHANGED_ACTION broadcast: " + intent);
@@ -3691,7 +3685,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // Now remove the network
             synchronized (mLock) {
                 try {
-                    mWifiManager.forget(newNetworkId, actionListener);
+                    sWifiManager.forget(newNetworkId, actionListener);
                     // now wait for callback
                     mLock.wait(TEST_WAIT_DURATION_MS);
                 } catch (InterruptedException e) {
@@ -3712,10 +3706,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             assertNull(intent.getParcelableExtra(WifiManager.EXTRA_WIFI_CONFIGURATION));
 
             // Ensure that the new network has been successfully removed.
-            assertEquals(savedNetworks.size(), mWifiManager.getConfiguredNetworks().size());
+            assertEquals(savedNetworks.size(), sWifiManager.getConfiguredNetworks().size());
         } finally {
             // For whatever reason, if the forget fails, try removing using the public remove API.
-            if (newNetworkId != INVALID_NETWORK_ID) mWifiManager.removeNetwork(newNetworkId);
+            if (newNetworkId != INVALID_NETWORK_ID) sWifiManager.removeNetwork(newNetworkId);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -3723,19 +3717,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#getFactoryMacAddresses()} returns at least one valid MAC address.
      */
-    @VirtualDeviceNotSupported
+    @RequiresDevice
+    @Test
     public void testGetFactoryMacAddresses() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestActionListener actionListener = new TestActionListener(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         int newNetworkId = INVALID_NETWORK_ID;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Obtain the factory MAC address
-            String[] macAddresses = mWifiManager.getFactoryMacAddresses();
+            String[] macAddresses = sWifiManager.getFactoryMacAddresses();
             assertTrue("At list one MAC address should be returned.", macAddresses.length > 0);
             try {
                 MacAddress mac = MacAddress.fromString(macAddresses[0]);
@@ -3752,62 +3743,47 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#isApMacRandomizationSupported()} does not crash.
      */
+    @Test
     public void testIsApMacRandomizationSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isApMacRandomizationSupported();
+        sWifiManager.isApMacRandomizationSupported();
     }
 
     /**
      * Tests {@link WifiManager#isConnectedMacRandomizationSupported()} does not crash.
      */
+    @Test
     public void testIsConnectedMacRandomizationSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isConnectedMacRandomizationSupported();
+        sWifiManager.isConnectedMacRandomizationSupported();
     }
 
     /**
      * Tests {@link WifiManager#isPreferredNetworkOffloadSupported()} does not crash.
      */
+    @Test
     public void testIsPreferredNetworkOffloadSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isPreferredNetworkOffloadSupported();
+        sWifiManager.isPreferredNetworkOffloadSupported();
     }
 
     /** Test that PNO scans reconnects us when the device is disconnected and the screen is off. */
+    @Test
     public void testPnoScan() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!mWifiManager.isPreferredNetworkOffloadSupported()) {
+        if (!sWifiManager.isPreferredNetworkOffloadSupported()) {
             // skip the test if PNO scanning is not supported
             return;
         }
 
-        // make sure we're connected
-        waitForConnection(WIFI_PNO_CONNECT_TIMEOUT_MILLIS);
-
         WifiInfo currentNetwork = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConnectionInfo);
+                sWifiManager::getConnectionInfo);
 
         // disable all networks that aren't already disabled
         List<WifiConfiguration> savedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConfiguredNetworks);
+                sWifiManager::getConfiguredNetworks);
         Set<Integer> disabledNetworkIds = new HashSet<>();
         for (WifiConfiguration config : savedNetworks) {
             if (config.getNetworkSelectionStatus().getNetworkSelectionDisableReason()
                     == WifiConfiguration.NetworkSelectionStatus.DISABLED_NONE) {
                 ShellIdentityUtils.invokeWithShellPermissions(
-                        () -> mWifiManager.disableNetwork(config.networkId));
+                        () -> sWifiManager.disableNetwork(config.networkId));
                 disabledNetworkIds.add(config.networkId);
             }
         }
@@ -3821,7 +3797,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
             // re-enable the current network - this will trigger PNO
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.enableNetwork(currentNetwork.getNetworkId(), false));
+                    () -> sWifiManager.enableNetwork(currentNetwork.getNetworkId(), false));
             disabledNetworkIds.remove(currentNetwork.getNetworkId());
 
             // PNO should reconnect us back to the network we disconnected from
@@ -3830,61 +3806,44 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // re-enable disabled networks
             for (int disabledNetworkId : disabledNetworkIds) {
                 ShellIdentityUtils.invokeWithShellPermissions(
-                        () -> mWifiManager.enableNetwork(disabledNetworkId, true));
+                        () -> sWifiManager.enableNetwork(disabledNetworkId, true));
             }
         }
     }
 
     /**
-     * Tests {@link WifiManager#isTdlsSupported()} does not crash.
-     */
-    public void testIsTdlsSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isTdlsSupported();
-    }
-
-    /**
      * Tests {@link WifiManager#isStaApConcurrencySupported()}.
      */
+    @Test
     public void testIsStaApConcurrencySupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // check that softap mode is supported by the device
-        if (!mWifiManager.isPortableHotspotSupported()) {
-            return;
-        }
-        assertTrue(mWifiManager.isWifiEnabled());
+        assumeTrue(sWifiManager.isPortableHotspotSupported());
 
         runWithScanning(() -> {
             // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
             // STA+AP concurrency.
-            ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.setWifiEnabled(false));
-            PollingCheck.check("Wifi turn off failed!", 2_000, () -> !mWifiManager.isWifiEnabled());
+            ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
+            PollingCheck.check("Wifi turn off failed!", 2_000, () -> !sWifiManager.isWifiEnabled());
             SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
             PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                    () -> mWifiManager.isWifiEnabled());
+                    () -> sWifiManager.isWifiEnabled());
 
-            boolean isStaApConcurrencySupported = mWifiManager.isStaApConcurrencySupported();
+            boolean isStaApConcurrencySupported = sWifiManager.isStaApConcurrencySupported();
             // start local only hotspot.
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
             try {
                 if (isStaApConcurrencySupported) {
-                    assertTrue(mWifiManager.isWifiEnabled());
+                    assertTrue(sWifiManager.isWifiEnabled());
                 } else {
                     // no concurrency, wifi should be disabled.
-                    assertFalse(mWifiManager.isWifiEnabled());
+                    assertFalse(sWifiManager.isWifiEnabled());
                 }
             } finally {
                 // clean up local only hotspot no matter if assertion passed or failed
                 stopLocalOnlyHotspot(callback, true);
             }
 
-            assertTrue(mWifiManager.isWifiEnabled());
+            assertTrue(sWifiManager.isWifiEnabled());
         }, false);
     }
 
@@ -3936,22 +3895,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#registerTrafficStateCallback(Executor,
      * WifiManager.TrafficStateCallback)} by sending some traffic.
      */
+    @Test
     public void testTrafficStateCallback() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         TestTrafficStateCallback callback = new TestTrafficStateCallback();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
-            waitForConnection();
 
             // Turn screen on for wifi traffic polling.
             turnScreenOn();
-            mWifiManager.registerTrafficStateCallback(
+            sWifiManager.registerTrafficStateCallback(
                     Executors.newSingleThreadExecutor(), callback);
             // Send some traffic to trigger the traffic state change callbacks.
             sendTraffic();
@@ -3961,7 +3914,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             assertTrue(success);
         } finally {
             turnScreenOff();
-            mWifiManager.unregisterTrafficStateCallback(callback);
+            sWifiManager.unregisterTrafficStateCallback(callback);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -3970,25 +3923,22 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#setScanAlwaysAvailable(boolean)} &
      * {@link WifiManager#isScanAlwaysAvailable()}.
      */
+    @Test
     public void testScanAlwaysAvailable() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isScanAlwaysAvailable();
+            currState = sWifiManager.isScanAlwaysAvailable();
             boolean newState = !currState;
-            mWifiManager.setScanAlwaysAvailable(newState);
+            sWifiManager.setScanAlwaysAvailable(newState);
             PollingCheck.check(
                     "Wifi scanning toggle failed!",
                     DURATION_SETTINGS_TOGGLE,
-                    () -> mWifiManager.isScanAlwaysAvailable() == newState);
-            assertEquals(newState, mWifiManager.isScanAlwaysAvailable());
+                    () -> sWifiManager.isScanAlwaysAvailable() == newState);
+            assertEquals(newState, sWifiManager.isScanAlwaysAvailable());
         } finally {
-            if (currState != null) mWifiManager.setScanAlwaysAvailable(currState);
+            if (currState != null) sWifiManager.setScanAlwaysAvailable(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -3997,25 +3947,22 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#setScanThrottleEnabled(boolean)} &
      * {@link WifiManager#isScanThrottleEnabled()}.
      */
+    @Test
     public void testScanThrottleEnabled() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isScanThrottleEnabled();
+            currState = sWifiManager.isScanThrottleEnabled();
             boolean newState = !currState;
-            mWifiManager.setScanThrottleEnabled(newState);
+            sWifiManager.setScanThrottleEnabled(newState);
             PollingCheck.check(
                     "Wifi settings toggle failed!",
                     DURATION_SETTINGS_TOGGLE,
-                    () -> mWifiManager.isScanThrottleEnabled() == newState);
-            assertEquals(newState, mWifiManager.isScanThrottleEnabled());
+                    () -> sWifiManager.isScanThrottleEnabled() == newState);
+            assertEquals(newState, sWifiManager.isScanThrottleEnabled());
         } finally {
-            if (currState != null) mWifiManager.setScanThrottleEnabled(currState);
+            if (currState != null) sWifiManager.setScanThrottleEnabled(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4024,25 +3971,22 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#setAutoWakeupEnabled(boolean)} &
      * {@link WifiManager#isAutoWakeupEnabled()}.
      */
+    @Test
     public void testAutoWakeUpEnabled() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isAutoWakeupEnabled();
+            currState = sWifiManager.isAutoWakeupEnabled();
             boolean newState = !currState;
-            mWifiManager.setAutoWakeupEnabled(newState);
+            sWifiManager.setAutoWakeupEnabled(newState);
             PollingCheck.check(
                     "Wifi settings toggle failed!",
                     DURATION_SETTINGS_TOGGLE,
-                    () -> mWifiManager.isAutoWakeupEnabled() == newState);
-            assertEquals(newState, mWifiManager.isAutoWakeupEnabled());
+                    () -> sWifiManager.isAutoWakeupEnabled() == newState);
+            assertEquals(newState, sWifiManager.isAutoWakeupEnabled());
         } finally {
-            if (currState != null) mWifiManager.setAutoWakeupEnabled(currState);
+            if (currState != null) sWifiManager.setAutoWakeupEnabled(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4051,31 +3995,28 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#setVerboseLoggingEnabled(boolean)} &
      * {@link WifiManager#isVerboseLoggingEnabled()}.
      */
+    @Test
     public void testVerboseLoggingEnabled() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         TestWifiVerboseLoggingStatusChangedListener listener =
-                WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(mContext) ?
-                new TestWifiVerboseLoggingStatusChangedListener() : null;
+                WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)
+                        ? new TestWifiVerboseLoggingStatusChangedListener() : null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             if (listener != null) {
-                mWifiManager.addWifiVerboseLoggingStatusChangedListener(mExecutor, listener);
+                sWifiManager.addWifiVerboseLoggingStatusChangedListener(mExecutor, listener);
             }
-            currState = mWifiManager.isVerboseLoggingEnabled();
+            currState = sWifiManager.isVerboseLoggingEnabled();
             boolean newState = !currState;
             if (listener != null) {
                 assertEquals(0, listener.numCalls);
             }
-            mWifiManager.setVerboseLoggingEnabled(newState);
+            sWifiManager.setVerboseLoggingEnabled(newState);
             PollingCheck.check(
                     "Wifi verbose logging toggle failed!",
                     DURATION_SETTINGS_TOGGLE,
-                    () -> mWifiManager.isVerboseLoggingEnabled() == newState);
+                    () -> sWifiManager.isVerboseLoggingEnabled() == newState);
             if (listener != null) {
                 PollingCheck.check(
                         "Verbose logging listener timeout",
@@ -4083,9 +4024,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                         () -> listener.status == newState && listener.numCalls == 1);
             }
         } finally {
-            if (currState != null) mWifiManager.setVerboseLoggingEnabled(currState);
+            if (currState != null) sWifiManager.setVerboseLoggingEnabled(currState);
             if (listener != null) {
-                mWifiManager.removeWifiVerboseLoggingStatusChangedListener(listener);
+                sWifiManager.removeWifiVerboseLoggingStatusChangedListener(listener);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -4094,28 +4035,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#setVerboseLoggingLevel(int)}.
      */
+    @Test
     public void testSetVerboseLogging() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isVerboseLoggingEnabled();
+            currState = sWifiManager.isVerboseLoggingEnabled();
 
-            mWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED);
-            assertTrue(mWifiManager.isVerboseLoggingEnabled());
+            sWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED);
+            assertTrue(sWifiManager.isVerboseLoggingEnabled());
             assertEquals(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED,
-                    mWifiManager.getVerboseLoggingLevel());
+                    sWifiManager.getVerboseLoggingLevel());
 
-            mWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_DISABLED);
-            assertFalse(mWifiManager.isVerboseLoggingEnabled());
+            sWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_DISABLED);
+            assertFalse(sWifiManager.isVerboseLoggingEnabled());
             assertEquals(WifiManager.VERBOSE_LOGGING_LEVEL_DISABLED,
-                    mWifiManager.getVerboseLoggingLevel());
+                    sWifiManager.getVerboseLoggingLevel());
         } finally {
-            if (currState != null) mWifiManager.setVerboseLoggingEnabled(currState);
+            if (currState != null) sWifiManager.setVerboseLoggingEnabled(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4124,24 +4062,21 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Test {@link WifiManager#setVerboseLoggingLevel(int)} for show key mode.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testSetVerboseLoggingShowKeyModeNonUserBuild() throws Exception {
         if (Build.TYPE.equals("user")) return;
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isVerboseLoggingEnabled();
+            currState = sWifiManager.isVerboseLoggingEnabled();
 
-            mWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY);
-            assertTrue(mWifiManager.isVerboseLoggingEnabled());
+            sWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY);
+            assertTrue(sWifiManager.isVerboseLoggingEnabled());
             assertEquals(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY,
-                    mWifiManager.getVerboseLoggingLevel());
+                    sWifiManager.getVerboseLoggingLevel());
         } finally {
-            if (currState != null) mWifiManager.setVerboseLoggingEnabled(currState);
+            if (currState != null) sWifiManager.setVerboseLoggingEnabled(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4150,27 +4085,24 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Test {@link WifiManager#setVerboseLoggingLevel(int)} for show key mode.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testSetVerboseLoggingShowKeyModeUserBuild() throws Exception {
         if (!Build.TYPE.equals("user")) return;
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         Boolean currState = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            currState = mWifiManager.isVerboseLoggingEnabled();
+            currState = sWifiManager.isVerboseLoggingEnabled();
 
-            mWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY);
-            assertTrue(mWifiManager.isVerboseLoggingEnabled());
+            sWifiManager.setVerboseLoggingLevel(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY);
+            assertTrue(sWifiManager.isVerboseLoggingEnabled());
             assertEquals(WifiManager.VERBOSE_LOGGING_LEVEL_ENABLED_SHOW_KEY,
-                    mWifiManager.getVerboseLoggingLevel());
+                    sWifiManager.getVerboseLoggingLevel());
             fail("Verbosing logging show key mode should not be allowed for user build.");
         } catch (SecurityException e) {
             // expected
         } finally {
-            if (currState != null) mWifiManager.setVerboseLoggingEnabled(currState);
+            if (currState != null) sWifiManager.setVerboseLoggingEnabled(currState);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4182,21 +4114,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * the existing saved networks on the device to be lost after the test. If you add the
      * networks back after reset, the ownership of saved networks will change.
      */
+    @Test
     public void testFactoryReset() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         List<WifiConfiguration> beforeSavedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConfiguredNetworks);
+                sWifiManager::getConfiguredNetworks);
         try {
-            mWifiManager.factoryReset();
+            sWifiManager.factoryReset();
             fail("Factory reset should not be allowed for non-privileged apps");
         } catch (SecurityException e) {
             // expected
         }
         List<WifiConfiguration> afterSavedNetworks = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConfiguredNetworks);
+                sWifiManager::getConfiguredNetworks);
         assertEquals(beforeSavedNetworks.size(), afterSavedNetworks.size());
     }
 
@@ -4204,11 +4133,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Test {@link WifiNetworkConnectionStatistics} does not crash.
      * TODO(b/150891569): deprecate it in Android S, this API is not used anywhere.
      */
+    @Test
     public void testWifiNetworkConnectionStatistics() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         new WifiNetworkConnectionStatistics();
         WifiNetworkConnectionStatistics stats = new WifiNetworkConnectionStatistics(0, 0);
         new WifiNetworkConnectionStatistics(stats);
@@ -4221,20 +4147,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * again.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testStartAndStopRestrictingAutoJoinToSubscriptionId() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        startScan();
-        waitForConnection();
         int fakeSubscriptionId = 5;
         ShellIdentityUtils.invokeWithShellPermissions(() ->
-                mWifiManager.startRestrictingAutoJoinToSubscriptionId(fakeSubscriptionId));
+                sWifiManager.startRestrictingAutoJoinToSubscriptionId(fakeSubscriptionId));
+        waitForDisconnection();
         startScan();
         ensureNotConnected();
         ShellIdentityUtils.invokeWithShellPermissions(() ->
-                mWifiManager.stopRestrictingAutoJoinToSubscriptionId());
+                sWifiManager.stopRestrictingAutoJoinToSubscriptionId());
         startScan();
         waitForConnection();
     }
@@ -4277,6 +4199,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testActiveCountryCodeChangedCallback() throws Exception {
         if (!hasLocationFeature()) {
             // skip the test if location is not supported
@@ -4290,6 +4213,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             // skip the test when there is no Country Code available
             return;
         }
+        if (!PropertyUtil.isVndkApiLevelAtLeast(Build.VERSION_CODES.TIRAMISU)) {
+            // skip the test if vendor version is lower than T
+            return;
+        }
         TestActiveCountryCodeChangedCallback testCountryCodeChangedCallback =
                 new TestActiveCountryCodeChangedCallback();
         TestExecutor executor = new TestExecutor();
@@ -4299,7 +4226,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             runWithScanning(() -> {
                 uiAutomation.adoptShellPermissionIdentity();
                 turnOffWifiAndTetheredHotspotIfEnabled();
-                mWifiManager.registerActiveCountryCodeChangedCallback(
+                sWifiManager.registerActiveCountryCodeChangedCallback(
                         executor, testCountryCodeChangedCallback);
 
 
@@ -4314,7 +4241,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                                             == null;
                         });
                 // Enable wifi to make sure country code has been updated.
-                mWifiManager.setWifiEnabled(true);
+                sWifiManager.setWifiEnabled(true);
                 PollingCheck.check(
                         "DriverCountryCode is null when wifi on",
                         5000,
@@ -4326,7 +4253,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                                             != null;
                         });
                 // Disable wifi to trigger country code change
-                mWifiManager.setWifiEnabled(false);
+                sWifiManager.setWifiEnabled(false);
                 PollingCheck.check(
                         "DriverCountryCode should be null when wifi off",
                         5000,
@@ -4336,10 +4263,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                                     && testCountryCodeChangedCallback
                                             .getCurrentDriverCountryCode() == null;
                         });
-                mWifiManager.unregisterActiveCountryCodeChangedCallback(
+                sWifiManager.unregisterActiveCountryCodeChangedCallback(
                             testCountryCodeChangedCallback);
                 testCountryCodeChangedCallback.resetCallbackCallededHistory();
-                mWifiManager.setWifiEnabled(true);
+                sWifiManager.setWifiEnabled(true);
                 // Check there is no callback has been called.
                 PollingCheck.check(
                         "Callback is called after unregister",
@@ -4359,14 +4286,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Test that the wifi country code is either null, or a length-2 string.
      */
+    @Test
     public void testGetCountryCode() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         String wifiCountryCode = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getCountryCode);
+                sWifiManager::getCountryCode);
 
         if (wifiCountryCode == null) {
             return;
@@ -4377,11 +4300,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertEquals(wifiCountryCode.toUpperCase(Locale.US), wifiCountryCode);
 
         // skip if Telephony is unsupported
-        if (!WifiFeature.isTelephonySupported(getContext())) {
+        if (!WifiFeature.isTelephonySupported(sContext)) {
             return;
         }
 
-        String telephonyCountryCode = getContext().getSystemService(TelephonyManager.class)
+        String telephonyCountryCode = sContext.getSystemService(TelephonyManager.class)
                 .getNetworkCountryIso();
 
         // skip if Telephony country code is unavailable
@@ -4398,34 +4321,29 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * @throws Exception
      */
     private void testGetCurrentNetwork(boolean shouldDisableWifi) throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // ensure Wifi is connected
-        ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.reconnect());
+        ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.reconnect());
         PollingCheck.check(
                 "Connection info network id is invalid - Please ensure there is a " +
                 " saved network in range of this device",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
-                () -> mWifiManager.getConnectionInfo().getNetworkId() != -1);
+                () -> sWifiManager.getConnectionInfo().getNetworkId() != -1);
         PollingCheck.check(
                 "Wifi current network is null - Please ensure there is a saved network " +
                         " in range of this device",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
-                () -> ShellIdentityUtils.invokeWithShellPermissions(mWifiManager::getCurrentNetwork)
+                () -> ShellIdentityUtils.invokeWithShellPermissions(sWifiManager::getCurrentNetwork)
                         != null);
 
-        String networkKey = mWifiManager.getConnectionInfo().getNetworkKey();
+        String networkKey = sWifiManager.getConnectionInfo().getNetworkKey();
         assertNotNull(networkKey);
 
         Network wifiCurrentNetwork = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getCurrentNetwork);
+                sWifiManager::getCurrentNetwork);
         assertNotNull(wifiCurrentNetwork);
 
         List<WifiConfiguration> configuredNetwork = ShellIdentityUtils.invokeWithShellPermissions(
-                mWifiManager::getConfiguredNetworks);
+                sWifiManager::getConfiguredNetworks);
 
         boolean isNetworkKeyExist = false;
         for (WifiConfiguration config : configuredNetwork) {
@@ -4441,7 +4359,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         synchronized (mLock) {
             try {
                 // File a request for wifi network.
-                mConnectivityManager.registerNetworkCallback(
+                sConnectivityManager.registerNetworkCallback(
                         new NetworkRequest.Builder()
                                 .addTransportType(TRANSPORT_WIFI)
                                 .build(),
@@ -4460,19 +4378,19 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             PollingCheck.check(
                     "Wifi not disabled!",
                     20000,
-                    () -> !mWifiManager.isWifiEnabled());
+                    () -> !sWifiManager.isWifiEnabled());
         } else {
-            ShellIdentityUtils.invokeWithShellPermissions(() -> mWifiManager.disconnect());
+            ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.disconnect());
         }
         PollingCheck.check(
                 "Wifi not disconnected! Connection info network id still valid",
                 20000,
-                () -> mWifiManager.getConnectionInfo().getNetworkId() == -1);
+                () -> sWifiManager.getConnectionInfo().getNetworkId() == -1);
 
         PollingCheck.check(
                 "Wifi not disconnected! Current network is not null",
                 WIFI_CONNECT_TIMEOUT_MILLIS,
-                () -> ShellIdentityUtils.invokeWithShellPermissions(mWifiManager::getCurrentNetwork)
+                () -> ShellIdentityUtils.invokeWithShellPermissions(sWifiManager::getCurrentNetwork)
                         == null);
     }
 
@@ -4481,6 +4399,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * with {@link ConnectivityManager#registerNetworkCallback} when connected to a Wifi network,
      * and returns null when disconnected.
      */
+    @Test
     public void testGetCurrentNetworkWifiDisconnected() throws Exception {
         testGetCurrentNetwork(false);
     }
@@ -4490,6 +4409,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * with {@link ConnectivityManager#registerNetworkCallback} when connected to a Wifi network,
      * and returns null when wifi disabled.
      */
+    @Test
     public void testGetCurrentNetworkWifiDisabled() throws Exception {
         testGetCurrentNetwork(true);
     }
@@ -4497,34 +4417,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#isWpa3SaeSupported()} does not crash.
      */
+    @Test
     public void testIsWpa3SaeSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWpa3SaeSupported();
+        sWifiManager.isWpa3SaeSupported();
     }
 
     /**
      * Tests {@link WifiManager#isWpa3SuiteBSupported()} does not crash.
      */
+    @Test
     public void testIsWpa3SuiteBSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWpa3SuiteBSupported();
+        sWifiManager.isWpa3SuiteBSupported();
     }
 
     /**
      * Tests {@link WifiManager#isEnhancedOpenSupported()} does not crash.
      */
+    @Test
     public void testIsEnhancedOpenSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isEnhancedOpenSupported();
+        sWifiManager.isEnhancedOpenSupported();
     }
 
     /**
@@ -4533,27 +4444,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Note that the response depends on device support and hence both true/false
      * are valid responses.
      */
+    @Test
     public void testIs5GhzBandSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // Check for 5GHz support with wifi enabled
         setWifiEnabled(true);
         PollingCheck.check(
                 "Wifi not enabled!",
                 20000,
-                () -> mWifiManager.isWifiEnabled());
-        boolean isSupportedEnabled = mWifiManager.is5GHzBandSupported();
+                () -> sWifiManager.isWifiEnabled());
+        boolean isSupportedEnabled = sWifiManager.is5GHzBandSupported();
 
         // Check for 5GHz support with wifi disabled
         setWifiEnabled(false);
         PollingCheck.check(
                 "Wifi not disabled!",
                 20000,
-                () -> !mWifiManager.isWifiEnabled());
-        boolean isSupportedDisabled = mWifiManager.is5GHzBandSupported();
+                () -> !sWifiManager.isWifiEnabled());
+        boolean isSupportedDisabled = sWifiManager.is5GHzBandSupported();
 
         // If Support is true when WiFi is disable, then it has to be true when it is enabled.
         // Note, the reverse is a valid case.
@@ -4568,27 +4475,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Note that the response depends on device support and hence both true/false
      * are valid responses.
      */
+    @Test
     public void testIs6GhzBandSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // Check for 6GHz support with wifi enabled
         setWifiEnabled(true);
         PollingCheck.check(
                 "Wifi not enabled!",
                 20000,
-                () -> mWifiManager.isWifiEnabled());
-        boolean isSupportedEnabled = mWifiManager.is6GHzBandSupported();
+                () -> sWifiManager.isWifiEnabled());
+        boolean isSupportedEnabled = sWifiManager.is6GHzBandSupported();
 
         // Check for 6GHz support with wifi disabled
         setWifiEnabled(false);
         PollingCheck.check(
                 "Wifi not disabled!",
                 20000,
-                () -> !mWifiManager.isWifiEnabled());
-        boolean isSupportedDisabled = mWifiManager.is6GHzBandSupported();
+                () -> !sWifiManager.isWifiEnabled());
+        boolean isSupportedDisabled = sWifiManager.is6GHzBandSupported();
 
         // If Support is true when WiFi is disable, then it has to be true when it is enabled.
         // Note, the reverse is a valid case.
@@ -4603,8 +4506,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Note that the response depends on device support and hence both true/false
      * are valid responses.
      */
+    @Test
     public void testIs60GhzBandSupported() throws Exception {
-        if (!(WifiFeature.isWifiSupported(getContext())
+        if (!(WifiFeature.isWifiSupported(sContext)
                 && ApiLevelUtil.isAtLeast(Build.VERSION_CODES.S))) {
             // skip the test if WiFi is not supported
             return;
@@ -4615,16 +4519,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         PollingCheck.check(
                 "Wifi not enabled!",
                 20000,
-                () -> mWifiManager.isWifiEnabled());
-        boolean isSupportedEnabled = mWifiManager.is60GHzBandSupported();
+                () -> sWifiManager.isWifiEnabled());
+        boolean isSupportedEnabled = sWifiManager.is60GHzBandSupported();
 
         // Check for 60GHz support with wifi disabled
         setWifiEnabled(false);
         PollingCheck.check(
                 "Wifi not disabled!",
                 20000,
-                () -> !mWifiManager.isWifiEnabled());
-        boolean isSupportedDisabled = mWifiManager.is60GHzBandSupported();
+                () -> !sWifiManager.isWifiEnabled());
+        boolean isSupportedDisabled = sWifiManager.is60GHzBandSupported();
 
         // If Support is true when WiFi is disable, then it has to be true when it is enabled.
         // Note, the reverse is a valid case.
@@ -4640,46 +4544,42 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Note that the response depends on device support and hence both true/false
      * are valid responses.
      */
+    @Test
     public void testIsWifiStandardsSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // Check for WiFi standards support with wifi enabled
         setWifiEnabled(true);
         PollingCheck.check(
                 "Wifi not enabled!",
                 20000,
-                () -> mWifiManager.isWifiEnabled());
+                () -> sWifiManager.isWifiEnabled());
         boolean isLegacySupportedEnabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_LEGACY);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_LEGACY);
         boolean is11nSupporedEnabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11N);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11N);
         boolean is11acSupportedEnabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AC);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AC);
         boolean is11axSupportedEnabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AX);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AX);
         boolean is11beSupportedEnabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE);
 
         // Check for WiFi standards support with wifi disabled
         setWifiEnabled(false);
         PollingCheck.check(
                 "Wifi not disabled!",
                 20000,
-                () -> !mWifiManager.isWifiEnabled());
+                () -> !sWifiManager.isWifiEnabled());
 
         boolean isLegacySupportedDisabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_LEGACY);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_LEGACY);
         boolean is11nSupportedDisabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11N);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11N);
         boolean is11acSupportedDisabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AC);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AC);
         boolean is11axSupportedDisabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AX);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11AX);
         boolean is11beSupportedDisabled =
-                mWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE);
+                sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE);
 
         if (isLegacySupportedDisabled) {
             assertTrue(isLegacySupportedEnabled);
@@ -4725,27 +4625,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * adds a Passpoint configuration correctly by getting it once it is added, and comparing it
      * to the local copy of the configuration.
      */
+    @Test
     public void testAddOrUpdatePasspointConfiguration() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // Create and install a Passpoint configuration
         PasspointConfiguration passpointConfiguration = createPasspointConfiguration();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
+            sWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
 
             // Compare configurations
-            List<PasspointConfiguration> configurations = mWifiManager.getPasspointConfigurations();
+            List<PasspointConfiguration> configurations = sWifiManager.getPasspointConfigurations();
             assertNotNull("The installed passpoint profile is missing", configurations);
             assertEquals(passpointConfiguration, getTargetPasspointConfiguration(configurations,
                     passpointConfiguration.getUniqueId()));
         } finally {
             // Clean up
-            mWifiManager.removePasspointConfiguration(passpointConfiguration.getHomeSp().getFqdn());
+            sWifiManager.removePasspointConfiguration(passpointConfiguration.getHomeSp().getFqdn());
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4755,11 +4651,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * adds a Passpoint configuration correctly, check the default metered setting. Use API change
      * metered override, verify Passpoint configuration changes with it.
      */
+    @Test
     public void testSetPasspointMeteredOverride() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // Create and install a Passpoint configuration
         PasspointConfiguration passpointConfiguration = createPasspointConfiguration();
         String fqdn = passpointConfiguration.getHomeSp().getFqdn();
@@ -4768,25 +4661,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
+            sWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
             PasspointConfiguration saved = getTargetPasspointConfiguration(
-                    mWifiManager.getPasspointConfigurations(), uniqueId);
+                    sWifiManager.getPasspointConfigurations(), uniqueId);
             assertNotNull("The installed passpoint profile is missing", saved);
             // Verify meter override setting.
             assertEquals("Metered overrider default should be none",
                     WifiConfiguration.METERED_OVERRIDE_NONE, saved.getMeteredOverride());
             // Change the meter override setting.
-            mWifiManager.setPasspointMeteredOverride(fqdn,
+            sWifiManager.setPasspointMeteredOverride(fqdn,
                     WifiConfiguration.METERED_OVERRIDE_METERED);
             // Verify passpoint config change with the new setting.
             saved = getTargetPasspointConfiguration(
-                    mWifiManager.getPasspointConfigurations(), uniqueId);
+                    sWifiManager.getPasspointConfigurations(), uniqueId);
             assertNotNull("The installed passpoint profile is missing", saved);
             assertEquals("Metered override should be metered",
                     WifiConfiguration.METERED_OVERRIDE_METERED, saved.getMeteredOverride());
         } finally {
             // Clean up
-            mWifiManager.removePasspointConfiguration(fqdn);
+            sWifiManager.removePasspointConfiguration(fqdn);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -4796,12 +4689,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#startSubscriptionProvisioning(OsuProvider, Executor, ProvisioningCallback)}
      * starts a subscription provisioning, and confirm a status callback invoked once.
      */
+    @Test
     public void testStartSubscriptionProvisioning() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // Using Java reflection to construct an OsuProvider instance because its constructor is
         // hidden and not available to apps.
         Class<?> osuProviderClass = Class.forName("android.net.wifi.hotspot2.OsuProvider");
@@ -4811,79 +4700,60 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         OsuProvider osuProvider = (OsuProvider) osuProviderClassConstructor.newInstance(TEST_SSID,
                 TEST_FRIENDLY_NAMES, TEST_SERVICE_DESCRIPTION, TEST_SERVER_URI, TEST_NAI,
                 TEST_METHOD_LIST);
-
+        TestProvisioningCallback callback = new TestProvisioningCallback(mLock);
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             synchronized (mLock) {
                 // Start a subscription provisioning for a non-existent Passpoint R2 AP
-                mWifiManager.startSubscriptionProvisioning(osuProvider, mExecutor,
-                        mProvisioningCallback);
+                sWifiManager.startSubscriptionProvisioning(osuProvider, mExecutor, callback);
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
-
+        waitForDisconnection();
         // Expect only a single callback event, connecting. Since AP doesn't exist, it ends here
-        assertEquals(ProvisioningCallback.OSU_STATUS_AP_CONNECTING, mProvisioningStatus);
+        assertEquals(ProvisioningCallback.OSU_STATUS_AP_CONNECTING, callback.mProvisioningStatus);
         // No failure callbacks expected
-        assertEquals(0, mProvisioningFailureStatus);
+        assertEquals(0, callback.mProvisioningFailureStatus);
         // No completion callback expected
-        assertFalse(mProvisioningComplete);
+        assertFalse(callback.mProvisioningComplete);
+        ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
+        PollingCheck.check("Wifi not disabled!", 20000,
+                () -> !sWifiManager.isWifiEnabled());
     }
 
     /**
      * Tests {@link WifiManager#setTdlsEnabled(InetAddress, boolean)} does not crash.
      */
+    @Test
     public void testSetTdlsEnabled() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
         InetAddress inetAddress = InetAddress.getByName(TEST_IP_ADDRESS);
 
-        mWifiManager.setTdlsEnabled(inetAddress, true);
+        sWifiManager.setTdlsEnabled(inetAddress, true);
         Thread.sleep(50);
-        mWifiManager.setTdlsEnabled(inetAddress, false);
+        sWifiManager.setTdlsEnabled(inetAddress, false);
     }
 
     /**
      * Tests {@link WifiManager#setTdlsEnabledWithMacAddress(String, boolean)} does not crash.
      */
+    @Test
     public void testSetTdlsEnabledWithMacAddress() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
-        mWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, true);
+        sWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, true);
         Thread.sleep(50);
-        mWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, false);
+        sWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, false);
     }
 
     /**
      * Verify the usage of {@code WifiManager#isTdlsOperationCurrentlyAvailable}.
      */
+    @Test
     public void testIsTdlsOperationCurrentlyAvailable() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        boolean expectedResult = mWifiManager.isTdlsSupported() ? true : false;
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
+        boolean expectedResult = sWifiManager.isTdlsSupported();
         AtomicBoolean enabled = new AtomicBoolean(false);
-        mWifiManager.isTdlsOperationCurrentlyAvailable(mExecutor,
+        sWifiManager.isTdlsOperationCurrentlyAvailable(mExecutor,
                 (enabledLocal) -> {
                     synchronized (mLock) {
                         enabled.set(enabledLocal);
@@ -4900,21 +4770,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify the usage of {@code WifiManager#getMaxSupportedConcurrentTdlsSessions}.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
     public void testGetMaxSupportedConcurrentTdlsSessions() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!mWifiManager.isTdlsSupported()) {
+        if (!sWifiManager.isTdlsSupported()) {
             // skip the test if TDLS is not supported
             return;
         }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
 
         AtomicInteger maxNumOfTdlsSessions = new AtomicInteger(0);
-        mWifiManager.getMaxSupportedConcurrentTdlsSessions(mExecutor,
+        sWifiManager.getMaxSupportedConcurrentTdlsSessions(mExecutor,
                 (maxNumOfTdlsSessionsLocal) -> {
                     synchronized (mLock) {
                         maxNumOfTdlsSessions.set(maxNumOfTdlsSessionsLocal);
@@ -4933,22 +4797,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify the usage of
      * {@link WifiManager#setTdlsEnabled(InetAddress, boolean, Executor, Consumer)}.
      */
+    @Test
     public void testSetTdlsEnabledWithIpAddressConsumerModel() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!mWifiManager.isTdlsSupported()) {
+        if (!sWifiManager.isTdlsSupported()) {
             // skip the test if TDLS is not supported
             return;
         }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
 
         InetAddress inetAddress = InetAddress.getByName(TEST_IP_ADDRESS);
-        mWifiManager.setTdlsEnabled(inetAddress, true, mExecutor, (e) -> {});
-        mWifiManager.setTdlsEnabled(inetAddress, false, mExecutor, (e) -> {});
+        sWifiManager.setTdlsEnabled(inetAddress, true, mExecutor, (e) -> {});
+        sWifiManager.setTdlsEnabled(inetAddress, false, mExecutor, (e) -> {});
     }
 
     /**
@@ -4956,18 +4814,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#setTdlsEnabledWithMacAddress(String, boolean, Executor, Consumer)}
      * and {@link WifiManager#getNumberOfEnabledTdlsSessions(Executor, Consumer)}.
      */
+    @Test
     public void testSetTdlsEnabledWithMacAddressConsumerModel() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!mWifiManager.isTdlsSupported()) {
+        if (!sWifiManager.isTdlsSupported()) {
             // skip the test if TDLS is not supported
             return;
         }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
 
         AtomicBoolean enabled = new AtomicBoolean(false);
         AtomicInteger numOfTdlsSessions = new AtomicInteger(0);
@@ -4981,7 +4833,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             }
         };
 
-        mWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, true, mExecutor,
+        sWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, true, mExecutor,
                 (enabledLocal) -> {
                     synchronized (mLock) {
                         enabled.set(enabledLocal);
@@ -4992,14 +4844,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             mLock.wait(TEST_WAIT_DURATION_MS);
         }
         assertTrue(enabled.get());
-        mWifiManager.getNumberOfEnabledTdlsSessions(mExecutor, listener2);
+        sWifiManager.getNumberOfEnabledTdlsSessions(mExecutor, listener2);
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
         }
         assertEquals(1, numOfTdlsSessions.get());
 
-        mWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, false, mExecutor, (e) -> {});
-        mWifiManager.getNumberOfEnabledTdlsSessions(mExecutor, listener2);
+        sWifiManager.setTdlsEnabledWithMacAddress(TEST_MAC_ADDRESS, false, mExecutor, (e) -> {});
+        sWifiManager.getNumberOfEnabledTdlsSessions(mExecutor, listener2);
         synchronized (mLock) {
             mLock.wait(TEST_WAIT_DURATION_MS);
         }
@@ -5014,17 +4866,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * macRandomizationSetting == RANDOMIZATION_PERSISTENT.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testSuggestionBuilderNonPersistentRandomization() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         WifiNetworkSuggestion suggestion = new WifiNetworkSuggestion.Builder()
                 .setSsid(TEST_SSID).setWpa2Passphrase(TEST_PASSPHRASE)
                 .setMacRandomizationSetting(WifiNetworkSuggestion.RANDOMIZATION_NON_PERSISTENT)
                 .build();
         assertEquals(WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS,
-                mWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
+                sWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
         verifySuggestionFoundWithMacRandomizationSetting(TEST_SSID,
                 WifiNetworkSuggestion.RANDOMIZATION_NON_PERSISTENT);
 
@@ -5032,14 +4881,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 .setSsid(TEST_SSID).setWpa2Passphrase(TEST_PASSPHRASE)
                 .build();
         assertEquals(WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS,
-                mWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
+                sWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
         verifySuggestionFoundWithMacRandomizationSetting(TEST_SSID,
                 WifiNetworkSuggestion.RANDOMIZATION_PERSISTENT);
     }
 
     private void verifySuggestionFoundWithMacRandomizationSetting(String ssid,
             int macRandomizationSetting) {
-        List<WifiNetworkSuggestion> retrievedSuggestions = mWifiManager.getNetworkSuggestions();
+        List<WifiNetworkSuggestion> retrievedSuggestions = sWifiManager.getNetworkSuggestions();
         for (WifiNetworkSuggestion entry : retrievedSuggestions) {
             if (entry.getSsid().equals(ssid)) {
                 assertEquals(macRandomizationSetting, entry.getMacRandomizationSetting());
@@ -5053,11 +4902,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#getWifiConfigForMatchedNetworkSuggestionsSharedWithUser(List)}
      */
+    @Test
     public void testGetAllWifiConfigForMatchedNetworkSuggestion() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         ScanResult scanResult = new ScanResult();
         scanResult.SSID = TEST_SSID;
@@ -5068,11 +4914,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 .setSsid(TEST_SSID).setWpa2Passphrase(TEST_PASSPHRASE).build();
 
         assertEquals(WifiManager.STATUS_NETWORK_SUGGESTIONS_SUCCESS,
-                mWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
+                sWifiManager.addNetworkSuggestions(Arrays.asList(suggestion)));
         List<WifiConfiguration> matchedResult;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            matchedResult = mWifiManager
+            matchedResult = sWifiManager
                     .getWifiConfigForMatchedNetworkSuggestionsSharedWithUser(testList);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
@@ -5084,11 +4930,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#getMatchingScanResults(List, List)}
      */
+    @Test
     public void testGetMatchingScanResults() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // Create pair of ScanResult and WifiNetworkSuggestion
         ScanResult scanResult = new ScanResult();
         scanResult.SSID = TEST_SSID;
@@ -5098,14 +4941,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         WifiNetworkSuggestion suggestion = new WifiNetworkSuggestion.Builder()
                 .setSsid(TEST_SSID).setWpa2Passphrase(TEST_PASSPHRASE).build();
 
-        Map<WifiNetworkSuggestion, List<ScanResult>> matchedResults = mWifiManager
+        Map<WifiNetworkSuggestion, List<ScanResult>> matchedResults = sWifiManager
                 .getMatchingScanResults(Arrays.asList(suggestion), Arrays.asList(scanResult));
         // Verify result is matched pair of ScanResult and WifiNetworkSuggestion
         assertEquals(scanResult.SSID, matchedResults.get(suggestion).get(0).SSID);
 
         // Change ScanResult to unmatched should return empty result.
         scanResult.SSID = TEST_SSID_UNQUOTED;
-        matchedResults = mWifiManager
+        matchedResults = sWifiManager
                 .getMatchingScanResults(Arrays.asList(suggestion), Arrays.asList(scanResult));
         assertTrue(matchedResults.get(suggestion).isEmpty());
     }
@@ -5113,30 +4956,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#disableEphemeralNetwork(String)}.
      */
+    @Test
     public void testDisableEphemeralNetwork() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         List<WifiConfiguration> savedNetworks = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Temporarily disable on all networks.
-            savedNetworks = mWifiManager.getConfiguredNetworks();
+            savedNetworks = sWifiManager.getConfiguredNetworks();
             for (WifiConfiguration network : savedNetworks) {
-                mWifiManager.disableEphemeralNetwork(network.SSID);
+                sWifiManager.disableEphemeralNetwork(network.SSID);
             }
             // trigger a disconnect and wait for disconnect.
-            mWifiManager.disconnect();
+            sWifiManager.disconnect();
             waitForDisconnection();
 
             // Now trigger scan and ensure that the device does not connect to any networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             ensureNotConnected();
         } finally {
             uiAutomation.dropShellPermissionIdentity();
@@ -5147,45 +4983,38 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#allowAutojoin(int, boolean)}.
      */
+    @Test
     public void testAllowAutojoin() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         List<WifiConfiguration> savedNetworks = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // disable autojoin on all networks.
-            savedNetworks = mWifiManager.getConfiguredNetworks();
+            savedNetworks = sWifiManager.getConfiguredNetworks();
             for (WifiConfiguration network : savedNetworks) {
-                mWifiManager.allowAutojoin(network.networkId, false);
+                sWifiManager.allowAutojoin(network.networkId, false);
             }
             // trigger a disconnect and wait for disconnect.
-            mWifiManager.disconnect();
+            sWifiManager.disconnect();
             waitForDisconnection();
 
             // Now trigger scan and ensure that the device does not connect to any networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             ensureNotConnected();
 
             // Now enable autojoin on all networks.
             for (WifiConfiguration network : savedNetworks) {
-                mWifiManager.allowAutojoin(network.networkId, true);
+                sWifiManager.allowAutojoin(network.networkId, true);
             }
 
             // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             waitForConnection();
         } finally {
             // Restore auto join state.
             if (savedNetworks != null) {
                 for (WifiConfiguration network : savedNetworks) {
-                    mWifiManager.allowAutojoin(network.networkId, network.allowAutojoin);
+                    sWifiManager.allowAutojoin(network.networkId, network.allowAutojoin);
                 }
             }
             uiAutomation.dropShellPermissionIdentity();
@@ -5195,25 +5024,21 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#allowAutojoinPasspoint(String, boolean)}.
      */
+    @Test
     public void testAllowAutojoinPasspoint() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         PasspointConfiguration passpointConfiguration = createPasspointConfiguration();
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
+            sWifiManager.addOrUpdatePasspointConfiguration(passpointConfiguration);
             // Turn off auto-join
-            mWifiManager.allowAutojoinPasspoint(
+            sWifiManager.allowAutojoinPasspoint(
                     passpointConfiguration.getHomeSp().getFqdn(), false);
             // Turn on auto-join
-            mWifiManager.allowAutojoinPasspoint(
+            sWifiManager.allowAutojoinPasspoint(
                     passpointConfiguration.getHomeSp().getFqdn(), true);
         } finally {
-            mWifiManager.removePasspointConfiguration(passpointConfiguration.getHomeSp().getFqdn());
+            sWifiManager.removePasspointConfiguration(passpointConfiguration.getHomeSp().getFqdn());
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -5221,42 +5046,35 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#allowAutojoinGlobal(boolean)}.
      */
+    @Test
     public void testAllowAutojoinGlobal() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // disable autojoin on all networks.
-            mWifiManager.allowAutojoinGlobal(false);
+            sWifiManager.allowAutojoinGlobal(false);
 
             // trigger a disconnect and wait for disconnect.
-            mWifiManager.disconnect();
+            sWifiManager.disconnect();
             waitForDisconnection();
 
             // Now trigger scan and ensure that the device does not connect to any networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             ensureNotConnected();
 
             // verify null is returned when attempting to get current configured network.
-            WifiConfiguration config = mWifiManager.getPrivilegedConnectedNetwork();
+            WifiConfiguration config = sWifiManager.getPrivilegedConnectedNetwork();
             assertNull("config should be null because wifi is not connected", config);
 
             // Now enable autojoin on all networks.
-            mWifiManager.allowAutojoinGlobal(true);
+            sWifiManager.allowAutojoinGlobal(true);
 
             // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             waitForConnection();
         } finally {
             // Re-enable auto join if the test fails for some reason.
-            mWifiManager.allowAutojoinGlobal(true);
+            sWifiManager.allowAutojoinGlobal(true);
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -5265,12 +5083,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify the invalid and valid usages of {@code WifiManager#queryAutojoinGlobal}.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testQueryAutojoinGlobal() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         AtomicBoolean enabled = new AtomicBoolean(false);
         Consumer<Boolean> listener = new Consumer<Boolean>() {
             @Override
@@ -5283,35 +5097,118 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         };
         // Test invalid inputs trigger IllegalArgumentException
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.queryAutojoinGlobal(null, listener));
+                () -> sWifiManager.queryAutojoinGlobal(null, listener));
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.queryAutojoinGlobal(mExecutor, null));
+                () -> sWifiManager.queryAutojoinGlobal(mExecutor, null));
 
         // Test caller with no permission triggers SecurityException.
         assertThrows("No permission should trigger SecurityException", SecurityException.class,
-                () -> mWifiManager.queryAutojoinGlobal(mExecutor, listener));
+                () -> sWifiManager.queryAutojoinGlobal(mExecutor, listener));
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Test get/set autojoin global enabled
-            mWifiManager.allowAutojoinGlobal(true);
-            mWifiManager.queryAutojoinGlobal(mExecutor, listener);
+            sWifiManager.allowAutojoinGlobal(true);
+            sWifiManager.queryAutojoinGlobal(mExecutor, listener);
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
             assertTrue(enabled.get());
 
             // Test get/set autojoin global disabled
-            mWifiManager.allowAutojoinGlobal(false);
-            mWifiManager.queryAutojoinGlobal(mExecutor, listener);
+            sWifiManager.allowAutojoinGlobal(false);
+            sWifiManager.queryAutojoinGlobal(mExecutor, listener);
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
             assertFalse(enabled.get());
         } finally {
             // Re-enable auto join if the test fails for some reason.
-            mWifiManager.allowAutojoinGlobal(true);
+            sWifiManager.allowAutojoinGlobal(true);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#setPerSsidRoamingMode(WifiSsid, int)},
+     * {@link WifiManager#getPerSsidRoamingModes(Executor, Consumer)},
+     * and {@link WifiManager#removePerSsidRoamingMode(WifiSsid)}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testPerSsidRoamingMode() throws Exception {
+        if (!sWifiManager.isAggressiveRoamingModeSupported()) {
+            // skip the test if aggressive roaming mode is not supported
+            return;
+        }
+        WifiSsid testSsid = WifiSsid.fromBytes("TEST_SSID_1".getBytes(StandardCharsets.UTF_8));
+        Map<String, Integer> roamingModes = new HashMap<>();
+        Consumer<Map<String, Integer>> listener = new Consumer<Map<String, Integer>>() {
+            @Override
+            public void accept(Map<String, Integer> value) {
+                synchronized (mLock) {
+                    roamingModes.clear();
+                    roamingModes.putAll(value);
+                    mLock.notify();
+                }
+            }
+        };
+
+        // Test caller with no permission triggers SecurityException.
+        assertThrows("No permission should trigger SecurityException", SecurityException.class,
+                () -> sWifiManager.setPerSsidRoamingMode(testSsid,
+                        WifiManager.ROAMING_MODE_AGGRESSIVE));
+        assertThrows("No permission should trigger SecurityException", SecurityException.class,
+                () -> sWifiManager.removePerSsidRoamingMode(testSsid));
+        assertThrows("No permission should trigger SecurityException", SecurityException.class,
+                () -> sWifiManager.getPerSsidRoamingModes(mExecutor, listener));
+
+        // Test that invalid inputs trigger an Exception.
+        assertThrows("null WifiSsid should trigger exception", NullPointerException.class,
+                () -> sWifiManager.setPerSsidRoamingMode(null,
+                        WifiManager.ROAMING_MODE_AGGRESSIVE));
+        assertThrows("null WifiSsid should trigger exception", NullPointerException.class,
+                () -> sWifiManager.removePerSsidRoamingMode(null));
+        assertThrows("null executor should trigger exception", NullPointerException.class,
+                () -> sWifiManager.getPerSsidRoamingModes(null, listener));
+        assertThrows("null listener should trigger exception", NullPointerException.class,
+                () -> sWifiManager.getPerSsidRoamingModes(mExecutor, null));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.setPerSsidRoamingMode(testSsid, WifiManager.ROAMING_MODE_AGGRESSIVE);
+            sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
+            Thread.sleep(TEST_WAIT_DURATION_MS);
+            assertTrue(
+                    roamingModes.get(testSsid.toString()) == WifiManager.ROAMING_MODE_AGGRESSIVE);
+            sWifiManager.removePerSsidRoamingMode(testSsid);
+            sWifiManager.getPerSsidRoamingModes(mExecutor, listener);
+            Thread.sleep(TEST_WAIT_DURATION_MS);
+            assertNull(roamingModes.get(testSsid.toString()));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Verify the invalid and valid usages of {@code WifiManager#setPnoScanState}.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    public void testSetPnoScanState() throws Exception {
+        // Test caller with no permission triggers SecurityException.
+        assertThrows("No permission should trigger SecurityException", SecurityException.class,
+                () -> sWifiManager.setPnoScanState(WifiManager.PNO_SCAN_STATE_ENABLED));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.setPnoScanState(WifiManager.PNO_SCAN_STATE_ENABLED);
+        } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
     }
@@ -5319,78 +5216,59 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#isWapiSupported()} does not crash.
      */
+    @Test
     public void testIsWapiSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWapiSupported();
+        sWifiManager.isWapiSupported();
     }
 
     /**
      * Tests {@link WifiManager#isWpa3SaePublicKeySupported()} does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testIsWpa3SaePublicKeySupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWpa3SaePublicKeySupported();
+        sWifiManager.isWpa3SaePublicKeySupported();
     }
 
     /**
      * Tests {@link WifiManager#isWpa3SaeH2eSupported()} does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testIsWpa3SaeH2eSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWpa3SaeH2eSupported();
+        sWifiManager.isWpa3SaeH2eSupported();
     }
 
     /**
      * Tests {@link WifiManager#isWifiDisplayR2Supported()} does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testIsWifiDisplayR2Supported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isWifiDisplayR2Supported();
+        sWifiManager.isWifiDisplayR2Supported();
     }
 
     /**
      * Tests {@link WifiManager#isP2pSupported()} returns true
      * if this device supports it, otherwise, ensure no crash.
      */
+    @Test
     public void testIsP2pSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
-        if (WifiFeature.isP2pSupported(getContext())) {
+        if (WifiFeature.isP2pSupported(sContext)) {
             // if this device supports P2P, ensure hw capability is correct.
-            assertTrue(mWifiManager.isP2pSupported());
+            assertTrue(sWifiManager.isP2pSupported());
         } else {
             // ensure no crash.
-            mWifiManager.isP2pSupported();
+            sWifiManager.isP2pSupported();
         }
 
     }
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testIsMultiStaConcurrencySupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // ensure no crash.
-        mWifiManager.isStaApConcurrencySupported();
+        sWifiManager.isStaApConcurrencySupported();
     }
 
     private PasspointConfiguration getTargetPasspointConfiguration(
@@ -5411,19 +5289,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * if the release is older than S.
      */
     @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.R)
+    @Test
     public void testIs60GhzBandSupportedOnROrOlder() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // check for 60ghz support with wifi enabled
         try {
-            boolean isSupported = mWifiManager.is60GHzBandSupported();
+            sWifiManager.is60GHzBandSupported();
             fail("Expected UnsupportedOperationException");
         } catch (UnsupportedOperationException ex) {
         }
-
     }
 
     /**
@@ -5433,22 +5306,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * are valid responses.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testIs60GhzBandSupportedOnSOrNewer() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // check for 60ghz support with wifi enabled
-        boolean isSupportedWhenWifiEnabled = mWifiManager.is60GHzBandSupported();
+        boolean isSupportedWhenWifiEnabled = sWifiManager.is60GHzBandSupported();
 
         // Check for 60GHz support with wifi disabled
         setWifiEnabled(false);
         PollingCheck.check(
                 "Wifi not disabled!",
                 20000,
-                () -> !mWifiManager.isWifiEnabled());
-        boolean isSupportedWhenWifiDisabled = mWifiManager.is60GHzBandSupported();
+                () -> !sWifiManager.isWifiEnabled());
+        boolean isSupportedWhenWifiDisabled = sWifiManager.is60GHzBandSupported();
 
         // If Support is true when WiFi is disable, then it has to be true when it is enabled.
         // Note, the reverse is a valid case.
@@ -5463,12 +5332,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     // TODO(b/196180536): Wait for T SDK finalization before changing
     // to `@SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)`
     @SdkSuppress(minSdkVersion = 31)
+    @Test
     public void testIsTrustOnFirstUseSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isTrustOnFirstUseSupported();
+        sWifiManager.isTrustOnFirstUseSupported();
     }
 
     public class TestCoexCallback extends WifiManager.CoexCallback {
@@ -5511,27 +5377,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Test that coex-related methods fail without the needed privileged permissions
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testCoexMethodsShouldFailNoPermission() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         try {
-            mWifiManager.setCoexUnsafeChannels(Collections.emptyList(), 0);
+            sWifiManager.setCoexUnsafeChannels(Collections.emptyList(), 0);
             fail("setCoexUnsafeChannels should not succeed - privileged call");
         } catch (SecurityException e) {
             // expected
         }
         final TestCoexCallback callback = new TestCoexCallback(mLock);
         try {
-            mWifiManager.registerCoexCallback(mExecutor, callback);
+            sWifiManager.registerCoexCallback(mExecutor, callback);
             fail("registerCoexCallback should not succeed - privileged call");
         } catch (SecurityException e) {
             // expected
         }
         try {
-            mWifiManager.unregisterCoexCallback(callback);
+            sWifiManager.unregisterCoexCallback(callback);
             fail("unregisterCoexCallback should not succeed - privileged call");
         } catch (SecurityException e) {
             // expected
@@ -5543,56 +5405,72 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * the listener. Since the default coex algorithm may be enabled, no-op is also valid behavior.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testListenOnCoexUnsafeChannels() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // These below API's only work with privileged permissions (obtained via shell identity
         // for test)
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        List<CoexUnsafeChannel> prevUnsafeChannels = null;
+        List<CoexUnsafeChannel> prevUnsafeChannels = new ArrayList<>();
         int prevRestrictions = -1;
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            final TestCoexCallback callback = new TestCoexCallback(mLock);
-            final List<CoexUnsafeChannel> testUnsafeChannels = new ArrayList<>();
-            testUnsafeChannels.add(new CoexUnsafeChannel(WIFI_BAND_24_GHZ, 6));
-            final int testRestrictions = COEX_RESTRICTION_WIFI_DIRECT
-                    | COEX_RESTRICTION_SOFTAP | COEX_RESTRICTION_WIFI_AWARE;
             synchronized (mLock) {
                 try {
-                    mWifiManager.registerCoexCallback(mExecutor, callback);
+                    boolean defaultAlgoEnabled = false;
+                    final TestCoexCallback callback = new TestCoexCallback(mLock);
+                    sWifiManager.registerCoexCallback(mExecutor, callback);
+
                     // Callback should be called after registering
                     mLock.wait(TEST_WAIT_DURATION_MS);
                     assertEquals(1, callback.getOnCoexUnsafeChannelChangedCount());
-                    // Store the previous coex channels and set new coex channels
+
+                    // Store the previous coex channels and try setting new coex channels 5 times.
+                    //
+                    // If the default algorithm is disabled, we'll get exactly 5 callbacks, and we
+                    // can verify that the update channels match what we inputted.
+                    //
+                    // If the default algorithm is enabled, then the callbacks will trigger
+                    // according to the algorithm, which may or may not trigger during the test.
+                    // Thus we try 5 times and see if the callbacks match the number of tries, since
+                    // it's highly unlikely that the default algorithm will update the channels
+                    // exactly 5 times during the test.
                     prevUnsafeChannels = callback.getCoexUnsafeChannels();
                     prevRestrictions = callback.getCoexRestrictions();
-                    mWifiManager.setCoexUnsafeChannels(testUnsafeChannels, testRestrictions);
-                    mLock.wait(TEST_WAIT_DURATION_MS);
-                    // Unregister callback and try setting again
-                    mWifiManager.unregisterCoexCallback(callback);
-                    mWifiManager.setCoexUnsafeChannels(testUnsafeChannels, testRestrictions);
-                    // Callback should not be called here since it was unregistered.
-                    mLock.wait(TEST_WAIT_DURATION_MS);
+                    List<CoexUnsafeChannel> testChannels = null;
+                    final int testRestrictions = COEX_RESTRICTION_WIFI_DIRECT
+                            | COEX_RESTRICTION_SOFTAP | COEX_RESTRICTION_WIFI_AWARE;
+                    for (int i = 0; i < 5; i++) {
+                        testChannels = List.of(new CoexUnsafeChannel(WIFI_BAND_24_GHZ, 1 + i));
+                        sWifiManager.setCoexUnsafeChannels(testChannels, testRestrictions);
+                        mLock.wait(TEST_WAIT_DURATION_MS);
+                        if (callback.getOnCoexUnsafeChannelChangedCount() != i + 2) {
+                            defaultAlgoEnabled = true;
+                            break;
+                        }
+                    }
+
+                    if (!defaultAlgoEnabled) {
+                        int currentCallbackCount = callback.getOnCoexUnsafeChannelChangedCount();
+                        assertEquals(testChannels, callback.getCoexUnsafeChannels());
+                        assertEquals(testRestrictions, callback.getCoexRestrictions());
+                        // Unregister callback and try setting again
+                        sWifiManager.unregisterCoexCallback(callback);
+                        sWifiManager.setCoexUnsafeChannels(
+                                List.of(new CoexUnsafeChannel(WIFI_BAND_24_GHZ, 11)),
+                                testRestrictions);
+                        mLock.wait(TEST_WAIT_DURATION_MS);
+                        // Callback should not be called here since it was unregistered.
+                        assertThat(callback.getOnCoexUnsafeChannelChangedCount())
+                                .isEqualTo(currentCallbackCount);
+                    }
                 } catch (InterruptedException e) {
                     fail("Thread interrupted unexpectedly while waiting on mLock");
                 }
             }
-            if (callback.getOnCoexUnsafeChannelChangedCount() == 2) {
-                // Default algorithm disabled, setter should set the getter values.
-                assertEquals(testUnsafeChannels, callback.getCoexUnsafeChannels());
-                assertEquals(testRestrictions, callback.getCoexRestrictions());
-            } else if (callback.getOnCoexUnsafeChannelChangedCount() != 1) {
-                fail("Coex callback called " + callback.mOnCoexUnsafeChannelChangedCount
-                        + " times. Expected 0 or 1 calls." );
-            }
         } finally {
             // Reset the previous unsafe channels if we overrode them.
             if (prevRestrictions != -1) {
-                mWifiManager.setCoexUnsafeChannels(prevUnsafeChannels, prevRestrictions);
+                sWifiManager.setCoexUnsafeChannels(prevUnsafeChannels, prevRestrictions);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -5602,11 +5480,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Verify that secure WPA-Enterprise network configurations can be added and updated.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testSecureEnterpriseConfigurationsAccepted() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         WifiConfiguration wifiConfiguration = new WifiConfiguration();
         wifiConfiguration.SSID = SSID1;
         wifiConfiguration.setSecurityParams(WifiConfiguration.SECURITY_TYPE_EAP_WPA3_ENTERPRISE);
@@ -5624,16 +5499,16 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             wifiConfiguration.enterpriseConfig.setAltSubjectMatch(TEST_DOM_SUBJECT_MATCH);
 
             // Verify that the network is added
-            networkId = mWifiManager.addNetwork(wifiConfiguration);
+            networkId = sWifiManager.addNetwork(wifiConfiguration);
             assertNotEquals(INVALID_NETWORK_ID, networkId);
 
             // Verify that the update API accepts configurations configured securely
             wifiConfiguration.networkId = networkId;
-            assertEquals(networkId, mWifiManager.updateNetwork(wifiConfiguration));
+            assertEquals(networkId, sWifiManager.updateNetwork(wifiConfiguration));
         } finally {
             if (networkId != INVALID_NETWORK_ID) {
                 // Clean up the previously added network
-                mWifiManager.removeNetwork(networkId);
+                sWifiManager.removeNetwork(networkId);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -5642,16 +5517,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#isPasspointTermsAndConditionsSupported)} does not crash.
      */
+    @Test
     public void testIsPasspointTermsAndConditionsSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
-        mWifiManager.isPasspointTermsAndConditionsSupported();
+        sWifiManager.isPasspointTermsAndConditionsSupported();
     }
 
     /**
@@ -5661,28 +5533,25 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * and the permission is not even given to shell user.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testManageCountryCodeMethodsFailWithoutPermissions() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         ShellIdentityUtils.invokeWithShellPermissions(() -> {
             try {
-                mWifiManager.setOverrideCountryCode(TEST_COUNTRY_CODE);
+                sWifiManager.setOverrideCountryCode(TEST_COUNTRY_CODE);
                 fail("setOverrideCountryCode() expected to fail - privileged call");
             } catch (SecurityException e) {
                 // expected
             }
 
             try {
-                mWifiManager.clearOverrideCountryCode();
+                sWifiManager.clearOverrideCountryCode();
                 fail("clearOverrideCountryCode() expected to fail - privileged call");
             } catch (SecurityException e) {
                 // expected
             }
 
             try {
-                mWifiManager.setDefaultCountryCode(TEST_COUNTRY_CODE);
+                sWifiManager.setDefaultCountryCode(TEST_COUNTRY_CODE);
                 fail("setDefaultCountryCode() expected to fail - privileged call");
             } catch (SecurityException e) {
                 // expected
@@ -5693,12 +5562,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#flushPasspointAnqpCache)} does not crash.
      */
+    @Test
     public void testFlushPasspointAnqpCache() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
@@ -5707,7 +5573,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.flushPasspointAnqpCache();
+            sWifiManager.flushPasspointAnqpCache();
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -5720,13 +5586,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     // TODO(b/139192273): Wait for T SDK finalization before changing
     // to `@SdkSuppress(minSdkVersion = Build.VERSION_CODES.T)`
     @SdkSuppress(minSdkVersion = 31)
+    @Test
     public void testEnablePasspointWithoutPermission() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         try {
-            mWifiManager.setWifiPasspointEnabled(true);
+            sWifiManager.setWifiPasspointEnabled(true);
             fail("setWifiPasspointEnabled() expected to fail - privileged call");
         } catch (SecurityException e) {
             // expected
@@ -5739,29 +5602,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     // TODO(b/139192273): Wait for T SDK finalization before changing
     // to `@SdkSuppress(minSdkVersion = Build.VERSION_CODES.T)`
     @SdkSuppress(minSdkVersion = 31)
+    @Test
     public void testEnablePasspoint() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         // The below API only works with privileged permissions (obtained via shell identity
         // for test)
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Check if passpoint is enabled by default.
-            assertTrue(mWifiManager.isWifiPasspointEnabled());
+            assertTrue(sWifiManager.isWifiPasspointEnabled());
             // Try to disable passpoint
-            mWifiManager.setWifiPasspointEnabled(false);
-            PollingCheck.check(
-                "Wifi passpoint turn off failed!", 2_000,
-                () -> mWifiManager.isWifiPasspointEnabled() == false);
+            sWifiManager.setWifiPasspointEnabled(false);
+            PollingCheck.check("Wifi passpoint turn off failed!", 2_000,
+                    () -> !sWifiManager.isWifiPasspointEnabled());
             // Try to enable passpoint
-            mWifiManager.setWifiPasspointEnabled(true);
-            PollingCheck.check(
-                "Wifi passpoint turn on failed!", 2_000,
-                () -> mWifiManager.isWifiPasspointEnabled() == true);
+            sWifiManager.setWifiPasspointEnabled(true);
+            PollingCheck.check("Wifi passpoint turn on failed!", 2_000,
+                    () -> sWifiManager.isWifiPasspointEnabled());
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -5770,61 +5627,56 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link WifiManager#isDecoratedIdentitySupported)} does not crash.
      */
+    @Test
     public void testIsDecoratedIdentitySupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (!WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // Skip the test if wifi module version is older than S.
             return;
         }
-        mWifiManager.isDecoratedIdentitySupported();
+        sWifiManager.isDecoratedIdentitySupported();
     }
 
     /**
      * Tests {@link WifiManager#setCarrierNetworkOffloadEnabled)} and
      * {@link WifiManager#isCarrierNetworkOffloadEnabled} work as expected.
      */
+    @Test
     public void testSetCarrierNetworkOffloadEnabled() {
-        if (!WifiFeature.isWifiSupported(getContext())
-                || !WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (!WifiFeature.isWifiSupported(sContext)
+                || !WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             // skip the test if WiFi is not supported
             return;
         }
-        assertTrue(mWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
+        assertTrue(sWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
         // The below API only works with privileged permissions (obtained via shell identity
         // for test)
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
-            mWifiManager.setCarrierNetworkOffloadEnabled(TEST_SUB_ID, false, false);
-            assertFalse(mWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
+            sWifiManager.setCarrierNetworkOffloadEnabled(TEST_SUB_ID, false, false);
+            assertFalse(sWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
         } finally {
-            mWifiManager.setCarrierNetworkOffloadEnabled(TEST_SUB_ID, false, true);
+            sWifiManager.setCarrierNetworkOffloadEnabled(TEST_SUB_ID, false, true);
             uiAutomation.dropShellPermissionIdentity();
         }
-        assertTrue(mWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
+        assertTrue(sWifiManager.isCarrierNetworkOffloadEnabled(TEST_SUB_ID, false));
     }
 
-   /**
+    /**
      * Test that {@link WifiManager#getUsableChannels(int, int)},
      * {@link WifiManager#getAllowedChannels(int, int)}
      * throws UnsupportedOperationException if the release is older than S.
      */
     @SdkSuppress(maxSdkVersion = Build.VERSION_CODES.R)
+    @Test
     public void testGetAllowedUsableChannelsOnROrOlder() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         try {
-            mWifiManager.getAllowedChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
+            sWifiManager.getAllowedChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
             fail("getAllowedChannels Expected to fail - UnsupportedOperationException");
         } catch (UnsupportedOperationException ex) {}
 
         try {
-            mWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
+            sWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
             fail("getUsableChannels Expected to fail - UnsupportedOperationException");
         } catch (UnsupportedOperationException ex) {}
     }
@@ -5833,16 +5685,12 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#getAllowedChannels(int, int))} does not crash
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testGetAllowedChannels() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // The below API only works with privileged permissions (obtained via shell identity
         // for test)
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
-
             WifiAvailableChannel channel = new WifiAvailableChannel(2412, OP_MODE_SAP);
             assertEquals(channel.getFrequencyMhz(), 2412);
             assertEquals(channel.getOperationalModes(), OP_MODE_SAP);
@@ -5852,7 +5700,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             Set<Integer> supported24GhzFreqs = new HashSet<Integer>();
             uiAutomation.adoptShellPermissionIdentity();
             List<WifiAvailableChannel> allowedChannels =
-                mWifiManager.getAllowedChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
+                    sWifiManager.getAllowedChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
             assertNotNull(allowedChannels);
             for (WifiAvailableChannel ch : allowedChannels) {
                 //Must contain a valid 2.4GHz frequency
@@ -5879,24 +5727,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * and returns at least one 2G channel in STA and WFD GO modes (if WFD is supported)
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @Test
     public void testGetUsableChannelsStaWfdMode() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // The below API only works with privileged permissions (obtained via shell identity
         // for test)
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             List<WifiAvailableChannel> usableStaChannels =
-                mWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
+                    sWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_STA);
             //There must be at least one usable STA channel in 2.4GHz band
             assertFalse(usableStaChannels.isEmpty());
-
-            if (mWifiManager.isP2pSupported()) {
+            if (sWifiManager.isP2pSupported()) {
                 List<WifiAvailableChannel> usableGoChannels =
-                        mWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_WIFI_DIRECT_GO);
+                        sWifiManager.getUsableChannels(WIFI_BAND_24_GHZ, OP_MODE_WIFI_DIRECT_GO);
                 //There must be at least one usable P2P channel in 2.4GHz band
                 assertFalse(usableGoChannels.isEmpty());
             }
@@ -5915,12 +5759,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testGetChannelData() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         List<Bundle> dataList = new ArrayList<>();
         Consumer<List<Bundle>> listener = new Consumer<List<Bundle>>() {
             @Override
@@ -5933,20 +5773,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         };
         // Test invalid inputs trigger IllegalArgumentException
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getChannelData(null, listener));
+                () -> sWifiManager.getChannelData(null, listener));
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getChannelData(mExecutor, null));
+                () -> sWifiManager.getChannelData(mExecutor, null));
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Start scan and wait for scan results
             startScan();
-            mWifiManager.getChannelData(mExecutor, listener);
+            sWifiManager.getChannelData(mExecutor, listener);
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
-            if (mWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
+            if (sWifiManager.isScanAlwaysAvailable() && isScanCurrentlyAvailable()) {
                 assertFalse(dataList.isEmpty());
             }
         } catch (UnsupportedOperationException ex) {
@@ -5961,16 +5801,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     /**
      * Validate that the Passpoint feature is enabled on the device.
      */
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testPasspointCapability() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         if (PropertyUtil.getVsrApiLevel() < Build.VERSION_CODES.S) {
             return;
         }
-        PackageManager packageManager = mContext.getPackageManager();
+        PackageManager packageManager = sContext.getPackageManager();
         assertTrue("Passpoint must be supported",
                 packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT));
     }
@@ -5979,19 +5816,20 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Validate add and remove SuggestionUserApprovalStatusListener. And verify the listener's
      * stickiness.
      */
+    @Test
     public void testAddRemoveSuggestionUserApprovalStatusListener() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())
-                || !WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+        if (!WifiFeature.isWifiSupported(sContext)
+                || !WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(sContext)) {
             return;
         }
         CountDownLatch countDownLatch = new CountDownLatch(1);
         TestUserApprovalStatusListener listener = new TestUserApprovalStatusListener(
                 countDownLatch);
         try {
-            mWifiManager.addSuggestionUserApprovalStatusListener(mExecutor, listener);
+            sWifiManager.addSuggestionUserApprovalStatusListener(mExecutor, listener);
             assertTrue(countDownLatch.await(TEST_WAIT_DURATION_MS, TimeUnit.MILLISECONDS));
         } finally {
-            mWifiManager.removeSuggestionUserApprovalStatusListener(listener);
+            sWifiManager.removeSuggestionUserApprovalStatusListener(listener);
         }
     }
 
@@ -6013,13 +5851,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testIsStaConcurrencyForMultiInternetSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
         // ensure no crash.
-        mWifiManager.isStaConcurrencyForMultiInternetSupported();
+        sWifiManager.isStaConcurrencyForMultiInternetSupported();
     }
 
     /**
@@ -6027,14 +5862,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetStaConcurrencyForMultiInternetModeWithoutPermission() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())
-                || !mWifiManager.isStaConcurrencyForMultiInternetSupported()) {
+        if (!WifiFeature.isWifiSupported(sContext)
+                || !sWifiManager.isStaConcurrencyForMultiInternetSupported()) {
             // skip the test if WiFi is not supported or multi internet feature not supported.
             return;
         }
         try {
-            mWifiManager.setStaConcurrencyForMultiInternetMode(
+            sWifiManager.setStaConcurrencyForMultiInternetMode(
                     WifiManager.WIFI_MULTI_INTERNET_MODE_DISABLED);
             fail("setWifiPasspointEnabled() expected to fail - privileged call");
         } catch (SecurityException e) {
@@ -6046,9 +5882,10 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#setStaConcurrencyForMultiInternetMode)} does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetStaConcurrencyForMultiInternetMode() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())
-                || !mWifiManager.isStaConcurrencyForMultiInternetSupported()) {
+        if (!WifiFeature.isWifiSupported(sContext)
+                || !sWifiManager.isStaConcurrencyForMultiInternetSupported()) {
             // skip the test if WiFi is not supported or multi internet feature not supported.
             return;
         }
@@ -6059,18 +5896,18 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         try {
             uiAutomation.adoptShellPermissionIdentity();
             // Try to disable multi internet
-            mWifiManager.setStaConcurrencyForMultiInternetMode(
+            sWifiManager.setStaConcurrencyForMultiInternetMode(
                     WifiManager.WIFI_MULTI_INTERNET_MODE_DISABLED);
             PollingCheck.check(
                     "Wifi multi internet disable failed!", 2_000,
-                    () -> mWifiManager.getStaConcurrencyForMultiInternetMode()
+                    () -> sWifiManager.getStaConcurrencyForMultiInternetMode()
                             == WifiManager.WIFI_MULTI_INTERNET_MODE_DISABLED);
             // Try to enable multi internet
-            mWifiManager.setStaConcurrencyForMultiInternetMode(
+            sWifiManager.setStaConcurrencyForMultiInternetMode(
                     WifiManager.WIFI_MULTI_INTERNET_MODE_MULTI_AP);
             PollingCheck.check(
                     "Wifi multi internet turn on failed!", 2_000,
-                    () -> mWifiManager.getStaConcurrencyForMultiInternetMode()
+                    () -> sWifiManager.getStaConcurrencyForMultiInternetMode()
                             == WifiManager.WIFI_MULTI_INTERNET_MODE_MULTI_AP);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
@@ -6107,17 +5944,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
     }
 
+    @Test
     public void testWifiNetworkStateChangeListener() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         TestWifiNetworkStateChangeListener testListener = new TestWifiNetworkStateChangeListener(
                 WifiManager.WifiNetworkStateChangedListener.WIFI_ROLE_CLIENT_PRIMARY);
         // Verify permission check
         assertThrows(SecurityException.class,
-                () -> mWifiManager.addWifiNetworkStateChangedListener(mExecutor, testListener));
+                () -> sWifiManager.addWifiNetworkStateChangedListener(mExecutor, testListener));
 
         // Disable wifi
         setWifiEnabled(false);
@@ -6126,11 +5959,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         try {
             // Register listener then enable wifi
             ShellIdentityUtils.invokeWithShellPermissions(
-                    () -> mWifiManager.addWifiNetworkStateChangedListener(mExecutor, testListener));
+                    () -> sWifiManager.addWifiNetworkStateChangedListener(mExecutor, testListener));
             setWifiEnabled(true);
 
             // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             waitForConnection();
 
             PollingCheck.check(
@@ -6155,44 +5988,37 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                             WifiManager.WifiNetworkStateChangedListener
                                     .WIFI_NETWORK_STATUS_DISCONNECTED));
         } finally {
-            mWifiManager.removeWifiNetworkStateChangedListener(testListener);
+            sWifiManager.removeWifiNetworkStateChangedListener(testListener);
         }
     }
 
     /**
      * Tests {@link WifiConfiguration#setBssidAllowlist(List)}.
      */
+    @Test
     public void testBssidAllowlist() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        // Trigger a scan & wait for connection to one of the saved networks.
-        mWifiManager.startScan();
-        waitForConnection();
-
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         List<WifiConfiguration> savedNetworks = null;
         try {
             uiAutomation.adoptShellPermissionIdentity();
 
-            WifiInfo wifiInfo = mWifiManager.getConnectionInfo();
+            WifiInfo wifiInfo = sWifiManager.getConnectionInfo();
             String connectedBssid = wifiInfo.getBSSID();
             int networkId = wifiInfo.getNetworkId();
 
             // Set empty BSSID allow list to block all APs
-            savedNetworks = mWifiManager.getConfiguredNetworks();
+            savedNetworks = sWifiManager.getConfiguredNetworks();
             for (WifiConfiguration network : savedNetworks) {
                 network.setBssidAllowlist(Collections.emptyList());
-                mWifiManager.updateNetwork(network);
+                sWifiManager.updateNetwork(network);
             }
 
             // Disable and re-enable Wifi to avoid reconnect to the secondary candidate
-            mWifiManager.setWifiEnabled(false);
+            sWifiManager.setWifiEnabled(false);
             waitForDisconnection();
-            mWifiManager.setWifiEnabled(true);
+            sWifiManager.setWifiEnabled(true);
             // Now trigger scan and ensure that the device does not connect to any networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             ensureNotConnected();
 
             // Set the previous connected BSSID on that network. Other network set with a fake
@@ -6200,24 +6026,24 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             for (WifiConfiguration network : savedNetworks) {
                 if (network.networkId == networkId) {
                     network.setBssidAllowlist(List.of(MacAddress.fromString(connectedBssid)));
-                    mWifiManager.updateNetwork(network);
+                    sWifiManager.updateNetwork(network);
                 } else {
                     network.setBssidAllowlist(List.of(MacAddress.fromString(TEST_BSSID)));
-                    mWifiManager.updateNetwork(network);
+                    sWifiManager.updateNetwork(network);
                 }
             }
 
             // Trigger a scan & wait for connection to one of the saved networks.
-            mWifiManager.startScan();
+            sWifiManager.startScan();
             waitForConnection();
-            wifiInfo = mWifiManager.getConnectionInfo();
+            wifiInfo = sWifiManager.getConnectionInfo();
             assertEquals(networkId, wifiInfo.getNetworkId());
         } finally {
             // Reset BSSID allow list to accept all APs
             for (WifiConfiguration network : savedNetworks) {
                 assertNotNull(network.getBssidAllowlist());
                 network.setBssidAllowlist(null);
-                mWifiManager.updateNetwork(network);
+                sWifiManager.updateNetwork(network);
             }
             uiAutomation.dropShellPermissionIdentity();
         }
@@ -6228,14 +6054,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * raise security exception without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testNotifyMinimumRequiredWifiSecurityLevelChangedWithoutPermission()
             throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
+        if (!WifiFeature.isWifiSupported(sContext)) {
             // skip the test if WiFi is not supported.
             return;
         }
         assertThrows(SecurityException.class,
-                () -> mWifiManager.notifyMinimumRequiredWifiSecurityLevelChanged(
+                () -> sWifiManager.notifyMinimumRequiredWifiSecurityLevelChanged(
                         DevicePolicyManager.WIFI_SECURITY_PERSONAL));
     }
 
@@ -6244,8 +6071,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * raise security exception without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testNotifyWifiSsidPolicyChangedWithoutPermission() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
+        if (!WifiFeature.isWifiSupported(sContext)) {
             // skip the test if WiFi is not supported.
             return;
         }
@@ -6253,7 +6081,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                 WifiSsidPolicy.WIFI_SSID_POLICY_TYPE_ALLOWLIST, new ArraySet<>(Arrays.asList(
                 WifiSsid.fromBytes("ssid".getBytes(StandardCharsets.UTF_8)))));
         try {
-            mWifiManager.notifyWifiSsidPolicyChanged(policy);
+            sWifiManager.notifyWifiSsidPolicyChanged(policy);
             fail("Expected security exception due to lack of permission");
         } catch (SecurityException e) {
             // expected
@@ -6266,13 +6094,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * a security exception without permission.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testIsItPossibleToCreateInterfaceNotAllowed() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
-        assertThrows(SecurityException.class, () -> mWifiManager.reportCreateInterfaceImpact(
+        assertThrows(SecurityException.class, () -> sWifiManager.reportCreateInterfaceImpact(
                 WifiManager.WIFI_INTERFACE_TYPE_AP, false, mExecutor,
                 (canBeCreatedLocal, interfacesWhichWillBeDeletedLocal) -> {
                     // should not get here (security exception!)
@@ -6284,18 +6108,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#reportCreateInterfaceImpact(int, boolean, Executor, BiConsumer)} .
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testIsItPossibleToCreateInterface() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         AtomicBoolean called = new AtomicBoolean(false);
         AtomicBoolean canBeCreated = new AtomicBoolean(false);
         AtomicReference<Set<WifiManager.InterfaceCreationImpact>>
                 interfacesWhichWillBeDeleted = new AtomicReference<>(null);
         ShellIdentityUtils.invokeWithShellPermissions(
-                () -> mWifiManager.reportCreateInterfaceImpact(
+                () -> sWifiManager.reportCreateInterfaceImpact(
                         WifiManager.WIFI_INTERFACE_TYPE_AP, false, mExecutor,
                         (canBeCreatedLocal, interfacesWhichWillBeDeletedLocal) -> {
                             synchronized (mLock) {
@@ -6336,45 +6156,33 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * Tests {@link WifiManager#isEasyConnectDppAkmSupported)} does not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testIsEasyConnectDppAkmSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isEasyConnectDppAkmSupported();
+        sWifiManager.isEasyConnectDppAkmSupported();
     }
 
     /**
      * Tests {@link WifiManager#getMaxNumberOfChannelsPerNetworkSpecifierRequest)} works
      */
+    @Test
     public void testGetMaxNumberOfChannelsPerNetworkSpecifierRequest() {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        assertTrue(mWifiManager.getMaxNumberOfChannelsPerNetworkSpecifierRequest() > 0);
+        assertTrue(sWifiManager.getMaxNumberOfChannelsPerNetworkSpecifierRequest() > 0);
     }
 
     /**
      * Tests {@link WifiManager#isTlsV13Supported)} does not crash.
      */
+    @Test
     public void testIsTlsV13Supported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isTlsV13Supported();
+        sWifiManager.isTlsV13Supported();
     }
 
     /**
      * Tests {@link WifiManager#isTlsMinimumVersionSupported)} does not crash.
      */
+    @Test
     public void testIsTlsMinimumVersionSupported() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-        mWifiManager.isTlsMinimumVersionSupported();
+        sWifiManager.isTlsMinimumVersionSupported();
     }
 
     private void fillQosPolicyParamsList(List<QosPolicyParams> policyParamsList,
@@ -6399,7 +6207,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     private boolean applicationQosFeatureEnabled() {
         boolean overlayEnabled;
         try {
-            WifiResourceUtil resourceUtil = new WifiResourceUtil(mContext);
+            WifiResourceUtil resourceUtil = new WifiResourceUtil(sContext);
             overlayEnabled = resourceUtil
                     .getWifiBoolean("config_wifiApplicationCentricQosPolicyFeatureEnabled");
         } catch (Exception e) {
@@ -6410,7 +6218,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         // Supplicant V2 is supported if the vendor partition indicates API > T.
         boolean halSupport = PropertyUtil.isVndkApiLevelNewerThan(Build.VERSION_CODES.TIRAMISU);
         boolean featureFlagEnabled = DeviceConfig.getBoolean(DEVICE_CONFIG_NAMESPACE,
-                "application_qos_policy_api_enabled", false);
+                "application_qos_policy_api_enabled", true);
 
         return overlayEnabled && featureFlagEnabled && halSupport;
     }
@@ -6421,12 +6229,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#removeAllQosPolicies()} do not crash.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
     public void testAddAndRemoveQosPolicies() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         final Mutable<Boolean> callbackReceived = new Mutable<Boolean>(false);
         final Mutable<Boolean> policiesRejected = new Mutable<Boolean>(true);
         Consumer<List<Integer>> listener = new Consumer<List<Integer>>() {
@@ -6451,11 +6255,11 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         // Test that invalid inputs trigger an Exception.
         final List<QosPolicyParams> policyParamsList = new ArrayList<>();
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.addQosPolicies(policyParamsList, null, listener));
+                () -> sWifiManager.addQosPolicies(policyParamsList, null, listener));
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.addQosPolicies(policyParamsList, mExecutor, null));
+                () -> sWifiManager.addQosPolicies(policyParamsList, mExecutor, null));
         assertThrows("null policy list should trigger exception", NullPointerException.class,
-                () -> mWifiManager.addQosPolicies(null, mExecutor, listener));
+                () -> sWifiManager.addQosPolicies(null, mExecutor, listener));
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
@@ -6466,7 +6270,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             if (!enabled) {
                 Log.i(TAG, "QoS policy APIs are not enabled");
                 fillQosPolicyParamsList(policyParamsList, 4, true);
-                mWifiManager.addQosPolicies(policyParamsList, mExecutor, listener);
+                sWifiManager.addQosPolicies(policyParamsList, mExecutor, listener);
                 synchronized (mLock) {
                     mLock.wait(TEST_WAIT_DURATION_MS);
                 }
@@ -6477,23 +6281,23 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
             // Empty params list
             assertThrows("empty list should trigger exception", IllegalArgumentException.class,
-                    () -> mWifiManager.addQosPolicies(new ArrayList<>(), mExecutor, listener));
+                    () -> sWifiManager.addQosPolicies(new ArrayList<>(), mExecutor, listener));
 
             // More than {@link WifiManager#getMaxNumberOfPoliciesPerQosRequest()}
             // policies in the list
             fillQosPolicyParamsList(policyParamsList,
-                    mWifiManager.getMaxNumberOfPoliciesPerQosRequest() + 1, true);
+                    sWifiManager.getMaxNumberOfPoliciesPerQosRequest() + 1, true);
             assertThrows("large list should trigger exception", IllegalArgumentException.class,
-                    () -> mWifiManager.addQosPolicies(policyParamsList, mExecutor, listener));
+                    () -> sWifiManager.addQosPolicies(policyParamsList, mExecutor, listener));
 
             // Params list contains duplicate policy ids
             fillQosPolicyParamsList(policyParamsList, 4, false);
             assertThrows("duplicate ids should trigger exception", IllegalArgumentException.class,
-                    () -> mWifiManager.addQosPolicies(policyParamsList, mExecutor, listener));
+                    () -> sWifiManager.addQosPolicies(policyParamsList, mExecutor, listener));
 
             // Valid list
             fillQosPolicyParamsList(policyParamsList, 4, true);
-            mWifiManager.addQosPolicies(policyParamsList, mExecutor, listener);
+            sWifiManager.addQosPolicies(policyParamsList, mExecutor, listener);
 
             // sleep to wait for a response from supplicant
             synchronized (mLock) {
@@ -6504,13 +6308,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
             for (int i = 0; i < policyParamsList.size(); i++) {
                 policyIds[i] = policyParamsList.get(i).getPolicyId();
             }
-            mWifiManager.removeQosPolicies(policyIds);
+            sWifiManager.removeQosPolicies(policyIds);
 
             // sleep to wait for a response from supplicant
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
-            mWifiManager.removeAllQosPolicies();
+            sWifiManager.removeAllQosPolicies();
         } catch (Exception e) {
             fail("addAndRemoveQosPolicy unexpected Exception " + e);
         } finally {
@@ -6518,10 +6322,15 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         }
     }
 
+    private boolean qosR3Supported() {
+        return SdkLevel.isAtLeastV() && Flags.androidVWifiApi();
+    }
+
     /**
      * Tests the builder and get methods for {@link QosPolicyParams}.
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
     public void testQosPolicyParamsBuilder() throws Exception {
         final int policyId = 5;
         final int direction = QosPolicyParams.DIRECTION_DOWNLINK;
@@ -6537,6 +6346,14 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         final int[] dstPortRange = new int[]{15, 22};
         final byte[] flowLabel = new byte[]{17, 18, 19};
 
+        int minServiceIntervalMicros = 2000;
+        int maxServiceIntervalMicros = 5000;
+        int minDataRateKbps = 500;
+        int delayBoundMicros = 200;
+        QosCharacteristics qosCharacteristics = new QosCharacteristics.Builder(
+                minServiceIntervalMicros, maxServiceIntervalMicros,
+                minDataRateKbps, delayBoundMicros).build();
+
         // Invalid parameter
         assertThrows("Invalid dscp should trigger an exception", IllegalArgumentException.class,
                 () -> new QosPolicyParams.Builder(policyId, direction)
@@ -6544,7 +6361,7 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                         .build());
 
         // Valid downlink parameters
-        QosPolicyParams downlinkParams =
+        QosPolicyParams.Builder builder =
                 new QosPolicyParams.Builder(policyId, QosPolicyParams.DIRECTION_DOWNLINK)
                         .setSourceAddress(srcAddr)
                         .setDestinationAddress(dstAddr)
@@ -6553,8 +6370,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
                         .setSourcePort(srcPort)
                         .setProtocol(protocol)
                         .setDestinationPort(dstPort)
-                        .setFlowLabel(flowLabel)
-                        .build();
+                        .setFlowLabel(flowLabel);
+        if (qosR3Supported()) {
+            // Optional field for downlink policies
+            builder.setQosCharacteristics(qosCharacteristics);
+        }
+        QosPolicyParams downlinkParams = builder.build();
+
         assertEquals(policyId, downlinkParams.getPolicyId());
         assertEquals(QosPolicyParams.DIRECTION_DOWNLINK, downlinkParams.getDirection());
         assertEquals(srcAddr, downlinkParams.getSourceAddress());
@@ -6565,25 +6387,37 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         assertEquals(protocol, downlinkParams.getProtocol());
         assertEquals(dstPort, downlinkParams.getDestinationPort());
         assertArrayEquals(flowLabel, downlinkParams.getFlowLabel());
+        if (qosR3Supported()) {
+            assertEquals(qosCharacteristics, downlinkParams.getQosCharacteristics());
+        }
+
+        if (ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "Uplink policies were not tested, since they are not supported before V");
+            return;
+        }
 
         // Valid uplink parameters
-        QosPolicyParams uplinkParams =
+        if (qosR3Supported()) {
+            QosPolicyParams uplinkParams =
                 new QosPolicyParams.Builder(policyId, QosPolicyParams.DIRECTION_UPLINK)
-                    .setSourceAddress(srcAddr)
-                    .setDestinationAddress(dstAddr)
-                    .setDscp(dscp)
-                    .setSourcePort(srcPort)
-                    .setProtocol(protocol)
-                    .setDestinationPortRange(dstPortRange[0], dstPortRange[1])
-                    .build();
-        assertEquals(policyId, uplinkParams.getPolicyId());
-        assertEquals(QosPolicyParams.DIRECTION_UPLINK, uplinkParams.getDirection());
-        assertEquals(srcAddr, uplinkParams.getSourceAddress());
-        assertEquals(dstAddr, uplinkParams.getDestinationAddress());
-        assertEquals(dscp, uplinkParams.getDscp());
-        assertEquals(srcPort, uplinkParams.getSourcePort());
-        assertEquals(protocol, uplinkParams.getProtocol());
-        assertArrayEquals(dstPortRange, uplinkParams.getDestinationPortRange());
+                            .setSourceAddress(srcAddr)
+                            .setDestinationAddress(dstAddr)
+                            .setDscp(dscp)
+                            .setSourcePort(srcPort)
+                            .setProtocol(protocol)
+                            .setDestinationPortRange(dstPortRange[0], dstPortRange[1])
+                            .setQosCharacteristics(qosCharacteristics)
+                            .build();
+            assertEquals(policyId, uplinkParams.getPolicyId());
+            assertEquals(QosPolicyParams.DIRECTION_UPLINK, uplinkParams.getDirection());
+            assertEquals(srcAddr, uplinkParams.getSourceAddress());
+            assertEquals(dstAddr, uplinkParams.getDestinationAddress());
+            assertEquals(dscp, uplinkParams.getDscp());
+            assertEquals(srcPort, uplinkParams.getSourcePort());
+            assertEquals(protocol, uplinkParams.getProtocol());
+            assertArrayEquals(dstPortRange, uplinkParams.getDestinationPortRange());
+            assertEquals(qosCharacteristics, uplinkParams.getQosCharacteristics());
+        }
     }
 
     /**
@@ -6593,12 +6427,8 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * {@link WifiManager#getLinkLayerStatsPollingInterval(Executor, Consumer)}
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
     public void testSetAndGetLinkLayerStatsPollingInterval() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
-
         AtomicInteger currentInterval = new AtomicInteger(-1);
         Consumer<Integer> listener = new Consumer<Integer>() {
             @Override
@@ -6612,33 +6442,33 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
         // SecurityException
         assertThrows(SecurityException.class,
-                () -> mWifiManager.setLinkLayerStatsPollingInterval(
+                () -> sWifiManager.setLinkLayerStatsPollingInterval(
                         TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS));
         assertThrows(SecurityException.class,
-                () -> mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener));
+                () -> sWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener));
         // null executor
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getLinkLayerStatsPollingInterval(null, listener));
+                () -> sWifiManager.getLinkLayerStatsPollingInterval(null, listener));
         // null listener
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, null));
+                () -> sWifiManager.getLinkLayerStatsPollingInterval(mExecutor, null));
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
         try {
             uiAutomation.adoptShellPermissionIdentity();
             assertThrows(IllegalArgumentException.class,
-                    () -> mWifiManager.setLinkLayerStatsPollingInterval(
+                    () -> sWifiManager.setLinkLayerStatsPollingInterval(
                             -TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS));
-            mWifiManager.setLinkLayerStatsPollingInterval(
+            sWifiManager.setLinkLayerStatsPollingInterval(
                     TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS);
-            mWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener);
+            sWifiManager.getLinkLayerStatsPollingInterval(mExecutor, listener);
             synchronized (mLock) {
                 mLock.wait(TEST_WAIT_DURATION_MS);
             }
             assertEquals(TEST_LINK_LAYER_STATS_POLLING_INTERVAL_MS, currentInterval.get());
             // set the interval to automatic handling after the test
-            mWifiManager.setLinkLayerStatsPollingInterval(0);
+            sWifiManager.setLinkLayerStatsPollingInterval(0);
         } catch (UnsupportedOperationException ex) {
             // Expected if the device does not support this API
         } catch (Exception e) {
@@ -6650,14 +6480,58 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
     }
 
     /**
+     * Tests {@link WifiManager#getMaxMloAssociationLinkCount(Executor, Consumer)} and
+     * {@link WifiManager#getMaxMloStrLinkCount(Executor, Consumer)}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testMloCapabilities() throws Exception {
+        AtomicInteger linkCount = new AtomicInteger();
+        Consumer<Integer> getListener = new Consumer<Integer>() {
+            @Override
+            public void accept(Integer value) {
+                synchronized (mLock) {
+                    linkCount.set(value);
+                    mLock.notify();
+                }
+            }
+        };
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            // Test that invalid inputs trigger an exception.
+            assertThrows("null executor should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getMaxMloAssociationLinkCount(null, getListener));
+            assertThrows("null listener should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getMaxMloAssociationLinkCount(mExecutor, null));
+            assertThrows("null executor should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getMaxMloStrLinkCount(null, getListener));
+            assertThrows("null listener should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getMaxMloStrLinkCount(mExecutor, null));
+
+            linkCount.set(Integer.MIN_VALUE);
+            sWifiManager.getMaxMloStrLinkCount(mExecutor, getListener);
+            PollingCheck.check("getMaxMloStrLinkCount failed", TEST_WAIT_DURATION_MS,
+                    () -> (linkCount.get() >= -1));
+
+            linkCount.set(Integer.MIN_VALUE);
+            sWifiManager.getMaxMloAssociationLinkCount(mExecutor, getListener);
+            PollingCheck.check("getMaxMloAssociationLinkCount failed", TEST_WAIT_DURATION_MS,
+                    () -> (linkCount.get() >= -1));
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+    /**
      * Tests {@link WifiManager#setLinkMode} and {@link WifiManager#getLinkMode} works
      */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
     public void testMloMode() {
-        // Skip the test if Wifi is not supported.
-        if (!WifiFeature.isWifiSupported(getContext())) return;
-        // Need elevated permission.
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        uiAutomation.adoptShellPermissionIdentity();
         // Get listener.
         AtomicInteger getMode = new AtomicInteger();
         Consumer<Integer> getListener = new Consumer<Integer>() {
@@ -6682,54 +6556,92 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         };
         // Test that invalid inputs trigger an exception.
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, null, setListener));
+                () -> sWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, null, setListener));
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, null));
+                () -> sWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, null));
         assertThrows("null executor should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getMloMode(null, getListener));
+                () -> sWifiManager.getMloMode(null, getListener));
         assertThrows("null listener should trigger exception", NullPointerException.class,
-                () -> mWifiManager.getMloMode(mExecutor, null));
+                () -> sWifiManager.getMloMode(mExecutor, null));
 
         // Test that invalid inputs trigger an IllegalArgumentException.
         assertThrows("Invalid mode", IllegalArgumentException.class,
-                () -> mWifiManager.setMloMode(-1, mExecutor, setListener));
+                () -> sWifiManager.setMloMode(-1, mExecutor, setListener));
         assertThrows("Invalid mode", IllegalArgumentException.class,
-                () -> mWifiManager.setMloMode(1000, mExecutor, setListener));
+                () -> sWifiManager.setMloMode(1000, mExecutor, setListener));
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         // Test set if supported.
         try {
+            uiAutomation.adoptShellPermissionIdentity();
             // Check getMloMode() returns values in range.
-            mWifiManager.getMloMode(mExecutor, getListener);
+            sWifiManager.getMloMode(mExecutor, getListener);
             assertThat(getMode.get()).isIn(Range.closed(WifiManager.MLO_MODE_DEFAULT,
                     WifiManager.MLO_MODE_LOW_POWER));
             // Try to set default MLO mode and get.
-            mWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, setListener);
+            sWifiManager.setMloMode(WifiManager.MLO_MODE_DEFAULT, mExecutor, setListener);
             if (setStatus.get()) {
-                mWifiManager.getMloMode(mExecutor, getListener);
+                sWifiManager.getMloMode(mExecutor, getListener);
                 assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
             }
             // Try to set low latency MLO mode and get.
-            mWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_LATENCY, mExecutor, setListener);
+            sWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_LATENCY, mExecutor, setListener);
             if (setStatus.get()) {
-                mWifiManager.getMloMode(mExecutor, getListener);
+                sWifiManager.getMloMode(mExecutor, getListener);
                 assertTrue(getMode.get() == WifiManager.MLO_MODE_LOW_LATENCY);
             }
             // Try to set high throughput MLO mode and get.
-            mWifiManager.setMloMode(WifiManager.MLO_MODE_HIGH_THROUGHPUT, mExecutor, setListener);
+            sWifiManager.setMloMode(WifiManager.MLO_MODE_HIGH_THROUGHPUT, mExecutor, setListener);
             if (setStatus.get()) {
-                mWifiManager.getMloMode(mExecutor, getListener);
+                sWifiManager.getMloMode(mExecutor, getListener);
                 assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
             }
             // Try to set low power MLO mode and get.
-            mWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_POWER, mExecutor, setListener);
+            sWifiManager.setMloMode(WifiManager.MLO_MODE_LOW_POWER, mExecutor, setListener);
             if (setStatus.get()) {
-                mWifiManager.getMloMode(mExecutor, getListener);
+                sWifiManager.getMloMode(mExecutor, getListener);
                 assertTrue(getMode.get() == WifiManager.MLO_MODE_DEFAULT);
             }
-        } catch (UnsupportedOperationException e) {
-            // Skip the set method if not supported.
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
         }
-        // Drop the permission.
-        uiAutomation.dropShellPermissionIdentity();
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testGetSupportedSimultaneousBandCombinations() {
+        AtomicInteger nEntries = new AtomicInteger();
+        Consumer<List<int[]>> getListener = new Consumer<List<int[]>>() {
+            @Override
+            public void accept(List<int[]> bands) {
+                synchronized (mLock) {
+                    nEntries.set(bands.size());
+                    mLock.notify();
+                }
+            }
+        };
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+
+            assertThrows("null executor should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getSupportedSimultaneousBandCombinations(null, getListener));
+            assertThrows("null listener should trigger exception", NullPointerException.class,
+                    () -> sWifiManager.getSupportedSimultaneousBandCombinations(mExecutor, null));
+
+            nEntries.set(-1);
+            sWifiManager.getSupportedSimultaneousBandCombinations(mExecutor, getListener);
+            PollingCheck.check("getSupportedSimultaneousBandCombinations failed",
+                    TEST_WAIT_DURATION_MS,
+                    () -> (nEntries.get() > -1));
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     /**
@@ -6737,12 +6649,13 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
      * and {@link WifiManager#setThirdPartyAppEnablingWifiConfirmationDialogEnabled(boolean)}
      */
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    @Test
     public void testGetAndSetThirdPartyAppEnablingWifiConfirmationDialogEnabled() {
         // Expect a SecurityException without the required permissions.
         assertThrows(SecurityException.class,
-                () -> mWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
+                () -> sWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
         assertThrows(SecurityException.class,
-                () -> mWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(true));
+                () -> sWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(true));
 
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         try {
@@ -6750,18 +6663,862 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
 
             // Store a new value.
             boolean defaultVal =
-                    mWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled();
+                    sWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled();
             boolean newVal = !defaultVal;
-            mWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(newVal);
+            sWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(newVal);
             assertEquals(newVal,
-                    mWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
+                    sWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
 
             // Restore the original value.
-            mWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(defaultVal);
+            sWifiManager.setThirdPartyAppEnablingWifiConfirmationDialogEnabled(defaultVal);
             assertEquals(defaultVal,
-                    mWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
+                    sWifiManager.isThirdPartyAppEnablingWifiConfirmationDialogEnabled());
         } catch (Exception e) {
             fail("Unexpected exception " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    static class TestWifiLowLatencyLockListener implements WifiManager.WifiLowLatencyLockListener {
+        private boolean mIsActivated = false;
+        private int[] mOwnerUids = null;
+        private int[] mActiveUids = null;
+
+        public void clear() {
+            mIsActivated = false;
+            mOwnerUids = null;
+            mActiveUids = null;
+        }
+
+        @Override
+        public void onActivatedStateChanged(boolean activated) {
+            mIsActivated = activated;
+        }
+
+        @Override
+        public void onOwnershipChanged(@NonNull int[] ownerUids) {
+            mOwnerUids = ownerUids;
+        }
+
+        @Override
+        public void onActiveUsersChanged(@NonNull int[] activeUids) {
+            mActiveUids = activeUids;
+        }
+
+        public boolean isActivated() {
+            return mIsActivated;
+        }
+
+        public boolean isLockOwned(int myUid) {
+            if (mOwnerUids == null) return false;
+            for (int uid : mOwnerUids) {
+                if (uid == myUid) return true;
+            }
+            return false;
+        }
+
+        public boolean isActiveLockUser(int myUid) {
+            if (mActiveUids == null) return false;
+            for (int uid : mActiveUids) {
+                if (uid == myUid) return true;
+            }
+            return false;
+        }
+    }
+
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testWifiLowLatencyLockListener() throws Exception {
+        TestWifiLowLatencyLockListener testListener = new TestWifiLowLatencyLockListener();
+        // Verify permission check
+        assertThrows(SecurityException.class,
+                () -> sWifiManager.addWifiLowLatencyLockListener(mExecutor, testListener));
+
+        // Disable wifi
+        setWifiEnabled(false);
+        waitForDisconnection();
+
+        WifiLock wifiLowLatencyLock = sWifiManager.createWifiLock(
+                WifiManager.WIFI_MODE_FULL_LOW_LATENCY,
+                TAG);
+
+        try {
+            // Register listener then enable wifi
+            ShellIdentityUtils.invokeWithShellPermissions(
+                    () -> sWifiManager.addWifiLowLatencyLockListener(mExecutor, testListener));
+            setWifiEnabled(true);
+
+            // Trigger a scan & wait for connection to one of the saved networks.
+            sWifiManager.startScan();
+            waitForConnection();
+
+            // TODO: b/281356259 - Move this to a foreground activity.
+            ShellIdentityUtils.invokeWithShellPermissions(() -> wifiLowLatencyLock.acquire());
+
+            if (sWifiManager.isLowLatencyModeSupported()) {
+                PollingCheck.check("Lock is not activated!", 1_000,
+                        () -> testListener.isActivated());
+            }
+
+            PollingCheck.check("Lock is not owned!", 1_000,
+                    () -> testListener.isLockOwned(myUid()));
+
+            if (sWifiManager.isLowLatencyModeSupported()) {
+                PollingCheck.check("Not an active Lock user!", 1_000,
+                        () -> testListener.isActiveLockUser(myUid()));
+            }
+
+            ShellIdentityUtils.invokeWithShellPermissions(() -> wifiLowLatencyLock.release());
+
+            // Note: The lock cannot be tested for deactivation after release because other
+            // applications can still keep it active.
+
+            PollingCheck.check("Still owns the Lock after release!", 1_000,
+                    () -> !testListener.isLockOwned(myUid()));
+        } catch (Exception e) {
+            fail("Unexpected exception " + e);
+        } finally {
+            testListener.clear();
+            sWifiManager.removeWifiLowLatencyLockListener(testListener);
+        }
+    }
+
+    /**
+     * Tests the builder and get methods for {@link OuiKeyedData}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+                 codeName = "VanillaIceCream")
+    @Test
+    public void testOuiKeyedDataBuilder() throws Exception {
+        int oui = 0x00112233;
+        PersistableBundle data = new PersistableBundle();
+        String key = "intField";
+        data.putInt(key, 12345);
+
+        assertThrows("Zero OUI should trigger an exception", IllegalArgumentException.class,
+                () -> new OuiKeyedData.Builder(0, data).build());
+        assertThrows(">24-bit OUI should trigger an exception", IllegalArgumentException.class,
+                () -> new OuiKeyedData.Builder(0x11223344, data).build());
+        assertThrows("Null data should trigger an exception", IllegalArgumentException.class,
+                () -> new OuiKeyedData.Builder(oui, null).build());
+
+        OuiKeyedData ouiKeyedData = new OuiKeyedData.Builder(oui, data).build();
+        assertEquals(oui, ouiKeyedData.getOui());
+        assertTrue(data.keySet().equals(ouiKeyedData.getData().keySet()));
+        assertEquals(data.getInt(key), ouiKeyedData.getData().getInt(key));
+    }
+
+    /**
+     * Tests {@link WifiManager#isWepSupported()} does not crash.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testIsWepSupported() throws Exception {
+        sWifiManager.isWepSupported();
+    }
+
+    /**
+     * Tests {@link WifiManager#isWpaPersonalSupported()} does not crash.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testIsWpaPersonalSupported() throws Exception {
+        sWifiManager.isWpaPersonalSupported();
+    }
+
+    /**
+     * Tests {@link WifiManager#setWepAllowed()} and
+     * {@link WifiManager#queryWepAllowed()}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testSetAndQueryWepAllowed() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        boolean currentWepAllowed = false;
+        boolean isRestoreRequired = false;
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            Mutable<Boolean> isWepAllowed = new Mutable<Boolean>(false);
+            sWifiManager.queryWepAllowed(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isWepAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue(isQuerySucceeded.value);
+            // Reset for next query
+            isQuerySucceeded.value = false;
+            currentWepAllowed = isWepAllowed.value;
+            isRestoreRequired = true;
+            sWifiManager.setWepAllowed(!currentWepAllowed);
+            sWifiManager.queryWepAllowed(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isWepAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertEquals(isWepAllowed.value, !currentWepAllowed);
+        } finally {
+            if (isRestoreRequired) {
+                sWifiManager.setWepAllowed(currentWepAllowed);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#enableMscs(MscsParams)}, {@link WifiManager#disableMscs()},
+     * and all get/set methods in {@link MscsParams}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testEnableAndDisableMscs() {
+        int frameClassifierFields = MscsParams.FRAME_CLASSIFIER_IP_VERSION;
+        int userPriorityBitmap = 0; // don't match any user priorities using MSCS
+        int userPriorityLimit = 7;
+        int streamTimeoutUs = 30000000; // 30 seconds (value is longer than TEST_WAIT_DURATION_MS)
+        MscsParams params = new MscsParams.Builder()
+                .setFrameClassifierFields(frameClassifierFields)
+                .setUserPriorityBitmap(userPriorityBitmap)
+                .setUserPriorityLimit(userPriorityLimit)
+                .setStreamTimeoutUs(streamTimeoutUs)
+                .build();
+        assertEquals(frameClassifierFields, params.getFrameClassifierFields());
+        assertEquals(userPriorityBitmap, params.getUserPriorityBitmap());
+        assertEquals(userPriorityLimit, params.getUserPriorityLimit());
+        assertEquals(streamTimeoutUs, params.getStreamTimeoutUs());
+
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.enableMscs(params);
+            synchronized (mLock) {
+                // Wait for the request to get sent to the AP.
+                mLock.wait(TEST_WAIT_DURATION_MS);
+            }
+            sWifiManager.disableMscs();
+        } catch (Exception e) {
+            fail("testEnableAndDisableMscs encountered an exception: " + e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests the result from {@link WifiUriParser#parseUri(String)} can be added.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testZxingNetworkFromUriParserCanBeAdded() throws Exception {
+        String testUriZx = "WIFI:S:testAbC;T:nopass";
+        UriParserResults result = WifiUriParser.parseUri(testUriZx);
+        assertNotNull(result);
+        assertEquals(result.getUriScheme(), UriParserResults.URI_SCHEME_ZXING_WIFI_NETWORK_CONFIG);
+        WifiConfiguration config = result.getWifiConfiguration();
+        assertNotNull(config);
+        // These below API's only work with privileged permissions (obtained via shell identity
+        // for test)
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation();
+        int networkId = INVALID_NETWORK_ID;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            // Verify that the network is added
+            networkId = sWifiManager.addNetwork(config);
+            assertNotEquals(INVALID_NETWORK_ID, networkId);
+        } finally {
+            if (networkId != INVALID_NETWORK_ID) {
+                // Clean up the previously added network
+                sWifiManager.removeNetwork(networkId);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /*
+     * Tests the builder and get methods for {@link QosCharacteristics}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testQosCharacteristicsBuilder() {
+        int minServiceIntervalMicros = 2000;
+        int maxServiceIntervalMicros = 5000;
+        int minDataRateKbps = 500;
+        int delayBoundMicros = 200;
+        int maxMsduSizeOctets = 4;
+        int serviceStartTimeMicros = 250;
+        int serviceStartTimeLinkId = 0x5;
+        int meanDataRateKbps = 1500;
+        int burstSizeOctets = 2;
+        int msduLifetimeMillis = 400;
+        int deliveryRatio = QosCharacteristics.DELIVERY_RATIO_99;
+        int countExponent = 5;
+
+        QosCharacteristics qosCharacteristics = new QosCharacteristics.Builder(
+                minServiceIntervalMicros, maxServiceIntervalMicros,
+                minDataRateKbps, delayBoundMicros)
+                .setBurstSizeOctets(burstSizeOctets)
+                .setMaxMsduSizeOctets(maxMsduSizeOctets)
+                .setServiceStartTimeInfo(serviceStartTimeMicros, serviceStartTimeLinkId)
+                .setMeanDataRateKbps(meanDataRateKbps)
+                .setMsduLifetimeMillis(msduLifetimeMillis)
+                .setMsduDeliveryInfo(deliveryRatio, countExponent)
+                .build();
+
+        assertEquals(minServiceIntervalMicros, qosCharacteristics.getMinServiceIntervalMicros());
+        assertEquals(maxServiceIntervalMicros, qosCharacteristics.getMaxServiceIntervalMicros());
+        assertEquals(minDataRateKbps, qosCharacteristics.getMinDataRateKbps());
+        assertEquals(delayBoundMicros, qosCharacteristics.getDelayBoundMicros());
+        assertEquals(maxMsduSizeOctets, qosCharacteristics.getMaxMsduSizeOctets());
+        assertEquals(serviceStartTimeMicros, qosCharacteristics.getServiceStartTimeMicros());
+        assertEquals(serviceStartTimeLinkId, qosCharacteristics.getServiceStartTimeLinkId());
+        assertEquals(meanDataRateKbps, qosCharacteristics.getMeanDataRateKbps());
+        assertEquals(burstSizeOctets, qosCharacteristics.getBurstSizeOctets());
+        assertEquals(msduLifetimeMillis, qosCharacteristics.getMsduLifetimeMillis());
+        assertEquals(deliveryRatio, qosCharacteristics.getDeliveryRatio());
+        assertEquals(countExponent, qosCharacteristics.getCountExponent());
+    }
+
+    private int querySendDhcpHostnameRestrictionSynchronous() throws Exception {
+        Mutable<Integer> queriedRestriction = new Mutable<>(0);
+        Mutable<Boolean> isQuerySucceeded = new Mutable<>(false);
+        sWifiManager.querySendDhcpHostnameRestriction(mExecutor, (value) -> {
+            synchronized (mLock) {
+                queriedRestriction.value = value;
+                isQuerySucceeded.value = true;
+                mLock.notify();
+            }
+        });
+        synchronized (mLock) {
+            long now = System.currentTimeMillis();
+            long deadline = now + TEST_WAIT_DURATION_MS;
+            while (!isQuerySucceeded.value && now < deadline) {
+                mLock.wait(deadline - now);
+                now = System.currentTimeMillis();
+            }
+        }
+        assertTrue(isQuerySucceeded.value);
+        return queriedRestriction.value;
+    }
+
+    /**
+     * Tests {@link WifiManager#setSendDhcpHostnameRestriction(int)} and
+     * {@link WifiManager#querySendDhcpHostnameRestriction(Executor, IntConsumer)}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
+    @Test
+    public void testSetAndQuerySendDhcpHostnameRestriction() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        int previousRestriction = 0;
+        boolean isRestoreRequired = false;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            previousRestriction = querySendDhcpHostnameRestrictionSynchronous();
+
+            sWifiManager.setSendDhcpHostnameRestriction(
+                    WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_OPEN);
+            isRestoreRequired = true;
+            assertEquals(querySendDhcpHostnameRestrictionSynchronous(),
+                    WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_OPEN);
+
+            sWifiManager.setSendDhcpHostnameRestriction(
+                    WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_OPEN
+                            | WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_SECURE);
+            assertEquals(querySendDhcpHostnameRestrictionSynchronous(),
+                    WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_OPEN
+                            | WifiManager.FLAG_SEND_DHCP_HOSTNAME_RESTRICTION_SECURE);
+        } finally {
+            if (isRestoreRequired) {
+                sWifiManager.setSendDhcpHostnameRestriction(previousRestriction);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiConfiguration#setWifi7Enabled(boolean)}. Validate default behavior, disable
+     * Wi-Fi 7 and Enable Wi-Fi 7.
+     */
+    @ApiTest(apis = {"android.net.wifi.WifiConfiguration#setWifi7Enabled",
+            "android.net.wifi.WifiConfiguration#isWifi7Enabled"})
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @Test
+    public void testEnableWifi7() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        TestActionListener actionListener = new TestActionListener(mLock);
+        setWifiEnabled(true);
+        WifiConfiguration wifi7Network = null;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            // Make sure device supports Wi-Fi 7
+            assumeTrue(sWifiManager.isWifiStandardSupported(ScanResult.WIFI_STANDARD_11BE));
+
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
+            wifi7Network = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_WIFI7);
+            // TODO: b/322011012
+            assumeTrue("Unable to locate Wi-Fi 7 networks in range.\n", wifi7Network != null);
+
+            // Default behavior: check new connection is Wi-Fi 7
+            sWifiManager.disconnect();
+            waitForDisconnection();
+            assertTrue(wifi7Network.isWifi7Enabled());
+            sWifiManager.connect(wifi7Network.networkId, actionListener);
+            waitForConnection();
+            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                    == ScanResult.WIFI_STANDARD_11BE);
+
+            // Disable Wi-Fi 7 while connected: check new connection is not Wi-Fi 7
+            wifi7Network.setWifi7Enabled(false);
+            assertFalse(wifi7Network.isWifi7Enabled());
+            sWifiManager.updateNetwork(wifi7Network);
+            waitForConnection();
+            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                    != ScanResult.WIFI_STANDARD_11BE);
+
+            // Enable Wi-Fi 7: check new connection is Wi-Fi 7
+            sWifiManager.disconnect();
+            waitForDisconnection();
+            wifi7Network.setWifi7Enabled(true);
+            assertTrue(wifi7Network.isWifi7Enabled());
+            sWifiManager.connect(wifi7Network.networkId, actionListener);
+            waitForConnection();
+            assertTrue(sWifiManager.getConnectionInfo().getWifiStandard()
+                    == ScanResult.WIFI_STANDARD_11BE);
+
+        } finally {
+            // Restore
+            if (wifi7Network != null) {
+                wifi7Network.setWifi7Enabled(true);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    class TestTwtSessionCallback implements TwtSessionCallback {
+        final AtomicReference<TwtSession> mTwtSession = new AtomicReference<>();
+        final AtomicInteger mTwtTeardownReasonCode = new AtomicInteger(-1);
+        final AtomicInteger mTwtErrorCode = new AtomicInteger(-1);
+
+        @Override
+        public void onFailure(int errorCode) {
+            synchronized (mLock) {
+                mTwtErrorCode.set(errorCode);
+                mLock.notify();
+            }
+        }
+
+        @Override
+        public void onTeardown(int reasonCode) {
+            synchronized (mLock) {
+                mTwtTeardownReasonCode.set(reasonCode);
+                mLock.notify();
+            }
+        }
+
+        @Override
+        public void onCreate(TwtSession twtSession) {
+            synchronized (mLock) {
+                mTwtSession.set(twtSession);
+            }
+        }
+    }
+
+    /**
+     * Validate setting up a TWT session if device supports and get stats and finally close. If the
+     * connection is multi-link, pick the first link and set up the TWT session.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
+            "VanillaIceCream")
+    @Test
+    @ApiTest(apis = {"android.net.wifi.WifiManager#getTwtCapabilities",
+            "android.net.wifi.WifiManager#twtSessionSetup",
+            "android.net.wifi.twt.TwtSession#getStats",
+            "android.net.wifi.twt.TwtSession#close",
+            "android.net.wifi.twt.TwtSession#getWakeDurationMicros",
+            "android.net.wifi.twt.TwtSession#getWakeIntervalMicros",
+            "android.net.wifi.twt.TwtSession#getMloLinkId",
+            "android.net.wifi.twt.TwtRequest#Builder",
+            "android.net.wifi.twt.TwtRequest.Builder#setLinkId",
+            "android.net.wifi.twt.TwtRequest#getMinWakeDurationMicros",
+            "android.net.wifi.twt.TwtRequest#getMaxWakeDurationMicros",
+            "android.net.wifi.twt.TwtRequest#getMinWakeIntervalMicros",
+            "android.net.wifi.twt.TwtRequest#getMaxWakeIntervalMicros",
+            "android.net.wifi.twt.TwtRequest#getLinkId"})
+    public void testTwt() throws Exception {
+        AtomicReference<Bundle> twtCapabilities = new AtomicReference<>();
+        AtomicReference<Bundle> twtStats = new AtomicReference<>();
+        long now, deadline;
+        Consumer<Bundle> twtCapabilityCallback = capabilities -> {
+            synchronized (mLock) {
+                twtCapabilities.set(capabilities);
+                mLock.notify();
+            }
+        };
+        Consumer<Bundle> twtStatsCallback = stats -> {
+            synchronized (mLock) {
+                twtStats.set(stats);
+                mLock.notify();
+            }
+        };
+        TestTwtSessionCallback testTwtSessionCallback = new TestTwtSessionCallback();
+        TestActionListener actionListener = new TestActionListener(mLock);
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.getTwtCapabilities(mExecutor, twtCapabilityCallback);
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (twtCapabilities.get() == null && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotNull("getTwtCapabilities() timed out !", twtCapabilities.get());
+            // Assume device is a TWT requester
+            assumeTrue(twtCapabilities.get().getBoolean(
+                    WifiManager.TWT_CAPABILITIES_KEY_BOOLEAN_TWT_REQUESTER));
+            assertTrue(twtCapabilities.get().getInt(
+                    WifiManager.TWT_CAPABILITIES_KEY_INT_MIN_WAKE_DURATION_MICROS) >= 0);
+            assertTrue(twtCapabilities.get().getInt(
+                    WifiManager.TWT_CAPABILITIES_KEY_INT_MAX_WAKE_DURATION_MICROS) >= 0);
+            assertTrue(twtCapabilities.get().getLong(
+                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MIN_WAKE_INTERVAL_MICROS) >= 0);
+            assertTrue(twtCapabilities.get().getLong(
+                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MAX_WAKE_INTERVAL_MICROS) >= 0);
+
+            // Connect to an available TWT responder network
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
+            WifiConfiguration twtNetwork = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_TWT_RESPONDER);
+            // TODO: Make it an assert once the TWT setup is available for CTS test
+            assumeTrue("Unable to locate TWT capable networks in range.\n", twtNetwork != null);
+            sWifiManager.disconnect();
+            waitForDisconnection();
+            sWifiManager.connect(twtNetwork.networkId, actionListener);
+            waitForConnection();
+
+            // Get the first link id, if the connection is multi-link
+            List<MloLink> mloLinks = sWifiManager.getConnectionInfo().getAssociatedMloLinks();
+            int linkId = MloLink.INVALID_MLO_LINK_ID;
+            if (!mloLinks.isEmpty()) {
+                linkId = mloLinks.getFirst().getLinkId();
+            }
+
+            // Build and validate twtRequest
+            int minWakeDuration = twtCapabilities.get().getInt(
+                    WifiManager.TWT_CAPABILITIES_KEY_INT_MIN_WAKE_DURATION_MICROS);
+            int maxWakeDuration = twtCapabilities.get().getInt(
+                    WifiManager.TWT_CAPABILITIES_KEY_INT_MAX_WAKE_DURATION_MICROS);
+            long minWakeInterval = twtCapabilities.get().getLong(
+                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MIN_WAKE_INTERVAL_MICROS);
+            long maxWakeInterval = twtCapabilities.get().getLong(
+                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MAX_WAKE_INTERVAL_MICROS);
+            TwtRequest.Builder builder = new TwtRequest.Builder(minWakeDuration, maxWakeDuration,
+                    minWakeInterval, maxWakeInterval);
+            if (linkId != MloLink.INVALID_MLO_LINK_ID) {
+                builder.setLinkId(linkId);
+            }
+            TwtRequest twtRequest = builder.build();
+            assertEquals(twtRequest.getMinWakeDurationMicros(), minWakeDuration);
+            assertEquals(twtRequest.getMaxWakeDurationMicros(), maxWakeDuration);
+            assertEquals(twtRequest.getMinWakeIntervalMicros(), minWakeInterval);
+            assertEquals(twtRequest.getMaxWakeIntervalMicros(), maxWakeInterval);
+            assertEquals(twtRequest.getLinkId(), linkId);
+
+            // Verify TWT session setup
+            sWifiManager.setupTwtSession(twtRequest, mExecutor, testTwtSessionCallback);
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (testTwtSessionCallback.mTwtSession.get() == null && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotNull("setupTwtSession() timed out !",
+                    testTwtSessionCallback.mTwtSession.get());
+            assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeDurationMicros() > 0);
+            assertTrue(testTwtSessionCallback.mTwtSession.get().getWakeIntervalMicros() > 0);
+            assertTrue(testTwtSessionCallback.mTwtSession.get().getMloLinkId() == linkId);
+
+            // Verify TWT session get stats
+            testTwtSessionCallback.mTwtSession.get().getStats(mExecutor, twtStatsCallback);
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (twtStats.get() == null && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotNull("TwtSession#getStats() timed out !", twtStats.get());
+            assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_AVERAGE_TX_PACKET_COUNT)
+                    >= 0);
+            assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_AVERAGE_RX_PACKET_COUNT)
+                    >= 0);
+            assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_AVERAGE_TX_PACKET_SIZE)
+                    >= 0);
+            assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_AVERAGE_RX_PACKET_SIZE)
+                    >= 0);
+            assertTrue(
+                    twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_AVERAGE_EOSP_DURATION_MICROS)
+                            >= 0);
+            assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_EOSP_COUNT) >= 0);
+
+            // Verify TWT session close
+            testTwtSessionCallback.mTwtSession.get().close();
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (testTwtSessionCallback.mTwtTeardownReasonCode.get() == -1
+                        && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotEquals("TwtSession#teardown() timed out !", -1,
+                    testTwtSessionCallback.mTwtTeardownReasonCode.get());
+            assertTrue(testTwtSessionCallback.mTwtTeardownReasonCode.get()
+                    == TwtSessionCallback.TWT_REASON_CODE_LOCALLY_REQUESTED);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
+            "VanillaIceCream")
+    @Test
+    public void testTwtSessionAutoCloseable() throws Exception {
+        AtomicReference<Bundle> twtCapabilities = new AtomicReference<>();
+        long now, deadline;
+        Consumer<Bundle> twtCapabilityCallback = capabilities -> {
+            synchronized (mLock) {
+                twtCapabilities.set(capabilities);
+                mLock.notify();
+            }
+        };
+        TestTwtSessionCallback testTwtSessionCallback = new TestTwtSessionCallback();
+        TestActionListener actionListener = new TestActionListener(mLock);
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.getTwtCapabilities(mExecutor, twtCapabilityCallback);
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (twtCapabilities.get() == null && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotNull("getTwtCapabilities() timed out !", twtCapabilities.get());
+            // Assume device is a TWT requester
+            assumeTrue(twtCapabilities.get().getBoolean(
+                    WifiManager.TWT_CAPABILITIES_KEY_BOOLEAN_TWT_REQUESTER));
+
+            // Connect to an available TWT responder network
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
+            WifiConfiguration twtNetwork = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
+                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_TWT_RESPONDER);
+            assumeTrue("Unable to locate TWT capable networks in range.\n", twtNetwork != null);
+            sWifiManager.disconnect();
+            waitForDisconnection();
+            sWifiManager.connect(twtNetwork.networkId, actionListener);
+            waitForConnection();
+
+            // Verify TWT session setup
+            sWifiManager.setupTwtSession(new TwtRequest.Builder(twtCapabilities.get().getInt(
+                            WifiManager.TWT_CAPABILITIES_KEY_INT_MIN_WAKE_DURATION_MICROS),
+                            twtCapabilities.get().getInt(
+                                    WifiManager.TWT_CAPABILITIES_KEY_INT_MAX_WAKE_DURATION_MICROS),
+                            twtCapabilities.get().getLong(
+                                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MIN_WAKE_INTERVAL_MICROS),
+                            twtCapabilities.get().getLong(
+                                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MAX_WAKE_INTERVAL_MICROS)).build(),
+                    mExecutor, testTwtSessionCallback);
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (testTwtSessionCallback.mTwtSession.get() == null && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertNotNull("setupTwtSession() timed out !",
+                    testTwtSessionCallback.mTwtSession.get());
+
+        } finally {
+            // Test Twt Session, if setup, closes automatically
+            if (testTwtSessionCallback.mTwtSession.get() != null) {
+                synchronized (mLock) {
+                    now = System.currentTimeMillis();
+                    deadline = now + TEST_WAIT_DURATION_MS;
+                    while (testTwtSessionCallback.mTwtTeardownReasonCode.get() == -1
+                            && now < deadline) {
+                        mLock.wait(deadline - now);
+                        now = System.currentTimeMillis();
+                    }
+                }
+                assertNotEquals("TwtSession auto close timed out !", -1,
+                        testTwtSessionCallback.mTwtTeardownReasonCode.get());
+                assertEquals(testTwtSessionCallback.mTwtTeardownReasonCode.get(),
+                        TwtSessionCallback.TWT_REASON_CODE_LOCALLY_REQUESTED);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+    /**
+     * Tests {@link WifiManager#isD2dSupportedWhenInfraStaDisabled()},
+     * {@link WifiManager#setD2dAllowedWhenInfraStaDisabled()} and
+     * {@link WifiManager#queryD2dAllowedWhenInfraStaDisabled()}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
+    @Test
+    public void testD2dAllowedWhenInfraStaDisabled() throws Exception {
+        if (!sWifiManager.isD2dSupportedWhenInfraStaDisabled()) {
+            // skip the test if feature is not supported.
+            return;
+        }
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        boolean currentD2dAllowed = false;
+        boolean isRestoreRequired = false;
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            Mutable<Boolean> isD2dAllowed = new Mutable<Boolean>(false);
+            sWifiManager.queryD2dAllowedWhenInfraStaDisabled(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isD2dAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("d2d allowed query fail", isQuerySucceeded.value);
+            // Reset for next query
+            isQuerySucceeded.value = false;
+            currentD2dAllowed = isD2dAllowed.value;
+            isRestoreRequired = true;
+            sWifiManager.setD2dAllowedWhenInfraStaDisabled(!currentD2dAllowed);
+            sWifiManager.queryD2dAllowedWhenInfraStaDisabled(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isD2dAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertEquals("set/query d2d allowed should match",
+                    isD2dAllowed.value, !currentD2dAllowed);
+        } finally {
+            if (isRestoreRequired) {
+                sWifiManager.setD2dAllowedWhenInfraStaDisabled(currentD2dAllowed);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
+     * Tests {@link WifiManager#retrieveWifiBackupData()},
+     * {@link WifiManager#restoreWifiBackupData()}.
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @Test
+    public void testWifiBackupRestore() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        Mutable<byte[]> backupWifiData = new Mutable<byte[]>();
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.retrieveWifiBackupData(mExecutor,
+                    new Consumer<byte[]>() {
+                    @Override
+                    public void accept(byte[] value) {
+                        synchronized (mLock) {
+                            isQuerySucceeded.value = true;
+                            backupWifiData.value = value;
+                            mLock.notify();
+                        }
+                    }
+                });
+            // Test no crash when calling backup/restore api
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("retrieve Wi-Fi backup data fail", isQuerySucceeded.value);
+            sWifiManager.restoreWifiBackupData(backupWifiData.value);
         } finally {
             uiAutomation.dropShellPermissionIdentity();
         }

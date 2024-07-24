@@ -34,7 +34,7 @@ import android.graphics.Color;
  *
  * <p>XYZ is commonly used as an intermediate color space for converting between one color space to
  * another. For example, to convert RGB to L*a*b*, first RGB is converted to XYZ, then XYZ is
- * convered to L*a*b*.
+ * converted to L*a*b*.
  *
  * <p>sRGB is a "specification originated from work in 1990s through cooperation by Hewlett-Packard
  * and Microsoft, and it was designed to be a standard definition of RGB for the internet, which it

@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAndroidAppTestCases",
+    team: "trendy_team_platform_security",
     defaults: ["cts_defaults"],
     platform_apis: true,
     libs: [
@@ -31,12 +32,22 @@ android_test {
         "androidx.test.rules",
         "junit",
         "mockito-target-minus-junit4",
+        "android.security.flags-aconfig-java",
+        "flag-junit",
+        "TestParameterInjector",
+        "cts-wm-util",
     ],
-    srcs: ["src/**/*.java"],
+    srcs: [
+        "src/**/*.java",
+        "test-apps/TestComponentCallerApp/**/Constants.java",
+    ],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-    data: [":CtsTestShareIdentityApp"],
+    data: [
+        ":CtsTestShareIdentityApp",
+        ":CtsTestComponentCallerApp",
+    ],
 }

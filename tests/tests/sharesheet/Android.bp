@@ -13,7 +13,7 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
+    default_team: "trendy_team_capture_and_share",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -29,7 +29,10 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "compatibility-device-util-axt",
+        "flag-junit",
         "mockito-target-minus-junit4",
+        "android.nfc.flags-aconfig-java",
+        "android.service.chooser.flags-aconfig-java",
         "androidx.test.uiautomator_uiautomator",
     ],
 

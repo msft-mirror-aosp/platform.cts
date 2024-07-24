@@ -1,4 +1,5 @@
 package {
+    default_team: "trendy_team_enterprise",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -10,6 +11,7 @@ java_library_host {
     ],
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
     plugins: ["auto_annotation_plugin"],
 }
@@ -22,6 +24,7 @@ android_library {
     ],
     srcs: [
         "common/src/main/java/**/*.java",
+        "common/src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
     sdk_version: "current",
@@ -34,6 +37,7 @@ android_library {
     sdk_version: "test_current",
     srcs: [
         "src/main/java/**/*.java",
+        "src/main/java/**/*.kt",
     ],
     static_libs: [
         "androidx.test.ext.junit",
@@ -48,6 +52,7 @@ android_test {
     name: "BedsteadQueryableTest",
     srcs: [
         "src/test/java/**/*.java",
+        "src/test/java/**/*.kt",
     ],
     test_suites: [
         "general-tests",

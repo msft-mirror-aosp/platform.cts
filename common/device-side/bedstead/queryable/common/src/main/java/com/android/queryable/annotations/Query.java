@@ -43,4 +43,10 @@ public @interface Query {
 
     /** Require the targetSdkVersion matches the {@link int} query */
     IntegerQuery targetSdkVersion() default @IntegerQuery();
+
+    /** Require the dpc to be or not be a device admin app. */
+    BooleanQuery isDeviceAdmin() default @BooleanQuery;
+
+    /** Require the dpc to be or not be a headless device owner single user app. */
+    BooleanQuery isHeadlessDOSingleUser() default @BooleanQuery;
 }

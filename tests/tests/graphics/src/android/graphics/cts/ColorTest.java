@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.util.ArraySet;
 import android.util.Log;
 import android.util.TypedValue;
 
@@ -36,6 +37,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -142,6 +144,19 @@ public class ColorTest {
                 android.R.color.system_accent3_800,
                 android.R.color.system_accent3_900,
                 android.R.color.system_accent3_1000,
+                android.R.color.system_error_0,
+                android.R.color.system_error_10,
+                android.R.color.system_error_50,
+                android.R.color.system_error_100,
+                android.R.color.system_error_200,
+                android.R.color.system_error_300,
+                android.R.color.system_error_400,
+                android.R.color.system_error_500,
+                android.R.color.system_error_600,
+                android.R.color.system_error_700,
+                android.R.color.system_error_800,
+                android.R.color.system_error_900,
+                android.R.color.system_error_1000,
         };
 
         int[] materialSystemColors = {
@@ -244,7 +259,10 @@ public class ColorTest {
                 android.R.color.system_palette_key_color_secondary_dark,
                 android.R.color.system_palette_key_color_tertiary_dark,
                 android.R.color.system_palette_key_color_neutral_dark,
-                android.R.color.system_palette_key_color_neutral_variant_dark
+                android.R.color.system_palette_key_color_neutral_variant_dark,
+                android.R.color.system_surface_disabled,
+                android.R.color.system_on_surface_disabled,
+                android.R.color.system_outline_disabled,
         };
 
         List<Integer> expectedColorStateLists = Arrays.asList(
@@ -299,33 +317,37 @@ public class ColorTest {
         // as the system. The actual value of the color does not matter. Hence only enforce that
         // 'colors' contains all the public colors and ignore System-api colors.
         ArrayList<String> missingColors = new ArrayList<>();
-        ArrayList<Integer> allKnownColors = new ArrayList<>();
-        allKnownColors.addAll(Arrays.stream(colors).map(pair -> pair[1]).toList());
-        allKnownColors.addAll(Arrays.stream(systemColors).boxed().toList());
-        allKnownColors.addAll(Arrays.stream(materialSystemColors).boxed().toList());
-        int numPublicApiColors = 0;
+        ArrayList<Integer> requiredPublicApiColorResIds = new ArrayList<>();
+        requiredPublicApiColorResIds.addAll(Arrays.stream(colors).map(pair -> pair[1]).toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(systemColors).boxed().toList());
+        requiredPublicApiColorResIds.addAll(Arrays.stream(materialSystemColors).boxed().toList());
+
+        Set<Integer> availablePublicApiColorResIds = new ArraySet<>();
         for (Field declaredColor : android.R.color.class.getDeclaredFields()) {
             if (Arrays.stream(declaredColor.getDeclaredAnnotations()).anyMatch(
                     (Annotation a) -> a.toString().contains("SystemApi"))) {
                 Log.i(LOG_TAG, declaredColor.getName() + " is SystemApi");
-            } else {
-                Integer value = -1;
-                try {
-                    value = (Integer) declaredColor.get(null);
-                } catch (IllegalAccessException ignored) { }
-
-                if (!allKnownColors.remove(value)) {
-                    missingColors.add(declaredColor.getName());
-                }
-                numPublicApiColors++;
+                continue;
+            }
+            Integer colorValue = -1;
+            try {
+                colorValue = (Integer) declaredColor.get(null);
+            } catch (IllegalAccessException ignored) { }
+            if (colorValue != -1) {
+                availablePublicApiColorResIds.add(colorValue);
             }
         }
 
-        assertEquals("Test no longer in sync with colors in android.R.color. "
-                + "Declared in list, but not public API : " + allKnownColors
-                + ". Missing in declared colors: " + missingColors,
-                colors.length + systemColors.length
-                + materialSystemColors.length, numPublicApiColors);
+        for (Integer requiredColorResId : requiredPublicApiColorResIds) {
+            if (!availablePublicApiColorResIds.contains(requiredColorResId)) {
+                missingColors.add(resources.getResourceName(requiredColorResId));
+            }
+        }
+
+        assertTrue(
+                "android.R.color misses required color resources. Declared in list,but not "
+                        + "installed : "
+                        + missingColors, missingColors.isEmpty());
     }
     @Test
     public void testAlpha() {
@@ -353,7 +375,7 @@ public class ColorTest {
         assertEquals(0xff, Color.green(Color.GREEN));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testHSVToColorArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];
@@ -374,7 +396,7 @@ public class ColorTest {
         assertEquals(Color.RED, Color.HSVToColor(0xff, hsv));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorStringOfInvalidLength() {
         // abnormal case: colorString starts with '#' but length is neither 7 nor 9
         Color.parseColor("#ff00ff0");
@@ -398,7 +420,7 @@ public class ColorTest {
         assertEquals(Color.MAGENTA, Color.parseColor("magenta"));
     }
 
-    @Test(expected=IllegalArgumentException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testParseColorUnsupportedFormat() {
         // abnormal case: colorString doesn't start with '#' and is unknown color
         Color.parseColor("hello");
@@ -418,7 +440,7 @@ public class ColorTest {
         assertEquals(Color.YELLOW, Color.rgb(1.0f, 1.0f, 0.0f));
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void testRGBToHSVArrayTooShort() {
         // abnormal case: hsv length less than 3
         float[] hsv = new float[2];

@@ -18,12 +18,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="14_r4">
+          android:versionName="15_r1">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="34"/>
 
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY" />
+    <uses-permission android:name="android.car.permission.CAR_DRIVING_STATE" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS"/>
@@ -125,7 +126,6 @@
     <application android:networkSecurityConfig="@xml/network_security_config"
                  android:label="@string/app_name"
                  android:icon="@drawable/icon"
-                 android:debuggable="true"
                  android:largeHeap="true"
                  android:requestLegacyExternalStorage="true"
                  android:allowBackup="false"
@@ -1569,6 +1569,7 @@
                 android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest" android:value="Helper class. List test activities" />
         </activity>
 
         <activity
@@ -1590,6 +1591,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.hardware.biometrics.BiometricPrompt.Builder#setAllowedAuthenticators|android.hardware.biometrics.BiometricPrompt.AuthenticationResult#getAuthenticationType|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationValidityDurationSeconds" />
         </activity>
 
         <activity
@@ -1611,6 +1614,10 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="CddTest"
+                       android:value="7.3.10/C-4-3,C-6-1,C-6-2,C-3-2,C-3-5,C-3-6" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.hardware.biometrics.BiometricPrompt#authenticate|android.hardware.biometrics.BiometricPrompt.AuthenticationResult#getAuthenticationType|android.security.keystore.KeyGenParameterSpec.Builder#setInvalidatedByBiometricEnrollment|android.provider.Settings#ACTION_BIOMETRIC_ENROLL" />
         </activity>
 
         <activity
@@ -1632,6 +1639,10 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="CddTest"
+                       android:value="7.3.10/C-4-3,C-2-9" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricManager#canAuthenticate|android.provider.Settings#ACTION_BIOMETRIC_ENROLL" />
         </activity>
 
         <activity
@@ -1653,6 +1664,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1674,6 +1687,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1695,6 +1710,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1716,7 +1733,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1738,7 +1756,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1760,7 +1779,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="ApiTest" android:value="javax.crypto.Cipher#updateAAD"/>
+            <meta-data android:name="ApiTest"
+                       android:value="javax.crypto.Cipher#updateAAD|android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1782,6 +1802,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1803,6 +1825,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1824,6 +1848,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1845,6 +1871,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1866,6 +1894,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1887,6 +1917,8 @@
                        android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.biometrics.BiometricPrompt#authenticate|android.security.keystore.KeyGenParameterSpec.Builder#setUserAuthenticationParameters" />
         </activity>
 
         <activity
@@ -1909,7 +1941,7 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
-                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret" />
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
         </activity>
 
         <activity
@@ -1932,7 +1964,7 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
-                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret" />
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
         </activity>
 
         <activity
@@ -1955,7 +1987,7 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
-                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret" />
+                android:value="javax.crypto.KeyAgreement#doPhase|javax.crypto.KeyAgreement#generateSecret|android.hardware.biometrics.BiometricPrompt#authenticate" />
         </activity>
 
         <activity android:name=".security.IdentityCredentialAuthentication"
@@ -2013,6 +2045,8 @@
                        android:value="single_display_mode" />
             <meta-data android:name="CddTest"
                        android:value="9.11.1/C-4-1" />
+            <meta-data android:name="ApiTest"
+                       android:value="android.hardware.fingerprint#authenticate|android.hardware.fingerprint#hasEnrolledFingerprints" />
         </activity>
 
         <activity android:name=".security.ProtectedConfirmationTest"
@@ -2369,6 +2403,57 @@
                                       android.nfc.tech.NfcA#getAtqa|
                                       android.nfc.tech.NfcA#getSak|
                                       android.nfc.tech.NfcA#transceive" />
+        </activity>
+
+        <activity android:name=".nfc.hce.ObserveModeReaderActivity"
+                android:label="@string/nfc_observe_mode_reader">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.ObserveModeEmulatorActivity"
+                android:label="@string/nfc_observe_mode_emulator">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.PollingLoopReaderActivity"
+                android:label="@string/nfc_polling_loop_a_reader">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
+        </activity>
+
+        <activity android:name=".nfc.hce.PollingLoopEmulatorActivity"
+                android:label="@string/nfc_polling_loop_a_emulator">
+                <meta-data android:name="display_mode"
+                       android:value="multi_display_mode" />
+                <meta-data android:name="GmsTest" android:value="GMS-VSR-3.2.8-001" />
+                <meta-data android:name="ApiTest"
+                       android:value="android.nfc.NfcAdapter#disallowTransaction|
+                                      android.nfc.NfcAdapter#allowTransaction|
+                                      android.nfc.cardemulation.HostApduService#KEY_POLLING_LOOP_TYPE|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_A|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_B|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_ON|
+                                      android.nfc.cardemulation.HostApduService#POLLING_LOOP_TYPE_OFF"/>
         </activity>
 
         <activity android:name=".nfc.hce.DualPaymentEmulatorActivity"
@@ -2740,6 +2825,15 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/screen_off_payment_aid_list"/>
         </service>
+        <service android:name=".nfc.hce.PollingLoopService" android:exported="true"
+                 android:permission="android.permission.BIND_NFC_SERVICE"
+                 android:enabled="false">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service" android:resource="@xml/access_aid_list"/>
+        </service>
 
         <service
             android:name=".nfc.hcef.MyHostFelicaService"
@@ -3046,9 +3140,10 @@
 
         <activity
             android:name=".camera.fov.PhotoCaptureActivity"
+            android:configChanges="orientation|screenSize"
             android:label="@string/camera_fov_calibration"
             android:exported="true"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
+            android:theme="@style/FullscreenTheme" >
             <intent-filter android:label="@string/camera_fov_calibration" >
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
@@ -3073,7 +3168,7 @@
         <activity
             android:name=".camera.fov.DetermineFovActivity"
             android:label="@string/camera_fov_calibration"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen" >
+            android:theme="@style/FullscreenTheme" >
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.automotive"/>
             <meta-data android:name="display_mode"
@@ -3403,6 +3498,8 @@
             <meta-data android:name="display_mode"
                 android:value="multi_display_mode" />
             <meta-data android:name="CddTest" android:value="3.8.3/H-0-4" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.NotificationFullScreenIntentVerifierActivity"
@@ -3419,6 +3516,8 @@
             <meta-data android:name="ApiTest"
                 android:value="android.app.Notification.Builder#setFullScreenIntent|
                 android.app.NotificationManager#notify" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.NotificationListenerVerifierActivity"
@@ -3454,6 +3553,20 @@
             <meta-data android:name="CddTest" android:value="3.8.3.1/C-1-4|2.2.3/3.8.10/H-1-1" />
         </activity>
 
+        <activity android:name=".notifications.NotificationStyleVerifierActivity"
+            android:exported="true"
+            android:label="@string/notification_style_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.automotive:android.hardware.type.television:android.hardware.type.watch" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="CddTest" android:value="3.8.3.1/C-2-1" />
+        </activity>
+
         <activity android:name=".notifications.ShowWhenLockedActivity"
             android:exported="true"
             android:showWhenLocked="true">
@@ -3461,6 +3574,12 @@
             <meta-data android:name="NonApiTest"
                 android:value="Helper class. Test activities: NotificationPrivacyVerifierActivity, NotificationFullScreenIntentVerifierActivity" />
         </activity>
+
+        <provider
+            android:name=".notifications.AssetsProvider"
+            android:authorities="com.android.cts.verifier.notifications.assets"
+            android:exported="false"
+            android:grantUriPermissions="true" />
 
         <receiver android:name=".notifications.BlockChangeReceiver"
             android:exported="true">
@@ -3520,6 +3639,8 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.widget.Toast#makeText" />
+            <meta-data android:name="test_excluded_features"
+                       android:value="android.hardware.type.watch" />
         </activity>
 
         <activity android:name=".notifications.BubblesVerifierActivity"
@@ -4582,6 +4703,9 @@
             <meta-data
                 android:name="test_parent"
                 android:value="com.android.cts.verifier.presence.PresenceTestActivity" />
+            <meta-data
+                android:name="test_required_features"
+                android:value="android.hardware.wifi.aware:android.hardware.wifi.rtt" />
             <meta-data
                 android:name="display_mode"
                 android:value="single_display_mode" />
@@ -5878,6 +6002,57 @@
                 android.media.AudioRecord.OnRoutingChangedListener#onRoutingChanged" />
         </activity>
 
+        <activity android:name=".audio.AudioDataPathsSpeakerMicActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_speakermic_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsAnalogActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_analog_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
+        <activity android:name=".audio.AudioDataPathsUSBActivity"
+            android:exported="true"
+            android:label="@string/audio_datapaths_USB_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
+            <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest"
+                android:value="android.media.AudioRecord#startRecording|
+                    android.media.AudioRecord#stopRecording|
+                    android.media.AudioTrack#play|
+                    android.media.AudioTrack#stop" />
+        </activity>
+
         <activity android:name=".audio.AudioLoopbackLatencyActivity"
             android:exported="true"
             android:label="@string/audio_loopback_latency_test">
@@ -6122,38 +6297,6 @@
                     android.content.BroadcastReceiver#onReceive"/>
         </activity>
 
-        <activity android:name=".audio.USBAudioPeripheralPlayActivity"
-                android:exported="true"
-                  android:label="@string/audio_uap_play_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.usb.host" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
-            <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.8.2/C-1-1,C-1-2" />
-        </activity>
-
-        <activity android:name=".audio.USBAudioPeripheralRecordActivity"
-                android:exported="true"
-                  android:label="@string/audio_uap_record_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.cts.intent.category.MANUAL_TEST" />
-            </intent-filter>
-            <meta-data android:name="test_category" android:value="@string/test_category_audio" />
-            <meta-data android:name="test_required_features" android:value="android.hardware.usb.host" />
-            <meta-data android:name="test_excluded_features"
-                       android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.watch:android.hardware.type.automotive" />
-            <meta-data android:name="display_mode" android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="7.8.2.2/H-1-1|7.7.2/C-2-1,C-2-2" />
-            <meta-data android:name="ApiTest"
-                android:value="android.app.Activity#onKeyDown"/>
-        </activity>
-
         <activity android:name=".audio.UsbMidiAudioActivity"
                 android:exported="true"
                   android:label="@string/usb_midi_audio_test">
@@ -6296,6 +6439,23 @@
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                        android:value="android.car.hardware.power.CarPowerManager#getCurrentPowerPolicy" />
+        </activity>
+
+        <!-- Used for CTS Verifying UX Restrictions on multiple displays. -->
+        <activity android:name=".car.UxRestrictionsTestActivity"
+            android:exported="true"
+            android:label="@string/car_uxre_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_category" android:value="@string/test_category_car" />
+            <meta-data android:name="test_required_features"
+                android:value="android.hardware.type.automotive"/>
+            <meta-data android:name="display_mode"
+                android:value="multi_display_mode" />
+            <meta-data android:name="NonApiTest"
+                android:value="Test behavior of ActivityBlockingActivity for UX Restrictions on multiple displays" />
         </activity>
 
         <activity-alias android:name=".car.CarDockActivity2"
@@ -6775,7 +6935,7 @@
             <meta-data android:name="test_excluded_features" android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-0-6" />
+            <meta-data android:name="CddTest" android:value="3.15/C-1-6" />
         </activity>
         <activity android:name=".instantapps.RecentAppsTestActivity"
                 android:exported="true"
@@ -6788,7 +6948,7 @@
             <meta-data android:name="test_excluded_features" android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-0-7" />
+            <meta-data android:name="CddTest" android:value="3.15/C-1-7" />
         </activity>
         <activity android:name=".instantapps.AppInfoTestActivity"
                 android:exported="true"
@@ -6802,11 +6962,11 @@
                 android:value="android.hardware.type.television:android.software.leanback:android.hardware.type.automotive:android.hardware.type.watch" />
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
-            <meta-data android:name="CddTest" android:value="3.15/C-0-5" />
+            <meta-data android:name="CddTest" android:value="3.15/C-1-5" />
         </activity>
 
         <activity android:name=".displaycutout.DisplayCutoutTestActivity"
-            android:theme="@android:style/Theme.Holo.NoActionBar.Fullscreen"
+            android:theme="@style/FullscreenTheme"
             android:exported="true"
             android:label="@string/display_cutout_test">
             <intent-filter>
@@ -6910,6 +7070,34 @@
         </activity>
 
         <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestFalse"
+            android:label="@string/controls_panel_dream_test_false"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
+            android:name=".controls.ControlsPanelVerifierSettingTest$DreamTestTrue"
+            android:label="@string/controls_panel_dream_test_true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <meta-data android:name="test_parent" android:value="com.android.cts.verifier.controls.ControlsPanelVerifierTestList"/>
+            <meta-data android:name="test_required_features" android:value="android.software.controls"/>
+            <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="android.services.controls.ControlsProviderService#META_DATA_PANEL_ACTIVITY" />
+        </activity>
+
+        <activity
             android:name=".input.UsiVersionActivity"
             android:label="@string/usi_version_test"
             android:exported="true">
@@ -6921,6 +7109,115 @@
             <meta-data android:name="ApiTest" android:value="android.view.InputDevice#getUsiVersion" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
+
+        <!-- Components for Sharesheet tests -->
+       <activity
+            android:name=".sharesheet.SharesheetChooserResultActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_result_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
+                    |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <!-- TODO: b/324916074
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>-->
+
+        <activity
+            android:name=".sharesheet.SharesheetPayloadToggleActionActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:label="@string/sharesheet_payload_toggle_action_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST.SharesheetPayloadToggleActionActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
+                    |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <activity
+            android:name=".sharesheet.SharesheetAlbumActivity"
+            android:exported="true"
+            android:label="@string/sharesheet_album_test">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.cts.intent.category.MANUAL_TEST" />
+            </intent-filter>
+
+            <meta-data
+                android:name="test_category"
+                android:value="@string/category_sharesheet" />
+            <meta-data
+                android:name="ApiTest"
+                android:value="android.content.Intent#EXTRA_CHOOSER_CONTENT_TYPE_HINT
+                    |android.content.Intent#CHOOSER_CONTENT_TYPE_ALBUM" />
+            <meta-data android:name="display_mode" android:value="single_display_mode" />
+        </activity>
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.images"
+            android:name=".sharesheet.SharesheetTestImageProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
+        <provider
+            android:authorities="com.android.cts.verifier.sharesheet.extracontent"
+            android:name=".sharesheet.SharesheetAdditionalContentProvider"
+            android:exported="false"
+            android:enabled="true"
+            android:grantUriPermissions="true" />
+
 
         <!-- Components used for CTS Verifying Capture Content For Notes APIs. -->
         <activity

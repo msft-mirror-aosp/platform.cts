@@ -36,6 +36,37 @@ android_test_helper_app {
         "catbox",
         "gcatbox",
         "ats",
+        "mcts",
+        "xrts",
+        "mcts-adbd",
+        "mcts-adservices",
+        "mcts-appsearch",
+        "mcts-art",
+        "mcts-bluetooth",
+        "mcts-cellbroadcast",
+        "mcts-configinfrastructure",
+        "mcts-conscrypt",
+        "mcts-cronet",
+        "mcts-dnsresolver",
+        "mcts-documentsui",
+        "mcts-extservices",
+        "mcts-healthfitness",
+        "mcts-ipsec",
+        "mcts-mainline-infra",
+        "mcts-media",
+        "mcts-mediaprovider",
+        "mcts-networking",
+        "mcts-neuralnetworks",
+        "mcts-ondevicepersonalization",
+        "mcts-permission",
+        "mcts-rkpd",
+        "mcts-scheduling",
+        "mcts-sdkextensions",
+        "mcts-statsd",
+        "mcts-tethering",
+        "mcts-tzdata",
+        "mcts-uwb",
+        "mcts-wifi",
     ],
     static_libs: [
         "compatibility-device-info",
@@ -63,6 +94,7 @@ genrule {
         " -r android.permission.READ_PHONE_STATE " +
         " -r android.permission.WRITE_EXTERNAL_STORAGE " +
         " -r android.permission.ACCESS_FINE_LOCATION " +
+        " -r android.permission.QUERY_ALL_PACKAGES" +
         " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +
         " -a com.android.cts.deviceinfo.CameraDeviceInfo " +
         " -a com.android.cts.deviceinfo.SensorDeviceInfo " +
@@ -74,6 +106,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.ConfigurationDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ConnectivityDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.CpuDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.DefaultAppDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.FeatureDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GenericDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +

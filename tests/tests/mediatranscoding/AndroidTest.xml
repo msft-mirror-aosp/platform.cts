@@ -33,5 +33,8 @@
         <!-- test-timeout unit is ms, value = 15 min -->
         <option name="test-timeout" value="900000" />
         <option name="runtime-hint" value="15m" />
+        <!-- CtsXXX  skips the module tests ... -->
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
+        <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
 </configuration>

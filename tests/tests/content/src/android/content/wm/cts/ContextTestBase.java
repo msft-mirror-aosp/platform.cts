@@ -23,11 +23,11 @@ import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static org.junit.Assert.fail;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.cts.ContextTest;
 import android.content.cts.MockActivity;
 import android.content.cts.MockService;
 import android.graphics.PixelFormat;
@@ -43,6 +43,8 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.rule.ServiceTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.Before;
 import org.junit.Rule;
 
@@ -57,7 +59,13 @@ public class ContextTestBase {
     private Display mDefaultDisplay;
     private VirtualDisplay mSecondaryDisplay;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public final ActivityTestRule<MockActivity> mActivityRule =
             new ActivityTestRule<>(MockActivity.class);
 
@@ -77,7 +85,7 @@ public class ContextTestBase {
         ImageReader reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888,
                 2 /* maxImages */);
         VirtualDisplay virtualDisplay = displayManager.createVirtualDisplay(
-                ContextTest.class.getName(), width, height, density, reader.getSurface(),
+                ContextTestBase.class.getName(), width, height, density, reader.getSurface(),
                 VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
         return virtualDisplay;
     }

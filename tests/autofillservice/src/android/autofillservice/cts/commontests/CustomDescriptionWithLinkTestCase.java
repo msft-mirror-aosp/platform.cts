@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.activities.AbstractAutoFillActivity;
@@ -103,8 +104,10 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
                     PostSaveLinkTappedAction.ROTATE_THEN_TAP_BACK_BUTTON);
         } finally {
             try {
-                mUiBot.setScreenOrientation(UiBot.PORTRAIT);
-                cleanUpAfterScreenOrientationIsBackToPortrait();
+                if (!Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED)) {
+                    mUiBot.setScreenOrientation(UiBot.PORTRAIT);
+                    cleanUpAfterScreenOrientationIsBackToPortrait();
+                }
             } catch (Exception e) {
                 mSafeCleanerRule.add(e);
             } finally {
@@ -137,8 +140,9 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
      */
     @Test
     public final void testTapLink_tapBack_thenStartOverByTouchOutsideAndFocus()
-            throws Exception {
-        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, false);
+              throws Exception {
+      mUiBot.assumeMinimumResolution(500);
+      tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, false);
     }
 
     /**
@@ -150,7 +154,8 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
     @Test
     public void testTapLink_tapBack_thenStartOverByTouchOutsideAndManualRequest()
             throws Exception {
-        tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, true);
+      mUiBot.assumeMinimumResolution(500);
+      tapLinkThenTapBackThenStartOverTest(PostSaveLinkTappedAction.TOUCH_OUTSIDE, true);
     }
 
     /**
@@ -296,7 +301,11 @@ public abstract class CustomDescriptionWithLinkTestCase<A extends AbstractAutoFi
     protected final CustomDescription.Builder newCustomDescriptionBuilder(Intent intent) {
         final RemoteViews presentation = newTemplate();
         final PendingIntent pendingIntent =
-                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_MUTABLE);
+                PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_MUTABLE,
+                        ActivityOptions.makeBasic()
+                                .setPendingIntentCreatorBackgroundActivityStartMode(
+                                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                                .toBundle());
         presentation.setOnClickPendingIntent(R.id.link, pendingIntent);
         return new CustomDescription.Builder(presentation);
     }

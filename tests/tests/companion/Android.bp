@@ -29,6 +29,7 @@ android_library {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
         "junit",
+        "flag-junit",
         "kotlin-test",
     ],
     libs: [
@@ -133,6 +134,7 @@ android_test {
     ],
 
     target_sdk_version: "current",
+    sdk_version: "test_current",
 }
 
 android_library {

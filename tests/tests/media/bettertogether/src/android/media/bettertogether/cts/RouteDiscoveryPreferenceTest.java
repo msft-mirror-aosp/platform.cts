@@ -26,6 +26,7 @@ import android.os.Parcel;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -36,6 +37,7 @@ import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class RouteDiscoveryPreferenceTest {
 

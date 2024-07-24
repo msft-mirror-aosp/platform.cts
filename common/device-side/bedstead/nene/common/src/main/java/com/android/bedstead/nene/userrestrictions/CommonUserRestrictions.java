@@ -94,6 +94,9 @@ public final class CommonUserRestrictions {
     /** See {@code android.os.UserManager#DISALLOW_ADD_CLONE_PROFILE} */
     public static final String DISALLOW_ADD_CLONE_PROFILE = "no_add_clone_profile";
 
+    /** See {@code android.os.UserManager#DISALLOW_ADD_PRIVATE_PROFILE} */
+    public static final String DISALLOW_ADD_PRIVATE_PROFILE = "no_add_private_profile";
+
     /** See {@code android.os.UserManager#ENSURE_VERIFY_APPS} */
     public static final String ENSURE_VERIFY_APPS = "ensure_verify_apps";
 
@@ -246,6 +249,12 @@ public final class CommonUserRestrictions {
     /** See {@code android.os.UserManager#DISALLOW_CONFIG_DEFAULT_APPS} */
     public static final String DISALLOW_CONFIG_DEFAULT_APPS = "disallow_config_default_apps";
 
+    /** See {@code android.os.UserManager#DISALLOW_SIM_GLOBALLY} */
+    public static final String DISALLOW_SIM_GLOBALLY = "no_sim_globally";
+
+    /** See {@code android.os.UserManager#DISALLOW_THREAD_NETWORK} */
+    public static final String DISALLOW_THREAD_NETWORK = "no_thread_network";
+
     /** See {@code Manifest#ACTION_USER_RESTRICTIONS_CHANGED} */
     public static final String ACTION_USER_RESTRICTIONS_CHANGED =
             "android.os.action.USER_RESTRICTIONS_CHANGED";
@@ -276,6 +285,7 @@ public final class CommonUserRestrictions {
             DISALLOW_ADD_USER,
             DISALLOW_ADD_MANAGED_PROFILE,
             DISALLOW_ADD_CLONE_PROFILE,
+            DISALLOW_ADD_PRIVATE_PROFILE,
             ENSURE_VERIFY_APPS,
             DISALLOW_CONFIG_CELL_BROADCASTS,
             DISALLOW_CONFIG_MOBILE_NETWORKS,
@@ -323,6 +333,7 @@ public final class CommonUserRestrictions {
             DISALLOW_ADD_WIFI_CONFIG,
             DISALLOW_CELLULAR_2G,
             DISALLOW_ULTRA_WIDEBAND_RADIO,
-            DISALLOW_CONFIG_DEFAULT_APPS
+            DISALLOW_CONFIG_DEFAULT_APPS,
+            DISALLOW_THREAD_NETWORK,
     };
 }

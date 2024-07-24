@@ -22,6 +22,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertNotResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumed;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertResumedAndFillsTask;
+import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
 import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
@@ -31,9 +32,9 @@ import android.content.Intent;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerStateHelper;
-import android.server.wm.jetpack.utils.ActivityEmbeddingUtil;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
+import android.support.test.uiautomator.UiDevice;
 import android.util.Pair;
 import android.util.Size;
 import android.view.WindowMetrics;
@@ -289,6 +290,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         final Size currentSize = mReportedDisplayMetrics.getSize();
         mReportedDisplayMetrics.setSize(new Size((int) (currentSize.getWidth() * 0.9),
                 (int) (currentSize.getHeight() * 0.9)));
+        UiDevice.getInstance(mInstrumentation).waitForIdle();
 
         // Verify that the placeholder was not finished and fills the task
         waitAndAssertResumedAndFillsTask(placeholderActivity);
@@ -387,8 +389,7 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
     @NonNull
     private Rect getTaskBounds() {
         final Activity activity = startFullScreenActivityNewTask(TestActivity.class);
-        final Rect taskBounds = ActivityEmbeddingUtil
-                .getTaskBounds(activity, true /* shouldWaitForResume */);
+        final Rect taskBounds = waitAndGetTaskBounds(activity, true /* shouldWaitForResume */);
         activity.finish();
         new WindowManagerStateHelper().waitAndAssertActivityRemoved(activity.getComponentName());
 

@@ -27,7 +27,6 @@ import its_session_utils
 import opencv_processing_utils
 import video_processing_utils
 
-_PREVIEW_STABILIZATION_MODE_PREVIEW = 2
 _VIDEO_DURATION = 3  # seconds
 
 _MAX_STABILIZED_RADIUS_RATIO = 1.25  # An FOV reduction of 20% corresponds to an
@@ -41,6 +40,8 @@ _MAX_CENTER_THRESHOLD_PERCENT = 0.075
 _MAX_AREA = 1920 * 1440  # max mandatory preview stream resolution
 _MIN_CENTER_THRESHOLD_PERCENT = 0.03
 _MIN_AREA = 176 * 144  # assume QCIF to be min preview size
+_KEY_FRAME_INDEX = -1  # last key frame
+_STABILIZED_SCALER_CROP_RTOL = 0.2  # 20% relative tolerance
 
 
 def _collect_data(cam, preview_size, stabilize):
@@ -161,16 +162,13 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
 
       camera_properties_utils.skip_unless(
           supported_stabilization_modes is not None
-          and _PREVIEW_STABILIZATION_MODE_PREVIEW
+          and camera_properties_utils.STABILIZATION_MODE_PREVIEW
           in supported_stabilization_modes,
           'Preview Stabilization not supported',
       )
 
       # Raise error if not FRONT or REAR facing camera
-      facing = props['android.lens.facing']
-      if (facing != camera_properties_utils.LENS_FACING_BACK
-          and facing != camera_properties_utils.LENS_FACING_FRONT):
-        raise AssertionError('Unknown lens facing: {facing}.')
+      camera_properties_utils.check_front_or_rear_camera(props)
 
       # List of preview resolutions to test
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
@@ -292,6 +290,27 @@ class PreviewStabilizationFoVTest(its_base_test.ItsBaseTest):
                              f'stabilized radius: {stab_radius}, '
                              f'expected max stabilized radius: '
                              f'{max_stab_radius}. ')
+
+        # Calculate ratio of stabilized image's scaler crop region over
+        # active array size and compare it against the ratio of stabilized
+        # circle's radius over unstabilized circle
+        if stab_radius > ustab_radius:
+          stab_scaler_crop = (stab_rec_obj['captureMetadata']
+                              [_KEY_FRAME_INDEX]['android.scaler.cropRegion'])
+          scaler_crop_ratio = image_fov_utils.calc_scaler_crop_region_ratio(
+              stab_scaler_crop, props)
+          radius_ratio = ustab_radius / stab_radius
+          if math.isclose(scaler_crop_ratio, radius_ratio,
+                          rel_tol=_STABILIZED_SCALER_CROP_RTOL):
+            logging.debug('Crop region/active array: %f', scaler_crop_ratio)
+            logging.debug('Stabilized/unstabilized circle: %f', radius_ratio)
+            continue
+          else:
+            failure_string += (f'Too much FoV reduction: '
+                               f'Crop region: {stab_scaler_crop}, '
+                               f'Crop region ratio: {scaler_crop_ratio:.2%}, '
+                               f'Circle ratio: {radius_ratio:.2%}, '
+                               f'Tolerance: {_STABILIZED_SCALER_CROP_RTOL:.2%}')
 
         if failure_string:
           failure_string = f'{preview_size} fails FoV test. ' + failure_string

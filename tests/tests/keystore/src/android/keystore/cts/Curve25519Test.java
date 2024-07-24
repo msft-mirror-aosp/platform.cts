@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.keystore.cts.util.ImportedKey;
@@ -244,6 +245,9 @@ public class Curve25519Test {
     @Test
     public void x25519KeyPairGenWithInvalidCurve() throws NoSuchAlgorithmException,
             NoSuchProviderException {
+        assumeTrue("AndroidKeyStore supports key generation of curve Ed25519 from"
+                        + " Android V preview", TestUtils.isEd25519AlgorithmExpectedToSupport());
+
         // Create KeyPairGenerator using XDH algorithm.
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH", "AndroidKeyStore");
         final String firstKeyAlias = "x25519-alias";
@@ -260,6 +264,9 @@ public class Curve25519Test {
     @Test
     public void ed25519KeyPairGenWithInvalidCurve() throws NoSuchAlgorithmException,
             NoSuchProviderException {
+        assumeTrue("AndroidKeyStore supports key generation of curve Ed25519 from"
+                        + " Android V preview", TestUtils.isEd25519AlgorithmExpectedToSupport());
+
         // Create KeyPairGenerator using Ed25519 algorithm.
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("Ed25519", "AndroidKeyStore");
         final String secondKeyAlias = "ed25519-alias";

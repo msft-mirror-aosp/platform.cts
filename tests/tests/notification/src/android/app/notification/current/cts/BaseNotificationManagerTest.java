@@ -20,9 +20,16 @@ import static android.app.Notification.CATEGORY_CALL;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.INTERRUPTION_FILTER_ALL;
 
+import static junit.framework.TestCase.assertTrue;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
+import android.Manifest;
 import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.Notification;
+import android.app.Notification.CallStyle;
 import android.app.NotificationChannel;
 import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
@@ -36,6 +43,7 @@ import android.app.stubs.shared.NotificationHelper.SEARCH_TYPE;
 import android.app.stubs.shared.TestNotificationAssistant;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
@@ -45,13 +53,22 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
-import android.test.AndroidTestCase;
 import android.util.ArraySet;
+import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AmUtils;
+import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.ThrowingRunnable;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,9 +76,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 /* Base class for NotificationManager tests. Handles some of the common set up logic for tests. */
-public abstract class BaseNotificationManagerTest extends AndroidTestCase {
+public abstract class BaseNotificationManagerTest {
 
     static final String STUB_PACKAGE_NAME = "android.app.stubs";
     protected static final String NOTIFICATION_CHANNEL_ID = "NotificationManagerTest";
@@ -75,6 +93,10 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
 
     private static final String TAG = BaseNotificationManagerTest.class.getSimpleName();
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    protected Context mContext;
     protected PackageManager mPackageManager;
     protected AudioManager mAudioManager;
     protected RoleManager mRoleManager;
@@ -82,13 +104,12 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
     protected ActivityManager mActivityManager;
     protected TestNotificationAssistant mAssistant;
     protected TestNotificationListener mListener;
-    protected List<String> mRuleIds;
     protected Instrumentation mInstrumentation;
     protected NotificationHelper mNotificationHelper;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void baseSetUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
         mNotificationHelper = new NotificationHelper(mContext);
         // clear the deck so that our getActiveNotifications results are predictable
@@ -103,7 +124,6 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         mPackageManager = mContext.getPackageManager();
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
-        mRuleIds = new ArrayList<>();
 
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
@@ -118,16 +138,11 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         setEnableServiceNotificationRateLimit(false);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-
+    @After
+    public void baseTearDown() throws Exception {
         setEnableServiceNotificationRateLimit(true);
 
         mNotificationManager.cancelAll();
-        for (String id : mRuleIds) {
-            mNotificationManager.removeAutomaticZenRule(id);
-        }
 
         assertExpectedDndState(INTERRUPTION_FILTER_ALL);
 
@@ -154,12 +169,35 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         }
     }
 
+    /**
+     * Runs a {@link ThrowingRunnable} as the Shell, while adopting SystemUI's permission (as
+     * checked by {@code NotificationManagerService#isCallerSystemOrSystemUi}).
+     */
+    protected static void runAsSystemUi(@NonNull ThrowingRunnable runnable) {
+        SystemUtil.runWithShellPermissionIdentity(runnable, Manifest.permission.STATUS_BAR_SERVICE);
+    }
+
+    /**
+     * Calls a {@link Callable} as the Shell, while adopting SystemUI's permission (as checked by
+     * {@code NotificationManagerService#isCallerSystemOrSystemUi}).
+     */
+    protected static <T> T callAsSystemUi(@NonNull Callable<T> callable) {
+        try {
+            return SystemUtil.callWithShellPermissionIdentity(callable,
+                    Manifest.permission.STATUS_BAR_SERVICE);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @SuppressWarnings("InlineMeInliner")
     protected void setUpNotifListener() {
         try {
             mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
             assertNotNull(mListener);
             mListener.resetData();
         } catch (Exception e) {
+            Log.e(TAG, "error in setUpNotifListener", e);
         }
     }
 
@@ -170,18 +208,14 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
         mNotificationHelper.runCommand(command, InstrumentationRegistry.getInstrumentation());
     }
 
-    protected void assertExpectedDndState(int expectedState) {
+    protected void assertExpectedDndState(int expectedState) throws Exception {
         int tries = 3;
         for (int i = tries; i >= 0; i--) {
             if (expectedState
                     == mNotificationManager.getCurrentInterruptionFilter()) {
                 break;
             }
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            Thread.sleep(100);
         }
 
         assertEquals(expectedState, mNotificationManager.getCurrentInterruptionFilter());
@@ -239,6 +273,19 @@ public abstract class BaseNotificationManagerTest extends AndroidTestCase {
                                 SystemClock.currentThreadTimeMillis(), person)
                 )
                 .setSmallIcon(android.R.drawable.sym_def_app_icon);
+    }
+
+    protected Notification.Builder getCallStyleNotification(final int id) {
+        Person person = new Person.Builder().setName("Test name").build();
+        PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0,
+            new Intent().setPackage(mContext.getPackageName()), PendingIntent.FLAG_MUTABLE);
+        CallStyle cs = CallStyle.forIncomingCall(person, pendingIntent, pendingIntent);
+
+        return new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(R.drawable.black)
+                .setContentTitle("notify#" + id)
+                .setContentText("This is #" + id + "notification  ")
+                .setStyle(cs);
     }
 
     protected void cancelAndPoll(int id) {

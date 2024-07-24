@@ -19,6 +19,10 @@ package {
 
 cc_test_library {
     name: "libAppThatUsesAppOps_jni",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
     sdk_version: "current",
     stl: "c++_static",
 
@@ -44,6 +48,10 @@ cc_test_library {
 
 android_test_helper_app {
     name: "CtsAppThatUsesAppOps",
+    defaults: [
+        "mts-target-sdk-version-current",
+    ],
+    min_sdk_version: "30",
 
     compile_multilib: "both",
 
@@ -65,4 +73,5 @@ android_test_helper_app {
         "general-tests",
         "mts",
     ],
+    sdk_version: "test_current",
 }

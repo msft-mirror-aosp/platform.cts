@@ -27,6 +27,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -45,6 +46,7 @@ import java.util.List;
  */
 @SmallTest
 @RequiresDevice
+@FrameworkSpecificTest   // fails in windowing on pure older releases
 @NonMainlineTest   // fails in windowing on pure older releases
 @RunWith(Parameterized.class)
 public class VideoDecoderRotationTest {

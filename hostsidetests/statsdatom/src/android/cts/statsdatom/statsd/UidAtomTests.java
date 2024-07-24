@@ -157,7 +157,8 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
         // because 1. it is likely to be less flaky (higher oom score processes will be killed
         // faster, making less likely for the OOM reaper to trigger and 2. we need two processes
         // to be able to force evictions on 32-bit userspace devices with > 4 GB RAM.
-        DeviceUtils.executeServiceAction(getDevice(), "LmkVictimBackgroundService",
+        DeviceUtils.executeServiceAction(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                "LmkVictimBackgroundService",
                 "action.allocate_memory");
         // Start fg activity and allocate
         try (AutoCloseable a = DeviceUtils.withActivity(

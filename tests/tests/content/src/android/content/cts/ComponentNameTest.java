@@ -16,15 +16,55 @@
 
 package android.content.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.ComponentName;
 import android.content.Context;
 import android.os.Parcel;
-import android.test.AndroidTestCase;
+import android.os.Process;
+import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
+import android.test.mock.MockContext;
+
+import androidx.test.InstrumentationRegistry;
+import androidx.test.runner.AndroidJUnit4;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * Test {@link ComponentName}.
  */
-public class ComponentNameTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+public class ComponentNameTest {
+    @Rule public final RavenwoodRule mRavenwood = new RavenwoodRule();
+
+    private Context mContext;
+
+    @Before
+    public void setUp() {
+        if (mRavenwood.isUnderRavenwood() || Process.isSdkSandbox()) {
+            // TODO: replace with mockito when better supported
+            mContext = new MockContext() {
+                @Override
+                public String getPackageName() {
+                    return "android.content.cts";
+                }
+            };
+        } else {
+            mContext = InstrumentationRegistry.getTargetContext();
+        }
+    }
+
+    @Test
     public void testConstructor() {
         // new the ComponentName instance
         new ComponentName("com.android.app", "com.android.app.InstrumentationTestActivity");
@@ -84,11 +124,13 @@ public class ComponentNameTest extends AndroidTestCase {
         new ComponentName(parcel);
     }
 
+    @Test
     public void testFlattenToString() {
         assertEquals("android.content.cts/android.content.cts.ComponentNameTest",
                 getComponentName().flattenToString());
     }
 
+    @Test
     public void testGetShortClassName() {
         // set the expected value, test normal value
         String actual = getComponentName().getShortClassName();
@@ -105,6 +147,7 @@ public class ComponentNameTest extends AndroidTestCase {
         assertEquals(".View", actual);
     }
 
+    @Test
     public void testReadFromParcel() {
         ComponentName expected = getComponentName();
         final Parcel parcel1 = Parcel.obtain();
@@ -119,11 +162,13 @@ public class ComponentNameTest extends AndroidTestCase {
         assertNull(expected);
     }
 
+    @Test
     public void testGetPackageName() {
         final String actual = getComponentName().getPackageName();
         assertEquals("android.content.cts", actual);
     }
 
+    @Test
     public void testUnflattenFromString() {
         final ComponentName componentName = getComponentName();
         final String flattenString = getComponentName().flattenToString();
@@ -132,6 +177,7 @@ public class ComponentNameTest extends AndroidTestCase {
         assertEquals(componentName, actual);
     }
 
+    @Test
     public void testFlattenToShortString() {
         // Test normal
         String actual = getComponentName().flattenToShortString();
@@ -148,6 +194,7 @@ public class ComponentNameTest extends AndroidTestCase {
         assertEquals("com.android.view/.View", actual);
     }
 
+    @Test
     public void testEquals() {
         // new the ComponentName instances, both are the same.
         final ComponentName componentName1 = getComponentName();
@@ -163,22 +210,27 @@ public class ComponentNameTest extends AndroidTestCase {
         assertFalse(componentName1.equals(null));
     }
 
+    @Test
     public void testToString() {
         assertNotNull(getComponentName().toString());
     }
 
+    @Test
     public void testToShortString() {
         // Test normal string
         final String shortString = getComponentName().toShortString();
         assertEquals("{android.content.cts/android.content.cts.ComponentNameTest}", shortString);
     }
 
+    @Test
     public void testGetClassName() {
         // set the expected value
         final String className = getComponentName().getClassName();
         assertEquals("android.content.cts.ComponentNameTest", className);
     }
 
+    @Test
+    @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
     public void testHashCode() {
         final ComponentName componentName = getComponentName();
 
@@ -191,6 +243,7 @@ public class ComponentNameTest extends AndroidTestCase {
         assertEquals(hashCode1, hashCode2);
     }
 
+    @Test
     public void testWriteToParcel() {
         // Test normal status
         final ComponentName componentName = getComponentName();
@@ -200,13 +253,17 @@ public class ComponentNameTest extends AndroidTestCase {
         assertFalse(0 == parcel.dataAvail());
         assertEquals("android.content.cts", parcel.readString());
         assertEquals("android.content.cts.ComponentNameTest", parcel.readString());
+    }
 
+    @Test
+    public void testWriteNullDataToParcel() {
         // Test null data
-        parcel = Parcel.obtain();
+        Parcel parcel = Parcel.obtain();
         ComponentName.writeToParcel(null, parcel);
         assertEquals(0, parcel.dataAvail());
     }
 
+    @Test
     public void testDescribeContents() {
         assertEquals(0, getComponentName().describeContents());
     }

@@ -30,5 +30,8 @@ java_test_host {
     ],
     data_device_bins_both: ["debuggerd_cts_crasher"],
     test_config: "AndroidTest.xml",
-    test_suites: ["cts"],
+    test_suites: [
+      "cts",
+      "general-tests",
+    ],
 }

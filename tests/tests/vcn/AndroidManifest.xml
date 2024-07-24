@@ -27,6 +27,8 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!--Allow tests to read telephony configurations -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <!--Allow tests to set global settings -->
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <application android:label="CtsVcnTestCases">
         <uses-library android:name="android.test.runner" />
@@ -35,8 +37,6 @@
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="android.net.vcn.cts"
                      android:label="CTS tests of android.net.vcn">
-        <meta-data android:name="listener"
-            android:value="com.android.cts.runner.CtsTestRunListener" />
     </instrumentation>
 
 </manifest>

@@ -84,12 +84,12 @@ import android.os.UserManager;
 import android.security.keystore.KeyGenParameterSpec;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
-import android.support.test.uiautomator.UiDevice;
 import android.text.TextUtils;
 import android.util.DebugUtils;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -253,8 +253,19 @@ public class SecurityLoggingTest extends BaseDeviceAdminTest {
     }
 
     private void forceSecurityLogs() throws Exception {
+        mOnSecurityLogsAvailableCalled = new CountDownLatch(1);
+
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .executeShellCommand("dpm force-security-logs");
+
+        //Wait for merging security log
+        try {
+            assertTrue("Did not receive security log callback in time",
+                mOnSecurityLogsAvailableCalled.await(60, TimeUnit.SECONDS));
+        }
+        finally {
+            mOnSecurityLogsAvailableCalled = null;
+        }
     }
 
     private void verifyAutomaticEventsPresent(List<SecurityEvent> events) {

@@ -30,7 +30,6 @@ import android.app.ActivityManager;
 import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.car.Car;
-import android.car.annotation.ApiRequirements;
 import android.car.app.CarActivityManager;
 import android.car.app.CarTaskViewController;
 import android.car.app.CarTaskViewControllerCallback;
@@ -38,7 +37,6 @@ import android.car.app.ControlledRemoteCarTaskView;
 import android.car.app.ControlledRemoteCarTaskViewCallback;
 import android.car.app.ControlledRemoteCarTaskViewConfig;
 import android.car.cts.R;
-import android.car.test.ApiCheckerRule;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -50,7 +48,8 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -60,7 +59,6 @@ import com.android.compatibility.common.util.ShellUtils;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -75,16 +73,14 @@ public class CarTaskViewControllerTest {
     private static final String COUNT_OPTION = " -c ";
     private static final String POINTER_OPTION = " -p ";
 
-    private final Context mContext = InstrumentationRegistry.getContext();
     private final Instrumentation mInstrumentation =
             InstrumentationRegistry.getInstrumentation();
+    private final Context mContext = mInstrumentation.getContext();
     private final Context mTargetContext = mInstrumentation.getTargetContext();
     private final ComponentName mTestActivity =
             new ComponentName(mTargetContext, TestActivity.class);
     private final UiAutomation mUiAutomation = mInstrumentation.getUiAutomation();
     private final UiDevice mUiDevice = UiDevice.getInstance(mInstrumentation);
-    @Rule
-    public final ApiCheckerRule mApiCheckerRule = new ApiCheckerRule.Builder().build();
 
     private TestCarTaskViewControllerCallback mCallback;
     private TestActivity mHostActivity;
@@ -165,16 +161,10 @@ public class CarTaskViewControllerTest {
     }
 
     @Test
-    // TODO(b/295368210): Enable these once the methods from hidden base class are properly
-    // recognized.
-    // @ApiTest(apis = {
-    //         "android.car.app.ControlledRemoteCarTaskView#isInitialized",
-    //         "android.car.app.ControlledRemoteCarTaskView#getTaskInfo"
-    // })
-    @NonApiTest(exemptionReasons = {}, justification = "Infra doesn't support methods in hidden "
-            + "base class")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_1,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
+    @ApiTest(apis = {
+            "android.car.app.ControlledRemoteCarTaskView#isInitialized",
+            "android.car.app.ControlledRemoteCarTaskView#getTaskInfo"
+    })
     public void createMultipleControlledRemoteCarTaskView_startsTheTask() {
         // Act
         CarTaskViewTestHolder taskViewCallback =
@@ -231,15 +221,7 @@ public class CarTaskViewControllerTest {
     }
 
     @Test
-    // TODO(b/295368210): Enable these once the methods from hidden base class are properly
-    // recognized.
-    // @ApiTest(apis = {
-    //        "android.car.app.ControlledRemoteCarTaskView#release"
-    // })
-    @NonApiTest(exemptionReasons = {}, justification = "Infra doesn't support methods in hidden "
-            + "base class")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_1,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
+    @ApiTest(apis = {"android.car.app.ControlledRemoteCarTaskView#release"})
     public void releaseControlledCarTaskView_releasesTaskView() throws Exception {
         // Arrange
         CarTaskViewTestHolder taskViewCallback =
@@ -266,6 +248,7 @@ public class CarTaskViewControllerTest {
     @Test
     @ApiTest(apis = {
             "android.car.app.ControlledRemoteCarTaskViewCallback#onTaskVanished(RunningTaskInfo)"})
+    @FlakyTest(bugId = 300182719)
     public void controlledRemoteCarTaskView_autoRestartDisabled_doesNotRestartTask_whenKilled()
             throws Exception {
         // Arrange
@@ -340,7 +323,7 @@ public class CarTaskViewControllerTest {
         CarActivityManagerTest.TestActivity temporaryActivity =
                 (CarActivityManagerTest.TestActivity) mInstrumentation.startActivitySync(
                         Intent.makeMainActivity(new ComponentName(mTargetContext,
-                                        CarActivityManagerTest.TestActivity.class))
+                                CarActivityManagerTest.TestActivity.class))
                                 .addFlags(FLAG_ACTIVITY_NEW_TASK), /* option */ null);
         PollingCheck.waitFor(() -> mHostActivity.mIsInStoppedState);
         // Finish the temporary activity to bring the host back to the top of the wm stack.
@@ -375,15 +358,13 @@ public class CarTaskViewControllerTest {
 
     @Test
     @NonApiTest(exemptionReasons = {}, justification = "No CDD Requirement")
-    @ApiRequirements(minCarVersion = ApiRequirements.CarVersion.UPSIDE_DOWN_CAKE_0,
-            minPlatformVersion = ApiRequirements.PlatformVersion.UPSIDE_DOWN_CAKE_0)
     public void remoteCarTaskView_receivesTouchInput() throws Exception {
         // Arrange
         CarTaskViewTestHolder carTaskViewHolder =
                 createControlledTaskView(/* parentId= */ R.id.top_container,
-                EmbeddedTestActivity1.createLaunchIntent(mTargetContext));
+                        EmbeddedTestActivity1.createLaunchIntent(mTargetContext));
         PollingCheck.waitFor(() -> EmbeddedTestActivity1.sInstance != null
-                && EmbeddedTestActivity1.sInstance.mIsResumed,
+                        && EmbeddedTestActivity1.sInstance.mIsResumed,
                 "EmbeddedTestActivity1 is not running.");
         mUiDevice.waitForIdle(QUIET_TIME_TO_BE_CONSIDERED_IDLE_STATE);
 

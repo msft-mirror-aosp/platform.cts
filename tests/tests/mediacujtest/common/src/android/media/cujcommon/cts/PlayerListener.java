@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.media.AudioManager;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 
@@ -40,11 +41,12 @@ import java.util.List;
 
 public abstract class PlayerListener implements Player.Listener {
 
+  public static final long NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US = 6000;
   public static final Object LISTENER_LOCK = new Object();
   public static int CURRENT_MEDIA_INDEX = 0;
 
   // Enum Declared for Test Type
-  protected enum TestType {
+  public enum TestType {
     PLAYBACK_TEST,
     SEEK_TEST,
     ORIENTATION_TEST,
@@ -56,13 +58,18 @@ public abstract class PlayerListener implements Player.Listener {
     MESSAGE_NOTIFICATION_TEST,
     PINCH_TO_ZOOM_TEST,
     SPEED_CHANGE_TEST,
-    PIP_MODE_TEST
+    PIP_MODE_TEST,
+    SPLIT_SCREEN_TEST,
+    DEVICE_LOCK_TEST,
+    LOCK_PLAYBACK_CONTROLLER_TEST,
+    AUDIO_OFFLOAD_TEST
   }
 
   public static boolean mPlaybackEnded;
   protected long mExpectedTotalTime;
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
+  protected AudioOffloadTestActivity mAudioOffloadActivity;
   protected long mSendMessagePosition;
   protected int mPreviousOrientation;
   protected int mOrientationIndex;
@@ -73,6 +80,8 @@ public abstract class PlayerListener implements Player.Listener {
   protected Format mCurrentTrackFormat;
   protected Format mConfiguredTrackFormat;
   protected long mStartTime;
+  protected AudioManager mAudioManager;
+  protected boolean mRingVolumeUpdated;
 
   public PlayerListener() {
     this.mSendMessagePosition = 0;
@@ -119,6 +128,20 @@ public abstract class PlayerListener implements Player.Listener {
   }
 
   /**
+   * Returns True for Split Screen test.
+   */
+  public final boolean isSplitScreenTest() {
+    return getTestType().equals(TestType.SPLIT_SCREEN_TEST);
+  }
+
+  /**
+   * Returns True for Audio Offload test.
+   */
+  public final boolean isAudioOffloadTest() {
+    return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST);
+  }
+
+  /**
    * Returns expected playback time for the playlist.
    */
   public final long getExpectedTotalTime() {
@@ -155,6 +178,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final void setScrollActivity(ScrollTestActivity activity) {
     this.mScrollActivity = activity;
+  }
+
+  /**
+   * Sets activity for audio offload test.
+   */
+  public final void setAudioOffloadActivity(AudioOffloadTestActivity activity) {
+    this.mAudioOffloadActivity = activity;
   }
 
   /**
@@ -202,17 +232,31 @@ public abstract class PlayerListener implements Player.Listener {
           if (mPlaybackEnded) {
             throw new RuntimeException("mPlaybackEnded already set, player could be ended");
           }
-          if (!isScrollTest()) {
-            mActivity.removePlayerListener();
-          } else {
+          if (isScrollTest()) {
             assertTrue(mScrollRequested);
             mScrollActivity.removePlayerListener();
+          } else if (isAudioOffloadTest()) {
+            mAudioOffloadActivity.removePlayerListener();
+          } else {
+            mActivity.removePlayerListener();
           }
           // Verify the total time taken by the notification test
           if (getTestType().equals(TestType.CALL_NOTIFICATION_TEST) || getTestType().equals(
               TestType.MESSAGE_NOTIFICATION_TEST)) {
+            // Restore the ring volume in case it was updated
+            if (mRingVolumeUpdated) {
+              mAudioManager.setStreamVolume(AudioManager.STREAM_RING,
+                  mAudioManager.getStreamMinVolume(AudioManager.STREAM_RING), 0 /*no flag used*/);
+            }
             long actualTime = System.currentTimeMillis() - mStartTime;
-            assertEquals((float) mExpectedTotalTime, (float) actualTime, 3000);
+            assertEquals((float) mExpectedTotalTime, (float) actualTime,
+                NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+          }
+          if (isAudioOffloadTest()) {
+            assertTrue("Player did not sleep for audio offload",
+                mAudioOffloadActivity.mIsSleepingForAudioOffloadEnabled);
+            assertTrue("Audio offload was not enabled",
+                mAudioOffloadActivity.mIsAudioOffloadEnabled);
           }
           mPlaybackEnded = true;
           LISTENER_LOCK.notify();

@@ -4,7 +4,7 @@
       "name": "CtsHardwareTestCases",
       "options": [
         {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
+          "exclude-annotation": "androidx.test.filters.FlakyTest"
         }
       ]
     }
@@ -14,14 +14,6 @@
     {
       "name": "CtsHardwareTestCases",
       "options": [
-        {
-          // TODO(b/221102945):
-          "exclude-filter": "android.hardware.input.cts.tests.VirtualTouchscreenTest#sendTouchEvent"
-        },
-        {
-          // TODO(b/214223833):
-          "exclude-filter": "android.hardware.cts.LowRamDeviceTest#testMinSharedDataPartitionSize"
-        },
         {
           // TODO(b/266108817): android.hardware.input.cts.tests unexpected timeouts
           "exclude-filter": "android.hardware.input.cts.tests.SonyDualshock4BluetoothTest#testAllMotions"
@@ -147,7 +139,6 @@
           "exclude-filter": "android.hardware.input.cts.tests.AsusGamepadTest#testAllMotions"
         },
         {
-          // TODO(b/190487022):
           "exclude-filter": "android.hardware.input.cts.tests.SonyDualshock4ProBluetoothTest#testVibrator"
         },
         {
@@ -156,6 +147,25 @@
         },
         {
           "exclude-filter": "android.hardware.input.cts.tests.GameviceGv186Test#testAllMotions"
+        }
+      ]
+    }
+  ],
+  "postsubmit": [
+    {
+      "name": "CtsHardwareTestCases",
+      "options": [
+        {
+          "include-filter": "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingDown_motionEventNotConsumed_getsConvertedToDpadDown"
+        },
+        {
+          "include-filter": "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingLeft_motionEventNotConsumed_getsConvertedToDpadLeft"
+        },
+        {
+          "include-filter": "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingRight_motionEventNotConsumed_getsConvertedToDpadRight"
+        },
+        {
+          "include-filter": "android.hardware.input.cts.tests.VirtualNavigationTouchpadTest#sendFlingUp_motionEventNotConsumed_getsConvertedToDpadUp"
         }
       ]
     }

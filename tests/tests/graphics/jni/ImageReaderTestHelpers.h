@@ -48,7 +48,7 @@ private:
   uint32_t mMaxImages;
 
   std::mutex mMutex;
-  // Number of images that's avaiable for acquire.
+  // Number of images that are available to be acquired.
   size_t mAvailableImages{0};
   // Although AImageReader supports acquiring multiple images at a time, we
   // don't really need it in this test. We only acquire one image that a time.

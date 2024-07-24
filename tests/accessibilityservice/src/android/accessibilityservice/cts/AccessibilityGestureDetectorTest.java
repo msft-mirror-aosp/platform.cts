@@ -19,10 +19,7 @@ import static android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplay
 import static android.accessibilityservice.cts.utils.GestureUtils.add;
 import static android.accessibilityservice.cts.utils.GestureUtils.click;
 import static android.accessibilityservice.cts.utils.GestureUtils.diff;
-import static android.accessibilityservice.cts.utils.GestureUtils.endTimeOf;
 import static android.accessibilityservice.cts.utils.GestureUtils.getGestureBuilder;
-import static android.accessibilityservice.cts.utils.GestureUtils.longClick;
-import static android.accessibilityservice.cts.utils.GestureUtils.startingAt;
 import static android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES;
 
 import static org.junit.Assume.assumeTrue;
@@ -36,6 +33,7 @@ import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
 import android.accessibilityservice.cts.activities.AccessibilityWindowQueryActivity;
+import android.accessibilityservice.cts.utils.DisplayUtils.VirtualDisplaySession;
 import android.accessibilityservice.cts.utils.GestureUtils;
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -55,6 +53,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.filters.FlakyTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
@@ -95,10 +94,14 @@ public class AccessibilityGestureDetectorTest {
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
+    private GestureUtils.DumpOnFailureRule mGestureUtilsDumpOnFailureRule =
+            new GestureUtils.DumpOnFailureRule();
+
     @Rule
     public final RuleChain mRuleChain = RuleChain
             .outerRule(mServiceRule)
-            .around(mDumpOnFailureRule);
+            .around(mDumpOnFailureRule)
+            .around(mGestureUtilsDumpOnFailureRule);
 
     // Test AccessibilityService that collects gestures.
     GestureDetectionStubAccessibilityService mService; 
@@ -118,6 +121,7 @@ public class AccessibilityGestureDetectorTest {
     public static void oneTimeSetup() {
         sInstrumentation = InstrumentationRegistry.getInstrumentation();
         sUiAutomation = sInstrumentation.getUiAutomation(FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+        GestureUtils.randomize();
     }
 
     @AfterClass
@@ -162,6 +166,7 @@ public class AccessibilityGestureDetectorTest {
     }
 
     @Test
+    @FlakyTest
     @AppModeFull
     public void testRecognizeGesturePath() {
         if (!mHasTouchScreen || !mScreenBigEnough) {
@@ -173,6 +178,7 @@ public class AccessibilityGestureDetectorTest {
     }
 
     @Test
+    @FlakyTest
     @AppModeFull
     public void testRecognizeGesturePathOnVirtualDisplay() throws Exception {
         assumeTrue(sInstrumentation.getContext().getPackageManager()
@@ -541,15 +547,11 @@ public class AccessibilityGestureDetectorTest {
     }
 
     private GestureDescription doubleTap(int displayId) {
-        StrokeDescription tap1 = click(mTapLocation);
-        StrokeDescription tap2 = startingAt(endTimeOf(tap1) + 20, click(mTapLocation));
-        return getGestureBuilder(displayId, tap1, tap2).build();
+        return GestureUtils.doubleTap(mTapLocation, displayId);
     }
 
     private GestureDescription doubleTapAndHold(int displayId) {
-        StrokeDescription tap1 = click(mTapLocation);
-        StrokeDescription tap2 = startingAt(endTimeOf(tap1) + 20, longClick(mTapLocation));
-        return getGestureBuilder(displayId, tap1, tap2).build();
+        return GestureUtils.doubleTapAndHold(mTapLocation, displayId);
     }
 
     private GestureDescription twoFingerSingleTap(int displayId) {

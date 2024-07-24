@@ -49,6 +49,7 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.DropBoxManager;
+import android.os.Flags;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -185,6 +186,7 @@ public final class ActivityManagerAppExitInfoTest {
     private SettingsSession<String> mHiddenApiSettings;
     private int mProcSeqNum;
     private String mFreezerTimeout;
+    private boolean mIsProfilingPss;
     private boolean mHeartbeatDead;
 
     @Before
@@ -216,6 +218,9 @@ public final class ActivityManagerAppExitInfoTest {
         mHiddenApiSettings.set("*");
         mFreezerTimeout = executeShellCmd(
                 "device_config get activity_manager_native_boot freeze_debounce_timeout");
+        mIsProfilingPss = !Flags.removeAppProfilerPssCollection()
+                || (Settings.Global.getInt(mContext.getContentResolver(),
+                        Settings.Global.FORCE_ENABLE_PSS_PROFILING, 0) == 1);
 
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
@@ -822,8 +827,15 @@ public final class ActivityManagerAppExitInfoTest {
         // Get the memory info from it.
         String dump = executeShellCmd("dumpsys activity processes " + STUB_PACKAGE_NAME);
         assertNotNull(dump);
-        final String lastPss = extractMemString(dump, " lastPss=", ' ');
-        final String lastRss = extractMemString(dump, " lastRss=", '\n');
+        String lastPss = null;
+        String lastRss = null;
+        if (mIsProfilingPss) {
+            lastPss = extractMemString(dump, " lastPss=", ' ');
+            lastRss = extractMemString(dump, " lastRss=", '\n');
+        } else {
+            // lastRss is not the final field in the dump, so the next separator is not a newline.
+            lastRss = extractMemString(dump, " lastRss=", ' ');
+        }
 
         // Revoke the read calendar permission
         mInstrumentation.getUiAutomation().revokeRuntimePermission(
@@ -843,8 +855,10 @@ public final class ActivityManagerAppExitInfoTest {
                 ApplicationExitInfo.REASON_PERMISSION_CHANGE, null, null, now, now2);
 
         // Also verify that we get the expected meminfo
-        assertEquals(lastPss, DebugUtils.sizeValueToString(
-                info.getPss() * 1024, new StringBuilder()));
+        if (mIsProfilingPss) {
+            assertEquals(lastPss, DebugUtils.sizeValueToString(
+                    info.getPss() * 1024, new StringBuilder()));
+        }
         assertEquals(lastRss, DebugUtils.sizeValueToString(
                 info.getRss() * 1024, new StringBuilder()));
     }
@@ -873,8 +887,15 @@ public final class ActivityManagerAppExitInfoTest {
         // Get the memory info from it.
         String dump = executeShellCmd("dumpsys activity processes " + STUB_PACKAGE_NAME);
         assertNotNull(dump);
-        final String lastPss = extractMemString(dump, " lastPss=", ' ');
-        final String lastRss = extractMemString(dump, " lastRss=", '\n');
+        String lastPss = null;
+        String lastRss = null;
+        if (mIsProfilingPss) {
+            lastPss = extractMemString(dump, " lastPss=", ' ');
+            lastRss = extractMemString(dump, " lastRss=", '\n');
+        } else {
+            // lastRss is not the final field in the dump, so the next separator is not a newline.
+            lastRss = extractMemString(dump, " lastRss=", ' ');
+        }
 
         // Revoke the read calendar permission
         runWithShellPermissionIdentity(() -> {
@@ -898,8 +919,10 @@ public final class ActivityManagerAppExitInfoTest {
         assertEquals(revokeReason, info.getDescription());
 
         // Also verify that we get the expected meminfo
-        assertEquals(lastPss, DebugUtils.sizeValueToString(
-                info.getPss() * 1024, new StringBuilder()));
+        if (mIsProfilingPss) {
+            assertEquals(lastPss, DebugUtils.sizeValueToString(
+                    info.getPss() * 1024, new StringBuilder()));
+        }
         assertEquals(lastRss, DebugUtils.sizeValueToString(
                 info.getRss() * 1024, new StringBuilder()));
     }
@@ -1484,11 +1507,11 @@ public final class ActivityManagerAppExitInfoTest {
         mContext.startActivity(intent1);
         sleep(1000);
 
-        // Launch Home to make sure the HeartbeatActivity is in cached mode
-        Intent intentHome = new Intent(Intent.ACTION_MAIN);
-        intentHome.addCategory(Intent.CATEGORY_HOME);
-        intentHome.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mContext.startActivity(intentHome);
+        // Launch another activity to make sure the HeartbeatActivity is in cached mode
+        Intent intent2 = new Intent(Intent.ACTION_MAIN);
+        intent2.setClassName(STUB_PACKAGE_NAME, STUB_PACKAGE_NAME + ".NonLauncherActivity");
+        intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent2);
 
         // Wait until the HeartbeatService finishes
         awaitForLatch(mLatch, HEARTBEAT_COUNTDOWN * HEARTBEAT_INTERVAL, "heartbeat");

@@ -59,13 +59,15 @@ public class Utils {
     public static final int MIN_DISPLAY_LONG_CANDIDATE_PIXELS = 1920;
     public static final int DISPLAY_SHORT_PIXELS;
     public static final int MIN_DISPLAY_SHORT_CANDIDATE_PIXELS = 1080;
+    public static final boolean IS_HDR;
+    public static final float HDR_DISPLAY_AVERAGE_LUMINANCE;
 
     public static final long TOTAL_MEMORY_MB;
     // Media performance requires 6 GB minimum RAM, but keeping the following to 5 GB
     // as activityManager.getMemoryInfo() returns around 5.4 GB on a 6 GB device.
     public static final long MIN_MEMORY_PERF_CLASS_CANDIDATE_MB = 5 * 1024;
     // Android T Media performance requires 8 GB min RAM, so setting lower as above
-    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 7 * 1024;
+    public static final long MIN_MEMORY_PERF_CLASS_T_MB = 6800;
 
     private static final boolean MEETS_AVC_CODEC_PRECONDITIONS;
     static {
@@ -127,6 +129,10 @@ public class Utils {
             DISPLAY_DPI = Math.max((int) (maxDiagonalPixels / diagonalInch),
                     context.getResources().getConfiguration().densityDpi);
 
+            IS_HDR = defaultDisplay.isHdr();
+            HDR_DISPLAY_AVERAGE_LUMINANCE =
+                defaultDisplay.getHdrCapabilities().getDesiredMaxAverageLuminance();
+
             ActivityManager activityManager = context.getSystemService(ActivityManager.class);
             ActivityManager.MemoryInfo memoryInfo = new ActivityManager.MemoryInfo();
             activityManager.getMemoryInfo(memoryInfo);
@@ -136,6 +142,8 @@ public class Utils {
             DISPLAY_LONG_PIXELS = 0;
             DISPLAY_SHORT_PIXELS = 0;
             TOTAL_MEMORY_MB = 0;
+            IS_HDR = false;
+            HDR_DISPLAY_AVERAGE_LUMINANCE = 0;
         }
         MEETS_AVC_CODEC_PRECONDITIONS = meetsAvcCodecPreconditions();
     }
@@ -165,10 +173,14 @@ public class Utils {
         return sPc == Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     }
 
+    public static boolean isVPerfClass() {
+        return sPc == Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    }
+
     /**
      * Latest defined media performance class.
      */
-    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    private static final int LAST_PERFORMANCE_CLASS = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     public static boolean isHandheld() {
         // handheld nature is not exposed to package manager, for now

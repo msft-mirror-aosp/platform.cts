@@ -22,13 +22,17 @@ import static com.android.bedstead.nene.permissions.CommonPermissions.SYSTEM_APP
 import static com.android.interactive.Automator.AUTOMATION_FILE;
 
 import android.graphics.PixelFormat;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -41,9 +45,12 @@ import com.android.interactive.annotations.CacheableStep;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nullable;
 
 /**
  * An atomic manual interaction step.
@@ -222,6 +229,11 @@ public abstract class Step<E> {
         throw new AssertionError("Could not automatically or manually pass test");
     }
 
+    /** Gets the boolean value of an instrumentation argument with a default value. */
+    private static boolean getBooleanArg(String argName, boolean defaultValue) {
+        return TestApis.instrumentation().arguments().getBoolean(argName, defaultValue);
+    }
+
     protected final void pass() {
         try {
             pass((E) Nothing.NOTHING);
@@ -254,12 +266,17 @@ public abstract class Step<E> {
 
     /** Adds a button to the interaction prompt. */
     protected void addButton(String title, Runnable onClick) {
-        Button btn = new Button(TestApis.context().instrumentedContext());
-        btn.setText(title);
-        btn.setOnClickListener(v -> onClick.run());
+        // Push to UI thread to avoid animation issues when adding the button
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            btn.setText(title);
+                            btn.setOnClickListener(v -> onClick.run());
 
-        GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-        layout.addView(btn);
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
     /**
@@ -267,18 +284,21 @@ public abstract class Step<E> {
      * the screen in case it covers some critical area of the app
      */
     protected void addSwapButton() {
-        Button btn = new Button(TestApis.context().instrumentedContext());
-        // up/down arrow
-        btn.setText("\u21F5");
-        btn.setOnClickListener(v -> swap());
+        // Push to UI thread to avoid animation issues when adding the button
+        new Handler(Looper.getMainLooper())
+                .post(
+                        () -> {
+                            Button btn = new Button(TestApis.context().instrumentedContext());
+                            // up/down arrow
+                            btn.setText("\u21F5");
+                            btn.setOnClickListener(v -> swap());
 
-        GridLayout layout = mInstructionView.findViewById(R.id.buttons);
-        layout.addView(btn);
+                            GridLayout layout = mInstructionView.findViewById(R.id.buttons);
+                            layout.addView(btn);
+                        });
     }
 
-    /**
-     * Adds a small button that allows users to collapse the instructions.
-     */
+    /** Adds a small button that allows users to collapse the instructions. */
     protected void addCollapseInstructionsButton() {
         mCollapseButton = new Button(TestApis.context().instrumentedContext());
         mCollapseButton.setText("\u21F1");
@@ -309,15 +329,48 @@ public abstract class Step<E> {
     /**
      * Shows the prompt with the given instruction.
      *
-     * <p>This should be called before any other methods on this class.
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
      */
     protected void show(String instruction) {
+        showWithListItems(instruction, /* listItems= */ null);
+    }
+
+    /**
+     * Shows the prompt with the given instruction and a list of string items.
+     *
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
+     */
+    protected void showWithListItems(String instruction, @Nullable List<String> listItems) {
+        showWithArrayAdapter(
+                instruction,
+                listItems == null
+                        ? null
+                        : new ArrayAdapter<String>(
+                                TestApis.context().instrumentationContext(),
+                                android.R.layout.simple_list_item_1,
+                                android.R.id.text1,
+                                listItems));
+    }
+
+    /**
+     * Shows the prompt with the given instruction and the {@link ArrayAdapter} to render a list in
+     * the panel.
+     *
+     * <p>This should be called before any other methods on this class.
+     */
+    protected <T> void showWithArrayAdapter(
+            String instruction, @Nullable ArrayAdapter<T> arrayAdapter) {
         mInstructionView =
                 LayoutInflater.from(TestApis.context().instrumentationContext())
                         .inflate(R.layout.instruction, null);
 
         TextView text = mInstructionView.findViewById(R.id.text);
         text.setText(instruction);
+
+        if (arrayAdapter != null) {
+            ListView list = mInstructionView.findViewById(R.id.list);
+            list.setAdapter(arrayAdapter);
+        }
 
         WindowManager.LayoutParams params =
                 new WindowManager.LayoutParams(
@@ -367,25 +420,21 @@ public abstract class Step<E> {
      * instruction view if it's still there.
      */
     protected void close() {
-        if (!mHasTakenScreenshot
-                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+        if (getBooleanArg("TAKE_SCREENSHOT", false) && !mHasTakenScreenshot) {
             mHasTakenScreenshot = true;
-            ScreenshotUtil.captureScreenshot(getClass().getCanonicalName());
-        }
-        if (mInstructionView != null) {
-            TestApis.context()
-                    .instrumentationContext()
-                    .getMainExecutor()
-                    .execute(
-                            () -> {
-                                try {
-                                    sWindowManager.removeViewImmediate(mInstructionView);
-                                    mInstructionView = null;
-                                } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
-                                    Log.i(LOG_TAG, "Error removing instruction view", e);
-                                }
-                            });
+            Log.i(LOG_TAG, "Test Name: " + ScreenshotUtil.getTestName());
+            String screenshotName = getClass().getSimpleName();
+            if (getBooleanArg("HIDE_INSTRUCTION", false)) {
+                screenshotName = ScreenshotUtil.getTestName() + "__" + screenshotName;
+                doRemoveInstructionView();
+                ScreenshotUtil.captureScreenshotWithDelay(
+                        screenshotName, /* delayInMillis= */ 50L);
+            } else {
+                ScreenshotUtil.captureScreenshot(screenshotName);
+                removeInstructionView();
+            }
+        } else {
+            removeInstructionView();
         }
     }
 
@@ -400,5 +449,29 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /** Removes the instruction view in the main executor if it's still there. */
+    private void removeInstructionView() {
+        if (mInstructionView != null) {
+            TestApis.context()
+                    .instrumentationContext()
+                    .getMainExecutor()
+                    .execute(() -> doRemoveInstructionView());
+        }
+    }
+
+    /** Removes the instruction view in the main thread immdediately if it's still there. */
+    private void doRemoveInstructionView() {
+        if (mInstructionView != null) {
+            try {
+                mInstructionView.setVisibility(View.INVISIBLE);
+                sWindowManager.removeViewImmediate(mInstructionView);
+                mInstructionView = null;
+            } catch (IllegalArgumentException e) {
+                // This can happen if the view is no longer attached
+                Log.i(LOG_TAG, "Error removing instruction view", e);
+            }
+        }
     }
 }

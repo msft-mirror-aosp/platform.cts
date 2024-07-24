@@ -40,6 +40,8 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSinkAudioPolicy;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.BluetoothSocketException;
 import android.bluetooth.BluetoothStatusCodes;
 import android.bluetooth.OobData;
 import android.content.AttributionSource;
@@ -61,7 +63,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.UUID;
 
 @RunWith(AndroidJUnit4.class)
 @LargeTest
@@ -75,6 +79,8 @@ public class BluetoothDeviceTest {
 
     private final String mFakeDeviceAddress = "00:11:22:AA:BB:CC";
     private BluetoothDevice mFakeDevice;
+    private int mFakePsm = 100;
+    private UUID mFakeUuid = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -161,6 +167,7 @@ public class BluetoothDeviceTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_GET_ADDRESS_TYPE_API)
     public void getAddressType() {
         // Skip the test if bluetooth or companion device are not present.
         assumeTrue(mHasBluetooth && mHasCompanionDevice);
@@ -578,7 +585,7 @@ public class BluetoothDeviceTest {
             // Skip the test if bluetooth or companion device are not present.
             return;
         }
-        String deviceAddress = "00:11:22:AA:BB:CC";
+        String deviceAddress = "00:11:22:AA:AA:AA";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
         // This should throw a SecurityException because no BLUETOOTH_CONNECT permission
@@ -611,5 +618,29 @@ public class BluetoothDeviceTest {
                 device.setActiveAudioDevicePolicy(
                         BluetoothDevice
                                 .ACTIVE_AUDIO_DEVICE_POLICY_ALL_PROFILES_INACTIVE_UPON_CONNECTION));
+    }
+    @RequiresFlagsEnabled(Flags.FLAG_BT_SOCKET_API_L2CAP_CID)
+    @Test
+    public void getL2capChannel() throws IOException {
+        // Skip the test if bluetooth or companion device are not present.
+        assumeTrue(mHasBluetooth && mHasCompanionDevice);
+
+        BluetoothSocket l2capSocket = mFakeDevice.createInsecureL2capChannel(mFakePsm);
+        BluetoothSocket rfcommSocket = mFakeDevice
+                        .createInsecureRfcommSocketToServiceRecord(mFakeUuid);
+
+        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
+
+        // This should throw a BluetoothSocketException because it is not L2CAP socket
+        assertThrows("Unknown L2CAP socket", BluetoothSocketException.class,
+                () -> rfcommSocket.getL2capLocalChannelId());
+        assertThrows("Unknown L2CAP socket", BluetoothSocketException.class,
+                () -> rfcommSocket.getL2capRemoteChannelId());
+
+        // This should throw a BluetoothSocketException because L2CAP socket is not connected
+        assertThrows("Socket closed", BluetoothSocketException.class,
+                () -> l2capSocket.getL2capLocalChannelId());
+        assertThrows("Socket closed", BluetoothSocketException.class,
+                () -> l2capSocket.getL2capRemoteChannelId());
     }
 }

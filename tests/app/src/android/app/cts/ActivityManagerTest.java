@@ -20,6 +20,7 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_LOCATION
 import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHONE;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
+import static android.app.Flags.FLAG_APP_RESTRICTIONS_API;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
@@ -52,11 +53,13 @@ import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityManager.OnUidImportanceListener;
 import android.app.ActivityManager.RecentTaskInfo;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.ActivityOptions;
+import android.app.Flags;
 import android.app.HomeVisibilityListener;
 import android.app.Instrumentation;
 import android.app.Instrumentation.ActivityMonitor;
@@ -86,6 +89,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -104,7 +108,10 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.server.wm.WindowManagerStateHelper;
@@ -130,6 +137,7 @@ import com.android.compatibility.common.util.UserHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -200,6 +208,8 @@ public final class ActivityManagerTest {
             | PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK
             | PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 
+    private static final String PACKAGE_SCHEME = "package";
+
     private Context mTargetContext;
     private ActivityManager mActivityManager;
     private PackageManager mPackageManager;
@@ -211,10 +221,9 @@ public final class ActivityManagerTest {
     private boolean mAppStandbyEnabled;
     private boolean mAutomotiveDevice;
     private boolean mLeanbackOnly;
+    private boolean mWatchDevice;
 
     private final UserHelper mUserHelper = new UserHelper();
-
-    private String mPreviousModernTrim;
 
     private boolean mIsWaitForFinishAttachApplicationEnabled;
 
@@ -226,6 +235,9 @@ public final class ActivityManagerTest {
 
     private static final String MONITOR_DEVICE_CONFIG_ACCESS =
             "android.permission.MONITOR_DEVICE_CONFIG_ACCESS";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -239,6 +251,8 @@ public final class ActivityManagerTest {
         mAppStandbyEnabled = AppStandbyUtils.isAppStandbyEnabled();
         mAutomotiveDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
         mLeanbackOnly = mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK_ONLY);
+        mWatchDevice = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH);
+
         startSubActivity(ScreenOnActivity.class);
         AmUtils.waitForBroadcastBarrier();
     }
@@ -542,6 +556,21 @@ public final class ActivityManagerTest {
         assertTrue(am.isBackgroundRestricted());
         setForcedAppStandby(targetPackage, false);
         assertFalse(am.isBackgroundRestricted());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_APP_RESTRICTIONS_API)
+    public void testBackgroundRestrictionsIntent() throws IOException {
+        assumeFalse("This intent is not required for leanback devices", mLeanbackOnly);
+        assumeFalse("This intent is not required for watch devices", mWatchDevice);
+
+        // This instrumentation runs in the target package's uid.
+        final String targetPackage = mTargetContext.getPackageName();
+        final Intent intent = new Intent(Settings.ACTION_BACKGROUND_RESTRICTIONS_SETTINGS)
+                .setData(Uri.fromParts(PACKAGE_SCHEME, targetPackage, null));
+        final ResolveInfo resolveInfo = mTargetContext.getPackageManager().resolveActivity(
+                intent, 0);
+        assertNotNull(resolveInfo);
     }
 
     @FlakyTest(detail = "Known fail on cuttleshish b/275888802 and other devices b/255817314.")
@@ -1668,16 +1697,6 @@ public final class ActivityManagerTest {
     @Test
     public void testTrimMemActivityFg() throws Exception {
 
-        runWithShellPermissionIdentity(() -> {
-            mPreviousModernTrim = DeviceConfig.getString(
-                DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                "use_modern_trim",
-                null);
-
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER, "use_modern_trim",
-                    "false", false);
-        });
-
         final int waitForSec = 5 * 1000;
         final ApplicationInfo ai1 = mTargetContext.getPackageManager()
                 .getApplicationInfo(PACKAGE_NAME_APP1, 0);
@@ -1709,40 +1728,15 @@ public final class ActivityManagerTest {
             // Keep the device awake
             toggleScreenOn(true);
 
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_MODERATE;
-
             // Start an activity
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_ACTIVITY,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, extras);
 
             watcher1.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
 
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_LOW;
-            // Force the memory pressure to low
-            runShellCommand(mInstrumentation, "am memory-factor set LOW");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            latchHolder[0] = new CountDownLatch(1);
-            expectedLevel[0] = TRIM_MEMORY_RUNNING_CRITICAL;
-            // Force the memory pressure to critical
-            runShellCommand(mInstrumentation, "am memory-factor set CRITICAL");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
             CommandReceiver.sendCommand(mTargetContext, CommandReceiver.COMMAND_START_SERVICE,
                     PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, LocalForegroundService.newCommand(
                     LocalForegroundService.COMMAND_START_NO_FOREGROUND));
-
-            // Reset the memory pressure override
-            runShellCommand(mInstrumentation, "am memory-factor reset");
 
             latchHolder[0] = new CountDownLatch(1);
             expectedLevel[0] = TRIM_MEMORY_UI_HIDDEN;
@@ -1754,48 +1748,6 @@ public final class ActivityManagerTest {
             assertTrue("Failed to wait for the trim memory event",
                     latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
 
-            // Start the heavy weight activity
-            final Intent intent = new Intent();
-            final CountDownLatch[] heavyLatchHolder = new CountDownLatch[1];
-            final Predicate[] testFunc = new Predicate[1];
-
-            intent.setPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
-            intent.setAction(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.putExtras(initWaitingForTrimLevel(level -> {
-                if (testFunc[0].test(level)) {
-                    heavyLatchHolder[0].countDown();
-                }
-            }));
-
-            final WindowManagerStateHelper wms = new WindowManagerStateHelper();
-            mTargetContext.startActivity(intent);
-            watcher3.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_TOP, null);
-            wms.waitForValidState(new ComponentName(CANT_SAVE_STATE_1_PACKAGE_NAME,
-                      "CantSave1Activity"));
-
-            heavyLatchHolder[0] = new CountDownLatch(1);
-            testFunc[0] = level -> TRIM_MEMORY_RUNNING_MODERATE <= (int) level
-                    && TRIM_MEMORY_RUNNING_CRITICAL >= (int) level;
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    heavyLatchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            // Now go home
-            final Intent homeIntent = new Intent();
-            homeIntent.setAction(Intent.ACTION_MAIN);
-            homeIntent.addCategory(Intent.CATEGORY_HOME);
-            homeIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            heavyLatchHolder[0] = new CountDownLatch(1);
-            testFunc[0] = level -> TRIM_MEMORY_BACKGROUND == (int) level;
-            mTargetContext.startActivity(homeIntent);
-            wms.waitForHomeActivityVisible();
-            assertTrue("Failed to wait for the trim memory event",
-                    heavyLatchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
         } finally {
             runShellCommand(mInstrumentation,
                     "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
@@ -1806,14 +1758,6 @@ public final class ActivityManagerTest {
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
                 mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
                 mActivityManager.forceStopPackage(CANT_SAVE_STATE_1_PACKAGE_NAME);
-                if (mPreviousModernTrim == null) {
-                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim");
-                } else {
-                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim", mPreviousModernTrim, false);
-                }
-
             });
 
             watcher1.finish();
@@ -1822,128 +1766,19 @@ public final class ActivityManagerTest {
         }
     }
 
-    @Test
-    public void testTrimMemActivityBg() throws Exception {
-        final int minLru = 8;
-        final int waitForSec = 30 * 1000;
-        final String prefix = "trimmem_";
-        final CountDownLatch[] latchHolder = new CountDownLatch[1];
-        final String pkgName = PACKAGE_NAME_APP1;
-        final ArrayMap<String, Pair<int[], ServiceConnection>> procName2Level = new ArrayMap<>();
-        int startSeq = 0;
-
-        try {
-
-            runWithShellPermissionIdentity(() -> {
-                mPreviousModernTrim = DeviceConfig.getString(
-                    DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                    "use_modern_trim",
-                    null);
-
-                DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                        "use_modern_trim", "false", false);
-            });
-
-            // Kill all background processes
-            runShellCommand(mInstrumentation, "am kill-all");
-
-            // Override the memory pressure level, force it staying at normal.
-            runShellCommand(mInstrumentation, "am memory-factor set NORMAL");
-
-            List<String> lru;
-            // Start a new isolated service once a time, and then check the lru list
-            do {
-                final String instanceName = prefix + startSeq++;
-                final int[] levelHolder = new int[1];
-
-                // Spawn the new isolated service
-                final ServiceConnection conn = TrimMemService.bindToTrimMemService(
-                        pkgName, instanceName, latchHolder, levelHolder, mTargetContext);
-
-                // Get the list of all cached apps
-                lru = getCachedAppsLru();
-                assertTrue(lru.size() > 0);
-
-                for (int i = lru.size() - 1; i >= 0; i--) {
-                    String p = lru.get(i);
-                    if (p.indexOf(instanceName) != -1) {
-                        // This is the new one we just created
-                        procName2Level.put(p, new Pair<>(levelHolder, conn));
-                        break;
+    private void killBackgroundProcesses(Predicate<String> predicate) {
+        runWithShellPermissionIdentity(() -> {
+            final List<ActivityManager.RunningAppProcessInfo> procs = mActivityManager
+                    .getRunningAppProcesses();
+            for (ActivityManager.RunningAppProcessInfo info: procs) {
+                if (info.importance
+                        >= ActivityManager.RunningAppProcessInfo.IMPORTANCE_SERVICE) {
+                    if (predicate.test(info.processName)) {
+                        mActivityManager.killBackgroundProcesses(info.pkgList[0]);
                     }
                 }
-                if (lru.size() < minLru) {
-                    continue;
-                }
-                if (lru.get(0).indexOf(pkgName) != -1) {
-                    // Okay now the very least recent used cached process is one of ours
-                    break;
-                } else {
-                    // Hm, someone dropped below us in the between, let's kill it
-                    ArraySet<String> others = new ArraySet<>();
-                    for (int i = 0, size = lru.size(); i < size; i++) {
-                        final String name = lru.get(i);
-                        if (name.indexOf(pkgName) != -1) {
-                            break;
-                        }
-                        others.add(name);
-                    }
-                    runWithShellPermissionIdentity(() -> {
-                        final List<ActivityManager.RunningAppProcessInfo> procs = mActivityManager
-                                .getRunningAppProcesses();
-                        for (ActivityManager.RunningAppProcessInfo info: procs) {
-                            if (info.importance
-                                    == ActivityManager.RunningAppProcessInfo.IMPORTANCE_CACHED) {
-                                if (others.contains(info.processName)) {
-                                    mActivityManager.killBackgroundProcesses(info.pkgList[0]);
-                                }
-                            }
-                        }
-                    });
-                }
-            } while (true);
-
-            // Remove all other processes
-            for (int i = lru.size() - 1; i >= 0; i--) {
-                if (lru.get(i).indexOf(pkgName) == -1) {
-                    lru.remove(i);
-                }
             }
-
-            latchHolder[0] = new CountDownLatch(lru.size());
-            // Force the memory pressure to moderate
-            runShellCommand(mInstrumentation, "am memory-factor set MODERATE");
-            assertTrue("Failed to wait for the trim memory event",
-                    latchHolder[0].await(waitForSec, TimeUnit.MILLISECONDS));
-
-            // Verify the trim levels among the LRU
-            int level = TRIM_MEMORY_COMPLETE;
-            assertEquals(level, procName2Level.get(lru.get(0)).first[0]);
-            for (int i = 1, size = lru.size(); i < size; i++) {
-                int curLevel = procName2Level.get(lru.get(i)).first[0];
-                assertTrue(level >= curLevel);
-                level = curLevel;
-            }
-
-            // Cleanup: Unbind from them
-            for (int i = procName2Level.size() - 1; i >= 0; i--) {
-                mTargetContext.unbindService(procName2Level.valueAt(i).second);
-            }
-        } finally {
-            runShellCommand(mInstrumentation, "am memory-factor reset");
-
-            runWithShellPermissionIdentity(() -> {
-                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
-                if (mPreviousModernTrim == null) {
-                    DeviceConfig.deleteProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim");
-                } else {
-                    DeviceConfig.setProperty(DeviceConfig.NAMESPACE_ACTIVITY_MANAGER,
-                            "use_modern_trim", mPreviousModernTrim, false);
-                }
-
-            });
-        }
+        });
     }
 
     @Test
@@ -2001,6 +1836,9 @@ public final class ActivityManagerTest {
                         packageName, packageName, 0, null);
                 watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY,
                         null);
+                // Sleep a while before proceeding to next one to make sure the activity lifecycle
+                // transitions have completed.
+                SystemClock.sleep(1000);
             });
 
             // Launch home so we'd have cleared these the above test activities from recents.
@@ -2067,6 +1905,9 @@ public final class ActivityManagerTest {
                         packageName, packageName, 0, null);
                 watcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY,
                         null);
+                // Sleep a while before proceeding to next one to make sure the activity lifecycle
+                // transitions have completed.
+                SystemClock.sleep(1000);
             });
 
             // Launch home so we'd have cleared these the above test activities from recents.
@@ -2303,9 +2144,9 @@ public final class ActivityManagerTest {
         assumeNonHeadlessSystemUserMode();
 
         runWithShellPermissionIdentity(() -> {
-            int currentUser = mActivityManager.getCurrentUser();
+            int currentUser = ActivityManager.getCurrentUser();
             assertTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
-            mActivityManager.switchUser(UserHandle.of(currentUser));
+            assertTrue(switchUser(currentUser, /* waitForSwitchToComplete= */ true));
         });
     }
 
@@ -2316,8 +2157,11 @@ public final class ActivityManagerTest {
                         + "config_canSwitchToHeadlessSystemUser is enabled.",
                 canSwitchToHeadlessSystemUser());
 
-        runWithShellPermissionIdentity(() ->
-                assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM)));
+        runWithShellPermissionIdentity(() -> {
+            int currentUser = ActivityManager.getCurrentUser();
+            assumeTrue(mActivityManager.switchUser(UserHandle.SYSTEM));
+            assertTrue(switchUser(currentUser, /* waitForSwitchToComplete= */ true));
+        });
     }
 
     @Test
@@ -2355,6 +2199,94 @@ public final class ActivityManagerTest {
         } catch (SecurityException e) {
             fail("Could not call noteForegroundResourceUseBegin with permission" + e.getMessage());
         }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_UID_IMPORTANCE_LISTENER_FOR_UIDS)
+    @Test
+    public void testAddOnUidImportanceListener() throws Exception {
+        final ApplicationInfo ai1 = mTargetContext.getPackageManager()
+                .getApplicationInfo(PACKAGE_NAME_APP1, 0);
+        final ApplicationInfo ai2 = mTargetContext.getPackageManager()
+                .getApplicationInfo(PACKAGE_NAME_APP2, 0);
+        final CountDownLatch[] latchHolder = new CountDownLatch[1];
+        final int[] expectedUidHolder = new int[1];
+        final OnUidImportanceListener listener = new OnUidImportanceListener() {
+            @Override
+            public void onUidImportance(int uid, int importance) {
+                if (uid == expectedUidHolder[0]) {
+                    latchHolder[0].countDown();
+                }
+            }
+        };
+        try {
+            // Make sure we could start activity from background
+            runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+
+            // If we didn't specify the target UID, we should be able to listen on all UID events.
+            mActivityManager.addOnUidImportanceListener(listener,
+                    RunningAppProcessInfo.IMPORTANCE_FOREGROUND);
+
+            latchHolder[0] = new CountDownLatch(1);
+            expectedUidHolder[0] = ai1.uid;
+            CommandReceiver.sendCommand(mTargetContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            assertTrue("Failed to receive the UID importance changes",
+                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+
+            latchHolder[0] = new CountDownLatch(1);
+            expectedUidHolder[0] = ai2.uid;
+            CommandReceiver.sendCommand(mTargetContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
+            assertTrue("Failed to receive the UID importance changes",
+                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+
+            launchHome();
+            mActivityManager.removeOnUidImportanceListener(listener);
+
+            // Listen on the APP1's UID importance changes only.
+            mActivityManager.addOnUidImportanceListener(listener,
+                    RunningAppProcessInfo.IMPORTANCE_FOREGROUND, new int[] {ai1.uid});
+
+            latchHolder[0] = new CountDownLatch(1);
+            expectedUidHolder[0] = ai1.uid;
+            CommandReceiver.sendCommand(mTargetContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
+            assertTrue("Failed to receive the UID importance changes",
+                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+
+            latchHolder[0] = new CountDownLatch(1);
+            expectedUidHolder[0] = ai2.uid;
+            CommandReceiver.sendCommand(mTargetContext,
+                    CommandReceiver.COMMAND_START_ACTIVITY,
+                    PACKAGE_NAME_APP1, PACKAGE_NAME_APP2, 0, null);
+            assertFalse("It should not receive the UID importance changes",
+                    latchHolder[0].await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+        } finally {
+            runShellCommand(mInstrumentation,
+                    "cmd deviceidle whitelist -" + PACKAGE_NAME_APP1);
+
+            mActivityManager.removeOnUidImportanceListener(listener);
+
+            runWithShellPermissionIdentity(() -> {
+                // force stop test package, where the whole test process group will be killed.
+                mActivityManager.forceStopPackage(PACKAGE_NAME_APP1);
+                mActivityManager.forceStopPackage(PACKAGE_NAME_APP2);
+            });
+        }
+    }
+
+    private boolean switchUser(int userId, boolean waitForSwitchToComplete) throws IOException {
+        StringBuilder userSwitchCommand = new StringBuilder("am switch-user ");
+        if (waitForSwitchToComplete) {
+            userSwitchCommand.append("-w ");
+        }
+
+        userSwitchCommand.append(userId);
+        return runShellCommand(mInstrumentation, userSwitchCommand.toString()).isEmpty();
     }
 
     private CountDownLatch startRemoteActivityAndLinkToDeath(ComponentName activity,

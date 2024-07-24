@@ -20,17 +20,20 @@ import static android.Manifest.permission.BIND_HOTWORD_DETECTION_SERVICE;
 import static android.Manifest.permission.BIND_VISUAL_QUERY_DETECTION_SERVICE;
 import static android.Manifest.permission.CAPTURE_AUDIO_HOTWORD;
 import static android.Manifest.permission.MANAGE_HOTWORD_DETECTION;
+import static android.Manifest.permission.RECEIVE_SANDBOX_TRIGGER_AUDIO;
 import static android.Manifest.permission.RECORD_AUDIO;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_EXPECTED_NO_CALL_TIMEOUT_IN_MS;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_LONG_TIMEOUT_IN_MS;
 import static android.voiceinteraction.cts.testcore.Helper.WAIT_TIMEOUT_IN_MS;
 
+import static com.android.compatibility.common.util.SystemUtil.callWithShellPermissionIdentity;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.permission.flags.Flags;
 import android.service.voice.AlwaysOnHotwordDetector;
 import android.service.voice.HotwordDetectionService;
 import android.service.voice.HotwordDetectionServiceFailure;
@@ -38,6 +41,7 @@ import android.service.voice.HotwordDetector;
 import android.service.voice.HotwordRejectedResult;
 import android.service.voice.SandboxedDetectionInitializer;
 import android.service.voice.SoundTriggerFailure;
+import android.service.voice.VisualQueryDetectedResult;
 import android.service.voice.VisualQueryDetectionService;
 import android.service.voice.VisualQueryDetectionServiceFailure;
 import android.service.voice.VisualQueryDetector;
@@ -48,6 +52,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -81,7 +87,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
     private AlwaysOnHotwordDetector.EventPayload mDetectedResult;
     private HotwordRejectedResult mRejectedResult;
     private ArrayList<String> mStreamedQueries = new ArrayList<>();
+    private ArrayList<byte[]> mStreamedAccessibilityData = new ArrayList();
     private String mCurrentQuery = "";
+    private byte[] mCurrentAccessibilityData = new byte[0];
     private HotwordDetectionServiceFailure mHotwordDetectionServiceFailure = null;
     private SoundTriggerFailure mSoundTriggerFailure = null;
     private String mUnknownFailure = null;
@@ -89,6 +97,8 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
     private int mSoftwareOnDetectedCount = 0;
     private int mDspOnDetectedCount = 0;
     private int mDspOnRejectedCount = 0;
+
+    private boolean mVoiceActivationPermissionEnabled;
 
     public CtsBasicVoiceInteractionService() {
         HandlerThread handlerThread = new HandlerThread("CtsBasicVoiceInteractionService");
@@ -258,10 +268,11 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
         };
 
         final Handler handler = runOnMainThread ? new Handler(Looper.getMainLooper()) : mHandler;
-        handler.post(() -> runWithShellPermissionIdentity(() -> {
-            mAlwaysOnHotwordDetector = callCreateAlwaysOnHotwordDetector(callback, useExecutor,
-                    options);
-        }, MANAGE_HOTWORD_DETECTION, RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD));
+        handler.post(() -> {
+            mAlwaysOnHotwordDetector = callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(callback,
+                    useExecutor, options, MANAGE_HOTWORD_DETECTION, RECORD_AUDIO,
+                    CAPTURE_AUDIO_HOTWORD);
+        });
     }
 
     /**
@@ -269,10 +280,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
      */
     public void createAlwaysOnHotwordDetectorWithoutManageHotwordDetectionPermission() {
         mDetectorInitializedLatch = new CountDownLatch(1);
-        mHandler.post(() -> runWithShellPermissionIdentity(
-                () -> callCreateAlwaysOnHotwordDetector(mNoOpHotwordDetectorCallback),
-                RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD
-        ));
+        mHandler.post(() -> callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(
+                mNoOpHotwordDetectorCallback, /* useExecutor= */ false, null, RECORD_AUDIO,
+                CAPTURE_AUDIO_HOTWORD));
     }
 
     /**
@@ -280,9 +290,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
      */
     public void createSoftwareHotwordDetectorWithoutManageHotwordDetectionPermission() {
         mDetectorInitializedLatch = new CountDownLatch(1);
-        mHandler.post(() -> runWithShellPermissionIdentity(
-                () -> callCreateSoftwareHotwordDetector(mNoOpSoftwareDetectorCallback,
-                        /* useExecutor= */ false), CAPTURE_AUDIO_HOTWORD));
+        mHandler.post(() -> callCreateSoftwareDetectorWithNecessaryPerm(
+                mNoOpSoftwareDetectorCallback, /* useExecutor= */ false,
+                null, CAPTURE_AUDIO_HOTWORD));
     }
 
     /**
@@ -292,10 +302,9 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
      */
     public void createSoftwareHotwordDetectorHoldBindHotwordDetectionPermission() {
         mDetectorInitializedLatch = new CountDownLatch(1);
-        mHandler.post(() -> runWithShellPermissionIdentity(
-                () -> callCreateSoftwareHotwordDetector(mNoOpSoftwareDetectorCallback,
-                        /* useExecutor= */ false), MANAGE_HOTWORD_DETECTION,
-                BIND_HOTWORD_DETECTION_SERVICE));
+        mHandler.post(() ->   callCreateSoftwareDetectorWithNecessaryPerm(
+                mNoOpSoftwareDetectorCallback, /* useExecutor= */ false, null,
+                MANAGE_HOTWORD_DETECTION, BIND_HOTWORD_DETECTION_SERVICE));
     }
 
     /**
@@ -305,10 +314,11 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
      */
     public void createAlwaysOnHotwordDetectorHoldBindHotwordDetectionPermission() {
         mDetectorInitializedLatch = new CountDownLatch(1);
-        mHandler.post(() -> runWithShellPermissionIdentity(
-                () -> callCreateAlwaysOnHotwordDetector(mNoOpHotwordDetectorCallback),
-                RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD, MANAGE_HOTWORD_DETECTION,
-                BIND_HOTWORD_DETECTION_SERVICE));
+        mHandler.post(() ->
+                callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(
+                        mNoOpHotwordDetectorCallback, /* useExecutor= */ false, null,
+                        RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD, MANAGE_HOTWORD_DETECTION,
+                        BIND_HOTWORD_DETECTION_SERVICE));
     }
 
     /**
@@ -331,11 +341,12 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
         mDetectorInitializedLatch = new CountDownLatch(1);
 
         final Handler handler = runOnMainThread ? new Handler(Looper.getMainLooper()) : mHandler;
-        handler.post(() -> runWithShellPermissionIdentity(() -> {
-            mAlwaysOnHotwordDetector = callCreateAlwaysOnHotwordDetector(
-                    createAlwaysOnHotwordDetectorCallbackWithListeners(), useExecutor,
-                    options);
-        }, MANAGE_HOTWORD_DETECTION, RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD));
+        handler.post(() -> {
+            mAlwaysOnHotwordDetector =
+                callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(
+                        createAlwaysOnHotwordDetectorCallbackWithListeners(), useExecutor,
+                        options, MANAGE_HOTWORD_DETECTION, RECORD_AUDIO, CAPTURE_AUDIO_HOTWORD);
+        });
     }
 
     /**
@@ -537,10 +548,11 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
         };
 
         final Handler handler = runOnMainThread ? new Handler(Looper.getMainLooper()) : mHandler;
-        handler.post(() -> runWithShellPermissionIdentity(() -> {
-            mSoftwareHotwordDetector = callCreateSoftwareHotwordDetector(callback, useExecutor,
-                    options);
-        }, MANAGE_HOTWORD_DETECTION));
+        handler.post(() -> {
+            mSoftwareHotwordDetector =
+                callCreateSoftwareDetectorWithNecessaryPerm(callback, useExecutor, options,
+                        MANAGE_HOTWORD_DETECTION);
+        });
     }
 
     /**
@@ -629,9 +641,10 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
         };
 
         final Handler handler = runOnMainThread ? new Handler(Looper.getMainLooper()) : mHandler;
-        handler.post(() -> runWithShellPermissionIdentity(() -> {
-            mSoftwareHotwordDetector = callCreateSoftwareHotwordDetector(callback, useExecutor);
-        }, MANAGE_HOTWORD_DETECTION));
+        handler.post(() -> {
+            mSoftwareHotwordDetector = callCreateSoftwareDetectorWithNecessaryPerm(callback,
+                    useExecutor, null, MANAGE_HOTWORD_DETECTION);
+        });
     }
 
     /**
@@ -665,12 +678,32 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
                 }
 
                 @Override
+                public void onQueryDetected(@NonNull VisualQueryDetectedResult partialResult) {
+                    Log.i(TAG, "onQueryDetected with VisualQueryDetectedResult");
+                    mCurrentQuery += partialResult.getPartialQuery();
+                    mCurrentAccessibilityData = accumulateAccessibilityStreamedData(
+                            mCurrentAccessibilityData,
+                            partialResult.getAccessibilityDetectionData());
+                }
+
+                private byte[] accumulateAccessibilityStreamedData(byte[] streamedData,
+                        byte[] newData) {
+                    byte[] newStreamedData = new byte[streamedData.length + newData.length];
+                    System.arraycopy(streamedData, 0, newStreamedData, 0,
+                            streamedData.length);
+                    System.arraycopy(newData, 0, newStreamedData, streamedData.length,
+                            newData.length);
+                    return newStreamedData;
+                }
+
+                @Override
                 public void onQueryRejected() {
                     Log.i(TAG, "onQueryRejected");
                     // mStreamedQueries are used to store previously streamed queries for testing
                     // reason, regardless of the queries being rejected or finished.
                     mStreamedQueries.add(mCurrentQuery);
                     mCurrentQuery = "";
+                    mCurrentAccessibilityData = new byte[0];
                     if (mOnQueryFinishRejectLatch != null) {
                         mOnQueryFinishRejectLatch.countDown();
                     }
@@ -678,10 +711,11 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
 
                 @Override
                 public void onQueryFinished() {
-
                     Log.i(TAG, "onQueryFinished");
                     mStreamedQueries.add(mCurrentQuery);
+                    mStreamedAccessibilityData.add(mCurrentAccessibilityData);
                     mCurrentQuery = "";
+                    mCurrentAccessibilityData = new byte[0];
                     if (mOnQueryFinishRejectLatch != null) {
                         mOnQueryFinishRejectLatch.countDown();
                     }
@@ -713,11 +747,17 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
                         VisualQueryDetectionServiceFailure visualQueryDetectionServiceFailure) {
                     Log.i(TAG, "onFailure visualQueryDetectionServiceFailure: "
                             + visualQueryDetectionServiceFailure);
+                    if (mOnFailureLatch != null) {
+                        mOnFailureLatch.countDown();
+                    }
                 }
 
                 @Override
                 public void onUnknownFailure(String errorMessage) {
                     Log.i(TAG, "onUnknownFailure errorMessage: " + errorMessage);
+                    if (mOnFailureLatch != null) {
+                        mOnFailureLatch.countDown();
+                    }
                 }
             };
             mVisualQueryDetector = callCreateVisualQueryDetector(callback);
@@ -839,6 +879,13 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
      */
     public ArrayList<String> getStreamedQueriesResult() {
         return mStreamedQueries;
+    }
+
+    /**
+     * Returns the OnQueryDetected() result.
+     */
+    public ArrayList<byte[]> getAccessibilityDataResult() {
+        return mStreamedAccessibilityData;
     }
 
     /**
@@ -1002,5 +1049,69 @@ public class CtsBasicVoiceInteractionService extends BaseVoiceInteractionService
                 TimeUnit.MILLISECONDS);
         mOnRecognitionPausedLatch = null;
         return !result;
+    }
+
+    public void setVoiceActivationPermissionEnabled(boolean val) {
+        mVoiceActivationPermissionEnabled = val;
+    }
+
+    /**
+     * Creates always on hotword detector, appending RECEIVE_SANDBOX_TRIGGER_AUDIO permission to
+     * requested permissions when the relevant flag is enabled.
+     *
+     * <p> <b>Context:</b>  A new permission (RECEIVE_SANDBOX_TRIGGER_AUDIO) has been added to
+     * guard creating trusted hotword detectors. This permission guard is only enabled when
+     * {@link Flags.FLAG_VOICE_ACTIVATION_PERMISSION_APIS} is enabled.
+     *
+     */
+    // TODO(b/305787465): Remove this method and request RECEIVE_SANDBOX_TRIGGER_AUDIO at the r
+    //  elevant locations once flag has been fully ramped up.
+    private AlwaysOnHotwordDetector callCreateAlwaysOnHotwordDetectorWithNecessaryPerm(
+            AlwaysOnHotwordDetector.Callback callback, boolean useExecutor,
+            @Nullable PersistableBundle options, String... permissions) {
+        List<String> requestedPermissions = new ArrayList<String>(Arrays.asList(permissions));
+
+        if (mVoiceActivationPermissionEnabled) {
+            Log.i(TAG, "Requesting voice activation permissions!");
+            requestedPermissions.add(RECEIVE_SANDBOX_TRIGGER_AUDIO);
+        }
+
+        try {
+            return callWithShellPermissionIdentity(() ->
+                            callCreateAlwaysOnHotwordDetector(callback, useExecutor, options),
+                    requestedPermissions.toArray(new String[0]));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Creates software hotword detector, appending RECEIVE_SANDBOX_TRIGGER_AUDIO permission to
+     * requested permissions when the relevant flag is enabled.
+     *
+     * <p> <b>Context:</b>  A new permission (RECEIVE_SANDBOX_TRIGGER_AUDIO) has been added to
+     * guard creating trusted hotword detectors. This permission guard is only enabled when
+     *  {@link Flags.FLAG_VOICE_ACTIVATION_PERMISSION_APIS} is enabled.
+     *
+     */
+    // TODO(b/305787465): Remove this method and request RECEIVE_SANDBOX_TRIGGER_AUDIO at the r
+    //  elevant locations once flag has been fully ramped up.
+    private HotwordDetector callCreateSoftwareDetectorWithNecessaryPerm(
+            HotwordDetector.Callback callback, boolean useExecutor,
+            @Nullable PersistableBundle options, String... permissions) {
+        List<String> requestedPermissions = new ArrayList<String>(Arrays.asList(permissions));
+
+        if (mVoiceActivationPermissionEnabled) {
+            Log.i(TAG, "Requesting voice activation permissions!");
+            requestedPermissions.add(RECEIVE_SANDBOX_TRIGGER_AUDIO);
+        }
+
+        try {
+            return callWithShellPermissionIdentity(() ->
+                            callCreateSoftwareHotwordDetector(callback, useExecutor, options),
+                    requestedPermissions.toArray(new String[0]));
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

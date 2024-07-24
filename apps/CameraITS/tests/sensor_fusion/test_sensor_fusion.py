@@ -14,6 +14,7 @@
 """Verify image and inertial sensor events are well synchronized."""
 
 
+import fnmatch
 import json
 import logging
 import math
@@ -38,10 +39,7 @@ import sensor_fusion_utils
 _CAM_FRAME_RANGE_MAX = 9.0  # Seconds: max allowed camera frame range.
 _GYRO_SAMP_RATE_MIN = 100.0  # Samples/second: min gyro sample rate.
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_ARDUINO_ANGLES = (0, 90)
 _ARDUINO_INIT_WAIT_TIME = 3.0  # Seconds to wait for Arduino comm
-_ARDUINO_MOVE_TIME = 2
-_ARDUINO_SERVO_SPEED = 20
 _NUM_ROTATIONS = 10
 _START_FRAME = 1
 _FRAME_DELTA_TOL = 1.5  # 50% margin over nominal FPS of captures
@@ -111,9 +109,9 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
           rot_rig['cntl'],
           rot_rig['ch'],
           _NUM_ROTATIONS,
-          _ARDUINO_ANGLES,
-          _ARDUINO_SERVO_SPEED,
-          _ARDUINO_MOVE_TIME,
+          sensor_fusion_utils.ARDUINO_ANGLES_SENSOR_FUSION,
+          sensor_fusion_utils.ARDUINO_SERVO_SPEED_SENSOR_FUSION,
+          sensor_fusion_utils.ARDUINO_MOVE_TIME_SENSOR_FUSION,
           serial_port,
       ),
   )
@@ -126,12 +124,11 @@ def _collect_data(cam, fps, w, h, test_length, rot_rig, chart_dist,
   if rot_rig['cntl'].lower() == 'arduino':
     time.sleep(_ARDUINO_INIT_WAIT_TIME)
 
-  # Capture frames.
+  # Raise error if not FRONT or REAR facing camera.
   facing = props['android.lens.facing']
-  if (facing != camera_properties_utils.LENS_FACING_FRONT and
-      facing != camera_properties_utils.LENS_FACING_BACK):
-    raise AssertionError(f'Unknown lens facing: {facing}.')
+  camera_properties_utils.check_front_or_rear_camera(props)
 
+  # Capture frames.
   fmt = {'format': 'yuv', 'width': w, 'height': h}
   s, e, _, _, _ = cam.do_3a(get_results=True, do_af=False)
   logging.debug('3A ISO: %d, exp: %.3fms', s, e/_MSEC_TO_NSEC)
@@ -379,13 +376,13 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
 
     # Validity check on gyro/camera timestamps
     cam_times = _get_cam_times(
-        events['cam'][_START_FRAME:len(events['cam'])], fps)
+        events['cam'][_START_FRAME:], fps)
     gyro_times = [e['time'] for e in events['gyro']]
     self._assert_gyro_encompasses_camera(cam_times, gyro_times)
 
     # Compute cam rotation displacement(rads) between pairs of adjacent frames.
     cam_rots = sensor_fusion_utils.get_cam_rotations(
-        frames[_START_FRAME:len(frames)], events['facing'], img_h,
+        frames[_START_FRAME:], events['facing'], img_h,
         name_with_log_path, _START_FRAME)
     logging.debug('cam_rots: %s', str(cam_rots))
     gyro_rots = sensor_fusion_utils.get_gyro_rotations(
@@ -420,6 +417,8 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
     corr_dist = scipy.spatial.distance.correlation(cam_rots, gyro_rots)
     logging.debug('Best correlation of %f at shift of %.3fms',
                   corr_dist, offset_ms)
+    print(f'test_sensor_fusion_corr_dist: {corr_dist}')
+    print(f'test_sensor_fusion_offset_ms: {offset_ms:.3f}')
 
     # Assert PASS/FAIL criteria.
     if corr_dist > _CORR_DIST_THRESH_MAX:
@@ -428,6 +427,21 @@ class SensorFusionTest(its_base_test.ItsBaseTest):
     if abs(offset_ms) > _OFFSET_MS_THRESH_MAX:
       raise AssertionError('Offset too large. Measured (ms): '
                            f'{offset_ms:.3f}, TOL: {_OFFSET_MS_THRESH_MAX}.')
+
+    else:  # remove frames if PASS
+      temp_files = []
+      try:
+        temp_files = os.listdir(self.log_path)
+      except FileNotFoundError:
+        logging.debug('/tmp directory: %s not found', self.log_path)
+      for file in temp_files:
+        if fnmatch.fnmatch(file, f'{_NAME}_frame*.png'):
+          file_to_remove = os.path.join(self.log_path, file)
+          try:
+            os.remove(file_to_remove)
+          except FileNotFoundError:
+            logging.debug('File not found: %s', str(file))
+      logging.debug('Test passes, frame images have been removed')
 
 if __name__ == '__main__':
   test_runner.main()

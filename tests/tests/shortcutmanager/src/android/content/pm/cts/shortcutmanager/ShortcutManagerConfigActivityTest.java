@@ -21,6 +21,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -28,7 +29,8 @@ import android.content.IntentSender;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps.PinItemRequest;
 import android.content.pm.ShortcutInfo;
-import android.test.suitebuilder.annotation.SmallTest;
+
+import androidx.test.filters.SmallTest;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -89,7 +91,9 @@ public class ShortcutManagerConfigActivityTest extends ShortcutManagerCtsTestsBa
 
         runTestOnUiThread(() -> {
             try {
-                mLauncherContext1.startIntentSender(sender.get(), null, 0, 0, 0);
+                mLauncherContext1.startIntentSender(sender.get(), null, 0, 0, 0,
+                        ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
+                                ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle());
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

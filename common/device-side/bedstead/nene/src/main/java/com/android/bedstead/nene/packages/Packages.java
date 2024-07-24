@@ -61,6 +61,7 @@ import com.android.bedstead.nene.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingIntentSender;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.ShellCommandUtils;
 import com.android.bedstead.nene.utils.UndoableContext;
@@ -748,7 +749,7 @@ public final class Packages {
         Intent toResolve = new Intent(ACTION_VIEW, Uri.parse("http://"));
 
         PackageManager pm = TestApis.context()
-                .androidContextAsUser(user)
+                .instrumentationContextAsUser(user)
                 .getPackageManager();
 
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.T)) {
@@ -761,16 +762,17 @@ public final class Packages {
             resolvedActivity = pm.resolveActivity(toResolve, MATCH_DEFAULT_ONLY);
         }
 
-        Set<String> possibleBrowserPackageName = possibleActivities.stream()
+        Set<String> possibleBrowserPackageNames =  possibleActivities.stream()
                 .map(Packages::extractPackageName)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Log.e("SettingTest", "possibleBrowserPackageNames: " + possibleBrowserPackageName);
+        Log.i(LOG_TAG, "possibleBrowserPackageNames: " + possibleBrowserPackageNames);
 
         String resolvedBrowserPackageName = extractPackageName(resolvedActivity);
+        Log.i(LOG_TAG, "defaultBrowserPackageName: " + resolvedBrowserPackageName);
         if (resolvedBrowserPackageName == null
-                || !possibleBrowserPackageName.contains(resolvedBrowserPackageName)) {
+                || !possibleBrowserPackageNames.contains(resolvedBrowserPackageName)) {
             return null;
         }
 
@@ -783,4 +785,27 @@ public final class Packages {
                 .map(activityInfo -> activityInfo.packageName)
                 .orElse(null);
     }
-}
+
+    /** See {@link PackageManager#queryIntentActivities(Intent, int)}.
+     *
+     * <p> Returns a list of {@link ResolveInfo} wrapped in {@link ResolveInfoWrapper}.*/
+    @Experimental
+    public List<ResolveInfoWrapper> queryIntentActivities(Intent intent, int flags) {
+        return TestApis.context().instrumentedContext().getPackageManager()
+                .queryIntentActivities(intent, flags)
+                .stream().map(r -> new ResolveInfoWrapper(r.activityInfo, r.match))
+                .collect(Collectors.toList());
+    }
+
+    /** See {@link PackageManager#queryIntentActivities(Intent, int)}.
+     *
+     * <p> Returns a list of {@link ResolveInfo} wrapped in {@link ResolveInfoWrapper}.*/
+    @Experimental
+    public List<ResolveInfoWrapper> queryIntentActivities(UserReference user, Intent intent, int flags) {
+        return TestApis.context().androidContextAsUser(user).getPackageManager()
+                .queryIntentActivities(intent, flags)
+                .stream().map(r -> new ResolveInfoWrapper(r.activityInfo, r.match))
+                .collect(Collectors.toList());
+    }
+
+ }

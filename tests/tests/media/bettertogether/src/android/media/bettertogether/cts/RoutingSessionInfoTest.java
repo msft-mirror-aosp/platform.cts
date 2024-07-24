@@ -34,6 +34,7 @@ import android.os.Parcel;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
@@ -44,6 +45,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@FrameworkSpecificTest
 @NonMainlineTest
 public class RoutingSessionInfoTest {
     public static final String TEST_ID = "test_id";
@@ -616,6 +618,20 @@ public class RoutingSessionInfoTest {
                 ? PLAYBACK_VOLUME_VARIABLE : PLAYBACK_VOLUME_FIXED;
 
         assertThat(sessionInfo.getVolumeHandling()).isEqualTo(expectedVolumeHandling);
+    }
+
+    @Test
+    public void testGroupVolumeHandlingForSystemSession() {
+        RoutingSessionInfo sessionInfo =
+                new RoutingSessionInfo.Builder(TEST_ID, TEST_CLIENT_PACKAGE_NAME)
+                        .setName(TEST_NAME)
+                        .addSelectedRoute(TEST_ROUTE_ID_0)
+                        .addSelectedRoute(TEST_ROUTE_ID_1)
+                        .setSystemSession(true)
+                        .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
+                        .build();
+
+        assertThat(sessionInfo.getVolumeHandling()).isEqualTo(PLAYBACK_VOLUME_VARIABLE);
     }
 
     @Test

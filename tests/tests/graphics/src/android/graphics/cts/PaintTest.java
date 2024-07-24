@@ -50,6 +50,9 @@ import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.Xfermode;
 import android.os.LocaleList;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannedString;
 
 import androidx.test.InstrumentationRegistry;
@@ -58,7 +61,9 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.ColorUtils;
+import com.android.text.flags.Flags;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -71,6 +76,9 @@ import java.util.function.Supplier;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class PaintTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final Typeface[] TYPEFACES = new Typeface[] {
             Typeface.DEFAULT,
             Typeface.DEFAULT_BOLD,
@@ -1781,6 +1789,7 @@ public class PaintTest {
     }
 
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_DEPRECATE_UI_FONTS)
     public void testElegantText() {
         final Paint p = new Paint();
         p.setTextSize(10);
@@ -1801,7 +1810,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment() {
+    public void testEqualsForTextMeasurement() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1809,7 +1818,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textSize() {
+    public void testEqualsForTextMeasurement_textSize() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1820,7 +1829,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textSkew() {
+    public void testEqualsForTextMeasurement_textSkew() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1831,7 +1840,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_textScale() {
+    public void testEqualsForTextMeasurement_textScale() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1842,7 +1851,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_letterSpacing() {
+    public void testEqualsForTextMeasurement_letterSpacing() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1853,7 +1862,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_localeList() {
+    public void testEqualsForTextMeasurement_localeList() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 
@@ -1867,7 +1876,7 @@ public class PaintTest {
     }
 
     @Test
-    public void testEqualsForTextMeasurment_typeface() {
+    public void testEqualsForTextMeasurement_typeface() {
         Paint p1 = new Paint();
         Paint p2 = new Paint();
 

@@ -203,7 +203,7 @@ public class WifiNL80211ManagerImp extends IWificond.Stub {
      * Otherwise the mocked scan result may not work because the frameworks keep use cache data
      * since there is no scan ready event.
      */
-    public void mockScanResultReadyEvent(String ifaceName) {
+    public void mockScanResultReadyEvent(String ifaceName, boolean isPno) {
         if (mMockIWifiScanners == null || ifaceName == null) {
             return;
         }
@@ -212,6 +212,6 @@ public class WifiNL80211ManagerImp extends IWificond.Stub {
             Log.e(TAG, "WifiScanner interface mock: Null!");
             return;
         }
-        wifiscanner.mockScanResultReadyEvent();
+        wifiscanner.mockScanResultReadyEvent(isPno);
     }
 }

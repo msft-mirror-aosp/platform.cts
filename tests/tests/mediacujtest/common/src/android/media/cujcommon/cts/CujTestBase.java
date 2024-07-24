@@ -19,9 +19,15 @@ package android.media.cujcommon.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.app.Activity;
+import android.app.ActivityTaskManager;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.os.Build;
+import android.os.UserManager;
 import android.telephony.TelephonyManager;
 
 import androidx.test.core.app.ActivityScenario;
@@ -40,22 +46,16 @@ public class CujTestBase {
       ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
       ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
   };
+  private static final int AUDIOTRACK_DEFAULT_SAMPLE_RATE = 44100;
+  private static final int AUDIOTRACK_DEFAULT_CHANNEL_MASK = AudioFormat.CHANNEL_OUT_STEREO;
+
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
+  protected AudioOffloadTestActivity mAudioOffloadActivity;
   public PlayerListener mListener;
-  private boolean mIsScrollTest;
 
   public CujTestBase(PlayerListener playerListener) {
-    if (!playerListener.isScrollTest()) {
-      ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
-      scenario.onActivity(activity -> {
-        this.mActivity = activity;
-      });
-      mListener = playerListener;
-      mActivity.addPlayerListener(mListener);
-      mListener.setActivity(mActivity);
-    } else {
-      mIsScrollTest = true;
+    if (playerListener.isScrollTest()) {
       ActivityScenario<ScrollTestActivity> scenario = ActivityScenario.launch(
           ScrollTestActivity.class);
       scenario.onActivity(activity -> {
@@ -64,6 +64,23 @@ public class CujTestBase {
       mListener = playerListener;
       mScrollActivity.addPlayerListener(mListener);
       mListener.setScrollActivity(mScrollActivity);
+    } else if (playerListener.isAudioOffloadTest()) {
+      ActivityScenario<AudioOffloadTestActivity> scenario = ActivityScenario.launch(
+          AudioOffloadTestActivity.class);
+      scenario.onActivity(activity -> {
+        this.mAudioOffloadActivity = activity;
+      });
+      mListener = playerListener;
+      mAudioOffloadActivity.addPlayerListener(mListener);
+      mListener.setAudioOffloadActivity(mAudioOffloadActivity);
+    } else {
+      ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class);
+      scenario.onActivity(activity -> {
+        this.mActivity = activity;
+      });
+      mListener = playerListener;
+      mActivity.addPlayerListener(mListener);
+      mListener.setActivity(mActivity);
     }
   }
 
@@ -86,10 +103,60 @@ public class CujTestBase {
   }
 
   /**
+   * Whether the device supports picture-in-picture feature.
+   */
+  public static boolean deviceSupportPipMode(final Activity activity) {
+    return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE);
+  }
+
+  /**
+   * Whether the device supports split-screen feature.
+   */
+  public static boolean deviceSupportSplitScreenMode(final Activity activity) {
+    return ActivityTaskManager.supportsSplitScreenMultiWindow(activity);
+  }
+
+  /**
+   * Whether the device supports audio offloading for particular encoding.
+   */
+  public static boolean deviceSupportAudioOffload(int encoding) {
+    AudioFormat audioFormat = new AudioFormat.Builder()
+        .setEncoding(encoding)
+        .setSampleRate(AUDIOTRACK_DEFAULT_SAMPLE_RATE)
+        .setChannelMask(AUDIOTRACK_DEFAULT_CHANNEL_MASK)
+        .build();
+    AudioAttributes defaultAudioAttributes = new AudioAttributes.Builder().build();
+    return AudioManager.isOffloadedPlaybackSupported(audioFormat, defaultAudioAttributes);
+  }
+
+  /**
    * Whether the device is a watch.
    */
   public static boolean isWatchDevice(final Activity activity) {
     return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+  }
+
+  /**
+   * Whether the device is a television.
+   */
+  public static boolean isTelevisionDevice(final Activity activity) {
+    return activity.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+  }
+
+  /**
+   * Whether the given {@code activity} is running as a visible background user.
+   */
+  public static boolean isVisibleBackgroundNonProfileUser(Activity activity) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+      return false;
+    }
+
+    UserManager um = activity.getSystemService(UserManager.class);
+    if (!um.isVisibleBackgroundUsersSupported()) {
+      return false;
+    }
+
+    return um.isUserVisible() && !um.isUserForeground() && !um.isProfile();
   }
 
   /**
@@ -102,15 +169,17 @@ public class CujTestBase {
   public void play(List<String> mediaUrls, long timeoutMilliSeconds)
       throws TimeoutException, InterruptedException {
     long startTime = System.currentTimeMillis();
-    if (!mIsScrollTest) {
-      mActivity.runOnUiThread(() -> {
-        mActivity.prepareMediaItems(mediaUrls);
-        mActivity.run();
-      });
-    } else {
+    if (mListener.isScrollTest()) {
       mScrollActivity.runOnUiThread(() -> {
         mScrollActivity.prepareMediaItems(mediaUrls);
-        mScrollActivity.run();
+      });
+    } else if (mListener.isAudioOffloadTest()) {
+      mAudioOffloadActivity.runOnUiThread(() -> {
+        mAudioOffloadActivity.prepareMediaItems(mediaUrls);
+      });
+    } else {
+      mActivity.runOnUiThread(() -> {
+        mActivity.prepareMediaItems(mediaUrls);
       });
     }
 
