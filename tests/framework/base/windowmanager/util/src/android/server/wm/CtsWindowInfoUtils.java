@@ -200,8 +200,23 @@ public class CtsWindowInfoUtils {
 
     public static boolean waitForWindowVisible(@NonNull IBinder windowToken)
             throws InterruptedException {
-        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS,
-                () -> windowToken, DEFAULT_DISPLAY);
+        return waitForWindowVisible(windowToken, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Waits for a window to become visible.
+     *
+     * @param windowToken The token of the window to wait for.
+     * @param displayId The ID of the display on which to check for the window's visibility.
+     * @return {@code true} if the window becomes visible within the timeout period, {@code false}
+     *         otherwise.
+     * @throws InterruptedException If the thread is interrupted while waiting for the window
+     *         information.
+     */
+    public static boolean waitForWindowVisible(@NonNull IBinder windowToken, int displayId)
+            throws InterruptedException {
+        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5, TimeUnit.SECONDS,
+                () -> windowToken, displayId);
     }
 
     /**
@@ -464,7 +479,26 @@ public class CtsWindowInfoUtils {
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
             @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point outCoords)
             throws InterruptedException {
-        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+        return tapOnWindowCenter(instrumentation, windowTokenSupplier, outCoords, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Tap on the center coordinates of the specified window and sends back the coordinates tapped
+     * </p>
+     *
+     * @param instrumentation     Instrumentation object to use for tap.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @param outCoords           If non null, the tapped coordinates will be set in the object.
+     * @param displayId           The ID of the display on which to tap the window center.
+     * @return true if successfully tapped on the coordinates, false otherwise.
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static boolean tapOnWindowCenter(Instrumentation instrumentation,
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point outCoords,
+            int displayId) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
         if (bounds == null) {
             return false;
         }
@@ -494,7 +528,27 @@ public class CtsWindowInfoUtils {
     public static boolean tapOnWindow(Instrumentation instrumentation,
             @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
             throws InterruptedException {
-        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+        return tapOnWindow(instrumentation, windowTokenSupplier, offset, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Tap on the coordinates of the specified window, offset by the value passed in.
+     * </p>
+     *
+     * @param instrumentation     Instrumentation object to use for tap.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @param offset              The offset from 0,0 of the window to tap on. If null, it will be
+     *                            ignored and 0,0 will be tapped.
+     * @param displayId           The ID of the display on which to tap the window.
+     * @return true if successfully tapped on the coordinates, false otherwise.
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static boolean tapOnWindow(Instrumentation instrumentation,
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
+            int displayId) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
         if (bounds == null) {
             return false;
         }
@@ -507,6 +561,21 @@ public class CtsWindowInfoUtils {
 
     public static Rect getWindowBoundsInWindowSpace(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
+        return getWindowBoundsInWindowSpace(windowTokenSupplier, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Get the bounds of a window in window space.
+     *
+     * @param windowTokenSupplier A supplier that provides the window token.
+     * @param displayId The ID of the display for which the window bounds are to be retrieved.
+     * @return A {@link Rect} representing the bounds of the window in window space,
+     *         or null if the window information is not available within the timeout period.
+     * @throws InterruptedException If the thread is interrupted while waiting for the window
+     *         information.
+     */
+    public static Rect getWindowBoundsInWindowSpace(@NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
             if (!windowInfo.bounds.isEmpty()) {
@@ -525,7 +594,7 @@ public class CtsWindowInfoUtils {
         };
 
         if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
-                windowTokenSupplier, DEFAULT_DISPLAY)) {
+                windowTokenSupplier, displayId)) {
             return null;
         }
         return bounds;
@@ -547,8 +616,7 @@ public class CtsWindowInfoUtils {
      *         window information.
      */
     public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier,
-            int displayId)
-            throws InterruptedException {
+             int displayId) throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
             if (!windowInfo.bounds.isEmpty()) {
@@ -572,12 +640,13 @@ public class CtsWindowInfoUtils {
      * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
      *                            is called each time window infos change. If the supplier returns
      *                            null, the window is assumed not visible yet.
+     * @param displayId The ID of the display on which the window is located.
      * @return Point of the window center
      * @throws InterruptedException if failed to wait for WindowInfo
      */
-    public static Point getWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier)
-            throws InterruptedException {
-        final Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+    public static Point getWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
+        final Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
         if (bounds == null) {
             throw new IllegalArgumentException("Could not get the bounds for window");
         }

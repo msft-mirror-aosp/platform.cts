@@ -207,6 +207,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     UinputTouchDevice mTouchScreen;
 
+    private int mDisplayId;
+
     class MotionConsumingSurfaceView extends SurfaceView {
         MotionConsumingSurfaceView(Context c) {
             super(c);
@@ -240,6 +242,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mCtsTouchUtils = new CtsTouchUtils(mInstrumentation.getTargetContext());
         mActivity = mActivityRule.launchActivity(null);
+        mDisplayId = mActivity.getDisplayId();
         mTouchScreen = new UinputTouchScreen(mInstrumentation, mActivity.getDisplay());
         mInstrumentation.waitForIdleSync();
         // Wait for device animation that shows above the activity to leave.
@@ -285,14 +288,21 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
     private void globalTapOnWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
-        final Point center = getWindowCenter(windowTokenSupplier);
+        final Point center = getWindowCenter(windowTokenSupplier, mDisplayId);
         UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(center.x, center.y);
         pointer.lift();
     }
 
     private void globalTapOnWindowCorner(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
-        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, mDisplayId);
+        globalTapOnWindow(windowTokenSupplier, 0 /*xOffset*/, 0 /*yOffset*/);
+    }
+
+    private void globalTapOnWindow(@NonNull Supplier<IBinder> windowTokenSupplier, int xOffset,
+            int yOffset) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, mDisplayId);
+
         if (bounds == null) {
             fail("Could not get bounds for window!");
         }
@@ -1305,7 +1315,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to wait for host window to be visible",
                 waitForWindowVisible(mSurfaceView));
         assertTrue("Failed to wait for embedded window to be visible",
-                waitForWindowVisible(mTestService.getWindowToken()));
+                waitForWindowVisible(mTestService.getWindowToken(),
+                mDisplayId));
 
         waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
         globalTapOnViewCenter(mSurfaceView);
@@ -1336,7 +1347,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to wait for host window to be visible",
                 waitForWindowVisible(mSurfaceView));
         assertTrue("Failed to wait for embedded window to be visible",
-                waitForWindowVisible(mTestService.getWindowToken()));
+                waitForWindowVisible(mTestService.getWindowToken(),
+                mDisplayId));
 
         globalTapOnViewCenter(mSurfaceView);
 
@@ -1467,7 +1479,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // window token. The supplier is called each time the predicate is
         // tested, eventually returning the window token.
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
+                popupView::getWindowToken, mDisplayId));
     }
 
     @Test
@@ -1495,7 +1507,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         Predicate<WindowInfo> hasExpectedDimensions =
                 windowInfo -> windowInfo.bounds.width() == 50 && windowInfo.bounds.height() == 50;
         assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
-                popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
+                popupView::getWindowToken, mDisplayId));
     }
 
     class TouchTransferringView extends View {
@@ -1765,7 +1777,8 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         mSurfaceView.getLocationInWindow(viewInWindow);
         Point point = new Point(viewInWindow[0] + 1, viewInWindow[1] + 1);
 
-        CtsWindowInfoUtils.tapOnWindow(mInstrumentation, mSurfaceView::getWindowToken, point);
+        CtsWindowInfoUtils.tapOnWindow(mInstrumentation, mSurfaceView::getWindowToken, point,
+                mDisplayId);
 
         assertTrue("Failed to receive touch from host=" + hostGotEvent[0] + " or embedded="
                 + embeddedGotEvent[0], receivedTouches.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
