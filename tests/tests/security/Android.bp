@@ -82,6 +82,7 @@ android_test {
         ":CtsUsePermissionApp22_2",
         ":CtsHelperAppOverlay",
         ":CtsDummyTargetApi15TestApp",
+        ":CtsEmptyApp",
     ],
 }
 
@@ -99,4 +100,9 @@ android_app_certificate {
 android_test_helper_app {
     name: "RolePermissionOverrideTestApp",
     manifest: "testdata/rolepermissionoverridetestapp.xml",
+}
+
+android_test_helper_app {
+    name: "CtsEmptyApp",
+    manifest: "testdata/AndroidManifest_EmptyApp.xml",
 }
