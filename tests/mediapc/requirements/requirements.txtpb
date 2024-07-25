@@ -3078,7 +3078,7 @@ requirements {
 requirements {
   id: "7.6.1/H-1-1"
   name: "Android 11 Memory"
-  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
   test_configs: {
     key: ""
     value: {
@@ -3088,7 +3088,7 @@ requirements {
   measurements: {
     key: "physical_memory_mb"
     value: {
-      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      description: "Physical memory in MiB as reported by ActivityManager.MemeryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
     }
@@ -3110,7 +3110,7 @@ requirements {
 requirements {
   id: "7.6.1/H-2-1"
   name: "Memory"
-  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
   test_configs: {
     key: ""
     value: {
@@ -3120,7 +3120,7 @@ requirements {
   measurements: {
     key: "physical_memory_mb"
     value: {
-      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      description: "Physical memory in MiB as reported by ActivityManager.MemoryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
     }
