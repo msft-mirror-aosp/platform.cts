@@ -45,12 +45,20 @@ public final class DefaultPaymentProviderTestUtils {
         return componentName;
     }
 
+    static ComponentName setDefaultPaymentSetting(ComponentName serviceName, Context context) {
+        ComponentName originalValue = CardEmulation.getPreferredPaymentService(context);
+        Settings.Secure.putString(context.getContentResolver(),
+                Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT,
+                serviceName == null ? null
+                        : serviceName.flattenToString());
+        return originalValue;
+    }
+
     static ComponentName setDefaultPaymentService(ComponentName serviceName, Context context) {
         try {
             androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                     .getUiAutomation().adoptShellPermissionIdentity();
 
-            ComponentName originalValue = CardEmulation.getPreferredPaymentService(context);
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(context);
             CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
             CardEmulationTest.SettingsObserver settingsObserver =
@@ -59,10 +67,7 @@ public final class DefaultPaymentProviderTestUtils {
                     Settings.Secure.getUriFor(
                             Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT),
                     true, settingsObserver, UserHandle.ALL);
-            Settings.Secure.putString(context.getContentResolver(),
-                    Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT,
-                    serviceName == null ? null
-                            : serviceName.flattenToString());
+            ComponentName originalValue = setDefaultPaymentSetting(serviceName, context);
             int count = 0;
             while (!settingsObserver.mSeenChange
                     && !cardEmulation.isDefaultServiceForCategory(serviceName,
@@ -97,12 +102,24 @@ public final class DefaultPaymentProviderTestUtils {
     }
 
     static void runWithDefaultPaymentService(Context context,
-            ComponentName service, String description, Runnable runnable) {
+            ComponentName service, String description,
+            Runnable runnable) {
         ComponentName originalValue = setDefaultPaymentService(service, context);
-        ensurePreferredService(description, context);
+        if (service != null) {
+            ensurePreferredService(description, context);
+        }
         runnable.run();
         if (originalValue != null) {
             setDefaultPaymentService(originalValue, context);
+        }
+    }
+
+    static void runWithDefaultPaymentSetting(Context context, ComponentName service,
+            Runnable runnable) {
+        ComponentName originalValue = setDefaultPaymentSetting(service, context);
+        runnable.run();
+        if (originalValue != null) {
+            setDefaultPaymentSetting(originalValue, context);
         }
     }
 }

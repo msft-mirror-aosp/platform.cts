@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * {@link TestListAdapter} that works like {@link android.widget.ArrayAdapter}
- * where items can be added by calling {@link #add(TestListItem)} repeatedly.
+ * {@link TestListAdapter} that works like {@link android.widget.ArrayAdapter} where items can be
+ * added by calling {@link #add(TestListItem)} or {@code #addAll(List<TestListItem>)}.
  */
 public class ArrayTestListAdapter extends TestListAdapter {
 
@@ -33,13 +33,20 @@ public class ArrayTestListAdapter extends TestListAdapter {
         super(context);
     }
 
+    @Override
+    protected List<TestListItem> getRows() {
+        return mRows;
+    }
+
+    /** Adds a new {@link TestListItem} to the adapter. */
     public void add(TestListItem item) {
         mRows.add(item);
         notifyDataSetChanged();
     }
 
-    @Override
-    protected List<TestListItem> getRows() {
-        return mRows;
+    /** Adds a list of {@link TestListItem}s to the adapter. */
+    public void addAll(List<TestListItem> items) {
+        mRows.addAll(items);
+        notifyDataSetChanged();
     }
 }
