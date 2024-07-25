@@ -1039,6 +1039,9 @@ public class SubscriptionManagerTest {
         bundle.putBoolean(CarrierConfigManager.KEY_EDITABLE_ENHANCED_4G_LTE_BOOL, true);
         bundle.putBoolean(CarrierConfigManager.KEY_HIDE_ENHANCED_4G_LTE_BOOL, false);
 
+        final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
+        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+
         overrideCarrierConfig(bundle, activeDataSubId);
         try {
             // Get the original ims values.

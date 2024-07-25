@@ -1074,8 +1074,6 @@ public class TelephonyManagerTest {
                 (tm) -> tm.getDeviceId(mTelephonyManager.getSlotIndex()));
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getDeviceSoftwareVersion(mTelephonyManager.getSlotIndex()));
-        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getPhoneAccountHandle());
 
         // FEATURE_TELEPHONY_DATA required.
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
@@ -1121,6 +1119,8 @@ public class TelephonyManagerTest {
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             mTelephonyManager.getVoiceMailNumber();
             mTelephonyManager.getVoiceMailAlphaTag();
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getPhoneAccountHandle());
         }
 
         //FEATURE_TELEPHONY_IMS required
@@ -1463,6 +1463,7 @@ public class TelephonyManagerTest {
         PhoneAccountHandle handle =
                 telecomManager.getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
         TelephonyManager telephonyManager = mTelephonyManager.createForPhoneAccountHandle(handle);
+        assertNotNull(telephonyManager);
         String globalSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.getSubscriberId());
         String localSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1480,6 +1481,8 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         List<PhoneAccountHandle> callCapableAccounts = telecomManager
                 .getCallCapablePhoneAccounts();
@@ -2740,6 +2743,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             int numFplmnsSet = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.setForbiddenPlmns(FPLMN_TEST));
@@ -2763,6 +2767,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             List<String> targetFplmns = new ArrayList<>();
             for (int i = 0; i < MIN_FPLMN_NUM; i++) {
@@ -2795,6 +2800,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             // Support test for empty SIM
             List<String> targetDummyFplmns = new ArrayList<>();
@@ -2829,6 +2835,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.setForbiddenPlmns(null));
