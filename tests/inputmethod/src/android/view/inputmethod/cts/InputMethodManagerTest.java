@@ -39,6 +39,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Debug;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.SecurityTest;
@@ -104,7 +105,7 @@ public class InputMethodManagerTest {
     @After
     public void resetImes() {
         if (mNeedsImeReset) {
-            runShellCommandOrThrow("ime reset");
+            runShellCommandOrThrow("ime reset --user " + UserHandle.myUserId());
             mNeedsImeReset = false;
         }
     }
@@ -350,7 +351,7 @@ public class InputMethodManagerTest {
 
     private void enableImes(String... ids) {
         for (String id : ids) {
-            runShellCommandOrThrow("ime enable " + id);
+            runShellCommandOrThrow("ime enable --user " + UserHandle.myUserId() + " " + id);
         }
         mNeedsImeReset = true;
     }
