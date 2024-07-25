@@ -18,7 +18,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.cts.verifier"
           android:versionCode="5"
-          android:versionName="12_r13">
+          android:versionName="12_r14">
 
     <uses-sdk android:minSdkVersion="19" android:targetSdkVersion="31"/>
 
@@ -4557,7 +4557,7 @@
             <meta-data android:name="display_mode"
                        android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
-                       android:value="android.media.MediaCodecInfo.CodecCapabilities.FEATURE_TunneledPlayback" />
+                       android:value="android.media.MediaCodecInfo.CodecCapabilities#FEATURE_TunneledPlayback" />
         </activity>
 
         <activity android:name=".tv.TvInputDiscoveryTestActivity"
