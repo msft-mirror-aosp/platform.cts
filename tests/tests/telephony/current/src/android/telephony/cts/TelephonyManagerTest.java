@@ -1067,8 +1067,6 @@ public class TelephonyManagerTest {
                 (tm) -> tm.getDeviceId(mTelephonyManager.getSlotIndex()));
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getDeviceSoftwareVersion(mTelephonyManager.getSlotIndex()));
-        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getPhoneAccountHandle());
 
         // FEATURE_TELEPHONY_DATA required.
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
@@ -1114,6 +1112,8 @@ public class TelephonyManagerTest {
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             mTelephonyManager.getVoiceMailNumber();
             mTelephonyManager.getVoiceMailAlphaTag();
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getPhoneAccountHandle());
         }
 
         //FEATURE_TELEPHONY_IMS required
@@ -1456,6 +1456,7 @@ public class TelephonyManagerTest {
         PhoneAccountHandle handle =
                 telecomManager.getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
         TelephonyManager telephonyManager = mTelephonyManager.createForPhoneAccountHandle(handle);
+        assertNotNull(telephonyManager);
         String globalSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.getSubscriberId());
         String localSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1473,6 +1474,8 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         List<PhoneAccountHandle> callCapableAccounts = telecomManager
                 .getCallCapablePhoneAccounts();
