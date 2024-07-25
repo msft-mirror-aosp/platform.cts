@@ -1563,6 +1563,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
 
         sendNotification(801, R.drawable.black);
         sendNotification(802, R.drawable.blue);
@@ -1570,6 +1571,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         sendNotification(804, R.drawable.yellow);
 
         // Wait until all the notifications, including the autogroup, are posted and grouped.
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
         rerankLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(5);
         assertAllPostedNotificationsAutogrouped();
