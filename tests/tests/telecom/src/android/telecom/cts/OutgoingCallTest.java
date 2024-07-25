@@ -131,7 +131,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @see {@link TelecomManager#EXTRA_START_CALL_WITH_SPEAKERPHONE}
      */
     public void testStartCallWithSpeakerphoneTrue_SpeakerphoneOnInCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -143,7 +143,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testStartCallWithSpeakerphoneFalse_SpeakerphoneOffInCall() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -159,7 +159,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testStartCallWithSpeakerphoneNotProvided_SpeakerphoneOffByDefault() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -216,7 +216,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testPhoneStateListenerInvokedOnOutgoingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -235,7 +235,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @throws Exception
      */
     public void testPhoneStateChangeAsExpected() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         final Bundle extras = new Bundle();
@@ -260,7 +260,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
      * @throws Exception
      */
     public void testExtraPhoneAccountHandleAvailable() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -293,7 +293,7 @@ public class OutgoingCallTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testAccountSelectionAvailable() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         PhoneAccountHandle cachedHandle = mTelecomManager.getUserSelectedOutgoingPhoneAccount();
