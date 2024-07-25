@@ -690,6 +690,30 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    public void testDeviceSmsCapable() {
+        boolean isSmsCapable = mTelephonyManager.isSmsCapable();
+        boolean isDeviceSmsCapable = mTelephonyManager.isDeviceSmsCapable();
+        boolean hasMessagingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING);
+
+        assertEquals("isSmsCapable should return the same as isDeviceSmsCapable",
+                isDeviceSmsCapable, isSmsCapable);
+        assertEquals("config_sms_capable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+                hasMessagingFeature, isDeviceSmsCapable);
+    }
+
+    @Test
+    public void testDeviceVoiceCapable() {
+        boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
+        boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
+        boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
+
+        assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
+                isDeviceVoiceCapable, isVoiceCapable);
+        assertEquals("config_voice_capable is not aligned with FEATURE_TELEPHONY_CALLING",
+                hasCallingFeature, isDeviceVoiceCapable);
+    }
+
+    @Test
     public void testHasCarrierPrivilegesViaCarrierConfigs() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
