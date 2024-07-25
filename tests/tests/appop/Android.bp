@@ -82,6 +82,7 @@ android_test {
         "flag-junit",
         "android.permission.flags-aconfig-java",
         "CtsVirtualDeviceCommonLib",
+        "Harrier",
     ],
 
     jni_libs: [
