@@ -20,6 +20,8 @@ import static android.app.admin.DevicePolicyManager.ID_TYPE_IMEI;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_INDIVIDUAL_ATTESTATION;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_MEID;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_SERIAL;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_CDMA;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY_GSM;
 import static android.keystore.cts.CertificateUtils.createCertificate;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -461,15 +463,19 @@ public class KeyManagementTest extends BaseDeviceAdminTest {
             assertWithMessage("Need to be able to read device identifiers")
                     .that(telephonyService)
                     .isNotNull();
-            imei = telephonyService.getImei(0);
-            meid = telephonyService.getMeid(0);
-            // If the device has a valid IMEI it must support attestation for it.
-            if (imei != null) {
-                modesToTest.add(ID_TYPE_IMEI);
+            if (mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY_GSM)) {
+                imei = telephonyService.getImei(0);
+                // If the device has a valid IMEI it must support attestation for it.
+                if (imei != null) {
+                    modesToTest.add(ID_TYPE_IMEI);
+                }
             }
-            // Same for MEID
-            if (meid != null) {
-                modesToTest.add(ID_TYPE_MEID);
+            if (mContext.getPackageManager().hasSystemFeature(FEATURE_TELEPHONY_CDMA)) {
+                meid = telephonyService.getMeid(0);
+                // Same for MEID
+                if (meid != null) {
+                    modesToTest.add(ID_TYPE_MEID);
+                }
             }
         }
         int numCombinations = 1 << modesToTest.size();
