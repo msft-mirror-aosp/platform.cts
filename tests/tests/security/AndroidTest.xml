@@ -58,6 +58,7 @@
         <option name="push" value="CtsUsePermissionApp22_2.apk->/data/local/tmp/cts/permission3/CtsUsePermissionApp22_2.apk" />
         <option name="push" value="CtsHelperAppOverlay.apk->/data/local/tmp/cts/permission3/CtsHelperAppOverlay.apk" />
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
+        <option name="push" value="CtsEmptyApp.apk->/data/local/tmp/cts/security/CtsEmptyApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
