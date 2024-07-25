@@ -399,6 +399,8 @@ public class VirtualDisplayTest {
                 assertEquals(Surface.ROTATION_0, display.getRotation());
             }
         } finally {
+            // Clean up after the test completes.
+            activity.finish();
             virtualDisplay.release();
         }
         assertDisplayUnregistered(display);
