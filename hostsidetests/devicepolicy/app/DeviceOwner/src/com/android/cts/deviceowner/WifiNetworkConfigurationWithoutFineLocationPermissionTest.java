@@ -19,6 +19,7 @@ package com.android.cts.deviceowner;
 import static com.android.compatibility.common.util.WifiConfigCreator.SECURITY_TYPE_NONE;
 
 import static com.google.common.truth.Truth.assertWithMessage;
+import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -42,9 +43,13 @@ public class WifiNetworkConfigurationWithoutFineLocationPermissionTest extends B
     private static final long UPDATE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(5);
     private static final long UPDATE_INTERVAL_MS = TimeUnit.SECONDS.toMillis(1);
 
+    @SuppressWarnings("JUnit4ClassUsedInJUnit3")
     @Override
     public void setUp() throws Exception {
         super.setUp();
+
+        // Skip if Wifi feature is disabled
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI));
 
         // WiFi is supposed to be a prerequisite of CTS but sometimes it's not enabled
         // for some unknown reason. Check it here just in case.

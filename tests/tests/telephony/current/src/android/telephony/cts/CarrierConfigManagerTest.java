@@ -375,13 +375,14 @@ public class CarrierConfigManagerTest {
     @Test
     public void testGetConfig_withNullKeys() {
         try {
-            mConfigManager.getConfig(null);
+            mConfigManager.getConfig((String) null);
             fail("getConfig with null keys should throw NullPointerException");
         } catch (NullPointerException expected) {
         }
 
         try {
-            mConfigManager.getConfig(CarrierConfigManager.KEY_CARRIER_CONFIG_VERSION_STRING, null);
+            mConfigManager.getConfig(CarrierConfigManager.KEY_CARRIER_CONFIG_VERSION_STRING,
+                    (String) null);
             fail("getConfig with null keys should throw NullPointerException");
         } catch (NullPointerException expected) {
         }
@@ -448,14 +449,15 @@ public class CarrierConfigManagerTest {
     @Test
     public void testGetConfigForSubId_withNullKeys() {
         try {
-            mConfigManager.getConfigForSubId(SubscriptionManager.getDefaultSubscriptionId(), null);
+            mConfigManager.getConfigForSubId(SubscriptionManager.getDefaultSubscriptionId(),
+                    (String) null);
             fail("getConfigForSubId with null keys should throw NullPointerException");
         } catch (NullPointerException expected) {
         }
 
         try {
             mConfigManager.getConfigForSubId(SubscriptionManager.getDefaultSubscriptionId(),
-                    CarrierConfigManager.KEY_CARRIER_CONFIG_VERSION_STRING, null);
+                    CarrierConfigManager.KEY_CARRIER_CONFIG_VERSION_STRING, (String) null);
             fail("getConfigForSubId with null keys should throw NullPointerException");
         } catch (NullPointerException expected) {
         }

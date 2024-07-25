@@ -43,6 +43,9 @@
   ],
   "tv-postsubmit": [
     {
+      "name": "CtsTvTestCases"
+    },
+    {
       "name": "CtsTvInputTestCases"
     },
     {

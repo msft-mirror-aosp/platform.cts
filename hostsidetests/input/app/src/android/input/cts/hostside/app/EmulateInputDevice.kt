@@ -31,6 +31,7 @@ import com.android.cts.input.UinputTouchPad
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -57,7 +58,10 @@ class EmulateInputDevice {
         val dm = DisplayMetrics().also { activity.display.getRealMetrics(it) }
         screenSize = Size(dm.widthPixels, dm.heightPixels)
         verifier = EventVerifier(activity::getInputEvent)
-        waitForWindowOnTop(activity.window)
+        assertTrue(
+            "Failed to wait for activity window to be on top",
+            waitForWindowOnTop(activity.window)
+        )
     }
 
     @After
@@ -188,6 +192,8 @@ class EmulateInputDevice {
         multiFingerSwipe(4)
     }
 
+    // Perform a multi-finger swipe in one direction and return to the starting location to
+    // minimize the size effects of the gesture to the rest of the system.
     private fun multiFingerSwipe(numFingers: Int) {
         UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
@@ -199,9 +205,10 @@ class EmulateInputDevice {
             touchpad.sync()
             Thread.sleep(TOUCHPAD_SCAN_DELAY_MILLIS)
 
-            for (rep in 0 until 10) {
+            for (rep in 0 until 20) {
+                val direction = if (rep < 10) 1 else -1
                 for (i in pointers.indices) {
-                    pointers[i].offset(0, 40)
+                    pointers[i].offset(0, direction * 40)
                     touchpad.sendMove(i, pointers[i])
                 }
                 touchpad.sync()
