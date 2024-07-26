@@ -56,11 +56,11 @@ import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.UinputTouchDevice;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -274,7 +274,7 @@ public final class TestUtils {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        CtsWindowInfoUtils.waitForStableWindowGeometry(5, TimeUnit.SECONDS);
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);

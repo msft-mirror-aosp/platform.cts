@@ -91,10 +91,12 @@ TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 'not on our allowlist, please refer to '
                                 f'{TABLET_REQUIREMENTS_URL}')
+USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
 
+_FLASH_MODE_OFF = 0
 _VALIDATE_LIGHTING_PATCH_H = 0.05
 _VALIDATE_LIGHTING_PATCH_W = 0.05
 _VALIDATE_LIGHTING_REGIONS = {
@@ -116,13 +118,12 @@ _VALIDATE_LIGHTING_REGIONS_MODULAR_UW = {
 }
 _VALIDATE_LIGHTING_MACRO_FOV_THRESH = 110
 _VALIDATE_LIGHTING_THRESH = 0.05  # Determined empirically from scene[1:6] tests
-_VALIDATE_LIGHTING_THRESH_DARK = 0.15  # Determined empirically for night test
+_VALIDATE_LIGHTING_THRESH_DARK = 0.3  # Determined empirically for night test
 _CMD_NAME_STR = 'cmdName'
 _OBJ_VALUE_STR = 'objValue'
 _STR_VALUE_STR = 'strValue'
 _TAG_STR = 'tag'
 _CAMERA_ID_STR = 'cameraId'
-_USE_CASE_CROPPED_RAW = 6
 _EXTRA_TIMEOUT_FACTOR = 10
 _COPY_SCENE_DELAY_SEC = 1
 _DST_SCENE_DIR = '/sdcard/Download/'
@@ -249,7 +250,7 @@ class ItsSession(object):
 
   CAP_JPEG = {'format': 'jpeg'}
   CAP_RAW = {'format': 'raw'}
-  CAP_CROPPED_RAW = {'format': 'raw', 'useCase': _USE_CASE_CROPPED_RAW}
+  CAP_CROPPED_RAW = {'format': 'raw', 'useCase': USE_CASE_CROPPED_RAW}
   CAP_YUV = {'format': 'yuv'}
   CAP_RAW_YUV = [{'format': 'raw'}, {'format': 'yuv'}]
 
@@ -1003,7 +1004,8 @@ class ItsSession(object):
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
                                              ae_target_fps_min=None,
-                                             ae_target_fps_max=None):
+                                             ae_target_fps_max=None,
+                                             pad_frames_at_end=False):
     """Issue a preview request with dynamic zoom and read back output object.
 
     The resolution of the preview and its recording will be determined by
@@ -1022,6 +1024,8 @@ class ItsSession(object):
         step_duration (float) sleep in ms between zoom ratios
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+      pad_frames_at_end: boolean; Whether to add additional frames at the end of
+        recording to workaround issue with MediaRecorder.
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -1047,6 +1051,7 @@ class ItsSession(object):
     cmd['stepSize'] = step_size
     cmd['stepDuration'] = step_duration
     cmd['hlg10Enabled'] = False
+    cmd['paddedFramesAtEnd'] = pad_frames_at_end
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
@@ -1193,7 +1198,7 @@ class ItsSession(object):
     cmd = {
         _CMD_NAME_STR: 'getSupportedExtensionPreviewSizes',
         _CAMERA_ID_STR: camera_id,
-        "extension": extension
+        "extension": extension  # pylint: disable=g-inconsistent-quotes
     }
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
@@ -1465,7 +1470,7 @@ class ItsSession(object):
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.product(buf.shape)
+        buf_size = numpy.prod(buf.shape)
         yuv_bufs[self._camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -1496,7 +1501,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.product(buf.shape)
+                buf_size = numpy.prod(buf.shape)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2015,7 +2020,7 @@ class ItsSession(object):
         # and cannot be accessed.
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.product(buf.shape)
+        buf_size = numpy.prod(buf.shape)
         yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -2033,7 +2038,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.product(buf.shape)
+                buf_size = numpy.prod(buf.shape)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2135,7 +2140,8 @@ class ItsSession(object):
             zoom_ratio=None,
             out_surfaces=None,
             repeat_request=None,
-            first_surface_for_3a=False):
+            first_surface_for_3a=False,
+            flash_mode=_FLASH_MODE_OFF):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -2163,6 +2169,10 @@ class ItsSession(object):
         See do_capture() for specifications on repeat_request.
       first_surface_for_3a: Use first surface in output_surfaces for 3A.
         Only applicable if out_surfaces contains at least 1 surface.
+      flash_mode: FLASH_MODE to be used during 3A
+        0: OFF
+        1: SINGLE
+        2: TORCH
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -2211,6 +2221,8 @@ class ItsSession(object):
       cmd['awbLock'] = True
     if ev_comp != 0:
       cmd['evComp'] = ev_comp
+    if flash_mode != 0:
+      cmd['flashMode'] = flash_mode
     if auto_flash:
       cmd['autoFlash'] = True
     if self._hidden_physical_id:

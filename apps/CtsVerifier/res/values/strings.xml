@@ -1191,7 +1191,7 @@
     <string name="multinetwork_connectivity_turn_wifi_positive">OK</string>
     <string name="multinetwork_connectivity_turn_wifi_negative">Cancel</string>
     <string name="multinetwork_connectivity_connect_to_target_ap_positive">OK</string>
-    <string name="multinetwork_connectivity_connect_to_target_ap">Connect to configured SSID: %s</string>
+    <string name="multinetwork_connectivity_connect_to_target_ap">Please connect to configured SSID: %s</string>
     <!-- Strings for NfcTestActivity -->
     <string name="nfc_test">NFC Test</string>
     <string name="nfc_test_info">The Peer-to-Peer Data Exchange tests require two devices with
@@ -4461,6 +4461,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="check_new_user_disclaimer">Check new user disclaimer</string>
     <string name="check_new_user_disclaimer_info">
         Please do the following: \n\n
+        0. Grant a permission to CtsVerifier by running \n
+        adb shell pm grant --user current com.android.cts.verifier android.permission.INTERACT_ACROSS_USERS\n\n
         1. Check persistent notification for managed device \n\n
         a). Open the notification UI, verify that there is a notification saying the device is managed.\n
         b). Tap the notification\n
@@ -5628,6 +5630,11 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
+    <string name="perf_mode_none_abreviation">None</string>
+    <string name="perf_mode_lowlatency_abreviation">LowLat</string>
+    <string name="perf_mode_powersave_abreviation">PowSav</string>
+    <string name="perf_mode_unknown_abreviation">/?/?/?</string>
+
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
     <string name="audio_datapaths_devices">Audio Devices</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
@@ -6100,7 +6107,7 @@ You should be prompted to select credentials; choose the ones you just installed
         The Acoustic Coupling Factor (ACF) will be computed for each case. A successful test expects ACF less than 0.4 for AEC ON,
         and ACF greater than 0.6 for AEC OFF.
         This test requires a quiet environment, and no headphones or similar connected.
-        This test must pass on any device which implements AEC.
+        This test must pass in devices where AEC functionality is mandatory or any device which implements AEC.
     </string>
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
@@ -7166,6 +7173,7 @@ You should be prompted to select credentials; choose the ones you just installed
     devices on the lock screen as part of their intent extras.\n\n
     For this test, you will need to have set up a screen lock.</string>
     <string name="controls_panel_settings_test_open_lockscreen_settings">Open Settings</string>
+    <string name="controls_panel_settings_test_dreams_not_supported_message">Dreams are not supported on this device. Test passed automatically.</string>
     <string name="controls_panel_setting_test_instructions">Using the button below, open Settings.
         Find the setting that allows you to control external devices from the lockscreen
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
@@ -7452,11 +7460,12 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
         \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
         \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+        \n\n* Screenshots can be used for notification validation steps 3 and 4
     </string>
     <string name="notif_hiding_app_test_instructions">
         1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
         \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
-        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n3. Press \"Send notification\".
         \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
         \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
     </string>

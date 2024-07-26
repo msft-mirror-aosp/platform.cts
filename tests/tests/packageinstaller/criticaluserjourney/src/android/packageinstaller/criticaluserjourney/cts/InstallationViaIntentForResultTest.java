@@ -24,11 +24,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Tests for PackageInstaller CUJs via startActivityForResult.
+ * Tests for PackageInstaller CUJs via startActivityForResult with ACTION_INSTALL_PACKAGE.
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-public class InstallationViaIntentForResultTest extends PackageInstallerCujTestBase {
+public class InstallationViaIntentForResultTest extends InstallationTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {

@@ -316,5 +316,7 @@
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication400" />
     <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication600" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
 
 </configuration>

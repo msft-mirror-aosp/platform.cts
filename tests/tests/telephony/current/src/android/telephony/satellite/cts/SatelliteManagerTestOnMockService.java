@@ -64,6 +64,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
@@ -72,6 +73,7 @@ import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
@@ -3609,6 +3611,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .registerForCommunicationAllowedStateChanged(
                         getContext().getMainExecutor(), allowStatecallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        if (Flags.geofenceEnhancementForBetterUx()) {
+            assertTrue(allowStatecallback.waitUntilResult(1));
+            assertFalse(allowStatecallback.isAllowed);
+        }
 
         /*
         // Test access controller using cached country codes
@@ -3867,14 +3873,15 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 500));
 
         // Time out to disable satellite. Telephony should respond SATELLITE_RESULT_MODEM_TIMEOUT to
-        // clients and move to SATELLITE_MODEM_STATE_OFF
+        // clients and stay in SATELLITE_MODEM_STATE_NOT_CONNECTED as satellite disable request
+        // failed.
         logd("testRequestSatelliteEnabled_timeout: disabling satellite...");
         callback.clearModemStates();
         result = requestSatelliteEnabledWithResult(false, TIMEOUT);
         assertEquals(SatelliteManager.SATELLITE_RESULT_MODEM_TIMEOUT, result);
-        assertTrue(callback.waitUntilModemOff());
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
-        assertFalse(isSatelliteEnabled());
+        assertTrue(callback.waitUntilResult(2));
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.modemState);
+        assertTrue(isSatelliteEnabled());
         assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
 
         // Respond to the above disable request. Telephony should ignore the event.
@@ -3882,7 +3889,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         callback.clearModemStates();
         assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(false));
         assertFalse(callback.waitUntilResult(1));
-        assertFalse(isSatelliteEnabled());
+        assertTrue(isSatelliteEnabled());
 
         // Restore the original states
         sMockSatelliteServiceManager.setShouldRespondTelephony(true);
@@ -4108,6 +4115,56 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertEquals(sessionStats, result.first);
 
             sMockSatelliteServiceManager.setWaitToSend(false);
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSubscriberIds() {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testProvisionSubscriberIds:");
+        // TODO(b/351911296): fix to CTS failed
+        beforeSatelliteForCarrierTest();
+        /* Test when this carrier is not supported ESOS in the carrier config */
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        waitFor(TimeUnit.MINUTES.toMillis(1));
+
+        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+        grantSatellitePermission();
+        try {
+            Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+            if (pairResult == null) {
+                fail("requestProvisionSubscriberIds List<ProvisionSubscriberId> null");
+                revokeSatellitePermission();
+                return;
+            }
+
+            SubscriptionInfo prioritySubsInfo = null;
+            if (pairResult.first.size() > 0) {
+                ProvisionSubscriberId provisionSubscriberId = pairResult.first.get(0);
+                // is ntn only supported SubscriptionInfo exist
+                for (SubscriptionInfo info : infos) {
+                    if (provisionSubscriberId == null) {
+                        fail("requestProvisionSubscriberIds provisionSubscriberId null");
+                        revokeSatellitePermission();
+                        return;
+                    }
+                    if (info.getIccId().equals(provisionSubscriberId.getSubscriberId())) {
+                        prioritySubsInfo = info;
+                    }
+                }
+                assertNotNull(prioritySubsInfo);
+                assertFalse(isProvisioned(provisionSubscriberId.getSubscriberId()));
+            } else {
+                assertNull(prioritySubsInfo);
+            }
         } finally {
             revokeSatellitePermission();
         }

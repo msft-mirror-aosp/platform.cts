@@ -66,6 +66,7 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.os.IBinder.shellCommand(java.io.FileDescriptor,java.io.FileDescriptor,java.io.FileDescriptor,java.lang.String[],android.os.ShellCallback,android.os.ResultReceiver) throws android.os.RemoteException");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract int android.text.ParcelableSpan.getSpanTypeIdInternal()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.text.ParcelableSpan.writeToParcelInternal(android.os.Parcel,int)");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.view.KeyboardShortcutGroup android.view.WindowManager.getApplicationLaunchKeyboardShortcuts(int)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowManager.requestAppKeyboardShortcuts(android.view.WindowManager$KeyboardShortcutsReceiver,int)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract boolean javax.microedition.khronos.egl.EGL10.eglReleaseThread()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void org.w3c.dom.ls.LSSerializer.setFilter(org.w3c.dom.ls.LSSerializerFilter)");
@@ -89,6 +90,7 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceConnected(android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceDisconnected()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.telephony.satellite.SatelliteTransmissionUpdateCallback.onSendDatagramStateChanged(int,int,int,int)");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.view.KeyboardShortcutGroup android.view.WindowManager.getApplicationLaunchKeyboardShortcuts(int)");
     }
 
     private final ResultObserver resultObserver;

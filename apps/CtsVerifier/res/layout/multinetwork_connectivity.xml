@@ -14,70 +14,88 @@
      limitations under the License.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:fitsSystemWindows="true"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                style="@style/RootLayoutPadding">
+    android:fitsSystemWindows="@bool/fit_system_windows"
+    style="@style/RootLayoutPadding"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <TextView android:id="@+id/test_prerequisites"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:text="@string/multinetwork_connectivity_test_pre_requisites"
-              style="@style/InstructionsSmallFont"
-    />
-    <TextView android:id="@+id/test_ap_label"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/test_prerequisites"
-              android:text="@string/multinetwork_connectivity_test_ap_name"
-              style="@style/InstructionsSmallFont"
-    />
-    <EditText android:id="@+id/test_ap_ssid"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/test_ap_label"
-              android:inputType="text"
-              style="@style/InstructionsSmallFont"
-    />
-    <TextView android:id="@+id/test_psk_label"
-              android:layout_width="wrap_content"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/test_ap_ssid"
-              android:text="@string/multinetwork_connectivity_test_ap_passphrase"
-              style="@style/InstructionsSmallFont"
-    />
-    <EditText android:id="@+id/test_ap_psk"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/test_psk_label"
-              android:inputType="textPassword"
-              style="@style/InstructionsSmallFont"
-    />
-    <TextView android:id="@+id/current_test"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/test_ap_psk"
-              android:text="@string/multinetwork_connectivity_test_1_desc"
-              style="@style/InstructionsSmallFont"
-    />
-    <TextView android:id="@+id/test_progress_info"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content"
-              android:layout_below="@id/current_test"
-              style="@style/InstructionsSmallFont"
-    />
-    <Button android:id="@+id/start_multinet_btn"
-            android:text="@string/multinetwork_connectivity_test_start"
-            android:layout_width="wrap_content"
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@id/test_progress_info"
-            android:layout_centerHorizontal="true"
-    />
+            android:orientation="vertical"
+            android:padding="10dp">
 
+            <TextView
+                android:id="@+id/test_prerequisites"
+                style="@style/InstructionsSmallFont"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/multinetwork_connectivity_test_pre_requisites" />
 
-    <include android:id="@+id/pass_fail_buttons"
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content"
-             android:layout_alignParentBottom="true"
-             layout="@layout/pass_fail_buttons"/>
+            <TextView
+                android:id="@+id/test_ap_label"
+                style="@style/InstructionsSmallFont"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/multinetwork_connectivity_test_ap_name" />
+
+            <EditText
+                android:id="@+id/test_ap_ssid"
+                style="@style/InstructionsSmallFont"
+                android:hint="@string/multinetwork_connectivity_test_ap_name"
+                android:importantForAutofill="no"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+
+            <TextView
+                android:id="@+id/test_psk_label"
+                style="@style/InstructionsSmallFont"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/multinetwork_connectivity_test_ap_passphrase" />
+
+            <EditText
+                android:id="@+id/test_ap_psk"
+                style="@style/InstructionsSmallFont"
+                android:hint="@string/multinetwork_connectivity_test_ap_passphrase"
+                android:importantForAutofill="no"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textPassword" />
+
+            <TextView
+                android:id="@+id/current_test"
+                style="@style/InstructionsSmallFont"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/multinetwork_connectivity_test_1_desc" />
+
+            <TextView
+                android:id="@+id/test_progress_info"
+                style="@style/InstructionsSmallFont"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/start_multinet_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="30dp"
+                android:text="@string/multinetwork_connectivity_test_start" />
+        </LinearLayout>
+    </ScrollView>
+
+    <include
+        android:id="@+id/pass_fail_buttons"
+        layout="@layout/pass_fail_buttons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true" />
 </RelativeLayout>

@@ -2,36 +2,37 @@
 # except I386.
 # This policy is appended to the architecture-specific policy.
 
+# These are system calls in their own right for everything but i386,
+# which uses https://man7.org/linux/man-pages/man2/socketcall.2.html.
 accept4: return EPERM
 accept: return EPERM
 bind: return EPERM
 connect: 1
 getsockopt: 1
 listen: return EPERM
+recvfrom: 1
+recvmsg: 1
+sendmsg: 1
+sendto: 1
+# setsockopt: level==SOL_SOCKET && optname==SO_PEEK_OFF
+setsockopt: arg1 == 1 && arg2 == 42
+shutdown: 1
+# socket: domain==AF_UNIX && protocol == 0
+socket: arg0 == 1 && arg2 == 0
+# socketpair: domain==AF_UNIX
+socketpair: arg0 == 1
+
+# Similarly, these are syscalls in their own right for everything but i386,
+# which uses https://man7.org/linux/man-pages/man2/ipc.2.html.
 msgctl: return EPERM
 msgget: return EPERM
 msgrcv: return EPERM
 msgsnd: return EPERM
-recvfrom: 1
-recvmsg: 1
 semctl: return EPERM
 semget: return EPERM
 semop: return EPERM
 semtimedop: return EPERM
-sendmsg: 1
-sendto: 1
-
-# setsockopt: level==SOL_SOCKET && optname==SO_PEEK_OFF
-setsockopt: arg1 == 1 && arg2 == 42
-
 shmat: return EPERM
 shmctl: return EPERM
 shmdt: return EPERM
 shmget: return EPERM
-shutdown: 1
-
-# socket: domain==AF_UNIX && protocol == 0
-socket: arg0 == 1 && arg2 == 0
-
-# socketpair: domain==AF_UNIX
-socketpair: arg0 == 1

@@ -37,6 +37,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoProfileAnnotation("com.android.tv.profile")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasNoTvProfile {
     /** Which user type the tv profile should not be attached to. */
     UserType forUser() default INSTRUMENTED_USER;

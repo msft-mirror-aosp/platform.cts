@@ -37,6 +37,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoProfileAnnotation("android.os.usertype.profile.CLONE")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasNoCloneProfile {
     /** Which user type the Clone profile should not be attached to. */
     UserType forUser() default INSTRUMENTED_USER;
