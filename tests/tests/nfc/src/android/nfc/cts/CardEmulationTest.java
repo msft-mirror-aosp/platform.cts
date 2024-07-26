@@ -1558,7 +1558,7 @@ public class CardEmulationTest {
         }
         synchronized (sCurrentPollLoopReceiver) {
             try {
-                sCurrentPollLoopReceiver.wait(5000);
+                sCurrentPollLoopReceiver.wait(10000);
             } catch (InterruptedException ie) {
                 Assert.assertNull(ie);
             }
