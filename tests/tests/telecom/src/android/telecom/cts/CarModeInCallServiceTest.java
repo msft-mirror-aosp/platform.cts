@@ -123,7 +123,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -135,7 +137,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -149,7 +153,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -169,7 +175,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -192,7 +200,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -215,7 +225,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -257,7 +269,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -289,7 +303,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -320,7 +336,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -345,7 +363,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -385,7 +405,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -437,7 +459,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -462,7 +486,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -501,7 +527,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -548,7 +576,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom || SHOULD_IGNORE_TEST) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
@@ -577,7 +607,9 @@ public class CarModeInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)
+                || mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE)) {
             return;
         }
 
