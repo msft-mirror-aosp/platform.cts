@@ -19,7 +19,6 @@ package com.android.cts.netpolicy.hostside;
 import static android.app.ActivityManager.PROCESS_STATE_BOUND_FOREGROUND_SERVICE;
 import static android.app.ActivityManager.PROCESS_STATE_TOP_SLEEPING;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_NOT_METERED;
-import static android.net.NetworkCapabilities.SIGNAL_STRENGTH_UNSPECIFIED;
 
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.canChangeActiveNetworkMeteredness;
 import static com.android.cts.netpolicy.hostside.NetworkPolicyTestUtils.getActiveNetworkCapabilities;
@@ -221,17 +220,24 @@ public class NetworkCallbackTest extends AbstractRestrictBackgroundNetworkTestCa
 
         // Get transports of the active network, this has to be done before changing meteredness,
         // since wifi will be disconnected when changing from non-metered to metered.
+        final NetworkRequest.Builder networkRequestBuilder = new NetworkRequest.Builder()
+                .clearCapabilities();
         final NetworkCapabilities networkCapabilities = getActiveNetworkCapabilities();
+        for (final int capability : networkCapabilities.getCapabilities()) {
+            networkRequestBuilder.addCapability(capability);
+        }
+        for (final int transportType : networkCapabilities.getTransportTypes()) {
+            networkRequestBuilder.addTransportType(transportType);
+        }
+        networkRequestBuilder.setNetworkSpecifier(networkCapabilities.getNetworkSpecifier());
+        networkRequestBuilder.removeCapability(NET_CAPABILITY_NOT_METERED);
 
         // Mark network as metered.
         mMeterednessConfiguration.configureNetworkMeteredness(true);
 
         // Register callback, copy the capabilities from the active network to expect the "original"
         // network before disconnecting, but null out some fields to prevent over-specified.
-        registerNetworkCallback(new NetworkRequest.Builder()
-                .setCapabilities(networkCapabilities.setTransportInfo(null))
-                .removeCapability(NET_CAPABILITY_NOT_METERED)
-                .setSignalStrength(SIGNAL_STRENGTH_UNSPECIFIED).build(), mTestNetworkCallback);
+        registerNetworkCallback(networkRequestBuilder.build(), mTestNetworkCallback);
         // Wait for onAvailable() callback to ensure network is available before the test
         // and store the default network.
         mNetwork = mTestNetworkCallback.expectAvailableCallbackAndGetNetwork();

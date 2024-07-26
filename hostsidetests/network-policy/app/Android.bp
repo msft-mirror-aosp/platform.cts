@@ -51,7 +51,6 @@ android_test_helper_app {
     name: "CtsHostsideNetworkPolicyTestsApp",
     defaults: [
         "cts_support_defaults",
-        "framework-connectivity-test-defaults",
         "CtsHostsideNetworkPolicyTestsAppDefaults",
     ],
 }
