@@ -134,7 +134,7 @@ object VirtualInputEventCreator {
             /* yPrecision= */ 1f,
             /* deviceId= */ 0,
             /* edgeFlags= */ 0,
-            InputDevice.SOURCE_TOUCH_NAVIGATION or InputDevice.SOURCE_TOUCHPAD,
+            InputDevice.SOURCE_TOUCH_NAVIGATION,
             /* flags= */ 0
         )
     }
@@ -230,8 +230,7 @@ object VirtualInputEventCreator {
             /* yPrecision= */ 1f,
             /* deviceId= */ 0,
             /* edgeFlags= */ 0,
-            InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_KEYBOARD
-                    or InputDevice.SOURCE_TOUCHSCREEN,
+            InputDevice.SOURCE_STYLUS or InputDevice.SOURCE_TOUCHSCREEN,
             /* flags= */ 0
         )
     }
