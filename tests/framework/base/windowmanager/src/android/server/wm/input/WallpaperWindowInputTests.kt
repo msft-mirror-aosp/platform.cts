@@ -23,6 +23,7 @@ import android.hardware.display.DisplayManager
 import android.platform.test.annotations.Presubmit
 import android.server.wm.ActivityManagerTestBase
 import android.server.wm.CliIntentExtra
+import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
 import android.server.wm.TestJournalProvider
 import android.server.wm.annotation.Group2
 import android.server.wm.app.Components
@@ -30,7 +31,7 @@ import android.server.wm.app.Components.TestInteractiveLiveWallpaperKeys
 import android.view.Display.DEFAULT_DISPLAY
 import android.view.InputDevice
 import android.view.MotionEvent
-import android.view.WindowManager
+import android.window.WindowInfosListenerForTest
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -38,10 +39,12 @@ import com.android.cts.input.inputeventmatchers.withSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -90,7 +93,11 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
                 enableWallpaperTouch
             )
         )
-        mWmState.waitAndAssertWindowShown(WindowManager.LayoutParams.TYPE_WALLPAPER, true)
+        val found = waitForWindowOnTop(5.seconds.toJavaDuration())
+            { windowInfo: WindowInfosListenerForTest.WindowInfo ->
+                windowInfo.name.contains(Components.WALLPAPER_TARGET_ACTIVITY.className)
+            }
+        assertTrue(found)
         TestJournalProvider.TestJournalContainer.start()
         val task = mWmState.getTaskByActivity(Components.WALLPAPER_TARGET_ACTIVITY)
         val bounds = task.bounds

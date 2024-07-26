@@ -46,10 +46,10 @@ import android.graphics.Rect;
 import android.util.SparseArray;
 import android.view.InputEvent;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -470,7 +470,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        CtsWindowInfoUtils.waitForStableWindowGeometry(5, TimeUnit.SECONDS);
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);

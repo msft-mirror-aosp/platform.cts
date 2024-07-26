@@ -117,6 +117,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -487,7 +488,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     leftMargin, topMargin);
             mInstrumentation.waitForIdleSync();
             waitUntilEmbeddedViewDrawn();
-            waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
             final int[] surfaceLocation = new int[2];
             mSurfaceView.getLocationOnScreen(surfaceLocation);
@@ -1261,7 +1262,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // everything, we should have a standard way to wait on the completion of async
         // operations
         waitForTouchableRegionChanged(originalRegion);
-        waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
         globalTapOnViewCenter(mSurfaceView);
         PollingCheck.waitFor(() -> mClicked);
@@ -1307,7 +1308,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         assertTrue("Failed to wait for embedded window to be visible",
                 waitForWindowVisible(mTestService.getWindowToken()));
 
-        waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
         globalTapOnViewCenter(mSurfaceView);
 
         MotionEvent motionEvent = mTestService.getMotionEvent();
@@ -1431,7 +1432,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
                     parentBounds.left + 100, parentBounds.top + 100);
             return expectedBounds.equals(popupBounds);
         };
-        assertTrue(waitForWindowInfos(hasExpectedFrame, 5, TimeUnit.SECONDS));
+        assertTrue(waitForWindowInfos(hasExpectedFrame, Duration.ofSeconds(5)));
     }
 
     @Test
@@ -1466,7 +1467,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         // because the popupView is initially unattached and doesn't have a
         // window token. The supplier is called each time the predicate is
         // tested, eventually returning the window token.
-        assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
+        assertTrue(waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
                 popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
     }
 
@@ -1494,7 +1495,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         Predicate<WindowInfo> hasExpectedDimensions =
                 windowInfo -> windowInfo.bounds.width() == 50 && windowInfo.bounds.height() == 50;
-        assertTrue(waitForWindowInfo(hasExpectedDimensions, 5, TimeUnit.SECONDS,
+        assertTrue(waitForWindowInfo(hasExpectedDimensions, Duration.ofSeconds(5),
                 popupView::getWindowToken, mActivity.getDisplay().getDisplayId()));
     }
 
