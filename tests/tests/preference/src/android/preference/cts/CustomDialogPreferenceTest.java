@@ -16,7 +16,10 @@
 
 package android.preference.cts;
 
+import android.Manifest;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class CustomDialogPreferenceTest
         extends ActivityInstrumentationTestCase2<PreferencesFromXml> {
@@ -31,7 +34,8 @@ public class CustomDialogPreferenceTest
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                this::getActivity, Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
         mDialogPref = (CustomDialogPreference) mActivity.findPreference(
                 "custom_dialog_pref_1");
     }
