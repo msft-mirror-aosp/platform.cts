@@ -139,7 +139,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         TimeUnit.SECONDS.sleep(10);
-        MockModemTestBase.beforeAllTestsCheck();
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
 
         sConnectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
@@ -181,7 +181,7 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        MockModemTestBase.afterAllTests();
+        MockModemTestBase.afterAllTestsBase();
     }
 
     @Before
