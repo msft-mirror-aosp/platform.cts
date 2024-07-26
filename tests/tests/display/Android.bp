@@ -33,6 +33,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "flag-junit",
+        "Harrier",
         "CtsSurfaceValidatorLib",
         "android.companion.virtual.flags-aconfig-java",
     ],
