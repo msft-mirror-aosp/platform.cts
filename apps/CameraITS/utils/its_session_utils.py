@@ -1005,7 +1005,7 @@ class ItsSession(object):
                                              sweep_zoom,
                                              ae_target_fps_min=None,
                                              ae_target_fps_max=None,
-                                             pad_frames_at_end=False):
+                                             padded_frames=False):
     """Issue a preview request with dynamic zoom and read back output object.
 
     The resolution of the preview and its recording will be determined by
@@ -1024,8 +1024,8 @@ class ItsSession(object):
         step_duration (float) sleep in ms between zoom ratios
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
-      pad_frames_at_end: boolean; Whether to add additional frames at the end of
-        recording to workaround issue with MediaRecorder.
+      padded_frames: boolean; Whether to add additional frames at the beginning
+        and end of recording to workaround issue with MediaRecorder.
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -1051,7 +1051,7 @@ class ItsSession(object):
     cmd['stepSize'] = step_size
     cmd['stepDuration'] = step_duration
     cmd['hlg10Enabled'] = False
-    cmd['paddedFramesAtEnd'] = pad_frames_at_end
+    cmd['paddedFrames'] = padded_frames
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
