@@ -16,6 +16,13 @@
 
 package android.telecom.cts;
 
+import static android.media.AudioManager.MODE_IN_COMMUNICATION;
+import static android.telecom.cts.TestUtils.TEST_SELF_MANAGED_HANDLE_1;
+import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
+import static android.telecom.cts.TestUtils.waitOnAllHandlers;
+
+import static org.junit.Assert.assertNotEquals;
+
 import android.content.Context;
 import android.database.Cursor;
 import android.media.AudioManager;
@@ -35,14 +42,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
-import static android.media.AudioManager.MODE_IN_COMMUNICATION;
-import static android.telecom.cts.TestUtils.TEST_SELF_MANAGED_HANDLE_1;
-import static android.telecom.cts.TestUtils.TEST_SELF_MANAGED_HANDLE_4;
-import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
-import static android.telecom.cts.TestUtils.waitOnAllHandlers;
-
-import static org.junit.Assert.assertNotEquals;
-
 /**
  * CTS tests for the self-managed {@link android.telecom.ConnectionService} APIs.
  * For more information about these APIs, see {@link android.telecom}, and
@@ -60,7 +59,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         super.setUp();
         NewOutgoingCallBroadcastReceiver.reset();
         mContext = getInstrumentation().getContext();
-        if (mShouldTestTelecom) {
+        if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
             // Register and enable the CTS ConnectionService; we want to be able to test a managed
             // ConnectionService alongside a self-managed ConnectionService.
             setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
@@ -74,16 +73,17 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-
-        CtsSelfManagedConnectionService connectionService =
-                CtsSelfManagedConnectionService.getConnectionService();
-        if (connectionService != null) {
-            connectionService.tearDown();
-            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_1);
-            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_2);
-            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_3);
+        if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
+            CtsSelfManagedConnectionService connectionService =
+                    CtsSelfManagedConnectionService.getConnectionService();
+            if (connectionService != null) {
+                connectionService.tearDown();
+                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_1);
+                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_2);
+                mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_3);
+            }
         }
+        super.tearDown();
     }
 
     /**
@@ -91,7 +91,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * the registered self-managed {@link android.telecom.PhoneAccount}s.
      */
     public void testTelecomManagerGetSelfManagedPhoneAccounts() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -112,7 +112,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * or other URI schemes.
      */
     public void testRegisterSelfManagedConnectionService() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         verifyAccountRegistration(TestUtils.TEST_SELF_MANAGED_HANDLE_1,
@@ -149,7 +149,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * A self-managed {@link android.telecom.PhoneAccount} cannot also be a call provider.
      */
     public void testRegisterCallCapableSelfManagedConnectionService() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -169,7 +169,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * A self-managed {@link android.telecom.PhoneAccount} cannot also be a SIM subscription.
      */
     public void testRegisterSimSelfManagedConnectionService() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -189,7 +189,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * A self-managed {@link android.telecom.PhoneAccount} cannot also be a connection manager.
      */
     public void testRegisterConnectionManagerSelfManagedConnectionService() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -223,7 +223,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * Tests ability to add a new self-managed incoming connection.
      */
     public void testAddSelfManagedIncomingConnection() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -266,7 +266,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * managed call can not be held.
      */
     public void testDisallowOutgoingCallWhileOngoingManagedCallCanNotBeHeld() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -302,7 +302,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * sip {@link Uri}s without being interrupted by system UX or other Telephony-related logic.
      */
     public void testAddSelfManagedOutgoingConnection() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         assertIsOutgoingCallPermitted(true, TestUtils.TEST_SELF_MANAGED_HANDLE_1);
@@ -323,7 +323,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * @throws Exception
      */
     public void testSelfManagedCallNotLogged() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -411,7 +411,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * {@link android.telecom.Connection#setAudioRoute(int)} API.
      */
     public void testAudioRoute() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         TestUtils.placeOutgoingCall(getInstrumentation(), mTelecomManager,
@@ -470,7 +470,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * @throws Exception
      */
     public void testIncomingWhileOngoingWithinLimit() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -498,7 +498,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * Tests the self-managed ConnectionService has gained the focus when it become active.
      */
     public void testSelfManagedConnectionServiceGainedFocus() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -522,7 +522,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
     }
 
     public void testSelfManagedConnectionServiceLostFocus() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -552,7 +552,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * Tests that Telecom will disallow the incoming call while the ringing call is existed.
      */
     public void testRingCallLimitForOnePhoneAccount() {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -578,7 +578,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * @throws Exception
      */
     public void testCallLimit() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -614,7 +614,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * call is successfully disconnected.
      */
     public void testDisconnectSelfManagedCallForEmergency() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);
@@ -655,7 +655,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * be created.
      */
     public void testEmergencyCallOngoingNewOutgoingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -682,7 +682,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
      * be created.
      */
     public void testEmergencyCallOngoingIncomingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
