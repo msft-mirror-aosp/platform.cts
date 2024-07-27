@@ -45,6 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -61,8 +62,9 @@ public class BaseAppVerifier {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
     public static final boolean S_IS_TEST_DISABLED = true;
     public boolean mShouldTestTelecom = true;
+    public boolean mSupportsManagedCalls = false;
     private BaseAppVerifierImpl mBaseAppVerifierImpl;
-    private Context mContext = null;
+    protected Context mContext = null;
     /***********************************************************
      /  ManagedConnectionServiceApp - The PhoneAccountHandle and PhoneAccount must reside in the
      /  CTS test process.
@@ -107,6 +109,8 @@ public class BaseAppVerifier {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mShouldTestTelecom = BaseAppVerifierImpl.shouldTestTelecom(mContext);
+        mSupportsManagedCalls = TestUtils.hasDialerRole(mContext)
+                && TestUtils.hasTelephonyFeature(mContext);
         if (!mShouldTestTelecom) {
             return;
         }

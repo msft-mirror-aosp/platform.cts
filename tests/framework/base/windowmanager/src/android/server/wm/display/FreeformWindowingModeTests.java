@@ -88,8 +88,9 @@ public class FreeformWindowingModeTests extends MultiDisplayTestBase {
         mWmState.assertVisibility(TEST_ACTIVITY, true);
         mWmState.assertFocusedActivity(
                 TEST_ACTIVITY + " must be focused Activity", TEST_ACTIVITY);
-        assertEquals(new Rect(0, 0, TEST_TASK_SIZE_1, TEST_TASK_SIZE_1),
-                mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds());
+        Rect testActivitySize = mWmState.getTaskByActivity(TEST_ACTIVITY).getBounds();
+        assertEquals(TEST_TASK_SIZE_1, testActivitySize.width());
+        assertEquals(TEST_TASK_SIZE_1, testActivitySize.height());
     }
 
     @Test

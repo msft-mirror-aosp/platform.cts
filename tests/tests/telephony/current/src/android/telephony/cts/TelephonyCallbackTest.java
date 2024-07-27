@@ -115,6 +115,7 @@ public class TelephonyCallbackTest {
     private boolean mOnLinkCapacityEstimateChangedCalled;
     private boolean mOnEmergencyCallbackModeChangedCalled;
     private boolean mOnCarrierRoamingNtnModeChangedCalled;
+    private boolean mOnCarrierRoamingNtnEligibleCalled;
     @RadioPowerState
     private int mRadioPowerState;
     @SimActivationState
@@ -1674,6 +1675,14 @@ public class TelephonyCallbackTest {
                 mLock.notify();
             }
         }
+
+        @Override
+        public void onCarrierRoamingNtnEligibleStateChanged(boolean eligible) {
+            synchronized (mLock) {
+                mOnCarrierRoamingNtnEligibleCalled = true;
+                mLock.notify();
+            }
+        }
     }
 
     @Test
@@ -1691,6 +1700,24 @@ public class TelephonyCallbackTest {
         assertTrue(mOnCarrierRoamingNtnModeChangedCalled);
 
         unRegisterTelephonyCallback(mOnCarrierRoamingNtnModeChangedCalled,
+                mCarrierRoamingNtnModeListener);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testOnCarrierRoamingNtnEligible() throws Throwable {
+        assertFalse(mOnCarrierRoamingNtnEligibleCalled);
+        mCarrierRoamingNtnModeListener = new CarrierRoamingNtnModeListener();
+        registerTelephonyCallback(mCarrierRoamingNtnModeListener);
+
+        synchronized (mLock) {
+            while (!mOnCarrierRoamingNtnEligibleCalled) {
+                mLock.wait(WAIT_TIME);
+            }
+        }
+        assertTrue(mOnCarrierRoamingNtnEligibleCalled);
+
+        unRegisterTelephonyCallback(mOnCarrierRoamingNtnEligibleCalled,
                 mCarrierRoamingNtnModeListener);
     }
 }

@@ -290,8 +290,7 @@ class VirtualNavigationTouchpadTest : VirtualDeviceTestCase() {
 
     private fun createKeyEvent(action: Int, code: Int): KeyEvent {
         val event = KeyEvent(action, code)
-        event.source =
-            InputDevice.SOURCE_TOUCH_NAVIGATION or InputDevice.SOURCE_TOUCHPAD
+        event.source = InputDevice.SOURCE_TOUCH_NAVIGATION
         event.displayId = mVirtualDisplay.display.displayId
         return event
     }

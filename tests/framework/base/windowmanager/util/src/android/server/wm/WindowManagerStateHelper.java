@@ -219,7 +219,8 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void waitAndAssertKeyguardGone() {
         assertTrue("Keyguard must be gone",
                 waitForWithAmState(
-                        state -> !state.getKeyguardControllerState().keyguardShowing,
+                        state -> !state.getKeyguardControllerState().keyguardShowing
+                                && !state.getKeyguardControllerState().mKeyguardGoingAway,
                         "Keyguard gone"));
     }
 
@@ -797,7 +798,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void assertKeyguardGone() {
-        assertFalse("Keyguard is not shown",
+        assertFalse("Keyguard must not be shown",
                 getKeyguardControllerState().keyguardShowing);
         assertFalse("Keyguard must not be going away",
                 getKeyguardControllerState().mKeyguardGoingAway);

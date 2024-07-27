@@ -20,6 +20,7 @@ import android.app.UiAutomation
 import android.content.Context
 import android.os.Bundle
 import android.os.Looper
+import android.os.UserHandle
 import android.platform.test.annotations.AppModeSdkSandbox
 import android.provider.Settings
 import android.text.style.SuggestionSpan
@@ -85,7 +86,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
 
     private val TAG = "SpellCheckerTest"
     private val SPELL_CHECKING_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme"
-    private val TIMEOUT = TimeUnit.SECONDS.toMillis(5)
+    private val TIMEOUT = TimeUnit.SECONDS.toMillis(10)
 
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context: Context = instrumentation.getTargetContext()
@@ -440,7 +441,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
                                 .setAttributes(RESULT_ATTR_LOOKS_LIKE_TYPO)
                 ).build()
         // SpellCheckingIme should have android:suppressesSpellChecker="true"
-        ImeSession(SPELL_CHECKING_IME_ID).use {
+        ImeSession(SPELL_CHECKING_IME_ID, UserHandle.myUserId()).use {
             assertThat(getCurrentInputMethodInfo().suppressesSpellChecker()).isTrue()
 
             MockSpellCheckerClient.create(context, configuration).use {
@@ -491,7 +492,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
                                 .setAttributes(RESULT_ATTR_LOOKS_LIKE_TYPO)
                 ).build()
         // SpellCheckingIme should have android:suppressesSpellChecker="true"
-        ImeSession(SPELL_CHECKING_IME_ID).use {
+        ImeSession(SPELL_CHECKING_IME_ID, UserHandle.myUserId()).use {
             assertThat(getCurrentInputMethodInfo().suppressesSpellChecker()).isTrue()
 
             MockSpellCheckerClient.create(context, configuration).use {
@@ -755,12 +756,12 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         return listener.getSentenceSuggestionsResults[prevSize]
     }
 
-    private inner class ImeSession(val imeId: String) : AutoCloseable {
+    private inner class ImeSession(val imeId: String, val userId: Int) : AutoCloseable {
 
         init {
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime reset")
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime enable $imeId")
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime set $imeId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime reset --user $userId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime enable --user $userId $imeId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime set --user $userId $imeId")
             PollingCheck.check("Make sure that $imeId is selected", TIMEOUT) {
                 getCurrentInputMethodInfo().id == imeId
             }

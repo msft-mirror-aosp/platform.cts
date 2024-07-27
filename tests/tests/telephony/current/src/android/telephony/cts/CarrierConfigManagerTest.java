@@ -21,6 +21,8 @@ import static android.app.AppOpsManager.MODE_IGNORED;
 import static android.app.AppOpsManager.OPSTR_READ_PHONE_STATE;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_OVERRIDE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_STRING;
+import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT;
+import static android.telephony.CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_CALL_TO_SATELLITE_T911_HANDOVER_TIMEOUT_MILLIS_INT;
@@ -251,6 +253,13 @@ public class CarrierConfigManagerTest {
                     TimeUnit.SECONDS.toMillis(30));
             assertFalse("KEY_SATELLITE_ESOS_SUPPORTED_BOOL doesn't match static default.",
                     config.getBoolean(KEY_SATELLITE_ESOS_SUPPORTED_BOOL));
+            assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
+                    config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
+                    CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+            assertEquals("KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
+                    180);
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",

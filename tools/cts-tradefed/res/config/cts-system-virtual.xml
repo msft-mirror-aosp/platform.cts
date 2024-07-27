@@ -406,6 +406,7 @@
   <option name="compatibility:include-filter" value="CtsAttributionSourceTestCases"/>
   <option name="compatibility:include-filter" value="SdkSandboxManagerTests"/>
   <option name="compatibility:include-filter" value="CtsInputTestCases"/>
+  <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases"/>
 
     <!--Exclude Filters -->
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
@@ -676,4 +677,17 @@
   <option name="compatibility:exclude-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
   <option name="compatibility:exclude-filter" value="CtsStorageHostTestCases android.appsecurity.cts.StorageHostTest#testFullDisk"/>
   <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testJobsInRestrictedBucket_WithRequiredNetwork"/>
+  <option name="compatibility:exclude-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandMultiUserTest#testUpdateMimeGroup_changed"/>
+  <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceImeTest#setDisplayImePolicy_changeAtRuntime"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testRestrictedJobAllowedWhenUidActive"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testUnmeteredConstraintFails_withMeteredWiFi"/>
+  <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsLoggingTest#getCellInfo"/>
+  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testTelephonyFeatures"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TelephonyTest"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoProcessOutgoingCallPermissionTest#testProcessOutgoingCall"/>
+  <option name="compatibility:exclude-filter" value="CtsProviderTestCases android.provider.cts.SmsBackupRestoreTest#testSmsBackupRestore"/>
+  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testSensorFeatures"/>
+  <option name="compatibility:exclude-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace"/>
+  <option name="compatibility:exclude-filter" value="CtsBackupHostTestCases android.cts.backup.OtherSoundsSettingsHostSideTest"/>
 </configuration>

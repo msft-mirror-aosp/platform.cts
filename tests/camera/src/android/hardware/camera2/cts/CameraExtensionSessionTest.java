@@ -1395,12 +1395,21 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                         extensionChars.getAvailableCaptureRequestKeys(extension);
                 boolean supportsStrengthControl = supportedRequestKeys.contains(
                         CaptureRequest.EXTENSION_STRENGTH);
-                boolean supportsAFControlMode = supportedRequestKeys.contains(
-                        CaptureRequest.CONTROL_AF_MODE);
                 Set<CaptureResult.Key> supportedResultKeys =
                         extensionChars.getAvailableCaptureResultKeys(extension);
                 boolean supportsAFControlState = supportedResultKeys.contains(
                         CaptureResult.CONTROL_AF_STATE);
+                boolean supportsCAFMode = false;
+                if (supportedRequestKeys.contains(CaptureRequest.CONTROL_AF_MODE) &&
+                        staticMeta.hasFocuser()) {
+                    int[] afModes = extensionChars.get(extension,
+                            CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES);
+                    if (afModes == null) {
+                        afModes = staticMeta.getAfAvailableModesChecked();
+                    }
+                    supportsCAFMode = Arrays.stream(afModes).anyMatch(
+                            mode -> mode == CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+                }
                 if (supportsStrengthControl) {
                     assertTrue(supportedResultKeys.contains(CaptureResult.EXTENSION_STRENGTH));
                 }
@@ -1476,12 +1485,15 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     captureBuilder.addTarget(texturedSurface);
                     CameraExtensionSession.ExtensionCaptureCallback repeatingCallbackMock =
                             mock(CameraExtensionSession.ExtensionCaptureCallback.class);
-                    // Check passive AF
-                    AutoFocusStateListener mockAFListener =
-                            mock(AutoFocusStateListener.class);
-                    AutoFocusStateMachine afState = new AutoFocusStateMachine(
-                            new TestAutoFocusProxy(mockAFListener));
-                    afState.setPassiveAutoFocus(true /*picture*/, captureBuilder);
+
+                    AutoFocusStateListener mockAFListener = mock(AutoFocusStateListener.class);
+                    AutoFocusStateMachine afState = null;
+                    if (supportsCAFMode && supportsAFControlState) {
+                        // Check passive AF
+                        afState = new AutoFocusStateMachine(
+                                new TestAutoFocusProxy(mockAFListener));
+                        afState.setPassiveAutoFocus(true /*picture*/, captureBuilder);
+                    }
                     SimpleCaptureCallback repeatingCaptureCallback =
                             new SimpleCaptureCallback(extension, repeatingCallbackMock,
                                     extensionChars.getAvailableCaptureResultKeys(extension),
@@ -1493,7 +1505,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     }
 
                     CaptureRequest repeatingRequest = captureBuilder.build();
-                    if (supportsAFControlMode && supportsAFControlState) {
+                    if (supportsCAFMode && supportsAFControlState) {
                         captureBuilder.set(
                                 CaptureRequest.CONTROL_AF_MODE,
                                 CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
@@ -1529,7 +1541,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
                     CameraExtensionSession.StillCaptureLatency stillCaptureLatency =
                             extensionSession.getRealtimeStillCaptureLatency();
                     CaptureRequest captureRequest = captureBuilder.build();
-                    if (supportsAFControlMode && supportsAFControlState) {
+                    if (supportsCAFMode && supportsAFControlState) {
                         verify(mockAFListener,
                                 timeout(WAIT_FOR_FOCUS_DONE_TIMEOUT_MS).atLeastOnce())
                                 .onDone(anyBoolean());

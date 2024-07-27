@@ -96,6 +96,7 @@ VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
 RESULT_OK_STATUS = '-1'
 
+_FLASH_MODE_OFF = 0
 _VALIDATE_LIGHTING_PATCH_H = 0.05
 _VALIDATE_LIGHTING_PATCH_W = 0.05
 _VALIDATE_LIGHTING_REGIONS = {
@@ -2139,7 +2140,8 @@ class ItsSession(object):
             zoom_ratio=None,
             out_surfaces=None,
             repeat_request=None,
-            first_surface_for_3a=False):
+            first_surface_for_3a=False,
+            flash_mode=_FLASH_MODE_OFF):
     """Perform a 3A operation on the device.
 
     Triggers some or all of AE, AWB, and AF, and returns once they have
@@ -2167,6 +2169,10 @@ class ItsSession(object):
         See do_capture() for specifications on repeat_request.
       first_surface_for_3a: Use first surface in output_surfaces for 3A.
         Only applicable if out_surfaces contains at least 1 surface.
+      flash_mode: FLASH_MODE to be used during 3A
+        0: OFF
+        1: SINGLE
+        2: TORCH
 
       Region format in args:
          Arguments are lists of weighted regions; each weighted region is a
@@ -2215,6 +2221,8 @@ class ItsSession(object):
       cmd['awbLock'] = True
     if ev_comp != 0:
       cmd['evComp'] = ev_comp
+    if flash_mode != 0:
+      cmd['flashMode'] = flash_mode
     if auto_flash:
       cmd['autoFlash'] = True
     if self._hidden_physical_id:

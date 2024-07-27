@@ -1,5 +1,6 @@
 package android.app.appops.cts
 
+import android.app.ActivityManager
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -30,6 +31,8 @@ class AppOpsMultiUserTest {
     private val packageManager: PackageManager = context.packageManager
     private val userManager: UserManager = context.getSystemService(UserManager::class.java)!!
     private val appOpsManager: AppOpsManager = context.getSystemService(AppOpsManager::class.java)!!
+    private val activityManager: ActivityManager =
+        context.getSystemService(ActivityManager::class.java)!!
 
     private val preExistingUsers: MutableList<UserInfo> = mutableListOf()
     private val newUsers: MutableList<UserInfo> = mutableListOf()
@@ -54,6 +57,13 @@ class AppOpsMultiUserTest {
                 }
             }
         }
+        // Some users aren't in running state in the secondary_user option test.
+        // The AppOpsService doesn't receive ACTION_PACKAGE_ADDED for that user.
+        SystemUtil.runWithShellPermissionIdentity {
+            preExistingUsers.removeAll { userInfo ->
+                !activityManager.isUserRunning(userInfo.id)
+            }
+        }
     }
 
     @After
@@ -62,7 +72,7 @@ class AppOpsMultiUserTest {
             SystemUtil.runShellCommandOrThrow("pm remove-user ${it.id}")
         }
 
-        SystemUtil.runShellCommandOrThrow("cmd appops reset")
+        SystemUtil.runShellCommandOrThrow("cmd appops reset --user ${context.userId}")
     }
 
     @Test

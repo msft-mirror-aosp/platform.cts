@@ -23,6 +23,8 @@ import android.media.AudioRouting;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 
+import java.util.List;
+
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AudioPlayRoutingNative extends AndroidTestCase {
     private static final String TAG = "AudioPlayRoutingNative";
@@ -98,11 +100,9 @@ public class AudioPlayRoutingNative extends AndroidTestCase {
         AudioRouting routingObj = player.GetRoutingInterface();
         assertNotNull(routingObj);
 
-        AudioDeviceInfo[] deviceList;
-        deviceList = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        assertTrue(deviceList != null);
-        for (AudioDeviceInfo devInfo : deviceList) {
-            assertTrue(routingObj.setPreferredDevice(devInfo));
+        List<AudioDeviceInfo> mediaDevices = AudioTestUtil.getMediaDevices();
+        for (AudioDeviceInfo device : mediaDevices) {
+            assertTrue(routingObj.setPreferredDevice(device));
         }
 
         player.ReleaseRoutingInterface(routingObj);
