@@ -93,7 +93,7 @@ class ZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_yuv_format(props)
+        yuv_size = capture_request_utils.get_largest_format('yuv', props)
         size = [yuv_size['width'], yuv_size['height']]
       logging.debug('capture size: %s', str(size))
       logging.debug('test TOLs: %s', str(test_tols))
