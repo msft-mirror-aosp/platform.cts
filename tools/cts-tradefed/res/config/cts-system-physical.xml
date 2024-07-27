@@ -21,7 +21,6 @@
   <option name="result-attribute" key="system" value="1" />
 
   <!--Include Filters -->
-  <option name="compatibility:include-filter" value="CtsNNAPITestCases"/>
   <option name="compatibility:include-filter" value="CtsTelecomTestCases"/>
   <option name="compatibility:include-filter" value="CtsMediaStressTestCases"/>
   <option name="compatibility:include-filter" value="CtsVideoTestCases"/>
@@ -658,4 +657,21 @@
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1641]"/>
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.GetApplicationInfoTest#testGetApplicationInfo"/>
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1216]"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.permissions"/>
+  <option name="compatibility:include-filter" value="CtsActivityRecognitionTestCases android.activityrecognition.cts.RenouncedPermissionsTest#testActivityRecognitionAttributionTagBlaming"/>
+  <option name="compatibility:include-filter" value="CtsStorageHostTestCases android.appsecurity.cts.StorageHostTest#testFullDisk"/>
+  <option name="compatibility:include-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex"/>
+  <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testJobsInRestrictedBucket_WithRequiredNetwork"/>
+  <option name="compatibility:include-filter" value="CtsPackageManagerTestCases android.content.pm.cts.PackageManagerShellCommandMultiUserTest#testUpdateMimeGroup_changed"/>
+  <option name="compatibility:include-filter" value="CtsVirtualDevicesAppLaunchTestCases android.virtualdevice.cts.applaunch.VirtualDeviceImeTest#setDisplayImePolicy_changeAtRuntime"/>
+  <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testRestrictedJobAllowedWhenUidActive"/>
+  <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.ConnectivityConstraintTest#testUnmeteredConstraintFails_withMeteredWiFi"/>
+  <option name="compatibility:include-filter" value="CtsAppOpsTestCases android.app.appops.cts.AppOpsLoggingTest#getCellInfo"/>
+  <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testTelephonyFeatures"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.TelephonyTest"/>
+  <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.NoProcessOutgoingCallPermissionTest#testProcessOutgoingCall"/>
+  <option name="compatibility:include-filter" value="CtsProviderTestCases android.provider.cts.SmsBackupRestoreTest#testSmsBackupRestore"/>
+  <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testSensorFeatures"/>
+  <option name="compatibility:include-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace"/>
+  <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.OtherSoundsSettingsHostSideTest"/>
  </configuration>

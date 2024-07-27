@@ -39,20 +39,21 @@ class RuntimeMessageCollectionTest {
     private var appUid = -1
 
     private fun installApk(apk: String) {
-        val result = runCommand("pm install -r -g --force-queryable $APK_PATH$apk")
+        val result = runCommand(
+            "pm install --user ${context.userId} -r -g --force-queryable $APK_PATH$apk")
         assertThat(result.trim()).isEqualTo("Success")
         appUid = context.packageManager.getPackageUid(APP_PKG, 0)
     }
 
     @Before
     fun resetTestApp() {
-        runCommand("pm uninstall $APP_PKG")
+        runCommand("pm uninstall --user ${context.userId} $APP_PKG")
         installApk("CtsAppToCollect.apk")
     }
 
     @After
     fun uninstallTestApp() {
-        runCommand("pm uninstall $APP_PKG")
+        runCommand("pm uninstall --user ${context.userId} $APP_PKG")
     }
 
     @Test

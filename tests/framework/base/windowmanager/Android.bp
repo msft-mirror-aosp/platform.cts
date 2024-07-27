@@ -225,6 +225,7 @@ filegroup {
 
 android_test {
     name: "CtsWindowManagerDeviceActivity",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -236,6 +237,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceAm",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -280,6 +282,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceKeyguard",
+    team: "trendy_team_windowing_animations_transitions",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -339,6 +342,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceMultiDisplay",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
@@ -362,6 +366,7 @@ android_test {
 
 android_test {
     name: "CtsWindowManagerDeviceOther",
+    team: "trendy_team_windowing_sdk",
     defaults: ["CtsWindowManagerDeviceDefault"],
 
     srcs: [
