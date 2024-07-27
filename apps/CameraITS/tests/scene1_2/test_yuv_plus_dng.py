@@ -55,6 +55,7 @@ class YuvPlusDngTest(its_base_test.ItsBaseTest):
 
       # Create requests
       mono_camera = camera_properties_utils.mono_camera(props)
+      camera_properties_utils.log_minimum_focus_distance(props)
       cam.do_3a(mono_camera=mono_camera)
       req = capture_request_utils.auto_capture_request()
       max_dng_size = capture_request_utils.get_available_output_sizes(

@@ -518,6 +518,9 @@ public class CallLogTest extends InstrumentationTestCase {
 
     @RequiresFlagsEnabled(android.provider.Flags.FLAG_ALLOW_CONFIG_MAXIMUM_CALL_LOG_ENTRIES_PER_SIM)
     public void testAddCallLogs_withMaximumCallLogEntriesPerSim() {
+        if (!android.provider.Flags.allowConfigMaximumCallLogEntriesPerSim()) {
+            return;
+        }
         try {
             getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.READ_VOICEMAIL);

@@ -287,6 +287,80 @@ public class RingerTest extends BaseAppVerifier {
         }
     }
 
+    /**
+     * Test the scenario where a new MANAGED incoming call is created and transitions to RINGING
+     * while the ringer is in VIBRATE mode and "Vibrations & haptics" are enabled. While the MT
+     * call is still RINGING, change the ringer mode to NORMAL mode.
+     *
+     * <h3> Test Steps: </h3>
+     * <ul>
+     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
+     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
+     * <p>
+     *  2. verify that the call did not ring audibly and that {@link AudioPlaybackCallback} was not
+     *  triggered.
+     * <p>
+     *  3. inspect the vibrator_manager dumpsys to ensure that a current ringtone vibration logged.
+     * <p>
+     *  4. while the MT call is still RINGING, change the ringer mode to NORMAL mode.
+     * <p>
+     *  5. verify that the call is now ringing audibly, {@link AudioPlaybackCallback} was
+     *  triggered, and a current ringtone vibration is still logged in the dumpsys.
+     *  <p>
+     *  6. disconnect the call
+     */
+    @Test
+    public void testIncomingCallVibrateModeEnableRinger_VibrateAndRing() throws Exception {
+        assumeTrue(mShouldTestTelecom);
+        assumeTrue(mSupportsManagedCalls);
+
+        // Configure the audio manager and register the audio playback callback:
+        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
+        AudioPlaybackCallback callback = createAudioPlaybackCallback(queue);
+        AudioManager audioManager =
+                configureAudioManager(AudioManager.RINGER_MODE_VIBRATE, callback);
+
+        // Configure the "Vibrations & haptics" settings:
+        configureVibrationSettings(ON);
+
+        AppControlWrapper managedApp = null;
+        try {
+            managedApp = bindToApp(ManagedConnectionServiceApp);
+            String mt = addIncomingCallAndVerify(managedApp);
+
+            // Verify that the call is not ringing audibly:
+            verifyCallIsInState(mt, STATE_RINGING);
+            Boolean originalRingingState =
+                    queue.poll(WAIT_FOR_NO_RING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            assertNull("Telecom should not have played a ringtone since ringer is in "
+                    + "VIBRATE mode", originalRingingState);
+
+            // Verify that the device is vibrating by inspecting the vibrator dumpsys:
+            waitForRingtoneVibrationLogOrTimeout();
+
+            // While the MT call is still ringing, change the ringer mode to “normal” mode:
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(audioManager,
+                    am -> am.setRingerMode(AudioManager.RINGER_MODE_NORMAL));
+
+            // Verify that the call is now audibly ringing:
+            Boolean updatedRingingState =
+                    queue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            assertNotNull("Telecom should have played a ringtone, timed out waiting for "
+                    + "state change", updatedRingingState);
+            assertTrue("Telecom should have played a ringtone.", updatedRingingState);
+
+            // Verify that the device is still vibrating by inspecting the vibrator dumpsys:
+            waitForRingtoneVibrationLogOrTimeout();
+
+            // Disconnect the call:
+            answerViaInCallServiceAndVerify(mt, VideoProfile.STATE_AUDIO_ONLY);
+            setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
+        } finally {
+            tearDownApp(managedApp);
+            audioManager.unregisterAudioPlaybackCallback(callback);
+        }
+    }
+
     private static Boolean isCurrentVibrationInDumpsys() throws Exception {
         String result =
                 executeShellCommand(
