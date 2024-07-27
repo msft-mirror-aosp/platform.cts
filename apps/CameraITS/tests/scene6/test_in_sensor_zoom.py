@@ -44,7 +44,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       logical_props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(logical_props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
-      debug = self.debug_mode
+
       # Skip the test if CROPPED_RAW is not present in stream use cases
       camera_properties_utils.skip_unless(
           camera_properties_utils.cropped_raw_stream_use_case(props))
@@ -127,7 +127,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
                                f' active array size: {aw} x {ah}')
         # Find FoV to determine minimum circle size for
         # find_center_circle's parameter
-        fov_ratio = zoom_capture_utils._DEFAULT_FOV_RATIO
+        fov_ratio = zoom_capture_utils.DEFAULT_FOV_RATIO
         if self.hidden_physical_id is not None:
           logical_cam_fov = float(cam.calc_camera_fov(logical_props))
           cam_fov = float(cam.calc_camera_fov(props))

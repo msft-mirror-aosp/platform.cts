@@ -17,6 +17,7 @@
 import logging
 import math
 
+_AE_MODE_OFF = 0
 _AE_MODE_ON_AUTO_FLASH = 2
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
@@ -387,23 +388,6 @@ def int_to_rational(i):
     return {'numerator': i, 'denominator': 1}
 
 
-def get_largest_yuv_format(props, match_ar=None):
-  """Return a capture request and format spec for the largest yuv size.
-
-  Args:
-    props: object returned from camera_properties_utils.get_camera_properties().
-    match_ar: (Optional) a (w, h) tuple. Aspect ratio to match during search.
-
-  Returns:
-    fmt:   an output format specification for the largest possible yuv format
-           for this device.
-  """
-  size = get_available_output_sizes('yuv', props, match_ar_size=match_ar)[0]
-  fmt = {'format': 'yuv', 'width': size[0], 'height': size[1]}
-
-  return fmt
-
-
 def get_smallest_yuv_format(props, match_ar=None):
   """Return a capture request and format spec for the smallest yuv size.
 
@@ -556,21 +540,27 @@ def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
       * metadata: the capture result object
   """
   preview_req_start = auto_capture_request()
-  preview_req_start[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_start['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_start[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_start[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
+  preview_req_start[
+      'android.flash.strengthLevel'] = strength
   # Repeat preview requests with aePrecapture set to IDLE
   # until AE is converged.
   preview_req_idle = auto_capture_request()
-  preview_req_idle[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_idle['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_idle[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_idle[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  preview_req_idle[
+      'android.flash.strengthLevel'] = strength
   # Single still capture request.
   still_capture_req = auto_capture_request()
   still_capture_req[

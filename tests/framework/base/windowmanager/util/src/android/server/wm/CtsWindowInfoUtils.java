@@ -45,6 +45,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +73,6 @@ public class CtsWindowInfoUtils {
      *
      * @param predicate The predicate tested each time window infos change.
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
-     * @param unit      The units associated with timeout.
      * @param uiAutomation Pass in a uiAutomation to use. If null is passed in, the default will
      *                     be used. Passing non null is only needed if the test has a custom version
      *                     of uiAutomtation since retrieving a uiAutomation could overwrite it.
@@ -80,7 +80,7 @@ public class CtsWindowInfoUtils {
      * the timeout is reached. False otherwise.
      */
     public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
-            long timeout, @NonNull TimeUnit unit, @Nullable UiAutomation uiAutomation)
+            @NonNull Duration timeout, @Nullable UiAutomation uiAutomation)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -101,7 +101,7 @@ public class CtsWindowInfoUtils {
                 var listener = new WindowInfosListenerForTest();
                 try {
                     listener.addWindowInfosListener(checkPredicate);
-                    latch.await(timeout, unit);
+                    latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
                 } finally {
                     listener.removeWindowInfosListener(checkPredicate);
                 }
@@ -127,19 +127,18 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Same as {@link #waitForWindowInfos(Predicate, long, TimeUnit, UiAutomation)}, but passes in
+     * Same as {@link #waitForWindowInfos(Predicate, Duration, UiAutomation)}, but passes in
      * a null uiAutomation object. This should be used in most cases unless there's a custom
      * uiAutomation object used in the test.
      *
      * @param predicate The predicate tested each time window infos change.
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
-     * @param unit      The units associated with timeout.
      * @return True if the provided predicate is true for any invocation before
      * the timeout is reached. False otherwise.
      */
     public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
-            long timeout, @NonNull TimeUnit unit) throws InterruptedException {
-        return waitForWindowInfos(predicate, timeout, unit, null /* uiAutomation */);
+            @NonNull Duration timeout) throws InterruptedException {
+        return waitForWindowInfos(predicate, timeout, null /* uiAutomation */);
     }
 
     /**
@@ -163,9 +162,9 @@ public class CtsWindowInfoUtils {
      * reached. False otherwise.
      * @hide
      */
-    public static boolean waitForWindowInfo(@NonNull Predicate<WindowInfo> predicate, long timeout,
-            @NonNull TimeUnit unit, @NonNull Supplier<IBinder> windowTokenSupplier, int displayId)
-            throws InterruptedException {
+    public static boolean waitForWindowInfo(@NonNull Predicate<WindowInfo> predicate,
+            @NonNull Duration timeout, @NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
         Predicate<List<WindowInfo>> wrappedPredicate = windowInfos -> {
             IBinder windowToken = windowTokenSupplier.get();
             if (windowToken == null) {
@@ -185,7 +184,7 @@ public class CtsWindowInfoUtils {
 
             return false;
         };
-        return waitForWindowInfos(wrappedPredicate, timeout, unit);
+        return waitForWindowInfos(wrappedPredicate, timeout);
     }
 
     /**
@@ -194,18 +193,18 @@ public class CtsWindowInfoUtils {
     public static boolean waitForWindowVisible(@NonNull View view) throws InterruptedException {
         // Wait until view is attached to a display
         PollingCheck.waitFor(() -> view.getDisplay() != null, "View not attached to a display");
-        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS,
+        return waitForWindowInfo(windowInfo -> true, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
                 view::getWindowToken, view.getDisplay().getDisplayId());
     }
 
     public static boolean waitForWindowVisible(@NonNull IBinder windowToken)
             throws InterruptedException {
-        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS,
+        return waitForWindowInfo(windowInfo -> true, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
                 () -> windowToken, DEFAULT_DISPLAY);
     }
 
     /**
-     * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(int, TimeUnit, Supplier)}. Adopts
+     * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(Duration, Supplier)}. Adopts
      * required permissions and waits at least five seconds before timing out.
      *
      * @param window The window to wait on.
@@ -213,7 +212,7 @@ public class CtsWindowInfoUtils {
      * reached. False otherwise.
      */
     public static boolean waitForWindowOnTop(@NonNull Window window) throws InterruptedException {
-        return waitForWindowOnTop(HW_TIMEOUT_MULTIPLIER * 5, TimeUnit.SECONDS,
+        return waitForWindowOnTop(Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
                 () -> window.getDecorView().getWindowToken());
     }
 
@@ -230,15 +229,14 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param unit                The units associated with timeout.
-     * @param windowTokenSupplier Supplies the window token for the window to wait on. The
+     * @param predicate Supplies the window token for the window to wait on. The
      *                            supplier is called each time window infos change. If the
      *                            supplier returns null, the window is assumed not visible
      *                            yet.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTop(long timeout, @NonNull TimeUnit unit,
+    public static boolean waitForWindowOnTop(@NonNull Duration timeout,
                                              @NonNull Predicate<WindowInfo> predicate)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
@@ -311,7 +309,7 @@ public class CtsWindowInfoUtils {
                         latch.countDown();
                     }
                 };
-                mTimer.schedule(mTask, 200 * HW_TIMEOUT_MULTIPLIER);
+                mTimer.schedule(mTask, 200L * HW_TIMEOUT_MULTIPLIER);
             }
         };
 
@@ -319,7 +317,7 @@ public class CtsWindowInfoUtils {
             var listener = new WindowInfosListenerForTest();
             try {
                 listener.addWindowInfosListener(windowNotOccluded);
-                latch.await(timeout, unit);
+                latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
             } finally {
                 listener.removeWindowInfosListener(windowNotOccluded);
             }
@@ -362,7 +360,6 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param unit                The units associated with timeout.
      * @param windowTokenSupplier Supplies the window token for the window to wait on. The
      *                            supplier is called each time window infos change. If the
      *                            supplier returns null, the window is assumed not visible
@@ -370,10 +367,10 @@ public class CtsWindowInfoUtils {
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTop(long timeout, @NonNull TimeUnit unit,
+    public static boolean waitForWindowOnTop(@NonNull Duration timeout,
             @NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
-        return waitForWindowOnTop(timeout, unit, windowInfo -> {
+        return waitForWindowOnTop(timeout, windowInfo -> {
             IBinder windowToken = windowTokenSupplier.get();
             return windowToken != null && windowInfo.windowToken == windowToken;
         });
@@ -388,11 +385,10 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout The amount of time to wait for the window to be visible.
-     * @param unit    The units associated with timeout.
      * @return True if window geometry becomes stable before the timeout is reached. False
      * otherwise.
      */
-    public static boolean waitForStableWindowGeometry(long timeout, @NonNull TimeUnit unit)
+    public static boolean waitForStableWindowGeometry(@NonNull Duration timeout)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -433,14 +429,14 @@ public class CtsWindowInfoUtils {
                     latch.countDown();
                 }
             };
-            timer.schedule(task[0], 200 * HW_TIMEOUT_MULTIPLIER);
+            timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
         };
 
         runWithSurfaceFlingerPermission(() -> {
             var listener = new WindowInfosListenerForTest();
             try {
                 listener.addWindowInfosListener(consumer);
-                latch.await(timeout, unit);
+                latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
             } finally {
                 listener.removeWindowInfosListener(consumer);
             }
@@ -524,7 +520,7 @@ public class CtsWindowInfoUtils {
             return false;
         };
 
-        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
+        if (!waitForWindowInfo(predicate, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER),
                 windowTokenSupplier, DEFAULT_DISPLAY)) {
             return null;
         }
@@ -543,7 +539,7 @@ public class CtsWindowInfoUtils {
             return false;
         };
 
-        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
+        if (!waitForWindowInfo(predicate, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER),
                 windowTokenSupplier, DEFAULT_DISPLAY)) {
             return null;
         }
@@ -632,7 +628,7 @@ public class CtsWindowInfoUtils {
                 Log.d(tag, "     " + windowInfo);
             }
             return true;
-        }, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
+        }, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER));
     }
 
     /**
