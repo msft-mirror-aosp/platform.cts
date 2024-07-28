@@ -75,6 +75,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -148,7 +149,7 @@ public class SurfaceControlInputReceiverTests {
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS, () -> clientToken));
+                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords);
@@ -218,7 +219,7 @@ public class SurfaceControlInputReceiverTests {
             assertNotNull("Failed to receive embedded client name", embeddedName);
 
             Rect bounds = new Rect();
-            boolean success = waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS,
+            boolean success = waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S),
                     windowInfo -> getBoundsIfWindowIsVisible(windowInfo, mActivity.getDisplayId(),
                             embeddedName, bounds));
             assertAndDumpWindowState(TAG, "Failed to find embedded SC on top", success);
@@ -277,8 +278,7 @@ public class SurfaceControlInputReceiverTests {
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(sc);
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be on top",
-                    waitForWindowOnTop(WAIT_TIME_S, TimeUnit.SECONDS,
-                            () -> clientToken));
+                    waitForWindowOnTop(Duration.ofSeconds(WAIT_TIME_S), () -> clientToken));
             Point tappedCoords = new Point();
             tapOnWindowCenter(InstrumentationRegistry.getInstrumentation(),
                     () -> clientToken, tappedCoords);
@@ -385,7 +385,7 @@ public class SurfaceControlInputReceiverTests {
                                     }
                                 }
                                 return false;
-                            }, WAIT_TIME_S, TimeUnit.SECONDS));
+                            }, Duration.ofSeconds(WAIT_TIME_S)));
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
             sendTap(InstrumentationRegistry.getInstrumentation(), coord);
@@ -475,7 +475,7 @@ public class SurfaceControlInputReceiverTests {
                                     }
                                 }
                                 return false;
-                            }, WAIT_TIME_S, TimeUnit.SECONDS));
+                            }, Duration.ofSeconds(WAIT_TIME_S)));
             final Point coord = new Point(bounds.left + bounds.width() / 2,
                     bounds.top + bounds.height() / 2);
             sendTap(InstrumentationRegistry.getInstrumentation(), coord);
@@ -640,7 +640,7 @@ public class SurfaceControlInputReceiverTests {
 
             IBinder clientToken = mWm.getSurfaceControlInputClientToken(mEmbeddedSc);
             assertNotNull("SurfaceControl client token was null", clientToken);
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
             assertAndDumpWindowState(TAG,
                     "Failed to wait for SurfaceControl with Input to be visible",
                     waitForWindowVisible(clientToken));
@@ -724,7 +724,7 @@ public class SurfaceControlInputReceiverTests {
 
             surfaceView.setOnTouchListener(hostTouchListener);
             mEmbeddedTransferToken = mIAttachEmbeddedWindow.getEmbeddedInputTransferToken();
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
 
         private void tearDown() throws RemoteException {

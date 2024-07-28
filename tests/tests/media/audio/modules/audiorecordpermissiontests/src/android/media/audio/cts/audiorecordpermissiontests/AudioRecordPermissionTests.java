@@ -17,15 +17,21 @@
 package android.media.audio.cts.audiorecordpermissiontests;
 
 import static android.media.audio.cts.audiorecordpermissiontests.common.ActionsKt.*;
+import static android.app.AppOpsManager.OP_RECORD_AUDIO;
+import static android.app.AppOpsManager.MODE_ALLOWED;
+import static android.app.AppOpsManager.MODE_IGNORED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.media.mediatestutils.TestUtils.getFutureForIntent;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
 import android.app.Instrumentation;
+import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -96,6 +102,7 @@ public class AudioRecordPermissionTests {
         // TODO(b/297259825) we never started recording unsilenced, due to avd sometime
         // providing only silenced mic data.
         assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
         final var future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
@@ -104,6 +111,7 @@ public class AudioRecordPermissionTests {
 
         // Future completes when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -113,6 +121,7 @@ public class AudioRecordPermissionTests {
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
         assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
         final var future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
@@ -121,6 +130,7 @@ public class AudioRecordPermissionTests {
             SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_SLEEP");
             // Future completes when silenced. If not, timeout and throw
             future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+            assertFalse(getOpState(TEST_PACKAGE));
         } finally {
             // Wait for unsilence after return to TOP
             final var receiveFuture = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
@@ -139,6 +149,7 @@ public class AudioRecordPermissionTests {
         startActivity(TEST_PACKAGE);
         startForeground(TEST_PACKAGE);
         assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
         final var future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
@@ -147,6 +158,7 @@ public class AudioRecordPermissionTests {
 
         // Assert that we timeout (future should not complete, since we should not be silenced)
         assertThrows(TimeoutException.class, () -> future.get(FALSE_NEG_SECS, TimeUnit.SECONDS));
+        assertTrue(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -158,6 +170,7 @@ public class AudioRecordPermissionTests {
         startActivity(TEST_PACKAGE);
         startForeground(TEST_PACKAGE);
         assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
         final var future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
@@ -166,6 +179,7 @@ public class AudioRecordPermissionTests {
 
         // Future is completes when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
     }
 
     @AsbSecurityTest(cveBugId = 268724205)
@@ -175,6 +189,7 @@ public class AudioRecordPermissionTests {
         // Start an activity, then start recording in a background service
         startActivity(TEST_PACKAGE);
         assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
         // Prime future that the stream is silenced
         final var future = makeFuture(TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
 
@@ -183,6 +198,7 @@ public class AudioRecordPermissionTests {
 
         // Assert that we timeout (future should not complete, since we should not be silenced)
         assertThrows(TimeoutException.class, () -> future.get(FALSE_NEG_SECS, TimeUnit.SECONDS));
+        assertTrue(getOpState(TEST_PACKAGE));
     }
 
     @Test
@@ -245,6 +261,12 @@ public class AudioRecordPermissionTests {
         mServiceStartedPackages.add(packageName);
         SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
         return result;
+    }
+
+    private boolean getOpState(String packageName) throws Exception {
+        final var uid = mContext.getPackageManager().getPackageUid(packageName, /* flags= */ 0);
+        return runWithShellPermissionIdentity(() ->mContext.getSystemService(AppOpsManager.class)
+                .isOperationActive(OP_RECORD_AUDIO, uid, packageName));
     }
 
     private Future makeFuture(String action) {
