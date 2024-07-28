@@ -23,7 +23,6 @@ import time
 import numpy as np
 
 import its_session_utils
-import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
 
@@ -211,10 +210,9 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   logging.debug('Number of frames %d', len(file_list))
   for file in file_list:
-    img = image_processing_utils.convert_image_to_numpy_array(
-        os.path.join(log_path, file)
-    )
-    frames.append(img / 255)
+    img_bgr = cv2.imread(os.path.join(log_path, file))
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    frames.append(img_rgb / 255)
   frame_h, frame_w, _ = frames[0].shape
   logging.debug('Frame size %d x %d', frame_w, frame_h)
 
@@ -286,7 +284,7 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
 def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
                                    zoom_end, step_size, recording_duration_ms,
-                                   pad_frames_at_end=False):
+                                   padded_frames=False):
   """Captures a preview video from the device.
 
   Captures camera preview frames from the passed device.
@@ -298,8 +296,8 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
     zoom_end: (float) is the ending zoom ratio during recording.
     step_size: (float) is the step for zoom ratio during recording.
     recording_duration_ms: preview recording duration in ms.
-    pad_frames_at_end: boolean; Whether to add additional frames at the end of
-      recording to workaround issue with MediaRecorder.
+    padded_frames: boolean; Whether to add additional frames at the beginning
+      and end of recording to workaround issue with MediaRecorder.
 
   Returns:
     recording object as described by cam.do_preview_recording_with_dynamic_zoom.
@@ -308,7 +306,7 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
       preview_size,
       stabilize=False,
       sweep_zoom=(zoom_start, zoom_end, step_size, recording_duration_ms),
-      pad_frames_at_end=pad_frames_at_end
+      padded_frames=padded_frames
   )
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
@@ -503,7 +501,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   # frames. Later these green padded frames are removed.
   preview_rec_obj = collect_preview_data_with_zoom(
       cam, preview_size, z_min, z_max, z_step_size,
-      _PREVIEW_DURATION, pad_frames_at_end=True)
+      _PREVIEW_DURATION, padded_frames=True)
 
   preview_file_name = its_session_utils.pull_file_from_dut(
       dut, preview_rec_obj['recordedOutputPath'], log_path)
@@ -516,16 +514,34 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
       log_path, preview_file_name, _IMG_FORMAT
   )
 
-  # Remove extra green buffer frames
-  for file_name in reversed(file_list):
+  first_camera_frame_idx = 0
+  last_camera_frame_idx = len(file_list)
+
+  # Find index of the first-non green frame
+  for (idx, file_name) in enumerate(file_list):
     file_path = os.path.join(log_path, file_name)
     if is_image_green(file_path):
-      file_list.remove(file_name)
+      its_session_utils.remove_file(file_path)
+      logging.debug('Removed green file %s', file_name)
+    else:
+      logging.debug('First camera frame: %s', file_name)
+      first_camera_frame_idx = idx
+      break
+
+  # Find index of last non-green frame
+  for (idx, file_name) in reversed(list(enumerate(file_list))):
+    file_path = os.path.join(log_path, file_name)
+    if is_image_green(file_path):
       its_session_utils.remove_file(file_path)
       logging.debug('Removed green file %s', file_name)
     else:
       logging.debug('Last camera frame: %s', file_name)
+      last_camera_frame_idx = idx
       break
+
+  logging.debug('start idx = %d -- end idx = %d', first_camera_frame_idx,
+                last_camera_frame_idx)
+  file_list = file_list[first_camera_frame_idx:last_camera_frame_idx+1]
 
   # Raise error if capture result and frame count doesn't match
   capture_results = preview_rec_obj['captureMetadata']

@@ -137,11 +137,13 @@ public final class Requirements {
                             {{- SafeTestConfigID $t_id | UpperCamelCase}}());
                 }
                 {{- range $v_id, $v := $r.GetVariants }}
+                {{- if HasConfigVariant $r $t_id $v_id }}
                 public Config{{ SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                         {{- UpperCamelCase $v_id}} withVariant{{- UpperCamelCase $v_id}}() {
                     return new Config{{SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                         {{- UpperCamelCase $v_id}}();
                 }
+                {{- end }}{{/* if HasConfigVariant */}}
                 {{- end }}{{/* range $v_id, $v */}}
             }
             {{- end }}
@@ -151,6 +153,7 @@ public final class Requirements {
             public static final class Variant{{UpperCamelCase $v_id}} {
                 private Variant{{UpperCamelCase $v_id}}() {}
                 {{- range $t_id, $t := $r.GetTestConfigs }}
+                {{- if HasConfigVariant $r $t_id $v_id }}
                 {{- if eq $t_id "" }}
                 public {{UpperCamelCase $r.GetName}}Requirement to(PerformanceClassEvaluator pce) {
                     return pce.addRequirement({{UpperCamelCase $r.GetName}}Requirement.create
@@ -164,6 +167,7 @@ public final class Requirements {
                         {{- UpperCamelCase $v_id}}();
                 }
                 {{- end }}
+                {{- end }}{{/* if HasConfigVariant */}}
                 {{- end }}{{/* range $t_id, $t */}}
             }
             {{- end }}{{/* range $v_id, $v */}}
@@ -171,6 +175,7 @@ public final class Requirements {
             {{- range $t_id, $t := $r.GetTestConfigs }}
             {{- if ne $t_id "" }}
             {{- range $v_id, $v := $r.GetVariants }}
+            {{- if HasConfigVariant $r $t_id $v_id }}
             public static final class Config{{SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
                     {{- UpperCamelCase $v_id}} {
                 private Config{{ SafeTestConfigID $t_id | UpperCamelCase}}AndVariant
@@ -181,6 +186,7 @@ public final class Requirements {
                         {{- UpperCamelCase $v_id}}());
                 }
             }
+            {{- end }}{{/* if HasConfigVariant */}}
             {{- end }}{{/* range $v_id, $v */}}
             {{- end }}
             {{- end }}{{/* range $t_id, $t */}}
@@ -261,6 +267,7 @@ public final class Requirements {
 
         {{- range $t_id, $t := $r.GetTestConfigs }}
         {{- range $v_id, $v := $r.GetVariants }}
+        {{- if HasConfigVariant $r $t_id $v_id }}
 
         /**
           * {{ $r.GetId }} {{$r.GetName}}{{- with $v.GetDescription}} {{.}}{{end}}
@@ -313,6 +320,7 @@ public final class Requirements {
             {{- end }}
             return req;
         }
+        {{- end }}{{/* if HasConfigVariant */}}
         {{- end }}{{/* range $v_id, $v */}}
         {{- end }}{{/* range $t_id, $t */}}
 

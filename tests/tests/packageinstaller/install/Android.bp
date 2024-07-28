@@ -33,6 +33,7 @@ android_test {
         "src/android/packageinstaller/install/cts/IntentTest.kt",
         "src/android/packageinstaller/install/cts/PackageInstallerTestBase.kt",
         "src/android/packageinstaller/install/cts/PreapprovalInstallTest.kt",
+        "src/android/packageinstaller/install/cts/SessionParamsPermissionStateTest.kt",
         "src/android/packageinstaller/install/cts/SessionTest.kt",
         "src/android/packageinstaller/install/cts/SessionTestInstant.kt",
     ],

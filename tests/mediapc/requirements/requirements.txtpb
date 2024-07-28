@@ -56,12 +56,105 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-2"
-  description: "- Concurrent video codec sessions\n- AV1 hardware decoder"
+  name: "Concurrent Video Decoder Sessions"
+  description: "Concurrent video decoder sessions"
+  test_configs: {
+    key: "720p"
+    value: {
+      id: "720p"
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      id: "1080p"
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      id: "4k"
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "VP9"
+    value: {
+      description: "When one of the codecs is VP9, variant used in 720p tests"
+    }
+  }
+  variants: {
+    key: "AV1"
+    value: {
+      description: "When one of the codecs is AV1, variant used in 720p tests"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "The number of frames per second that can be decoded concurrently"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "The number of frames dropped per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST support 6 instances of hardware video decoder sessions (AVC or HEVC) in any codec combination running concurrently at 720p resolution@30 fps."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -69,6 +162,53 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST support 6 instances of hardware video decoder sessions (AVC, HEVC, VP9* or later) in any codec combination running concurrently at 720p resolution@30 fps. *Only 2 instances are required if VP9 codec is present."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -76,6 +216,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support 6 instances of hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30 fps."
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -83,6 +236,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions at 1080p resolution@30 fps and 3 sessions at 4k resolution@30fps, unless AV1. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -90,6 +256,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 1080p resolution@30 fps and 3 sessions at 4k resolution@30fps, unless AV1. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
@@ -2893,7 +3078,7 @@ requirements {
 requirements {
   id: "7.6.1/H-1-1"
   name: "Android 11 Memory"
-  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
   test_configs: {
     key: ""
     value: {
@@ -2903,7 +3088,7 @@ requirements {
   measurements: {
     key: "physical_memory_mb"
     value: {
-      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      description: "Physical memory in MiB as reported by ActivityManager.MemeryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
     }
@@ -2925,7 +3110,7 @@ requirements {
 requirements {
   id: "7.6.1/H-2-1"
   name: "Memory"
-  description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  description: "Minimum memory available to the kernel as reported by ActivityManager.MemoryInfo.totalMemory"
   test_configs: {
     key: ""
     value: {
@@ -2935,7 +3120,7 @@ requirements {
   measurements: {
     key: "physical_memory_mb"
     value: {
-      description: "Physical memory in MiB as reported by android.app.ActivityManager.MemeryInfo.totalMemory."
+      description: "Physical memory in MiB as reported by ActivityManager.MemoryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
     }

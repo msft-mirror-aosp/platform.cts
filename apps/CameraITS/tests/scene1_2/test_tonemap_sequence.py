@@ -104,6 +104,7 @@ class TonemapSequenceTest(its_base_test.ItsBaseTest):
       means = []
 
       # set params based on per_frame_control & read_3a
+      camera_properties_utils.log_minimum_focus_distance(props)
       manual_and_per_frame_control = (
           camera_properties_utils.per_frame_control(props) and
           camera_properties_utils.read_3a(props))
