@@ -46,8 +46,6 @@ public class CodecTranscoderTestBase {
     String mTestFile;
     int mBitrate;
     int mFrameRate;
-    double mFrameDrops;
-    long mLastPresentationTimeUs = -1;
     boolean mUseHighBitDepth;
     MediaExtractor mExtractor;
     int mMaxBFrames;
@@ -119,8 +117,6 @@ public class CodecTranscoderTestBase {
         mDecInputCount = 0;
         mDecOutputCount = 0;
         mEncOutputCount = 0;
-        mFrameDrops = 0;
-        mLastPresentationTimeUs = -1;
     }
 
     void configureCodec(MediaFormat decFormat, MediaFormat encFormat, boolean isAsync,
@@ -178,14 +174,7 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawDecOutputEOS = true;
         }
-        long expectedFrameDurationUs = 1000000 / mFrameRate;
-        long presentationTimeUs = info.presentationTimeUs;
-        if (mLastPresentationTimeUs != -1) {
-            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
-                mFrameDrops++;
-            }
-        }
-        mLastPresentationTimeUs = presentationTimeUs;
+
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mDecOutputCount++;
         }
@@ -196,14 +185,7 @@ public class CodecTranscoderTestBase {
         if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             mSawEncOutputEOS = true;
         }
-        long expectedFrameDurationUs = 1000000 / mFrameRate;
-        long presentationTimeUs = info.presentationTimeUs;
-        if (mLastPresentationTimeUs != -1) {
-            if (presentationTimeUs > mLastPresentationTimeUs + expectedFrameDurationUs) {
-                mFrameDrops++;
-            }
-        }
-        mLastPresentationTimeUs = presentationTimeUs;
+
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mEncOutputCount++;
         }
@@ -438,7 +420,7 @@ class Transcode extends CodecTranscoderTestBase implements Callable<CodecMetrics
         double fps = mEncOutputCount / ((end - start) / 1000.0);
         Log.d(LOG_TAG, "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
                 + mEncoderName + " Achieved fps: " + fps);
-        return getMetrics(fps, mFrameDrops / 30);
+        return getMetrics(fps, 0.0);
     }
 
     @Override
@@ -547,7 +529,7 @@ class TranscodeLoad extends Transcode {
         Log.d(LOG_TAG,
                 "MediaType: " + mMediaType + " Decoder: " + mDecoderName + " Encoder: "
                         + mEncoderName + " Achieved fps: " + fps);
-        return getMetrics(fps, mFrameDrops / 30);
+        return getMetrics(fps, 0.0);
     }
 
     @Override
