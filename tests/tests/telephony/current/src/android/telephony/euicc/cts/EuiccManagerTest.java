@@ -22,6 +22,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.PendingIntent;
@@ -121,6 +122,10 @@ public class EuiccManagerTest {
         }
 
         mEuiccManager = (EuiccManager) getContext().getSystemService(Context.EUICC_SERVICE);
+
+        if (!Flags.enforceTelephonyFeatureMappingForPublicApis()) {
+            assumeNotNull(mEuiccManager);
+        }
     }
 
     @After
