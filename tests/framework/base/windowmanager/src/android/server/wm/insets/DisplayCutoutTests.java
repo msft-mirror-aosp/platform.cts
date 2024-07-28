@@ -94,9 +94,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -192,7 +192,7 @@ public class DisplayCutoutTests {
                         / (float) DENSITY_DEFAULT)
                         * MAXIMUM_SIZE_FOR_NO_LETTERBOX_IF_DEFAULT_OR_SHORT_EDGE_DP);
         assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
+                waitForStableWindowGeometry(Duration.ofSeconds(5)));
     }
 
     @Test
