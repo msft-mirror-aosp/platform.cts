@@ -61,8 +61,6 @@ public class NfcPreferredPaymentTest {
     private CardEmulation mCardEmulation;
     private Context mContext;
 
-    private WalletRoleTestUtils.RoleContext mRoleContext;
-
     private boolean supportsHardware() {
         final PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
         boolean existAnyReqFeature =
