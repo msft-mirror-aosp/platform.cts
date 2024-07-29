@@ -510,9 +510,6 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                 }
                 Log.v(TAG, "Testing Jpeg/R capture for Camera " + id);
 
-                assertTrue(mAllStaticInfo.get(id).isCapabilitySupported(CameraCharacteristics
-                        .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT));
-
                 openDevice(id);
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.JPEG_R, /*repeating*/false);
@@ -549,7 +546,10 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
                         ImageFormat.JPEG_R, /*repeating*/false);
                 params.mColorSpace = ColorSpace.Named.DISPLAY_P3;
                 params.mUseColorSpace = true;
-                params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10;
+                if (mStaticInfo.isCapabilitySupported(CameraCharacteristics
+                        .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10;
+                }
                 bufferFormatTestByCamera(params);
             } finally {
                 closeDevice(id);
