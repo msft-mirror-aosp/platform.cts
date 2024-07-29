@@ -71,6 +71,8 @@ public class TestActivity extends Activity {
 
     private long mOnBackPressedCallCount;
 
+    private boolean mPaused = false;
+
     private TextView mOverlayView;
     private OnBackInvokedCallback mIgnoreBackKeyCallback = () -> {
         // Ignore back.
@@ -158,6 +160,22 @@ public class TestActivity extends Activity {
             getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(mIgnoreBackKeyCallback);
             mIgnoreBackKeyCallbackRegistered = false;
         }
+    }
+
+    @Override
+    protected void onPause() {
+        mPaused = true;
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        mPaused = false;
+        super.onResume();
+    }
+
+    public boolean isPaused() {
+        return mPaused;
     }
 
     /**

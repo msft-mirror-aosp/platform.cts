@@ -20,9 +20,12 @@ import android.os.SystemClock
 import android.util.Log
 import android.view.InputDevice
 import android.view.MotionEvent
+import android.view.MotionEvent.TOOL_TYPE_FINGER
 import android.view.VelocityTracker
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.cts.input.MotionEventBuilder
+import com.android.cts.input.PointerBuilder
 import com.google.common.truth.Truth.assertThat
 import org.junit.After
 import org.junit.Assert.fail
@@ -204,9 +207,15 @@ class VelocityTrackerTest {
         for (i in 0 until numEvents) {
             val eventTime = downTime + i * 10
             val action = if (i == 0) MotionEvent.ACTION_DOWN else MotionEvent.ACTION_MOVE
-            val event = MotionEvent.obtain(downTime, eventTime, action, 0f, 0f, 0)
-            // MotionEvent translation/offset is only applied to pointer sources, like touchscreens.
-            event.source = InputDevice.SOURCE_TOUCHSCREEN
+            // MotionEvent translation/offset is only applied to pointer sources, so use touchscreen
+            // as the source for the event
+            val event = MotionEventBuilder(
+                action,
+                InputDevice.SOURCE_TOUCHSCREEN
+            ).downTime(downTime).eventTime(eventTime).pointer(
+                PointerBuilder(0, TOOL_TYPE_FINGER).x(0f).y(0f)
+            ).build()
+
             event.offsetLocation((i * 10).toFloat(), (i * 10).toFloat())
             vt.addMovement(event)
         }

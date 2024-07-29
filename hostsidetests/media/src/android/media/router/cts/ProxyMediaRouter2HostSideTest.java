@@ -136,17 +136,6 @@ public class ProxyMediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @Test
     @AppModeFull
     @RequiresDevice
-    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException()
-            throws DeviceNotAvailableException {
-        runDeviceTests(
-                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_PACKAGE,
-                PROXY_MEDIA_ROUTER_WITH_MEDIA_CONTENT_CONTROL_HELPER_TEST_CLASS,
-                "requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException");
-    }
-
-    @Test
-    @AppModeFull
-    @RequiresDevice
     public void cancelScanRequest_callTwice_throwsIllegalArgumentException()
             throws DeviceNotAvailableException {
         runDeviceTests(

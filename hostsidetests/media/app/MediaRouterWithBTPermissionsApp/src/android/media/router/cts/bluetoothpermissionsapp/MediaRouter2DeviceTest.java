@@ -439,6 +439,18 @@ public class MediaRouter2DeviceTest {
         }
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
+    @Test
+    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException() {
+        MediaRouter2 localRouter = MediaRouter2.getInstance(mContext);
+        assertThat(localRouter).isNotNull();
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        localRouter.requestScan(
+                                new ScanRequest.Builder().setScreenOffScan(true).build()));
+    }
+
     @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})
     @Test
     public void setRouteListingPreference_propagatesToManager() {

@@ -408,8 +408,14 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 true /* imeRequestsBackCallback */,
                 (instrumentation, editorRef) -> {
                     TestUtils.turnScreenOff();
+                    TestUtils.waitOnMainUntil(
+                            () -> ((TestActivity) editorRef.get().getContext()).isPaused(),
+                            TIMEOUT);
                     TestUtils.turnScreenOn();
                     TestUtils.unlockScreen();
+                    TestUtils.waitOnMainUntil(
+                            () -> !((TestActivity) editorRef.get().getContext()).isPaused(),
+                            TIMEOUT);
                     // Before testing the back procedure, ensure the test activity has the window
                     // focus and the IME visible after screen-on.
                     TestUtils.waitOnMainUntil(editorRef.get()::hasWindowFocus, TIMEOUT);
