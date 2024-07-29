@@ -7,6 +7,7 @@ import static android.nfc.cts.WalletRoleTestUtils.getWalletRoleHolderService;
 import static android.nfc.cts.WalletRoleTestUtils.runWithRole;
 import static android.nfc.cts.WalletRoleTestUtils.runWithRoleNone;
 
+import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static org.junit.Assume.assumeFalse;
@@ -34,6 +35,7 @@ import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.PollingFrame;
 import android.nfc.cardemulation.PollingFrame.PollingFrameType;
+import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.RemoteException;
@@ -368,6 +370,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testTypeAPollingLoopToDefault() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         ComponentName originalDefault = null;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
@@ -393,6 +396,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testTypeAPollingLoopToWalletHolder() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME,
                 () -> {
                     NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -415,6 +419,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testCustomFrameToCustomInTwoFullLoops() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.WALLET_HOLDER_PACKAGE_NAME,
                 () -> {
                     NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -451,6 +456,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAPollingLoopToForeground() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
@@ -511,6 +517,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTypeAOneLoopPollingLoopToForeground() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
@@ -549,6 +556,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testTypeABNoOffPollingLoopToDefault() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         ComponentName originalDefault = null;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
@@ -575,6 +583,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testTypeAPollingLoopToForegroundWithWalletHolder() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
@@ -621,6 +630,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTwoCustomPollingLoopToPreferredCustomAndBackgroundDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
@@ -679,6 +689,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testTwoCustomPollingLoopToCustomAndBackgroundDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         assumeTrue(adapter.isObserveModeSupported());
         adapter.notifyHceDeactivated();
@@ -742,6 +753,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomDynamic() {
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         ComponentName customServiceName = new ComponentName(mContext, CustomHostApduService.class);
@@ -760,6 +772,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomDynamicAndRemove() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -798,6 +811,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomWithPrefixDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -821,6 +835,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustomWithPrefix() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         String testName = new Object() {
@@ -840,6 +855,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testThreeWayConflictPollingLoopToForegroundDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         ComponentName originalDefault = null;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
@@ -879,6 +895,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testBackgroundForegroundConflictPollingLoopToForegroundDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -912,6 +929,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testBackgroundPaymentConflictPollingLoopToPaymentDynamic() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         ComponentName originalDefault = null;
@@ -946,6 +964,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testCustomPollingLoopToCustom() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         String testName = new Object() {
@@ -962,6 +981,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testThreeWayConflictPollingLoopToForeground() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         ComponentName originalDefault = null;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
@@ -991,6 +1011,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testThreeWayConflictPollingLoopToForegroundWithWalletHolder() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         Activity activity = createAndResumeActivity();
@@ -1016,6 +1037,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void testBackgroundForegroundConflictPollingLoopToForeground() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
@@ -1042,6 +1064,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     @RequiresFlagsDisabled(android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED)
     public void testBackgroundPaymentConflictPollingLoopToPayment() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         adapter.notifyHceDeactivated();
         ComponentName originalDefault = null;
@@ -1066,6 +1089,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testBackgroundWalletConflictPollingLoopToWallet_walletRoleEnabled() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         runWithRole(mContext, WALLET_HOLDER_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             adapter.notifyHceDeactivated();
@@ -1087,6 +1111,7 @@ public class CardEmulationTest {
                            Flags.FLAG_NFC_OBSERVE_MODE,
                            android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testAutoDisableObserveMode() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
             Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
@@ -1122,6 +1147,7 @@ public class CardEmulationTest {
                            android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
                            Flags.FLAG_NFC_OBSERVE_MODE})
     public void testDontAutoDisableObserveModeInForeground() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
@@ -1158,6 +1184,7 @@ public class CardEmulationTest {
                            android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
                            Flags.FLAG_NFC_OBSERVE_MODE})
     public void testDontAutoDisableObserveModeInForegroundTwoServices() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
@@ -1204,6 +1231,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testAutoTransact() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
@@ -1241,6 +1269,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testAutoTransact_walletRoleEnabled() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -1277,6 +1306,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testAutoTransactDynamic() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
@@ -1317,6 +1347,7 @@ public class CardEmulationTest {
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP,
             Flags.FLAG_NFC_OBSERVE_MODE})
     public void testOffHostAutoTransactDynamic() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
         assumeTrue(adapter.isObserveModeSupported());
@@ -1374,6 +1405,7 @@ public class CardEmulationTest {
             Flags.FLAG_NFC_OBSERVE_MODE,
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testAutoTransactDynamic_walletRoleEnabled() throws Exception {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         restoreOriginalService();
         runWithRole(mContext, CTS_PACKAGE_NAME, () -> {
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
@@ -1414,6 +1446,7 @@ public class CardEmulationTest {
     @Test
     @RequiresFlagsEnabled({android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP})
     public void testInvalidPollingLoopFilter() {
+        assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         ComponentName customServiceName = new ComponentName(mContext, CustomHostApduService.class);
