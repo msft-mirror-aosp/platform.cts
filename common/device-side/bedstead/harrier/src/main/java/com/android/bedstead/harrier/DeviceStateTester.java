@@ -91,7 +91,7 @@ public final class DeviceStateTester implements AutoCloseable {
     private Statement statement(Description description) {
         return new Statement() {
             @Override
-            public void evaluate() throws Throwable {
+            public void evaluate() {
                 mDeviceState.prepareTestState(description);
             }
         };

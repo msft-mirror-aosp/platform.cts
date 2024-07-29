@@ -43,8 +43,4 @@ class GlobalSettingsComponent : DeviceStateComponent {
         }
         originalGlobalSettings.clear()
     }
-
-    override fun releaseResources() {
-        originalGlobalSettings.clear()
-    }
 }

@@ -23,6 +23,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.components.TestAppsComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
@@ -37,7 +38,7 @@ import com.android.bedstead.testapp.TestAppQueryBuilder
  */
 class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val enterpriseComponent: EnterpriseComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
 
@@ -54,21 +55,28 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
     private val mRemovedDeviceAdmins: MutableMap<String, DevicePolicyController> = HashMap()
 
     fun ensureHasNoTestDeviceAdmin(userType: UserType) {
-        val user: UserReference = deviceState.resolveUserTypeToUser(userType)
+        val user: UserReference = userTypeResolver.toUser(userType)
         val remoteDeviceAdmins = RemoteDeviceAdmin.fetchAllRemoteDeviceAdmins(user)
         for (remoteDeviceAdmin in remoteDeviceAdmins) {
             remoteDeviceAdmin.devicePolicyController().remove()
 
-            if (!mAddedDeviceAdmins.remove(remoteDeviceAdmin.key(),
-                            remoteDeviceAdmin.devicePolicyController())) {
+            if (!mAddedDeviceAdmins.remove(
+                    remoteDeviceAdmin.key(),
+                    remoteDeviceAdmin.devicePolicyController()
+                )
+            ) {
                 mRemovedDeviceAdmins[remoteDeviceAdmin.key()] =
-                        remoteDeviceAdmin.devicePolicyController()
+                    remoteDeviceAdmin.devicePolicyController()
             }
         }
     }
 
-    fun ensureHasDeviceAdmin(key: String, userType: UserType, isPrimary: Boolean,
-                             deviceAdminQuery: TestAppQueryBuilder = TestAppProvider().query()) {
+    fun ensureHasDeviceAdmin(
+        key: String,
+        userType: UserType,
+        isPrimary: Boolean,
+        deviceAdminQuery: TestAppQueryBuilder = TestAppProvider().query()
+    ) {
         var deviceAdminQueryMutable = deviceAdminQuery
         deviceAdminQueryMutable.applyAnnotation(
             testAppsComponent.additionalQueryParameters.getOrDefault(key, null)
@@ -79,18 +87,19 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
                 .wherePackageName()
                 .isEqualTo(RemoteDeviceAdmin.REMOTE_DEVICE_ADMIN_APP_PACKAGE_NAME)
         }
-        if (isPrimary && enterpriseComponent.primaryPolicyManager != null
-                && !deviceAdminQueryMutable.matches(
-                    enterpriseComponent.primaryPolicyManager?.testApp())) {
+        if (isPrimary && enterpriseComponent.primaryPolicyManager != null &&
+            !deviceAdminQueryMutable.matches(enterpriseComponent.primaryPolicyManager?.testApp())
+        ) {
             throw IllegalStateException(
                     "Only one DeviceAdmin can be marked as primary per test (current primary is " +
-                            enterpriseComponent.primaryPolicyManager + ")");
+                            enterpriseComponent.primaryPolicyManager + ")"
+            )
         }
         val currentRemoteDeviceAdmin =
             RemoteDeviceAdmin.fetchRemoteDeviceAdmin(deviceAdminQueryMutable)
         val deviceAdmin: DevicePolicyController
         if (currentRemoteDeviceAdmin == null || !mAddedDeviceAdmins.containsKey(key)) {
-            val user: UserReference = deviceState.resolveUserTypeToUser(userType)
+            val user: UserReference = userTypeResolver.toUser(userType)
             deviceAdmin = RemoteDeviceAdmin.setAsDeviceAdmin(user, deviceAdminQueryMutable)
                     .devicePolicyController()
             if (!mRemovedDeviceAdmins.remove(key, deviceAdmin)) {
@@ -102,7 +111,7 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
 
         if (isPrimary) {
             enterpriseComponent.primaryPolicyManager =
-                    RemoteDeviceAdmin.forDevicePolicyController(deviceAdmin);
+                RemoteDeviceAdmin.forDevicePolicyController(deviceAdmin)
         }
     }
 
@@ -120,9 +129,10 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
         if (mAddedDeviceAdmins.containsKey(key)) {
             return RemoteDeviceAdmin.forDevicePolicyController(mAddedDeviceAdmins.get(key))
         }
-        throw IllegalStateException("No Harrier-managed device admin exists for the given key. " +
-                "This method should only be used when the @EnsureHasDeviceAdmin annotation was " +
-                "used.")
+        throw IllegalStateException(
+            "No Harrier-managed device admin exists for the given key. This method should only " +
+                    "be used when the @EnsureHasDeviceAdmin annotation was used."
+        )
     }
 
     override fun teardownShareableState() {
@@ -146,13 +156,7 @@ class DeviceAdminComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
         mRemovedDeviceAdmins.clear()
     }
 
-    override fun releaseResources() {
-        mAddedDeviceAdmins.clear()
-        mRemovedDeviceAdmins.clear()
-    }
-
     private companion object {
         const val LOG_TAG = "DeviceAdminComponent"
     }
-
 }

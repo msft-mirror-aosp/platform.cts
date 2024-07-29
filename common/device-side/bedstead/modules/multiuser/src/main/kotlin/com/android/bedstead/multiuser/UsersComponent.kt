@@ -56,7 +56,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
     private val userRestrictionsComponent: UserRestrictionsComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val context = context().instrumentedContext()
     private val createdUsers: MutableList<UserReference> = mutableListOf()
     private val mRemovedUsers: MutableList<RemovedUser> = mutableListOf()
@@ -415,8 +415,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
      * See [com.android.bedstead.harrier.DeviceState.otherUser]
      */
     fun otherUser(): UserReference {
-        checkNotNull(otherUserType) { "No other user specified. Use @OtherUser" }
-        return deviceState.resolveUserTypeToUser(otherUserType)
+        otherUserType?.let {
+            return userTypeResolver.toUser(it)
+        } ?: throw IllegalStateException("No other user specified. Use @OtherUser")
     }
 
     /**
@@ -485,6 +486,87 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         )
     }
 
+    /**
+     * See [profile]
+     */
+    fun profile(profileType: String, forUser: UserReference): UserReference {
+        val resolvedUserType = users().supportedType(profileType) ?: throw IllegalStateException(
+            "Can not have a profile of type $profileType as they are not supported on this device"
+        )
+        return profile(resolvedUserType, forUser)
+    }
+
+    /**
+     * See [profile]
+     */
+    fun profile(
+        profileType: String,
+        forUser: com.android.bedstead.harrier.UserType
+    ): UserReference = profile(profileType, userTypeResolver.toUser(forUser))
+
+    /**
+     * See [DeviceState.tvProfile]
+     */
+    fun tvProfile(): UserReference {
+        return tvProfile(forUser = com.android.bedstead.harrier.UserType.INSTRUMENTED_USER)
+    }
+
+    /**
+     * See [DeviceState.tvProfile]
+     */
+    fun tvProfile(forUser: com.android.bedstead.harrier.UserType): UserReference {
+        return tvProfile(userTypeResolver.toUser(forUser))
+    }
+
+    /**
+     * See [DeviceState.tvProfile]
+     */
+    fun tvProfile(forUser: UserReference): UserReference {
+        return profile(TV_PROFILE_TYPE_NAME, forUser)
+    }
+
+    /**
+     * See [DeviceState.cloneProfile]
+     */
+    fun cloneProfile(): UserReference {
+        return cloneProfile(forUser = com.android.bedstead.harrier.UserType.INITIAL_USER)
+    }
+
+    /**
+     * See [DeviceState.cloneProfile]
+     */
+    fun cloneProfile(forUser: com.android.bedstead.harrier.UserType): UserReference {
+        return cloneProfile(userTypeResolver.toUser(forUser))
+    }
+
+    /**
+     * See [DeviceState.cloneProfile]
+     */
+    fun cloneProfile(forUser: UserReference): UserReference {
+        return profile(CLONE_PROFILE_TYPE_NAME, forUser)
+    }
+
+    /**
+     * See [DeviceState.privateProfile]
+     */
+    fun privateProfile(): UserReference {
+        return privateProfile(forUser = com.android.bedstead.harrier.UserType.INITIAL_USER)
+    }
+
+    /**
+     * See [DeviceState.privateProfile]
+     */
+    fun privateProfile(forUser: com.android.bedstead.harrier.UserType): UserReference {
+        return privateProfile(userTypeResolver.toUser(forUser))
+    }
+
+    /**
+     * See [DeviceState.privateProfile]
+     */
+    fun privateProfile(forUser: UserReference): UserReference {
+        return profile(PRIVATE_PROFILE_TYPE_NAME, forUser)
+    }
+
     private fun getProfileManagedByHarrier(
         userType: UserType,
         forUser: UserReference
@@ -515,7 +597,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         switchedToParentUser: OptionalBoolean,
         isQuietModeEnabled: OptionalBoolean
     ) {
-        val forUserReference = deviceState.resolveUserTypeToUser(forUser)
+        val forUserReference = userTypeResolver.toUser(forUser)
         ensureHasProfile(profileType, forUserReference, isQuietModeEnabled, installInstrumentedApp)
         ensureSwitchedToUser(switchedToParentUser, forUserReference)
     }
@@ -615,7 +697,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         profileType: String,
         forUser: com.android.bedstead.harrier.UserType
     ) {
-        val forUserReference: UserReference = deviceState.resolveUserTypeToUser(forUser)
+        val forUserReference: UserReference = userTypeResolver.toUser(forUser)
         val resolvedProfileType = users().supportedType(profileType)
             ?: return // These profile types don't exist so there can't be any
         val profile = users().findProfileOfType(
@@ -634,6 +716,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
     companion object {
         private const val LOG_TAG = "UsersComponent"
+        private const val CLONE_PROFILE_TYPE_NAME: String = "android.os.usertype.profile.CLONE"
+        private const val TV_PROFILE_TYPE_NAME: String = "com.android.tv.profile"
+        private const val PRIVATE_PROFILE_TYPE_NAME: String = "android.os.usertype.profile.PRIVATE"
     }
 }
 

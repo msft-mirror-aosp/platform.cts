@@ -25,9 +25,13 @@ import java.lang.annotation.Annotation;
  * Interface used to register a new class which can execute Harrier annotations.
  * <p>
  * This can be used to add additional harrier-compatible annotations without modifying harrier
+ * <p>
+ * Ideally instances of this interface shouldn't contain state but should reference to
+ * extension functions or use objects of {@link DeviceStateComponent}
+ * with {@link BedsteadServiceLocator} as the provider
  */
 // This is written in Java because Kotlin interfaces can't expose default methods to Java
-public interface AnnotationExecutor extends FailureDumper, DeviceStateComponent {
+public interface AnnotationExecutor extends FailureDumper {
     /**
      * Called when an annotation should be applied.
      *
