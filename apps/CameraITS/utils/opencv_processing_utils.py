@@ -296,7 +296,7 @@ class Chart(object):
       scale_factor: float; scaling factor for chart search
     """
     req = capture_request_utils.auto_capture_request()
-    cap_chart = image_processing_utils.stationary_lens_cap(cam, req, fmt)
+    cap_chart = capture_request_utils.stationary_lens_capture(cam, req, fmt)
     img_3a = image_processing_utils.convert_capture_to_rgb_image(
         cap_chart, props)
     img_3a = image_processing_utils.rotate_img_per_argv(img_3a)
