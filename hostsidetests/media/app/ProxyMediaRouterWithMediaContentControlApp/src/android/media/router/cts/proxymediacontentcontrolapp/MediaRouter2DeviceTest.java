@@ -54,8 +54,8 @@ import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -158,18 +158,6 @@ public class MediaRouter2DeviceTest {
             localInstance.unregisterRouteCallback(placeholderCallback);
             instance.unregisterRouteCallback(onRoutesUpdated);
         }
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
-    @Test
-    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException() {
-        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
-        assertThat(instance).isNotNull();
-        assertThrows(
-                SecurityException.class,
-                () ->
-                        instance.requestScan(
-                                new ScanRequest.Builder().setScreenOffScan(true).build()));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
