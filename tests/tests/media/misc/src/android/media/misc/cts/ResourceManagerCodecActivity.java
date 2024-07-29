@@ -17,7 +17,6 @@
 package android.media.misc.cts;
 
 import android.app.Activity;
-import android.content.Context;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
@@ -32,6 +31,7 @@ import java.util.ArrayList;
 
 public class ResourceManagerCodecActivity extends Activity {
     private static final String TAG = "ResourceManagerCodecActivity";
+    private static final int MAX_INSTANCES = 32;
     private static final int FRAME_RATE = 30;
     private static final int IFRAME_INTERVAL = 10;
     private boolean mHighResolution = false;
@@ -57,10 +57,7 @@ public class ResourceManagerCodecActivity extends Activity {
             mMime = extras.getString("mime", mMime);
         }
 
-        Context context = getApplicationContext();
-        int maxInstances = ResourceManagerStubActivity.getMaxCodecInstances(context);
-
-        if (allocateCodecs(maxInstances) == maxInstances) {
+        if (allocateCodecs(MAX_INSTANCES) == MAX_INSTANCES) {
             // As we haven't reached the limit with MAX_INSTANCES,
             // no need to wait for reclaim exception.
             Log.d(TAG, "We may not get reclaim event");
