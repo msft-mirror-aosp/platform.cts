@@ -20,6 +20,8 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
+
+	pb "cts/test/mediapc/requirements/requirements_go_proto"
 )
 
 // Funcs returns a mapping from names of template helper functions to the
@@ -28,15 +30,17 @@ func Funcs() template.FuncMap {
 	// These function are made available in templates by calling their key values, e.g. {{SnakeCase "HelloWorld"}}.
 	return template.FuncMap{
 		// go/keep-sorted start
-		"Dict":           dict,
-		"KebabCase":      kebabCase,
-		"LowerCamelCase": lowerCamelCase,
-		"LowerCase":      strings.ToLower,
-		"SafeReqID":      safeReqID,
-		"SnakeCase":      snakeCase,
-		"TitleCase":      titleCase,
-		"UpperCamelCase": upperCamelCase,
-		"UpperCase":      strings.ToUpper,
+		"Dict":             dict,
+		"HasConfigVariant": HasConfigVariant,
+		"KebabCase":        kebabCase,
+		"LowerCamelCase":   lowerCamelCase,
+		"LowerCase":        strings.ToLower,
+		"SafeReqID":        safeReqID,
+		"SafeTestConfigID": safeTestConfigID,
+		"SnakeCase":        snakeCase,
+		"TitleCase":        titleCase,
+		"UpperCamelCase":   upperCamelCase,
+		"UpperCase":        strings.ToUpper,
 		// go/keep-sorted end
 	}
 }
@@ -122,6 +126,14 @@ func safeReqID(s string) string {
 	return "r" + strings.ToLower(f(f(f(s, "/", "__"), ".", "_"), "-", "_"))
 }
 
+// safeTestConfigID converts a group name to a variable name safe string to append onto a requirement id.
+func safeTestConfigID(s string) string {
+	if s == "" {
+		return ""
+	}
+	return "__" + snakeCase(s)
+}
+
 // dict converts a list of key-value pairs into a map.
 // If there is an odd number of values, the last value is nil.
 // The last key is preserved so in the template it can be referenced like {{$myDict.key}}.
@@ -137,6 +149,19 @@ func dict(v ...any) map[string]any {
 		dict[key] = v[i+1]
 	}
 	return dict
+}
+
+// HasConfigVariant checks if a requirement has a spec for a given test config and variant.
+func HasConfigVariant(r *pb.Requirement, configID string, variantID string) bool {
+	for _, spec := range r.GetSpecs() {
+		if configID == spec.GetTestConfigId() {
+			_, ok := spec.GetVariantSpecs()[variantID]
+			if ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // toString converts a value to a string.

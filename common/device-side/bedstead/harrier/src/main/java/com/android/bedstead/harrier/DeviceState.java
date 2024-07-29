@@ -24,9 +24,11 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
 import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
+import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
+import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
 import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
 import static com.android.queryable.queries.ActivityQuery.activity;
@@ -88,6 +90,7 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
 import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.multiuser.UserRestrictionsComponent;
@@ -95,8 +98,10 @@ import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
+import com.android.bedstead.nene.devicepolicy.DevicePolicy;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
+import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
 import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
@@ -105,6 +110,7 @@ import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
 import com.android.bedstead.nene.utils.ResolveInfoWrapper;
+import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator;
@@ -151,6 +157,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
+
 /**
  * A Junit rule which exposes methods for efficiently changing and querying device state.
  *
@@ -196,6 +204,14 @@ public final class DeviceState extends HarrierRule {
 
     // We allow overriding the limit on a class-by-class basis
     private final Duration mMaxTestDuration;
+    private static final boolean TRACK_DUMPSYS_DEVICE_POLICY_LEAKS = TestApis
+            .instrumentation()
+            .arguments()
+            .getBoolean("track-dumpsys-device-policy-leaks", false);
+    private static final boolean THROW_ON_DEVICE_POLICY_LEAKS = TestApis
+            .instrumentation()
+            .arguments()
+            .getBoolean("throw-on-device-policy-leaks", false);
 
     private ExecutorService mTestExecutor;
     private Thread mTestThread;
@@ -203,6 +219,8 @@ public final class DeviceState extends HarrierRule {
     private final PackageManager mPackageManager = sContext.getPackageManager();
 
     private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
+
+    private final List<TestRuleExecutor> mTestRuleExecutors = new ArrayList<>();
 
     public static final class Builder {
 
@@ -309,6 +327,9 @@ public final class DeviceState extends HarrierRule {
             @Override
             public void evaluate() throws Throwable {
                 Future<Throwable> future = mTestExecutor.submit(() -> {
+                    FailureDumper.Companion.registerCurrentTest(
+                            description.getClassName() + "#" + description.getMethodName()
+                    );
                     try {
                         executeTest(base, description);
                         return null;
@@ -352,17 +373,30 @@ public final class DeviceState extends HarrierRule {
 
     private void executeTest(Statement base, Description description) throws Throwable {
         String testName = description.getMethodName();
+        String devicePolicyDumpBeforeTests = null;
+        if (THROW_ON_DEVICE_POLICY_LEAKS) {
+            devicePolicyDumpBeforeTests = DevicePolicy.INSTANCE.dump();
+        }
 
         try {
             prepareTestState(description);
             base.evaluate();
         } finally {
             Log.d(LOG_TAG, "Tearing down state for test " + testName);
+
+            // Teardown any external rule this test depends on.
+            for (TestRuleExecutor externalRuleExecutor : mTestRuleExecutors) {
+                externalRuleExecutor.teardown(/* deviceState= */ this);
+            }
+
             teardownNonShareableState();
-            if (!mSkipTestTeardown) {
+            if (!mSkipTestTeardown || THROW_ON_DEVICE_POLICY_LEAKS) {
                 teardownShareableState();
             }
             Log.d(LOG_TAG, "Finished tearing down state for test " + testName);
+            if (devicePolicyDumpBeforeTests != null) {
+                printDevicePolicyDumpDifference(devicePolicyDumpBeforeTests);
+            }
         }
     }
 
@@ -387,6 +421,11 @@ public final class DeviceState extends HarrierRule {
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
         applyAnnotations(annotations, /* isTest= */ true);
+
+        List<Annotation> testRulesExecutorAnnotations = annotations.stream()
+                .filter(a -> a.annotationType().getAnnotation(UsesTestRuleExecutor.class) != null)
+                .collect(Collectors.toList());
+        prepareExternalRule(description, testRulesExecutorAnnotations);
 
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
@@ -757,6 +796,11 @@ public final class DeviceState extends HarrierRule {
 
                 Log.d(LOG_TAG, "Preparing state for suite " + description.getClassName());
 
+                String devicePolicyDumpBeforeTests = null;
+                if (TRACK_DUMPSYS_DEVICE_POLICY_LEAKS) {
+                    devicePolicyDumpBeforeTests = DevicePolicy.INSTANCE.dump();
+                }
+
                 Tags.clearTags();
                 Tags.addTag(Tags.USES_DEVICESTATE);
                 boolean isInstantApp = TestApis.packages().instrumented().isInstantApp();
@@ -795,7 +839,7 @@ public final class DeviceState extends HarrierRule {
                 } finally {
                     runAnnotatedMethods(testClass, AfterClass.class);
 
-                    if (!mSkipClassTeardown) {
+                    if (!mSkipClassTeardown || TRACK_DUMPSYS_DEVICE_POLICY_LEAKS) {
                         teardownShareableState();
                     }
 
@@ -807,9 +851,29 @@ public final class DeviceState extends HarrierRule {
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.ANY);
 
                     releaseResources();
+
+                    if (devicePolicyDumpBeforeTests != null) {
+                        printDevicePolicyDumpDifference(devicePolicyDumpBeforeTests);
+                    }
                 }
             }
         };
+    }
+
+    private void printDevicePolicyDumpDifference(@Nonnull String devicePolicyDumpBeforeTests) {
+        String currentDump = DevicePolicy.INSTANCE.dump();
+        // TODO (b/348162683) replace StringLinesDiff with a proper diff
+        StringLinesDiff diff = new StringLinesDiff(devicePolicyDumpBeforeTests, currentDump);
+        if (diff.countLinesDifference() > DEVICE_POLICY_STANDARD_LINES_DIFFERENCE) {
+            Log.w(LOG_TAG, "device_policy dump:\n" + currentDump);
+            String message = "device_policy state has changed, probably a " +
+                    "state leak, these are the new lines:\n" + diff.extraLinesString();
+            if (THROW_ON_DEVICE_POLICY_LEAKS) {
+                throw new NeneException(message);
+            } else {
+                Log.w(LOG_TAG, message);
+            }
+        }
     }
 
     private static final Map<String, String>
@@ -1863,6 +1927,10 @@ public final class DeviceState extends HarrierRule {
         return mLocator.get(getAnnotationExecutorClass(executorClassName));
     }
 
+    private TestRuleExecutor usesTestRuleExecutor(UsesTestRuleExecutor executorClassName) {
+        return mLocator.get(getTestRuleExecutorClass(executorClassName));
+    }
+
     private void requireSystemServiceAvailable(Class<?> serviceClass, FailureMode failureMode) {
         checkFailOrSkip("Requires " + serviceClass + " to be available",
                 TestApis.services().serviceIsAvailable(serviceClass), failureMode);
@@ -1982,6 +2050,21 @@ public final class DeviceState extends HarrierRule {
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    private void prepareExternalRule(Description description,
+            List<Annotation> testRulesExecutorAnnotations) {
+        for (Annotation annotation : testRulesExecutorAnnotations) {
+            Class<? extends Annotation> annotationType = annotation.annotationType();
+            UsesTestRuleExecutor usesTestRuleExecutorAnnotation =
+                    annotationType.getAnnotation(UsesTestRuleExecutor.class);
+            Log.d(LOG_TAG, "Preparing " + usesTestRuleExecutorAnnotation +
+                    " for test " + description.getMethodName());
+            TestRuleExecutor externalRuleExecutor =
+                    usesTestRuleExecutor(usesTestRuleExecutorAnnotation);
+            externalRuleExecutor.applyTestRule(/* deviceState= */ this, annotation, description);
+            mTestRuleExecutors.add(externalRuleExecutor);
         }
     }
 }

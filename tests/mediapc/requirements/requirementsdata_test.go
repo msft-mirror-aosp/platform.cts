@@ -18,6 +18,8 @@ import (
 	"slices"
 	"testing"
 
+	"google.golang.org/protobuf/proto"
+
 	"google3/third_party/android/mediapc_requirements/requirements"
 	pb "cts/test/mediapc/requirements/requirements_go_proto"
 	"github.com/google/go-cmp/cmp"
@@ -73,11 +75,8 @@ func TestAllTestConfigsSpecifiedAndUsed(t *testing.T) {
 		t.Run(req.GetName(), func(t *testing.T) {
 
 			specifiedTestConfigs := []string{}
-			for id, testConfig := range req.GetTestConfigs() {
-				if id != testConfig.GetId() {
-					t.Errorf("Test config id [%s] does not match its key [%s]", testConfig.GetId(), id)
-				}
-				specifiedTestConfigs = append(specifiedTestConfigs, testConfig.GetId())
+			for id := range req.GetTestConfigs() {
+				specifiedTestConfigs = append(specifiedTestConfigs, id)
 			}
 
 			usedTestConfigs := []string{}
@@ -90,6 +89,76 @@ func TestAllTestConfigsSpecifiedAndUsed(t *testing.T) {
 			if diff := cmp.Diff(specifiedTestConfigs, usedTestConfigs, cmpopts.SortSlices(
 				func(a, b string) bool { return a < b })); diff != "" {
 				t.Errorf("Specified test configs do not match used test configs (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestConfigMeasurementsValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	for _, req := range reqList.GetRequirements() {
+		if !req.HasName() {
+			continue // Do not check requirements that are not implemented yet
+		}
+
+		t.Run(req.GetName(), func(t *testing.T) {
+			for measurementName, measurement := range req.GetMeasurements() {
+				if measurement.GetComparison() != pb.Comparison_COMPARISON_CONFIG {
+					continue // Do not check measurements that are not config measurements
+				}
+
+				t.Run(measurementName, func(t *testing.T) {
+					measurementValues := make(map[string]*pb.RequiredValue)
+					for _, spec := range req.GetSpecs() {
+						val, ok := measurementValues[spec.GetTestConfigId()]
+						if !ok {
+							measurementValues[spec.GetTestConfigId()] = spec.GetRequiredValues()[measurementName]
+						} else if !proto.Equal(val, spec.GetRequiredValues()[measurementName]) {
+							t.Errorf("Test config [%s] has multiple different values for measurement [%s]: [%v] and [%v]", spec.GetTestConfigId(), measurementName, spec.GetRequiredValues()[measurementName], val)
+						}
+					}
+				})
+			}
+
+		})
+	}
+}
+
+func TestConfigVariantsValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	for _, req := range reqList.GetRequirements() {
+		if !req.HasName() {
+			continue // Do not check requirements that are not implemented yet
+		}
+
+		t.Run(req.GetName(), func(t *testing.T) {
+			for configID := range req.GetTestConfigs() {
+
+				// Check that all test configs have the same variants
+				t.Run(configID, func(t *testing.T) {
+					specToVariants := make(map[int64][]string)
+					for mpc, spec := range req.GetSpecs() {
+						if spec.GetTestConfigId() == configID {
+							specToVariants[mpc] = []string{}
+							for variantID := range spec.GetVariantSpecs() {
+								specToVariants[mpc] = append(specToVariants[mpc], variantID)
+							}
+						}
+					}
+
+					prev := []string{}
+					for _, variants := range specToVariants {
+						if len(prev) > 0 {
+							if diff := cmp.Diff(prev, variants, cmpopts.SortSlices(
+								func(a, b string) bool { return a < b })); diff != "" {
+								t.Errorf("Test config [%s] missing variants (-want +got):\n%s", configID, diff)
+							}
+						}
+						prev = variants
+					}
+				})
 			}
 		})
 	}

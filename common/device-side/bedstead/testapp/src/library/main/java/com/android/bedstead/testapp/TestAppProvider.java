@@ -105,10 +105,7 @@ public final class TestAppProvider {
         }
         mTestAppsInitialised = true;
 
-        int indexId = sContext.getResources().getIdentifier(
-                "raw/index", /* defType= */ null, sContext.getPackageName());
-
-        try (InputStream inputStream = sContext.getResources().openRawResource(indexId)) {
+        try (InputStream inputStream = sContext.getAssets().open("testapps/index.txt")) {
             TestappProtos.TestAppIndex index = TestappProtos.TestAppIndex.parseFrom(inputStream);
             for (int i = 0; i < index.getAppsCount(); i++) {
                 loadApk(index.getApps(i));
@@ -123,10 +120,6 @@ public final class TestAppProvider {
     private void loadApk(TestappProtos.AndroidApp app) {
         TestAppDetails details = new TestAppDetails();
         details.mApp = app;
-
-        details.mResourceIdentifier = sContext.getResources().getIdentifier(
-                "raw/" + getApkNameWithoutSuffix(app.getApkName()),
-                /* defType= */ null, sContext.getPackageName());
 
         for (int i = 0; i < app.getMetadataCount(); i++) {
             TestappProtos.Metadata metadataEntry = app.getMetadata(i);
@@ -220,10 +213,6 @@ public final class TestAppProvider {
         }
 
         return metadataSet;
-    }
-
-    private String getApkNameWithoutSuffix(String apkName) {
-        return apkName.split("\\.", 2)[0];
     }
 
     void markTestAppUsed(TestAppDetails testApp) {

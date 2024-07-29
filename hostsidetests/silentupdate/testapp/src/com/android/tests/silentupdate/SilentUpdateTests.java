@@ -254,7 +254,13 @@ public class SilentUpdateTests {
             Assert.assertEquals("Installing a DPC package with INSTALL_DPC_PACKAGES "
                             + "permission should not require user action.",
                     PackageInstaller.STATUS_SUCCESS,
-                    install(sDpcApp::apkStream, /* requireUserAction= */ false));
+                    install(() -> {
+                        try {
+                            return sDpcApp.apkStream();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to get InputStream of dpc app", e);
+                        }
+                    }, /* requireUserAction= */ false));
         }
     }
 
@@ -265,7 +271,13 @@ public class SilentUpdateTests {
             Assert.assertEquals("Installing a DPC package without INSTALL_DPC_PACKAGES "
                             + "permission should require user action.",
                     PackageInstaller.STATUS_PENDING_USER_ACTION,
-                    install(sDpcApp::apkStream, /* requireUserAction= */ false));
+                    install(() -> {
+                        try {
+                            return sDpcApp.apkStream();
+                        } catch (IOException e) {
+                            throw new RuntimeException("Unable to get InputStream of dpc app", e);
+                        }
+                    }, /* requireUserAction= */ false));
         }
     }
 

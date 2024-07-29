@@ -22,7 +22,7 @@ import org.junit.Before;
 /**
  * The test base to test PackageInstaller update ownership CUJs.
  */
-public class UpdateOwnershipTestBase extends PackageInstallerCujTestBase {
+public class UpdateOwnershipTestBase extends InstallationTestBase {
 
     private static final String PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE =
             "is_update_ownership_enforcement_available";
@@ -42,6 +42,7 @@ public class UpdateOwnershipTestBase extends PackageInstallerCujTestBase {
     }
 
     @After
+    @Override
     public void tearDown() throws Exception {
         setPackageManagerDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE,
                 mIsUpdateOwnershipEnforcementAvailable);

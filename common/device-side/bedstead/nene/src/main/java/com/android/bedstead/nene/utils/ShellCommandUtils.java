@@ -17,7 +17,7 @@
 package com.android.bedstead.nene.utils;
 
 import static android.os.Build.VERSION_CODES.S;
-
+import static android.cts.testapisreflection.TestApisReflectionKt.executeShellCommandRwe;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 import android.app.Instrumentation;
@@ -93,8 +93,8 @@ public final class ShellCommandUtils {
      * API 29, but the NewApi warning doesn't understand this.
      */
     @SuppressWarnings("NewApi") // executeShellCommandRwe was @TestApi back to API 29, now public
-    private static ParcelFileDescriptor[] executeShellCommandRwe(String command) {
-        return uiAutomation().executeShellCommandRwe(command);
+    private static ParcelFileDescriptor[] executeShellCommandRweInternal(String command) {
+        return executeShellCommandRwe(uiAutomation(), command);
     }
 
     /**
@@ -107,7 +107,7 @@ public final class ShellCommandUtils {
     public static StreamingShellOutput executeCommandForStream(String command, byte[] stdInBytes)
             throws AdbException {
         try {
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];
@@ -133,7 +133,7 @@ public final class ShellCommandUtils {
         }
 
         try {
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];
@@ -171,7 +171,7 @@ public final class ShellCommandUtils {
         // TODO(scottjonathan): Add argument to force errors to stderr
         try {
 
-            ParcelFileDescriptor[] fds = executeShellCommandRwe(command);
+            ParcelFileDescriptor[] fds = executeShellCommandRweInternal(command);
             ParcelFileDescriptor fdOut = fds[OUT_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdIn = fds[IN_DESCRIPTOR_INDEX];
             ParcelFileDescriptor fdErr = fds[ERR_DESCRIPTOR_INDEX];

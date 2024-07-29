@@ -94,9 +94,10 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _NAME)
+      camera_id = self.camera_id
 
       # Determine camera supported extensions
-      supported_extensions = cam.get_supported_extensions(self.camera_id)
+      supported_extensions = cam.get_supported_extensions(camera_id)
       logging.debug('Supported extensions: %s', supported_extensions)
 
       # Check media performance class
@@ -113,10 +114,14 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(should_run)
 
       tablet_name_unencoded = self.tablet.adb.shell(
-          ['getprop', 'ro.build.product']
+          ['getprop', 'ro.product.device']
       )
       tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
       logging.debug('Tablet name: %s', tablet_name)
+
+      if (tablet_name.lower() not in
+          low_light_utils.TABLET_LOW_LIGHT_SCENES_ALLOWLIST):
+        raise AssertionError('Tablet not supported for low light scenes.')
 
       if tablet_name == its_session_utils.TABLET_LEGACY_NAME:
         raise AssertionError(f'Incompatible tablet! Please use a tablet with '
@@ -163,7 +168,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         capture_sizes = capture_request_utils.get_available_output_sizes(
             format_name, props)
         extension_capture_sizes_str = cam.get_supported_extension_sizes(
-            self.camera_id, _EXTENSION_NIGHT, format_constant
+            camera_id, _EXTENSION_NIGHT, format_constant
         )
         if not extension_capture_sizes_str:
           continue
@@ -185,7 +190,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Set tablet brightness to darken scene
       self.set_screen_brightness(_TABLET_BRIGHTNESS)
 
-      file_stem = f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
+      file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()
