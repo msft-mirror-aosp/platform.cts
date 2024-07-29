@@ -17,12 +17,94 @@
 all_mpcs: [30, 31, 33, 34, 35]
 requirements {
   id: "5.1/H-1-1"
-  description: "- Concurrent video codec sessions"
+  name: "Video Decoder Instances"
+  description: "Video decoder instances"
+  test_configs: {
+    key: "720p"
+    value: {
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "VP9"
+    value: {
+      description: "When one of the codecs is VP9, variant used in 720p tests"
+    }
+  }
+  variants: {
+    key: "AV1"
+    value: {
+      description: "When one of the codecs is AV1, variant used in 720p tests"
+    }
+  }
+  measurements: {
+    key: "concurrent_sessions"
+    value: {
+      description: "The number of concurrent sessions"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST advertise the maximum number of hardware video decoder sessions that can be run concurrently in any codec combination via the CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities.getSupportedPerformancePoints() methods."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -30,6 +112,53 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 2
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 6
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -37,6 +166,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -44,6 +186,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -51,6 +206,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
@@ -280,12 +448,94 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-3"
-  description: "- Concurrent video codec sessions"
+  name: "Video Encoder Instances"
+  description: "Video encoder instances"
+  test_configs: {
+    key: "720p"
+    value: {
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "VP9"
+    value: {
+      description: "When one of the codecs is VP9, variant used in 720p tests"
+    }
+  }
+  variants: {
+    key: "AV1"
+    value: {
+      description: "When one of the codecs is AV1, variant used in 720p tests"
+    }
+  }
+  measurements: {
+    key: "concurrent_sessions"
+    value: {
+      description: "The number of concurrent sessions"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST advertise the maximum number of hardware video encoder sessions that can be run concurrently in any codec combination via the CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities.getSupportedPerformancePoints() methods."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -293,6 +543,53 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 2
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 6
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -300,6 +597,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -307,6 +617,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -314,17 +637,112 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-4"
-  description: "- Concurrent video codec sessions\n- AV1 hardware decoder"
+  name: "Concurrent Video Encoder Sessions"
+  description: "Concurrent video encoder sessions"
+  test_configs: {
+    key: "720p"
+    value: {
+      id: "720p"
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      id: "1080p"
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      id: "4k"
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "byte_buffer_mode"
+    value: {
+      description: "When the test is run in byte buffer mode"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "The number of frames per second that can be decoded concurrently"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "The number of frames dropped per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST support 6 instances of hardware video encoder sessions (AVC or HEVC) in any codec combination running concurrently at 720p resolution@30 fps."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "byte_buffer_mode"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 0  # Requirement not asserted in byte buffer mode
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -332,6 +750,36 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST support 6 instances of hardware video encoder sessions (AVC, HEVC, VP9* or later) in any codec combination running concurrently at 720p resolution@30 fps. *Only 2 instances are required if VP9 codec is present."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "byte_buffer_mode"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 0  # Requirement not asserted in byte buffer mode
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -339,6 +787,36 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support 6 instances of hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30fps."
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
+      variant_specs: {
+        key: "byte_buffer_mode"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 0  # Requirement not asserted in byte buffer mode
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 1080
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -346,6 +824,36 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 4 sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
+      variant_specs: {
+        key: "byte_buffer_mode"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 0  # Requirement not asserted in byte buffer mode
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 2160
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -353,17 +861,141 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video encoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 4 sessions at 1080p resolution@30 fps and 2 sessions at 4k resolution@30fps, unless AV1. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 171  # 6 encoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
+      variant_specs: {
+        key: "byte_buffer_mode"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 0  # Requirement not asserted in byte buffer mode
+            }
+          }
+          required_values: {
+            key: "frame_drops_per_sec"
+            value {
+              double_value: 1
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value: {
+              int_value: 2160
+            }
+          }
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-5"
-  description: "- Concurrent video codec sessions"
+  name: "Video Transcoding Instances"
+  description: "Video transcoding instances"
+  test_configs: {
+    key: "720p"
+    value: {
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "VP9"
+    value: {
+      description: "When one of the codecs is VP9, variant used in 720p tests"
+    }
+  }
+  variants: {
+    key: "AV1"
+    value: {
+      description: "When one of the codecs is AV1, variant used in 720p tests"
+    }
+  }
+  measurements: {
+    key: "concurrent_sessions"
+    value: {
+      description: "The number of concurrent sessions"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST advertise the maximum number of hardware video encoder and decoder sessions that can be run concurrently in any codec combination via the CodecCapabilities.getMaxSupportedInstances() and VideoCapabilities.getSupportedPerformancePoints() methods."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -371,6 +1003,53 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 2
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "concurrent_sessions"
+            value {
+              int_value: 6
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -378,6 +1057,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -385,6 +1077,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -392,17 +1097,123 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_sessions"
+        value {
+          int_value: 6
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-6"
-  description: "- Concurrent video codec sessions\n- AV1 hardware decoder"
+  name: "Concurrent Video Transcoding Sessions"
+  description: "Concurrent video transcoding sessions"
+  test_configs: {
+    key: "720p"
+    value: {
+      id: "720p"
+      description: "Tests running at 720p"
+    }
+  }
+  test_configs: {
+    key: "1080p"
+    value: {
+      id: "1080p"
+      description: "Tests running at 1080p"
+    }
+  }
+  test_configs: {
+    key: "4k"
+    value: {
+      id: "4k"
+      description: "Tests running at 4k"
+    }
+  }
+  variants: {
+    key: "VP9"
+    value: {
+      description: "When one of the codecs is VP9, variant used in 720p tests"
+    }
+  }
+  variants: {
+    key: "AV1"
+    value: {
+      description: "When one of the codecs is AV1, variant used in 720p tests"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "The number of frames per second that can be decoded concurrently"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "The number of frames dropped per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST support 6 instances of hardware video decoder and hardware video encoder sessions (AVC or HEVC) in any codec combination running concurrently at 720p@30 fps resolution."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -410,6 +1221,53 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST support 6 instances of hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9* or later) in any codec combination running concurrently at 720p@30fps resolution. *Only 2 instances are required if VP9 codec is present."
+      test_config_id: "720p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 720
+        }
+      }
+      variant_specs: {
+        key: "VP9"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 28.5  # 2 codecs * 30 fps * 0.95 tolerance factor / 2
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
+      variant_specs: {
+        key: "AV1"
+        value: {
+          required_values: {
+            key: "concurrent_fps"
+            value {
+              double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+            }
+          }
+          required_values: {
+            key: "resolution"
+            value {
+              int_value: 720
+            }
+          }
+        }
+      }
     }
   }
   specs {
@@ -417,6 +1275,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support 6 instances of hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p@30fps resolution."
+      test_config_id: "1080p"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -424,6 +1295,19 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently with 3 sessions at 4K@30fps resolution (unless AV1), out of which at most 2 are encoder sessions and 3 sessions at 1080p resolution. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -431,6 +1315,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 6 instances of 8-bit (SDR) hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently with 3 sessions at 4K@30fps resolution (unless AV1), out of which at most 2 are encoder sessions and 3 sessions at 1080p resolution. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codecs are only required to support 1080p resolution, but are still required to support 6 instances at 1080p30fps."
+      test_config_id: "4k"
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 85.5  # 6 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
@@ -1372,12 +2275,55 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-19"
-  description: "- HDR video codecs"
+  name: "Concurrent HDR Transcoding Sessions"
+  description: "Concurrent HDR transcoding sessions"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "concurrent_fps"
+    value: {
+      description: "The number of frames per second that can be decoded concurrently"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_sec"
+    value: {
+      description: "The number of frames dropped per second"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support 3 instances of 10-bit (HDR) hardware video decoder and hardware video encoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 4K@30fps resolution (unless AV1) out of which at most 1 is an encoder session, which could be configured in RGBA_1010102 input format through a GL surface. HDR metadata generation by the encoder is not required if encoding from the GL surface. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 42.75  # 3 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -1385,6 +2331,24 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
+      required_values: {
+        key: "concurrent_fps"
+        value {
+          double_value: 42.75  # 3 codecs * 30 fps * 0.95 tolerance factor / 2
+        }
+      }
+      required_values: {
+        key: "frame_drops_per_sec"
+        value {
+          double_value: 1
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }

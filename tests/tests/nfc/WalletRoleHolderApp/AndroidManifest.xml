@@ -36,7 +36,7 @@
                 <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE"/>
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service"
-                android:resource="@xml/payment_aid_list"/>
+                android:resource="@xml/xpayment_aid_list"/>
         </service>
         <activity android:name="com.android.test.walletroleholder.WalletRoleHolderForegroundActivity"
             android:exported="true">
