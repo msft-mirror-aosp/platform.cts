@@ -1,6 +1,7 @@
 package android.nfc.cts;
 
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -25,8 +26,8 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.nfc.*;
 import android.nfc.cardemulation.CardEmulation;
-import android.os.Bundle;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -34,6 +35,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -54,6 +56,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
@@ -660,6 +663,8 @@ public class NfcAdapterTest {
             adapter.notifyHceDeactivated();
         }
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
         private final CountDownLatch mTagDetectedCountDownLatch;
 
@@ -670,6 +675,62 @@ public class NfcAdapterTest {
         @Override
         public void onTagConnected(boolean connected, Tag tag) {
             mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onStateUpdated(int state) {
+        }
+
+        @Override
+        public void onApplyRouting(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onNdefRead(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onEnable(@NonNull Consumer<Boolean> isAllowed) {
+        }
+
+        @Override
+        public void onDisable(@NonNull Consumer<Boolean> isAllowed) {
+        }
+
+        @Override
+        public void onBootStarted() {
+        }
+
+        @Override
+        public void onEnableStarted() {
+        }
+
+        @Override
+        public void onDisableStarted() {
+        }
+
+        @Override
+        public void onBootFinished(int status) {
+        }
+
+        @Override
+        public void onEnableFinished(int status) {
+        }
+
+        @Override
+        public void onDisableFinished(int status) {
+        }
+
+        @Override
+        public void onTagDispatch(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onRoutingChanged() {
+        }
+
+        @Override
+        public void onHceEventReceived(int action) {
         }
     }
 
