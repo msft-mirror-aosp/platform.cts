@@ -390,6 +390,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         getLaunchActivityBuilder().setTargetActivity(BROADCAST_RECEIVER_ACTIVITY)
                 .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
+                .setDisplayId(getMainDisplayId())
                 .setIntentFlags(FLAG_ACTIVITY_NEW_TASK).execute();
         waitAndAssertResumedActivity(BROADCAST_RECEIVER_ACTIVITY,"Activity must be resumed");
         final int taskId = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getTaskId();
@@ -412,7 +413,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
         if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
             // TODO(b/300009006): remove this if condition when root tasks setup is moved to SysUI.
-            mWmState.assertHomeActivityVisible(false);
+            // Pass in the display id since home activity can be present on multiple displays for
+            // visible background users
+            mWmState.assertHomeActivityVisible(false, getMainDisplayId());
         }
     }
 
