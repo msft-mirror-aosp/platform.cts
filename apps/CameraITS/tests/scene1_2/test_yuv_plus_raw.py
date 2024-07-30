@@ -31,6 +31,7 @@ _PATCH_H = 0.1  # center 10%
 _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
+_POST_RAW_BOOST_REF = 100  # numbers larger than 100 increase YUV brightness
 _THRESHOLD_MAX_RMS_DIFF = 0.035
 
 
@@ -57,7 +58,7 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   patch = image_processing_utils.get_image_patch(
       img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   rgb_means_yuv = image_processing_utils.compute_image_means(patch)
-  logging.debug('%s YUV RGB means: %s', raw_fmt, str(rgb_means_yuv))
+  logging.debug('%s YUV RGB means: %s', raw_fmt, rgb_means_yuv)
 
   # RAW
   img = image_processing_utils.convert_raw_capture_to_rgb_image(
@@ -71,7 +72,15 @@ def convert_and_compare_captures(cap_raw, cap_yuv, props,
   patch = image_processing_utils.get_image_patch(
       img, _PATCH_X, _PATCH_Y, _PATCH_W, _PATCH_H)
   rgb_means_raw = image_processing_utils.compute_image_means(patch)
-  logging.debug('%s RAW RGB means: %s', raw_fmt, str(rgb_means_raw))
+  logging.debug('%s RAW RGB means: %s', raw_fmt, rgb_means_raw)
+
+  # Compensate for postRawSensitivityBoost in YUV.
+  if cap_yuv['metadata'].get('android.control.postRawSensitivityBoost'):
+    boost = cap_yuv['metadata']['android.control.postRawSensitivityBoost']
+    logging.debug('postRawSensitivityBoost: %d', boost)
+    if boost != _POST_RAW_BOOST_REF:
+      rgb_means_raw = [m * boost / _POST_RAW_BOOST_REF for m in rgb_means_raw]
+      logging.debug('Post-boost %s RAW RGB means: %s', raw_fmt, rgb_means_raw)
 
   rms_diff = image_processing_utils.compute_image_rms_difference_1d(
       rgb_means_yuv, rgb_means_raw)

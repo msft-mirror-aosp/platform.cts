@@ -80,6 +80,7 @@ public class CallGraphManager {
      * Maps detected APIs to CTS test methods and marks them as covered by this CTS module.
      */
     public void resolveCoveredApis(ApiCoverage apiCoverage) {
+        resolveExtendedMethods();
         for (ClassProfile classProfile : mModule.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
@@ -97,6 +98,13 @@ public class CallGraphManager {
             }
         }
         markCoveredApisWithoutCaller(apiCoverage);
+    }
+
+    /** Resolves cases that methods are extended from super classes. */
+    private void resolveExtendedMethods() {
+        for (ClassProfile classProfile : mModule.getClasses()) {
+            classProfile.resolveExtendedMethods();
+        }
     }
 
     /** Collects covered APIs for a test method via memorized search. */

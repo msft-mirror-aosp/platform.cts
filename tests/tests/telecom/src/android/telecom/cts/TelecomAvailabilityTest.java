@@ -26,10 +26,14 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
+import android.os.SystemProperties;
 import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
+
+import com.android.compatibility.common.util.CddTest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +144,47 @@ public class TelecomAvailabilityTest extends InstrumentationTestCase {
         assertNotNull(intentWithNumber);
         assertEquals(1, mPackageManager.queryIntentActivities(intentWithNumber,
                 PackageManager.MATCH_DEFAULT_ONLY).size());
+    }
+
+    /**
+     * Ensures that all call capable devices declare the Telecom feature.
+     *
+     * A call capable device is one which has audio input and output capabilities and has the
+     * ability to make calls through one of the following routes:
+     * 1. A mobile network using the Telephony stack (ie.
+     * {@link PackageManager#FEATURE_TELEPHONY_CALLING}).
+     * 2. Applications that provide calling functionality over the internet (i.e. VoIP apps).  This
+     * includes both pre-bundled and user-installed communication applications.
+     *
+     * The Telecom framework is the use-case specific API for calling and communication apps.
+     */
+    @CddTest(requirements = {"7.4.1.2/H-0-1", "7.4.1.2/H-0-2"})
+    public void testTelecomFeatureAvailability() {
+        if (getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // FEATURE_TELECOM is required for devices originally developed targeting Android U or
+            // higher.
+            // Devices developed prior to U which are upgrading to U or later are not expected to
+            // change the feature flag definitions for their build configurations.  Hence we check
+            // the vendor API level instead of the SDK API level.
+            return;
+        }
+
+        boolean hasAudioInputAndOutput = mPackageManager.hasSystemFeature(
+                PackageManager.FEATURE_MICROPHONE) && mPackageManager.hasSystemFeature(
+                PackageManager.FEATURE_AUDIO_OUTPUT);
+
+        if (!hasAudioInputAndOutput) {
+            // Devices which have no means to handle audio input and output do not require Telecom.
+            return;
+        }
+
+        // All other devices should have a Telecom framework present.
+        assertTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELECOM));
+    }
+
+    private int getVendorApiLevel() {
+        return SystemProperties.getInt(
+                "ro.vendor.api_level", Build.VERSION.DEVICE_INITIAL_SDK_INT);
     }
 
     /**

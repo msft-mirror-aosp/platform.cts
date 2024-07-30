@@ -19,6 +19,7 @@ package android.hardware.devicestate.cts;
 import static android.hardware.devicestate.DeviceStateManager.INVALID_DEVICE_STATE_IDENTIFIER;
 import static android.hardware.devicestate.DeviceStateManager.MAXIMUM_DEVICE_STATE_IDENTIFIER;
 import static android.hardware.devicestate.DeviceStateManager.MINIMUM_DEVICE_STATE_IDENTIFIER;
+import static android.hardware.devicestate.feature.flags.Flags.FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE;
 import static android.server.wm.DeviceStateUtils.assertValidDeviceState;
 import static android.server.wm.DeviceStateUtils.assertValidState;
 import static android.server.wm.DeviceStateUtils.runWithControlDeviceStatePermission;
@@ -37,6 +38,8 @@ import static org.mockito.Mockito.verify;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.ArraySet;
 
 import androidx.annotation.NonNull;
@@ -383,6 +386,68 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
         assertEquals(originalState, callback.mCurrentState.getIdentifier());
     }
 
+    /**
+     * Tests that calling {@link DeviceStateManager#cancelStateRequest()} is successful while the
+     * calling activity is backgrounded provided the request is cancelled by the same process that
+     * sent the request.
+     */
+    @ApiTest(apis = {
+            "android.hardware.devicestate.DeviceStateManager#requestState",
+            "android.hardware.devicestate.DeviceStateManager#cancelStateRequest",
+            "android.hardware.devicestate.DeviceState#hasProperty",
+            "android.hardware.devicestate.DeviceState#getIdentifier"})
+    @RequiresFlagsEnabled(FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE)
+    @Test
+    public void testCancelStateSucceedsBackgrounded_ifAppWasOriginalRequester()
+            throws Throwable {
+        final DeviceStateManager manager = getDeviceStateManager();
+        final List<DeviceState> supportedStates = manager.getSupportedDeviceStates();
+
+        // We want to verify that the app can change device state
+        // So we only attempt if there are more than 1 possible state.
+        assumeTrue(supportedStates.size() > 1);
+        final Set<Integer> statesAvailableToRequest = getAvailableStatesToRequest(supportedStates);
+        assumeFalse(statesAvailableToRequest.isEmpty());
+
+        final Set<Integer> availableDeviceStates = generateDeviceStateSet(supportedStates);
+
+        final StateTrackingCallback callback = new StateTrackingCallback();
+        manager.registerCallback(Runnable::run, callback);
+        PollingCheck.waitFor(TIMEOUT,
+                () -> callback.mCurrentState.getIdentifier() != INVALID_DEVICE_STATE);
+        final TestActivitySession<DeviceStateTestActivity> activitySession =
+                createManagedTestActivitySession();
+
+        activitySession.launchTestActivityOnDisplaySync(
+                DeviceStateTestActivity.class,
+                DEFAULT_DISPLAY
+        );
+
+        final DeviceStateTestActivity activity = activitySession.getActivity();
+
+        final Set<Integer> possibleStates = possibleStates(true /* shouldSucceed */,
+                availableDeviceStates,
+                statesAvailableToRequest);
+        int nextState = calculateDifferentState(callback.mCurrentState.getIdentifier(),
+                possibleStates);
+        // checks that we were able to find a valid state to request.
+        assumeTrue(nextState != INVALID_DEVICE_STATE);
+
+        runWithControlDeviceStatePermission(() -> activity.requestDeviceStateChange(nextState));
+
+        // We have to check the state has transitioned first, before checking to verify the activity
+        // has been made visible again.
+        PollingCheck.waitFor(TIMEOUT, () -> callback.mCurrentState.getIdentifier() == nextState);
+        PollingCheck.waitFor(TIMEOUT, () -> activity.mResumed);
+
+        assertEquals(nextState, callback.mCurrentState.getIdentifier());
+        assertFalse(activity.requestStateFailed);
+
+        launchHomeActivity();
+        waitAndAssertStoppedActivity(activity.getComponentName());
+
+        activity.cancelOverriddenState(); // reset device state after successful request
+    }
 
     /**
      * Returns a set of device states that are available to be requested by an application.
@@ -496,6 +561,7 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
      * {@link android.Manifest.permission.CONTROL_DEVICE_STATE} permission held.
      */
     @ApiTest(apis = {"android.hardware.devicestate.DeviceStateManager#cancelStateRequest"})
+    @RequiresFlagsDisabled(FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE)
     @Test(expected = SecurityException.class)
     public void testCancelOverrideRequestWithoutPermission() throws Throwable {
         final DeviceStateManager manager = getDeviceStateManager();

@@ -79,6 +79,8 @@ public class ImeSettings {
 
     private static final String USE_CUSTOM_EXTRACT_TEXT_VIEW = "useCustomExtractTextView";
 
+    private static final String ZERO_INSETS = "zeroInsets";
+
     @NonNull
     private final PersistableBundle mBundle;
     private final SessionChannel mChannel;
@@ -226,6 +228,11 @@ public class ImeSettings {
     /** Whether or not custom extract view hierarchy should be used. */
     public boolean isCustomExtractTextViewEnabled() {
         return mBundle.getBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, false);
+    }
+
+    /** Whether the IME should provide zero insets when shown. */
+    public boolean isZeroInsetsEnabled() {
+        return mBundle.getBoolean(ZERO_INSETS, false);
     }
 
     static Bundle serializeToBundle(@NonNull String eventCallbackActionName,
@@ -508,6 +515,15 @@ public class ImeSettings {
         /** Sets whether or not custom extract view hierarchy should be used. */
         public Builder setCustomExtractTextViewEnabled(boolean enabled) {
             mBundle.putBoolean(USE_CUSTOM_EXTRACT_TEXT_VIEW, enabled);
+            return this;
+        }
+
+        /**
+         * Sets whether {@link android.inputmethodservice.InputMethodService#onComputeInsets}
+         * should return zero insets.
+         */
+        public Builder setZeroInsets(boolean enabled) {
+            mBundle.putBoolean(ZERO_INSETS, enabled);
             return this;
         }
     }

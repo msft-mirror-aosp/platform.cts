@@ -30,7 +30,7 @@ import lighting_control_utils
 import low_light_utils
 import preview_processing_utils
 
-_AE_LOW_LIGHT_BOOST_MODE = 6  # The preview frame number to capture
+_AE_LOW_LIGHT_BOOST_MODE = 6
 
 _CONTROL_AF_MODE_AUTO = 1
 _CONTROL_AWB_MODE_AUTO = 1
@@ -136,10 +136,14 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(should_run)
 
       tablet_name_unencoded = self.tablet.adb.shell(
-          ['getprop', 'ro.build.product']
+          ['getprop', 'ro.product.device']
       )
       tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
       logging.debug('Tablet name: %s', tablet_name)
+
+      if (tablet_name.lower() not in
+          low_light_utils.TABLET_LOW_LIGHT_SCENES_ALLOWLIST):
+        raise AssertionError('Tablet not supported for low light scenes.')
 
       if tablet_name == its_session_utils.TABLET_LEGACY_NAME:
         raise AssertionError(f'Incompatible tablet! Please use a tablet with '

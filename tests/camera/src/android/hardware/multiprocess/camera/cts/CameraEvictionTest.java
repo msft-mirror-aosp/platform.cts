@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityTaskManager;
+import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
@@ -48,6 +49,7 @@ import android.view.InputDevice;
 import android.view.MotionEvent;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.uiautomator.UiDevice;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +89,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     private int mProcessPid = -1;
     private WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
     private TestTaskOrganizer mTaskOrganizer;
+    private UiDevice mUiDevice;
 
     /** Load jni on initialization */
     static {
@@ -151,7 +154,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
 
         mCompleted = false;
         getActivity();
-        mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiAutomation = instrumentation.getUiAutomation();
+        mUiDevice = UiDevice.getInstance(instrumentation);
         mContext = InstrumentationRegistry.getTargetContext();
         System.setProperty("dexmaker.dexcache", mContext.getCacheDir().toString());
         mActivityManager = mContext.getSystemService(ActivityManager.class);
@@ -548,9 +553,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
                 mock(CameraManager.AvailabilityCallback.class);
         manager.registerAvailabilityCallback(mockAvailCb, cameraHandler);
 
-        // Remove current task from top of stack. This will impact the camera access
-        // priorities.
-        getActivity().moveTaskToBack(/*nonRoot*/true);
+        // Launch home activity to remove current task from top of stack.
+        // This will impact the camera access priorities.
+        pressHome();
 
         verify(mockAvailCb, timeout(
                 PERMISSION_CALLBACK_TIMEOUT_MS).atLeastOnce()).onCameraAccessPrioritiesChanged();
@@ -581,9 +586,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
             context = initializeAvailabilityCallbacksNative();
             assertTrue("Failed to initialize native availability callbacks", (context != 0));
 
-            // Remove current task from top of stack. This will impact the camera access
-            // pririorties.
-            getActivity().moveTaskToBack(/*nonRoot*/true);
+            // Launch home activity to remove current task from top of stack.
+            // This will impact the camera access priorities.
+            pressHome();
 
             Thread.sleep(PERMISSION_CALLBACK_TIMEOUT_MS);
             assertTrue("No camera permission access changed callback received",
@@ -917,5 +922,9 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
         assertTrue("Only had " + expIndex + " of " + expected.length +
                 " expected objects in array " + Arrays.toString(actual) + ", expected was " +
                 Arrays.toString(expected), expIndex == expected.length);
+    }
+
+    private void pressHome() {
+        mUiDevice.pressHome();
     }
 }

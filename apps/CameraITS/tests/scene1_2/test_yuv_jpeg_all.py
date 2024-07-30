@@ -149,7 +149,7 @@ class YuvJpegAllTest(its_base_test.ItsBaseTest):
         cam.do_3a(do_af=False)
         req = capture_request_utils.auto_capture_request(
             linear_tonemap=True, props=props, do_af=False)
-        largest_yuv = capture_request_utils.get_largest_yuv_format(props)
+        largest_yuv = capture_request_utils.get_largest_format('yuv', props)
         match_ar = (largest_yuv['width'], largest_yuv['height'])
 
       yuv_rgbs = []

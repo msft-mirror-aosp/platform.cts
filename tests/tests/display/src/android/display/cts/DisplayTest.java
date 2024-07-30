@@ -79,6 +79,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.DisplayStateManager;
@@ -91,6 +93,7 @@ import com.google.common.truth.Truth;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -119,6 +122,9 @@ import java.util.function.Predicate;
 public class DisplayTest extends TestBase {
     private static final String TAG = "DisplayTest";
 
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -144,6 +150,7 @@ public class DisplayTest extends TestBase {
     private WindowManager mWindowManager;
     private UiModeManager mUiModeManager;
     private Context mContext;
+    private int mTestRunningUserId;
     private ColorSpace[] mSupportedWideGamuts;
     private Display mDefaultDisplay;
     private int mInitialRefreshRateSwitchingType;
@@ -242,6 +249,7 @@ public class DisplayTest extends TestBase {
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
         mContext = getInstrumentation().getTargetContext();
+        mTestRunningUserId = mContext.getUserId();
         assertTrue("Physical display is expected.", DisplayUtil.isDisplayConnected(mContext)
                 || MediaUtils.onCuttlefish());
 
@@ -264,14 +272,14 @@ public class DisplayTest extends TestBase {
 
     private void enableAppOps() {
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user " + mTestRunningUserId + " ");
         cmd.append(InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
         cmd.append(" android:system_alert_window allow");
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand(cmd.toString());
 
         StringBuilder query = new StringBuilder();
-        query.append("appops get ");
+        query.append("appops get --user " + mTestRunningUserId + " ");
         query.append(InstrumentationRegistry.getInstrumentation().getContext().getPackageName());
         query.append(" android:system_alert_window");
         String queryStr = query.toString();
@@ -521,6 +529,9 @@ public class DisplayTest extends TestBase {
     }
 
     private void overrideHdrTypes() {
+        // TODO(b/347657922): HDR override not working for device without default HDR support.
+        // So run tests that require HDR override only for devices that support HDR by default.
+        assumeTrue(mDefaultDisplay.isHdr());
         mDisplayManager.overrideHdrTypes(DEFAULT_DISPLAY, new int[]{
                 HdrCapabilities.HDR_TYPE_DOLBY_VISION, HdrCapabilities.HDR_TYPE_HDR10,
                 HdrCapabilities.HDR_TYPE_HLG, HdrCapabilities.HDR_TYPE_HDR10_PLUS});
@@ -946,8 +957,11 @@ public class DisplayTest extends TestBase {
 
     /**
      * Test that refresh rate switch app requests are correctly executed on a secondary display.
+     * TODO(b/352630509): OverlayDisplay (i.e. SecondaryDisplay) does not support visible background
+     * users at the moment, so skipping this test for secondary_user_on_secondary_display
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testRefreshRateSwitchOnSecondaryDisplay() throws Exception {
         // Standalone VR devices globally ignore SYSTEM_ALERT_WINDOW via AppOps.
         // Skip this test, which depends on a Presentation SYSTEM_ALERT_WINDOW to pass.

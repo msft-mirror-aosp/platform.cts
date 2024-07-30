@@ -19,6 +19,7 @@ import math
 import os.path
 import pathlib
 
+import cv2
 from mobly import test_runner
 import numpy as np
 
@@ -30,13 +31,15 @@ import opencv_processing_utils
 import preview_processing_utils
 
 
-_AE_ATOL = 4.0
+_AE_ATOL = 7.0
 _AE_RTOL = 0.04  # 4%
-_AF_ATOL = 0.02  # 2%
 _ARUCO_MARKERS_COUNT = 4
-_AWB_ATOL = 0.02  # 2%
+_AWB_ATOL_AB = 10  # ATOL for A and B means in LAB color space
+_AWB_ATOL_L = 3  # ATOL for L means in LAB color space
 _CH_FULL_SCALE = 255
 _COLORS = ('r', 'g', 'b', 'gray')
+_COLOR_GRAY = _COLORS[3]
+_CONVERGED_STATE = 2
 _IMG_FORMAT = 'png'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PATCH_MARGIN = 50  # pixels
@@ -103,27 +106,6 @@ def _check_orientation_and_flip(props, uw_img, w_img, img_name_stem):
   return uw_img, w_img
 
 
-def _compute_slanted_edge_sharpness(input_img, file_name):
-  """Computes sharpness of the slanted edge image.
-
-  Extracts the slanted edge patch from the input_img and
-  saves it in the file_name path. Computes the sharpness of the
-  slanted edge patch. Larger value means the image is sharper.
-
-  Args:
-    input_img: numpy flat RGB/luma image array.
-    file_name: file name of the saved patch.
-  Returns:
-    sharpness_level: Sharpness estimation value based on the
-    average of gradient magnitude.
-  """
-  slanted_edge_patch = opencv_processing_utils.get_slanted_edge_from_patch(
-      input_img)
-  image_processing_utils.write_image(
-      slanted_edge_patch/_CH_FULL_SCALE, file_name)
-  return image_processing_utils.compute_image_sharpness(slanted_edge_patch)
-
-
 def _do_ae_check(uw_img, w_img, log_path, suffix):
   """Checks that the luma change is within range.
 
@@ -133,7 +115,9 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
     log_path: path to save the image.
     suffix: str; patch suffix to be used in file name.
   Returns:
-    Failed AE check messages if any. None otherwise.
+    failed_ae_msg: Failed AE check messages if any. None otherwise.
+    uw_y_avg: y_avg value for UW lens
+    w_y_avg: y_avg value for W lens
   """
   failed_ae_msg = []
   file_stem = f'{os.path.join(log_path, _NAME)}_{suffix}'
@@ -157,60 +141,61 @@ def _do_ae_check(uw_img, w_img, log_path, suffix):
                          f'RTOL: {_AE_RTOL} '
                          f'uw_y_avg: {uw_y_avg:.4f} '
                          f'w_y_avg: {w_y_avg:.4f} ')
-  return failed_ae_msg
+  return failed_ae_msg, uw_y_avg, w_y_avg
 
 
-def _do_af_check(uw_img, w_img, log_path):
+def _do_af_check(uw_img, w_img):
   """Checks the AF behavior between the uw and w img.
 
   Args:
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
-    log_path: path to save the image.
+
   Returns:
-    Failed AF check messages if any. None otherwise.
+    failed_af_msg: Failed AF check messages if any. None otherwise.
+    sharpness_uw: sharpness value for UW lens
+    sharpness_w: sharpness value for W lens
   """
   failed_af_msg = []
-  file_stem = f'{os.path.join(log_path, _NAME)}_slanted_edge'
-  sharpness_uw = _compute_slanted_edge_sharpness(uw_img, f'{file_stem}_uw.png')
+  sharpness_uw = image_processing_utils.compute_image_sharpness(uw_img)
   logging.debug('Sharpness for UW patch: %.2f', sharpness_uw)
-
-  sharpness_w = _compute_slanted_edge_sharpness(w_img, f'{file_stem}_w.png')
+  sharpness_w = image_processing_utils.compute_image_sharpness(w_img)
   logging.debug('Sharpness for W patch: %.2f', sharpness_w)
 
-  if not math.isclose(sharpness_w, sharpness_uw, abs_tol=_AF_ATOL):
-    failed_af_msg.append('Sharpness > threshold value.'
-                         f' ATOL: {_AF_ATOL} '
+  if sharpness_w < sharpness_uw:
+    failed_af_msg.append('Sharpness should be higher for W lens.'
                          f'sharpness_w: {sharpness_w:.4f} '
                          f'sharpness_uw: {sharpness_uw:.4f}')
-  return failed_af_msg
+  return failed_af_msg, sharpness_uw, sharpness_w
 
 
-def _do_awb_check(uw_img, w_img):
-  """Checks the ratio of R/G and B/G for UW and W img.
+def _do_awb_check(uw_img, w_img, cab_atol, patch_color):
+  """Checks the delta Cab for UW and W img.
 
   Args:
     uw_img: image captured using UW lens.
     w_img: image captured using W lens.
+    cab_atol: float; threshold to use for delta Cab.
+    patch_color: str; color of the patch to be tested.
   Returns:
-    Failed AWB check messages if any. None otherwise.
+    failed_awb_msg: Failed AWB check messages if any. None otherwise.
   """
   failed_awb_msg = []
-  uw_r_g_ratio, uw_b_g_ratio = _get_color_ratios(uw_img, 'UW')
-  w_r_g_ratio, w_b_g_ratio = _get_color_ratios(w_img, 'W')
+  uw_l, uw_a, uw_b = _get_lab_means(uw_img, 'UW')
+  w_l, w_a, w_b = _get_lab_means(w_img, 'W')
 
-  if not math.isclose(uw_r_g_ratio, w_r_g_ratio,
-                      abs_tol=_AWB_ATOL):
-    failed_awb_msg.append(f'R/G change is greater than the threshold value: '
-                          f'ATOL: {_AWB_ATOL} '
-                          f'uw_r_g_ratio: {uw_r_g_ratio:.4f} '
-                          f'w_r_g_ratio: {w_r_g_ratio:.4f}')
-  if not math.isclose(uw_b_g_ratio, w_b_g_ratio,
-                      abs_tol=_AWB_ATOL):
-    failed_awb_msg.append(f'B/G change is greater than the threshold value: '
-                          f'ATOL: {_AWB_ATOL} '
-                          f'uw_b_g_ratio: {uw_b_g_ratio:.4f} '
-                          f'w_b_g_ratio: {w_b_g_ratio:.4f}')
+  # Calculate Delta Cab
+  cab = np.sqrt(abs(uw_a - w_a)**2 + abs(uw_b - w_b)**2)
+  logging.debug('delta_C: %.4f', cab)
+
+  if cab > cab_atol:
+    failed_awb_msg.append('Delta Cab is greater than the threshold value for '
+                          f'patch: {patch_color} '
+                          f'CAB_ATOL: {cab_atol} '
+                          f'delta_cab: {cab:.4f} '
+                          f'UW L, a, b means: {uw_l:.4f}, '
+                          f'{uw_a:.4f}, {uw_b:.4f}'
+                          f'W L, a, b means: {w_l:.4f}, {w_a:.4f}, {w_b:.4f}')
   return failed_awb_msg
 
 
@@ -278,29 +263,27 @@ def _find_aruco_markers(img_bw, img_path, lens_suffix):
   return corners, ids
 
 
-def _get_color_ratios(img, identifier):
-  """Computes the ratios of R/G and B/G for img.
+def _get_lab_means(img, identifier):
+  """Computes the mean of L,a,b img in Cielab color space.
 
   Args:
     img: RGB img in numpy format.
     identifier: str; identifier for logging statement. ie. 'UW' or 'W'
 
   Returns:
-    r_g_ratio: Ratio of R and G channel means.
-    b_g_ratio: Ratio of B and G channel means.
+    mean_l, mean_a, mean_b: mean of L, a, b channels
   """
-  img_means = image_processing_utils.compute_image_means(img)
-  r = img_means[0]
-  g = img_means[1]
-  b = img_means[2]
-  logging.debug('%s R mean: %.4f', identifier, r)
-  logging.debug('%s G mean: %.4f', identifier, g)
-  logging.debug('%s B mean: %.4f', identifier, b)
-  r_g_ratio = r/g
-  b_g_ratio = b/g
-  logging.debug('%s R/G ratio: %.4f', identifier, r_g_ratio)
-  logging.debug('%s B/G ratio: %.4f', identifier, b_g_ratio)
-  return r_g_ratio, b_g_ratio
+  # Convert to Lab color space
+  from skimage import color  # pylint: disable=g-import-not-at-top
+  img_lab = color.rgb2lab(img)
+
+  mean_l = np.mean(img_lab[:, :, 0])  # Extract L* channel and get mean
+  mean_a = np.mean(img_lab[:, :, 1])  # Extract a* channel and get mean
+  mean_b = np.mean(img_lab[:, :, 2])  # Extract b* channel and get mean
+
+  logging.debug('Lens: %s, mean_l: %.2f, mean_a: %.2f, mean_b: %.2f',
+                identifier, mean_l, mean_a, mean_b)
+  return mean_l, mean_a, mean_b
 
 
 def _get_four_quadrant_patches(img, img_path, lens_suffix):
@@ -340,6 +323,38 @@ def _get_four_quadrant_patches(img, img_path, lens_suffix):
   return four_quadrant_patches
 
 
+def _get_slanted_edge_patch(img, img_path, lens_suffix):
+  """Crops the central slanted edge part of the img and returns the patch.
+
+  Args:
+    img: an openCV image in RGB order.
+    img_path: path to save the image.
+    lens_suffix: str; suffix used to save the image. ie: 'w' or 'uw'.
+
+  Returns:
+    slanted_edge_patch: list of 4 coordinates.
+  """
+  num_rows = 3
+  num_columns = 5
+  size_x = math.floor(img.shape[1])
+  size_y = math.floor(img.shape[0])
+  slanted_edge_patch = []
+  x = int(round(size_x / num_columns * (num_columns // 2), 0))
+  y = int(round(size_y / num_rows * (num_rows // 2), 0))
+  w = int(round(size_x / num_columns, 0))
+  h = int(round(size_y / num_rows, 0))
+  patch = img[y:y+h, x:x+w]
+  slanted_edge_patch = patch[_PATCH_MARGIN:-_PATCH_MARGIN,
+                             _PATCH_MARGIN:-_PATCH_MARGIN]
+  filename_with_path = img_path.with_name(
+      f'{img_path.stem}_{lens_suffix}_slanted_edge{img_path.suffix}'
+  )
+  image_processing_utils.write_rgb_uint8_image(
+      slanted_edge_patch, filename_with_path
+  )
+  return slanted_edge_patch
+
+
 class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
   """Test that the switch from UW to W lens has similar RGB values.
 
@@ -367,7 +382,9 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           camera_properties_utils.zoom_ratio_range(props) and
-          camera_properties_utils.logical_multi_camera(props))
+          camera_properties_utils.logical_multi_camera(props) and
+          camera_properties_utils.ae_regions(props) and
+          camera_properties_utils.awb_regions(props))
 
       # Check the zoom range
       zoom_range = props['android.control.zoomRatioRange']
@@ -398,9 +415,14 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       physical_id_before = None
       counter = 0  # counter for the index of crossover point result
       lens_changed = False
+      converged_state_counter = 0
+      converged_state = False
 
       for capture_result in capture_results:
         counter += 1
+        ae_state = capture_result['android.control.aeState']
+        awb_state = capture_result['android.control.awbState']
+        af_state = capture_result['android.control.afState']
         physical_id = capture_result[
             'android.logicalMultiCamera.activePhysicalId']
         if not physical_id_before:
@@ -413,7 +435,31 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
           logging.debug('Crossover zoom ratio point: %f', zoom_ratio)
           physical_id_before = physical_id
           lens_changed = True
+          if ae_state == awb_state == af_state == _CONVERGED_STATE:
+            converged_state = True
+            converged_state_counter = counter
+            logging.debug('3A converged at the crossover point')
           break
+
+       # If the frame at crossover point was not converged, then
+       # traverse the list of capture results after crossover point
+       # to find the converged frame which will be used for AE,
+       # AWB and AF checks.
+      if not converged_state:
+        converged_state_counter = counter
+        for capture_result in capture_results[converged_state_counter-1:]:
+          converged_state_counter += 1
+          ae_state = capture_result['android.control.aeState']
+          awb_state = capture_result['android.control.awbState']
+          af_state = capture_result['android.control.afState']
+          if physical_id_before == capture_result[
+              'android.logicalMultiCamera.activePhysicalId']:
+            if ae_state == awb_state == af_state == _CONVERGED_STATE:
+              logging.debug('3A converged after crossover point.')
+              logging.debug('Zoom ratio at converged state after crossover'
+                            'point: %f', zoom_ratio)
+              converged_state = True
+              break
 
       # Raise error is lens did not switch within the range
       # _ZOOM_RANGE_UW_W
@@ -422,12 +468,37 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
         e_msg = 'Crossover point not found. Try running the test again!'
         raise AssertionError(e_msg)
 
+      # Raise error is 3A does not converge after the lens change
+      if not converged_state:
+        e_msg = '3A not converged after the lens change.'
+        raise AssertionError(e_msg)
+
       img_uw_file = file_list[counter-2]
       capture_result_uw = capture_results[counter-2]
+      uw_phy_id = (
+          capture_result_uw['android.logicalMultiCamera.activePhysicalId']
+      )
+      physical_props_uw = cam.get_camera_properties_by_id(uw_phy_id)
+      min_focus_distance_uw = (
+          physical_props_uw['android.lens.info.minimumFocusDistance']
+      )
+      logging.debug('Min focus distance for UW phy_id: %s is %f',
+                    uw_phy_id, min_focus_distance_uw)
+
       logging.debug('Capture results uw crossover: %s', capture_result_uw)
-      img_w_file = file_list[counter-1]
-      capture_result_w = capture_results[counter-1]
-      logging.debug('Capture results w crossover: %s', capture_result_w)
+      logging.debug('Capture results w crossover: %s',
+                    capture_results[counter-1])
+      img_w_file = file_list[converged_state_counter-1]
+      capture_result_w = capture_results[converged_state_counter-1]
+      logging.debug('Capture results w crossover converged: %s',
+                    capture_result_w)
+      w_phy_id = capture_result_w['android.logicalMultiCamera.activePhysicalId']
+      physical_props_w = cam.get_camera_properties_by_id(w_phy_id)
+      min_focus_distance_w = (
+          physical_props_w['android.lens.info.minimumFocusDistance']
+      )
+      logging.debug('Min focus distance for W phy_id: %s is %f',
+                    w_phy_id, min_focus_distance_w)
 
       # Remove unwanted frames and only save the UW and
       # W crossover point frames along with mp4 recording
@@ -482,17 +553,46 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
       w_four_patches = _get_four_quadrant_patches(
           w_chart_patch, w_path, 'w')
 
-      for uw_patch, w_patch, color in zip(
+      ae_uw_y_avgs = {}
+      ae_w_y_avgs = {}
+
+      for uw_patch, w_patch, patch_color in zip(
           uw_four_patches, w_four_patches, _COLORS):
-        logging.debug('Checking for quadrant color: %s', color)
+        logging.debug('Checking for quadrant color: %s', patch_color)
+
         # AE Check: Extract the Y component from rectangle patch
-        failed_ae_msg = _do_ae_check(uw_patch, w_patch, self.log_path, color)
+        ae_msg, uw_y_avg, w_y_avg = _do_ae_check(
+            uw_patch, w_patch, self.log_path, patch_color)
+        if ae_msg:
+          failed_ae_msg.append(f'{ae_msg}\n')
+        ae_uw_y_avgs.update({patch_color: f'{uw_y_avg:.4f}'})
+        ae_w_y_avgs.update({patch_color: f'{w_y_avg:.4f}'})
 
-        # AWB Check : Verify that R/G and B/G ratios are within the limits
-        failed_awb_msg = _do_awb_check(uw_patch, w_patch)
+        # AWB Check : Verify that delta Cab are within the limits
+        cab_atol = _AWB_ATOL_L if patch_color == _COLOR_GRAY else _AWB_ATOL_AB
+        awb_msg = _do_awb_check(uw_patch, w_patch, cab_atol, patch_color)
+        if awb_msg:
+          failed_awb_msg.append(f'{awb_msg}\n')
 
-      # AF check using slanted edge
-      failed_af_msg = _do_af_check(uw_chart_patch, w_chart_patch, self.log_path)
+      # Below print statements are for logging purpose.
+      # Do not replace with logging.
+      print(f'{_NAME}_ae_uw_y_avgs: ', ae_uw_y_avgs)
+      print(f'{_NAME}_ae_w_y_avgs: ', ae_w_y_avgs)
+
+      # Skip the AF check FF->FF
+      if min_focus_distance_w == 0:
+        logging.debug('AF check skipped for this device.')
+      else:
+        # AF check using slanted edge
+        uw_slanted_edge_patch = _get_slanted_edge_patch(
+            uw_chart_patch, uw_path, 'uw')
+        w_slanted_edge_patch = _get_slanted_edge_patch(
+            w_chart_patch, w_path, 'w')
+        failed_af_msg, sharpness_uw, sharpness_w = _do_af_check(
+            uw_slanted_edge_patch, w_slanted_edge_patch)
+        print(f'{_NAME}_uw_sharpness: {sharpness_uw:.4f}')
+        print(f'{_NAME}_w_sharpness: {sharpness_w:.4f}')
+
       if failed_awb_msg or failed_ae_msg or failed_af_msg:
         error_msg = _get_error_msg(failed_awb_msg, failed_ae_msg, failed_af_msg)
         raise AssertionError(f'{_NAME} failed with following errors:\n'

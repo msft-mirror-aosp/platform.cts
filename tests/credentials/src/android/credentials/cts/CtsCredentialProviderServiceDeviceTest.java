@@ -74,7 +74,6 @@ import com.android.compatibility.common.util.UserSettings;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -135,8 +134,8 @@ public class CtsCredentialProviderServiceDeviceTest {
 
     // Assumption fails, and all tests skipped if the credential manager feature
     // is not found on the device
-    @ClassRule
-    public static final RequiredFeatureRule mRequiredFeatureRule =
+    @Rule
+    public final RequiredFeatureRule mRequiredFeatureRule =
             new RequiredFeatureRule(PackageManager.FEATURE_CREDENTIALS);
 
 
@@ -166,8 +165,9 @@ public class CtsCredentialProviderServiceDeviceTest {
     @Before
     public void setUpTest() {
         Log.i(TAG, "Skipping all tests in the file if we are not on the right device type...");
-        assumeFalse("Skipping tests: Wear does not "
-                + "support CredentialManager yet", isWatch(mContext));
+        boolean enabledOnWatch = android.credentials.flags.Flags.wearCredentialManagerEnabled();
+        assumeFalse("Skipping tests: Wear does not enable CredentialManager yet",
+                isWatch(mContext) && !enabledOnWatch);
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
 

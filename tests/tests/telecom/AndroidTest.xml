@@ -43,6 +43,8 @@
     <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer">
         <option name="flag-value"
                 value="telecom/com.android.server.telecom.flags.cache_call_audio_callbacks=true"/>
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.unregister_unresolvable_accounts=true"/>
     </target_preparer>
 
     <!-- Enabling change id ALLOW_TEST_API_ACCESS allows that package to access @TestApi methods -->

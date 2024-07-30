@@ -54,5 +54,4 @@
     <option
         name="device-listeners"
         value="com.android.modules.utils.testing.NativeCoverageHackInstrumentationListener"/>
-
 </configuration>

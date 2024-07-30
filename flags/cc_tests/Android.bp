@@ -39,6 +39,7 @@ cc_test {
     ],
     shared_libs: [
         "libbase",
+        "liblog",
         "server_configurable_flags",
         "libaconfig_storage_read_api_cc",
     ],

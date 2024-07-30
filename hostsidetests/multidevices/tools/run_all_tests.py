@@ -114,11 +114,6 @@ def main():
   config_file_contents = get_config_file_contents()
   device_ids = get_device_serial_number(config_file_contents)
 
-  # Prepare devices
-  for device_id in device_ids:
-    # Verify CTS Verifier is installed
-    multi_device_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
-
   test_results = {}
   test_summary_file_list = []
 

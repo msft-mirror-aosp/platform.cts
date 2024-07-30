@@ -215,6 +215,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps can't hold INTERACT_ACROSS_USERS permission")
     public void testGetLastKnownLocation_AdasLocationSettingsOn() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
 
@@ -831,6 +832,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps can't hold INTERACT_ACROSS_USERS permission")
     public void testRequestLocationUpdates_AdasGnssBypass() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
 

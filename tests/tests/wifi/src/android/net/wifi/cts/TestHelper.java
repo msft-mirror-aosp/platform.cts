@@ -25,6 +25,7 @@ import static android.net.NetworkCapabilities.NET_CAPABILITY_OEM_PAID;
 import static android.net.NetworkCapabilities.NET_CAPABILITY_OEM_PRIVATE;
 import static android.net.NetworkCapabilities.TRANSPORT_WIFI;
 import static android.net.wifi.WifiManager.STATUS_LOCAL_ONLY_CONNECTION_FAILURE_UNKNOWN;
+import static android.net.wifi.WifiManager.STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT;
 import static android.os.Process.myUid;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -360,6 +361,7 @@ public class TestHelper {
                 int failureReason) {
             mBlocker.countDown();
             onFailureCalled = true;
+            this.failureReason = failureReason;
         }
 
         public boolean await(long timeout) throws Exception {
@@ -881,13 +883,16 @@ public class TestHelper {
             Thread.sleep(1_000);
             // Start the UI interactions.
             uiThread.start();
-            assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
             // now wait for callback
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
             if (shouldUserReject) {
+                assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
+                assertThat(localOnlyListener.failureReason)
+                        .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
                 assertThat(testNetworkCallback.onUnavailableCalled).isTrue();
             } else {
+                assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
                 assertThat(testNetworkCallback.onAvailableCalled).isTrue();
                 final WifiInfo wifiInfo = getWifiInfo(testNetworkCallback.networkCapabilities);
                 assertConnectionEquals(network, wifiInfo);

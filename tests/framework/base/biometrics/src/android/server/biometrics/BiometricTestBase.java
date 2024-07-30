@@ -113,8 +113,6 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected static final String TITLE_VIEW = "title";
     protected static final String SUBTITLE_VIEW = "subtitle";
     protected static final String DESCRIPTION_VIEW = "description";
-    protected static final String CONTENT_VIEW = "customized_view";
-    protected static final String CONTENT_DESCRIPTION_VIEW  = "customized_view_description";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
@@ -422,7 +420,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
             String logoDescription) throws Exception {
         final Handler handler = new Handler(Looper.getMainLooper());
         final Executor executor = handler::post;
-        final BiometricPrompt prompt = new BiometricPrompt.Builder(mContext)
+        final BiometricPrompt.Builder builder = new BiometricPrompt.Builder(mContext)
                 .setTitle("Title")
                 .setSubtitle("Subtitle")
                 .setDescription("Description")
@@ -432,10 +430,16 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
                 })
                 .setAllowBackgroundAuthentication(true)
                 .setAllowedSensorIds(new ArrayList<>(Collections.singletonList(sensorId)))
-                .setLogoRes(logoRes)
-                .setLogoBitmap(logoBitmap)
-                .setLogoDescription(logoDescription)
-                .build();
+                .setLogoDescription(logoDescription);
+
+        if (logoRes != -1) {
+            builder.setLogoRes(logoRes);
+        }
+        if (logoBitmap != null) {
+            builder.setLogoBitmap(logoBitmap);
+        }
+
+        final BiometricPrompt prompt = builder.build();
         prompt.authenticate(cancellationSignal, executor, callback);
 
         waitForState(STATE_AUTH_STARTED_UI_SHOWING);

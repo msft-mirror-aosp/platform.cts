@@ -18,6 +18,7 @@ package android.mediastress.cts.preconditions.app;
 import android.app.Instrumentation;
 import android.media.MediaFormat;
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -39,6 +40,8 @@ import java.util.regex.Pattern;
  */
 @RunWith(JUnit4.class)
 public class MediaPreparerAppTest {
+
+    private static final String TAG = MediaPreparerAppTest.class.getSimpleName();
 
     /** The module name used to retrieve Dynamic Configuration data */
     private static final String MODULE_NAME = "CtsMediaStressTestCases";
@@ -85,6 +88,10 @@ public class MediaPreparerAppTest {
         String moduleName = InstrumentationRegistry.getArguments().getString("module-name");
         if (moduleName == null) {
             moduleName = MODULE_NAME;
+            Log.i(TAG, "module-name argument is null. Using the default module name: "
+                    + moduleName);
+        } else {
+            Log.i(TAG, "module-name is set from the argument: " + moduleName);
         }
         Resolution maxRes = new Resolution(DEFAULT_MAX_WIDTH, DEFAULT_MAX_HEIGHT);
         DynamicConfigDeviceSide config = new DynamicConfigDeviceSide(moduleName);

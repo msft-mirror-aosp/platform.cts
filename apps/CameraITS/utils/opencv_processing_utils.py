@@ -35,8 +35,9 @@ ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_31CM = 13.5  # cm
-CHART_HEIGHT_22CM = 9.5  # cm
+CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
+CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_90CM = 90.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -88,6 +89,8 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
+SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -201,6 +204,8 @@ def calc_chart_scaling(chart_distance, camera_fov):
       chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
   is_chart_distance_31cm = math.isclose(
       chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_90cm = math.isclose(
+      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
 
   if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
     chart_scaling = SCALE_WIDE_IN_22CM_RIG
@@ -208,14 +213,16 @@ def calc_chart_scaling(chart_distance, camera_fov):
     chart_scaling = SCALE_TELE_IN_22CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
     chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif (fov <= FOV_THRESH_TELE25 and
-        is_chart_distance_31cm or
-        chart_distance > CHART_DISTANCE_31CM):
+  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE25_IN_31CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
+    chart_scaling = SCALE_CHART_67_PERCENT
   elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE_IN_31CM_RIG
+  elif chart_distance > CHART_DISTANCE_31CM:
+    chart_scaling = SCALE_CHART_33_PERCENT
   return chart_scaling
 
 
@@ -1034,42 +1041,6 @@ def get_patch_from_aruco_markers(
                 CV2_RED_NORM, CV2_LINE_THICKNESS)
   return input_img[red_corner[1]:gray_corner[1],
                    red_corner[0]:gray_corner[0]].copy()
-
-
-def get_slanted_edge_from_patch(input_img):
-  """Returns the slanted edge patch from the input img.
-
-  Args:
-    input_img: input img in numpy array with ArUco markers
-      to be detected
-  Returns: Numpy float image array of the slanted edge patch
-  """
-  slanted_edge_coordinates = {}
-  parameters = cv2.aruco.DetectorParameters_create()
-  # ArUco markers used are 4x4
-  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  _, _, rejected_params = cv2.aruco.detectMarkers(
-      input_img, aruco_dict, parameters=parameters)
-  logging.debug('rejected_params: %s', rejected_params)
-  final_corner = {}
-  for corner in rejected_params:
-    final_corner = corner.reshape(4, 2)
-
-  slanted_edge_coordinates[0] = tuple(map(int, final_corner[0]))
-  slanted_edge_coordinates[3] = tuple(map(int, final_corner[3]))
-  square_w = abs(final_corner[0][1] - final_corner[3][1])
-  slanted_edge_coordinates[1] = (final_corner[0][0] +
-                                 square_w, final_corner[0][1])
-  slanted_edge_coordinates[2] = (final_corner[3][0] +
-                                 square_w, final_corner[3][1])
-  logging.debug('slanted_edge_coordinates: %s', slanted_edge_coordinates)
-  top_left = tuple(map(int, slanted_edge_coordinates[0]))
-  bottom_right = tuple(map(int, slanted_edge_coordinates[2]))
-  cv2.rectangle(input_img, top_left, bottom_right,
-                CV2_RED_NORM, CV2_LINE_THICKNESS)
-  slanted_edge = input_img[top_left[1]:bottom_right[1],
-                           top_left[0]:bottom_right[0]]
-  return slanted_edge
 
 
 def get_chart_boundary_from_aruco_markers(

@@ -58,6 +58,15 @@ public final class MockTestActivityUtil {
      * A key to be used as the {@code key} of {@link Map} passed as {@code extras} parameter of
      * {@link #launchSync(boolean, long, Map)}.
      *
+     * <p>A valid {@code value} is the string representation of an integer.
+     */
+    public static final String EXTRA_SOFT_INPUT_MODE =
+            "android.view.inputmethod.ctstestapp.EXTRA_SOFT_INPUT_MODE";
+
+    /**
+     * A key to be used as the {@code key} of {@link Map} passed as {@code extras} parameter of
+     * {@link #launchSync(boolean, long, Map)}.
+     *
      * <p>A valid {@code value} is either {@code "true"} or {@code "false"}.</p>
      */
     public static final String EXTRA_KEY_SHOW_DIALOG =

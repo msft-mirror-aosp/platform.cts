@@ -57,6 +57,7 @@ public class ApkPackageNameCheck {
         // TODO: Remove exception when their package have been fixed.
         EXCEPTION_LIST.add("android.app.cts");
         EXCEPTION_LIST.add("android.content.cts");
+        EXCEPTION_LIST.add("android.packageinstaller.install.cts");
         // TODO(b/290634145): Refactor WM CTS into fully isolated modules
         EXCEPTION_LIST.add("android.server.wm.cts");
         EXCEPTION_LIST.add("android.systemui.cts");
@@ -65,6 +66,7 @@ public class ApkPackageNameCheck {
         EXCEPTION_LIST.add("android.mediav2.cts");
         EXCEPTION_LIST.add("android.media.bettertogether.cts");
         EXCEPTION_LIST.add("android.media.codec.cts");
+        EXCEPTION_LIST.add("android.media.decoder.cts");
         EXCEPTION_LIST.add("android.media.drmframework.cts");
         EXCEPTION_LIST.add("android.media.encoder.cts");
         EXCEPTION_LIST.add("android.media.extractor.cts");

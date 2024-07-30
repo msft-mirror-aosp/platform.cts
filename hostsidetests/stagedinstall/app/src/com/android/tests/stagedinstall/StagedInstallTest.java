@@ -133,9 +133,6 @@ public class StagedInstallTest {
     private static final TestApp Apex2SignedBobRotRollback = new TestApp(
             "Apex2SignedBobRotRollback", SHIM_APEX_PACKAGE_NAME, 2, /*isApex*/true,
             "com.android.apex.cts.shim.v2_signed_bob_rot_rollback.apex");
-    private static final TestApp ApexNoHashtree2 = new TestApp(
-            "Apex2", SHIM_APEX_PACKAGE_NAME, 2, /*isApex*/true,
-            "com.android.apex.cts.shim.v2_no_hashtree.apex");
     private static final TestApp ApexWrongSha2 = new TestApp(
             "ApexWrongSha2", SHIM_APEX_PACKAGE_NAME, 2, /*isApex*/true,
             "com.android.apex.cts.shim.v2_wrong_sha.apex");
@@ -1049,44 +1046,6 @@ public class StagedInstallTest {
     public void testInstallApkChangingFingerprint_VerifyAborted() throws Exception {
         int sessionId = retrieveLastSessionId();
         assertSessionFailed(sessionId);
-    }
-
-    @Test
-    public void testInstallStagedNoHashtreeApex_Commit() throws Exception {
-        assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
-        int sessionId = stageSingleApk(ApexNoHashtree2).assertSuccessful().getSessionId();
-        assertSessionReady(sessionId);
-        storeSessionId(sessionId);
-        // Version shouldn't change before reboot.
-        assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(1);
-    }
-
-    @Test
-    public void testInstallStagedNoHashtreeApex_VerifyPostReboot() throws Exception {
-        int sessionId = retrieveLastSessionId();
-        assertSessionApplied(sessionId);
-        assertThat(getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(2);
-        // Read all files under /apex/com.android.apex.cts.shim to somewhat verify that hashtree
-        // is not corrupted
-        Files.walkFileTree(Paths.get("/apex/com.android.apex.cts.shim"),
-                new SimpleFileVisitor<Path>() {
-
-                    @Override
-                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                            throws IOException {
-                        Files.readAllBytes(file);
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                    @Override
-                    public FileVisitResult visitFileFailed(Path file, IOException exc)
-                            throws IOException {
-                        if (file.endsWith("lost+found")) {
-                            return FileVisitResult.CONTINUE;
-                        }
-                        throw exc;
-                    }
-                });
     }
 
     @Test

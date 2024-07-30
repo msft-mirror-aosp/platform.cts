@@ -120,7 +120,8 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
       # If device doesn't support UW, only test W
       # If device's UW's zoom ratio is bigger than 0.9x, use that value
       test_zoom_ratios = [_ZOOM_RATIO_W]
-      if zoom_range[0] < _ZOOM_RATIO_W:
+      if (zoom_range[0] < _ZOOM_RATIO_W and
+          first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
         test_zoom_ratios.append(max(_ZOOM_RATIO_UW, zoom_range[0]))
 
       # Initialize rotation rig

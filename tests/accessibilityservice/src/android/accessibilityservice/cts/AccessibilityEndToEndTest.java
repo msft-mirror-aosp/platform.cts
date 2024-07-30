@@ -102,6 +102,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -118,6 +119,7 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+import android.view.accessibility.Flags;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -125,7 +127,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -1192,6 +1193,16 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             throws Throwable {
         mActivity.waitForEnterAnimationComplete();
 
+        // Layout. The LinearLayout has a touch delegate that covers the button's area extended to
+        // the right button (x's in the diagram)
+        //      ++++++++++++++++++++++++++++++++++++++++++++++++++ LinearLayout
+        //      +   |--------------------| |----------------------- | +
+        //      +   |xxxxxxxxxxxxxxxxxxxx|x|xxxx                    | +
+        //      +   |x                   | |   x  buttonWithTooltip  | +
+        //      +   |x       button      | | A x                     | +
+        //      +   |xxxxxxxxxxxxxxxxxxxx|x|xxxx                     | +
+        //      +   |--------------------| |----------------------- | +
+        //      +++++++++++++++++++++++++++++++++++++++++++++++++++++++
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final String buttonResourceName = resources.getResourceName(R.id.button);
         final Button button = mActivity.findViewById(R.id.button);
@@ -1215,6 +1226,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // common downTime for touch explorer injected events
             final long downTime = SystemClock.uptimeMillis();
             // hover through delegate, parent, 2nd view, parent and delegate again
+            // MOVE event at point A. We should delegate to button
             sUiAutomation.executeAndWaitForEvent(
                     () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
                     filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
@@ -1253,65 +1265,76 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         }
     }
 
-    @MediumTest
     @Test
-    @ApiTest(apis = {"android.view.View#onHoverEvent",
-            "android.view.accessibility.AccessibilityManager#sendAccessibilityEvent"})
-    public void testTouchDelegateCoverParentWithEbt_HoverChildAndBack_FocusTargetAgain()
-            throws Throwable {
+    @RequiresFlagsEnabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
+    public void testTouchDelegate_ancestorHasTouchDelegate_sendsEventToDelegate()
+            throws InterruptedException {
         mActivity.waitForEnterAnimationComplete();
 
+        // Layout. buttonTargetGrandparent has a touch delegate that covers the buttonTarget and
+        // some area to the right of buttonTarget. buttonTargetParent has the same bounds as
+        // buttonTargetGrandparent
+        //      ++++++++++++++++++++++++++++++++++++++++++++++++++ buttonTargetGrandparent
+        //      + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx +
+        //      + x   buttonTargetParent                        x +
+        //      + x  _______________                            x +
+        //      + x | buttonTarget  |                           x +
+        //      + x |_______________|                           x +
+        //      + xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx +
+        //      +++++++++++++++++++++++++++++++++++++++++++++++++++
+
         final Resources resources = sInstrumentation.getTargetContext().getResources();
+        final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
+        final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final int[] buttonLocation = new int[2];
+        buttonTarget.getLocationOnScreen(buttonLocation);
+        final int buttonY = buttonTarget.getHeight() / 2;
+        final int hoverY = buttonLocation[1] + buttonY;
         final int touchableSize = resources.getDimensionPixelSize(
                 R.dimen.button_touchable_width_increment_amount);
-        final String targetResourceName = resources.getResourceName(R.id.buttonDelegated);
-        final View textView = mActivity.findViewById(R.id.delegateText);
-        final Button target = mActivity.findViewById(R.id.buttonDelegated);
-        int[] location = new int[2];
-        textView.getLocationOnScreen(location);
-        final int textX = location[0] + touchableSize/2;
-        final int textY = location[1] + textView.getHeight() / 2;
-        final int delegateX = location[0] - touchableSize/2;
-        final int targetX = target.getWidth() / 2;
-        final int targetY = target.getHeight() / 2;
-        final View.OnHoverListener listener = CtsMouseUtil.installHoverListener(target, false);
+        final int hoverLeft = buttonLocation[0] + buttonTarget.getWidth() + touchableSize / 2;
         enableTouchExploration(true);
 
         try {
             final long downTime = SystemClock.uptimeMillis();
-            // Like switch bar, it has a text view, a button and a delegate covers parent layout.
-            // hover the delegate, text and delegate again.
             sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, false, delegateX, textY),
+                    () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
                     filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            assertTrue(target.isHovered());
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, true, textX, textY),
-                    filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_EXIT,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            sUiAutomation.executeAndWaitForEvent(
-                    () -> injectHoverEvent(downTime, true, delegateX, textY),
-                    filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
-                           targetResourceName), DEFAULT_TIMEOUT_MS);
-            assertTrue(target.isHovered());
-
-            CtsMouseUtil.clearHoverListener(target);
-            View.OnHoverListener verifier = inOrder(listener).verify(listener);
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_ENTER, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, textX, textY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_EXIT, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_ENTER, targetX, targetY));
-            verifier.onHover(eq(target),
-                    matchHover(MotionEvent.ACTION_HOVER_MOVE, targetX, targetY));
+                            buttonResourceName), DEFAULT_TIMEOUT_MS);
         } catch (TimeoutException e) {
-            fail("Accessibility events should be received as expected " + e.getMessage());
+            fail("TYPE_VIEW_HOVER_ENTER from buttonTarget should be received as expected "
+                    + e.getMessage());
+        } finally {
+            enableTouchExploration(false);
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REMOVE_CHILD_HOVER_CHECK_FOR_TOUCH_EXPLORATION)
+    public void testTouchDelegate_ancestorHasTouchDelegate_doesNotSendEventToDelegate()
+            throws InterruptedException {
+        mActivity.waitForEnterAnimationComplete();
+
+        final Resources resources = sInstrumentation.getTargetContext().getResources();
+        final String buttonResourceName = resources.getResourceName(R.id.buttonTarget);
+        final Button buttonTarget = mActivity.findViewById(R.id.buttonTarget);
+        final int[] buttonLocation = new int[2];
+        buttonTarget.getLocationOnScreen(buttonLocation);
+        final int buttonY = buttonTarget.getHeight() / 2;
+        final int hoverY = buttonLocation[1] + buttonY;
+        final int touchableSize = resources.getDimensionPixelSize(
+                R.dimen.button_touchable_width_increment_amount);
+        final int hoverLeft = buttonLocation[0] + buttonTarget.getWidth() + touchableSize / 2;
+        enableTouchExploration(true);
+
+        try {
+            final long downTime = SystemClock.uptimeMillis();
+            assertThrows("Received TYPE_HOVER_ENTER from target view.",
+                    TimeoutException.class,
+                    () ->   sUiAutomation.executeAndWaitForEvent(
+                            () -> injectHoverEvent(downTime, false, hoverLeft, hoverY),
+                            filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
+                                    buttonResourceName), DEFAULT_TIMEOUT_MS));
         } finally {
             enableTouchExploration(false);
         }
@@ -2082,7 +2105,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     /** Test the case where we want to intercept but not consume motion events. */
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
     public void testOnMotionEvent_interceptsEventFromRequestedSource_observesMotionEvents() {
@@ -2171,10 +2193,29 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
      * has already enabled touch exploration. Motion event observing should not work.
      */
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
+    @RequiresFlagsDisabled(
+            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS)
     public void testMotionEventObserving_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
+        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/false);
+    }
+
+    /**
+     * Test the case where we want to intercept but not consume motion events, but another service
+     * has already enabled touch exploration. Motion event observing should work.
+     */
+    @Test
+    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
+    @RequiresFlagsEnabled({
+            android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING,
+            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS})
+    public void testMotionEventObserving_observesTouchscreenEventWhenTouchExplorationEnabled() {
+        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/true);
+    }
+
+    private void testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(
+            boolean shouldObserve) {
         // Don't run this test on systems without a touchscreen.
         PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
@@ -2227,8 +2268,11 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
             // The view should have seen two hover events.
             listener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-            // The observing service shouldn't see any events.
-            assertThat(eventCount.get()).isEqualTo(0);
+            if (shouldObserve) {
+                assertThat(eventCount.get()).isEqualTo(2);
+            } else {
+                assertThat(eventCount.get()).isEqualTo(0);
+            }
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }

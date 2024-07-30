@@ -31,6 +31,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 
 import android.content.ContentResolver;
 import android.graphics.Rect;
@@ -157,6 +158,11 @@ public class LayoutTests extends WindowManagerTestBase {
 
     @Test
     public void testAddingImmersiveWindow() throws InterruptedException {
+        assumeFalse("Automotive device implementations: [3.8/A] MAY restrict the application"
+                + " requests to limit the ability to enter a full screen mode as described in"
+                + " immersive documentation",
+                isCar() && remoteInsetsControllerControlsSystemBars());
+
         final boolean[] systemUiFlagsGotCleared = {false};
         final TestActivity activity = startActivity(TestActivity.class);
 

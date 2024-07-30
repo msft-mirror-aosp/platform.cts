@@ -38,6 +38,7 @@ import android.telecom.CallAttributes;
 import android.telecom.CallControl;
 import android.telecom.CallException;
 import android.telecom.PhoneAccount;
+import android.telecom.PhoneAccountHandle;
 import android.telecom.StreamingCall;
 import android.telecom.cts.streamingtestapp.CtsCallStreamingService;
 import android.telecom.cts.streamingtestapp.ICtsCallStreamingServiceControl;
@@ -58,8 +59,10 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
 
     private static final String CALL_STREAMING_PACKAGE_NAME =
             "android.telecom.cts.streamingtestapp";
+    private static final PhoneAccountHandle ACCOUNT_HANDLE =
+            new PhoneAccountHandle(new ComponentName(TestUtils.PACKAGE, TestUtils.PACKAGE), TAG);
     private static final PhoneAccount ACCOUNT =
-            PhoneAccount.builder(TestUtils.TEST_SELF_MANAGED_HANDLE_1, TestUtils.ACCOUNT_LABEL)
+            PhoneAccount.builder(ACCOUNT_HANDLE, TestUtils.ACCOUNT_LABEL)
                     .setCapabilities(
                             PhoneAccount.CAPABILITY_SUPPORTS_TRANSACTIONAL_OPERATIONS
                     ).build();
@@ -81,7 +84,6 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
         mCtsRoleManagerAdapter.setRoleHolder(RoleManager.ROLE_SYSTEM_CALL_STREAMING,
                 CALL_STREAMING_PACKAGE_NAME);
         NewOutgoingCallBroadcastReceiver.reset();
-        setupConnectionService(null, FLAG_REGISTER | FLAG_ENABLE);
         mTelecomManager.registerPhoneAccount(ACCOUNT);
         cleanup();
     }
@@ -90,7 +92,7 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
     public void tearDown() throws Exception {
         if (mShouldTestTelecom) {
             cleanup();
-            mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_SELF_MANAGED_HANDLE_1);
+            mTelecomManager.unregisterPhoneAccount(ACCOUNT_HANDLE);
             if (mPreviousRoleHolder == null) {
                 mCtsRoleManagerAdapter.removeRoleHolder(RoleManager.ROLE_SYSTEM_CALL_STREAMING,
                         CALL_STREAMING_PACKAGE_NAME);
@@ -113,7 +115,7 @@ public class CallStreamingTest extends BaseTelecomTestWithMockServices {
 
         TelecomCtsVoipCall call = new TelecomCtsVoipCall("streaming_call");
         final CountDownLatch latch = new CountDownLatch(1);
-        CallAttributes attributes = new CallAttributes.Builder(TestUtils.TEST_SELF_MANAGED_HANDLE_1,
+        CallAttributes attributes = new CallAttributes.Builder(ACCOUNT_HANDLE,
                 DIRECTION_OUTGOING, "testName", Uri.parse("tel:123-TEST"))
                 .setCallType(CallAttributes.AUDIO_CALL)
                 .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)

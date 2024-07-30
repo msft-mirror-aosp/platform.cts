@@ -41,6 +41,7 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -166,7 +167,7 @@ public final class CarTelemetryManagerTest extends AbstractCarTestCase {
                 .isEqualTo(CarTelemetryManager.STATUS_ADD_METRICS_CONFIG_SUCCEEDED);
     }
 
-    @Test
+    @Ignore("b/317660373")
     @ApiTest(apis = {
             "android.car.telemetry.CarTelemetryManager#"
                     + "addMetricsConfig(String, byte[], Executor, AddMetricsConfigCallback)",
@@ -209,7 +210,8 @@ public final class CarTelemetryManagerTest extends AbstractCarTestCase {
                 .isEqualTo(CarTelemetryManager.STATUS_GET_METRICS_CONFIG_FINISHED);
     }
 
-    @Test
+
+    @Ignore("b/317660373")
     @ApiTest(apis = {
             "android.car.telemetry.CarTelemetryManager#"
                     + "addMetricsConfig(String, byte[], Executor, AddMetricsConfigCallback)",

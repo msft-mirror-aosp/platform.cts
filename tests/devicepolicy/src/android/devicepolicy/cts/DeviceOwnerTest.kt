@@ -17,6 +17,8 @@ package android.devicepolicy.cts
 
 import android.app.admin.DevicePolicyManager
 import android.content.pm.PackageManager
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
@@ -30,8 +32,6 @@ import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
 import com.android.bedstead.harrier.annotations.UserTest
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException
@@ -372,15 +372,12 @@ class DeviceOwnerTest {
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isProvisioningAllowed"])
+    @EnsureHasDeviceOwner
     fun getIsProvisioningAllowed_forManagedDevice_setupWizardIsComplete_returnsFalse() {
         TestApis.users().instrumented().setupComplete = true
-        remoteDpcTestApp.install().use {
-            assertThat(
-                    devicePolicyManager.isProvisioningAllowed(
-                            DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE
-                    )
-            ).isFalse()
-        }
+        assertThat(devicePolicyManager.isProvisioningAllowed(
+            DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE
+        )).isFalse()
     }
 
     @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)

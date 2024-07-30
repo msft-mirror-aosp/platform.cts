@@ -20,6 +20,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.keystore.cts.util.EmptyArray;
@@ -291,6 +292,12 @@ public class RSACipherTest {
     @Test
     @RequiresFlagsEnabled(android.security.Flags.FLAG_MGF1_DIGEST_SETTER_V2)
     public void testRsaOaepDecryptWithWrongMGF1DigestFails() throws Exception {
+        // Setting different MGF1 digest was supported from Keymint V1.
+        assumeTrue("This test only applies to Keymint V1 and above."
+                        + " KeyMaster implementations are allowed to ignore tags they do not know"
+                        + " and so they will not return an error, leading to the test failing.",
+                (TestUtils.hasKeystoreVersion(false /*isStrongBoxBased*/,
+                        Attestation.KM_VERSION_KEYMINT_1)));
         Provider provider = Security.getProvider(EXPECTED_PROVIDER_NAME);
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", "AndroidKeyStore");
         generator.initialize(new KeyGenParameterSpec.Builder("test_1",

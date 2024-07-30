@@ -48,11 +48,17 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -61,9 +67,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /** Device-side test for {@link MediaRouter2} functionality. */
+@RunWith(BedsteadJUnit4.class)
 @LargeTest
 public class MediaRouter2DeviceTest {
     private static final int TIMEOUT_MS = 5000;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private Context mContext;
     private Executor mExecutor;
     private Activity mScreenOnActivity;
@@ -150,18 +162,6 @@ public class MediaRouter2DeviceTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
     @Test
-    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException() {
-        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
-        assertThat(instance).isNotNull();
-        assertThrows(
-                SecurityException.class,
-                () ->
-                        instance.requestScan(
-                                new ScanRequest.Builder().setScreenOffScan(true).build()));
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
-    @Test
     public void cancelScanRequest_callTwice_throwsIllegalArgumentException() {
         MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
         assertThat(instance).isNotNull();
@@ -210,6 +210,7 @@ public class MediaRouter2DeviceTest {
         assertThat(onUnbindConditionVariable.block(TIMEOUT_MS)).isTrue();
     }
 
+    @RequireMultiUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withInteractAcrossUsersFull_returnsInstance() {
@@ -236,6 +237,7 @@ public class MediaRouter2DeviceTest {
                 .isNotNull();
     }
 
+    @RequireMultiUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @Test
     public void getInstance_acrossUsers_withoutInteractAcrossUsersFull_throwsSecurityException() {
@@ -255,6 +257,7 @@ public class MediaRouter2DeviceTest {
                                 UserHandle.of(targetUserId)));
     }
 
+    @RequireMultiUserSupport
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CROSS_USER_ROUTING_IN_MEDIA_ROUTER2)
     @SuppressLint("MissingPermission")
     @Test

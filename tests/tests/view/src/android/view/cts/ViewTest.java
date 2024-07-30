@@ -519,6 +519,7 @@ public class ViewTest {
 
         final MotionEvent event =
                 EventUtils.generateMouseEvent(x, y, MotionEvent.ACTION_HOVER_MOVE, 0);
+        event.setDisplayId(mActivity.getDisplayId());
         mInstrumentation.sendPointerSync(event);
         mInstrumentation.waitForIdleSync();
 
@@ -2753,6 +2754,7 @@ public class ViewTest {
         long eventTime = downTime;
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_MOVE,
                 1, 2, 0);
+        event.setDisplayId(mActivity.getDisplayId());
         mInstrumentation.sendTrackballEventSync(event);
         mInstrumentation.waitForIdleSync();
         assertTrue(view.hasCalledOnTrackballEvent());
@@ -3372,11 +3374,13 @@ public class ViewTest {
         MotionEvent downEvent =
                 MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
         downEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        downEvent.setDisplayId(mActivity.getDisplayId());
         mInstrumentation.sendPointerSync(downEvent);
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent upEvent =
                 MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
         upEvent.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        upEvent.setDisplayId(mActivity.getDisplayId());
         mInstrumentation.sendPointerSync(upEvent);
 
         compareAndRecycleMotionEvents(downEvent, events.poll());
@@ -3782,9 +3786,11 @@ public class ViewTest {
         float x = xy[0] + viewWidth / 2.0f;
         float y = xy[1] + viewHeight / 2.0f;
 
+        final int displayId = mActivity.getDisplayId();
         long downTime = SystemClock.uptimeMillis();
         MotionEvent event = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN,
                 x, y, 0);
+        event.setDisplayId(displayId);
         assertFalse(view.isPressed());
         mInstrumentation.sendPointerSync(event);
         waitPrepressedTimeout();
@@ -3799,6 +3805,7 @@ public class ViewTest {
         x = xy[0] + viewWidth + slop;
         y = xy[1] + viewHeight + slop;
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_MOVE, x, y, 0);
+        event.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
         assertFalse(view.isPressed());
@@ -3809,6 +3816,7 @@ public class ViewTest {
         x = xy[0] + viewWidth - 1;
         y = xy[1] + viewHeight - 1;
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_MOVE, x, y, 0);
+        event.setDisplayId(displayId);
         SystemClock.sleep(20); // prevent event batching
         mInstrumentation.sendPointerSync(event);
         waitPrepressedTimeout();
@@ -3821,6 +3829,7 @@ public class ViewTest {
         view.reset();
         eventTime = SystemClock.uptimeMillis();
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_UP, x, y, 0);
+        event.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
         verifyZeroInteractions(listener);
@@ -3830,6 +3839,7 @@ public class ViewTest {
         y = xy[1] + viewHeight / 2.0f;
         downTime = SystemClock.uptimeMillis();
         event = MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+        event.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
 
@@ -3838,6 +3848,7 @@ public class ViewTest {
         reset(listener);
         eventTime = SystemClock.uptimeMillis();
         event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_CANCEL, x, y, 0);
+        event.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(event);
         compareAndRecycleMotionEvents(event, view.pollTouchEvent());
         assertFalse(view.isPressed());
@@ -4782,6 +4793,7 @@ public class ViewTest {
                 SystemClock.uptimeMillis(), SystemClock.uptimeMillis(),
                 MotionEvent.ACTION_DOWN, xOnScreen, yOnScreen, 1);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        event.setDisplayId(mActivity.getDisplayId());
         mInstrumentation.sendPointerSync(event);
 
         return view.startDragAndDrop(ClipData.newPlainText("", ""), shadowBuilder, view, 0);

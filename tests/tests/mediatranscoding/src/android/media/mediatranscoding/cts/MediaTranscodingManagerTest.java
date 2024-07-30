@@ -37,6 +37,7 @@ import android.media.MediaTranscodingManager.TranscodingRequest;
 import android.media.MediaTranscodingManager.TranscodingSession;
 import android.media.MediaTranscodingManager.VideoTranscodingRequest;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
@@ -78,6 +79,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 @RunWith(AndroidJUnit4.class)
 public class MediaTranscodingManagerTest {
     private static final String TAG = "MediaTranscodingManagerTest";
+    public static final boolean VNDK_IS_AT_LEAST_S =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.S;
     /** The time to wait for the transcode operation to complete before failing the test. */
     private static final int TRANSCODE_TIMEOUT_SECONDS = 10;
     /** Copy the transcoded video to /storage/emulated/0/Download/ */
@@ -164,6 +168,8 @@ public class MediaTranscodingManagerTest {
 
         Assume.assumeTrue("Media transcoding disabled",
                 SystemProperties.getBoolean("sys.fuse.transcode_enabled", false));
+        Assume.assumeTrue("Skipping MediaTranscodingManagerTest on VNDK < S partition"
+                + "because it doesn't support transcoding", VNDK_IS_AT_LEAST_S);
 
         PackageManager pm =
                 InstrumentationRegistry.getInstrumentation().getTargetContext().getPackageManager();

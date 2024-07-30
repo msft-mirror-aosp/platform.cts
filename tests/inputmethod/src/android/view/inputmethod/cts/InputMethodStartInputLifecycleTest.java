@@ -20,6 +20,9 @@ import static android.inputmethodservice.InputMethodService.FINISH_INPUT_NO_FALL
 import static android.view.View.SCREEN_STATE_OFF;
 import static android.view.View.SCREEN_STATE_ON;
 import static android.view.View.VISIBLE;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
+import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
@@ -67,9 +70,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -239,9 +242,49 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
         }
     }
 
+    @Test
+    @AppModeFull(reason = "forceStop interferes with instant app")
+    public void testShowingImeDuringSessionChange_doesntShowOnPreviousSession() throws Exception {
+        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        final boolean instant =
+                instrumentation.getTargetContext().getPackageManager().isInstantApp();
+        try (MockImeSession imeSession = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String markerHidden = getTestMarker("hidden");
+            launchTestActivity(markerHidden, SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+            expectEvent(stream, editorMatcher("onStartInput", markerHidden), TIMEOUT);
+
+            // Ensure we don't have a session.
+            MockTestActivityUtil.forceStopPackage();
+
+            final String markerShown = getTestMarker("shown");
+            MockTestActivityUtil.launchSync(instant, TIMEOUT, Map.of(
+                    MockTestActivityUtil.EXTRA_KEY_PRIVATE_IME_OPTIONS, markerShown,
+                    MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE,
+                    Integer.toString(SOFT_INPUT_STATE_VISIBLE)));
+
+            // Wait for startInput on the second activity to have happened, but don't consume the
+            // events.
+            expectEvent(stream.copy(), editorMatcher("onStartInput", markerShown), TIMEOUT);
+            // Assert that the onStartInputView was dispatched for the second activity, not the
+            // first.
+            notExpectEvent(stream, editorMatcher("onStartInputView", markerHidden), 0);
+            expectEvent(stream, editorMatcher("onStartInputView", markerShown), TIMEOUT);
+        }
+    }
+
     private EditText launchTestActivity(String marker) {
+        return launchTestActivity(marker, SOFT_INPUT_STATE_UNSPECIFIED);
+    }
+
+    private EditText launchTestActivity(String marker, int softInputMode) {
         final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-        TestActivity.startSync(activity-> {
+        TestActivity.startSync(activity -> {
+            activity.getWindow().setSoftInputMode(softInputMode);
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
