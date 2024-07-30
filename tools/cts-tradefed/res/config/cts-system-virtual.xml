@@ -407,7 +407,61 @@
   <option name="compatibility:include-filter" value="SdkSandboxManagerTests"/>
   <option name="compatibility:include-filter" value="CtsInputTestCases"/>
   <option name="compatibility:include-filter" value="CtsOnDeviceIntelligenceServiceTestCases"/>
-
+  <option name="compatibility:include-filter" value="MicrodroidTestApp"/>
+  <option name="compatibility:include-filter" value="CtsSyncAccountAccessOtherCertTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppWidgetTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSyncManagerTestsCases"/>
+  <option name="compatibility:include-filter" value="CtsSafetyCenterTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSimpleCpuTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSdkSandboxHostSideTests"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAssistTestCases"/>
+  <option name="compatibility:include-filter" value="CtsStrictJavaPackagesTestCases"/>
+  <option name="compatibility:include-filter" value="CtsContentProviderTestsWithoutVisibility"/>
+  <option name="compatibility:include-filter" value="CtsNetSecPolicyUsesCleartextTrafficUnspecifiedTestCases"/>
+  <option name="compatibility:include-filter" value="CtsRebootReadinessTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectHostSideDeviceTestCases"/>
+  <option name="compatibility:include-filter" value="CtsGrammaticalInflectionTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppFgsTestCases"/>
+  <option name="compatibility:include-filter" value="CtsContentProviderTestsWithVisibility"/>
+  <option name="compatibility:include-filter" value="CtsAppCloningMediaProviderHostTest"/>
+  <option name="compatibility:include-filter" value="CtsNoPermissionTestCases"/>
+  <option name="compatibility:include-filter" value="CtsQuickAccessWalletTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDexMetadataHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsMockingTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppPredictionServiceTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesNoPermission"/>
+  <option name="compatibility:include-filter" value="CtsDeviceStateManagerTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSharedUserMigrationTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicySimTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPackageManagerMultiUserHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsNoPermissionTestCases25"/>
+  <option name="compatibility:include-filter" value="CtsWallpaperEffectsGenerationServiceTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSdkSandboxInprocessTests"/>
+  <option name="compatibility:include-filter" value="SdkSandboxManagerDisabledTests"/>
+  <option name="compatibility:include-filter" value="MicrodroidTestAppNoPerm"/>
+  <option name="compatibility:include-filter" value="CtsDeviceLockTestCases"/>
+  <option name="compatibility:include-filter" value="CtsTaskFpsCallbackTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUffdGcTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppUsageHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsColorModeTestCases"/>
+  <option name="compatibility:include-filter" value="CtsArtTestCases"/>
+  <option name="compatibility:include-filter" value="CtsJvmtiRunTest1904HostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUsesLibraryHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAbiOverrideHostTestCases"/>
+  <option name="compatibility:include-filter" value="art-run-test-018-stack-overflow"/>
+  <option name="compatibility:include-filter" value="art_standalone_libdexfile_external_tests"/>
+  <option name="compatibility:include-filter" value="art-run-test-048-reflect-v8"/>
+  <option name="compatibility:include-filter" value="art_standalone_dex2oat_cts_tests"/>
+  <option name="compatibility:include-filter" value="art_libnativebridge_cts_tests"/>
+  <option name="compatibility:include-filter" value="art_standalone_libartpalette_tests"/>
+  <option name="compatibility:include-filter" value="CtsCarHostNonRecoverableTestCases"/>
+  <option name="compatibility:include-filter" value="CtsPermissionUiTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAdServicesExtDataStorageServiceTest"/>
+  <option name="compatibility:include-filter" value="CtsPdfModuleTestCases"/>
+  <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission"/>
+  
     <!--Exclude Filters -->
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky3"/>
@@ -690,4 +744,7 @@
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.SystemFeaturesTest#testSensorFeatures"/>
   <option name="compatibility:exclude-filter" value="CtsInputTestCases android.input.cts.AppKeyCombinationsTest#testCtrlSpace"/>
   <option name="compatibility:exclude-filter" value="CtsBackupHostTestCases android.cts.backup.OtherSoundsSettingsHostSideTest"/>
+  <option name="compatibility:exclude-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest#serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout"/>
+  <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky1"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecurityLoggingWithSingleUser"/>
 </configuration>
