@@ -117,7 +117,16 @@ public class VulkanFeaturesTest {
                     "VK_KHR_shader_expect_assume",
                     "VK_KHR_shader_quad_control",
                     "VK_KHR_vertex_attribute_divisor",
-                    "VK_ANDROID_external_format_resolve"});
+                    "VK_ANDROID_external_format_resolve",
+                    "VK_KHR_dynamic_rendering_local_read",
+                    "VK_KHR_shader_float_controls2",
+                    "VK_KHR_shader_maximal_reconvergence",
+                    "VK_KHR_shader_subgroup_rotate",
+                    "VK_KHR_video_decode_av1",
+                    "VK_KHR_video_encode_h264",
+                    "VK_KHR_video_encode_h265",
+                    "VK_KHR_video_encode_queue",
+                    "VK_KHR_video_maintenance1"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_U,
                 new String[] {
