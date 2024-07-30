@@ -301,6 +301,7 @@ public abstract class ActivityManagerTestBase {
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
     private UserHelper mUserHelper;
+    protected int mUserId;
 
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
@@ -720,6 +721,7 @@ public abstract class ActivityManagerTestBase {
         mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
                 + "be either empty or resumed");
         mUserHelper = new UserHelper(mContext);
+        mUserId = mContext.getUserId();
     }
 
     /** It always executes after {@link org.junit.After}. */

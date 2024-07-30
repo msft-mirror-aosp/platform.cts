@@ -13,36 +13,26 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_framework_backstage_power",
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "CtsHostsideNetworkPolicyTests",
+android_test_helper_app {
+    name: "CtsDirectBootAwareIme",
+    srcs: ["src/**/*.java"],
     defaults: ["cts_defaults"],
-    // Only compile source java files in this apk.
-    srcs: [
-        "src/**/*.java",
-        ":ArgumentConstants",
-    ],
-    libs: [
-        "cts-tradefed",
-        "tradefed",
-    ],
-    static_libs: [
-        "modules-utils-build-testing",
-        "flag-junit-host",
-        "net_flags_host_lib",
-    ],
-    // Tag this module as a cts test artifact
+    optimize: {
+        enabled: false,
+    },
+    sdk_version: "current",
+    min_sdk_version: "34",
+    // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
-        "sts",
+        "mts",
     ],
-    data: [
-        ":CtsHostsideNetworkPolicyTestsApp",
-        ":CtsHostsideNetworkPolicyTestsApp2",
+    static_libs: [
+        "androidx.annotation_annotation",
     ],
-    per_testcase_directory: true,
 }
