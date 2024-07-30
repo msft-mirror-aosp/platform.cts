@@ -1,5 +1,4 @@
-//
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,29 +13,26 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_input_method_framework",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsWindowManagerSdk28TestCases",
-    team: "trendy_team_windowing_sdk",
+android_test_helper_app {
+    name: "CtsDirectBootAwareIme",
+    srcs: ["src/**/*.java"],
     defaults: ["cts_defaults"],
-
-    srcs: [
-        "src/**/*.java",
-    ],
-
-    sdk_version: "30",
-    min_sdk_version: "28",
-    target_sdk_version: "28",
-
-    static_libs: [
-        "androidx.test.rules",
-        "cts-wm-util",
-    ],
-
+    optimize: {
+        enabled: false,
+    },
+    sdk_version: "current",
+    min_sdk_version: "34",
+    // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+        "mts",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
     ],
 }
