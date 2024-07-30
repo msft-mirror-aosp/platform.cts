@@ -137,6 +137,8 @@ public class SubscriptionManagerTest {
     private String mPackageName;
     private SubscriptionManager mSm;
     private SubscriptionManagerTest.CarrierConfigReceiver mReceiver;
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    private static AssertionError sInitError = null;
 
     private static class CarrierConfigReceiver extends BroadcastReceiver {
         private CountDownLatch mLatch = new CountDownLatch(1);
@@ -203,6 +205,7 @@ public class SubscriptionManagerTest {
     }
 
     @BeforeClass
+    @SuppressWarnings("StaticAssignmentOfThrowable")
     public static void setUpClass() throws Exception {
         if (!isSupported()) return;
 
@@ -216,8 +219,10 @@ public class SubscriptionManagerTest {
         try {
             // Wait to get callback for availability of internet
             callback.waitForAvailable();
+        } catch (AssertionError e) {
+            sInitError = e;
         } catch (InterruptedException e) {
-            fail("NetworkCallback wait was interrupted.");
+            sInitError = new AssertionError("NetworkCallback wait was interrupted");
         } finally {
             cm.unregisterNetworkCallback(callback);
         }
@@ -231,6 +236,7 @@ public class SubscriptionManagerTest {
 
     @Before
     public void setUp() throws Exception {
+        if (sInitError != null) throw sInitError;
         assumeTrue(isSupported());
 
         mSm = InstrumentationRegistry.getContext().getSystemService(SubscriptionManager.class);
