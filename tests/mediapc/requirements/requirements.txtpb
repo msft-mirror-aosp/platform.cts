@@ -1764,12 +1764,33 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-11"
-  description: "- AV1 hardware decoder\n- Secure hardware decoders"
+  name: "Secure Hardware Decoders"
+  description: "Supports various secure hardware decoders"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "secure_requirement_satisfied_boolean"
+    value: {
+      description: "Are secure hardware decoders supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support a secure decoder for every hardware AVC, HEVC, VP9 or AV1 decoder on the device."
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -1777,6 +1798,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -1784,6 +1811,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
@@ -3204,12 +3237,47 @@ requirements {
 }
 requirements {
   id: "5.7/H-1-2"
-  description: "- Hardware-backed trusted execution environment"
+  name: "Media Drm Security Level Hardware Secure All"
+  description: "Hardware-backed trusted execution environment"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "number_crypto_hw_secure_all_support"
+    value: {
+      description: "Number of crypto hw secure all supported."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support MediaDrm.SECURITY_LEVEL_HW_12ECURE_ALL with the below content decryption capabilities.\nMinimum Sample size        4 MiB\nMinimum Number of Subsamples - H264 or HEVC        32\nMinimum Number of Subsamples - VP9        9\nMinimum Number of Subsamples - AV1        288\nMinimum subsample buffer size        1 MiB\nMinimum Generic crypto buffer size        500 KiB\nMinimum Number of concurrent sessions        30\nMinimum Number of keys per session        20\nMinimum Total Number of Keys (all sessions)        80\nMinimum Total Number of DRM Keys (all sessions)        6\nMessage Size        16 KiB\nDecrypted Frames per Second        60 fps"
+      specification:
+        "MUST support MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL with the below "
+        "content decryption capabilities.\n"
+        "Minimum Sample size        4 MiB\n"
+        "Minimum Number of Subsamples - H264 or HEVC        32\n"
+        "Minimum Number of Subsamples - VP9        9\n"
+        "Minimum Number of Subsamples - AV1        288\n"
+        "Minimum subsample buffer size        1 MiB\n"
+        "Minimum Generic crypto buffer size        500 KiB\n"
+        "Minimum Number of concurrent sessions        30\n"
+        "Minimum Number of keys per session        20\n"
+        "Minimum Total Number of Keys (all sessions)        80\n"
+        "Minimum Total Number of DRM Keys (all sessions)        6\n"
+        "Message Size        16 KiB\n"
+        "Decrypted Frames per Second        60 fps"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3217,6 +3285,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3224,6 +3298,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }
