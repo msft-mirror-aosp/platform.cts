@@ -4669,17 +4669,18 @@
                        android:value="single_display_mode" />
         </activity>
 
-        <activity android:name=".managedprovisioning.ManagedUserPositiveTestActivity"
-                 android:exported="true"
-                  android:label="@string/managed_user_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <action android:name="com.android.cts.verifier.managedprovisioning.action.CHECK_AFFILIATED_PROFILE_OWNER" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-        </activity>
+        <!-- b/340154320 Disabled while the teardown of the user is resulting in a crash -->
+<!--        <activity android:name=".managedprovisioning.ManagedUserPositiveTestActivity"-->
+<!--                 android:exported="true"-->
+<!--                  android:label="@string/managed_user_test">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <action android:name="com.android.cts.verifier.managedprovisioning.action.CHECK_AFFILIATED_PROFILE_OWNER" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--            </intent-filter>-->
+<!--            <meta-data android:name="display_mode"-->
+<!--                       android:value="single_display_mode" />-->
+<!--        </activity>-->
 
         <activity android:name=".managedprovisioning.DeviceOwnerRequestingBugreportTestActivity"
                 android:exported="true"
