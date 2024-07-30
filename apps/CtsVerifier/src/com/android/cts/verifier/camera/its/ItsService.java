@@ -4874,7 +4874,10 @@ public class ItsService extends Service implements SensorEventListener {
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
                         + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
                         + " phyid = "
-                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
+                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
+                        + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
+                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);
