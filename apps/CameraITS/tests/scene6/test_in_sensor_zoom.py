@@ -68,11 +68,11 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       # Capture a RAW frame without any zoom
       raw_size = capture_request_utils.get_available_output_sizes(
           'raw', props)[0]
-      output_surfaces = [{'format' : 'raw',
+      output_surfaces = [{'format': 'raw',
                           'width': raw_size[0],
                           'height': raw_size[1]}]
       if self.hidden_physical_id:
-        output_surfaces[0].update({'physicalCamera' : self.hidden_physical_id})
+        output_surfaces[0].update({'physicalCamera': self.hidden_physical_id})
       imgs = {}
       cam.do_3a(out_surfaces=output_surfaces)
       req = capture_request_utils.auto_capture_request()
@@ -87,7 +87,9 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       image_processing_utils.write_image(
           rgb_full_img, f'{name_with_log_path}_raw_full.jpg')
       imgs['raw_full'] = rgb_full_img
-      output_surfaces[0].update({'useCase' : its_session_utils.USE_CASE_CROPPED_RAW})
+      output_surfaces[0].update(
+          {'useCase': its_session_utils.USE_CASE_CROPPED_RAW}
+      )
       # Capture RAW images with different zoom ratios with stream use case
       # CROPPED_RAW set
       for _, z in enumerate(z_list):

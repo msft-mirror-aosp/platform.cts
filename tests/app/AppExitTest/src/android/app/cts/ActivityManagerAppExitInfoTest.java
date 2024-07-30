@@ -536,7 +536,7 @@ public final class ActivityManagerAppExitInfoTest {
             }
             // make sure we have cached process killed
             String output = executeShellCmd("dumpsys activity lru");
-            if (output == null && output.indexOf(" cch+") == -1) {
+            if (output == null || output.indexOf(" cch+") == -1) {
                 break;
             }
         }

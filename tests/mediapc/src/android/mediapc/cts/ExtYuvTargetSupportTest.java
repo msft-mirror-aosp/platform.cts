@@ -19,6 +19,8 @@ package android.mediapc.cts;
 import static org.junit.Assert.assertTrue;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.ExtYuvTargetRequirement;
 import android.mediapc.cts.common.Utils;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -180,9 +182,8 @@ public class ExtYuvTargetSupportTest {
         EGL14.eglTerminate(mEGLDisplay);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.ExtYuvTargetRequirement rExtensionSupported =
-                pce.addExtYUVSupportReq();
-        rExtensionSupported.setExtYuvTargetSupport(mEXTYuvTargetSupported);
+        ExtYuvTargetRequirement rExtensionSupported = Requirements.addR5_12__H_1_3().to(pce);
+        rExtensionSupported.setExtYuvTargetSupported(mEXTYuvTargetSupported);
 
         pce.submitAndCheck();
     }

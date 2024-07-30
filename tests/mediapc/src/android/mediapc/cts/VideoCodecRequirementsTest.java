@@ -385,9 +385,9 @@ public class VideoCodecRequirementsTest {
     }
 
     /**
-     * MUST support portrait resolution for all hardware codecs. AV1 codecs are limited to only
-     * 1080p resolution while others should support 4k or camera preferred resolution
-     * (whichever is less)
+     * MUST support portrait resolution for all hardware codecs that support landscape. AV1 codecs
+     * are limited to only 1080p resolution while others should support 4k or camera preferred
+     * resolution (whichever is less)
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
@@ -417,8 +417,8 @@ public class VideoCodecRequirementsTest {
                 Size finalRequiredSize = requiredSize;
                 Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
                 isSupported = selectHardwareCodecs(mediaType, null, null, isEncoder).stream()
-                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize)
-                                && MediaUtils.supports(codec, mediaType, rotatedSize));
+                        .filter(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize))
+                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, rotatedSize));
                 if (!isSupported) {
                     break outerloop;
                 }

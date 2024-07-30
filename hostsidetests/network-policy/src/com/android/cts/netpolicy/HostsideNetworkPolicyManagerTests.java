@@ -18,6 +18,10 @@ package com.android.cts.netpolicy;
 
 import static com.android.cts.netpolicy.arguments.InstrumentationArguments.ARG_WAIVE_BIND_PRIORITY;
 
+import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import com.android.server.net.Flags;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -76,8 +80,8 @@ public class HostsideNetworkPolicyManagerTests extends HostsideNetworkPolicyTest
                 TEST_PKG + ".NetworkPolicyManagerTest", "testIsUidRestrictedOnMeteredNetworks");
     }
 
-    // TODO(b/321848487): Annotate with @RequiresFlagsEnabled to mirror the device-side test.
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testIsUidNetworkingBlocked_whenInBackground() throws Exception {
         runDeviceTestsWithCustomOptions(TEST_PKG, TEST_PKG + ".NetworkPolicyManagerTest",
                 "testIsUidNetworkingBlocked_whenInBackground",
