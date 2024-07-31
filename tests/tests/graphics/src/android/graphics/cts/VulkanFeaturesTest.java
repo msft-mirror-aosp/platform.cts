@@ -117,7 +117,16 @@ public class VulkanFeaturesTest {
                     "VK_KHR_shader_expect_assume",
                     "VK_KHR_shader_quad_control",
                     "VK_KHR_vertex_attribute_divisor",
-                    "VK_ANDROID_external_format_resolve"});
+                    "VK_ANDROID_external_format_resolve",
+                    "VK_KHR_dynamic_rendering_local_read",
+                    "VK_KHR_shader_float_controls2",
+                    "VK_KHR_shader_maximal_reconvergence",
+                    "VK_KHR_shader_subgroup_rotate",
+                    "VK_KHR_video_decode_av1",
+                    "VK_KHR_video_encode_h264",
+                    "VK_KHR_video_encode_h265",
+                    "VK_KHR_video_encode_queue",
+                    "VK_KHR_video_maintenance1"});
         DEQP_EXTENSIONS_MAP.put(
                 DEQP_LEVEL_FOR_U,
                 new String[] {
@@ -245,6 +254,8 @@ public class VulkanFeaturesTest {
     private JSONObject mVulkanDevices[];
     private JSONObject mBestDevice = null;
     private boolean mIsTV = false;
+    private boolean mIsWatch = false;
+    private boolean mHasTouchscreen = false;
 
     @Before
     public void setup() throws Throwable {
@@ -274,6 +285,10 @@ public class VulkanFeaturesTest {
                     }
                 } else if (PackageManager.FEATURE_LEANBACK.equals(feature.name)) {
                     mIsTV = true;
+                } else if (PackageManager.FEATURE_WATCH.equals(feature.name)) {
+                    mIsWatch = true;
+                } else if (PackageManager.FEATURE_TOUCHSCREEN.equals(feature.name)) {
+                    mHasTouchscreen = true;
                 }
             }
         }
@@ -509,11 +524,16 @@ public class VulkanFeaturesTest {
     private static native String nativeGetABPSupport();
     private static native String nativeGetABPCpuOnlySupport();
 
+    private boolean isHandheld() {
+        // There is no PM feature for "handheld"
+        return mHasTouchscreen && !mIsTV && !mIsWatch;
+    }
+
     @CddTest(requirement = "7.1.4.2/C-1-13")
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
-        assumeTrue("Skipping because ABP is not required of TV devices", !mIsTV);
+        assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 
         if (!hasOnlyCpuDevice()) {
             assertEquals("This device must support the ABP 2021.", "", nativeGetABPSupport());

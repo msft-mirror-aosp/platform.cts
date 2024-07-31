@@ -178,6 +178,9 @@ public class ItsService extends Service implements SensorEventListener {
     // Time given for background requests to warm up pipeline
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
 
+    // Time given PreviewRecorder to record green buffer frames
+    private static final long PADDED_FRAMES_MS = 600;
+
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
     private static final long TIMEOUT_IDLE_MS_EXTENSIONS = 20000;
@@ -215,6 +218,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String TRIGGER_AF_KEY = "af";
     public static final String VIB_PATTERN_KEY = "pattern";
     public static final String EVCOMP_KEY = "evComp";
+    public static final String FLASH_MODE_KEY = "flashMode";
     public static final String AUTO_FLASH_KEY = "autoFlash";
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
@@ -2164,6 +2168,11 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, String.format("Running 3A with AE exposure compensation value: %d", evComp));
             }
 
+            int flashMode = params.optInt(FLASH_MODE_KEY, CaptureRequest.FLASH_MODE_OFF);
+            if (flashMode != CaptureRequest.FLASH_MODE_OFF) {
+                Logt.i(TAG, String.format("Running 3A with FLASH_MODE: %d", flashMode));
+            }
+
             // Auto flash can be specified as part of AE convergence.
             boolean autoFlash = params.optBoolean(AUTO_FLASH_KEY, false);
             if (autoFlash == true) {
@@ -2261,6 +2270,10 @@ public class ItsService extends Service implements SensorEventListener {
 
                         if (evComp != 0) {
                             req.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, evComp);
+                        }
+
+                        if (flashMode != CaptureRequest.FLASH_MODE_OFF) {
+                            req.set(CaptureRequest.FLASH_MODE, flashMode);
                         }
 
                         if (autoFlash == false) {
@@ -2393,6 +2406,8 @@ public class ItsService extends Service implements SensorEventListener {
             Size inputSize, int inputFormat, int maxInputBuffers,
             boolean backgroundRequest, boolean reuseSession)
             throws ItsException {
+        final int TEN_BIT_CAPABILITY =
+            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
@@ -2440,7 +2455,10 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
-                        is10bitOutputPresent = true;
+                        int[] actualCapabilities = cameraCharacteristics.get(
+                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                        is10bitOutputPresent = Arrays.asList(CameraTestUtils.toObject(
+                                    actualCapabilities)).contains(TEN_BIT_CAPABILITY);
                     } else if ("priv".equals(sformat)) {
                         outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
@@ -3062,6 +3080,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
+        boolean paddedFrames = cmdObj.optBoolean("paddedFrames", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.
@@ -3107,12 +3126,47 @@ public class ItsService extends Service implements SensorEventListener {
             long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
                     DynamicRangeProfiles.STANDARD;
             pr.startRecording();
+            if (paddedFrames) {
+                Logt.v(TAG, "Record Green frames at the beginning of the video");
+                pr.overrideCameraFrames(true);
+
+                // MediaRecorder APIs don't specify whether they're synchronous or asynchronous,
+                // and different vendors seem to have interpret this differently. This delay
+                // allows for MediaRecorder to complete the `startRecording` routine before
+                // streaming frames from the camera. b/348332718
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare", e);
+                }
+            }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener, extraConfigs);
+            if (paddedFrames) {
+                Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+
+                Logt.v(TAG, "Record Camera frames after green frames");
+                pr.overrideCameraFrames(false);
+            }
 
             action.execute();
+
+            if (paddedFrames) {
+                pr.overrideCameraFrames(true);
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+            }
+
             // Stop repeating request and ensure frames in flight are sent to MediaRecorder
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
@@ -4824,7 +4878,10 @@ public class ItsService extends Service implements SensorEventListener {
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
                         + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
                         + " phyid = "
-                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
+                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
+                        + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
+                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);

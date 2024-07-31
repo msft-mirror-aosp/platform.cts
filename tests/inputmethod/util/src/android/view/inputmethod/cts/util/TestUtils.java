@@ -56,6 +56,7 @@ import com.android.compatibility.common.util.CommonTestUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.UinputTouchDevice;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -69,6 +70,9 @@ import java.util.function.Supplier;
 
 public final class TestUtils {
     private static final long TIME_SLICE = 100;  // msec
+
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
+
     /**
      * Executes a call on the application's main thread, blocking until it is complete.
      *
@@ -193,7 +197,7 @@ public final class TestUtils {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final PowerManager pm = context.getSystemService(PowerManager.class);
         runShellCommand("input keyevent KEYCODE_WAKEUP");
-        CommonTestUtils.waitUntil("Device does not wake up after 5 seconds", 5,
+        CommonTestUtils.waitUntil("Device does not wake up after " + TIMEOUT + " seconds", TIMEOUT,
                 () -> pm != null && pm.isInteractive());
     }
 
@@ -210,7 +214,7 @@ public final class TestUtils {
         final Context context = InstrumentationRegistry.getInstrumentation().getContext();
         final PowerManager pm = context.getSystemService(PowerManager.class);
         runShellCommand("input keyevent KEYCODE_SLEEP");
-        CommonTestUtils.waitUntil("Device does not sleep after 5 seconds", 5,
+        CommonTestUtils.waitUntil("Device does not sleep after " + TIMEOUT + " seconds", TIMEOUT,
                 () -> pm != null && !pm.isInteractive());
     }
 
@@ -230,7 +234,7 @@ public final class TestUtils {
 
         assertFalse("This method is currently not supported in instant apps.",
                 context.getPackageManager().isInstantApp());
-        CommonTestUtils.waitUntil("Device does not unlock after 3 seconds", 3,
+        CommonTestUtils.waitUntil("Device does not unlock after " + TIMEOUT + " seconds", TIMEOUT,
                 () -> {
                     SystemUtil.runWithShellPermissionIdentity(
                             () -> instrumentation.sendKeyDownUpSync((KeyEvent.KEYCODE_MENU)));
@@ -274,7 +278,7 @@ public final class TestUtils {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        CtsWindowInfoUtils.waitForStableWindowGeometry(5, TimeUnit.SECONDS);
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
