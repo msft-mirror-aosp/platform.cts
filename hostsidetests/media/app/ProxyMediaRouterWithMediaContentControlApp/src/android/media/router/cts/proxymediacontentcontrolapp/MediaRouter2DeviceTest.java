@@ -150,18 +150,6 @@ public class MediaRouter2DeviceTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
     @Test
-    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException() {
-        MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
-        assertThat(instance).isNotNull();
-        assertThrows(
-                SecurityException.class,
-                () ->
-                        instance.requestScan(
-                                new ScanRequest.Builder().setScreenOffScan(true).build()));
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
-    @Test
     public void cancelScanRequest_callTwice_throwsIllegalArgumentException() {
         MediaRouter2 instance = MediaRouter2.getInstance(mContext, mContext.getPackageName());
         assertThat(instance).isNotNull();

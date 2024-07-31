@@ -473,6 +473,17 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "screenOffScan_onProxyRouter_allowedWithMediaContentControl");
     }
 
+    @Test
+    @AppModeFull
+    @RequiresDevice
+    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException()
+            throws DeviceNotAvailableException {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException");
+    }
+
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
