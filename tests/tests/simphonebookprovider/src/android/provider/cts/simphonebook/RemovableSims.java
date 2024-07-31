@@ -54,14 +54,16 @@ class RemovableSims {
                 mContext.getSystemService(SubscriptionManager.class));
         mRemovableSubscriptionInfos = new ArrayList<>();
         mRemovableSimSlotCount = 0;
-
-        if (RequiredFeatureRule.hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC)) {
-            // Wait for the eSIM state to be loaded before continuing. Otherwise, the card info
-            // we load later may indicate that they are not eSIM when they actually are.
-            PollingCheck.waitFor(30_000, () ->
-                    mTelephonyManager.getCardIdForDefaultEuicc() !=
-                            TelephonyManager.UNINITIALIZED_CARD_ID
-            );
+        // If the device has only active PSIMs then it is not required to wait for EUICC
+        // initialization and we can skip it.
+        if (RequiredFeatureRule.hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC) &&
+                !hasActivePsimsOnly(subscriptionManager)) {
+                // Wait for the eSIM state to be loaded before continuing. Otherwise, the card info
+                // we load later may indicate that they are not eSIM when they actually are.
+                PollingCheck.waitFor(30_000, () ->
+                        mTelephonyManager.getCardIdForDefaultEuicc() !=
+                                TelephonyManager.UNINITIALIZED_CARD_ID
+                );
         }
 
         List<UiccCardInfo> uiccCards = SystemUtil.runWithShellPermissionIdentity(
@@ -118,5 +120,20 @@ class RemovableSims {
             return removableSubscriptionInfos.get(0).getSubscriptionId();
         }
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+    }
+
+    private boolean hasActivePsimsOnly(SubscriptionManager subscriptionManager) {
+        List<SubscriptionInfo> activeList = SystemUtil.runWithShellPermissionIdentity(() ->
+                        subscriptionManager.getActiveSubscriptionInfoList(),
+                Manifest.permission.READ_PHONE_STATE);
+        int counter = 0;
+        if (activeList != null) {
+            for (SubscriptionInfo subInfo : activeList) {
+                if (!subInfo.isEmbedded()) {
+                    counter++;
+                }
+            }
+        }
+        return (counter > 1 && counter == mTelephonyManager.getActiveModemCount());
     }
 }

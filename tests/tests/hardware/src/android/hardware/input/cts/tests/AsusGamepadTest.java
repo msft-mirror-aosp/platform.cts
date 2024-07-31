@@ -29,6 +29,7 @@ import org.junit.runner.RunWith;
 public class AsusGamepadTest extends InputHidTestCase {
     public AsusGamepadTest() {
         super(R.raw.asus_gamepad_register);
+        addDelayAfterSetup();
     }
 
     @Test

@@ -20,6 +20,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import android.Manifest;
 import android.app.ActivityManager;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
@@ -30,10 +31,12 @@ import android.os.OutcomeReceiver;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.CallLog;
 import android.provider.CallLog.Calls;
 import android.provider.cts.R;
+import android.telecom.PhoneAccountHandle;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 import android.util.Pair;
@@ -54,6 +57,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to call_log provider.")
 public class CallLogTest extends InstrumentationTestCase {
     private static final String TAG = CallLogTest.class.getSimpleName();
     // Test Call Log Entry
@@ -88,8 +92,19 @@ public class CallLogTest extends InstrumentationTestCase {
     private static final String TEST_FAIL_DID_NOT_TRHOW_SE =
             "fail test because Security Exception was not throw";
     private static final String HSUM_MGG = "in headless system user mode (HSUM); skipping tests.";
+    // telephony phone accounts
+    private static final ComponentName TELEPHONY_COMPONENT_NAME =
+            new ComponentName("com.android.phone",
+                    "com.android.services.telephony.TelephonyConnectionService");
+    private static final PhoneAccountHandle SIM_PHONE_ACCOUNT_HANDLE_1 =
+            new PhoneAccountHandle(TELEPHONY_COMPONENT_NAME, "android.cts.CallLogTest.1");
+    private static final PhoneAccountHandle SIM_PHONE_ACCOUNT_HANDLE_2 =
+            new PhoneAccountHandle(TELEPHONY_COMPONENT_NAME, "android.cts.CallLogTest.2");
     // Instance vars
     private ContentResolver mContentResolver;
+    private CallLogGenerator mCallLogGenerator;
+    private int mMaxCallLogEntriesPerSim;
+
 
     // Class to objectify the call log data (returned from a Cursor object)
     public class LogEntry {
@@ -139,6 +154,8 @@ public class CallLogTest extends InstrumentationTestCase {
         // Sets up this package as default dialer in super.
         super.setUp();
         mContentResolver = getInstrumentation().getContext().getContentResolver();
+        mCallLogGenerator = new CallLogGenerator(getInstrumentation().getContext());
+        mMaxCallLogEntriesPerSim = getMaxCallLogEntriesPerSim(getInstrumentation().getContext());
     }
 
     @Override
@@ -499,6 +516,43 @@ public class CallLogTest extends InstrumentationTestCase {
                 e.getErrorCode());
     }
 
+    @RequiresFlagsEnabled(android.provider.Flags.FLAG_ALLOW_CONFIG_MAXIMUM_CALL_LOG_ENTRIES_PER_SIM)
+    public void testAddCallLogs_withMaximumCallLogEntriesPerSim() {
+        if (!android.provider.Flags.allowConfigMaximumCallLogEntriesPerSim()) {
+            return;
+        }
+        try {
+            getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(Manifest.permission.READ_VOICEMAIL);
+            mCallLogGenerator.generateCallLogs(
+                    SIM_PHONE_ACCOUNT_HANDLE_1, mMaxCallLogEntriesPerSim);
+            mCallLogGenerator.generateCallLogs(
+                    SIM_PHONE_ACCOUNT_HANDLE_2, mMaxCallLogEntriesPerSim);
+            assertEquals(
+                    mMaxCallLogEntriesPerSim,
+                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
+            assertEquals(
+                    mMaxCallLogEntriesPerSim,
+                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
+
+            Uri uri = mCallLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_1);
+            assertNotNull(uri);
+            uri = mCallLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_2);
+            assertNotNull(uri);
+
+            assertEquals(
+                    mMaxCallLogEntriesPerSim,
+                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
+            assertEquals(
+                    mMaxCallLogEntriesPerSim,
+                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
+        } finally {
+            mCallLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1);
+            mCallLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_2);
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
     private byte[] readResourceDrawable(Context context, int id) throws Exception {
         InputStream inputStream = context.getResources().openRawResource(id);
         return readBytes(inputStream);
@@ -604,6 +658,12 @@ public class CallLogTest extends InstrumentationTestCase {
 
         assertEquals(displayName, cursor.getString(
                 cursor.getColumnIndex(Calls.ASSERTED_DISPLAY_NAME)));
+    }
+
+    private int getMaxCallLogEntriesPerSim(Context context) {
+        final int resId = context.getResources().getIdentifier(
+                "config_maximumCallLogEntriesPerSim", "integer", "android");
+        return context.getResources().getInteger(resId);
     }
 
     /**

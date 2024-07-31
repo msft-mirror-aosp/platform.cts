@@ -40,7 +40,8 @@
         <option name="push" value="CtsInstallerCujTestApp.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestApp.apk" />
         <option name="push" value="CtsInstallerCujTestAppV2.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestAppV2.apk" />
         <option name="push" value="CtsInstallerCujTestInstaller.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestInstaller.apk" />
-    </target_preparer>
+        <option name="push" value="CtsInstallerCujTestInstallerV2.apk->/data/local/tmp/cts/packageinstaller/cuj/CtsInstallerCujTestInstallerV2.apk" />
+   </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
@@ -60,6 +61,10 @@
         <option name="run-command" value="cmd statusbar collapse" />
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
+
+        <!-- Temporarily disable Device Config sync -->
+        <option name="run-command" value="device_config set_sync_disabled_for_tests persistent" />
+        <option name="teardown-command" value="device_config set_sync_disabled_for_tests none" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

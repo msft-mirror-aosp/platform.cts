@@ -16,8 +16,11 @@
 
 package android.preference.cts;
 
+import android.Manifest;
 import android.preference.Preference;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class PreferenceCategoryTest
         extends ActivityInstrumentationTestCase2<PreferenceFromCodeActivity> {
@@ -31,7 +34,8 @@ public class PreferenceCategoryTest
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                this::getActivity, Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
     }
 
     public void testPreferenceCategory() {

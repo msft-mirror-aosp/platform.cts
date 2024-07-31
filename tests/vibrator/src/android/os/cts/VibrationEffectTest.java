@@ -18,26 +18,35 @@ package android.os.cts;
 
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.os.Parcel;
+import android.os.PersistableBundle;
 import android.os.VibrationEffect;
 import android.os.VibrationEffect.Composition.UnreachableAfterRepeatingIndefinitelyException;
+import android.os.vibrator.Flags;
 import android.os.vibrator.PrebakedSegment;
 import android.os.vibrator.PrimitiveSegment;
 import android.os.vibrator.RampSegment;
 import android.os.vibrator.StepSegment;
 import android.os.vibrator.VibrationEffectSegment;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -87,19 +96,28 @@ public class VibrationEffectTest {
                     .addEffect(TEST_WAVEFORM_BUILT)
                     .compose();
 
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 1)
+    public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                    getRequiredPrivilegedPermissions());
+
 
     @Test
     public void testCreateOneShot() {
         VibrationEffect e = VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE);
-        assertEquals(100, e.getDuration());
+        assertThat(e.getDuration()).isEqualTo(100);
         assertAmplitude(VibrationEffect.DEFAULT_AMPLITUDE, e, 0);
 
         e = VibrationEffect.createOneShot(1, 1);
-        assertEquals(1, e.getDuration());
+        assertThat(e.getDuration()).isEqualTo(1);
         assertAmplitude(1 / 255f, e, 0);
 
         e = VibrationEffect.createOneShot(1000, 255);
-        assertEquals(1000, e.getDuration());
+        assertThat(e.getDuration()).isEqualTo(1000);
         assertAmplitude(1f, e, 0);
     }
 
@@ -123,22 +141,22 @@ public class VibrationEffectTest {
     @Test
     public void testOneShotEquals() {
         VibrationEffect otherEffect = VibrationEffect.createOneShot(TEST_TIMING, TEST_AMPLITUDE);
-        assertEquals(TEST_ONE_SHOT, otherEffect);
-        assertEquals(TEST_ONE_SHOT.hashCode(), otherEffect.hashCode());
+        assertThat(otherEffect).isEqualTo(TEST_ONE_SHOT);
+        assertThat(otherEffect.hashCode()).isEqualTo(TEST_ONE_SHOT.hashCode());
     }
 
     @Test
     public void testOneShotNotEqualsAmplitude() {
         VibrationEffect otherEffect =
                 VibrationEffect.createOneShot(TEST_TIMING, TEST_AMPLITUDE - 1);
-        assertNotEquals(TEST_ONE_SHOT, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_ONE_SHOT);
     }
 
     @Test
     public void testOneShotNotEqualsTiming() {
         VibrationEffect otherEffect =
                 VibrationEffect.createOneShot(TEST_TIMING - 1, TEST_AMPLITUDE);
-        assertNotEquals(TEST_ONE_SHOT, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_ONE_SHOT);
     }
 
     @Test
@@ -147,8 +165,8 @@ public class VibrationEffectTest {
                 VibrationEffect.createOneShot(TEST_TIMING, VibrationEffect.DEFAULT_AMPLITUDE);
         VibrationEffect otherEffect =
                 VibrationEffect.createOneShot(TEST_TIMING, VibrationEffect.DEFAULT_AMPLITUDE);
-        assertEquals(effect, otherEffect);
-        assertEquals(effect.hashCode(), otherEffect.hashCode());
+        assertThat(otherEffect).isEqualTo(effect);
+        assertThat(otherEffect.hashCode()).isEqualTo(effect.hashCode());
     }
 
     @Test
@@ -161,7 +179,7 @@ public class VibrationEffectTest {
         for (int id : ids) {
             for (boolean fallback : fallbacks) {
                 VibrationEffect effect = VibrationEffect.get(id, fallback);
-                assertEquals(-1, effect.getDuration());
+                assertThat(effect.getDuration()).isEqualTo(-1);
                 assertPrebakedEffectId(id, effect, 0);
                 assertShouldFallback(fallback, effect, 0);
             }
@@ -171,8 +189,8 @@ public class VibrationEffectTest {
     @Test
     public void testPrebakedEquals() {
         VibrationEffect otherEffect = VibrationEffect.get(VibrationEffect.EFFECT_CLICK, true);
-        assertEquals(TEST_PREBAKED, otherEffect);
-        assertEquals(TEST_PREBAKED.hashCode(), otherEffect.hashCode());
+        assertThat(otherEffect).isEqualTo(TEST_PREBAKED);
+        assertThat(otherEffect.hashCode()).isEqualTo(TEST_PREBAKED.hashCode());
     }
 
     @Test
@@ -181,16 +199,16 @@ public class VibrationEffectTest {
                 VibrationEffect.EFFECT_DOUBLE_CLICK, true);
         VibrationEffect predefinedEffect = VibrationEffect.createPredefined(
                 VibrationEffect.EFFECT_DOUBLE_CLICK);
-        assertEquals(expectedEffect, predefinedEffect);
-        assertEquals(expectedEffect.hashCode(), predefinedEffect.hashCode());
+        assertThat(predefinedEffect).isEqualTo(expectedEffect);
+        assertThat(predefinedEffect.hashCode()).isEqualTo(expectedEffect.hashCode());
     }
 
     @Test
     public void testCreateWaveform() {
         VibrationEffect effect = VibrationEffect.createWaveform(TEST_TIMINGS, TEST_AMPLITUDES, -1);
         assertArrayEquals(TEST_TIMINGS, getTimings(effect));
-        assertEquals(-1, getRepeatIndex(effect));
-        assertEquals(400, effect.getDuration());
+        assertThat(getRepeatIndex(effect)).isEqualTo(-1);
+        assertThat(effect.getDuration()).isEqualTo(400);
         for (int i = 0; i < TEST_TIMINGS.length; i++) {
             assertAmplitude(TEST_FLOAT_AMPLITUDES[i], effect, i);
         }
@@ -200,11 +218,11 @@ public class VibrationEffectTest {
         assertAmplitude(VibrationEffect.DEFAULT_AMPLITUDE, effect, /* index= */ 0);
 
         effect = VibrationEffect.createWaveform(TEST_TIMINGS, TEST_AMPLITUDES, 0);
-        assertEquals(0, getRepeatIndex(effect));
+        assertThat(getRepeatIndex(effect)).isEqualTo(0);
 
         effect = VibrationEffect.createWaveform(
                 TEST_TIMINGS, TEST_AMPLITUDES, TEST_AMPLITUDES.length - 1);
-        assertEquals(TEST_AMPLITUDES.length - 1, getRepeatIndex(effect));
+        assertThat(getRepeatIndex(effect)).isEqualTo(TEST_AMPLITUDES.length - 1);
     }
 
     @Test
@@ -258,16 +276,16 @@ public class VibrationEffectTest {
     public void testCreateWaveformWithNoAmplitudes() {
         VibrationEffect effect = VibrationEffect.createWaveform(TEST_TIMINGS, -1);
         assertArrayEquals(TEST_TIMINGS, getTimings(effect));
-        assertEquals(-1, getRepeatIndex(effect));
+        assertThat(getRepeatIndex(effect)).isEqualTo(-1);
         for (int i = 0; i < TEST_TIMINGS.length; i++) {
             assertAmplitude(i % 2 == 0 ? 0 : VibrationEffect.DEFAULT_AMPLITUDE, effect, i);
         }
 
         effect = VibrationEffect.createWaveform(TEST_TIMINGS, 0);
-        assertEquals(0, getRepeatIndex(effect));
+        assertThat(getRepeatIndex(effect)).isEqualTo(0);
 
         effect = VibrationEffect.createWaveform(TEST_TIMINGS, TEST_TIMINGS.length - 1);
-        assertEquals(TEST_TIMINGS.length - 1, getRepeatIndex(effect));
+        assertThat(getRepeatIndex(effect)).isEqualTo(TEST_TIMINGS.length - 1);
     }
 
     @Test
@@ -284,15 +302,15 @@ public class VibrationEffectTest {
         VibrationEffect effect = VibrationEffect.createWaveform(TEST_TIMINGS, TEST_AMPLITUDES, -1);
         VibrationEffect otherEffect =
                 VibrationEffect.createWaveform(TEST_TIMINGS, TEST_AMPLITUDES, -1);
-        assertEquals(effect, otherEffect);
-        assertEquals(effect.hashCode(), otherEffect.hashCode());
+        assertThat(otherEffect).isEqualTo(effect);
+        assertThat(otherEffect.hashCode()).isEqualTo(effect.hashCode());
     }
 
     @Test
     public void testWaveformNotEqualsDifferentRepeatIndex() {
         VibrationEffect otherEffect =
                 VibrationEffect.createWaveform(TEST_TIMINGS, TEST_AMPLITUDES, 0);
-        assertNotEquals(TEST_WAVEFORM, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM);
     }
 
     @Test
@@ -301,7 +319,7 @@ public class VibrationEffectTest {
         newTimings[0] = 200;
         VibrationEffect otherEffect =
                 VibrationEffect.createWaveform(newTimings, TEST_AMPLITUDES, -1);
-        assertNotEquals(TEST_WAVEFORM, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM);
     }
 
     @Test
@@ -310,7 +328,7 @@ public class VibrationEffectTest {
         newAmplitudes[0] = 1;
         VibrationEffect otherEffect =
                 VibrationEffect.createWaveform(TEST_TIMINGS, newAmplitudes, -1);
-        assertNotEquals(TEST_WAVEFORM, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM);
     }
 
     @Test
@@ -319,28 +337,27 @@ public class VibrationEffectTest {
         int[] newAmplitudes = Arrays.copyOfRange(TEST_AMPLITUDES, 0, TEST_AMPLITUDES.length -1);
         VibrationEffect otherEffect =
                 VibrationEffect.createWaveform(newTimings, newAmplitudes, -1);
-        assertNotEquals(TEST_WAVEFORM, otherEffect);
-        assertNotEquals(otherEffect, TEST_WAVEFORM);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM);
     }
 
     @Test
     public void testWaveformWithNoAmplitudesEquals() {
         VibrationEffect otherEffect = VibrationEffect.createWaveform(TEST_TIMINGS, -1);
-        assertEquals(TEST_WAVEFORM_NO_AMPLITUDES, otherEffect);
-        assertEquals(TEST_WAVEFORM_NO_AMPLITUDES.hashCode(), otherEffect.hashCode());
+        assertThat(otherEffect).isEqualTo(TEST_WAVEFORM_NO_AMPLITUDES);
+        assertThat(otherEffect.hashCode()).isEqualTo(TEST_WAVEFORM_NO_AMPLITUDES.hashCode());
     }
 
     @Test
     public void testWaveformWithNoAmplitudesNotEqualsDifferentRepeatIndex() {
         VibrationEffect otherEffect = VibrationEffect.createWaveform(TEST_TIMINGS, 0);
-        assertNotEquals(TEST_WAVEFORM_NO_AMPLITUDES, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM_NO_AMPLITUDES);
     }
 
     @Test
     public void testWaveformWithNoAmplitudesNotEqualsDifferentArrayLength() {
         long[] newTimings = Arrays.copyOfRange(TEST_TIMINGS, 0, TEST_TIMINGS.length - 1);
         VibrationEffect otherEffect = VibrationEffect.createWaveform(newTimings, -1);
-        assertNotEquals(TEST_WAVEFORM_NO_AMPLITUDES, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM_NO_AMPLITUDES);
     }
 
     @Test
@@ -348,7 +365,7 @@ public class VibrationEffectTest {
         long[] newTimings = Arrays.copyOf(TEST_TIMINGS, TEST_TIMINGS.length);
         newTimings[0] = 1;
         VibrationEffect otherEffect = VibrationEffect.createWaveform(newTimings, -1);
-        assertNotEquals(TEST_WAVEFORM_NO_AMPLITUDES, otherEffect);
+        assertThat(otherEffect).isNotEqualTo(TEST_WAVEFORM_NO_AMPLITUDES);
     }
 
     @Test
@@ -357,7 +374,7 @@ public class VibrationEffectTest {
         TEST_ONE_SHOT.writeToParcel(p, 0);
         p.setDataPosition(0);
         VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
-        assertEquals(TEST_ONE_SHOT, parceledEffect);
+        assertThat(parceledEffect).isEqualTo(TEST_ONE_SHOT);
     }
 
     @Test
@@ -366,7 +383,7 @@ public class VibrationEffectTest {
         TEST_WAVEFORM.writeToParcel(p, 0);
         p.setDataPosition(0);
         VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
-        assertEquals(TEST_WAVEFORM, parceledEffect);
+        assertThat(parceledEffect).isEqualTo(TEST_WAVEFORM);
     }
 
     @Test
@@ -375,7 +392,7 @@ public class VibrationEffectTest {
         TEST_PREBAKED.writeToParcel(p, 0);
         p.setDataPosition(0);
         VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
-        assertEquals(TEST_PREBAKED, parceledEffect);
+        assertThat(parceledEffect).isEqualTo(TEST_PREBAKED);
     }
 
     @Test
@@ -384,7 +401,18 @@ public class VibrationEffectTest {
         TEST_COMPOSED.writeToParcel(p, 0);
         p.setDataPosition(0);
         VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
-        assertEquals(TEST_COMPOSED, parceledEffect);
+        assertThat(parceledEffect).isEqualTo(TEST_COMPOSED);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testParcelingVendorEffect() {
+        VibrationEffect vendorEffect = VibrationEffect.createVendorEffect(createTestVendorData());
+        Parcel p = Parcel.obtain();
+        vendorEffect.writeToParcel(p, 0);
+        p.setDataPosition(0);
+        VibrationEffect parceledEffect = VibrationEffect.CREATOR.createFromParcel(p);
+        assertThat(parceledEffect).isEqualTo(vendorEffect);
     }
 
     @Test
@@ -393,13 +421,16 @@ public class VibrationEffectTest {
         TEST_WAVEFORM.describeContents();
         TEST_PREBAKED.describeContents();
         TEST_COMPOSED.describeContents();
+        if (Flags.vendorVibrationEffects()) {
+            VibrationEffect.createVendorEffect(createTestVendorData()).describeContents();
+        }
     }
 
     @Test
     public void testStartComposition() {
         VibrationEffect.Composition first = VibrationEffect.startComposition();
         VibrationEffect.Composition other = VibrationEffect.startComposition();
-        assertNotEquals(first, other);
+        assertThat(first).isNotEqualTo(other);
     }
 
     @Test
@@ -412,7 +443,7 @@ public class VibrationEffectTest {
                 .addEffect(TEST_WAVEFORM)
                 .compose();
 
-        assertEquals(-1, effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(-1);
         assertArrayEquals(new long[]{
                 -1 /* tick */, TEST_TIMING /* oneshot */, -1 /* click */, -1 /* thud */,
                 100, 100, 200 /* waveform */
@@ -443,8 +474,8 @@ public class VibrationEffectTest {
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f, 10)
                 .addEffect(TEST_WAVEFORM)
                 .compose();
-        assertEquals(effect, otherEffect);
-        assertEquals(effect.hashCode(), otherEffect.hashCode());
+        assertThat(effect).isEqualTo(otherEffect);
+        assertThat(effect.hashCode()).isEqualTo(otherEffect.hashCode());
     }
 
     @Test
@@ -460,8 +491,8 @@ public class VibrationEffectTest {
         VibrationEffect otherEffect = VibrationEffect.startComposition()
                 .repeatEffectIndefinitely(nonRepeatingWaveform)
                 .compose();
-        assertEquals(effect, otherEffect);
-        assertEquals(effect.hashCode(), otherEffect.hashCode());
+        assertThat(effect).isEqualTo(otherEffect);
+        assertThat(effect.hashCode()).isEqualTo(otherEffect.hashCode());
     }
 
     @Test
@@ -472,7 +503,7 @@ public class VibrationEffectTest {
         VibrationEffect otherEffect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -483,7 +514,7 @@ public class VibrationEffectTest {
         VibrationEffect otherEffect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.5f)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -494,7 +525,7 @@ public class VibrationEffectTest {
         VibrationEffect otherEffect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.8f, 100)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -507,7 +538,7 @@ public class VibrationEffectTest {
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -519,7 +550,7 @@ public class VibrationEffectTest {
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -530,7 +561,7 @@ public class VibrationEffectTest {
         VibrationEffect otherEffect = VibrationEffect.startComposition()
                 .addEffect(TEST_WAVEFORM)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -543,7 +574,7 @@ public class VibrationEffectTest {
                 .addOffDuration(Duration.ofSeconds(10))
                 .addEffect(TEST_ONE_SHOT)
                 .compose();
-        assertNotEquals(effect, otherEffect);
+        assertThat(effect).isNotEqualTo(otherEffect);
     }
 
     @Test
@@ -553,26 +584,26 @@ public class VibrationEffectTest {
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
                 .addEffect(TEST_ONE_SHOT)
                 .compose();
-        assertEquals(-1, effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(-1);
 
         effect = VibrationEffect.startComposition()
                 .addEffect(TEST_ONE_SHOT)
                 .compose();
-        assertEquals(TEST_ONE_SHOT.getDuration(), effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(TEST_ONE_SHOT.getDuration());
 
         effect = VibrationEffect.startComposition().addOffDuration(Duration.ofSeconds(2)).compose();
-        assertEquals(2_000, effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(2_000);
 
         effect = VibrationEffect.startComposition()
                 .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK)
                 .addEffect(VibrationEffect.createWaveform(new long[]{10, 10}, /* repeat= */ 0))
                 .compose();
-        assertEquals(Long.MAX_VALUE, effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(Long.MAX_VALUE);
 
         effect = VibrationEffect.startComposition()
                 .repeatEffectIndefinitely(TEST_ONE_SHOT)
                 .compose();
-        assertEquals(Long.MAX_VALUE, effect.getDuration());
+        assertThat(effect.getDuration()).isEqualTo(Long.MAX_VALUE);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -621,7 +652,7 @@ public class VibrationEffectTest {
     public void testStartWaveform() {
         VibrationEffect.WaveformBuilder first = VibrationEffect.startWaveform();
         VibrationEffect.WaveformBuilder other = VibrationEffect.startWaveform();
-        assertNotEquals(first, other);
+        assertThat(first).isNotEqualTo(other);
 
         VibrationEffect effect = VibrationEffect.startWaveform(targetAmplitude(0.5f))
                 .addSustain(Duration.ofMillis(10))
@@ -661,22 +692,22 @@ public class VibrationEffectTest {
                         targetAmplitude(0.2f), targetFrequency(200f))
                 .build();
 
-        assertEquals(TEST_WAVEFORM_BUILT, other);
-        assertEquals(TEST_WAVEFORM_BUILT.hashCode(), other.hashCode());
+        assertThat(other).isEqualTo(TEST_WAVEFORM_BUILT);
+        assertThat(other.hashCode()).isEqualTo(TEST_WAVEFORM_BUILT.hashCode());
 
         VibrationEffect.WaveformBuilder builder =
                 VibrationEffect.startWaveform(targetAmplitude(TEST_FLOAT_AMPLITUDE))
                 .addSustain(Duration.ofMillis(TEST_TIMING));
-        assertEquals(TEST_ONE_SHOT, builder.build());
-        assertEquals(TEST_ONE_SHOT.hashCode(), builder.build().hashCode());
+        assertThat(builder.build()).isEqualTo(TEST_ONE_SHOT);
+        assertThat(builder.build().hashCode()).isEqualTo(TEST_ONE_SHOT.hashCode());
 
         builder = VibrationEffect.startWaveform();
         for (int i = 0; i < TEST_TIMINGS.length; i++) {
             builder.addTransition(Duration.ZERO, targetAmplitude(TEST_FLOAT_AMPLITUDES[i]));
             builder.addSustain(Duration.ofMillis(TEST_TIMINGS[i]));
         }
-        assertEquals(TEST_WAVEFORM, builder.build());
-        assertEquals(TEST_WAVEFORM.hashCode(), builder.build().hashCode());
+        assertThat(builder.build()).isEqualTo(TEST_WAVEFORM);
+        assertThat(builder.build().hashCode()).isEqualTo(TEST_WAVEFORM.hashCode());
     }
 
     @Test
@@ -688,7 +719,7 @@ public class VibrationEffectTest {
         VibrationEffect other = VibrationEffect.startWaveform(targetAmplitude(0.5f))
                 .addSustain(Duration.ofMillis(10))
                 .build();
-        assertEquals(effect, other);
+        assertThat(effect).isEqualTo(other);
 
         effect = VibrationEffect.startWaveform(targetAmplitude(1f), targetFrequency(100f))
                 .addTransition(Duration.ofMillis(10), targetAmplitude(1f), targetFrequency(100f))
@@ -696,7 +727,7 @@ public class VibrationEffectTest {
         other = VibrationEffect.startWaveform(targetAmplitude(1f), targetFrequency(100f))
                 .addSustain(Duration.ofMillis(10))
                 .build();
-        assertEquals(effect, other);
+        assertThat(effect).isEqualTo(other);
     }
 
     @Test
@@ -705,7 +736,7 @@ public class VibrationEffectTest {
                 .addSustain(Duration.ofMillis(10))
                 .addTransition(Duration.ofMillis(100), targetAmplitude(1))
                 .build();
-        assertNotEquals(TEST_WAVEFORM_BUILT, other);
+        assertThat(other).isNotEqualTo(TEST_WAVEFORM_BUILT);
     }
 
     @Test
@@ -716,7 +747,7 @@ public class VibrationEffectTest {
         VibrationEffect second = VibrationEffect.startWaveform(targetAmplitude(0.5f))
                 .addSustain(Duration.ofMillis(10))
                 .build();
-        assertNotEquals(first, second);
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test
@@ -727,7 +758,7 @@ public class VibrationEffectTest {
         VibrationEffect second = VibrationEffect.startWaveform()
                 .addTransition(Duration.ofMillis(10), targetAmplitude(0.8f))
                 .build();
-        assertNotEquals(first, second);
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test
@@ -738,7 +769,7 @@ public class VibrationEffectTest {
         VibrationEffect second = VibrationEffect.startWaveform()
                 .addTransition(Duration.ofMillis(10), targetAmplitude(0.5f), targetFrequency(50f))
                 .build();
-        assertNotEquals(first, second);
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test
@@ -749,7 +780,7 @@ public class VibrationEffectTest {
         VibrationEffect second = VibrationEffect.startWaveform()
                 .addTransition(Duration.ofMillis(100), targetAmplitude(0.5f), targetFrequency(50f))
                 .build();
-        assertNotEquals(first, second);
+        assertThat(first).isNotEqualTo(second);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -770,9 +801,36 @@ public class VibrationEffectTest {
 
     @Test
     public void testStartWaveformZeroAmplitudeSustainIsSameAsOffPeriodOnlyComposition() {
-        assertEquals(
-                VibrationEffect.startWaveform().addSustain(Duration.ofMillis(1_000)).build(),
-                VibrationEffect.startComposition().addOffDuration(Duration.ofSeconds(1)).compose());
+        assertThat(VibrationEffect.startWaveform().addSustain(Duration.ofMillis(1_000)).build())
+                .isEqualTo(
+                        VibrationEffect.startComposition()
+                                .addOffDuration(Duration.ofSeconds(1))
+                                .compose());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testCreateVendorEffect() {
+        PersistableBundle vendorData = createTestVendorData();
+        VibrationEffect.VendorEffect effect =
+                (VibrationEffect.VendorEffect) VibrationEffect.createVendorEffect(vendorData);
+        assertThat(effect.getDuration()).isEqualTo(-1);
+        assertThat(effect.getVendorData().size()).isEqualTo(vendorData.size());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testCreateVendorEffectEmptyBundleFails() {
+        VibrationEffect.createVendorEffect(new PersistableBundle());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testVendorEffectEquals() {
+        VibrationEffect effect = VibrationEffect.createVendorEffect(createTestVendorData());
+        VibrationEffect otherEffect = VibrationEffect.createVendorEffect(createTestVendorData());
+        assertThat(otherEffect).isEqualTo(effect);
+        assertThat(otherEffect.hashCode()).isEqualTo(effect.hashCode());
     }
 
     @SuppressWarnings("ReturnValueIgnored")
@@ -783,83 +841,120 @@ public class VibrationEffectTest {
         TEST_WAVEFORM_BUILT.toString();
         TEST_PREBAKED.toString();
         TEST_COMPOSED.toString();
+        if (Flags.vendorVibrationEffects()) {
+            VibrationEffect.createVendorEffect(createTestVendorData()).toString();
+        }
     }
 
     private long[] getTimings(VibrationEffect effect) {
-        return ((VibrationEffect.Composed) effect).getSegments().stream()
-                .mapToLong(VibrationEffectSegment::getDuration)
-                .toArray();
+        if (effect instanceof VibrationEffect.Composed composed) {
+            return composed.getSegments().stream()
+                    .mapToLong(VibrationEffectSegment::getDuration)
+                    .toArray();
+        }
+        return null;
     }
 
     private int getRepeatIndex(VibrationEffect effect) {
-        return ((VibrationEffect.Composed) effect).getRepeatIndex();
+        if (effect instanceof VibrationEffect.Composed composed) {
+            return composed.getRepeatIndex();
+        }
+        return -1;
     }
 
     private void assertStepSegment(VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
-        assertTrue(composed.getSegments().get(index) instanceof StepSegment);
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(StepSegment.class);
     }
 
     private void assertRampSegment(VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
-        assertTrue(composed.getSegments().get(index) instanceof RampSegment);
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(RampSegment.class);
     }
 
     private void assertAmplitude(float expected, VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
+        assertThat(index).isLessThan(composed.getSegments().size());
         VibrationEffectSegment segment = composed.getSegments().get(index);
         if (segment instanceof StepSegment) {
-            assertEquals(expected, ((StepSegment) composed.getSegments().get(index)).getAmplitude(),
-                    TEST_TOLERANCE);
+            assertThat(((StepSegment) composed.getSegments().get(index)).getAmplitude())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expected);
         } else if (segment instanceof RampSegment) {
-            assertEquals(expected,
-                    ((RampSegment) composed.getSegments().get(index)).getEndAmplitude(),
-                    TEST_TOLERANCE);
+            assertThat(((RampSegment) composed.getSegments().get(index)).getEndAmplitude())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expected);
         } else {
             fail("Expected a step or ramp segment at index " + index + " of " + effect);
         }
     }
 
     private void assertFrequency(float expected, VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
+        assertThat(index).isLessThan(composed.getSegments().size());
         VibrationEffectSegment segment = composed.getSegments().get(index);
         if (segment instanceof StepSegment) {
-            assertEquals(expected,
-                    ((StepSegment) composed.getSegments().get(index)).getFrequencyHz(),
-                    TEST_TOLERANCE);
+            assertThat(((StepSegment) composed.getSegments().get(index)).getFrequencyHz())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expected);
         } else if (segment instanceof RampSegment) {
-            assertEquals(expected,
-                    ((RampSegment) composed.getSegments().get(index)).getEndFrequencyHz(),
-                    TEST_TOLERANCE);
+            assertThat(((RampSegment) composed.getSegments().get(index)).getEndFrequencyHz())
+                    .isWithin(TEST_TOLERANCE)
+                    .of(expected);
         } else {
             fail("Expected a step or ramp segment at index " + index + " of " + effect);
         }
     }
 
     private void assertPrebakedEffectId(int expected, VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
-        assertTrue(composed.getSegments().get(index) instanceof PrebakedSegment);
-        assertEquals(expected, ((PrebakedSegment) composed.getSegments().get(index)).getEffectId());
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(PrebakedSegment.class);
+        assertThat(((PrebakedSegment) composed.getSegments().get(index)).getEffectId())
+                .isEqualTo(expected);
     }
 
     private void assertShouldFallback(boolean expected, VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
-        assertTrue(composed.getSegments().get(index) instanceof PrebakedSegment);
-        assertEquals(expected,
-                ((PrebakedSegment) composed.getSegments().get(index)).shouldFallback());
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(PrebakedSegment.class);
+        assertThat(((PrebakedSegment) composed.getSegments().get(index)).shouldFallback())
+                .isEqualTo(expected);
     }
 
     private void assertPrimitiveId(int expected, VibrationEffect effect, int index) {
+        assertThat(effect).isInstanceOf(VibrationEffect.Composed.class);
         VibrationEffect.Composed composed = (VibrationEffect.Composed) effect;
-        assertTrue(index < composed.getSegments().size());
-        assertTrue(composed.getSegments().get(index) instanceof PrimitiveSegment);
-        assertEquals(expected,
-                ((PrimitiveSegment) composed.getSegments().get(index)).getPrimitiveId());
+        assertThat(index).isLessThan(composed.getSegments().size());
+        assertThat(composed.getSegments().get(index)).isInstanceOf(PrimitiveSegment.class);
+        assertThat(((PrimitiveSegment) composed.getSegments().get(index)).getPrimitiveId())
+                .isEqualTo(expected);
+    }
+
+    private static PersistableBundle createTestVendorData() {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        vendorData.putDouble("scale", 0.5);
+        vendorData.putBoolean("loop", false);
+        vendorData.putLongArray("amplitudes", new long[] { 0, 255, 128 });
+        vendorData.putString("label", "vibration");
+        return vendorData;
+    }
+
+    private static String[] getRequiredPrivilegedPermissions() {
+        if (Flags.vendorVibrationEffects()) {
+            return new String[]{
+                    android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
+            };
+        }
+        return null;
     }
 }

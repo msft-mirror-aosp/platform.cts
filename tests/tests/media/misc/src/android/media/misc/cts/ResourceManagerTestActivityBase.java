@@ -36,7 +36,6 @@ public class ResourceManagerTestActivityBase extends Activity {
     private static final int FRAME_RATE = 10;
     // 10 seconds between I-frames
     private static final int IFRAME_INTERVAL = 10;
-    protected static final int MAX_INSTANCES = 32;
     // Less important codec of value 100.
     private static final int CODEC_IMPORTANCE_100 = 100;
     private static final MediaCodecList sMCL = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
