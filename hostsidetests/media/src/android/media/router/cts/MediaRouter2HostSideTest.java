@@ -445,6 +445,34 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "managerScan_withNoAppsScanning_doesNotWakeUpProvider");
     }
 
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
+    })
+    @Test
+    public void screenOffScan_onLocalRouter_allowedWithMediaContentControl() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "screenOffScan_onLocalRouter_allowedWithMediaContentControl");
+    }
+
+    @AppModeFull
+    @RequiresDevice
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
+    })
+    @Test
+    public void screenOffScan_onProxyRouter_allowedWithMediaContentControl() throws Exception {
+        runDeviceTests(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                DEVICE_SIDE_TEST_CLASS,
+                "screenOffScan_onProxyRouter_allowedWithMediaContentControl");
+    }
+
     private void setPermissionEnabled(String packageName, String permission, boolean enabled)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
