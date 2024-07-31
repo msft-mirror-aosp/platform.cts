@@ -23,6 +23,7 @@ from matplotlib import animation
 from matplotlib import ticker
 import matplotlib.pyplot as plt
 import numpy
+from PIL import Image
 
 import camera_properties_utils
 import capture_request_utils
@@ -35,7 +36,6 @@ _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 _CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-_DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 _MIN_AREA_RATIO = 0.00013  # Found empirically with partners
 _MIN_CIRCLE_PTS = 25
 _MIN_FOCUS_DIST_TOL = 0.80  # allow charts a little closer than min
@@ -44,14 +44,16 @@ _OFFSET_PLOT_FPS = 2
 _OFFSET_PLOT_INTERVAL = 400  # delay between frames in milliseconds.
 _OFFSET_RTOL_MIN_FD = 0.30
 _RADIUS_RTOL_MIN_FD = 0.15
-OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
-RADIUS_RTOL = 0.10
-ZOOM_MIN_THRESH = 2.0
-ZOOM_MAX_THRESH = 10.0
-ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
-PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
-PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
+
+DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
+OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
+PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
+PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
+RADIUS_RTOL = 0.10
+ZOOM_MAX_THRESH = 10.0
+ZOOM_MIN_THRESH = 2.0
+ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 
 
 @dataclasses.dataclass
@@ -124,7 +126,7 @@ def find_center_circle(
     img, img_name, size, zoom_ratio, min_zoom_ratio,
     expected_color=_CIRCLE_COLOR, circle_ar_rtol=_CIRCLE_AR_RTOL,
     circlish_rtol=_CIRCLISH_RTOL, min_circle_pts=_MIN_CIRCLE_PTS,
-    fov_ratio=_DEFAULT_FOV_RATIO, debug=False, draw_color=_CV2_RED,
+    fov_ratio=DEFAULT_FOV_RATIO, debug=False, draw_color=_CV2_RED,
     write_img=True):
   """Find circle closest to image center for scene with multiple circles.
 
@@ -182,8 +184,7 @@ def find_center_circle(
   # write copy of image for debug purposes
   if debug:
     img_copy_name = img_name.split('.')[0] + '_copy.jpg'
-    image_processing_utils.write_image(numpy.expand_dims(
-        (255-img_bw).astype(numpy.float)/255.0, axis=2), img_copy_name)
+    Image.fromarray((img_bw).astype(numpy.uint8)).save(img_copy_name)
 
   # check contours and find the best circle candidates
   circles = []

@@ -40,6 +40,7 @@ android_test {
         "com.android.text.flags-aconfig-java",
         "android.view.inputmethod.flags-aconfig-java",
         "flag-junit",
+        "Harrier",
     ],
 
     libs: ["android.test.runner"],

@@ -54,7 +54,7 @@ public class LegacyToastTest extends BaseToastTest {
         try {
             showToastsViaAddingWindow(1, false);
             fail("Shouldn't be able to add toast windows directly");
-        } catch (WindowManager.BadTokenException e) {
+        } catch (WindowManager.BadTokenException | WindowManager.InvalidDisplayException e) {
             /* expected */
         }
     }

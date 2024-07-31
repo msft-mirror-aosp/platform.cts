@@ -27,11 +27,14 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -39,12 +42,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Debug;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SecurityTest;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -55,17 +63,20 @@ import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.mockime.ImeSettings;
+import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -89,6 +100,10 @@ public class InputMethodManagerTest {
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
     private static final String HIDDEN_FROM_PICKER_IME_LABEL = "Hidden From Picker IME";
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private Instrumentation mInstrumentation;
     private Context mContext;
     private InputMethodManager mImManager;
@@ -104,7 +119,7 @@ public class InputMethodManagerTest {
     @After
     public void resetImes() {
         if (mNeedsImeReset) {
-            runShellCommandOrThrow("ime reset");
+            runShellCommandOrThrow("ime reset --user " + UserHandle.myUserId());
             mNeedsImeReset = false;
         }
     }
@@ -258,42 +273,15 @@ public class InputMethodManagerTest {
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testShowInputMethodPicker() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
 
-        TestActivity.startSync(activity -> {
-            final View view = new View(activity);
-            view.setLayoutParams(new LayoutParams(
-                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-            return view;
-        });
+        startActivityAndShowInputMethodPicker();
 
-        // Make sure that InputMethodPicker is not shown in the initial state.
-        mContext.sendBroadcast(
-                new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
-        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be closed");
-
-        // Test InputMethodManager#showInputMethodPicker() works as expected.
-        mImManager.showInputMethodPicker();
-        waitOnMainUntil(() -> isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be shown");
-
-        // UiDevice.getInstance(Instrumentation) may return a cached instance if it's already called
-        // in this process and for some unknown reasons it fails to detect MOCK_IME_LABEL.
-        // As a quick workaround, here we clear its internal singleton value.
-        // TODO(b/230698095): Fix this in UiDevice or stop using UiDevice.
-        try {
-            final Field field = UiDevice.class.getDeclaredField("sInstance");
-            field.setAccessible(true);
-            field.set(null, null);
-        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException
-                | IllegalAccessException e) {
-            // We don't treat this as an error as it's an implementation detail of UiDevice.
-        }
-
-        final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
+        final UiDevice uiDevice = getUiDevice();
         assertThat(uiDevice.wait(Until.hasObject(By.text(MOCK_IME_LABEL)), TIMEOUT)).isTrue();
         assertThat(uiDevice.findObject(By.text(HIDDEN_FROM_PICKER_IME_LABEL))).isNull();
 
@@ -302,6 +290,74 @@ public class InputMethodManagerTest {
                 new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
         waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
                 "InputMethod picker should be closed");
+    }
+
+    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @Test
+    public void testInputMethodPickerSwitchIme() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
+        enableImes(MOCK_IME_ID);
+
+        startActivityAndShowInputMethodPicker();
+
+        final UiDevice uiDevice = getUiDevice();
+        final var mockImeUiObjects =
+                uiDevice.wait(Until.findObjects(By.text(MOCK_IME_LABEL)), TIMEOUT);
+        assertThat(mockImeUiObjects.isEmpty()).isFalse();
+
+        final var initialInfo = mImManager.getCurrentInputMethodInfo();
+
+        // In the new IME Switcher Menu the text would be displayed twice (first as the IME name in
+        // the header, and second as "subtype" name), but we can only click on the second one.
+        final var mockImeUiObject = mockImeUiObjects.getLast();
+        mockImeUiObject.click();
+
+        // Tapping on a menu item should dismiss the menu.
+        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                "InputMethod picker should be closed");
+
+        final var newInfo = mImManager.getCurrentInputMethodInfo();
+        assertNotEquals(initialInfo, newInfo);
+        assertNotNull(newInfo);
+        assertEquals(MOCK_IME_ID, newInfo.getId());
+    }
+
+    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @Test
+    public void testInputMethodPickerOpenLanguageSettings() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final var activity = startActivityAndShowInputMethodPicker();
+
+            final UiDevice uiDevice = getUiDevice();
+            final var mockImeUiObjects =
+                    uiDevice.wait(Until.findObjects(By.text(MOCK_IME_LABEL)), TIMEOUT);
+            // In the new IME Switcher Menu the text would be displayed twice (once as the IME name
+            // in the header, second as "subtype" name), but we can only click on the second one.
+            assertThat(mockImeUiObjects.isEmpty()).isFalse();
+
+            final var languageSettingsButtonUiObject =
+                    uiDevice.wait(Until.findObject(By.res("android:id/button1")), TIMEOUT);
+            assertNotNull(languageSettingsButtonUiObject);
+            languageSettingsButtonUiObject.click();
+
+            // Tapping on the language settings button should dismiss the menu.
+            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                    "InputMethod picker should be closed");
+
+            waitOnMainUntil(() -> !activity.hasWindowFocus(), TIMEOUT,
+                    "Test activity shouldn't be focused");
+        }
     }
 
     @Test
@@ -331,6 +387,46 @@ public class InputMethodManagerTest {
         waitForWithGc(() -> receivedSignalCleaned.getCount() == 0);
     }
 
+    @NonNull
+    private TestActivity startActivityAndShowInputMethodPicker() throws Exception {
+        final var testActivity = TestActivity.startSync(activity -> {
+            final View view = new View(activity);
+            view.setLayoutParams(new LayoutParams(
+                    LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+            return view;
+        });
+
+        // Make sure that InputMethodPicker is not shown in the initial state.
+        mContext.sendBroadcast(
+                new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                "InputMethod picker should be closed");
+
+        // Test InputMethodManager#showInputMethodPicker() works as expected.
+        mImManager.showInputMethodPicker();
+        waitOnMainUntil(() -> isInputMethodPickerShown(mImManager), TIMEOUT,
+                "InputMethod picker should be shown");
+
+        return testActivity;
+    }
+
+    @NonNull
+    private UiDevice getUiDevice() {
+        // UiDevice.getInstance(Instrumentation) may return a cached instance if it's already called
+        // in this process and for some unknown reasons it fails to detect MOCK_IME_LABEL.
+        // As a quick workaround, here we clear its internal singleton value.
+        // TODO(b/230698095): Fix this in UiDevice or stop using UiDevice.
+        try {
+            final Field field = UiDevice.class.getDeclaredField("sInstance");
+            field.setAccessible(true);
+            field.set(null, null);
+        } catch (NoSuchFieldException | SecurityException | IllegalArgumentException
+                 | IllegalAccessException e) {
+            // We don't treat this as an error as it's an implementation detail of UiDevice.
+        }
+        return UiDevice.getInstance(mInstrumentation);
+    }
+
     private void waitForWithGc(PollingCheck.PollingCheckCondition condition) throws IOException {
         try {
             PollingCheck.waitFor(() -> {
@@ -350,7 +446,7 @@ public class InputMethodManagerTest {
 
     private void enableImes(String... ids) {
         for (String id : ids) {
-            runShellCommandOrThrow("ime enable " + id);
+            runShellCommandOrThrow("ime enable --user " + UserHandle.myUserId() + " " + id);
         }
         mNeedsImeReset = true;
     }

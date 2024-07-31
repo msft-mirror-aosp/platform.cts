@@ -59,6 +59,7 @@
         -->
         <option name="push" value="CtsInputMethod1.apk->/data/local/tmp/cts/inputmethod/CtsInputMethod1.apk" />
         <option name="push" value="CtsInputMethod2.apk->/data/local/tmp/cts/inputmethod/CtsInputMethod2.apk" />
+        <option name="push" value="CtsDirectBootAwareIme.apk->/data/local/tmp/cts/inputmethod/CtsDirectBootAwareIme.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />

@@ -29,6 +29,7 @@ import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -52,7 +53,6 @@ import android.media.MediaRecorder;
 import android.media.codec.Flags;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
-import android.mediapc.cts.common.Requirements.RGBA1010102ColorFormatRequirement;
 import android.mediapc.cts.common.Utils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
@@ -301,7 +301,7 @@ public class VideoCodecRequirementsTest {
     }
 
     /**
-     * MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+     * MUST support the Feature_HlgEditing feature for default hardware AV1 and HEVC
      * encoders present on the device at 4K resolution or the largest Camera-supported
      * resolution, whichever is less.
      */
@@ -309,7 +309,7 @@ public class VideoCodecRequirementsTest {
     @RequiresFlagsEnabled(Flags.FLAG_HLG_EDITING)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirement = "5.1/H-1-20")
-    public void testHlgEditingSupport() throws CameraAccessException {
+    public void testHlgEditingSupport() throws CameraAccessException, IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MIMETYPE_VIDEO_AV1};
 
@@ -328,6 +328,9 @@ public class VideoCodecRequirementsTest {
         for (String mediaType : mediaTypes) {
             ArrayList<String> hwEncoders = selectHardwareCodecs(mediaType, null, null, true);
             for (String encoder : hwEncoders) {
+                if (!isDefaultCodec(encoder, mediaType, true)) {
+                    continue;
+                }
                 MediaFormat format =
                         MediaFormat.createVideoFormat(mediaType, maxRecordingSize.getWidth(),
                                 maxRecordingSize.getHeight());
@@ -382,13 +385,13 @@ public class VideoCodecRequirementsTest {
     }
 
     /**
-     * MUST support portrait resolution for all hardware codecs. AV1 codecs are limited to only
-     * 1080p resolution while others should support 4k or camera preferred resolution
-     * (whichever is less)
+     * MUST support portrait resolution for all hardware codecs that support landscape. AV1 codecs
+     * are limited to only 1080p resolution while others should support 4k or camera preferred
+     * resolution (whichever is less)
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
-    @CddTest(requirement = "5.12/H-1-22")
+    @CddTest(requirement = "5.1/H-1-22")
     public void testPortraitResolutionSupport() throws CameraAccessException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
@@ -414,8 +417,8 @@ public class VideoCodecRequirementsTest {
                 Size finalRequiredSize = requiredSize;
                 Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
                 isSupported = selectHardwareCodecs(mediaType, null, null, isEncoder).stream()
-                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize)
-                                && MediaUtils.supports(codec, mediaType, rotatedSize));
+                        .filter(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize))
+                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, rotatedSize));
                 if (!isSupported) {
                     break outerloop;
                 }
@@ -456,7 +459,8 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        RGBA1010102ColorFormatRequirement colorFormatSupportReq = Requirements.addR5_12__H_1_2(pce);
+        Requirements.RGBA1010102ColorFormatRequirement colorFormatSupportReq =
+                Requirements.addR5_12__H_1_2().to(pce);
         colorFormatSupportReq.setRgba1010102ColorFormat(isSupported);
 
         pce.submitAndCheck();

@@ -165,8 +165,8 @@ public final class TestApp {
     /**
      * Returns an {@link InputStream} of the apk for this app.
      */
-    public InputStream apkStream() {
-        return sContext.getResources().openRawResource(mDetails.mResourceIdentifier);
+    public InputStream apkStream() throws IOException {
+        return sContext.getAssets().open("testapps/" + mDetails.mApp.getApkName());
     }
 
     /**

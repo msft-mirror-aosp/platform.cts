@@ -3625,13 +3625,18 @@ public class AudioTrackTest {
 
             // Sample rate out of bounds.
             // System levels caught on AudioFormat.
-            assertThrows(IllegalArgumentException.class, () -> {
-                audioTrack[0] = new AudioTrack.Builder()
-                        .setAudioFormat(new AudioFormat.Builder()
-                                .setSampleRate(BIGNUM)
-                                .build())
-                        .build();
-            });
+            for (int sampleRate : new int[] {
+                    BIGNUM,
+                    AudioSystem.SAMPLE_RATE_HZ_MIN - 1,
+                    AudioSystem.SAMPLE_RATE_HZ_MAX + 1}) {
+                assertThrows(IllegalArgumentException.class, () -> {
+                    audioTrack[0] = new AudioTrack.Builder()
+                            .setAudioFormat(new AudioFormat.Builder()
+                                    .setSampleRate(sampleRate)
+                                    .build())
+                            .build();
+                });
+            }
 
             // Invalid channel mask - caught here on use.
             assertThrows(IllegalArgumentException.class, () -> {

@@ -189,7 +189,7 @@ public class NotificationHelper {
 
     public TestNotificationListener enableListener(String pkg) throws IOException {
         String command = " cmd notification allow_listener "
-                + pkg + "/" + TestNotificationListener.class.getName();
+                + pkg + "/" + TestNotificationListener.class.getName() + " " + mContext.getUserId();
         runCommand(command, InstrumentationRegistry.getInstrumentation());
         mNotificationListener = TestNotificationListener.getInstance();
         if (mNotificationListener != null) {
@@ -201,7 +201,8 @@ public class NotificationHelper {
     public void disableListener(String pkg) throws IOException {
         final ComponentName component =
                 new ComponentName(pkg, TestNotificationListener.class.getName());
-        String command = " cmd notification disallow_listener " + component.flattenToString();
+        String command = " cmd notification disallow_listener " + component.flattenToString()
+                + " " + mContext.getUserId();
 
         runCommand(command, InstrumentationRegistry.getInstrumentation());
 
@@ -235,11 +236,13 @@ public class NotificationHelper {
         if (componentName == null || componentName.equals(getEnabledAssistant())) {
             return;
         }
-        SystemUtil.runShellCommand("cmd notification allow_assistant " + componentName);
+        SystemUtil.runShellCommand("cmd notification allow_assistant " + componentName + " "
+                + mContext.getUserId());
     }
 
     public String getEnabledAssistant() {
-        return SystemUtil.runShellCommand("cmd notification get_approved_assistant");
+        return SystemUtil.runShellCommand("cmd notification get_approved_assistant" + " "
+                + mContext.getUserId());
     }
 
     public void disableAssistant(String pkg) throws IOException {

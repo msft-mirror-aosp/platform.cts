@@ -35,12 +35,13 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresDevice;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.packages.Package;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -228,13 +229,11 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
-    @FlakyTest
     public void testScanTriggerAllowedWithBackgroundLocationPermission()
             throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_BACKGROUND_LOCATION);
+        Package wifiPackage = TestApis.packages().find(WIFI_LOCATION_TEST_APP_PACKAGE_NAME);
+        wifiPackage.grantPermission(ACCESS_FINE_LOCATION);
+        wifiPackage.grantPermission(ACCESS_BACKGROUND_LOCATION);
         triggerScanBgServiceAndAssertStatusIs(true);
     }
 
@@ -247,13 +246,11 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
-    @FlakyTest
     public void testScanResultsRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_BACKGROUND_LOCATION);
+        Package wifiPackage = TestApis.packages().find(WIFI_LOCATION_TEST_APP_PACKAGE_NAME);
+        wifiPackage.grantPermission(ACCESS_FINE_LOCATION);
+        wifiPackage.grantPermission(ACCESS_BACKGROUND_LOCATION);
         retrieveScanResultsBgServiceAndAssertStatusIs(true);
     }
 
@@ -266,13 +263,11 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
     }
 
     @Test
-    @FlakyTest
     public void testConnectionInfoRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_BACKGROUND_LOCATION);
+        Package wifiPackage = TestApis.packages().find(WIFI_LOCATION_TEST_APP_PACKAGE_NAME);
+        wifiPackage.grantPermission(ACCESS_FINE_LOCATION);
+        wifiPackage.grantPermission(ACCESS_BACKGROUND_LOCATION);
         retrieveConnectionInfoBgServiceAndAssertStatusIs(true);
     }
 
@@ -287,13 +282,11 @@ public class WifiLocationInfoBackgroundTest extends WifiJUnit4TestBase{
 
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
     @Test
-    @FlakyTest
     public void testTransportInfoRetrievalAllowedWithBackgroundLocationPermission()
             throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_FINE_LOCATION);
-        InstrumentationRegistry.getInstrumentation().getUiAutomation().grantRuntimePermission(
-                WIFI_LOCATION_TEST_APP_PACKAGE_NAME, ACCESS_BACKGROUND_LOCATION);
+        Package wifiPackage = TestApis.packages().find(WIFI_LOCATION_TEST_APP_PACKAGE_NAME);
+        wifiPackage.grantPermission(ACCESS_FINE_LOCATION);
+        wifiPackage.grantPermission(ACCESS_BACKGROUND_LOCATION);
         retrieveTransportInfoBgServiceAndAssertStatusIs(true);
     }
 

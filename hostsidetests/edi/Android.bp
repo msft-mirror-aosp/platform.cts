@@ -37,5 +37,8 @@ java_test_host {
         "hamcrest-library",
     ],
     data: [":SharedLibraryInfoTestApp"],
+    data_native_bins: [
+        "avbtool",
+    ],
     per_testcase_directory: true,
 }

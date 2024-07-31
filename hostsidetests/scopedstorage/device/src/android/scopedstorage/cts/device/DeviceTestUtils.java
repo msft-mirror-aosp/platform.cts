@@ -51,10 +51,9 @@ public class DeviceTestUtils {
     protected static void checkUISupported() {
         PackageManager pm = sInstrumentation.getContext().getPackageManager();
 
-        // Do not run tests on Watches, TVs, Auto or devices without UI.
+        // Do not run tests on Watches, TVs or devices without UI.
         Assume.assumeTrue(!pm.hasSystemFeature(PackageManager.FEATURE_EMBEDDED)
                 && !pm.hasSystemFeature(PackageManager.FEATURE_WATCH)
-                && !pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                && !pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+                && !pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK));
     }
 }
