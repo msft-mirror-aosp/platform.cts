@@ -32,6 +32,7 @@ import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HY
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -260,6 +261,9 @@ public class CarrierConfigManagerTest {
                             + "doesn't match static default.",
                     config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
                     180);
+            assertEquals("KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT "
+                    + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT), 30);
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",
