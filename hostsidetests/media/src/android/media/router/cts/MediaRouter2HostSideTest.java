@@ -327,6 +327,16 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @Test
     public void getSystemController_withoutBTPermissions_returnsDefaultRoute() throws Exception {
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_SCAN",
+                /* enabled= */ false,
+                mUserId);
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_CONNECT",
+                /* enabled= */ false,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
