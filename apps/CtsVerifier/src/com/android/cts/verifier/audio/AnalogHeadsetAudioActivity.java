@@ -25,7 +25,6 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -56,6 +55,7 @@ public class AnalogHeadsetAudioActivity
     private static final boolean DEBUG = false;
 
     private AudioManager    mAudioManager;
+    private ConnectListener mConnectListener;
     private boolean mIsTVOrFixedVolume;
 
     // UI
@@ -122,6 +122,7 @@ public class AnalogHeadsetAudioActivity
         setContentView(R.layout.audio_headset_audio_activity);
 
         mAudioManager = getSystemService(AudioManager.class);
+        mConnectListener = new ConnectListener();
         mIsTVOrFixedVolume = AudioSystemFlags.isTV(this) || mAudioManager.isVolumeFixed();
 
         mHeadsetNameText = (TextView)findViewById(R.id.headset_analog_name);
@@ -164,8 +165,6 @@ public class AnalogHeadsetAudioActivity
 
         mResultsTxt = (TextView)findViewById(R.id.headset_results);
 
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
-
         showKeyMessagesState();
         enablePlayerButtons(false, false);
 
@@ -179,8 +178,15 @@ public class AnalogHeadsetAudioActivity
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
     public void onStop() {
         stopPlay();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         super.onStop();
     }
 

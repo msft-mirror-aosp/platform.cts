@@ -33,6 +33,7 @@ import com.android.queryable.queries.StringQuery;
 import com.android.queryable.queries.StringQueryHelper;
 
 import com.google.auto.value.AutoAnnotation;
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 
 /** Builder for progressively building {@link TestApp} queries. */
 public final class TestAppQueryBuilder implements Queryable {
@@ -83,6 +84,7 @@ public final class TestAppQueryBuilder implements Queryable {
     /**
      * Apply the query parameters inside the {@link Query} to this {@link TestAppQueryBuilder}.
      */
+    @CanIgnoreReturnValue
     public TestAppQueryBuilder applyAnnotation(Query query) {
         if (query == null) {
             return this;

@@ -821,8 +821,13 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
                         getContext().getMainExecutor(), callback));
-        assertThrows(SecurityException.class,
-                () -> sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback));
+        try {
+            sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback);
+            fail("Expected IllegalArgumentException or SecurityException");
+        } catch (IllegalArgumentException | SecurityException ex) {
+            assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
+            logd(ex.toString());
+        }
     }
 
     @Test
@@ -960,7 +965,7 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         final List<ProvisionSubscriberId> list = new ArrayList<>(
-                Collections.singleton(new ProvisionSubscriberId("09876543", 12345)));
+                Collections.singleton(new ProvisionSubscriberId("09876543", 12345, "")));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override

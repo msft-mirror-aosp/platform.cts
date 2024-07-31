@@ -36,4 +36,11 @@ public final class DeviceTest {
 
         assertThat(TestApis.device().isScreenOn()).isTrue();
     }
+
+    @Test
+    public void sleep_screenTurnsOff() {
+        TestApis.device().sleep();
+
+        assertThat(TestApis.device().isScreenOn()).isFalse();
+    }
 }

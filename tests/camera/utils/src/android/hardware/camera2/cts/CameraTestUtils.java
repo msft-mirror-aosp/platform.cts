@@ -2285,8 +2285,9 @@ public class CameraTestUtils extends Assert {
      * Get the largest size by area, and with given aspect ratio.
      *
      * @param sizes an array of sizes, must have at least 1 element
+     * @param aspectRatio the aspect ratio to match. -1 if aspect ratio doesn't need to match.
      *
-     * @return Largest Size
+     * @return Largest Size. Null if no such size exists matching aspect ratio.
      *
      * @throws IllegalArgumentException if sizes was null or had 0 elements
      */
@@ -2295,18 +2296,18 @@ public class CameraTestUtils extends Assert {
             throw new IllegalArgumentException("sizes was empty");
         }
 
-        Size sz = sizes[0];
+        Size sz = null;
         for (Size size : sizes) {
             float ar = 1.0f * size.getWidth() / size.getHeight();
             if (aspectRatio > 0 && Math.abs(ar - aspectRatio) > ASPECT_RATIO_MATCH_THRESHOLD) {
                 continue;
             }
 
-            if (size.getWidth() * size.getHeight() > sz.getWidth() * sz.getHeight()) {
+            if (sz == null
+                    || size.getWidth() * size.getHeight() > sz.getWidth() * sz.getHeight()) {
                 sz = size;
             }
         }
-
         return sz;
     }
 

@@ -18,6 +18,7 @@ package com.android.bedstead.nene.tile
 
 import android.service.quicksettings.TileService
 
+/** Helper methods related to quick settings. */
 object QuickSettings {
 
     /**

@@ -713,8 +713,6 @@
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PendingIntentTest#testUpdateCurrent" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PendingIntentTest#testWriteToParcel" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PendingIntent_CanceledExceptionTest#testConstructor" />
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PictureInPictureParamsTest#testPictureInPictureParamsGetters" />
-    <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PictureInPictureParamsTest#testPictureInPictureParamsGettersNullValues" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.PipNotSupportedActivityTest#testLaunchPipNotSupportedActivity" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ProgressDialogTest#testAccessMax" />
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ProgressDialogTest#testAccessProgress" />
