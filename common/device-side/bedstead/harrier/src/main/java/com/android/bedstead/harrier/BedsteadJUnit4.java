@@ -688,7 +688,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.toList();
+            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -793,7 +793,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        comparator.thenComparing((o1, o2) -> {
+        var unused = comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -1166,7 +1166,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     HarrierRule getHarrierRule() {
         if (mHarrierRule == null) {
-            classRules();
+            var unused = classRules();
         }
         return mHarrierRule;
     }

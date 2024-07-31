@@ -34,7 +34,10 @@ public class RecordingResult {
             CaptureResult.LENS_INTRINSIC_CALIBRATION,
             // TODO: b/332581106 - Evaluate if data added by samples surpasses socket limit
             CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES,
-            CaptureResult.SENSOR_TIMESTAMP
+            CaptureResult.SENSOR_TIMESTAMP,
+            CaptureResult.CONTROL_AE_STATE,
+            CaptureResult.CONTROL_AF_STATE,
+            CaptureResult.CONTROL_AWB_STATE
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;

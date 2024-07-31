@@ -21,6 +21,8 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.service.notification.NotificationAssistantService.FEEDBACK_RATING;
 
+import static com.android.compatibility.common.preconditions.SystemUiHelper.hasNoTraditionalStatusBar;
+
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -43,7 +45,6 @@ import android.app.stubs.shared.TestNotificationAssistant;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -52,7 +53,6 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.provider.Settings;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -98,10 +98,6 @@ public class NotificationAssistantServiceTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    private boolean isWatch() {
-      return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -604,7 +600,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationVisibilityChanged() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch() || isTelevision());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
         setUpListeners();
         turnScreenOn();
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
@@ -644,7 +640,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationClicked() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch() || isTelevision());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
 
         setUpListeners();
         turnScreenOn();
@@ -672,7 +668,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationFeedbackReceived() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
 
         setUpListeners(); // also enables assistant
         mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE",
@@ -764,13 +760,6 @@ public class NotificationAssistantServiceTest {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         mHelper.runCommand("input keyevent KEYCODE_WAKEUP", instrumentation);
         mHelper.runCommand("wm dismiss-keyguard", instrumentation);
-    }
-
-    private boolean isTelevision() {
-        PackageManager packageManager = mContext.getPackageManager();
-        return packageManager != null
-                && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
     }
 
     private int getAssistantCancellationReason(String key) {

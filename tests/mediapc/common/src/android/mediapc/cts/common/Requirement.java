@@ -104,8 +104,14 @@ public abstract class Requirement {
 
     protected <T> void setMeasuredValue(String measurement, T measuredValue) {
         RequiredMeasurement<T> rm =
-            (RequiredMeasurement<T>)this.mRequiredMeasurements.get(measurement);
+                (RequiredMeasurement<T>) this.mRequiredMeasurements.get(measurement);
         rm.setMeasuredValue(measuredValue);
+    }
+
+    protected <T> T getMeasuredValue(String measurement, Class<T> clazz) {
+        RequiredMeasurement<T> rm =
+                (RequiredMeasurement<T>) this.mRequiredMeasurements.get(measurement);
+        return clazz.cast(rm.getMeasuredValue());
     }
 
     /**

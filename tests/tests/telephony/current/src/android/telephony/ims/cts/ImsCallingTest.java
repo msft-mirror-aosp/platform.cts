@@ -1428,6 +1428,7 @@ public class ImsCallingTest extends ImsCallingBase {
                 true);
         bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_WFC_IMS_AVAILABLE_BOOL, true);
         bundle.putBoolean(CarrierConfigManager.KEY_CARRIER_DEFAULT_WFC_IMS_ENABLED_BOOL, false);
+        bundle.putBoolean(CarrierConfigManager.KEY_ALLOW_HOLD_VIDEO_CALL_BOOL, false);
         overrideCarrierConfig(bundle);
 
         // Precondition : WFC disabled

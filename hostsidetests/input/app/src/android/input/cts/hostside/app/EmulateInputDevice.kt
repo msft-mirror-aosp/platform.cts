@@ -15,11 +15,12 @@
  */
 package android.input.cts.hostside.app
 
-import android.app.Activity
-import android.content.Context
+import android.cts.input.EventVerifier
 import android.graphics.Point
+import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
 import android.util.DisplayMetrics
 import android.util.Size
+import android.view.MotionEvent
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -28,7 +29,9 @@ import com.android.cts.input.UinputKeyboard
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchPad
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.inputeventmatchers.withMotionAction
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -41,18 +44,24 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class EmulateInputDevice {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var context: Context
+    private lateinit var activity: CaptureEventActivity
     private lateinit var screenSize: Size
+    private lateinit var verifier: EventVerifier
 
     @get:Rule
-    val activityRule = ActivityScenarioRule(Activity::class.java)
+    val activityRule = ActivityScenarioRule(CaptureEventActivity::class.java)
 
     @Suppress("DEPRECATION")
     @Before
     fun setUp() {
-        activityRule.scenario.onActivity { context = it }
-        val dm = DisplayMetrics().also { context.display.getRealMetrics(it) }
+        activityRule.scenario.onActivity { activity = it }
+        val dm = DisplayMetrics().also { activity.display.getRealMetrics(it) }
         screenSize = Size(dm.widthPixels, dm.heightPixels)
+        verifier = EventVerifier(activity::getInputEvent)
+        assertTrue(
+            "Failed to wait for activity window to be on top",
+            waitForWindowOnTop(activity.window)
+        )
     }
 
     @After
@@ -65,17 +74,17 @@ class EmulateInputDevice {
      */
     @Test
     fun useTouchscreenForFiveSeconds() {
-        UinputTouchScreen(instrumentation, context.display).use { touchscreen ->
-            // Start the usage session.
-            touchscreen.tapOnScreen()
-
-            // Continue using the touchscreen for at least five more seconds.
-            for (i in 0 until 5) {
-                Thread.sleep(1000)
+        UinputTouchScreen(instrumentation, activity.display).use { touchscreen ->
+            // Use touchscreen for five more seconds, tapping it 6 times, with a 1 second wait
+            for (i in 0 until 6) {
+                if (i != 0) {
+                    Thread.sleep(1000)
+                }
                 touchscreen.tapOnScreen()
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_DOWN))
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_MOVE))
+                verifier.assertReceivedMotion(withMotionAction(MotionEvent.ACTION_UP))
             }
-
-            Thread.sleep(UINPUT_POST_EVENT_DELAY_MILLIS)
         }
     }
 
@@ -101,7 +110,7 @@ class EmulateInputDevice {
 
     @Test
     fun useTouchpadWithFingersAndPalms() {
-        UinputTouchPad(instrumentation, context.display).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             for (i in 0 until 3) {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
@@ -132,7 +141,7 @@ class EmulateInputDevice {
 
     @Test
     fun pinchOnTouchpad() {
-        UinputTouchPad(instrumentation, context.display).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointer0 = Point(500, 500)
             val pointer1 = Point(700, 700)
             touchpad.sendBtnTouch(true)
@@ -183,8 +192,10 @@ class EmulateInputDevice {
         multiFingerSwipe(4)
     }
 
+    // Perform a multi-finger swipe in one direction and return to the starting location to
+    // minimize the size effects of the gesture to the rest of the system.
     private fun multiFingerSwipe(numFingers: Int) {
-        UinputTouchPad(instrumentation, context.display).use { touchpad ->
+        UinputTouchPad(instrumentation, activity.display).use { touchpad ->
             val pointers = Array(numFingers) { i -> Point(500 + i * 200, 500) }
             touchpad.sendBtnTouch(true)
             touchpad.sendBtn(UinputTouchDevice.toolBtnForFingerCount(numFingers), true)
@@ -194,9 +205,10 @@ class EmulateInputDevice {
             touchpad.sync()
             Thread.sleep(TOUCHPAD_SCAN_DELAY_MILLIS)
 
-            for (rep in 0 until 10) {
+            for (rep in 0 until 20) {
+                val direction = if (rep < 10) 1 else -1
                 for (i in pointers.indices) {
-                    pointers[i].offset(0, 40)
+                    pointers[i].offset(0, direction * 40)
                     touchpad.sendMove(i, pointers[i])
                 }
                 touchpad.sync()

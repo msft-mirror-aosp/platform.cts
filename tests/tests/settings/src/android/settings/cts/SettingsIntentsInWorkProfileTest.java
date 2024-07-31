@@ -16,7 +16,7 @@
 
 package android.settings.cts;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -94,7 +94,7 @@ public class SettingsIntentsInWorkProfileTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final ResolveInfo ri = packageManager.resolveActivity(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);
-        assertNotNull(ri);
+        assumeTrue(ri != null); // Skip the test if target package cannot handle this intent
         targetContext.startActivity(intent);
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }

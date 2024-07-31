@@ -33,6 +33,10 @@
         <option name="test-file-name" value="CtsProviderTestCases.apk" />
         <option name="test-file-name" value="CtsProviderMultiAuthorityApp.apk" />
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="cmd sdk_sandbox append-test-allowlist content-provider settings android.provider.apps.cts.multi1 android.provider.apps.cts.multi2 android.provider.cts.TestSRSProvider" />
+        <option name="teardown-command" value="cmd sdk_sandbox clear-test-allowlists" />
+    </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
         <option name="package" value="android.provider.cts" />
