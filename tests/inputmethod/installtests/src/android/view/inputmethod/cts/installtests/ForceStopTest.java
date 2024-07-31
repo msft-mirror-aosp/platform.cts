@@ -95,8 +95,7 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        testImeRemainsEnabledAfterForceStopMain(currentUser, false /* selectIme */,
-                false /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(currentUser, false /* selectIme */);
     }
 
     /**
@@ -105,8 +104,7 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        testImeRemainsEnabledAfterForceStopMain(currentUser, true /* selectIme */,
-                false /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(currentUser, true /* selectIme */);
     }
 
     /**
@@ -117,8 +115,7 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
         final UserReference additionalUser = sDeviceState.additionalUser();
-        testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */,
-                true /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */);
     }
 
     @RequireMultiUserSupport
@@ -126,12 +123,10 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {
         final UserReference additionalUser = sDeviceState.additionalUser();
-        testImeRemainsEnabledAfterForceStopMain(additionalUser, true /* selectIme */,
-                true /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, true /* selectIme */);
     }
 
-    private void testImeRemainsEnabledAfterForceStopMain(UserReference user,
-            boolean selectIme, boolean backgroundUser) {
+    private void testImeRemainsEnabledAfterForceStopMain(UserReference user, boolean selectIme) {
         final int userId = user.id();
         TestApis.packages().install(user, new File(Ime1Constants.APK_PATH));
         assertImeExistsInApiResult(Ime1Constants.IME_ID, userId);
@@ -154,7 +149,7 @@ public class ForceStopTest {
         // enabled.
         assertImeEnabledInApiResult(Ime1Constants.IME_ID, userId);
 
-        if (selectIme && !backgroundUser) {
+        if (selectIme) {
             // Force-stopping a background user's IME package will unselect the IME.
             assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, userId);
         }

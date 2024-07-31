@@ -21,10 +21,13 @@ import static org.junit.Assert.assertEquals;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.AudioRecordingConfiguration;
 import android.media.audiopolicy.AudioProductStrategy;
 import android.os.PowerManager;
+
+import androidx.test.InstrumentationRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -187,5 +190,29 @@ class AudioTestUtil {
             }
             return false;
         }
+    }
+
+
+    private static final List<Integer> MEDIA_DEVICE_TYPES = List.of(
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+            AudioDeviceInfo.TYPE_WIRED_HEADSET,
+            AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+            AudioDeviceInfo.TYPE_USB_HEADSET,
+            AudioDeviceInfo.TYPE_BLE_HEADSET);
+
+    static List<AudioDeviceInfo> getMediaDevices() {
+        AudioManager am = InstrumentationRegistry.getInstrumentation()
+                .getContext().getSystemService(AudioManager.class);
+
+        List<AudioDeviceInfo> mediaDevices = new ArrayList();
+        AudioDeviceInfo[] allDevices = am.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+
+        for (AudioDeviceInfo device : allDevices) {
+            if (MEDIA_DEVICE_TYPES.contains(device.getType())) {
+                mediaDevices.add(device);
+            }
+        }
+        return mediaDevices;
     }
 }

@@ -215,8 +215,6 @@ abstract class CodecTestBase {
     boolean mSignalEOSWithLastFrame;
     int mInputCount;
     int mOutputCount;
-    double mFrameDrops;
-    long mLastPresentationTimeUs = -1;
     long mPrevOutputPts;
     boolean mSignalledOutFormatChanged;
     MediaFormat mOutFormat;
@@ -246,10 +244,6 @@ abstract class CodecTestBase {
         mOutputCountListener = listener;
     }
 
-    private long getRenderTimeUs(long renderedTime, int frameIndex, long frameInterval) {
-        return renderedTime + frameIndex * frameInterval;
-    }
-
     /**
      * Called to handle a dequeued output buffer.
      *
@@ -260,48 +254,7 @@ abstract class CodecTestBase {
             mSawOutputEOS = true;
         }
 
-        long renderStartTimeUs = 0;
         int outputCount = mOutputCount;
-        long nowUs = System.nanoTime() / 1000;
-        long mEachFrameTimeIntervalUs = 1000000 / 30;
-        String mediaType = mOutFormat.getString(MediaFormat.KEY_MIME);
-        int initialDelay = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? 8 : 0;
-
-        if (outputCount == 0) {
-            // delay rendering the first frame by the specific delay
-            renderStartTimeUs = nowUs + initialDelay * mEachFrameTimeIntervalUs;
-        }
-
-        if (nowUs > getRenderTimeUs(renderStartTimeUs, outputCount + 1, mEachFrameTimeIntervalUs)) {
-            // If the current sample timeStamp is greater than the actual presentation timeStamp
-            // of the next sample, we will consider it as a frame drop and don't render.
-            mFrameDrops++;
-            mCodec.releaseOutputBuffer(bufferIndex, false);
-        } else if (nowUs > getRenderTimeUs(renderStartTimeUs, outputCount,
-                mEachFrameTimeIntervalUs)) {
-            // If the current sample timeStamp is greater than the actual presentation timeStamp
-            // of the current sample, we can render it.
-            mCodec.releaseOutputBuffer(bufferIndex, true);
-        } else {
-            // If the current sample timestamp is less than the actual presentation timeStamp,
-            // We are okay with directly rendering the sample if we are less by not more than
-            // half of one sample duration. Otherwise we sleep for how much more we are less
-            // than the half of one sample duration.
-            if ((getRenderTimeUs(renderStartTimeUs, outputCount, mEachFrameTimeIntervalUs) - nowUs)
-                    > (mEachFrameTimeIntervalUs / 2)) {
-                try {
-                    Thread.sleep(((renderStartTimeUs
-                            + (outputCount * mEachFrameTimeIntervalUs) - nowUs)
-                            - (mEachFrameTimeIntervalUs / 2)) / 1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt(); // Restore the interrupted status
-                    throw new RuntimeException("the thread caught an interrupted exception"
-                            + "instead of sleeping before rendering the sample timestamp" + e);
-                }
-            }
-            mCodec.releaseOutputBuffer(bufferIndex, true);
-        }
-
         // handle output count prior to releasing the buffer as that can take time
         if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
             mOutputCount++;
@@ -350,8 +303,6 @@ abstract class CodecTestBase {
         mSignalEOSWithLastFrame = signalEOSWithLastFrame;
         mInputCount = 0;
         mOutputCount = 0;
-        mFrameDrops = 0;
-        mLastPresentationTimeUs = -1;
         mPrevOutputPts = Long.MIN_VALUE;
         mSignalledOutFormatChanged = false;
     }
@@ -956,6 +907,7 @@ class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
     private static final String LOG_TAG = Decode.class.getSimpleName();
 
     final String mDecoderName;
+    static final long EACH_FRAME_TIME_INTERVAL_US = 1000000 / 30;
     static final String WIDEVINE_LICENSE_SERVER_URL = "https://proxy.uat.widevine.com/proxy";
     static final String PROVIDER = "widevine_test";
     final String mServerURL =
@@ -965,6 +917,9 @@ class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
     private int mInitialFramesToIgnoreCount = 1;
     private long mStartTimeMillis = 0;
     private long mEndTimeMillis = 0;
+
+    double mFrameDrops;
+    long mRenderedStartTimeUs;
 
     Decode(String mediaType, String testFile, String decoderName, boolean isAsync) {
         this(mediaType, testFile,decoderName, isAsync, false);
@@ -992,6 +947,72 @@ class Decode extends CodecDecoderTestBase implements Callable<CodecMetrics> {
         if (count == mInitialFramesToIgnoreCount) {
             mStartTimeMillis = mEndTimeMillis;
         }
+    }
+
+    private long getRenderedTimeUs(int frameIndex) {
+        return mRenderedStartTimeUs + frameIndex * EACH_FRAME_TIME_INTERVAL_US;
+    }
+
+    @Override
+    protected void dequeueOutput(int bufferIndex, MediaCodec.BufferInfo info) {
+        evalFrameDropsWhileDequeue(bufferIndex, info, mMediaType);
+    }
+
+    private void evalFrameDropsWhileDequeue(int bufferIndex, MediaCodec.BufferInfo info,
+                             String mediaType) {
+        if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+            mSawOutputEOS = true;
+        }
+
+        int outputCount = mOutputCount;
+        long nowUs = System.nanoTime() / 1000;
+        int initialDelay = mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AV1) ? 8 : 0;
+
+        if (outputCount == 0) {
+            // delay rendering the first frame by the specific delay
+            mRenderedStartTimeUs = nowUs + initialDelay * EACH_FRAME_TIME_INTERVAL_US;
+        }
+
+        if (nowUs > getRenderedTimeUs(outputCount + 1)) {
+            // If the current sample timeStamp is greater than the actual presentation timeStamp
+            // of the next sample, we will consider it as a frame drop and don't render.
+            mFrameDrops++;
+            mCodec.releaseOutputBuffer(bufferIndex, false);
+        } else if (nowUs > getRenderedTimeUs(outputCount)) {
+            // If the current sample timeStamp is greater than the actual presentation timeStamp
+            // of the current sample, we can render it.
+            mCodec.releaseOutputBuffer(bufferIndex, true);
+        } else {
+            // If the current sample timestamp is less than the actual presentation timeStamp,
+            // We are okay with directly rendering the sample if we are less by not more than
+            // half of one sample duration. Otherwise we sleep for how much more we are less
+            // than the half of one sample duration.
+            if ((getRenderedTimeUs(outputCount) - nowUs) > (EACH_FRAME_TIME_INTERVAL_US / 2)) {
+                try {
+                    Thread.sleep(((getRenderedTimeUs(outputCount) - nowUs)
+                            - (EACH_FRAME_TIME_INTERVAL_US / 2)) / 1000);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt(); // Restore the interrupted status
+                    throw new RuntimeException("the thread caught an interrupted exception"
+                            + "instead of sleeping before rendering the sample timestamp" + e);
+                }
+            }
+            mCodec.releaseOutputBuffer(bufferIndex, true);
+        }
+
+        if (info.size > 0 && (info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+            mOutputCount++;
+            if (mOutputCountListener != null) {
+                mOutputCountListener.accept(mOutputCount);
+            }
+        }
+    }
+
+    @Override
+    void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
+        mFrameDrops = 0;
+        mRenderedStartTimeUs = 0;
+        super.resetContext(isAsync, signalEOSWithLastFrame);
     }
 
     public CodecMetrics doDecode() throws Exception {
@@ -1144,7 +1165,7 @@ class Encode extends CodecEncoderTestBase implements Callable<CodecMetrics> {
                 ((mEndTimeMillis - mStartTimeMillis) / 1000.0);
         Log.d(LOG_TAG, "Encode MediaType: " + mMediaType + " Encoder: " + mEncoderName +
                 " Achieved fps: " + fps);
-        return getMetrics(fps, mFrameDrops / 30);
+        return getMetrics(fps, 0.0);
     }
 
     @Override

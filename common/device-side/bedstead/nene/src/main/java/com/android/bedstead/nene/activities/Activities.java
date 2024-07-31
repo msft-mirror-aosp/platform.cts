@@ -31,19 +31,24 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.testapisreflection.ActivityTaskManagerProxy;
 import android.cts.testapisreflection.TestApisReflectionKt;
+import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
 
 import androidx.annotation.Nullable;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -67,6 +72,8 @@ public final class Activities {
     /** Proxy class to access inaccessible TestApi methods. */
     private static final ActivityTaskManagerProxy sProxyInstance =
             new ActivityTaskManagerProxy();
+
+    private static final String TAG = "BedsteadActivities";
 
     private Activities() {
     }
@@ -211,5 +218,35 @@ public final class Activities {
                     activityName
             ));
         }
+    }
+
+    /**
+     * Blocks until the activity has started.
+     *
+     * @param intent The intent to start.
+     */
+    public void startActivity(Intent intent) {
+        startActivity(intent, null);
+    }
+
+    /**
+     * Blocks until the activity has started.
+     *
+     * @param intent The intent to start.
+     * @param options Additional options for how the Activity should be started.
+     * See {@link android.content.Context#startActivity(Intent, Bundle)}
+     * Context.startActivity(Intent, Bundle)} for more details.
+     */
+    public void startActivity(Intent intent, @Nullable Bundle options) {
+        Log.d(TAG, "startActivity(): " + intent + ", " + options);
+        ComponentReference startActivity = TestApis.activities().foregroundActivity();
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        InstrumentationRegistry.getInstrumentation().getContext().startActivity(intent, options);
+        Poll.forValue("Foreground activity", () -> TestApis.activities().foregroundActivity())
+                .toNotBeEqualTo(startActivity)
+                .errorOnFail("Could not start activity " + this + ". Relevant logcat: "
+                    + TestApis.logcat().dump(l -> l.contains("ActivityManager")))
+                .timeout(Duration.ofSeconds(30))
+                .await();
     }
 }

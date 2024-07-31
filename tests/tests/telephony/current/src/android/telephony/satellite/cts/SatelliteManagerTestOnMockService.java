@@ -64,6 +64,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
@@ -72,6 +73,7 @@ import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
+import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
@@ -3609,6 +3611,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 .registerForCommunicationAllowedStateChanged(
                         getContext().getMainExecutor(), allowStatecallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResultAllowState);
+        if (Flags.geofenceEnhancementForBetterUx()) {
+            assertTrue(allowStatecallback.waitUntilResult(1));
+            assertFalse(allowStatecallback.isAllowed);
+        }
 
         /*
         // Test access controller using cached country codes
@@ -4109,6 +4115,56 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertEquals(sessionStats, result.first);
 
             sMockSatelliteServiceManager.setWaitToSend(false);
+        } finally {
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testProvisionSubscriberIds() {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testProvisionSubscriberIds:");
+        // TODO(b/351911296): fix to CTS failed
+        beforeSatelliteForCarrierTest();
+        /* Test when this carrier is not supported ESOS in the carrier config */
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+        waitFor(TimeUnit.MINUTES.toMillis(1));
+
+        SubscriptionManager sm = getContext().getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> infos = ShellIdentityUtils.invokeMethodWithShellPermissions(sm,
+                SubscriptionManager::getAllSubscriptionInfoList);
+        grantSatellitePermission();
+        try {
+            Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+            if (pairResult == null) {
+                fail("requestProvisionSubscriberIds List<ProvisionSubscriberId> null");
+                revokeSatellitePermission();
+                return;
+            }
+
+            SubscriptionInfo prioritySubsInfo = null;
+            if (pairResult.first.size() > 0) {
+                ProvisionSubscriberId provisionSubscriberId = pairResult.first.get(0);
+                // is ntn only supported SubscriptionInfo exist
+                for (SubscriptionInfo info : infos) {
+                    if (provisionSubscriberId == null) {
+                        fail("requestProvisionSubscriberIds provisionSubscriberId null");
+                        revokeSatellitePermission();
+                        return;
+                    }
+                    if (info.getIccId().equals(provisionSubscriberId.getSubscriberId())) {
+                        prioritySubsInfo = info;
+                    }
+                }
+                assertNotNull(prioritySubsInfo);
+                assertFalse(isProvisioned(provisionSubscriberId.getSubscriberId()));
+            } else {
+                assertNull(prioritySubsInfo);
+            }
         } finally {
             revokeSatellitePermission();
         }
