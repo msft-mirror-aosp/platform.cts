@@ -27,7 +27,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.UserHandle;
-import android.provider.Settings;
 import android.util.ArraySet;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -106,17 +105,6 @@ final class MultiUserUtils {
         return runWithShellPermissionIdentity(uiAutomation, () ->
                 imm.getCurrentInputMethodInfoAsUser(user),
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL);
-    }
-
-    @Nullable
-    static String getSecureSettings(@NonNull Context context, @NonNull UiAutomation uiAutomation,
-            @NonNull String setting, @NonNull UserHandle user) {
-        Objects.requireNonNull(user);
-        return runWithShellPermissionIdentity(uiAutomation, () -> Settings.Secure.getString(
-                        context.createPackageContextAsUser("android", 0, user).getContentResolver(),
-                        setting),
-                Manifest.permission.INTERACT_ACROSS_USERS_FULL,
-                Manifest.permission.QUERY_ALL_PACKAGES);
     }
 
     @NonNull
