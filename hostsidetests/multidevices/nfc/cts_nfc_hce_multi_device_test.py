@@ -54,6 +54,12 @@ _NFC_TECH_A_POLLING_OFF = (0x10 #NfcAdapter.FLAG_READER_NFC_BARCODE
 _NFC_TECH_A_LISTEN_ON = 0x1 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_A
 _NFC_TECH_F_LISTEN_ON = 0x4 #NfcAdapter.FLAG_LISTEN_NFC_PASSIVE_F
 _NFC_LISTEN_OFF = 0x0 #NfcAdapter.FLAG_LISTEN_DISABLE
+_SERVICE_PACKAGE = "com.android.nfc.service"
+_TRANSPORT_SERVICE_1 = _SERVICE_PACKAGE + ".TransportService1"
+_TRANSPORT_SERVICE_2 = _SERVICE_PACKAGE + ".TransportService2"
+_ACCESS_SERVICE = _SERVICE_PACKAGE + ".AccessService"
+_PAYMENT_SERVICE_1 = _SERVICE_PACKAGE + ".PaymentService1"
+_PAYMENT_SERVICE_2 = _SERVICE_PACKAGE + ".PaymentService2"
 
 class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
     def setup_class(self):
@@ -125,7 +131,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Transport Service after
         _NFC_TIMEOUT_SEC.
         """
-        self.emulator.nfc_emulator.startSingleNonPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_TRANSPORT_SERVICE_1], _TRANSPORT_SERVICE_1, False)
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -160,9 +167,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # reader
         role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
             'RoleHeld')
-        self.emulator.nfc_emulator.startSinglePaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_PAYMENT_SERVICE_1], _PAYMENT_SERVICE_1, True
+        )
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForService(_PAYMENT_SERVICE_1)
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -189,9 +198,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
             'RoleHeld')
-        self.emulator.nfc_emulator.startDualPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_PAYMENT_SERVICE_1, _PAYMENT_SERVICE_2], _PAYMENT_SERVICE_1, True
+        )
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForService(_PAYMENT_SERVICE_1)
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -219,9 +230,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
             'RoleHeld')
-        self.emulator.nfc_emulator.startForegroundPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivityWithPreferredService(
+            [_PAYMENT_SERVICE_1, _PAYMENT_SERVICE_2], _PAYMENT_SERVICE_2, _PAYMENT_SERVICE_2,
+            True
+        )
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForPreferredService()
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -250,7 +264,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             'RoleHeld')
         self.emulator.nfc_emulator.startDynamicAidEmulatorActivity()
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForPreferredService()
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -279,7 +293,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             'RoleHeld')
         self.emulator.nfc_emulator.startPrefixPaymentEmulatorActivity()
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForPreferredService()
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -310,7 +324,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             'RoleHeld')
         self.emulator.nfc_emulator.startPrefixPaymentEmulator2Activity()
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForPreferredService()
 
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
@@ -395,7 +409,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         1. Verifies a successful APDU exchange between the emulator and the
         transport service.
         """
-        self.emulator.nfc_emulator.startDualNonPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_TRANSPORT_SERVICE_2, _ACCESS_SERVICE], _TRANSPORT_SERVICE_2, False
+        )
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
         self.reader.nfc_reader.startDualNonPaymentReaderActivity()
@@ -419,7 +435,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
           1. Verifies a successful APDU exchange between the emulator and the
           transport service.
           """
-        self.emulator.nfc_emulator.startForegroundNonPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivityWithPreferredService(
+        [_TRANSPORT_SERVICE_1, _TRANSPORT_SERVICE_2], _TRANSPORT_SERVICE_2, _TRANSPORT_SERVICE_2,
+            False)
         test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
             'ApduSuccess')
         self.reader.nfc_reader.startForegroundNonPaymentReaderActivity()
@@ -463,7 +481,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
          Verifies:
          1. Verifies 50 ApduSuccess events are received in a row.
          """
-        self.emulator.nfc_emulator.startTapTestEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_TRANSPORT_SERVICE_1], _TRANSPORT_SERVICE_1, False
+        )
         for i in range(50):
             test_pass_handler = self.emulator.nfc_emulator.asyncWaitForTestPass(
                 'ApduSuccess'
@@ -521,7 +541,7 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         )
         self.emulator.nfc_emulator.startScreenOffPaymentEmulatorActivity()
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForPreferredService()
 
         screen_off_handler = self.emulator.nfc_emulator.asyncWaitForScreenOff(
             'ScreenOff')
@@ -554,7 +574,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         1. Verifies APDU exchange is successful between the reader and the
         selected service.
         """
-        self.emulator.nfc_emulator.startConflictingNonPaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_TRANSPORT_SERVICE_1, _TRANSPORT_SERVICE_2], _TRANSPORT_SERVICE_2, False
+        )
         self.reader.nfc_reader.startConflictingNonPaymentReaderActivity()
         self.emulator.nfc_emulator.selectItem()
         self.reader.nfc_reader.setPollTech(_NFC_TECH_A_POLLING_OFF)
@@ -610,7 +632,9 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Verifies:
         1. Verifies Nfc-A and ISO-DEP protocol parameters are set correctly.
         """
-        self.emulator.nfc_emulator.startProtocolParamsEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            None, None, False
+        )
         test_pass_handler = self.reader.nfc_reader.asyncWaitForTestPass(
             'TestPass')
         self.reader.nfc_reader.startProtocolParamsReaderActivity()
@@ -680,9 +704,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         # reader
         role_held_handler = self.emulator.nfc_emulator.asyncWaitForRoleHeld(
             'RoleHeld')
-        self.emulator.nfc_emulator.startSinglePaymentEmulatorActivity()
+        self.emulator.nfc_emulator.startSimpleEmulatorActivity(
+            [_PAYMENT_SERVICE_1], _PAYMENT_SERVICE_1, True
+        )
         role_held_handler.waitAndGet('RoleHeld', _NFC_TIMEOUT_SEC)
-        self.emulator.nfc_emulator.waitForService()
+        self.emulator.nfc_emulator.waitForService(_PAYMENT_SERVICE_1)
 
         self.emulator.nfc_emulator.setNfcState(False)
         self.emulator.nfc_emulator.setNfcState(True)

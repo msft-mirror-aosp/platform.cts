@@ -865,7 +865,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.W)) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

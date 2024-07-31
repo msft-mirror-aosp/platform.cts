@@ -1602,6 +1602,11 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new FontScaleSession());
     }
 
+    /** @see ObjectTracker#manage(AutoCloseable) */
+    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
+        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
+    }
+
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
     protected void disableIgnoreOrientationRequest() {
         mObjectTracker.manage(new IgnoreOrientationRequestSession(false /* enable */));

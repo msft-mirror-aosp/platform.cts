@@ -68,6 +68,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.Condition;
+import android.server.wm.DisplayMetricsSession;
 import android.server.wm.StateLogger;
 import android.support.test.metricshelper.MetricsAsserts;
 import android.util.EventLog.Event;
@@ -108,6 +109,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
     private final MetricsReader mMetricsReader = new MetricsReader();
     private long mPreUptimeMs;
     private LogSeparator mLogSeparator;
+    private int mTestRunningUserId;
 
     @Before
     public void setUp() throws Exception {
@@ -115,6 +117,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         mPreUptimeMs = SystemClock.uptimeMillis();
         mMetricsReader.checkpoint(); // clear out old logs
         mLogSeparator = separateLogs(); // add a new separator for logs
+        mTestRunningUserId = Process.myUserHandle().getIdentifier();
     }
 
     /**
@@ -140,7 +143,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
                 (int) metricsLog.getTaggedData(APP_TRANSITION_WINDOWS_DRAWN_DELAY_MS);
         final String expectedLog =
                 "Displayed " + TEST_ACTIVITY.flattenToShortString()  + " for user "
-                        + Process.myUserHandle().getIdentifier()
+                        + mTestRunningUserId
                         + ": " + formatDuration(windowsDrawnDelayMs);
         assertLogsContain(deviceLogs, expectedLog);
         assertEventLogsContainsLaunchTime(eventLogs, TEST_ACTIVITY, windowsDrawnDelayMs);
@@ -213,6 +216,16 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         fail("Could not find wm_activity_launch_time for " + componentName);
     }
 
+    private String getStartCommand() {
+        return "am start -W --user " + mTestRunningUserId
+                + " " + TEST_ACTIVITY.flattenToShortString();
+    }
+
+    private String getColdStartCommand() {
+        return "am start -W -S --user " + mTestRunningUserId
+                + " " + TEST_ACTIVITY.flattenToShortString();
+    }
+
     /**
      * Start an activity that reports full drawn and verify:
      * - fully drawn metrics are added to metrics logs
@@ -265,8 +278,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
         mMetricsReader.checkpoint(); // clear out old logs
 
         // This is warm launch because its process should be alive after the above steps.
-        final String amStartOutput = SystemUtil.runShellCommand(
-                "am start -W " + TEST_ACTIVITY.flattenToShortString());
+        final String amStartOutput = SystemUtil.runShellCommand(getStartCommand());
 
         final LogMaker metricsLog = waitForMetricsLog(TEST_ACTIVITY, APP_TRANSITION);
         final int windowsDrawnDelayMs =
@@ -285,15 +297,14 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
      */
     @Test
     public void testAppHotLaunchSetsWaitResultDelayData() {
-        SystemUtil.runShellCommand("am start -S -W " + TEST_ACTIVITY.flattenToShortString());
+        SystemUtil.runShellCommand(getColdStartCommand());
 
         // Test hot launch
         launchHomeActivityNoWait();
         waitAndAssertActivityState(TEST_ACTIVITY, STATE_STOPPED, "Activity should be stopped");
         mMetricsReader.checkpoint(); // clear out old logs
 
-        final String amStartOutput = SystemUtil.runShellCommand(
-                "am start -W " + TEST_ACTIVITY.flattenToShortString());
+        final String amStartOutput = SystemUtil.runShellCommand(getStartCommand());
 
         final LogMaker metricsLog = waitForMetricsLog(TEST_ACTIVITY, APP_TRANSITION);
         final int windowsDrawnDelayMs =
@@ -311,17 +322,19 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
      */
     @Test
     public void testAppRelaunchSetsWaitResultDelayData() {
-        final String startTestActivityCmd = "am start -W " + TEST_ACTIVITY.flattenToShortString();
+        final String startTestActivityCmd = getStartCommand();
         SystemUtil.runShellCommand(startTestActivityCmd);
 
         launchHomeActivityNoWait();
         waitAndAssertActivityState(TEST_ACTIVITY, STATE_STOPPED, "Activity should be stopped");
 
-        final float originalFontScale = mContext.getResources().getConfiguration().fontScale;
-        final FontScaleSession fontScaleSession = createManagedFontScaleSession();
-        fontScaleSession.set(fontScaleSession.get() + 0.1f);
-        Condition.waitFor("font scale changed", () ->
-                originalFontScale != mContext.getResources().getConfiguration().fontScale);
+        // Check whether the test activity is relaunched after changing the display density,
+        // which can change the device configuration for users testing on both the main display
+        // and the secondary display.
+        final DisplayMetricsSession dmSession =
+                createManagedDisplayMetricsSession(getMainDisplayId());
+        dmSession.getDisplayMetrics().setDensity(
+                dmSession.getInitialDisplayMetrics().getDensity() + 1);
 
         // Move the task of test activity to front.
         final String amStartOutput = SystemUtil.runShellCommand(startTestActivityCmd);
@@ -335,8 +348,7 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
      */
     @Test
     public void testAppColdLaunchSetsWaitResultDelayData() {
-        final String amStartOutput = SystemUtil.runShellCommand(
-                "am start -S -W " + TEST_ACTIVITY.flattenToShortString());
+        final String amStartOutput = SystemUtil.runShellCommand(getColdStartCommand());
 
         final LogMaker metricsLog = waitForMetricsLog(TEST_ACTIVITY, APP_TRANSITION);
         final int windowsDrawnDelayMs =
@@ -441,7 +453,8 @@ public class ActivityMetricsLoggerTests extends ActivityManagerTestBase {
     @Test
     public void testConsecutiveLaunch() {
         final String amStartOutput = SystemUtil.runShellCommand(
-                "am start --ez " + KEY_LAUNCH_ACTIVITY
+                "am start --user " + mTestRunningUserId
+                + " --ez " + KEY_LAUNCH_ACTIVITY
                 + " true --es " + KEY_TARGET_COMPONENT + " " + TEST_ACTIVITY.flattenToShortString()
                 + " -W " + LAUNCHING_ACTIVITY.flattenToShortString());
         assertLaunchComponentState(amStartOutput, TEST_ACTIVITY, LAUNCH_STATE_COLD);

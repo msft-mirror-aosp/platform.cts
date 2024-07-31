@@ -168,11 +168,6 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         return result;
     }
 
-    /** @see ObjectTracker#manage(AutoCloseable) */
-    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
-        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
-    }
-
     public static class LetterboxAspectRatioSession extends IgnoreOrientationRequestSession {
         private static final String WM_SET_LETTERBOX_STYLE_ASPECT_RATIO =
                 "wm set-letterbox-style --aspectRatio ";

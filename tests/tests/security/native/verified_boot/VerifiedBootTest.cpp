@@ -128,7 +128,7 @@ TEST(VerifiedBootTest, avbHashtreeNotUsingSha1) {
         std::string hash_alg = android::base::GetProperty(alg_prop_name, "");
 
         if (hash_alg.empty())
-            ADD_FAILURE() << "Could not find hash algorithm for" << partition;
+            ADD_FAILURE() << "Could not find hash algorithm for " << partition;
         if (android::base::StartsWithIgnoreCase(hash_alg, "sha1"))
             ADD_FAILURE() << "SHA1 is insecure, but is being used for " << partition;
     }
