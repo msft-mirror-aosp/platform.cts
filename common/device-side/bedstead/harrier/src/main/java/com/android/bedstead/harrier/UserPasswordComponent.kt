@@ -16,8 +16,8 @@
 package com.android.bedstead.harrier
 
 import android.util.Log
-import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
+import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 
@@ -80,7 +80,11 @@ class UserPasswordComponent(locator: BedsteadServiceLocator) : DeviceStateCompon
 
     override fun teardownShareableState() {
         mUsersSetPasswords.forEach {
-            it.clearPassword()
+            try {
+                it.clearPassword()
+            } catch (exception: NeneException) {
+                Log.w(LOG_TAG, "Error clearing password", exception)
+            }
         }
         mUsersSetPasswords.clear()
     }
