@@ -36,7 +36,6 @@ import android.os.ParcelFileDescriptor;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
 import android.os.UserHandle;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -228,15 +227,8 @@ public class MockImeSession implements AutoCloseable {
                 MultiUserUtils.getCurrentInputMethodInfoAsUser(mContext, mUiAutomation,
                         mTargetUser);
         final String result = imi != null ? imi.getId() : null;
-        // debug log for b/354782333.
-        final String defaultInputMethod = MultiUserUtils.getSecureSettings(mContext,
-                mUiAutomation, Settings.Secure.DEFAULT_INPUT_METHOD, mTargetUser);
-        // debug log for b/354782333.
-        final String enabledInputMethods = MultiUserUtils.getSecureSettings(mContext,
-                mUiAutomation, Settings.Secure.ENABLED_INPUT_METHODS, mTargetUser);
         Log.v(TAG, "getCurrentInputMethodId(): returning " + result + " for user "
-                + mTargetUser.getIdentifier() + " DEFAULT_INPUT_METHOD=" + defaultInputMethod
-                + " ENABLED_INPUT_METHODS=" + enabledInputMethods);
+                + mTargetUser.getIdentifier());
         return result;
     }
 
