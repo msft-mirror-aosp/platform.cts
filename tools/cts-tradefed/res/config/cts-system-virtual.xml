@@ -461,7 +461,8 @@
   <option name="compatibility:include-filter" value="CtsPdfModuleTestCases"/>
   <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases"/>
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission"/>
-  
+  <option name="compatibility:module-arg" value="CtsKeystoreTestCases:include-filter:*KeyStoreTest*" />
+
     <!--Exclude Filters -->
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky3"/>
@@ -747,4 +748,41 @@
   <option name="compatibility:exclude-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest#serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky1"/>
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecurityLoggingWithSingleUser"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testShowNextPrevious"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testInitialState"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnCheckedChangePendingIntent"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnClickPendingIntent"/>
+  <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetDisplayedChild"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testSetAppStandbyBuckets"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testSetAppStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testOutOfBoundsStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsMediaCUJSmallTest android.media.cujsmalltest.cts.CtsMediaShortFormFullModePlaybackTest#testVideoPlayback[0_Hevc_720p_15sec_CallNotificationTest]"/>
+  <option name="compatibility:exclude-filter" value="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testGetAppStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission31_GrantNearby_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingInMiddleOfChainNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_Default_Upgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermissionNeverForLocation31_GrantNearby"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_GrantLocation_Upgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_Downgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission30_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanWithoutRenouncingNotesBluetoothAndLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission31_OnBehalfOfDisavowingApp"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest30WithBluetooth#testGivenBluetoothIsDeniedWhenScanIsAttemptedThenThenGetEmptyScanResult"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermissionNeverForLocation31_GrantNearby_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnAcrossReboot"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetMeteredDataDisabledPackages"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetPermissionPolicyLogged"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionReviewTapjackingTest#testOverlaysAreHidden"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingLocationNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPasswordQualityWithoutSecureLockScreen"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingLocationNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanWithoutRenouncingNotesBluetoothAndLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionPolicy"/>
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-VK.wsi.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-GLES2.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-GLES3.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-VK.api.smoke#*" />
 </configuration>

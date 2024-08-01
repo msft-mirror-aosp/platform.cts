@@ -20,9 +20,11 @@
     <uses-permission android:name="android.permission.DISABLE_KEYGUARD" />
     <application>
         <activity android:name="android.transition.cts.TransitionActivity"
-            android:label="TransitionActivity"/>
+            android:label="TransitionActivity"
+            android:exported="true"/>
         <activity android:name="android.transition.cts.TargetActivity"
-            android:label="TargetActivity"/>
+            android:label="TargetActivity"
+            android:exported="true"/>
         <uses-library android:name="android.test.runner" />
     </application>
 
