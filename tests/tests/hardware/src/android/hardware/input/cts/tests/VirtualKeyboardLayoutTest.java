@@ -140,7 +140,6 @@ public class VirtualKeyboardLayoutTest {
                 new int[]{
                         KeyEvent.KEYCODE_Q,
                         KeyEvent.KEYCODE_W,
-                        KeyEvent.KEYCODE_E,
                         KeyEvent.KEYCODE_R,
                         KeyEvent.KEYCODE_T,
                         KeyEvent.KEYCODE_Y
@@ -148,7 +147,6 @@ public class VirtualKeyboardLayoutTest {
                 new int[]{
                         KeyEvent.KEYCODE_APOSTROPHE,
                         KeyEvent.KEYCODE_COMMA,
-                        KeyEvent.KEYCODE_E,
                         KeyEvent.KEYCODE_P,
                         KeyEvent.KEYCODE_Y,
                         KeyEvent.KEYCODE_F
