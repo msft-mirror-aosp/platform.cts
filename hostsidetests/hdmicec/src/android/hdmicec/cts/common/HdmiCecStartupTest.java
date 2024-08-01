@@ -20,6 +20,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.hdmicec.cts.BaseHdmiCecCtsTest;
 import android.hdmicec.cts.CecOperand;
+import android.hdmicec.cts.HdmiCecConstants;
 
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
@@ -58,6 +59,10 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
     public void cectVerifyStartupMessages_Cec14b() throws Exception {
         ITestDevice device = getDevice();
 
+        setSystemCecVersion(HdmiCecConstants.CEC_VERSION_1_4);
+        assertWithMessage("Driver version change failed").that(
+                getSystemCecVersion()).isEqualTo(HdmiCecConstants.CEC_VERSION_1_4);
+
         List<CecOperand> expectedMessages = Collections.singletonList(
                 CecOperand.REPORT_PHYSICAL_ADDRESS);
         List<CecOperand> allowedMessages = new ArrayList<>(
@@ -69,6 +74,14 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
                         CecOperand.REQUEST_ACTIVE_SOURCE, CecOperand.GIVE_PHYSICAL_ADDRESS,
                         CecOperand.GIVE_SYSTEM_AUDIO_MODE_STATUS, CecOperand.REPORT_POWER_STATUS));
         allowedMessages.addAll(expectedMessages);
+
+        String deviceType = device.getProperty(HdmiCecConstants.HDMI_DEVICE_TYPE_PROPERTY);
+        boolean isAudioSystem = deviceType.contains(
+                Integer.toString(HdmiCecConstants.CEC_DEVICE_TYPE_AUDIO_SYSTEM));
+        if (isAudioSystem) {
+            allowedMessages.addAll(new ArrayList<>(
+                Arrays.asList(CecOperand.SET_SYSTEM_AUDIO_MODE, CecOperand.INITIATE_ARC)));
+        }
 
         device.reboot();
         /* Monitor CEC messages for 20s after reboot */
@@ -90,6 +103,10 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
                 expectedMessages.size());
         assertWithMessage("Expected <Report Physical Address>").that(
                 requiredMessages.get(0)).isEqualTo(CecOperand.REPORT_PHYSICAL_ADDRESS);
+
+        // Clear persist value
+        setSystemCecVersion(-1);
+        device.reboot();
     }
 
     /**
