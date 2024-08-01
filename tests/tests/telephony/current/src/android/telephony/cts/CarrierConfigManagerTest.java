@@ -22,6 +22,7 @@ import static android.app.AppOpsManager.OPSTR_READ_PHONE_STATE;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_OVERRIDE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT;
+import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY;
@@ -69,6 +70,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.satellite.SatelliteManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -257,6 +259,11 @@ public class CarrierConfigManagerTest {
             assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
                     config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
                     CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+            assertEquals("KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT "
+                    + "doesn't match static default.",
+                    config.getInt(
+                            KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT),
+                    SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911);
             assertEquals("KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
