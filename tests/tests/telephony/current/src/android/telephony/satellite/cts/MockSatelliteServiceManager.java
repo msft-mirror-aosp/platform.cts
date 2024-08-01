@@ -1193,8 +1193,7 @@ class MockSatelliteServiceManager {
     }
 
     @NonNull List<String> getPlmnListFromOverlayConfig() {
-        String[] plmnArr = readStringArrayFromOverlayConfig(
-                R.array.config_satellite_providers);
+        String[] plmnArr = readStringArrayFromOverlayConfig("config_satellite_providers");
         return Arrays.stream(plmnArr).toList();
     }
 
@@ -1268,12 +1267,14 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @NonNull private String[] readStringArrayFromOverlayConfig(@ArrayRes int id) {
+    @NonNull private String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
         String[] strArray = null;
         try {
-            strArray = mInstrumentation.getContext().getResources().getStringArray(id);
+            strArray = mInstrumentation.getContext().getResources().getStringArray(
+                    Resources.getSystem().getIdentifier(resourceName, "array", "android"));
         } catch (Resources.NotFoundException ex) {
-            loge("readStringArrayFromOverlayConfig: id= " + id + ", ex=" + ex);
+            loge("readStringArrayFromOverlayConfig: resourceName = "
+                    + resourceName + ", ex = " + ex);
         }
         if (strArray == null) {
             strArray = new String[0];
