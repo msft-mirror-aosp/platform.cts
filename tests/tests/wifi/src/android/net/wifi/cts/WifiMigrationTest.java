@@ -145,7 +145,7 @@ public class WifiMigrationTest extends WifiJUnit3TestBase {
      *
      * TODO: Update @SdkSuppress once a version code >V is available
      */
-    @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION)
+    @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION_READ_ONLY)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     public void testMigrateLegacyKeystoreToWifiBlobstore() {

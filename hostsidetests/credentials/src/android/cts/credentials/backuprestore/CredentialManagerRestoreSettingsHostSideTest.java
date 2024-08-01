@@ -161,10 +161,11 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
         mBackupUtils.restoreAndAssertSuccess("1", SETTINGS_PACKAGE);
 
         // 6. Make sure the settings were not overridden.
-        assertThat(getSecureSettingValue(AUTOFILL_SETTING_NAME)).isEqualTo(AUTOFILL_TEST_SERVICE);
-        assertThat(getSecureSettingValue(CREDMAN_SETTING_NAME)).isEqualTo(CREDMAN_TEST_SERVICE);
-        assertThat(getSecureSettingValue(CREDMAN_PRIMARY_SETTING_NAME))
-                .isEqualTo(CREDMAN_TEST_PRIMARY_SERVICE);
+        assertSameComponentName(
+                getSecureSettingValue(AUTOFILL_SETTING_NAME), AUTOFILL_TEST_SERVICE);
+        assertSameComponentName(getSecureSettingValue(CREDMAN_SETTING_NAME), CREDMAN_TEST_SERVICE);
+        assertSameComponentName(
+                getSecureSettingValue(CREDMAN_PRIMARY_SETTING_NAME), CREDMAN_TEST_PRIMARY_SERVICE);
     }
 
     @Test
@@ -186,10 +187,28 @@ public class CredentialManagerRestoreSettingsHostSideTest extends BaseHostJUnit4
         mBackupUtils.restoreAndAssertSuccess("1", SETTINGS_PACKAGE);
 
         // 5. Make sure the settings were not overridden.
-        assertThat(getSecureSettingValue(AUTOFILL_SETTING_NAME)).isEqualTo(NEW_SETTINGS_VALUE);
-        assertThat(getSecureSettingValue(CREDMAN_SETTING_NAME)).isEqualTo(NEW_SETTINGS_VALUE);
-        assertThat(getSecureSettingValue(CREDMAN_PRIMARY_SETTING_NAME))
-                .isEqualTo(NEW_SETTINGS_VALUE);
+        assertSameComponentName(getSecureSettingValue(AUTOFILL_SETTING_NAME), NEW_SETTINGS_VALUE);
+        assertSameComponentName(getSecureSettingValue(CREDMAN_SETTING_NAME), NEW_SETTINGS_VALUE);
+        assertSameComponentName(
+                getSecureSettingValue(CREDMAN_PRIMARY_SETTING_NAME), NEW_SETTINGS_VALUE);
+    }
+
+    private void assertSameComponentName(String one, String two) {
+        assertThat(normalizedString(one))
+                .isEqualTo(normalizedString(two));
+    }
+
+    private static String normalizedString(String str) {
+        int sep = str.indexOf('/');
+        if (sep < 0 || (sep + 1) >= str.length()) {
+            return "";
+        }
+        String pkg = str.substring(0, sep);
+        String cls = str.substring(sep + 1);
+        if (cls.length() > 0 && cls.charAt(0) == '.') {
+            cls = pkg + cls;
+        }
+        return cls;
     }
 
     private String getSecureSettingValue(String name) throws Exception {

@@ -287,7 +287,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testGetStatSize() throws Exception {
         ParcelFileDescriptor pf = makeParcelFileDescriptor();
         assertTrue(pf.getStatSize() >= 0);
@@ -521,7 +520,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = Os.class)
     public void testCheckFinalizerBehavior() throws Exception {
         final Runtime runtime = Runtime.getRuntime();
         ParcelFileDescriptor pfd = makeParcelFileDescriptor();

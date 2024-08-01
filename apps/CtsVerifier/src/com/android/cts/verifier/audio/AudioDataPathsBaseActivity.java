@@ -27,8 +27,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
@@ -42,6 +44,8 @@ import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
+import com.android.cts.verifier.libs.ui.PlainTextFormatter;
+import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
@@ -84,11 +88,11 @@ public abstract class AudioDataPathsBaseActivity
     private Button mDevicesButton;
 
     private TextView mRoutesTx;
-    private WebView mResultsView;
+    private View mResultsView;
 
     private WaveScopeView mWaveView = null;
 
-    private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private TextFormatter mTextFormatter;
 
     // Test Manager
     protected TestManager mTestManager = new TestManager();
@@ -161,9 +165,29 @@ public abstract class AudioDataPathsBaseActivity
 
         mRoutesTx = (TextView) findViewById(R.id.audio_datapaths_routes);
 
-        mResultsView = (WebView) findViewById(R.id.audio_datapaths_results);
+        LinearLayout resultsLayout = findViewById(R.id.audio_datapaths_results);
+        if (AudioSystemFlags.supportsWebView(this)) {
+            mTextFormatter = new HtmlFormatter();
+            mResultsView = new WebView(this);
+        } else {
+            // No WebView
+            mTextFormatter = new PlainTextFormatter();
+            mResultsView = new TextView(this);
+        }
+        resultsLayout.addView(mResultsView,
+                new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 
-        mWaveView = (WaveScopeView) findViewById(R.id.uap_recordWaveView);
+        boolean isWatch = AudioSystemFlags.isWatch(this);
+        if (isWatch) {
+            // Device Attributes Header
+            ((LinearLayout) findViewById(R.id.audio_datapaths_header))
+                    .setOrientation(LinearLayout.VERTICAL);
+            // Utilities UI
+            ((LinearLayout) findViewById(R.id.audio_loopback_utilities_layout))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
+        mWaveView = findViewById(R.id.uap_recordWaveView);
         mWaveView.setBackgroundColor(Color.DKGRAY);
         mWaveView.setTraceColor(Color.WHITE);
 
@@ -752,96 +776,96 @@ public abstract class AudioDataPathsBaseActivity
         //
         // HTML Reporting
         //
-        HtmlFormatter generateReport(int api, HtmlFormatter htmlFormatter) {
+        TextFormatter generateReport(int api, TextFormatter textFormatter) {
             // Description
-            htmlFormatter.openParagraph()
+            textFormatter.openParagraph()
                     .appendText(getDescription());
             if (hasPassed(api)) {
-                htmlFormatter.appendBreak()
+                textFormatter.appendBreak()
                         .openBold()
                         .appendText(getTestStateString(api))
                         .closeBold();
 
                 TestStateData stateData = mTestStateData[api];
                 if (stateData != null) {
-                    htmlFormatter.appendBreak()
+                    textFormatter.appendBreak()
                             .openTextColor("blue")
                             .appendText(stateData.buildErrorString(this))
                             .closeTextColor();
                 }
             } else {
                 if (hasError(api)) {
-                    htmlFormatter.appendBreak();
+                    textFormatter.appendBreak();
                     switch (mTestStateCode[api]) {
                         case TESTSTATUS_BAD_START:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Couldn't Start Stream");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Couldn't Start Stream");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_BUILD:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Couldn't Open Stream");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Couldn't Open Stream");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ROUTING:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Invalid Route");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Invalid Route");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Invalid Analysis Channel");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Invalid Analysis Channel");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_CANT_SET_MMAP:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Did not set MMAP mode - "
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Did not set MMAP mode - "
                                     + transferTypeToSharingString(mTransferType));
-                            htmlFormatter.closeTextColor();
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_MISMATCH_MMAP: {
-                            htmlFormatter.openTextColor("blue");
-                            htmlFormatter.appendText("Note : ");
+                            textFormatter.openTextColor("blue");
+                            textFormatter.appendText("Note : ");
                             BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
-                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatOutputAttributes());
+                                textFormatter.appendBreak();
+                                textFormatter.appendText(formatOutputAttributes());
                             }
                             if (errorData.mRecorderFailed) {
                                 if (errorData.mPlayerFailed) {
-                                    htmlFormatter.appendBreak();
+                                    textFormatter.appendBreak();
                                 }
-                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatInputAttributes());
+                                textFormatter.appendBreak();
+                                textFormatter.appendText(formatInputAttributes());
                             }
-                            htmlFormatter.closeTextColor();
+                            textFormatter.closeTextColor();
                         }
                             break;
                         case TESTSTATUS_BAD_SHARINGMODE:
-                            htmlFormatter.openTextColor("blue");
-                            htmlFormatter.appendText("Note : ");
+                            textFormatter.openTextColor("blue");
+                            textFormatter.appendText("Note : ");
                             BadSharingTestState errorData =
                                     (BadSharingTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
-                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
                                         + transferTypeString);
                             }
                             if (errorData.mRecorderFailed) {
-                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
                             }
-                            htmlFormatter.appendBreak();
-                            htmlFormatter.appendText(formatOutputAttributes());
-                            htmlFormatter.closeTextColor();
+                            textFormatter.appendBreak();
+                            textFormatter.appendText(formatOutputAttributes());
+                            textFormatter.closeTextColor();
                             break;
                     }
-                    htmlFormatter.closeTextColor();
+                    textFormatter.closeTextColor();
                 }
             }
 
@@ -867,40 +891,40 @@ public abstract class AudioDataPathsBaseActivity
                 // was needed to pass.
                 // So, for a cross-talk test, "mag:0.01062 > 0.01000" means that the test
                 // failed, because 0.01062 > 0.01000
-                htmlFormatter.appendBreak();
-                htmlFormatter.openTextColor(passMagnitude ? "black" : "red");
+                textFormatter.appendBreak();
+                textFormatter.openTextColor(passMagnitude ? "black" : "red");
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    htmlFormatter.appendText(maxMagString
+                    textFormatter.appendText(maxMagString
                             + String.format(locale,
                             passMagnitude ? " >= %.5f " : " < %.5f ",
                             MIN_SIGNAL_PASS_MAGNITUDE));
                 } else {
-                    htmlFormatter.appendText(maxMagString
+                    textFormatter.appendText(maxMagString
                             + String.format(locale,
                             passMagnitude ? " <= %.5f " : " > %.5f ",
                             MAX_XTALK_PASS_MAGNITUDE));
                 }
-                htmlFormatter.closeTextColor();
+                textFormatter.closeTextColor();
 
-                htmlFormatter.openTextColor(passJitter ? "black" : "red");
+                textFormatter.openTextColor(passJitter ? "black" : "red");
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    htmlFormatter.appendText(phaseJitterString
+                    textFormatter.appendText(phaseJitterString
                                     + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
                                     MAX_SIGNAL_PASS_JITTER));
                 } else {
-                    htmlFormatter.appendText(phaseJitterString);
+                    textFormatter.appendText(phaseJitterString);
                 }
-                htmlFormatter.closeTextColor();
+                textFormatter.closeTextColor();
 
-                htmlFormatter.appendBreak();
+                textFormatter.appendBreak();
             } else {
                 // results == null
-                htmlFormatter.appendBreak();
-                htmlFormatter.appendText("No Results.");
+                textFormatter.appendBreak();
+                textFormatter.appendText("No Results.");
             }
-            htmlFormatter.closeParagraph();
+            textFormatter.closeParagraph();
 
-            return htmlFormatter;
+            return textFormatter;
         }
 
         //
@@ -1347,47 +1371,46 @@ public abstract class AudioDataPathsBaseActivity
                     mRoutesTx.setVisibility(View.GONE);
                     mWaveView.setVisibility(View.GONE);
 
-                    mHtmlFormatter.clear();
-                    mHtmlFormatter.openDocument();
-                    mTestManager.generateReport(mHtmlFormatter);
+                    mTextFormatter.clear();
+                    mTextFormatter.openDocument();
+                    mTestManager.generateReport(mTextFormatter);
 
                     mTestHasBeenRun = true;
                     boolean passEnabled = passBtnEnabled();
                     getPassButton().setEnabled(passEnabled);
 
-                    mHtmlFormatter.openParagraph();
+                    mTextFormatter.openParagraph();
                     if (mTestCanceled) {
-                        mHtmlFormatter.openBold();
-                        mHtmlFormatter.appendText("Test Canceled");
-                        mHtmlFormatter.closeBold();
-                        mHtmlFormatter.appendBreak();
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("Test Canceled");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendBreak();
                     }
                     int numFailures = countFailures(mApi);
                     int numUntested = getNumTestModules() - countTestedTestModules();
-                    mHtmlFormatter.appendText("There were " + numFailures + " failures.");
-                    mHtmlFormatter.appendBreak();
-                    mHtmlFormatter.appendText(
+                    mTextFormatter.appendText("There were " + numFailures + " failures.");
+                    mTextFormatter.appendBreak();
+                    mTextFormatter.appendText(
                             "There were " + numUntested + " untested paths.");
 
                     if (numFailures == 0 && numUntested == 0) {
-                        mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText("All tests passed.");
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("All tests passed.");
                     }
-                    mHtmlFormatter.closeParagraph();
-                    mHtmlFormatter.openParagraph();
+                    mTextFormatter.closeParagraph();
+                    mTextFormatter.openParagraph();
 
                     if (mIsLessThanV && passEnabled) {
-                        mHtmlFormatter.appendText("Although not all test modules passed, "
+                        mTextFormatter.appendText("Although not all test modules passed, "
                                 + "for this OS version you may enter a PASS.");
-                        mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText("In future versions, "
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("In future versions, "
                                 + "ALL test modules will be required to pass.");
                     }
-                    mHtmlFormatter.closeParagraph();
+                    mTextFormatter.closeParagraph();
 
-                    mHtmlFormatter.closeDocument();
-                    mResultsView.loadData(mHtmlFormatter.toString(),
-                            "text/html; charset=utf-8", "utf-8");
+                    mTextFormatter.closeDocument();
+                    mTextFormatter.put(mResultsView);
                     showResultsView();
 
                     mCalibrateButton.setEnabled(true);
@@ -1459,17 +1482,17 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
-        HtmlFormatter generateReport(HtmlFormatter htmlFormatter) {
-            htmlFormatter.openHeading(3);
-            htmlFormatter.appendText("Test API: ");
-            htmlFormatter.appendText(mApi == TEST_API_JAVA ? "Java" : "Native");
-            htmlFormatter.closeHeading(3);
+        TextFormatter generateReport(TextFormatter textFormatter) {
+            textFormatter.openHeading(3);
+            textFormatter.appendText("Test API: ");
+            textFormatter.appendText(mApi == TEST_API_JAVA ? "Java" : "Native");
+            textFormatter.closeHeading(3);
 
             for (TestModule module : mTestModules) {
-                module.generateReport(mApi, htmlFormatter);
+                module.generateReport(mApi, textFormatter);
             }
 
-            return htmlFormatter;
+            return textFormatter;
         }
 
         //
@@ -1515,15 +1538,14 @@ public abstract class AudioDataPathsBaseActivity
     }
 
     void displayNonHandheldMessage() {
-        mHtmlFormatter.clear();
-        mHtmlFormatter.openDocument();
-        mHtmlFormatter.openParagraph();
-        mHtmlFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
-        mHtmlFormatter.closeParagraph();
+        mTextFormatter.clear();
+        mTextFormatter.openDocument();
+        mTextFormatter.openParagraph();
+        mTextFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
+        mTextFormatter.closeParagraph();
 
-        mHtmlFormatter.closeDocument();
-        mResultsView.loadData(mHtmlFormatter.toString(),
-                "text/html; charset=utf-8", "utf-8");
+        mTextFormatter.closeDocument();
+        mTextFormatter.put(mResultsView);
         showResultsView();
     }
 

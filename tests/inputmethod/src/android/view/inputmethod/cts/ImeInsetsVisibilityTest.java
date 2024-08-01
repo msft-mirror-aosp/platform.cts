@@ -18,6 +18,7 @@ package android.view.inputmethod.cts;
 
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
@@ -37,6 +38,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -88,6 +90,12 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
+
+    // TODO(b/356717219): Decommission this method once IME CTS moves to Bedstead.
+    protected boolean isAutomotive() {
+        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        return context.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
+    }
 
     @Test
     public void testImeVisibilityWhenImeFocusableChildPopup() throws Exception {
@@ -239,6 +247,7 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     @Test
     public void testEditTextPositionAndPersistWhenAboveImeWindowShown() throws Exception {
         Assume.assumeFalse(isPreventImeStartup());
+        Assume.assumeFalse(isAutomotive());  // TODO(b/356717219): Remove once moving to Bedstead.
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(

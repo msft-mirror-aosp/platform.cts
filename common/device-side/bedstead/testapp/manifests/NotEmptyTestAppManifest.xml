@@ -21,6 +21,9 @@
 
     <application android:label="NotEmptyTestApp">
         <meta-data android:name="test-metadata-key" android:value="test-metadata-value" />
+        <meta-data android:name="test-metadata-with-res-key"
+                   android:value="test_xml"
+                   android:resource="@xml/test_xml" />
 
         <activity-alias
             android:name="android.testapp.TestSchemeActivityAlias"

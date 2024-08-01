@@ -576,20 +576,43 @@ object DevicePolicy {
         return DevicePolicyResources.sInstance
     }
 
+    @JvmOverloads
+    fun setActiveAdmin(user: UserReference = TestApis.users().instrumented(),
+                       componentName: ComponentName): DeviceAdmin {
+        TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                CommonPermissions.MANAGE_DEVICE_ADMINS)
+                .use {
+                    devicePolicyManager(user).setActiveAdmin(componentName,
+                            /* refreshing= */ true, user.id())
+                }
+
+        Poll.forValue("Active admins") { getActiveAdmins(user) }
+                .toMeet { i: Set<DeviceAdmin> ->
+                    i.contains(
+                            DeviceAdmin.of(componentName.packageName, componentName))
+                }
+                .errorOnFail()
+                .await()
+
+        return DeviceAdmin(user, TestApis.packages().find(componentName.packageName), componentName)
+    }
+
     /**
      * Get active admins on the given user.
      */
     @JvmOverloads
-    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<ComponentReference> {
+    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<DeviceAdmin> {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
-                .use {
-                    val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
-                    return activeAdmins.stream()
-                            .map { component: ComponentName? -> ComponentReference(component) }
-                            .collect(
-                                    Collectors.toSet()
-                            )
-                }
+            .use {
+                val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
+                return activeAdmins.stream()
+                    .map { component: ComponentName ->
+                        DeviceAdmin.of(component.packageName, component)
+                    }
+                    .collect(
+                        Collectors.toSet()
+                    )
+            }
     }
 
     /**

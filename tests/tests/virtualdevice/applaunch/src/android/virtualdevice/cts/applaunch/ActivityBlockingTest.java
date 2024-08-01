@@ -283,6 +283,50 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void testPerDisplayActivityPolicy() {
+        // Allow launches by default except for the monitored component.
+        createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
+                .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT)
+                .build());
+        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent());
+
+        // Create a new display that will have custom policy.
+        VirtualDisplay customPolicyDisplay = mRule.createManagedVirtualDisplay(
+                mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+        final int customPolicyDisplayId = customPolicyDisplay.getDisplay().getDisplayId();
+
+        assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
+
+        // Removing an exemption applies only to that display.
+        mVirtualDevice.removeActivityPolicyExemption(
+                mMonitoredIntent.getComponent(), customPolicyDisplayId);
+        assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
+
+        // Set the display policy policy to block by default.
+        mVirtualDevice.setDevicePolicy(
+                POLICY_TYPE_ACTIVITY, DEVICE_POLICY_CUSTOM, customPolicyDisplayId);
+        assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
+
+        // Adding an exemption allows for launching it.
+        mVirtualDevice.addActivityPolicyExemption(
+                mMonitoredIntent.getComponent(), customPolicyDisplayId);
+        assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
+
+        // Changing the device level exemption applies to all displays.
+        mVirtualDevice.removeActivityPolicyExemption(mMonitoredIntent.getComponent());
+        assertActivityLaunchAllowed(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
+        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent());
+        assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
+        assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
+    }
+
     @RequiresFlagsEnabled(
             {Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
@@ -406,15 +450,19 @@ public class ActivityBlockingTest {
      * BlockedAppStreamingActivity.
      */
     private void assertActivityLaunchBlocked(Intent intent) {
+        assertActivityLaunchBlocked(intent, mVirtualDisplay);
+    }
+
+    private void assertActivityLaunchBlocked(Intent intent, VirtualDisplay display) {
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(
-                mContext, mVirtualDisplay.getDisplay().getDisplayId(), intent)).isFalse();
-        mRule.sendIntentToDisplay(intent, mVirtualDisplay);
+                mContext, display.getDisplay().getDisplayId(), intent)).isFalse();
+        mRule.sendIntentToDisplay(intent, display);
         if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
             verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
-                    eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                    eq(display.getDisplay().getDisplayId()),
                     eq(intent.getComponent()), anyInt());
         }
-        assertBlockedAppStreamingActivityLaunched();
+        assertBlockedAppStreamingActivityLaunched(display);
     }
 
     /**
@@ -433,19 +481,31 @@ public class ActivityBlockingTest {
      * Assert that launching an activity is successful with the given intent.
      */
     private void assertActivityLaunchAllowed(Intent intent) {
-        mRule.sendIntentToDisplay(intent, mVirtualDisplay);
+        assertActivityLaunchAllowed(intent, mVirtualDisplay);
+    }
+
+    private void assertActivityLaunchAllowed(Intent intent, VirtualDisplay display) {
+        mRule.sendIntentToDisplay(intent, display);
         assertThat(mActivityManager.isActivityStartAllowedOnDisplay(
-                mContext, mVirtualDisplay.getDisplay().getDisplayId(), intent)).isTrue();
-        assertActivityLaunched(intent.getComponent());
+                mContext, display.getDisplay().getDisplayId(), intent)).isTrue();
+        assertActivityLaunched(intent.getComponent(), display);
     }
 
     private void assertBlockedAppStreamingActivityLaunched() {
-        assertActivityLaunched(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT);
+        assertBlockedAppStreamingActivityLaunched(mVirtualDisplay);
+    }
+
+    private void assertBlockedAppStreamingActivityLaunched(VirtualDisplay display) {
+        assertActivityLaunched(VirtualDeviceRule.BLOCKED_ACTIVITY_COMPONENT, display);
     }
 
     private void assertActivityLaunched(ComponentName componentName) {
-        verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onTopActivityChanged(
-                eq(mVirtualDisplay.getDisplay().getDisplayId()), eq(componentName), anyInt());
+        assertActivityLaunched(componentName, mVirtualDisplay);
+    }
+
+    private void assertActivityLaunched(ComponentName componentName, VirtualDisplay display) {
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS).atLeastOnce()).onTopActivityChanged(
+                eq(display.getDisplay().getDisplayId()), eq(componentName), anyInt());
         reset(mActivityListener);
     }
 

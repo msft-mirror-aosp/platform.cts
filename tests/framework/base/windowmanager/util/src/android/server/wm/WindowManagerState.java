@@ -1100,6 +1100,21 @@ public class WindowManagerState {
         return false;
     }
 
+    /**
+     * Check if at least one window on {@code displayId}. which matches the specified name has shown
+     * it's surface.
+     */
+    public boolean isWindowSurfaceShownOnDisplay(String windowName, int displayId) {
+        for (WindowState window : mWindowStates) {
+            if (window.getName().equals(windowName) && window.getDisplayId() == displayId) {
+                if (window.isSurfaceShown()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /** Check if at least one window which matches the specified name has shown it's surface. */
     public boolean isWindowSurfaceShown(String windowName) {
         for (WindowState window : mWindowStates) {

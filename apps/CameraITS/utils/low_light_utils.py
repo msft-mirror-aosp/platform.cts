@@ -50,6 +50,7 @@ TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
 )
 
 

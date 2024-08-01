@@ -5623,6 +5623,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_inputscolon">Inputs:</string>
     <string name="audio_general_outputscolon">Outputs:</string>
 
+    <!-- Audio Loopback Calibration -->
+    <string name="audio_calibration_info">
+        This panel allows you to set levels for loopback signals
+        The process is as follows:
+        &#8226;Select the input and output devices on which the loopback is executing.
+        &#8226;Click "Left" to play a sine wave on the left channel of the selected output device.
+        &#8226;Use the volume control on the DUT and/or external peripheral to set an appropriate signal level.
+        &#8226;Repeat the process for the right channel.
+    </string>
+
     <!-- Audio Data Paths Test-->
     <string name="audio_datapaths_clearresults">Clear Results</string>
     <string name="audio_datapaths_legacy">Legacy</string>
