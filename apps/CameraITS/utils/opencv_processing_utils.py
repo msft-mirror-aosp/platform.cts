@@ -971,7 +971,7 @@ def find_aruco_markers(input_img, output_img_path):
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  parameters = cv2.aruco.DetectorParameters()
+  parameters = cv2.aruco.DetectorParameters_create()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
