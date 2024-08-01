@@ -29,7 +29,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 import android.companion.virtual.VirtualDeviceManager.IntentInterceptorCallback;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
-import android.companion.virtualdevice.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -37,7 +36,6 @@ import android.content.IntentFilter;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
@@ -122,7 +120,6 @@ public class ActivityInterceptionTest {
         verifyZeroInteractions(mInterceptor);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTENT_INTERCEPTION_ACTION_MATCHING_FIX)
     @Test
     public void interceptorRegistered_withExplicitAction_intentWithoutActionShouldLaunch() {
         IntentFilter intentFilter = new IntentFilter(ACTION_INTERCEPTED_RECEIVER);
