@@ -664,8 +664,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
         final String activityComponentName = getActivityName(activityName);
         final String message = activityComponentName + " to be focused";
         return Condition.waitFor(new Condition<>(message, () -> {
+            computeState();
             boolean focusedActivityMatching = activityComponentName.equals(getFocusedActivity());
+            if (!focusedActivityMatching) {
+                logAlways("Expecting top resumed activity " + activityComponentName + ", but is "
+                        + getFocusedActivity());
+            }
             boolean focusedAppMatching = activityComponentName.equals(getFocusedApp());
+            if (!focusedAppMatching) {
+                logAlways("Expecting focused app " + activityComponentName + ", but is "
+                        + getFocusedApp());
+            }
             return focusedActivityMatching && focusedAppMatching;
         }).setRetryIntervalMs(200).setRetryLimit(20));
     }
