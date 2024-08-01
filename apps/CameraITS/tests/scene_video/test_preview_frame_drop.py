@@ -116,7 +116,7 @@ class PreviewFrameDropTest(its_base_test.ItsBaseTest):
       failure_messages = []
       file_name_with_path = os.path.join(
           self.log_path, file_name)
-      reported_frame_rate = video_processing_utils.get_average_frame_rate(
+      reported_frame_rate = video_processing_utils.get_avg_frame_rate(
           file_name_with_path)
       if not math.isclose(video_fps, reported_frame_rate, rel_tol=_FPS_RTOL):
         failure_messages.append(
