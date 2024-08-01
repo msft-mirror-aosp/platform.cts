@@ -16,12 +16,14 @@
 package com.android.bedstead.enterprise
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
+import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
@@ -40,6 +42,7 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
     private val enterpriseComponent: EnterpriseComponent by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
+    private val deviceAdminComponent: DeviceAdminComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val usersComponent: UsersComponent by locator
 
@@ -71,6 +74,17 @@ class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : Annotation
 
             is EnsureHasProfileOwner ->
                 profileOwnersComponent.ensureHasProfileOwner(annotation)
+
+            is EnsureHasDeviceAdmin ->
+                deviceAdminComponent.ensureHasDeviceAdmin(
+                        annotation.key,
+                        annotation.onUser,
+                        annotation.isPrimary,
+                        TestAppProvider().query(annotation.dpc)
+                )
+
+            is EnsureHasNoTestDeviceAdmin ->
+                deviceAdminComponent.ensureHasNoTestDeviceAdmin(annotation.onUser)
 
             is RequireHasPolicyExemptApps -> annotation.logic()
             is MostImportantCoexistenceTest -> annotation.logic(
