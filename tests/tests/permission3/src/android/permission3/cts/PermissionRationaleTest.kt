@@ -167,9 +167,9 @@ class PermissionRationaleTest : BaseUsePermissionTest() {
 
         clicksSettings_doesNothing_leaves()
 
-        eventually {
-            assertPermissionRationaleDialogIsVisible(true)
-        }
+        // Eventually requires a longer timeout than that of all internal ui checks in
+        // assertPermissionRationaleDialogIsVisible
+        eventually({ assertPermissionRationaleDialogIsVisible(true) }, 75000L)
     }
 
     @Test
