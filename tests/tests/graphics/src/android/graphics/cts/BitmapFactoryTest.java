@@ -1018,11 +1018,11 @@ public class BitmapFactoryTest {
 
         Config expectedConfig = Config.RGBA_1010102;
 
-        // For TVs, even if the device advertises that 10 bits profile is supported, the output
-        // format might not be CPU readable, but the video can still be displayed. When the TV's
+        // Even if the device advertises that 10 bits profile is supported, the output
+        // format might not be CPU readable, but the video can still be displayed. When the
         // hevc decoder doesn't support YUVP010 format, and inPreferredConfig is RGBA_1010102,
         // then the color type of output falls back to RGBA_8888 automatically.
-        if (MediaUtils.isTv() && !hasHEVCDecoderSupportsYUVP010()) {
+        if (!hasHEVCDecoderSupportsYUVP010()) {
             expectedConfig = Config.ARGB_8888;
         }
 
@@ -1059,14 +1059,11 @@ public class BitmapFactoryTest {
                 ImageDecoder.isMimeTypeSupported("image/heif"));
         assumeTrue("No 10-bit HEVC decoder, skip the test.", has10BitHEVCDecoder());
 
-        // When TV does not support P010, color type of output is RGBA_8888 when decoding 10-bit
+        // When device does not support P010 color type of output is RGBA_8888 when decoding 10-bit
         // heif, and this behavior is tested in testDecode10BitHEIF10BitBitmap. So skipping this
-        // test when P010 is not supported by TV.
-        if (MediaUtils.isTv()) {
-            assumeTrue(
-                "The TV does not support YUVP010 format, skip the test",
+        // test when P010 is not supported.
+        assumeTrue("No HEVC decoder that supports YUVP010, skip the test.",
                 hasHEVCDecoderSupportsYUVP010());
-        }
 
         BitmapFactory.Options opt = new BitmapFactory.Options();
         opt.inPreferredConfig = Config.ARGB_8888;
