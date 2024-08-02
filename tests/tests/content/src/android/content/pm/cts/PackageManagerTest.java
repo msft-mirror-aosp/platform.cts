@@ -168,6 +168,8 @@ import com.android.internal.security.VerityUtils;
 
 import com.google.common.truth.Expect;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import junit.framework.AssertionFailedError;
 
 import org.junit.After;
@@ -319,6 +321,7 @@ public class PackageManagerTest {
     private static final String MOCK_LAUNCHER_APK = SAMPLE_APK_BASE
             + "CtsContentMockLauncherTestApp.apk";
     private static final String NON_EXISTENT_PACKAGE_NAME = "android.content.cts.nonexistent.pkg";
+    private static final String INVALID_PACKAGE_NAME = "@null_invalid#name";
     private static final String STUB_PACKAGE_APK = SAMPLE_APK_BASE
             + "CtsSyncAccountAccessStubs.apk";
     private static final String STUB_PACKAGE_SPLIT =
@@ -1969,6 +1972,30 @@ public class PackageManagerTest {
         assertThat(installPackageWithResult(appInfo.getBaseCodePath())).isEqualTo("Success\n");
     }
 
+    @Test
+    public void testInstall_invalidInstallerName_installerNameRejected() {
+        installPackageWithInstallerPkgName(HELLO_WORLD_APK, INVALID_PACKAGE_NAME);
+        String dumpsys = SystemUtil.runShellCommand("dumpsys package " + HELLO_WORLD_PACKAGE_NAME);
+
+        String initiatingPackageName = parseDumpsysAndGet(dumpsys, "initiatingPackageName");
+        assertEquals(SHELL_PACKAGE_NAME, initiatingPackageName);
+
+        String installerPackageName = parseDumpsysAndGet(dumpsys, "installerPackageName");
+        assertNull(installerPackageName);
+    }
+
+    @Test
+    public void testInstall_nonExistentInstallerName_installerNameNull() {
+        installPackageWithInstallerPkgName(HELLO_WORLD_APK, NON_EXISTENT_PACKAGE_NAME);
+        String dumpsys = SystemUtil.runShellCommand("dumpsys package " + HELLO_WORLD_PACKAGE_NAME);
+
+        String initiatingPackageName = parseDumpsysAndGet(dumpsys, "initiatingPackageName");
+        assertEquals(SHELL_PACKAGE_NAME, initiatingPackageName);
+
+        String installerPackageName = parseDumpsysAndGet(dumpsys, "installerPackageName");
+        assertNull(installerPackageName);
+    }
+
     private String installPackageWithResult(String apkPath) {
         return SystemUtil.runShellCommand("pm install -t " + apkPath);
     }
@@ -1990,11 +2017,26 @@ public class PackageManagerTest {
                 "Success\n");
     }
 
-    private void installPackageWithInstallerPkgName(String apkPath, String installerName)
-            throws IOException {
+    private void installPackageWithInstallerPkgName(String apkPath, String installerName) {
         File file = new File(apkPath);
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 "pm install -i " + installerName + " -t -g " + file.getPath()));
+    }
+
+    private String parseDumpsysAndGet(String dumpsys, String key) {
+        if (dumpsys == null) {
+            Log.e(TAG, "Dumpsys is null");
+            return null;
+        }
+
+        Pattern pattern = Pattern.compile(key + "=(.*)");
+        Matcher matcher = pattern.matcher(dumpsys);
+        if (matcher.find()) {
+            String match = matcher.group(1);
+            return match.equals("null") ? null : match;
+        }
+        Log.e(TAG, "No match found for " + key);
+        return null;
     }
 
     private void uninstallPackage(String packageName) {
