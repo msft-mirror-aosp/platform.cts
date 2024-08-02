@@ -21,6 +21,8 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_AVAILABLE;
 import static android.content.Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE;
+import static android.cts.testapisreflection.TestApisReflectionKt.forceUpdateUserSetupComplete;
+import static android.cts.testapisreflection.TestApisReflectionKt.getUserType;
 import static android.os.Build.VERSION_CODES.P;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.S;
@@ -37,7 +39,6 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.KeyguardManager;
 import android.app.admin.DevicePolicyManager;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -553,7 +554,7 @@ public final class UserReference implements AutoCloseable {
                 try (PermissionContext p = TestApis.permissions()
                         .withPermission(CREATE_USERS)
                         .withPermissionOnVersionAtLeast(U, QUERY_USERS)) {
-                    String userTypeName = TestApisReflectionKt.getUserType(mUserManager);
+                    String userTypeName = getUserType(mUserManager);
                     if (userTypeName.equals("")) {
                         throw new NeneException("User does not exist " + this);
                     }
@@ -655,7 +656,7 @@ public final class UserReference implements AutoCloseable {
                 /* user= */ this, USER_SETUP_COMPLETE_KEY, complete ? 1 : 0);
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            TestApisReflectionKt.forceUpdateUserSetupComplete(devicePolicyManager, id());
+            forceUpdateUserSetupComplete(devicePolicyManager, id());
         }
     }
 
