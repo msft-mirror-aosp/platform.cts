@@ -138,7 +138,7 @@ class ThirtySixtyFpsPreviewFoVMatchTest(its_base_test.ItsBaseTest):
         # Validate preview frame rate
         preview_file_name_with_path = os.path.join(
             self.log_path, preview_file_name)
-        preview_frame_rate = video_processing_utils.get_average_frame_rate(
+        preview_frame_rate = video_processing_utils.get_avg_frame_rate(
             preview_file_name_with_path)
         if not math.isclose(preview_frame_rate, fps, abs_tol=_FPS_ATOL):
           logging.warning(
