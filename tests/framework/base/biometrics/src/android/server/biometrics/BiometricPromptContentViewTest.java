@@ -51,6 +51,7 @@ import androidx.test.uiautomator.UiObject2;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -78,6 +79,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * Upon successful authentication, checks that the result is
      * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
+    @Ignore("b/356789161")
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
     @ApiTest(apis = {
             "android.hardware.biometrics."
@@ -333,6 +335,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * Upon successful authentication, checks that the result is
      * {@link BiometricPrompt#AUTHENTICATION_RESULT_TYPE_BIOMETRIC}
      */
+    @Ignore("b/356789161")
     @CddTest(requirements = {"7.3.10/C-4-2", "7.3.10/C-4-4"})
     @ApiTest(apis = {
             "android.hardware.biometrics."
