@@ -48,6 +48,7 @@ import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.StrictMode;
+import android.os.UserManager;
 import android.os.StrictMode.ThreadPolicy.Builder;
 import android.os.StrictMode.ViolationInfo;
 import android.os.strictmode.CleartextNetworkViolation;
@@ -133,7 +134,7 @@ public class StrictModeTest {
             new GestureDetector.SimpleOnGestureListener();
     private static final String WM_CLASS_NAME = WindowManager.class.getSimpleName();
 
-    private Context getContext() {
+    private static Context getContext() {
         return ApplicationProvider.getApplicationContext();
     }
 
@@ -1534,6 +1535,8 @@ public class StrictModeTest {
 
     public static class TestWindowService extends WindowProviderService {
         private final TestToken mToken = new TestToken();
+        private final int mDisplayId = getContext().getSystemService(UserManager.class)
+                .getMainDisplayIdAssignedToUser();
 
         @Override
         public IBinder onBind(Intent intent) {
@@ -1543,6 +1546,11 @@ public class StrictModeTest {
         @Override
         public int getWindowType() {
             return TYPE_APPLICATION_OVERLAY;
+        }
+
+        @Override
+        public int getInitialDisplayId() {
+            return mDisplayId;
         }
 
         public class TestToken extends Binder {
