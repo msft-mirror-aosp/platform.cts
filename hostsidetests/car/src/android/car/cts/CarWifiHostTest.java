@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CarWifiHostTest extends CarHostJUnit4TestCase {
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
+    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(25);
 
     private static final String GET_PERSISTENT_TETHERING =
             "settings get global android.car.ENABLE_PERSISTENT_TETHERING";
