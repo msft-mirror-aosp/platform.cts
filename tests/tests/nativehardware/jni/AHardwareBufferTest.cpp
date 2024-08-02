@@ -651,4 +651,46 @@ TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
     }
 }
 
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, 0, -1, nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
+}
+
+
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, WithoutCPUAccessLock) {
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1,
+                                     nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
+}
+
 } // namespace android

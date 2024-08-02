@@ -41,7 +41,6 @@ import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -201,35 +200,6 @@ public class VirtualDevicePermissionTest {
                 .isEqualTo(PackageManager.PERMISSION_DENIED);
     }
 
-    @RequiresFlagsDisabled(Flags.FLAG_STREAM_PERMISSIONS)
-    @Test
-    public void permissionDialogDefaultParams_streamingDisabled_showsBlockedDialog() {
-        verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
-    }
-
-    @RequiresFlagsDisabled(Flags.FLAG_STREAM_PERMISSIONS)
-    @Test
-    public void permissionDialogAllowlisted_streamingDisabled_showsBlockedDialog() {
-        VirtualDeviceParams params = new VirtualDeviceParams.Builder()
-                .setAllowedActivities(
-                        Set.of(PERMISSION_TEST_ACTIVITY, getPermissionDialogComponentName()))
-                .build();
-        createVirtualDeviceAndDisplay(params);
-        verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
-    }
-
-    @RequiresFlagsDisabled(Flags.FLAG_STREAM_PERMISSIONS)
-    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
-    @Test
-    public void permissionDialogDynamicallyAllowlisted_streamingDisabled_showsBlockedDialog() {
-        mVirtualDevice.setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_ACTIVITY,
-                VirtualDeviceParams.DEVICE_POLICY_CUSTOM);
-        mVirtualDevice.addActivityPolicyExemption(PERMISSION_TEST_ACTIVITY);
-        mVirtualDevice.addActivityPolicyExemption(getPermissionDialogComponentName());
-        verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_STREAM_PERMISSIONS)
     @Test
     public void permissionDialogInBlocklist_streamingEnabled_showsBlockedDialog() {
         VirtualDeviceParams params = new VirtualDeviceParams.Builder()
@@ -239,7 +209,7 @@ public class VirtualDevicePermissionTest {
         verifyComponentShownAfterPermissionRequest(BLOCKED_ACTIVITY_COMPONENT);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_STREAM_PERMISSIONS, Flags.FLAG_DYNAMIC_POLICY})
+    @RequiresFlagsEnabled(Flags.FLAG_DYNAMIC_POLICY)
     @Test
     public void permissionDialogInDynamicBlocklist_streamingEnabled_showsBlockedDialog() {
         mVirtualDevice.setDevicePolicy(VirtualDeviceParams.POLICY_TYPE_ACTIVITY,
