@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.testapis.parser.signatures;
+package com.android.bedstead.testapisreflection.processor.signatures;
 
-import static com.android.bedstead.testapis.parser.utils.TypeUtils.typeForString;
+import com.android.bedstead.testapisreflection.processor.utils.TypeUtils;
 
 import java.util.Objects;
-
-import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
+import javax.lang.model.type.TypeMirror;
 
 /**
  * Represents a minimal representation of a field for comparison purposes
@@ -46,7 +45,7 @@ public final class FieldSignature {
 
             return new FieldSignature(/* frameworkClass= */ parts[0],
                     /* name= */ parts[1],
-                    /* type= */ typeForString(parts[2], types, elements));
+                    /* type= */ TypeUtils.typeForString(parts[2], types, elements));
         } catch (Exception e) {
             throw new RuntimeException(
                     "TestApisReflection: unable to parse Test Api field: " + fieldString, e);

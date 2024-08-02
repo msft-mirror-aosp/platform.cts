@@ -18,9 +18,7 @@ package com.android.bedstead.nene.devicepolicy;
 
 import static android.cts.testapisreflection.TestApisReflectionKt.forceRemoveActiveAdmin;
 import static android.cts.testapisreflection.TestApisReflectionKt.getDeviceOwnerType;
-import static android.cts.testapisreflection.TestApisReflectionKt.isRemovingAdmin;
 import static android.cts.testapisreflection.TestApisReflectionKt.setDeviceOwnerType;
-
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -78,7 +76,8 @@ public final class DeviceOwner extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            forceRemoveActiveAdmin(devicePolicyManager, mComponentName, mUser.id());
+            forceRemoveActiveAdmin(devicePolicyManager, mComponentName,
+                    mUser.id());
         } catch (SecurityException e) {
             if (e.getMessage().contains("Attempt to remove non-test admin")
                     && TEST_APP_APP_COMPONENT_FACTORY.equals(mPackage.appComponentFactory())) {
@@ -146,7 +145,8 @@ public final class DeviceOwner extends DevicePolicyController {
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)) {
-            setDeviceOwnerType(devicePolicyManager, mComponentName, deviceOwnerType);
+            setDeviceOwnerType(devicePolicyManager, mComponentName,
+                    deviceOwnerType);
         } catch (IllegalStateException e) {
             throw new NeneException("Failed to set the device owner type", e);
         }
