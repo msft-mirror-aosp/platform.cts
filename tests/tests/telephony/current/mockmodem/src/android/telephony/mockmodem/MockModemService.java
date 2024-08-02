@@ -169,7 +169,7 @@ public class MockModemService extends Service {
         try {
             sMockCentralizedNetworkAgent.setNetworkAgentInfo(sIRadioDataImpl, mNumOfPhone);
         } catch (Exception e) {
-            Log.e(TAG, "Exception error: " + e);
+            Log.e(TAG, "Failed to setNetworkAgentInfo", e);
         }
         mBinder = new LocalBinder();
     }
