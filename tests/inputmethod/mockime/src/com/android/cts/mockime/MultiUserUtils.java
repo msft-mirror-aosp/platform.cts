@@ -107,6 +107,14 @@ final class MultiUserUtils {
                 Manifest.permission.INTERACT_ACROSS_USERS_FULL);
     }
 
+    @Nullable
+    static String getSecureSettings(@NonNull UiAutomation uiAutomation, @NonNull String setting,
+            @NonNull UserHandle user) {
+        Objects.requireNonNull(user);
+        final var command = "settings get --user " + user.getIdentifier() + " secure " + setting;
+        return runShellCommandOrThrow(uiAutomation, command).stripTrailing();
+    }
+
     @NonNull
     static List<ApplicationExitInfo> getHistoricalProcessExitReasons(@NonNull Context context,
             @NonNull UiAutomation uiAutomation, @Nullable String packageName,
