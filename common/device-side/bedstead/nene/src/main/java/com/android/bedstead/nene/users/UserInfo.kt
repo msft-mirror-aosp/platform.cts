@@ -41,7 +41,7 @@ class UserInfo {
     val flags : Int?
     val lastLoggedInFingerprint : String?
 
-    private val proxy: UserInfoProxy
+    val proxy: UserInfoProxy
 
     constructor(proxy: UserInfoProxy) {
         this.proxy = proxy
