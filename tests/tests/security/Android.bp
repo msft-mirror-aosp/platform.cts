@@ -96,6 +96,7 @@ android_test {
         ":CtsPermissionBackupAppCert4History124",
         ":CtsAppThatRequestCustomCameraPermission",
         ":CtsWallpaperBalTestApp",
+        ":CtsEmptyApp",
     ],
 }
 
@@ -251,4 +252,9 @@ filegroup {
     srcs: [
         "test-cert-with-1-2-4-in-rotation-history",
     ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyApp",
+    manifest: "testdata/AndroidManifest_EmptyApp.xml",
 }

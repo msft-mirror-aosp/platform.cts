@@ -25,24 +25,37 @@ import static com.android.compatibility.common.util.SystemUtil.runWithShellPermi
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
+
 import static org.junit.Assume.assumeNoException;
 
 import android.content.Context;
+import android.content.pm.InstallSourceInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.platform.test.annotations.AsbSecurityTest;
 
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.SystemUtil;
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
 public class CVE_2024_0044 extends StsExtraBusinessLogicTestCase {
+
+    private static final String INVALID_PACKAGE_NAME = "@null_invalid#name";
+    private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/security/";
+    private static final String EMPTY_TEST_APP_PACKAGE_NAME =
+            "android.security.cts.emptyapp";
+    private static final String EMPTY_TEST_APP_APK = SAMPLE_APK_BASE + "CtsEmptyApp.apk";
 
     @AsbSecurityTest(cveBugId = 307532206)
     @Test
@@ -97,5 +110,23 @@ public class CVE_2024_0044 extends StsExtraBusinessLogicTestCase {
         } catch (Exception e) {
             assumeNoException(e);
         }
+    }
+
+    @AsbSecurityTest(cveBugId = 307532206)
+    @Test
+    public void testInstall_invalidInstallerName_installerNameRejected() throws Exception {
+        final PackageManager packageManager = getApplicationContext().getPackageManager();
+        installPackageWithInstallerPkgName(EMPTY_TEST_APP_APK, INVALID_PACKAGE_NAME);
+        InstallSourceInfo installSourceInfo = packageManager.getInstallSourceInfo(
+                EMPTY_TEST_APP_PACKAGE_NAME);
+        // installerName passed via ADB is set as initiatingPackageName
+        assertNull(installSourceInfo.getInitiatingPackageName());
+        assertNull(installSourceInfo.getInstallingPackageName());
+    }
+
+    private void installPackageWithInstallerPkgName(String apkPath, String installerName) {
+        File file = new File(apkPath);
+        assertEquals("Success\n", SystemUtil.runShellCommand(
+                "pm install -i " + installerName + " -t -g " + file.getPath()));
     }
 }
