@@ -16,16 +16,14 @@
 
 package android.mediaprovidertranscode.cts;
 
-import static androidx.test.InstrumentationRegistry.getContext;
-
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.assertFileContent;
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.assertTranscode;
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.executeShellCommand;
-import static android.mediaprovidertranscode.cts.TranscodeTestUtils.installAppWithStoragePermissions;
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.isAppIoBlocked;
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.open;
 import static android.mediaprovidertranscode.cts.TranscodeTestUtils.openFileAs;
-import static android.mediaprovidertranscode.cts.TranscodeTestUtils.uninstallApp;
+
+import static androidx.test.InstrumentationRegistry.getContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -41,17 +39,23 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.os.Process;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
-import android.os.UserHandle;
 import android.provider.MediaStore;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.install.lib.TestApp;
+
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -62,16 +66,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
 @RunWith(AndroidJUnit4.class)
 public class TranscodeTest {
-    private static final String TAG = "TranscodeTest";
     private static final File EXTERNAL_STORAGE_DIRECTORY
             = Environment.getExternalStorageDirectory();
     private static final File DIR_CAMERA
@@ -93,11 +89,11 @@ public class TranscodeTest {
     private static final String LEGACY_FILE_NAME = "TranscodeTestLegacy_" + NONCE + ".mp4";
 
     private static final TestApp TEST_APP_HEVC = new TestApp("TestAppHevc",
-            "android.mediaprovidertranscode.cts.testapp", 1, false,
+            "android.mediaprovidertranscode.cts.testapp.hevc", 1, false,
             "CtsTranscodeTestAppSupportsHevc.apk");
 
     private static final TestApp TEST_APP_SLOW_MOTION = new TestApp("TestAppSlowMotion",
-            "android.mediaprovidertranscode.cts.testapp", 1, false,
+            "android.mediaprovidertranscode.cts.testapp.sm", 1, false,
             "CtsTranscodeTestAppSupportsSlowMotion.apk");
 
     @Before
@@ -589,8 +585,6 @@ public class TranscodeTest {
         File modernFile = new File(DIR_CAMERA, HEVC_FILE_NAME);
         ParcelFileDescriptor pfdOriginal2 = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_HEVC);
-
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             ParcelFileDescriptor pfdOriginal1 = open(modernFile, false);
@@ -606,7 +600,6 @@ public class TranscodeTest {
                 pfdOriginal2.close();
             }
             modernFile.delete();
-            uninstallApp(TEST_APP_HEVC);
         }
     }
 
@@ -616,8 +609,6 @@ public class TranscodeTest {
         File modernFile = new File(DIR_CAMERA, HEVC_FILE_NAME);
         ParcelFileDescriptor pfdOriginal2 = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_SLOW_MOTION);
-
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             ParcelFileDescriptor pfdOriginal1 = open(modernFile, false);
@@ -633,7 +624,6 @@ public class TranscodeTest {
                 pfdOriginal2.close();
             }
             modernFile.delete();
-            uninstallApp(TEST_APP_HEVC);
         }
     }
 
@@ -643,8 +633,6 @@ public class TranscodeTest {
         String packageName = TEST_APP_SLOW_MOTION.getPackageName();
         ParcelFileDescriptor pfdOriginal2 = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_SLOW_MOTION);
-
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             ParcelFileDescriptor pfdOriginal1 = open(modernFile, false);
@@ -659,13 +647,13 @@ public class TranscodeTest {
 
             assertFileContent(modernFile, modernFile, pfdOriginal1, pfdOriginal2, true);
         } finally {
-            // Explicitly close PFD otherwise instrumention might crash when test_app is uninstalled
+            // Explicitly close PFD otherwise instrumentation might crash when test_app is
+            // uninstalled
             if (pfdOriginal2 != null) {
                 pfdOriginal2.close();
             }
             modernFile.delete();
             TranscodeTestUtils.resetAppCompat(packageName);
-            uninstallApp(TEST_APP_HEVC);
         }
     }
 
@@ -675,8 +663,6 @@ public class TranscodeTest {
         String packageName = TEST_APP_SLOW_MOTION.getPackageName();
         ParcelFileDescriptor pfdOriginal2 = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_SLOW_MOTION);
-
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             ParcelFileDescriptor pfdOriginal1 = open(modernFile, false);
@@ -694,7 +680,6 @@ public class TranscodeTest {
             }
             modernFile.delete();
             TranscodeTestUtils.resetAppCompat(packageName);
-            uninstallApp(TEST_APP_HEVC);
         }
     }
 
@@ -776,7 +761,6 @@ public class TranscodeTest {
         ParcelFileDescriptor pfdModernApp = null;
         ParcelFileDescriptor pfdModernAppPassingLegacyUid = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_SLOW_MOTION);
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             // pfdModernApp is for original content (without transcoding) since this is a modern
@@ -806,7 +790,6 @@ public class TranscodeTest {
                 pfdModernAppPassingLegacyUid.close();
             }
             modernFile.delete();
-            uninstallApp(TEST_APP_SLOW_MOTION);
         }
     }
 
@@ -821,7 +804,6 @@ public class TranscodeTest {
         ParcelFileDescriptor pfdLegacyApp = null;
         ParcelFileDescriptor pfdLegacyAppPassingModernUid = null;
         try {
-            installAppWithStoragePermissions(TEST_APP_HEVC);
             Uri uri = TranscodeTestUtils.stageHEVCVideoFile(modernFile);
 
             // pfdLegacyApp is for transcoded content since this is a legacy app.
@@ -851,7 +833,6 @@ public class TranscodeTest {
                 pfdLegacyAppPassingModernUid.close();
             }
             modernFile.delete();
-            uninstallApp(TEST_APP_HEVC);
         }
     }
 
