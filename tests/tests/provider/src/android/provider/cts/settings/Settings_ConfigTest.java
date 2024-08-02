@@ -232,10 +232,10 @@ public class Settings_ConfigTest {
     public void testSetAndGetStrings_sameNamespace() throws Exception {
         assertNull(Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1)).get(KEY1));
         assertNull(Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1)).get(KEY2));
-        Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                put(KEY1, VALUE1);
-                put(KEY2, VALUE2);
-            }});
+        Settings.Config.setStrings(NAMESPACE1, Map.of(
+                KEY1, VALUE1,
+                KEY2, VALUE2
+        ));
 
         assertEquals(VALUE1, Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1)).get(KEY1));
         assertEquals(VALUE2, Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY2)).get(KEY2));
@@ -247,10 +247,10 @@ public class Settings_ConfigTest {
      */
     @Test
     public void testSetAndGetStrings_differentNamespace() throws Exception {
-        Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                put(KEY1, VALUE1);
-                put(KEY2, VALUE2);
-            }});
+        Settings.Config.setStrings(NAMESPACE1, Map.of(
+                KEY1, VALUE1,
+                KEY2, VALUE2
+        ));
 
         assertNull(Settings.Config.getStrings(NAMESPACE2, Arrays.asList(KEY1)).get(KEY1));
         assertNull(Settings.Config.getStrings(NAMESPACE2, Arrays.asList(KEY2)).get(KEY2));
@@ -261,14 +261,14 @@ public class Settings_ConfigTest {
      */
     @Test
     public void testSetAndGetStrings_multipleNamespaces() throws Exception {
-        Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                put(KEY1, VALUE1);
-                put(KEY2, VALUE2);
-            }});
-        Settings.Config.setStrings(NAMESPACE2, new HashMap<String, String>() {{
-                put(KEY1, VALUE3);
-                put(KEY2, VALUE4);
-            }});
+        Settings.Config.setStrings(NAMESPACE1, Map.of(
+                KEY1, VALUE1,
+                KEY2, VALUE2
+        ));
+        Settings.Config.setStrings(NAMESPACE2, Map.of(
+                KEY1, VALUE3,
+                KEY2, VALUE4
+        ));
 
         Map<String, String> namespace1Values = Settings.Config
                 .getStrings(NAMESPACE1, Arrays.asList(KEY1, KEY2));
@@ -287,15 +287,15 @@ public class Settings_ConfigTest {
      */
     @Test
     public void testSetAndGetStrings_overrideValue() throws Exception {
-        Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                put(KEY1, VALUE1);
-                put(KEY2, VALUE2);
-            }});
+        Settings.Config.setStrings(NAMESPACE1, Map.of(
+                KEY1, VALUE1,
+                KEY2, VALUE2
+        ));
 
-        Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                put(KEY1, VALUE3);
-                put(KEY2, VALUE4);
-            }});
+        Settings.Config.setStrings(NAMESPACE1, Map.of(
+                KEY1, VALUE3,
+                KEY2, VALUE4
+        ));
 
         assertEquals(VALUE3, Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1)).get(KEY1));
         assertEquals(VALUE4, Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY2)).get(KEY2));
@@ -429,10 +429,10 @@ public class Settings_ConfigTest {
         Settings.Config.setMonitorCallback(sContentResolver,
                 Executors.newSingleThreadExecutor(), callback);
         try {
-            Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                    put(KEY1, VALUE1);
-                    put(KEY2, VALUE2);
-                }});
+            Settings.Config.setStrings(NAMESPACE1, Map.of(
+                    KEY1, VALUE1,
+                    KEY2, VALUE2
+            ));
         } catch (DeviceConfig.BadConfigException e) {
             fail("Callback set strings" + e.toString());
         }
@@ -465,10 +465,10 @@ public class Settings_ConfigTest {
         // Reading properties triggers the monitor callback function.
         Settings.Config.getStrings(NAMESPACE1, Arrays.asList(KEY1));
         try {
-            Settings.Config.setStrings(NAMESPACE1, new HashMap<String, String>() {{
-                    put(KEY1, VALUE1);
-                    put(KEY2, VALUE2);
-                }});
+            Settings.Config.setStrings(NAMESPACE1, Map.of(
+                    KEY1, VALUE1,
+                    KEY2, VALUE2
+            ));
         } catch (DeviceConfig.BadConfigException e) {
             fail("Callback set strings" + e.toString());
         }

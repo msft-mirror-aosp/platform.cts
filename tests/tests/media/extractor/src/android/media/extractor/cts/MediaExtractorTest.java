@@ -68,7 +68,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -506,43 +505,45 @@ public class MediaExtractorTest {
         // advances the reference set index, matches set 1 until it encounters set 2 etc.
         // At the end it verifies that all the reference sets were met.
         List<Map<Integer, AudioPresentation>> refPresentations = Arrays.asList(
-                new HashMap<Integer, AudioPresentation>() {{  // First set.
-                    put(10, new AudioPresentation.Builder(10)
+                // First set.
+                Map.of(
+                    10, new AudioPresentation.Builder(10)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(11, new AudioPresentation.Builder(11)
+                            .build(),
+                    11, new AudioPresentation.Builder(11)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasAudioDescription(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(12, new AudioPresentation.Builder(12)
+                            .build(),
+                    12, new AudioPresentation.Builder(12)
                             .setLocale(ULocale.FRENCH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                }},
-                new HashMap<Integer, AudioPresentation>() {{  // Second set.
-                    put(10, new AudioPresentation.Builder(10)
+                            .build()
+                ),
+                // Second set.
+                Map.of(
+                    10, new AudioPresentation.Builder(10)
                             .setLocale(ULocale.GERMAN)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasAudioDescription(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(11, new AudioPresentation.Builder(11)
+                            .build(),
+                    11, new AudioPresentation.Builder(11)
                             .setLocale(new ULocale("es"))
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasSpokenSubtitles(true)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                    put(12, new AudioPresentation.Builder(12)
+                            .build(),
+                    12, new AudioPresentation.Builder(12)
                             .setLocale(ULocale.ENGLISH)
                             .setMasteringIndication(AudioPresentation.MASTERED_FOR_SURROUND)
                             .setHasDialogueEnhancement(true)
-                            .build());
-                }},
+                            .build()
+                ),
                 null,
                 null
         );
