@@ -31,12 +31,19 @@ android_test {
     ],
 
     certificate: "media",
-    java_resources: [":CtsTranscodeTestAppSupportsHevc", ":CtsTranscodeTestAppSupportsSlowMotion"]
+    java_resources: [
+        ":CtsTranscodeTestAppSupportsHevc",
+        ":CtsTranscodeTestAppSupportsSlowMotion",
+    ],
+    data: [
+        ":CtsTranscodeTestAppSupportsHevc",
+        ":CtsTranscodeTestAppSupportsSlowMotion",
+    ],
 }
 
 android_test_helper_app {
     name: "CtsTranscodeTestAppSupportsHevc",
-    manifest: "helper/AndroidManifest.xml",
+    manifest: "helper/HEVCAndroidManifest.xml",
     sdk_version: "test_current",
     resource_dirs: ["helper/res-hevc"],
     srcs: [
@@ -49,7 +56,7 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "CtsTranscodeTestAppSupportsSlowMotion",
-    manifest: "helper/AndroidManifest.xml",
+    manifest: "helper/SMAndroidManifest.xml",
     sdk_version: "test_current",
     resource_dirs: ["helper/res-slow-motion"],
     srcs: [
