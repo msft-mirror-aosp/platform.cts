@@ -110,7 +110,7 @@ object GlobalSettings {
      *
      * See [.putString]
      */
-    fun putString(key: String, value: String) {
+    fun putString(key: String, value: String?) {
         TestApis.permissions().withPermission(Manifest.permission.WRITE_SECURE_SETTINGS).use {
             Settings.Global.putString(
                     TestApis.context().instrumentedContext().contentResolver, key, value)
