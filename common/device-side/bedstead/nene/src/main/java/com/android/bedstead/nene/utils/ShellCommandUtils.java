@@ -17,7 +17,6 @@
 package com.android.bedstead.nene.utils;
 
 import static android.os.Build.VERSION_CODES.S;
-import static android.cts.testapisreflection.TestApisReflectionKt.executeShellCommandRwe;
 import static java.time.temporal.ChronoUnit.SECONDS;
 
 import android.app.Instrumentation;
@@ -94,7 +93,7 @@ public final class ShellCommandUtils {
      */
     @SuppressWarnings("NewApi") // executeShellCommandRwe was @TestApi back to API 29, now public
     private static ParcelFileDescriptor[] executeShellCommandRweInternal(String command) {
-        return executeShellCommandRwe(uiAutomation(), command);
+        return uiAutomation().executeShellCommandRwe(command);
     }
 
     /**
