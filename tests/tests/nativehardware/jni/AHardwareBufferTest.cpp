@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/properties.h>
 #include <android/hardware_buffer.h>
 #include <android/log.h>
 #include <errno.h>
@@ -143,6 +144,10 @@ AHardwareBuffer_Desc GetDescription(AHardwareBuffer* buffer) {
     AHardwareBuffer_Desc description;
     AHardwareBuffer_describe(buffer, &description);
     return description;
+}
+
+bool IsSoftwareRenderer() {
+    return android::base::GetIntProperty("ro.cpuvulkan.version", 0) > 0;
 }
 
 } // namespace
@@ -653,6 +658,12 @@ TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
 
 // The test tried to lock buffer without cpu access
 TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
     const AHardwareBuffer_Desc ahbDesc {
         .width = 128,
         .height = 128,
@@ -674,6 +685,12 @@ TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
 
 // The test tried to lock buffer without cpu access
 TEST(AHardwareBufferTest, WithoutCPUAccessLock) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
     const AHardwareBuffer_Desc ahbDesc {
         .width = 128,
         .height = 128,
