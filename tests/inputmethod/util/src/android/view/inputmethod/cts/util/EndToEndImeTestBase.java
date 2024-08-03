@@ -34,7 +34,6 @@ import android.platform.test.annotations.AppModeInstant;
 import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -52,9 +51,6 @@ public class EndToEndImeTestBase {
 
     @Rule
     public TestName mTestName = new TestName();
-
-    protected final CtsTouchUtils mCtsTouchUtils = new CtsTouchUtils(
-            InstrumentationRegistry.getInstrumentation().getTargetContext());
 
     /** Command to get verbose ImeTracker logging state. */
     private static final String GET_VERBOSE_IME_TRACKER_LOGGING_CMD =

@@ -318,13 +318,15 @@ public class TestBase extends WifiJUnit4TestBase {
                 if (is24Ghz(scanResult.frequency)) {
                     if (scanResult.is80211azNtbResponder()) {
                         ap24Ghz11Az.put(scanResult.BSSID, scanResult);
-                    } else {
+                    }
+                    if (scanResult.is80211mcResponder()) {
                         ap24Ghz11Mc.put(scanResult.BSSID, scanResult);
                     }
                 } else if (is5Ghz(scanResult.frequency)) {
                     if (scanResult.is80211azNtbResponder()) {
                         ap5Ghz11Az.put(scanResult.BSSID, scanResult);
-                    } else {
+                    }
+                    if (scanResult.is80211mcResponder()) {
                         ap5Ghz11Mc.put(scanResult.BSSID, scanResult);
                     }
                 }
