@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.tile
+package com.android.bedstead.testapisreflection.processor.annotations
 
-import android.service.quicksettings.TileService
-
-/** Helper methods related to quick settings. */
-object QuickSettings {
-
-    /**
-     * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
-     */
-    fun isSupported(): Boolean {
-        return TileService.isQuickSettingsSupported()
-    }
-
+/**
+ * Entry point to TestApisReflection.
+ *
+ * <p>This should only be used in the TestApisReflection module, to trigger the generation of
+ * the TestApisReflection class.
+ */
+annotation class TestApisReflectionTrigger {
 }

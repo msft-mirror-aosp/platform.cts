@@ -16,10 +16,8 @@
 
 package com.android.bedstead.nene.devicepolicy;
 
-import static android.cts.testapisreflection.TestApisReflectionKt.setProfileOwnerOnOrganizationOwnedDevice;
 import static android.cts.testapisreflection.TestApisReflectionKt.forceRemoveActiveAdmin;
-import static android.cts.testapisreflection.TestApisReflectionKt.isRemovingAdmin;
-import static android.cts.testapisreflection.TestApisReflectionKt.setDeviceOwnerType;
+import static android.cts.testapisreflection.TestApisReflectionKt.setProfileOwnerOnOrganizationOwnedDevice;
 import static android.os.Build.VERSION_CODES.R;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 
