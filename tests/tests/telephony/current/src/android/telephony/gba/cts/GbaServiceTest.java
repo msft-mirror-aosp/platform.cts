@@ -46,6 +46,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RunWith(AndroidJUnit4.class)
 public final class GbaServiceTest {
@@ -182,6 +183,7 @@ public final class GbaServiceTest {
     private void runGbaFailCase(int r, String permission) {
         final AtomicBoolean isSuccess = new AtomicBoolean(false);
         final AtomicBoolean isFail = new AtomicBoolean(false);
+        final AtomicInteger gotReason = new AtomicInteger(-1);
         TelephonyManager.BootstrapAuthenticationCallback cb = new
                   TelephonyManager.BootstrapAuthenticationCallback() {
             @Override
@@ -194,8 +196,8 @@ public final class GbaServiceTest {
 
             @Override
             public void onAuthenticationFailure(int reason) {
-                assertEquals(reason, r);
                 synchronized (isFail) {
+                    gotReason.set(r);
                     isFail.set(true);
                     isFail.notify();
                 }
@@ -211,6 +213,7 @@ public final class GbaServiceTest {
         waitForMs(isFail, REQ_TIMEOUT);
 
         assertTrue(isFail.get());
+        assertEquals(r, gotReason.get());
         assertFalse(isSuccess.get());
     }
 

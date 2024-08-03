@@ -266,8 +266,21 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
                 f'{name_with_path}_ae_mode={ae_mode}_'
                 f'torch_strength={strength}_'
             )
+            # check if testing image size is supported
+            output_sizes = capture_request_utils.get_available_output_sizes(
+                _FORMAT_NAME, props)
+            if _IMG_SIZE in output_sizes:
+              width, height = _IMG_SIZE
+              logging.debug(
+                  'Testing with default image size: %dx%d', width, height
+              )
+            else:
+              width, height = output_sizes[len(output_sizes)//2]
+              logging.debug(
+                  'Default size not supported, testing with size: %dx%d',
+                  width, height
+              )
             # defining out_surfaces
-            width, height = _IMG_SIZE
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate

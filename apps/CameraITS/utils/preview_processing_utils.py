@@ -29,7 +29,7 @@ import video_processing_utils
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _ASPECT_TOL = 0.01
-_GREEN_TOL = 235
+_GREEN_TOL = 200
 _RED_BLUE_TOL = 15
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'

@@ -24,7 +24,6 @@ import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtens
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.layout.FoldingFeature.STATE_FLAT;
@@ -100,7 +99,7 @@ import java.util.stream.Collectors;
  * {@link SetRequestedOrientationRule} so that screen rotation is not blocked.
  *
  * Build/Install/Run:
- *     atest CtsWindowManagerJetpackTestCases:ExtensionWindowLayoutComponentTest
+ * atest CtsWindowManagerJetpackTestCases:ExtensionWindowLayoutComponentTest
  */
 @Presubmit
 @LargeTest
@@ -133,7 +132,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     private Context createContextWithNonActivityWindow() {
         Display defaultDisplay = mContext.getSystemService(DisplayManager.class).getDisplay(
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         Context windowContext = mContext.createWindowContext(defaultDisplay,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY, null /* options */);
 
@@ -189,7 +188,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_windowContext()
             throws Exception {
-        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(DEFAULT_DISPLAY)) {
+        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(
+                getMainDisplayId())) {
             Context context = createContextWithNonActivityWindow();
             changeDisplayMetricThenVerifyWindowLayout(context, displaySession);
         }
@@ -204,7 +204,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_wrappedWindowContext()
             throws Exception {
-        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(DEFAULT_DISPLAY)) {
+        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(
+                getMainDisplayId())) {
             Context context = createContextWithNonActivityWindow();
             Context wrappedContext = new ContextWrapper(context);
             WindowLayoutInfo windowLayoutInfoFromContext = getExtensionWindowLayoutInfo(context);
@@ -393,7 +394,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
             "androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     public void testGetWindowLayoutInfo_displayMetricsChanged_windowLayoutUpdates()
             throws Exception {
-        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(DEFAULT_DISPLAY)) {
+        try (DisplayMetricsSession displaySession = new DisplayMetricsSession(
+                getMainDisplayId())) {
             TestActivity testActivity = startFullScreenActivityNewTask(
                     TestActivity.class, null /* activityId */);
             TestValueCountConsumer<WindowLayoutInfo> windowLayoutInfoConsumer =
@@ -446,7 +448,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     public void testGetWindowLayoutInfo_enterExitPip_windowLayoutInfoMatches()
             throws InterruptedException {
         TestConfigChangeHandlingActivity configHandlingActivity = startActivityNewTask(
-                        TestConfigChangeHandlingActivity.class, null);
+                TestConfigChangeHandlingActivity.class, null);
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
         assumeHasDisplayFeatures(mWindowLayoutInfo);
 
@@ -519,7 +521,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         Context windowContext = createContextWithNonActivityWindow();
         WindowLayoutInfo firstWindowLayoutContext = getExtensionWindowLayoutInfo(windowContext);
         Rect windowContextBounds = windowContext.getSystemService(
-                        WindowManager.class).getCurrentWindowMetrics().getBounds();
+                WindowManager.class).getCurrentWindowMetrics().getBounds();
 
         final Rect firstBounds = getActivityBounds(activity);
         final Rect firstMaximumBounds = getMaximumActivityBounds(activity);
@@ -647,8 +649,8 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
                 if (extensionFoldingFeature.getBounds().equals(sidecarDisplayFeature.getRect())
                         && extensionFoldingFeature.getType() == sidecarDisplayFeature.getType()
                         && areExtensionAndSidecarDeviceStateEqual(
-                                extensionFoldingFeature.getState(),
-                                sidecarInterface.getDeviceState().posture)) {
+                        extensionFoldingFeature.getState(),
+                        sidecarInterface.getDeviceState().posture)) {
                     // Match found
                     extensionDisplayFeatureMatched[extensionIndex] = true;
                     sidecarDisplayFeatureMatched[sidecarIndex] = true;
@@ -831,11 +833,12 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     /**
      * Verifies that the inputClass has the expected access modifiers, function name,
      * input parameters, and return type. Fails if any are not what is expected.
-     * @param inputClass: The Class in Question; Type: Class.
-     * @param methodName: The Name of the Method to Check; Type: String.
-     * @param parameterList: A list of classes representing the input parameter's Data Types.
-     * @param returnType: The return type of the method; Type: Class.
-     * @throws NoSuchMethodException: If No Class found, throws a NoSuchMethodException error.
+     *
+     * @param inputClass    The Class in Question; Type: Class.
+     * @param methodName    The Name of the Method to Check; Type: String.
+     * @param parameterList A list of classes representing the input parameter's Data Types.
+     * @param returnType    The return type of the method; Type: Class.
+     * @throws NoSuchMethodException If No Class found, throws a NoSuchMethodException error.
      */
     public void validateClassInfo(Class<?> inputClass, String methodName, Class<?>[] parameterList,
             Class<?> returnType) throws NoSuchMethodException {

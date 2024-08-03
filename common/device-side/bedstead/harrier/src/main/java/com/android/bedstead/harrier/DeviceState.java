@@ -20,28 +20,20 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.os.Build.VERSION.SDK_INT;
 
 import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip;
-import static com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip;
-import static com.android.bedstead.harrier.annotations.EnsureHasAccount.DEFAULT_ACCOUNT_KEY;
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
 import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
-import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_BLUETOOTH;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
-import static com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP;
-import static com.android.queryable.queries.ActivityQuery.activity;
-import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 
-import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.android.bedstead.enterprise.DeviceAdminComponent;
@@ -51,68 +43,30 @@ import com.android.bedstead.enterprise.ProfileOwnersComponent;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
-import com.android.bedstead.harrier.annotations.EnsureBluetoothEnabled;
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceDisabled;
-import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled;
-import com.android.bedstead.harrier.annotations.EnsureGlobalSettingSet;
 import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
-import com.android.bedstead.harrier.annotations.EnsureHasAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts;
-import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService;
-import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled;
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.EnsurePolicyOperationUnsafe;
-import com.android.bedstead.harrier.annotations.EnsurePropertySet;
-import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet;
-import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp;
-import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission;
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled;
-import com.android.bedstead.harrier.annotations.EnsureUsingDisplayTheme;
-import com.android.bedstead.harrier.annotations.EnsureUsingScreenOrientation;
-import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
-import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.FailureMode;
-import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser;
-import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.RequirePackageInstalled;
-import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled;
-import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent;
-import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
-import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
-import com.android.bedstead.harrier.annotations.RequireTelephonySupport;
-import com.android.bedstead.harrier.annotations.TestTag;
 import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
-import com.android.bedstead.multiuser.UserRestrictionsComponent;
+import com.android.bedstead.harrier.components.AccountsComponent;
+import com.android.bedstead.harrier.components.TestAppsComponent;
 import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
-import com.android.bedstead.nene.devicepolicy.CommonDevicePolicy;
 import com.android.bedstead.nene.devicepolicy.DevicePolicy;
-import com.android.bedstead.nene.display.Display;
-import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.logcat.SystemServerException;
-import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.nene.utils.FailureDumper;
-import com.android.bedstead.nene.utils.ResolveInfoWrapper;
 import com.android.bedstead.nene.utils.StringLinesDiff;
 import com.android.bedstead.nene.utils.Tags;
 import com.android.bedstead.permissions.PermissionContext;
@@ -121,8 +75,6 @@ import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.remotedpc.RemoteDevicePolicyManagerRoleHolder;
 import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
-import com.android.bedstead.testapp.NotFoundException;
-import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
 import com.android.bedstead.testapp.TestAppQueryBuilder;
@@ -131,7 +83,6 @@ import com.android.queryable.annotations.Query;
 
 import junit.framework.AssertionFailedError;
 
-import org.junit.Assume;
 import org.junit.AssumptionViolatedException;
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
@@ -149,11 +100,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -195,8 +143,6 @@ public final class DeviceState extends HarrierRule {
     private final int mMinSdkVersion;
     private int mMinSdkVersionCurrentTest;
 
-    private boolean mNextSafetyOperationSet = false;
-
     private static final String TV_PROFILE_TYPE_NAME = "com.android.tv.profile";
     private static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
     private static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
@@ -221,8 +167,6 @@ public final class DeviceState extends HarrierRule {
 
     private ExecutorService mTestExecutor;
     private Thread mTestThread;
-
-    private final PackageManager mPackageManager = sContext.getPackageManager();
 
     private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
 
@@ -258,12 +202,7 @@ public final class DeviceState extends HarrierRule {
         mProfileOwnersComponent = mLocator.get(ProfileOwnersComponent.class);
         mDeviceAdminComponent = mLocator.get(DeviceAdminComponent.class);
         mTestAppsComponent = mLocator.get(TestAppsComponent.class);
-        mUserRestrictionsComponent = mLocator.get(UserRestrictionsComponent.class);
-        mContentTestApp = testApps()
-                .query()
-                .wherePackageName()
-                .isEqualTo("com.android.ContentTestApp")
-                .get();
+        mAccountsComponent = mLocator.get(AccountsComponent.class);
         mMaxTestDuration = maxTestDuration;
         mSkipTestTeardown = TestApis.instrumentation().arguments().getBoolean(
                 SKIP_TEST_TEARDOWN_KEY, false);
@@ -316,14 +255,6 @@ public final class DeviceState extends HarrierRule {
         Log.i(LOG_TAG, "Releasing resources");
         mLocator.releaseResources();
         mRegisteredBroadcastReceivers.clear();
-        mOriginalProperties.clear();
-        mOriginalGlobalSettings.clear();
-        mOriginalSecureSettings.clear();
-        mTemporaryContentSuggestionsServiceSet.clear();
-        mOriginalDefaultContentSuggestionsServiceEnabled.clear();
-        mCreatedAccounts.clear();
-        mAccounts.clear();
-        mAccountAuthenticators.clear();
 
         Log.i(LOG_TAG, "Shutting down test thread executor");
         mTestExecutor.shutdown();
@@ -438,96 +369,9 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
-        //TODO b/345391598 move handling annotations to AnnotationExecutors
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
         for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
-
-            Class<? extends Annotation> annotationType = annotation.annotationType();
-
-            if (annotation instanceof EnsureDefaultContentSuggestionsServiceEnabled ensureDefaultContentSuggestionsServiceEnabledAnnotation) {
-
-                ensureDefaultContentSuggestionsServiceEnabled(
-                        ensureDefaultContentSuggestionsServiceEnabledAnnotation.onUser(),
-                        /* enabled= */ true
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureDefaultContentSuggestionsServiceDisabled ensureDefaultContentSuggestionsServiceDisabledAnnotation) {
-
-                ensureDefaultContentSuggestionsServiceEnabled(
-                        ensureDefaultContentSuggestionsServiceDisabledAnnotation.onUser(),
-                        /* enabled= */ false
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasTestContentSuggestionsService ensureHasTestContentSuggestionsServiceAnnotation) {
-                ensureHasTestContentSuggestionsService(
-                        ensureHasTestContentSuggestionsServiceAnnotation.onUser());
-                continue;
-            }
-
-            if (annotation instanceof TestTag testTagAnnotation) {
-                Tags.addTag(testTagAnnotation.value());
-            }
-
-            if (annotation instanceof EnsureTestAppInstalled ensureTestAppInstalledAnnotation) {
-                mTestAppsComponent.ensureTestAppInstalled(
-                        ensureTestAppInstalledAnnotation.key(),
-                        ensureTestAppInstalledAnnotation.query(),
-                        resolveUserTypeToUser(ensureTestAppInstalledAnnotation.onUser()),
-                        ensureTestAppInstalledAnnotation.isPrimary()
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureTestAppHasPermission ensureTestAppHasPermissionAnnotation) {
-                mTestAppsComponent.ensureTestAppHasPermission(
-                        ensureTestAppHasPermissionAnnotation.testAppKey(),
-                        ensureTestAppHasPermissionAnnotation.value(),
-                        ensureTestAppHasPermissionAnnotation.minVersion(),
-                        ensureTestAppHasPermissionAnnotation.maxVersion(),
-                        ensureTestAppHasPermissionAnnotation.failureMode()
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureTestAppDoesNotHavePermission ensureTestAppDoesNotHavePermissionAnnotation) {
-                mTestAppsComponent.ensureTestAppDoesNotHavePermission(
-                        ensureTestAppDoesNotHavePermissionAnnotation.testAppKey(),
-                        ensureTestAppDoesNotHavePermissionAnnotation.value(),
-                        ensureTestAppDoesNotHavePermissionAnnotation.failureMode()
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureTestAppHasAppOp ensureTestAppHasAppOpAnnotation) {
-                mTestAppsComponent.ensureTestAppHasAppOp(
-                        ensureTestAppHasAppOpAnnotation.testAppKey(),
-                        ensureTestAppHasAppOpAnnotation.value(),
-                        ensureTestAppHasAppOpAnnotation.minVersion(),
-                        ensureTestAppHasAppOpAnnotation.maxVersion()
-                );
-                continue;
-            }
-
-            if (annotation instanceof RequireSystemServiceAvailable requireSystemServiceAvailableAnnotation) {
-                requireSystemServiceAvailable(requireSystemServiceAvailableAnnotation.value(),
-                        requireSystemServiceAvailableAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireTargetSdkVersion requireTargetSdkVersionAnnotation) {
-
-                requireTargetSdkVersion(
-                        requireTargetSdkVersionAnnotation.min(),
-                        requireTargetSdkVersionAnnotation.max(),
-                        requireTargetSdkVersionAnnotation.failureMode());
-
-                continue;
-            }
 
             if (annotation instanceof RequireSdkVersion requireSdkVersionAnnotation) {
 
@@ -547,180 +391,12 @@ public final class DeviceState extends HarrierRule {
                 continue;
             }
 
-            if (annotation instanceof UsesAnnotationExecutor) {
-                usesAnnotationExecutor((UsesAnnotationExecutor) annotation);
-                continue;
-            }
-
-            if (annotation instanceof RequirePackageInstalled requirePackageInstalledAnnotation) {
-                requirePackageInstalled(
-                        requirePackageInstalledAnnotation.value(),
-                        requirePackageInstalledAnnotation.onUser(),
-                        requirePackageInstalledAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequirePackageNotInstalled requirePackageNotInstalledAnnotation) {
-                requirePackageNotInstalled(
-                        requirePackageNotInstalledAnnotation.value(),
-                        requirePackageNotInstalledAnnotation.onUser(),
-                        requirePackageNotInstalledAnnotation.failureMode()
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsurePackageNotInstalled ensurePackageNotInstalledAnnotation) {
-                ensurePackageNotInstalled(
-                        ensurePackageNotInstalledAnnotation.value(),
-                        ensurePackageNotInstalledAnnotation.onUser()
-                );
-                continue;
-            }
-
-            if (annotation instanceof EnsureBluetoothEnabled) {
-                ensureBluetoothEnabled();
-                continue;
-            }
-
-            if (annotation instanceof EnsureBluetoothDisabled) {
-                ensureBluetoothDisabled();
-                continue;
-            }
-
-            if (annotation instanceof EnsureWifiEnabled) {
-                ensureWifiEnabled();
-                continue;
-            }
-
-            if (annotation instanceof EnsureWifiDisabled) {
-                ensureWifiDisabled();
-                continue;
-            }
-
-            if (annotation instanceof EnsureSecureSettingSet ensureSecureSettingSetAnnotation) {
-                ensureSecureSettingSet(
-                        ensureSecureSettingSetAnnotation.onUser(),
-                        ensureSecureSettingSetAnnotation.key(),
-                        ensureSecureSettingSetAnnotation.value());
-                continue;
-            }
-
-            if (annotation instanceof EnsurePropertySet ensurePropertySetAnnotation) {
-                ensurePropertySet(
-                        ensurePropertySetAnnotation.key(), ensurePropertySetAnnotation.value());
-                continue;
-            }
-
-            if (annotation instanceof EnsureUsingDisplayTheme ensureUsingDisplayTheme) {
-                ensureUsingDisplayTheme(ensureUsingDisplayTheme.theme());
-                continue;
-            }
-
-            if (annotation instanceof EnsureUsingScreenOrientation ensureUsingScreenOrientation) {
-                ensureUsingScreenOrientation(ensureUsingScreenOrientation.orientation());
-                continue;
-            }
-
-            if (annotation instanceof EnsureGlobalSettingSet ensureGlobalSettingSetAnnotation) {
-                ensureGlobalSettingSet(
-                        ensureGlobalSettingSetAnnotation.key(),
-                        ensureGlobalSettingSetAnnotation.value());
-                continue;
-            }
-
+            Class<? extends Annotation> annotationType = annotation.annotationType();
             UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
                     annotationType.getAnnotation(UsesAnnotationExecutor.class);
             if (usesAnnotationExecutorAnnotation != null) {
                 var executor = usesAnnotationExecutor(usesAnnotationExecutorAnnotation);
                 executor.applyAnnotation(annotation);
-                continue;
-            }
-
-
-            if (annotation instanceof EnsureHasAccountAuthenticator ensureHasAccountAuthenticatorAnnotation) {
-                ensureHasAccountAuthenticator(ensureHasAccountAuthenticatorAnnotation.onUser());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasAccount ensureHasAccountAnnotation) {
-                ensureHasAccount(
-                        ensureHasAccountAnnotation.onUser(),
-                        ensureHasAccountAnnotation.key(),
-                        ensureHasAccountAnnotation.features());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasAccounts ensureHasAccountsAnnotation) {
-                ensureHasAccounts(ensureHasAccountsAnnotation.value());
-                continue;
-            }
-
-            if (annotation instanceof EnsureHasNoAccounts ensureHasNoAccountsAnnotation) {
-                ensureHasNoAccounts(ensureHasNoAccountsAnnotation.onUser(),
-                        ensureHasNoAccountsAnnotation.allowPreCreatedAccounts(),
-                        ensureHasNoAccountsAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireQuickSettingsSupport requireQuickSettingsSupport) {
-                checkFailOrSkip("Device does not have quick settings",
-                        TestApis.quickSettings().isSupported(),
-                        requireQuickSettingsSupport.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireHasDefaultBrowser requireHasDefaultBrowser) {
-                UserReference user =
-                        resolveUserTypeToUser(requireHasDefaultBrowser.forUser());
-
-                checkFailOrSkip("User: " + user + " does not have a default browser",
-                        TestApis.roles().hasBrowserRoleHolderAsUser(user),
-                        requireHasDefaultBrowser.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireTelephonySupport requireTelephonySupport) {
-                checkFailOrSkip("Device does not have telephony support",
-                        mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
-                        requireTelephonySupport.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsurePolicyOperationUnsafe ensurePolicyOperationUnsafeAnnotation) {
-                ensurePolicyOperationUnsafe(ensurePolicyOperationUnsafeAnnotation.operation(),
-                        ensurePolicyOperationUnsafeAnnotation.reason());
-
-                continue;
-            }
-
-            if (annotation instanceof RequirePackageRespondsToIntent requirePackageRespondsToIntentAnnotation) {
-                requirePackageRespondsToIntent(
-                        requirePackageRespondsToIntentAnnotation.intent(),
-                        resolveUserTypeToUser(requirePackageRespondsToIntentAnnotation.user()),
-                        requirePackageRespondsToIntentAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof RequireNoPackageRespondsToIntent requireNoPackageRespondsToIntentAnnotation) {
-                requireNoPackageRespondsToIntent(
-                        requireNoPackageRespondsToIntentAnnotation.intent(),
-                        resolveUserTypeToUser(requireNoPackageRespondsToIntentAnnotation.user()),
-                        requireNoPackageRespondsToIntentAnnotation.failureMode());
-                continue;
-            }
-
-            if (annotation instanceof EnsurePackageRespondsToIntent ensurePackageRespondsToIntentAnnotation) {
-                ensurePackageRespondsToIntent(
-                        ensurePackageRespondsToIntentAnnotation.intent(),
-                        resolveUserTypeToUser(ensurePackageRespondsToIntentAnnotation.user()),
-                        ensurePackageRespondsToIntentAnnotation.failureMode());
-                continue;
-            }
-
-            if(annotation instanceof EnsureNoPackageRespondsToIntent ensureNoPackageRespondsToIntentAnnotation) {
-                ensureNoPackageRespondsToIntent(
-                        ensureNoPackageRespondsToIntentAnnotation.intent(),
-                        ensureNoPackageRespondsToIntentAnnotation.user());
                 continue;
             }
         }
@@ -959,18 +635,6 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    private void requireTargetSdkVersion(
-            int min, int max, FailureMode failureMode) {
-        int targetSdkVersion = TestApis.packages().instrumented().targetSdkVersion();
-
-        checkFailOrSkip(
-                "TargetSdkVersion must be between " + min + " and " + max
-                        + " (inclusive) (version is " + targetSdkVersion + ")",
-                min <= targetSdkVersion && max >= targetSdkVersion,
-                failureMode
-        );
-    }
-
     private void requireSdkVersion(int min, int max, FailureMode failureMode) {
         requireSdkVersion(min, max, failureMode,
                 "Sdk version must be between " + min + " and " + max + " (inclusive)");
@@ -988,31 +652,14 @@ public final class DeviceState extends HarrierRule {
 
     private static final String LOG_TAG = "DeviceState";
 
-    private static final Context sContext = TestApis.context().instrumentedContext();
     private final UsersComponent mUsersComponent;
     private final EnterpriseComponent mEnterpriseComponent;
     private final DeviceOwnerComponent mDeviceOwnerComponent;
     private final ProfileOwnersComponent mProfileOwnersComponent;
     private final DeviceAdminComponent mDeviceAdminComponent;
     private final TestAppsComponent mTestAppsComponent;
-    private final UserRestrictionsComponent mUserRestrictionsComponent;
+    private final AccountsComponent mAccountsComponent;
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
-    private Boolean mOriginalBluetoothEnabled;
-    private DisplayProperties.Theme mOriginalDisplayTheme;
-    private DisplayProperties.ScreenOrientation mOriginalScreenOrientation;
-
-    private Boolean mOriginalWifiEnabled;
-    private final Map<String, String> mOriginalProperties = new HashMap<>();
-    private final Map<String, String> mOriginalGlobalSettings = new HashMap<>();
-    private final Map<UserReference, Boolean> mOriginalDefaultContentSuggestionsServiceEnabled =
-            new HashMap<>();
-    private final Set<UserReference> mTemporaryContentSuggestionsServiceSet =
-            new HashSet<>();
-    private final Map<UserReference, Map<String, String>> mOriginalSecureSettings = new HashMap<>();
-    private final Set<AccountReference> mCreatedAccounts = new HashSet<>();
-    private final Map<String, AccountReference> mAccounts = new HashMap<>();
-    private final Map<UserReference, RemoteAccountAuthenticator> mAccountAuthenticators =
-            new HashMap<>();
 
     /**
      * Get the {@link UserReference} of the work profile for the initial user.
@@ -1450,33 +1097,11 @@ public final class DeviceState extends HarrierRule {
     }
 
     void teardownNonShareableState() {
-        // TODO(b/329570492): Support sharing of theme in bedstead across tests
-        if (mOriginalDisplayTheme != null) {
-            Display.INSTANCE.setDisplayTheme(mOriginalDisplayTheme);
-            mOriginalDisplayTheme = null;
-        }
-
-        // TODO(b/329570492): Support sharing of orientation in bedstead across tests
-        if (mOriginalScreenOrientation != null) {
-            Display.INSTANCE.setScreenOrientation(mOriginalScreenOrientation);
-            mOriginalScreenOrientation = null;
-        }
-
         for (BlockingBroadcastReceiver broadcastReceiver : mRegisteredBroadcastReceivers) {
             broadcastReceiver.unregisterQuietly();
         }
         mRegisteredBroadcastReceivers.clear();
-        mAccounts.clear();
-        mAccountAuthenticators.clear();
-
         mLocator.teardownNonShareableState();
-
-        if (mNextSafetyOperationSet) {
-            ensurePolicyOperationUnsafe(
-                    CommonDevicePolicy.DevicePolicyOperation.OPERATION_NONE,
-                    CommonDevicePolicy.OperationSafetyReason.OPERATION_SAFETY_REASON_NONE);
-            mNextSafetyOperationSet = false;
-        }
     }
 
     void teardown() {
@@ -1485,50 +1110,6 @@ public final class DeviceState extends HarrierRule {
     }
 
     private void teardownShareableState() {
-        if (!mCreatedAccounts.isEmpty()) {
-            mCreatedAccounts.forEach(AccountReference::remove);
-
-            TestApis.devicePolicy().calculateHasIncompatibleAccounts();
-        }
-
-        if (mOriginalBluetoothEnabled != null) {
-            TestApis.bluetooth().setEnabled(mOriginalBluetoothEnabled);
-            mOriginalBluetoothEnabled = null;
-        }
-
-        if (mOriginalWifiEnabled != null) {
-            TestApis.wifi().setEnabled(mOriginalWifiEnabled);
-            mOriginalWifiEnabled = null;
-        }
-
-        for (Map.Entry<UserReference, Boolean> s
-                : mOriginalDefaultContentSuggestionsServiceEnabled.entrySet()) {
-            TestApis.content().suggestions().setDefaultServiceEnabled(s.getKey(), s.getValue());
-        }
-        mOriginalDefaultContentSuggestionsServiceEnabled.clear();
-
-        for (UserReference u : mTemporaryContentSuggestionsServiceSet) {
-            TestApis.content().suggestions().clearTemporaryService(u);
-        }
-        mTemporaryContentSuggestionsServiceSet.clear();
-
-        for (Map.Entry<String, String> s : mOriginalGlobalSettings.entrySet()) {
-            TestApis.settings().global().putString(s.getKey(), s.getValue());
-        }
-        mOriginalGlobalSettings.clear();
-
-        for (Map.Entry<String, String> s : mOriginalProperties.entrySet()) {
-            TestApis.properties().set(s.getKey(), s.getValue());
-        }
-        mOriginalProperties.clear();
-
-        for (Map.Entry<UserReference, Map<String, String>> s : mOriginalSecureSettings.entrySet()) {
-            for (Map.Entry<String, String> s2 : s.getValue().entrySet()) {
-                TestApis.settings().secure().putString(s.getKey(), s2.getKey(), s2.getValue());
-            }
-        }
-        mOriginalSecureSettings.clear();
-
         TestApis.activities().clearAllActivities();
         mLocator.teardownShareableState();
     }
@@ -1602,52 +1183,6 @@ public final class DeviceState extends HarrierRule {
         return mDeviceAdminComponent.deviceAdmin(key);
     }
 
-    private void requirePackageInstalled(
-            String packageName, UserType forUser, FailureMode failureMode) {
-        Package pkg = TestApis.packages().find(packageName);
-
-        if (forUser.equals(UserType.ANY)) {
-            checkFailOrSkip(
-                    packageName + " is required to be installed",
-                    !pkg.installedOnUsers().isEmpty(),
-                    failureMode);
-        } else {
-            checkFailOrSkip(
-                    packageName + " is required to be installed for " + forUser,
-                    pkg.installedOnUser(resolveUserTypeToUser(forUser)),
-                    failureMode);
-        }
-    }
-
-    private void requirePackageNotInstalled(
-            String packageName, UserType forUser, FailureMode failureMode) {
-        Package pkg = TestApis.packages().find(packageName);
-
-        if (forUser.equals(UserType.ANY)) {
-            checkFailOrSkip(
-                    packageName + " is required to be not installed",
-                    pkg.installedOnUsers().isEmpty(),
-                    failureMode);
-        } else {
-            checkFailOrSkip(
-                    packageName + " is required to be not installed for " + forUser,
-                    !pkg.installedOnUser(resolveUserTypeToUser(forUser)),
-                    failureMode);
-        }
-    }
-
-    private void ensurePackageNotInstalled(
-            String packageName, UserType forUser) {
-        Package pkg = TestApis.packages().find(packageName);
-
-        if (forUser.equals(UserType.ANY)) {
-            pkg.uninstallFromAllUsers();
-        } else {
-            UserReference user = resolveUserTypeToUser(forUser);
-            pkg.uninstall(user);
-        }
-    }
-
     /**
      * Behaves like {@link #dpc()} except that when running on a delegate, this will return
      * the delegating DPC not the delegate.
@@ -1711,107 +1246,6 @@ public final class DeviceState extends HarrierRule {
         return mTestAppsComponent.testApp(key);
     }
 
-    private void ensureBluetoothEnabled() {
-        // TODO(b/220306133): bluetooth from background
-        Assume.assumeTrue("Can only configure bluetooth from foreground",
-                TestApis.users().instrumented().isForeground());
-
-        mUserRestrictionsComponent.ensureDoesNotHaveUserRestriction(
-                DISALLOW_BLUETOOTH,
-                UserType.ANY
-        );
-
-        if (mOriginalBluetoothEnabled == null) {
-            mOriginalBluetoothEnabled = TestApis.bluetooth().isEnabled();
-        }
-        TestApis.bluetooth().setEnabled(true);
-    }
-
-    private void ensureBluetoothDisabled() {
-        Assume.assumeTrue("Can only configure bluetooth from foreground",
-                TestApis.users().instrumented().isForeground());
-
-        if (mOriginalBluetoothEnabled == null) {
-            mOriginalBluetoothEnabled = TestApis.bluetooth().isEnabled();
-        }
-        TestApis.bluetooth().setEnabled(false);
-    }
-
-    private void ensureWifiEnabled() {
-        if (mOriginalWifiEnabled == null) {
-            mOriginalWifiEnabled = TestApis.wifi().isEnabled();
-        }
-        TestApis.wifi().setEnabled(true);
-    }
-
-    private void ensureWifiDisabled() {
-        if (mOriginalWifiEnabled == null) {
-            mOriginalWifiEnabled = TestApis.wifi().isEnabled();
-        }
-        TestApis.wifi().setEnabled(false);
-    }
-
-    private void ensureGlobalSettingSet(String key, String value) {
-        if (!mOriginalGlobalSettings.containsKey(key)) {
-            mOriginalGlobalSettings.put(key, TestApis.settings().global().getString(key));
-        }
-
-        TestApis.settings().global().putString(key, value);
-    }
-
-    private void ensureSecureSettingSet(UserType user, String key, String value) {
-        ensureSecureSettingSet(resolveUserTypeToUser(user), key, value);
-    }
-
-    private void ensureSecureSettingSet(UserReference user, String key, String value) {
-        if (!mOriginalSecureSettings.containsKey(user)) {
-            mOriginalSecureSettings.put(user, new HashMap<>());
-        }
-        if (!mOriginalSecureSettings.get(user).containsKey(key)) {
-            mOriginalSecureSettings.get(user)
-                    .put(key, TestApis.settings().secure().getString(user, key));
-        }
-
-        TestApis.settings().secure().putString(user, key, value);
-    }
-
-    private void ensureDefaultContentSuggestionsServiceEnabled(UserType user, boolean enabled) {
-        ensureDefaultContentSuggestionsServiceEnabled(resolveUserTypeToUser(user), enabled);
-    }
-
-    private void ensureDefaultContentSuggestionsServiceEnabled(UserReference user,
-            boolean enabled) {
-        boolean currentValue = TestApis.content().suggestions().defaultServiceEnabled(user);
-
-        if (currentValue == enabled) {
-            return;
-        }
-
-        if (!mOriginalDefaultContentSuggestionsServiceEnabled.containsKey(user)) {
-            mOriginalDefaultContentSuggestionsServiceEnabled.put(user, currentValue);
-        }
-
-        TestApis.content().suggestions().setDefaultServiceEnabled(enabled);
-    }
-
-    private final TestApp mContentTestApp;
-    private final ComponentReference mContentSuggestionsService =
-            ComponentReference.unflattenFromString(
-                    "com.android.ContentTestApp/.ContentSuggestionsService");
-
-    private void ensureHasTestContentSuggestionsService(UserType user) {
-        ensureHasTestContentSuggestionsService(resolveUserTypeToUser(user));
-    }
-
-    private void ensureHasTestContentSuggestionsService(UserReference user) {
-        ensureDefaultContentSuggestionsServiceEnabled(user, /* enabled= */ false);
-        mTestAppsComponent.ensureTestAppInstalled("content", mContentTestApp, user);
-
-        mTemporaryContentSuggestionsServiceSet.add(user);
-
-        TestApis.content().suggestions().setTemporaryService(user, mContentSuggestionsService);
-    }
-
     /**
      * Access harrier-managed accounts on the instrumented user.
      */
@@ -1830,135 +1264,21 @@ public final class DeviceState extends HarrierRule {
      * Access harrier-managed accounts on the given user.
      */
     public RemoteAccountAuthenticator accounts(UserReference user) {
-        if (!mAccountAuthenticators.containsKey(user)) {
-            throw new IllegalStateException("No Harrier-Managed account authenticator on user "
-                    + user + ". Did you use @EnsureHasAccountAuthenticator or @EnsureHasAccount?");
-        }
-
-        return mAccountAuthenticators.get(user);
-    }
-
-    private void ensureHasAccountAuthenticator(UserType onUser) {
-        UserReference user = resolveUserTypeToUser(onUser);
-        // We don't use .install() so we can rely on the default testapp sharing/uninstall logic
-        mTestAppsComponent.ensureTestAppInstalled(REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP,
-                user);
-
-        mAccountAuthenticators.put(user, RemoteAccountAuthenticator.install(user));
-    }
-
-    private void ensureHasAccount(UserType onUser, String key, String[] features) {
-        ensureHasAccount(onUser, key, features, new HashSet<>());
-    }
-
-
-    private AccountReference ensureHasAccount(UserType onUser, String key, String[] features,
-            Set<AccountReference> ignoredAccounts) {
-        ensureHasAccountAuthenticator(onUser);
-
-        Optional<AccountReference> account =
-                accounts(onUser).allAccounts().stream().filter(i -> !ignoredAccounts.contains(i))
-                        .findFirst();
-
-        if (account.isPresent()) {
-            accounts(onUser).setFeatures(account.get(), new HashSet<>(Arrays.asList(features)));
-            mAccounts.put(key, account.get());
-            TestApis.devicePolicy().calculateHasIncompatibleAccounts();
-            return account.get();
-        }
-
-        AccountReference createdAccount = accounts(onUser).addAccount()
-                .features(new HashSet<>(Arrays.asList(features)))
-                .add();
-        mCreatedAccounts.add(createdAccount);
-        mAccounts.put(key, createdAccount);
-        TestApis.devicePolicy().calculateHasIncompatibleAccounts();
-        return createdAccount;
-    }
-
-    private void ensureHasAccounts(EnsureHasAccount[] accounts) {
-        Set<AccountReference> ignoredAccounts = new HashSet<>();
-
-        for (EnsureHasAccount account : accounts) {
-            ignoredAccounts.add(ensureHasAccount(
-                    account.onUser(), account.key(), account.features(), ignoredAccounts));
-        }
-    }
-
-    /**
-     * See {@link DeviceState#ensureHasNoAccounts(UserReference, boolean, FailureMode)}
-     * @deprecated do not use it in tests
-     */
-    //TODO(karzelek): move it outside of DeviceState
-    @Deprecated
-    public void ensureHasNoAccounts(UserType userType, boolean allowPreCreatedAccounts,
-            FailureMode failureMode) {
-        if (userType == UserType.ANY) {
-            TestApis.users().all().forEach(user -> ensureHasNoAccounts(user,
-                    allowPreCreatedAccounts, failureMode));
-        } else {
-            ensureHasNoAccounts(resolveUserTypeToUser(userType),
-                    allowPreCreatedAccounts, failureMode);
-        }
-    }
-
-    /**
-     * Ensure that the given user has no accounts
-     * <p>
-     * Do not use this method inside tests, instead use the {@link EnsureHasNoAccounts} annotation.
-     * @deprecated do not use it in tests
-     */
-    //TODO(karzelek): move it outside of DeviceState
-    @Deprecated
-    public void ensureHasNoAccounts(UserReference user, boolean allowPreCreatedAccounts,
-            FailureMode failureMode) {
-        if (REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP.pkg().installedOnUser(user)) {
-            user.start(); // The user has to be started to remove accounts
-
-            RemoteAccountAuthenticator.install(user).allAccounts()
-                    .forEach(AccountReference::remove);
-        }
-
-        Set<AccountReference> accounts = TestApis.accounts().all(user);
-
-        // If allowPreCreatedAccounts is enabled, that means it's okay to have
-        // pre created accounts on the device.
-        // Now to EnsureHasNoAccounts we will only check that there are no non-pre created accounts.
-        // Non pre created accounts either have ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_DISALLOWED
-        // or do not have ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_ALLOWED
-        if (allowPreCreatedAccounts) {
-            accounts = accounts.stream()
-                    .filter(accountReference -> !accountReference.hasFeature(
-                            DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_ALLOWED)
-                            || accountReference.hasFeature(
-                            DevicePolicyManager.ACCOUNT_FEATURE_DEVICE_OR_PROFILE_OWNER_DISALLOWED))
-                    .collect(Collectors.toSet());
-        }
-
-        if (!accounts.isEmpty()) {
-            failOrSkip("Expected no user created accounts on user " + user
-                    + " but there was some that could not be removed.", failureMode);
-        }
-
-        TestApis.devicePolicy().calculateHasIncompatibleAccounts();
+        return mAccountsComponent.accounts(user);
     }
 
     /**
      * Get the default account defined with {@link EnsureHasAccount}.
      */
     public AccountReference account() {
-        return account(DEFAULT_ACCOUNT_KEY);
+        return mAccountsComponent.account();
     }
 
     /**
      * Get the account defined with {@link EnsureHasAccount} with a given key.
      */
     public AccountReference account(String key) {
-        if (!mAccounts.containsKey(key)) {
-            throw new IllegalStateException("No account for key " + key);
-        }
-
-        return mAccounts.get(key);
+        return mAccountsComponent.account(key);
     }
 
     @Override
@@ -1972,117 +1292,6 @@ public final class DeviceState extends HarrierRule {
 
     private TestRuleExecutor usesTestRuleExecutor(UsesTestRuleExecutor executorClassName) {
         return mLocator.get(getTestRuleExecutorClass(executorClassName));
-    }
-
-    private void requireSystemServiceAvailable(Class<?> serviceClass, FailureMode failureMode) {
-        checkFailOrSkip("Requires " + serviceClass + " to be available",
-                TestApis.services().serviceIsAvailable(serviceClass), failureMode);
-    }
-
-    private void ensurePolicyOperationUnsafe(
-            CommonDevicePolicy.DevicePolicyOperation operation,
-            CommonDevicePolicy.OperationSafetyReason reason) {
-        mNextSafetyOperationSet = true;
-        TestApis.devicePolicy().setNextOperationSafety(operation, reason);
-        mNextSafetyOperationSet = true;
-        TestApis.devicePolicy().setNextOperationSafety(operation, reason);
-    }
-
-    private void ensurePropertySet(String key, String value) {
-        if (!mOriginalProperties.containsKey(key)) {
-            mOriginalProperties.put(key, TestApis.properties().get(key));
-        }
-
-        TestApis.properties().set(key, value);
-    }
-
-    private void ensureUsingDisplayTheme(DisplayProperties.Theme theme) {
-        if (mOriginalDisplayTheme == null) {
-            mOriginalDisplayTheme = Display.INSTANCE.getDisplayTheme();
-        }
-        Display.INSTANCE.setDisplayTheme(theme);
-    }
-
-    private void ensureUsingScreenOrientation(DisplayProperties.ScreenOrientation orientation) {
-        if (mOriginalScreenOrientation == null) {
-            mOriginalScreenOrientation = Display.INSTANCE.getScreenOrientation();
-        }
-        Display.INSTANCE.setScreenOrientation(orientation);
-    }
-
-    private void requirePackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
-        Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).size() > 0;
-
-        if(packageResponded) {
-            checkFailOrSkip(
-                    "Requires at least one package to respond to this intent.",
-                    /* value= */ true,
-                    failureMode);
-        }
-        else {
-            failOrSkip("Requires at least one package to respond to this intent.", failureMode);
-        }
-    }
-
-    private void requireNoPackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
-        Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean noPackageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).isEmpty();
-
-        if(noPackageResponded) {
-            checkFailOrSkip(
-                    "Requires no package to respond to this intent.",
-                    /* value= */ true,
-                    failureMode);
-        }
-        else {
-            failOrSkip("Requires no package to respond to this intent.", failureMode);
-        }
-    }
-
-    private void ensurePackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserReference user,
-            FailureMode failureMode) {
-        Intent intent = new Intent(/* action= */ paramIntent.action());
-        boolean packageResponded = TestApis.packages().queryIntentActivities(user,
-                intent, /* flags= */0).size() > 0;
-
-        if (!packageResponded) {
-            try {
-                mTestAppsComponent.ensureTestAppInstalled(
-                        /* testApp= */ testApps().query().whereActivities().contains(
-                                        activity().where().intentFilters().contains(
-                                                intentFilter().where().actions().contains(
-                                                        paramIntent.action())))
-                                .get()
-                        , user);
-            } catch (NotFoundException notFoundException) {
-                failOrSkip(
-                        "Could not found the testApp which contains an activity matching the intent"
-                            + " action '"
-                                + paramIntent.action()
-                                + "'.",
-                        failureMode);
-            }
-        }
-    }
-
-    private void ensureNoPackageRespondsToIntent(
-            com.android.bedstead.harrier.annotations.Intent paramIntent, UserType user) {
-        Intent intent = new Intent(/* action= */ paramIntent.action());
-        List<ResolveInfoWrapper> resolveInfoWrappers = TestApis.packages().queryIntentActivities(
-                resolveUserTypeToUser(user), intent, /* flags= */0);
-
-        for (ResolveInfoWrapper resolveInfoWrapper : resolveInfoWrappers) {
-            String packageName = resolveInfoWrapper.activityInfo().packageName;
-            ensurePackageNotInstalled(packageName, user);
-        }
     }
 
     void onTestFailed(Throwable exception) {

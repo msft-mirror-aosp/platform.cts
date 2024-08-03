@@ -207,8 +207,21 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
           else:
             # naming images to be captured
             img_name = f'{name_with_path}_ae_mode={ae_mode}_flash_strength={strength}.jpg'
+            # check if testing image size is supported, if not use mid size
+            output_sizes = capture_request_utils.get_available_output_sizes(
+                _FORMAT_NAME, props)
+            if _IMG_SIZE in output_sizes:
+              width, height = _IMG_SIZE
+              logging.debug(
+                  'Testing with default image size: %dx%d', width, height
+              )
+            else:
+              width, height = output_sizes[len(output_sizes)//2]
+              logging.debug(
+                  'Default size not supported, testing with size: %dx%d',
+                  width, height
+              )
             # defining out_surfaces
-            width, height = _IMG_SIZE
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate

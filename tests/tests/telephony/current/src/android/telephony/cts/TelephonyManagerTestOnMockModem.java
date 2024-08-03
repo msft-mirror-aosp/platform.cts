@@ -122,7 +122,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
     private static final int TIMEOUT_IN_SEC_FOR_MODEM_CB = 10;
     @BeforeClass
     public static void beforeAllTests() throws Exception {
-        MockModemTestBase.beforeAllTestsCheck();
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
         MockModemTestBase.createMockModemAndConnectToService();
 
         sServiceStateChangeCallbackHandlerThread =
@@ -153,7 +153,7 @@ public class TelephonyManagerTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        MockModemTestBase.afterAllTests();
+        if (!MockModemTestBase.afterAllTestsBase()) return;
 
         if (sServiceStateChangeCallbackHandlerThread != null) {
             sServiceStateChangeCallbackHandlerThread.quitSafely();

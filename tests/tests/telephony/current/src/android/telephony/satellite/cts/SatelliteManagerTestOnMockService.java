@@ -162,6 +162,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     boolean mWifiInitState = false;
     boolean mNfcInitState = false;
     boolean mUwbInitState = false;
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    static AssertionError sInitError = null;
 
 
     @Rule
@@ -169,7 +171,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
-    public static void beforeAllTests() throws Exception {
+    public static void beforeAllTests() {
         logd("beforeAllTests");
 
         if (!shouldTestSatelliteWithMockService()) return;
@@ -179,14 +181,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             // FEATURE_TELEPHONY_SATELLITE is missing, so let's set up mock SatelliteManager.
             sSatelliteManager = new SatelliteManager(getContext());
         }
-        MockModemManager.enforceMockModemDeveloperSetting();
+        try {
+            MockModemManager.enforceMockModemDeveloperSetting();
+        } catch (Exception e) {
+            sInitError = new AssertionError("enforceMockModemDeveloperSetting failed", e);
+            return;
+        }
 
         grantSatellitePermission();
 
         sMockSatelliteServiceManager = new MockSatelliteServiceManager(
                 InstrumentationRegistry.getInstrumentation());
         setUpSatelliteAccessAllowed();
-        setupMockSatelliteService();
+        try {
+            setupMockSatelliteService();
+        } catch (AssertionError e) {
+            sInitError = e;
+            return;
+        }
 
         sCarrierConfigReceiver = new CarrierConfigReceiver(SUB_ID);
         sLocationManager = getContext().getSystemService(LocationManager.class);
@@ -239,6 +251,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @AfterClass
     public static void afterAllTests() {
         logd("afterAllTests");
+        if (sInitError != null) return;
         if (!shouldTestSatelliteWithMockService()) return;
 
         grantSatellitePermission();
@@ -265,6 +278,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     @Before
     public void setUp() throws Exception {
         logd("setUp");
+        if (sInitError != null) throw sInitError;
         if (!shouldTestSatelliteWithMockService()) return;
         assumeTrue(sMockSatelliteServiceManager != null);
 

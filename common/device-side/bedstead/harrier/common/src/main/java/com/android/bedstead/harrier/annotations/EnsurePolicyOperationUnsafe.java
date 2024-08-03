@@ -30,6 +30,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsurePolicyOperationUnsafe {
 
     /** The operation to perform when the unsafe operation has been triggered. */

@@ -73,9 +73,9 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_1/2/... are same scene split to load balance run times for scenes
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
-    'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
-    'scene8', 'scene9',
+    'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
+    'scene6', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -113,6 +113,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene0': None,
     'scene1_1': 'A grey card covering at least the middle 30% of the scene',
     'scene1_2': 'A grey card covering at least the middle 30% of the scene',
+    'scene1_3': 'A grey card covering at least the middle 30% of the scene, '
+                'without a white border like scene1_1 or scene1_2',
     'scene2_a': 'The picture with 3 faces in tests/scene2_a/scene2_a.png',
     'scene2_b': 'The picture with 3 faces in tests/scene2_b/scene2_b.png',
     'scene2_c': 'The picture with 3 faces in tests/scene2_c/scene2_c.png',

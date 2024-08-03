@@ -102,11 +102,14 @@ public class CarrierRoamingSatelliteTestBase {
 
     protected static void afterAllTestsBase() throws Exception {
         logd(TAG, "afterAllTestsBase");
-        assertTrue(sMockModemManager.disconnectMockModemService());
-        sMockModemManager = null;
         sTelephonyManager = null;
         sSubscriptionManager = null;
         sWifiManager = null;
+
+        if (sMockModemManager != null) {
+            assertTrue(sMockModemManager.disconnectMockModemService());
+            sMockModemManager = null;
+        }
 
         if (sWifiStateReceiver != null) {
             getContext().unregisterReceiver(sWifiStateReceiver);

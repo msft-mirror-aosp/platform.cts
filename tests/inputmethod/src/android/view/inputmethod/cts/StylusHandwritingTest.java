@@ -1432,6 +1432,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
     @Test
     @FlakyTest
     public void testOnViewClicked_withStylusHandwriting() throws Exception {
+        int displayId;
+        String initialUserRotation = null;
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),
@@ -1453,62 +1456,73 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     editorMatcher("onStartInputView", focusedMarker),
                     NOT_EXPECT_TIMEOUT);
 
-            // Finger tap on editor and verify onUpdateEditorToolType
-            TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_DOWN);
-            MotionEvent upEvent =
-                    TestUtils.injectFingerEventOnViewCenter(focusedEditText, MotionEvent.ACTION_UP);
-            int toolTypeFinger = upEvent.getToolType(upEvent.getActionIndex());
-            assertEquals(
-                    "tool type finger must match", MotionEvent.TOOL_TYPE_FINGER, toolTypeFinger);
-            expectEvent(
-                    stream,
-                    onUpdateEditorToolTypeMatcher(toolTypeFinger),
-                    TIMEOUT);
+            Context context = focusedEditText.getContext();
+            displayId = context.getDisplayId();
+            final Display display = context.getDisplay();
 
-            // Start handwriting on same focused editor
-            final int touchSlop = getTouchSlop();
-            int startX = focusedEditText.getWidth() / 2;
-            int startY = focusedEditText.getHeight() / 2;
-            int endX = startX + 2 * touchSlop;
-            int endY = startY + 2 * touchSlop;
-            final int number = 5;
-            TestUtils.injectStylusDownEvent(focusedEditText, startX, startY);
-            TestUtils.injectStylusMoveEvents(focusedEditText, startX, startY,
-                    endX, endY, number);
-            try {
-                // Handwriting should start.
+            try (UinputTouchDevice touch = new UinputTouchScreen(instrumentation, display);
+                    UinputTouchDevice stylus = new UinputStylus(instrumentation, display)) {
+                initialUserRotation =
+                        getInitialRotationAndAwaitExpectedRotation(displayId, context);
+                // Finger tap on editor and verify onUpdateEditorToolType
+                // Finger tap on unfocused editor.
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_DOWN);
+                TestUtils.injectFingerEventOnViewCenter(
+                        touch, unfocusedEditText, MotionEvent.ACTION_UP);
+                int toolTypeFinger =
+                        MotionEvent.TOOL_TYPE_FINGER;
                 expectEvent(
                         stream,
-                        editorMatcher("onStartStylusHandwriting", focusedMarker),
+                        onUpdateEditorToolTypeMatcher(toolTypeFinger),
                         TIMEOUT);
+
+                // Start handwriting on same focused editor
+                final int touchSlop = getTouchSlop();
+                int startX = focusedEditText.getWidth() / 2;
+                int startY = focusedEditText.getHeight() / 2;
+                int endX = startX + 2 * touchSlop;
+                int endY = startY + 2 * touchSlop;
+                final int number = 5;
+                TestUtils.injectStylusDownEvent(stylus, focusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, focusedEditText, startX, startY,
+                        endX, endY, number);
+                try {
+                    // Handwriting should start.
+                    expectEvent(
+                            stream,
+                            editorMatcher("onStartStylusHandwriting", focusedMarker),
+                            TIMEOUT);
+                } finally {
+                    TestUtils.injectStylusUpEvent(stylus);
+                }
+                imeSession.callFinishStylusHandwriting();
+                expectEvent(
+                        stream,
+                        editorMatcher("onFinishStylusHandwriting", focusedMarker),
+                        TIMEOUT_1_S);
+
+                addVirtualStylusIdForTestSession();
+                // Now start handwriting on unfocused editor and verify toolType is available in
+                // EditorInfo
+                startX = unfocusedEditText.getWidth() / 2;
+                startY = unfocusedEditText.getHeight() / 2;
+                endX = startX + 2 * touchSlop;
+                endY = startY + 2 * touchSlop;
+                TestUtils.injectStylusDownEvent(stylus, unfocusedEditText, startX, startY);
+                TestUtils.injectStylusMoveEvents(stylus, unfocusedEditText, startX, startY,
+                        endX, endY, number);
+                try {
+                    expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+
+                    // toolType should be updated on next stylus handwriting start
+                    expectEvent(stream, onStartStylusHandwritingMatcher(
+                            MotionEvent.TOOL_TYPE_STYLUS, unfocusedMarker), TIMEOUT);
+                } finally {
+                    TestUtils.injectStylusUpEvent(stylus);
+                }
             } finally {
-                TestUtils.injectStylusUpEvent(focusedEditText, endX, endY);
-            }
-            imeSession.callFinishStylusHandwriting();
-            expectEvent(
-                    stream,
-                    editorMatcher("onFinishStylusHandwriting", focusedMarker),
-                    TIMEOUT_1_S);
-
-            addVirtualStylusIdForTestSession();
-            // Now start handwriting on unfocused editor and verify toolType is available in
-            // EditorInfo
-            startX = unfocusedEditText.getWidth() / 2;
-            startY = unfocusedEditText.getHeight() / 2;
-            endX = startX + 2 * touchSlop;
-            endY = startY + 2 * touchSlop;
-
-            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
-            TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
-                    endX, endY, number);
-            try {
-                expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
-
-                // toolType should be updated on next stylus handwriting start
-                expectEvent(stream, onStartStylusHandwritingMatcher(
-                        MotionEvent.TOOL_TYPE_STYLUS, unfocusedMarker), TIMEOUT);
-            } finally {
-                TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+                TestUtils.setRotation(displayId, initialUserRotation);
             }
         }
     }

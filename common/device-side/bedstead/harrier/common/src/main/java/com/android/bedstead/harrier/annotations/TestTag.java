@@ -32,6 +32,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(TestTags.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface TestTag {
 
     String value();

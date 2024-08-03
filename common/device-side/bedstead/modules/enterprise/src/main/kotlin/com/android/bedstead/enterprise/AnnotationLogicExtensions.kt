@@ -20,8 +20,8 @@ import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps
 import com.android.bedstead.harrier.AnnotationExecutorUtil
-import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.nene.TestApis
 
 fun RequireHasPolicyExemptApps.logic() {

@@ -23,10 +23,11 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.harrier.components.AccountsComponent
+import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -50,6 +51,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
     private val profileOwnersComponent: ProfileOwnersComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val usersComponent: UsersComponent by locator
+    private val accountsComponent: AccountsComponent by locator
     private var devicePolicyManagerRoleHolder: RemoteDevicePolicyManagerRoleHolder? = null
     private var delegateDpc: RemotePolicyManager? = null
     var primaryPolicyManager: RemotePolicyManager? = null
@@ -91,9 +93,9 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
      */
     fun ensureHasDevicePolicyManagerRoleHolder(onUser: UserType, isPrimary: Boolean) {
         val user: UserReference = deviceState.resolveUserTypeToUser(onUser)
-        deviceState.ensureHasNoAccounts(
+        accountsComponent.ensureHasNoAccounts(
             UserType.ANY,
-            /* allowPreCreatedAccounts = */ true,
+            allowPreCreatedAccounts = true,
             FailureMode.FAIL
         )
         testAppsComponent.ensureTestAppInstalled(RemoteDevicePolicyManagerRoleHolder.sTestApp, user)

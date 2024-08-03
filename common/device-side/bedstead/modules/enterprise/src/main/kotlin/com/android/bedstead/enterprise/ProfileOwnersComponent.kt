@@ -20,10 +20,11 @@ import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.AccountsComponent
+import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.devicepolicy.DevicePolicyController
@@ -48,6 +49,7 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
     private val enterpriseComponent: EnterpriseComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val userRestrictionsComponent: UserRestrictionsComponent by locator
+    private val accountsComponent: AccountsComponent by locator
     private val profileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
     private val changedProfileOwners: MutableMap<UserReference, DevicePolicyController?> = HashMap()
 
@@ -126,9 +128,9 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             if (!changedProfileOwners.containsKey(user)) {
                 changedProfileOwners[user] = currentProfileOwner
             }
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 user,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
             if (resolvedDpcTestApp != null) {
@@ -141,16 +143,16 @@ class ProfileOwnersComponent(locator: BedsteadServiceLocator) : DeviceStateCompo
             }
         }
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 user,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
         } else {
             // Prior to U this incorrectly checked the system user
-            deviceState.ensureHasNoAccounts(
+            accountsComponent.ensureHasNoAccounts(
                 UserType.SYSTEM_USER,
-                /* allowPreCreatedAccounts = */ true,
+                allowPreCreatedAccounts = true,
                 FailureMode.FAIL
             )
         }

@@ -128,12 +128,16 @@ public class SignalStrengthTest {
         Set<Class<? extends CellSignalStrength>> types =
                 new HashSet<Class<? extends CellSignalStrength>>();
 
-        Class<? extends CellSignalStrength> dataType =
-                getSignalStrengthTypeForNetworkType(mTm.getDataNetworkType());
+        Class<? extends CellSignalStrength> dataType = null;
+        if (mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
+            dataType = getSignalStrengthTypeForNetworkType(mTm.getDataNetworkType());
+        }
         if (dataType != null) types.add(dataType);
 
-        Class<? extends CellSignalStrength> voiceType =
-                getSignalStrengthTypeForNetworkType(mTm.getVoiceNetworkType());
+        Class<? extends CellSignalStrength> voiceType = null;
+        if (mPm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
+            voiceType = getSignalStrengthTypeForNetworkType(mTm.getVoiceNetworkType());
+        }
 
         // Check if camped for Voice-Only
         if (dataType == null && voiceType != null) {

@@ -976,15 +976,29 @@ def find_aruco_markers(input_img, output_img_path):
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  # Early return if sufficient markers found
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected.')
+    cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
+    image_processing_utils.write_image(input_img / 255, output_img_path)
+    return corners, ids, rejected_params
+  # Try with high-contrast greyscale if needed
+  logging.debug('Trying ArUco marker detection with greyscale image.')
+  bw_img = convert_image_to_high_contrast_black_white(input_img)
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
+      bw_img, aruco_dict, parameters=parameters)
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected with greyscale image.')
+  # Handle case where no markers are found
   if ids is None:
-    e_msg = 'ArUco markers not detected.'
     image_processing_utils.write_image(input_img/255, output_img_path)
-    raise AssertionError(e_msg)
-  logging.debug('Number of ArUco markers detected: %d', len(ids))
+    raise AssertionError('ArUco markers not detected.')
+  # Log and save results
+  logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-  image_processing_utils.write_image(input_img/255, output_img_path)
+  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+  image_processing_utils.write_image(bw_img / 255, output_img_path)
   return corners, ids, rejected_params
 
 

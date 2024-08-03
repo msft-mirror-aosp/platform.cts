@@ -56,17 +56,19 @@ public class MockModemTestBase {
     protected static TelephonyManager sTelephonyManager;
     protected static boolean sIsMultiSimDevice;
 
-    protected static void beforeAllTestsCheck() throws Exception {
+    protected static boolean beforeAllTestsCheck() throws Exception {
         if (VDBG) Log.d(TAG, "beforeAllTests()");
 
         if (!hasTelephonyFeature()) {
             Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return;
+            return false;
         }
         MockModemManager.enforceMockModemDeveloperSetting();
         sTelephonyManager =
                 (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
         sIsMultiSimDevice = isMultiSim(sTelephonyManager);
+
+        return true;
     }
 
     protected static void createMockModemAndConnectToService() throws Exception {
@@ -75,11 +77,11 @@ public class MockModemTestBase {
         assertTrue(sMockModemManager.connectMockModemService());
     }
 
-    protected static void afterAllTests() throws Exception {
-        if (VDBG) Log.d(TAG, "afterAllTests()");
+    protected static boolean afterAllTestsBase() throws Exception {
+        if (VDBG) Log.d(TAG, "afterAllTestsBase()");
 
         if (!hasTelephonyFeature()) {
-            return;
+            return false;
         }
 
         // Rebind all interfaces which is binding to MockModemService to default.
@@ -89,6 +91,8 @@ public class MockModemTestBase {
         sMockModemManager.forceErrorResponse(0, RIL_REQUEST_RADIO_POWER, -1);
         assertTrue(sMockModemManager.disconnectMockModemService());
         sMockModemManager = null;
+
+        return true;
     }
 
     @Before
