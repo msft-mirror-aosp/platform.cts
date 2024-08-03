@@ -57,10 +57,22 @@ public class OnDeviceIntelligenceServiceTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        sanboxedServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceSandboxedInferenceService);
-        intelligenceServiceComponentName = mContext.getResources().getString(
-                com.android.internal.R.string.config_defaultOnDeviceIntelligenceService);
+        sanboxedServiceComponentName =
+                mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceSandboxedInferenceService",
+                                                "string",
+                                                "android"));
+        intelligenceServiceComponentName =
+                mContext.getResources()
+                        .getString(
+                                mContext.getResources()
+                                        .getIdentifier(
+                                                "config_defaultOnDeviceIntelligenceService",
+                                                "string",
+                                                "android"));
     }
 
     @Test
