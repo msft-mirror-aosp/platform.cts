@@ -24,6 +24,7 @@ import android.os.Looper
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display
 import android.view.Surface
+import android.view.View
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
 import java.util.concurrent.TimeUnit
@@ -180,6 +181,15 @@ open class UinputTouchDevice(
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         uinputDevice.close()
+    }
+
+    fun tapOnViewCenter(view: View) {
+        val xy = IntArray(2)
+        view.getLocationOnScreen(xy)
+        val x = xy[0] + view.width / 2
+        val y = xy[1] + view.height / 2
+        val pointer = touchDown(x, y)
+        pointer.lift()
     }
 
     private val pointerIds = mutableSetOf<Int>()

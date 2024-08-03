@@ -36,7 +36,10 @@ cc_library_shared {
         "libGLESv2",
         "libGLESv3",
     ],
-    static_libs: ["libgmock_ndk"],
+    static_libs: [
+        "libbase_ndk",
+        "libgmock_ndk",
+    ],
     whole_static_libs: ["libnativetesthelper_jni"],
     cflags: [
         "-Werror",

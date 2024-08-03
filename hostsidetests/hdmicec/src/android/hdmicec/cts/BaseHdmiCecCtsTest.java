@@ -46,6 +46,7 @@ import java.util.regex.Pattern;
 @OptionClass(alias = "hdmi-cec-client-cts-test")
 public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
 
+    public static final String PROPERTY_CEC_VERSION = "persist.sys.hdmi.cec_version";
     public static final String PROPERTY_LOCALE = "persist.sys.locale";
     private static final String POWER_CONTROL_MODE = "power_control_mode";
     private static final String POWER_STATE_CHANGE_ON_ACTIVE_SOURCE_LOST =
@@ -372,6 +373,41 @@ public class BaseHdmiCecCtsTest extends BaseHostJUnit4Test {
 
     public void setCec14() throws Exception {
         setCecVersion(getDevice(), HdmiCecConstants.CEC_VERSION_1_4);
+    }
+
+    /**
+     * Store framework cec version in persist for reference.
+     * @param cecVersion cec version for vendor reference.
+     * @throws Exception exception while storing persist variable through adb shell.
+     */
+    public void setSystemCecVersion(int cecVersion) throws Exception {
+        ITestDevice device = getDevice();
+        // Restart adb as root
+        device.executeAdbCommand("root");
+        if (cecVersion == -1) {
+            // Reset persist variable to empty
+            device.executeShellCommand("setprop " + PROPERTY_CEC_VERSION + " \"\"");
+        } else {
+            device.executeShellCommand("setprop " + PROPERTY_CEC_VERSION + " " + cecVersion);
+        }
+    }
+
+    /**
+     * Get stored cec framework version from persist.
+     * @return stored cec version.
+     * @throws Exception exception while getting persist variable through adb shell.
+     */
+    public int getSystemCecVersion() throws Exception {
+        ITestDevice device = getDevice();
+        // Restart adb as root
+        device.executeAdbCommand("root");
+        String result = device.executeShellCommand("getprop " + PROPERTY_CEC_VERSION).trim();
+        try {
+            int cecVersion = Integer.parseInt(result);
+            return cecVersion;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     public String getSystemLocale() throws Exception {

@@ -35,8 +35,9 @@ ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_31CM = 13.5  # cm
-CHART_HEIGHT_22CM = 9.5  # cm
+CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
+CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_90CM = 90.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -88,6 +89,8 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
+SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -201,6 +204,8 @@ def calc_chart_scaling(chart_distance, camera_fov):
       chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
   is_chart_distance_31cm = math.isclose(
       chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_90cm = math.isclose(
+      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
 
   if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
     chart_scaling = SCALE_WIDE_IN_22CM_RIG
@@ -208,14 +213,16 @@ def calc_chart_scaling(chart_distance, camera_fov):
     chart_scaling = SCALE_TELE_IN_22CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
     chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif (fov <= FOV_THRESH_TELE25 and
-        is_chart_distance_31cm or
-        chart_distance > CHART_DISTANCE_31CM):
+  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE25_IN_31CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
+    chart_scaling = SCALE_CHART_67_PERCENT
   elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE_IN_31CM_RIG
+  elif chart_distance > CHART_DISTANCE_31CM:
+    chart_scaling = SCALE_CHART_33_PERCENT
   return chart_scaling
 
 
@@ -964,20 +971,34 @@ def find_aruco_markers(input_img, output_img_path):
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  parameters = cv2.aruco.DetectorParameters()
+  parameters = cv2.aruco.DetectorParameters_create()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  # Early return if sufficient markers found
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected.')
+    cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
+    image_processing_utils.write_image(input_img / 255, output_img_path)
+    return corners, ids, rejected_params
+  # Try with high-contrast greyscale if needed
+  logging.debug('Trying ArUco marker detection with greyscale image.')
+  bw_img = convert_image_to_high_contrast_black_white(input_img)
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
+      bw_img, aruco_dict, parameters=parameters)
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected with greyscale image.')
+  # Handle case where no markers are found
   if ids is None:
-    e_msg = 'ArUco markers not detected.'
     image_processing_utils.write_image(input_img/255, output_img_path)
-    raise AssertionError(e_msg)
-  logging.debug('Number of ArUco markers detected: %d', len(ids))
+    raise AssertionError('ArUco markers not detected.')
+  # Log and save results
+  logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-  image_processing_utils.write_image(input_img/255, output_img_path)
+  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+  image_processing_utils.write_image(bw_img / 255, output_img_path)
   return corners, ids, rejected_params
 
 

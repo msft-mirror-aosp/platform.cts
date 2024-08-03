@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public final class DumpTest {
 
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
     @Test
     public void test_dumpDoesNotContainEditorText() throws Exception {

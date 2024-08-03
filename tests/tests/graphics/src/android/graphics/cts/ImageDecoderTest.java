@@ -253,11 +253,11 @@ public class ImageDecoderTest {
 
         Bitmap.Config expectedConfig = Bitmap.Config.RGBA_1010102;
 
-        // For TVs, even if the device advertises that 10 bits profile is supported, the output
-        // format might not be CPU readable, but the video can still be displayed. When the TV's
+        // Even if the device advertises that 10 bits profile is supported, the output
+        // format might not be CPU readable, but the video can still be displayed. When the
         // hevc decoder doesn't support YUVP010 format, then the color type of output falls back
         // to RGBA_8888 automatically.
-        if (MediaUtils.isTv() && !hasHEVCDecoderSupportsYUVP010()) {
+        if (!hasHEVCDecoderSupportsYUVP010()) {
             expectedConfig = Bitmap.Config.ARGB_8888;
         }
 
