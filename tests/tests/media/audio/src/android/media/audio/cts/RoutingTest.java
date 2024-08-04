@@ -42,10 +42,10 @@ import com.android.compatibility.common.util.MediaUtils;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 /**
  * AudioTrack / AudioRecord / MediaPlayer / MediaRecorder preferred device
  * and routing listener tests.
@@ -120,14 +120,10 @@ public class RoutingTest extends AndroidTestCase {
         assertTrue(audioTrack.setPreferredDevice(null));
 
         // test each device
-        AudioDeviceInfo[] deviceList = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        for (int index = 0; index < deviceList.length; index++) {
-            if (deviceList[index].getType() == AudioDeviceInfo.TYPE_TELEPHONY) {
-                // Device with type as TYPE_TELEPHONY requires a privileged permission.
-                continue;
-            }
-            assertTrue(audioTrack.setPreferredDevice(deviceList[index]));
-            assertTrue(audioTrack.getPreferredDevice() == deviceList[index]);
+        List<AudioDeviceInfo> mediaDevices = AudioTestUtil.getMediaDevices();
+        for (AudioDeviceInfo device : mediaDevices) {
+            assertTrue(audioTrack.setPreferredDevice(device));
+            assertTrue(device.equals(audioTrack.getPreferredDevice()));
         }
 
         // Check defaults again
@@ -638,21 +634,15 @@ public class RoutingTest extends AndroidTestCase {
         assertTrue(mediaPlayer.isPlaying());
 
         // test each device
-        AudioDeviceInfo[] deviceList = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        for (int index = 0; index < deviceList.length; index++) {
-            if (deviceList[index].getType() == AudioDeviceInfo.TYPE_TELEPHONY
-                || deviceList[index].getType() == AudioDeviceInfo.TYPE_FM) {
-                // Device with type as TYPE_TELEPHONY requires a privileged permission.
-                // Device with type as FM is non-real device but attached, so skip
-                continue;
-            }
+        List<AudioDeviceInfo> mediaDevices = AudioTestUtil.getMediaDevices();
+        for (AudioDeviceInfo device : mediaDevices) {
             mediaPlayer.pause();
             //Wait for state to change before setPreferDevice
             SystemClock.sleep(200);
-            assertTrue(mediaPlayer.setPreferredDevice(deviceList[index]));
+            assertTrue(mediaPlayer.setPreferredDevice(device));
             mediaPlayer.start();
             assertTrue(mediaPlayer.isPlaying());
-            assertTrue(mediaPlayer.getPreferredDevice() == deviceList[index]);
+            assertTrue(device.equals(mediaPlayer.getPreferredDevice()));
         }
 
         // Check defaults again
@@ -724,8 +714,8 @@ public class RoutingTest extends AndroidTestCase {
             return;
         }
 
-        AudioDeviceInfo[] devices = mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        if (devices.length < 2) {
+        List<AudioDeviceInfo> mediaDevices = AudioTestUtil.getMediaDevices();
+        if (mediaDevices.size() < 2) {
             // In this case, we cannot switch output device, that may cause the test fail.
             return;
         }
@@ -751,9 +741,8 @@ public class RoutingTest extends AndroidTestCase {
         listener.reset();
 
         listener.setCallExpected(false);
-        for (AudioDeviceInfo device : devices) {
-            if (routedDevice.getId() != device.getId() &&
-                    device.getType() != AudioDeviceInfo.TYPE_TELEPHONY) {
+        for (AudioDeviceInfo device : mediaDevices) {
+            if (routedDevice.getId() != device.getId()) {
                 mediaPlayer.pause();
                 //Wait for state to change before setPreferDevice
                 SystemClock.sleep(200);
