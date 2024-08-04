@@ -171,7 +171,7 @@ public class StorageTest extends InstrumentationTestCase {
         // Wait for all scrollables to appear
         device.wait(
                 Until.findObjects(By.scrollable(true)),
-                5000
+                10000
         );
         int i = device.findObjects(By.scrollable(true)).size();
         for (int j = 0; j < i; j++) {

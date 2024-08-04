@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <android-base/properties.h>
 #include <android/hardware_buffer.h>
 #include <android/log.h>
 #include <errno.h>
@@ -143,6 +144,10 @@ AHardwareBuffer_Desc GetDescription(AHardwareBuffer* buffer) {
     AHardwareBuffer_Desc description;
     AHardwareBuffer_describe(buffer, &description);
     return description;
+}
+
+bool IsSoftwareRenderer() {
+    return android::base::GetIntProperty("ro.cpuvulkan.version", 0) > 0;
 }
 
 } // namespace
@@ -649,6 +654,60 @@ TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
     for (auto& thread : threads) {
         thread.join();
     }
+}
+
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, 0, -1, nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
+}
+
+
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, WithoutCPUAccessLock) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1,
+                                     nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
 }
 
 } // namespace android

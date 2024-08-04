@@ -62,6 +62,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.RemoteCallback;
 import android.os.SystemClock;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.DeviceConfig;
 import android.service.notification.NotificationListenerService;
 import android.util.Log;
@@ -181,7 +182,8 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
 
     @Rule
     public final RuleChain mRuleChain = RuleChain.outerRule(new RequiredPropertiesRule())
-            .around(new MeterednessConfigurationRule());
+            .around(new MeterednessConfigurationRule())
+            .around(DeviceFlagsValueProvider.createCheckFlagsRule());
 
     protected void setUp() throws Exception {
         mInstrumentation = getInstrumentation();
@@ -228,22 +230,6 @@ public abstract class AbstractRestrictBackgroundNetworkTestCase {
         mServiceClient.unbind();
         final PowerManager.WakeLock lock = mLock;
         if (null != lock && lock.isHeld()) lock.release();
-    }
-
-    /**
-     * Check if the feature blocking network for top_sleeping and lower priority proc-states is
-     * enabled. This is a manual check because the feature flag infrastructure may not be available
-     * in all the branches that will get this code.
-     * TODO: b/322115994 - Use @RequiresFlagsEnabled with
-     * Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE once the tests are moved to cts.
-     */
-    protected boolean isNetworkBlockedForTopSleepingAndAbove() {
-        if (!SdkLevel.isAtLeastV()) {
-            return false;
-        }
-        final String output = executeShellCommand("device_config get backstage_power"
-                + " com.android.server.net.network_blocked_for_top_sleeping_and_above");
-        return Boolean.parseBoolean(output);
     }
 
     /**
