@@ -19,7 +19,9 @@ package com.android.cts.netpolicy;
 import static com.android.cts.netpolicy.arguments.InstrumentationArguments.ARG_WAIVE_BIND_PRIORITY;
 
 import android.platform.test.annotations.FlakyTest;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 
+import com.android.server.net.Flags;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
@@ -65,8 +67,8 @@ public class HostsideConnOnActivityStartTest extends HostsideNetworkPolicyTestCa
         runDeviceTestsWithCustomOptions(TEST_PKG, TEST_CLASS, "testStartActivity_appStandby");
     }
 
-    // TODO(b/321848487): Annotate with @RequiresFlagsEnabled to mirror the device-side test.
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testStartActivity_default() throws Exception {
         runDeviceTestsWithCustomOptions(TEST_PKG, TEST_CLASS, "testStartActivity_default",
                 Map.of(ARG_WAIVE_BIND_PRIORITY, "true"));
