@@ -86,12 +86,25 @@ public class LaunchRunner {
 
     /**
      * Re-run a previously recorded {@link Persistence.TestCase} and verify that the recorded
-     * states match the states resulting from the rerun.
+     * states match the states resulting from the rerun. The test will be performed on the
+     * default display.
      *
      * @param initialContext the context to launch the first Activity from.
      * @param testCase       the {@link Persistence.TestCase} we are verifying.
      */
     void verify(Context initialContext, Persistence.TestCase testCase) {
+        verify(initialContext, testCase, Display.DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Re-run a previously recorded {@link Persistence.TestCase} and verify that the recorded
+     * states match the states resulting from the rerun.
+     *
+     * @param initialContext  the context to launch the first Activity from.
+     * @param testCase        the {@link Persistence.TestCase} we are verifying.
+     * @param launchDisplayId The id of the display where the test will be performed.
+     */
+    void verify(Context initialContext, Persistence.TestCase testCase, int launchDisplayId) {
         List<GenerationIntent> initialState = testCase.getSetup().getInitialIntents();
         List<GenerationIntent> act = testCase.getSetup().getAct();
 
@@ -99,7 +112,8 @@ public class LaunchRunner {
 
         // Launch the first activity from the start context
         GenerationIntent firstIntent = initialState.get(0);
-        Activity firstActivity = launchFromContext(initialContext, firstIntent.getActualIntent());
+        Activity firstActivity = launchFromContext(initialContext, firstIntent.getActualIntent(),
+                FEATURE_UNDEFINED, launchDisplayId);
         // Launch all tasks in the same task display area. CTS tests using multiple tasks assume
         // they will be started in the same task display area.
         int firstActivityDisplayAreaFeatureId = mTestBase.getWmState()
@@ -111,7 +125,8 @@ public class LaunchRunner {
             GenerationIntent generationIntent = initialState.get(i);
             Activity activityToLaunchFrom = activityLog.get(generationIntent.getLaunchFromIndex(i));
             Activity result = launch(activityToLaunchFrom, generationIntent.getActualIntent(),
-                    generationIntent.startForResult(), firstActivityDisplayAreaFeatureId);
+                    generationIntent.startForResult(), firstActivityDisplayAreaFeatureId,
+                    launchDisplayId);
             activityLog.add(result);
         }
 
@@ -126,7 +141,8 @@ public class LaunchRunner {
             Activity activityToLaunchFrom = activityLog.get(
                     generationIntent.getLaunchFromIndex(initialState.size() + i));
             Activity result = launch(activityToLaunchFrom, generationIntent.getActualIntent(),
-                    generationIntent.startForResult(), firstActivityDisplayAreaFeatureId);
+                    generationIntent.startForResult(), firstActivityDisplayAreaFeatureId,
+                    launchDisplayId);
             activityLog.add(result);
         }
 
@@ -250,38 +266,39 @@ public class LaunchRunner {
         }
     }
 
-
     public Activity launchFromContext(Context context, Intent intent) {
-        return launchFromContext(context, intent, FEATURE_UNDEFINED);
+        return launchFromContext(context, intent, FEATURE_UNDEFINED, Display.DEFAULT_DISPLAY);
     }
 
-
     public Activity launchFromContext(Context context, Intent intent,
-                                      int launchTaskDisplayAreaFeatureId) {
+                                      int launchTaskDisplayAreaFeatureId, int launchDisplayId) {
         Instrumentation.ActivityMonitor monitor = getInstrumentation()
                 .addMonitor((String) null, null, false);
 
-        context.startActivity(intent, getLaunchOptions(launchTaskDisplayAreaFeatureId));
+        context.startActivity(intent,
+                getLaunchOptions(launchTaskDisplayAreaFeatureId, launchDisplayId));
         Activity activity = monitor.waitForActivityWithTimeout(ACTIVITY_LAUNCH_TIMEOUT);
-        waitAndAssertActivityLaunched(activity, intent);
+        waitAndAssertActivityLaunched(activity, intent, launchDisplayId);
 
         return activity;
     }
 
     public Activity launch(Activity activityContext, Intent intent, boolean startForResult) {
-        return launch(activityContext, intent, startForResult, FEATURE_UNDEFINED);
+        return launch(activityContext, intent, startForResult, FEATURE_UNDEFINED,
+                Display.DEFAULT_DISPLAY);
     }
 
     public Activity launch(Activity activityContext, Intent intent, boolean startForResult,
-                           int launchTaskDisplayAreaFeatureId) {
+                           int launchTaskDisplayAreaFeatureId, int launchDisplayId) {
         Instrumentation.ActivityMonitor monitor = getInstrumentation()
                 .addMonitor((String) null, null, false);
 
         if (startForResult) {
             activityContext.startActivityForResult(intent, 1,
-                    getLaunchOptions(launchTaskDisplayAreaFeatureId));
+                    getLaunchOptions(launchTaskDisplayAreaFeatureId, launchDisplayId));
         } else {
-            activityContext.startActivity(intent, getLaunchOptions(launchTaskDisplayAreaFeatureId));
+            activityContext.startActivity(intent,
+                    getLaunchOptions(launchTaskDisplayAreaFeatureId, launchDisplayId));
         }
         Activity activity = monitor.waitForActivityWithTimeout(ACTIVITY_LAUNCH_TIMEOUT);
 
@@ -293,18 +310,19 @@ public class LaunchRunner {
             // for that case.
             getInstrumentation().waitForIdleSync();
         } else {
-            waitAndAssertActivityLaunched(activity, intent);
+            waitAndAssertActivityLaunched(activity, intent, launchDisplayId);
         }
 
         return activity;
     }
 
-    private void waitAndAssertActivityLaunched(Activity activity, Intent intent) {
+    private void waitAndAssertActivityLaunched(Activity activity, Intent intent,
+            int launchDisplayId) {
         assertNotNull("Intent: " + intent.toString(), activity);
 
         final ComponentName testActivityName = activity.getComponentName();
         mTestBase.waitAndAssertTopResumedActivity(testActivityName,
-                Display.DEFAULT_DISPLAY, "Activity must be resumed");
+                launchDisplayId, "Activity must be resumed");
     }
 
     /**
@@ -361,16 +379,14 @@ public class LaunchRunner {
         return amWmState.getRootTasks();
     }
 
-    private static Bundle getLaunchOptions() {
-        return getLaunchOptions(FEATURE_UNDEFINED);
-    }
-
-    private static Bundle getLaunchOptions(int launchTaskDisplayAreaFeatureId) {
+    private static Bundle getLaunchOptions(int launchTaskDisplayAreaFeatureId,
+            int launchDisplayId) {
         ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WindowConfiguration.WINDOWING_MODE_FULLSCREEN);
         if (launchTaskDisplayAreaFeatureId != DisplayAreaOrganizer.FEATURE_UNDEFINED) {
             options.setLaunchTaskDisplayAreaFeatureId(launchTaskDisplayAreaFeatureId);
         }
+        options.setLaunchDisplayId(launchDisplayId);
         return options.toBundle();
     }
 }

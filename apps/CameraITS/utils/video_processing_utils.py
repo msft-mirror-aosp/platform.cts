@@ -313,7 +313,7 @@ def extract_last_key_frame_from_recording(log_path, file_name):
   return np_image
 
 
-def get_average_frame_rate(video_file_name_with_path):
+def get_avg_frame_rate(video_file_name_with_path):
   """Get average frame rate assuming variable frame rate video.
 
   Args:

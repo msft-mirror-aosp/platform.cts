@@ -147,7 +147,7 @@ public class TileServiceTest extends BaseTileServiceTest {
         tile.setSubtitle(subtitle);
         tile.updateTile();
 
-        Thread.sleep(200);
+        Thread.sleep(300);
 
         final QsTileState tileState = findTileState();
         assertNotNull(tileState);

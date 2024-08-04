@@ -26,11 +26,17 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
+import com.android.cts.verifier.libs.ui.PlainTextFormatter;
+import com.android.cts.verifier.libs.ui.TextFormatter;
 
 import java.util.Set;
 
@@ -39,7 +45,8 @@ public class AudioDevicesDialog extends Dialog implements OnClickListener {
     private AudioManager mAudioManager;
     private ConnectionListener mConnectListener;
 
-    private WebView mInfoPanel;
+    private View mInfoPanel;
+    private TextFormatter mTextFormatter;
 
     AudioDevicesDialog(Context context) {
         super(context);
@@ -62,7 +69,18 @@ public class AudioDevicesDialog extends Dialog implements OnClickListener {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
 
         findViewById(R.id.audio_devices_done).setOnClickListener(this);
-        mInfoPanel = (WebView) findViewById(R.id.audio_devices_info);
+
+        LinearLayout infoPanelLayout = findViewById(R.id.audio_devices_info);
+        if (AudioSystemFlags.supportsWebView(mContext)) {
+            mTextFormatter = new HtmlFormatter();
+            mInfoPanel = new WebView(mContext);
+        } else {
+            // No WebView
+            mTextFormatter = new PlainTextFormatter();
+            mInfoPanel = new TextView(mContext);
+        }
+        infoPanelLayout.addView(mInfoPanel,
+                new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 
         displayDeviceSupport();
     }
@@ -85,101 +103,100 @@ public class AudioDevicesDialog extends Dialog implements OnClickListener {
     void displayDeviceSupport() {
         final int headerLevel = 2;
 
-        HtmlFormatter mHtmlFormatter = new HtmlFormatter();
-        mHtmlFormatter.openDocument();
+        mTextFormatter.clear();
+        mTextFormatter.openDocument();
 
         // Supported Devices
-        mHtmlFormatter.openHeading(headerLevel)
+        mTextFormatter.openHeading(headerLevel)
                 .appendText(mContext.getString(R.string.audio_general_supporteddevices))
                 .closeHeading(headerLevel);
-        mHtmlFormatter.appendText(mContext.getString(R.string.audio_supported_devices_explain))
+        mTextFormatter.appendText(mContext.getString(R.string.audio_supported_devices_explain))
                 .appendBreak()
                 .appendBreak();
 
         if (!Flags.supportedDeviceTypesApi()) {
             // Can't determine support (i.e. the AudioManager.getSupporteDeviceTypes() not
             // unflagged
-            mHtmlFormatter.openItalic()
+            mTextFormatter.openItalic()
                     .appendText(mContext.getString(R.string.audio_devicesupport_cantdetermine))
                     .closeItalic()
                     .appendBreak();
         } else {
             // Inputs
-            mHtmlFormatter.openBold()
+            mTextFormatter.openBold()
                     .appendText(mContext.getString(R.string.audio_general_inputscolon))
-                    .appendBreak()
-                    .closeBold();
+                    .closeBold()
+                    .appendBreak();
 
             Set<Integer> inputDevices =
                     mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_INPUTS);
-            mHtmlFormatter.openBulletList();
+            mTextFormatter.openBulletList();
             for (Integer deviceType : inputDevices) {
-                mHtmlFormatter.openListItem()
+                mTextFormatter.openListItem()
                         .appendText(AudioDeviceUtils.getShortDeviceTypeName(deviceType))
                         .closeListItem();
             }
-            mHtmlFormatter.closeBulletList();
+            mTextFormatter.closeBulletList();
 
             // Outputs
-            mHtmlFormatter.openBold()
+            mTextFormatter.openBold()
                     .appendText(mContext.getString(R.string.audio_general_outputscolon))
-                    .appendBreak()
-                    .closeBold();
+                    .closeBold()
+                    .appendBreak();
 
             Set<Integer> outputDevices =
                     mAudioManager.getSupportedDeviceTypes(AudioManager.GET_DEVICES_OUTPUTS);
-            mHtmlFormatter.openBulletList();
+            mTextFormatter.openBulletList();
             for (Integer deviceType : outputDevices) {
-                mHtmlFormatter.openListItem()
+                mTextFormatter.openListItem()
                         .appendText(AudioDeviceUtils.getShortDeviceTypeName(deviceType))
                         .closeListItem();
             }
-            mHtmlFormatter.closeBulletList();
+            mTextFormatter.closeBulletList();
         }
 
         // Available Devices
-        mHtmlFormatter.openHeading(headerLevel)
+        mTextFormatter.openHeading(headerLevel)
                 .appendText(mContext.getString(R.string.audio_general_availabledevices))
                 .closeHeading(headerLevel);
-        mHtmlFormatter.appendText(mContext.getString(R.string.audio_available_devices_explain))
+        mTextFormatter.appendText(mContext.getString(R.string.audio_available_devices_explain))
                 .appendBreak()
                 .appendBreak();
 
         // Inputs
-        mHtmlFormatter.openBold()
+        mTextFormatter.openBold()
                 .appendText(mContext.getString(R.string.audio_general_inputscolon))
-                .appendBreak()
-                .closeBold();
+                .closeBold()
+                .appendBreak();
 
-        mHtmlFormatter.openBulletList();
+        mTextFormatter.openBulletList();
         AudioDeviceInfo[] inputDevices =
                 mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
         for (AudioDeviceInfo deviceInfo : inputDevices) {
-            mHtmlFormatter.openListItem()
+            mTextFormatter.openListItem()
                     .appendText(AudioDeviceUtils.getShortDeviceTypeName(deviceInfo.getType()))
                     .closeListItem();
         }
-        mHtmlFormatter.closeBulletList();
+        mTextFormatter.closeBulletList();
 
         // Outputs
-        mHtmlFormatter.openBold()
+        mTextFormatter.openBold()
                 .appendText(mContext.getString(R.string.audio_general_outputscolon))
-                .appendBreak()
-                .closeBold();
+                .closeBold()
+                .appendBreak();
 
         AudioDeviceInfo[] outputDevices =
                 mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
-        mHtmlFormatter.openBulletList();
+        mTextFormatter.openBulletList();
         for (AudioDeviceInfo deviceInfo : outputDevices) {
-            mHtmlFormatter.openListItem()
+            mTextFormatter.openListItem()
                     .appendText(AudioDeviceUtils.getShortDeviceTypeName(deviceInfo.getType()))
                     .closeListItem();
         }
-        mHtmlFormatter.closeBulletList();
+        mTextFormatter.closeBulletList();
 
-        mHtmlFormatter.closeDocument();
-
-        mInfoPanel.loadData(mHtmlFormatter.toString(), "text/html; charset=utf-8", "utf-8");
+        mTextFormatter.closeDocument();
+        mTextFormatter.put(mInfoPanel);
     }
 
     //
