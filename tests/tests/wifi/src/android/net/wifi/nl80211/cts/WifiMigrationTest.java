@@ -14,44 +14,54 @@
  * limitations under the License.
  */
 
-package android.net.wifi.cts;
+package android.net.wifi.nl80211.cts;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
+import android.content.Context;
 import android.net.wifi.WifiMigration;
 import android.net.wifi.flags.Flags;
 import android.os.Build;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
+import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 
-public class WifiMigrationTest extends WifiJUnit3TestBase {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+@SmallTest
+@RunWith(AndroidJUnit4.class)
+public class WifiMigrationTest {
     private static final String TEST_SSID_UNQUOTED = "testSsid1";
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            return;
-        }
+    private Context mContext;
+    @Before
+    public void setUp() throws Exception {
+        mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        assumeTrue(WifiFeature.isWifiSupported(mContext));
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
-            // skip the test if WiFi is not supported
-            super.tearDown();
-            return;
-        }
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
+        assumeTrue(WifiFeature.isWifiSupported(mContext));
     }
 
     /**
      * Tests {@link android.net.wifi.WifiMigration.SettingsMigrationData.Builder} class.
      */
+    @Test
     public void testWifiMigrationSettingsDataBuilder() throws Exception {
-        if (!WifiFeature.isWifiSupported(getContext())) {
+        if (!WifiFeature.isWifiSupported(mContext)) {
             // skip the test if WiFi is not supported
             return;
         }
@@ -79,9 +89,10 @@ public class WifiMigrationTest extends WifiJUnit3TestBase {
     /**
      * Tests {@link android.net.wifi.WifiMigration.SettingsMigrationData} class.
      */
+    @Test
     public void testWifiMigrationSettings() throws Exception {
         try {
-            WifiMigration.loadFromSettings(getContext());
+            WifiMigration.loadFromSettings(mContext);
         } catch (Exception ignore) {
         }
     }
@@ -92,6 +103,7 @@ public class WifiMigrationTest extends WifiJUnit3TestBase {
      * {@link WifiMigration#removeSharedConfigStoreFile(int)} and
      * {@link WifiMigration#removeUserConfigStoreFile(int, UserHandle)}.
      */
+    @Test
     public void testWifiMigrationConfigStore() throws Exception {
         try {
             WifiMigration.convertAndRetrieveSharedConfigStoreFile(
@@ -145,6 +157,7 @@ public class WifiMigrationTest extends WifiJUnit3TestBase {
      *
      * TODO: Update @SdkSuppress once a version code >V is available
      */
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_LEGACY_KEYSTORE_TO_WIFI_BLOBSTORE_MIGRATION_READ_ONLY)
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")

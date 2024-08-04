@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
+package com.android.bedstead.harrier.components
 
 import com.android.bedstead.enterprise.EnterpriseComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
+import com.android.bedstead.harrier.AnnotationExecutorUtil
+import com.android.bedstead.harrier.BedsteadServiceLocator
+import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.EnsureTestAppDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasAppOp
 import com.android.bedstead.harrier.annotations.EnsureTestAppHasPermission
@@ -49,7 +52,6 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     private val _additionalQueryParameters: MutableMap<String, Query> = mutableMapOf()
     val additionalQueryParameters: Map<String, Query>
         get() = _additionalQueryParameters
-
 
     /**
      * See [EnsureTestAppHasPermission]

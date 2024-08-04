@@ -13,9 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
+package com.android.bedstead.harrier.components
 
 import android.util.Log
+import com.android.bedstead.harrier.BedsteadServiceLocator
+import com.android.bedstead.harrier.Defaults
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.DeviceStateComponent
+import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
 import com.android.bedstead.nene.exceptions.NeneException
