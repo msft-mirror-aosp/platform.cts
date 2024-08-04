@@ -58,7 +58,7 @@ public class MockModemManager {
     private static Context sContext;
     private static MockModemServiceConnector sServiceConnector;
     private static final long TIMEOUT_IN_MSEC_FOR_SIM_STATUS_CHANGED = 10000;
-    private static final int WAIT_UPDATE_TIMEOUT_MS = 200;  // 0.2sec delay
+    private static final int WAIT_UPDATE_TIMEOUT_MS = 1000;  // 1sec delay
     private MockModemService mMockModemService;
 
     public static void enforceMockModemDeveloperSetting() throws Exception {
@@ -1122,7 +1122,7 @@ public class MockModemManager {
     }
 
     /**
-     * Wait latch for 0.2 sec or latch to countdown.
+     * Wait latch for WAIT_UPDATE_TIMEOUT_MS or latch to countdown.
      * @param slotId : slotId of the device.
      * @param waitMs : Wait in milliseconds for the latch-wait timeout.
      * @return true if latch is success else fail.
