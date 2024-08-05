@@ -17,8 +17,6 @@
 package com.android.bedstead.remoteframeworkclasses.processor;
 
 import com.android.bedstead.remoteframeworkclasses.processor.annotations.RemoteFrameworkClasses;
-import com.android.bedstead.testapis.parser.TestApisParser;
-import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 
 import com.google.android.enterprise.connectedapps.annotations.CrossUser;
 import com.google.auto.service.AutoService;
@@ -41,11 +39,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Generated;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
@@ -97,9 +95,18 @@ public final class Processor extends AbstractProcessor {
     private static final ImmutableSet<String> ALLOWLISTED_METHODS =
             loadList("/apis/allowlisted-methods.txt");
 
-    /** A set of all classes listed in test-current.txt. */
-    static final ImmutableSet<ClassSignature> CLASSES_LISTED_IN_TEST_CURRENT_FILE =
-            loadClassesListedInTestCurrentFile();
+    // TODO(b/332847045): get resource from TestApisReflection target
+    static final ImmutableSet<String> ALLOWLISTED_TEST_CLASSES =
+            loadList("/apis/allowlisted-test-classes.txt");
+    private static ImmutableSet<String> loadList(String filename) {
+        try {
+            return ImmutableSet.copyOf(Resources.toString(
+                    Processor.class.getResource(filename),
+                    StandardCharsets.UTF_8).split("\n"));
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read file", e);
+        }
+    }
 
     /**
      * The TestApisReflection module generates proxy classes used to access TestApi classes and
@@ -252,8 +259,7 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods,
-            Elements elements) {
+    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods, Elements elements) {
         ExecutableElement method = api.method;
         if (allowListedMethods.contains(MethodSignature.forMethod(method, elements))) {
             return false; // Special case hacked in methods
@@ -323,23 +329,18 @@ public final class Processor extends AbstractProcessor {
         classBuilder.addJavadoc("<p>For implementation see {@link $T}.\n", implClassName);
 
 
-        classBuilder
-                .addAnnotation(
-                        AnnotationSpec.builder(Generated.class)
-                                .addMember("value", "$S", Processor.class.getName())
-                                .build())
-                .addAnnotation(AnnotationSpec.builder(CrossUser.class)
-                        .addMember("parcelableWrappers",
-                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
-                                NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
-                                NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
-                                NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
-                                NULL_PARCELABLE_ACTIVITY_CLASSNAME,
-                                NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                                NULL_HANDLER_CALLBACK_CLASSNAME)
-                        .addMember("futureWrappers", "$T.class",
-                                ACCOUNT_MANAGE_FUTURE_WRAPPER_CLASSNAME)
-                        .build());
+        classBuilder.addAnnotation(AnnotationSpec.builder(CrossUser.class)
+                .addMember("parcelableWrappers",
+                        "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
+                        NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
+                        NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
+                        NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
+                        NULL_PARCELABLE_ACTIVITY_CLASSNAME,
+                        NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
+                        NULL_HANDLER_CALLBACK_CLASSNAME)
+                .addMember("futureWrappers", "$T.class",
+                        ACCOUNT_MANAGE_FUTURE_WRAPPER_CLASSNAME)
+                .build());
 
         for (Api api : apis) {
             ExecutableElement method = api.method;
@@ -545,15 +546,6 @@ public final class Processor extends AbstractProcessor {
                                 className)
                         .addSuperinterface(interfaceClassName)
                         .addModifiers(Modifier.PUBLIC);
-
-        classBuilder.addAnnotation(
-                        AnnotationSpec.builder(Generated.class)
-                                .addMember("value", "$S", Processor.class.getName())
-                                .build())
-                .addAnnotation(
-                        AnnotationSpec.builder(SuppressWarnings.class)
-                                .addMember("value", "$S", "CheckSignatures")
-                                .build());
 
         classBuilder.addField(ClassName.get(frameworkClass),
                 "mFrameworkClass", Modifier.PRIVATE, Modifier.FINAL);
@@ -772,23 +764,6 @@ public final class Processor extends AbstractProcessor {
                 .map(p -> p.asType().toString()).collect(
                         Collectors.joining(",")) + ")";
     }
-
-    private static ImmutableSet<String> loadList(String filename) {
-        try {
-            return ImmutableSet.copyOf(Resources.toString(
-                    Processor.class.getResource(filename),
-                    StandardCharsets.UTF_8).split("\n"));
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read file", e);
-        }
-    }
-
-    private static ImmutableSet<ClassSignature> loadClassesListedInTestCurrentFile() {
-        return ImmutableSet.copyOf(TestApisParser.parse().stream()
-                .flatMap(p -> p.getClassSignatures().stream())
-                .collect(Collectors.toSet()));
-    }
-
     private static class Api {
         private final ExecutableElement method;
         private final boolean isTestApi;

@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.testapis.parser.utils;
+package com.android.bedstead.testapisreflection.processor.utils;
+
+import com.android.bedstead.testapisreflection.processor.signatures.ClassSignature;
 
 import com.squareup.kotlinpoet.ClassName;
 import com.squareup.kotlinpoet.ParameterizedTypeName;
@@ -190,6 +192,27 @@ public final class TypeUtils {
         return element.asType();
     }
 
+    private static String typeQualifiedName(TypeMirror typeMirror) {
+        if (typeMirror == null) {
+            return null;
+        }
+
+        return typeQualifiedName(typeMirror.toString());
+    }
+
+    public static String typeQualifiedName(String type) {
+        // Change java package name to valid kotlin package
+        if (type.startsWith("java.util")) {
+            type = type.replace("java.util", "kotlin.collections");
+        } else if (type.startsWith("java.lang")) {
+            type = type.replace("java.lang", "kotlin");
+        }
+
+        // If type is parameterized, erase parameter, for e.g. kolin.collections.List<String>
+        // would be converted into kotlin.collections.List
+        return type.split("<", 2)[0];
+    }
+
     public static String typePackageName(String type) {
         String[] parts = type.split("\\.");
         StringBuilder name = new StringBuilder();
@@ -226,26 +249,6 @@ public final class TypeUtils {
 
     public static boolean isParameterizedType(String type) {
         return type.contains("<");
-    }
-
-    private static String typeQualifiedName(String type) {
-        // Change java package name to valid kotlin package
-        if (type.startsWith("java.util")) {
-            type = type.replace("java.util", "kotlin.collections");
-        } else if (type.startsWith("java.lang")) {
-            type = type.replace("java.lang", "kotlin");
-        }
-
-        // If type is parameterized, erase parameter, for e.g. kolin.collections.List<String>
-        // would be converted into kotlin.collections.List
-        return type.split("<", 2)[0];
-    }
-    private static String typeQualifiedName(TypeMirror typeMirror) {
-        if (typeMirror == null) {
-            return null;
-        }
-
-        return typeQualifiedName(typeMirror.toString());
     }
 
     private static TypeMirror extractTypeArgument(TypeMirror type) {

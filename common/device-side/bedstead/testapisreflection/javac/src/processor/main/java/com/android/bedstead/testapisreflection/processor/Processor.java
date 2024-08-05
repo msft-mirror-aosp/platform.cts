@@ -18,12 +18,12 @@ package com.android.bedstead.testapisreflection.processor;
 
 import static com.android.bedstead.testapisreflection.processor.utils.ResourceLoader.load;
 
-import com.android.bedstead.testapis.parser.signatures.ClassSignature;
-import com.android.bedstead.testapis.parser.signatures.PackageSignature;
-import com.android.bedstead.testapis.parser.TestApisParser;
 import com.android.bedstead.testapisreflection.processor.annotations.TestApisReflectionTrigger;
 import com.android.bedstead.testapisreflection.processor.generators.ProxyClassesGenerator;
 import com.android.bedstead.testapisreflection.processor.generators.ProxyMethodExtensionsGenerator;
+import com.android.bedstead.testapisreflection.processor.signatures.ClassSignature;
+import com.android.bedstead.testapisreflection.processor.signatures.PackageSignature;
+import com.android.bedstead.testapisreflection.processor.utils.TestApisParser;
 
 import com.google.auto.service.AutoService;
 import com.google.common.collect.ImmutableSet;
