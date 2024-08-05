@@ -73,7 +73,8 @@ public class MediaProjectionTests {
         sysUiResources = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager().getResourcesForApplication(SYSTEM_UI_PACKAGE);
 
-        final String singleAppResName = "screen_share_permission_dialog_option_single_app";
+        final String singleAppResName =
+            "media_projection_entry_app_permission_dialog_option_text_single_app";
 
         int singleAppResId = sysUiResources.getIdentifier(
                 singleAppResName, "string", SYSTEM_UI_PACKAGE);
