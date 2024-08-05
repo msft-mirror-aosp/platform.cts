@@ -22,6 +22,7 @@ import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static org.junit.Assert.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -142,7 +143,8 @@ public class ActivityManagementTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intent, mVirtualDisplayId);
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onActivityLaunchBlocked(
-                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUserId()));
+                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUserId()),
+                any());
     }
 
     @Test
