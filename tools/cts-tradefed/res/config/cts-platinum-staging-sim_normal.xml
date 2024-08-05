@@ -392,7 +392,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionRemove" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Destroy" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Disconnect" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Extras" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_StateChange" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCreate" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceDTMFTone" />
