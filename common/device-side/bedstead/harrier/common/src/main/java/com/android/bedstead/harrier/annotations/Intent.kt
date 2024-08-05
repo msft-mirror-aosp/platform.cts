@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations
 /**
  * Represents an Intent for testing purposes.
  */
+@Target()
 @Retention(AnnotationRetention.RUNTIME)
 annotation class Intent (
 

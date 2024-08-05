@@ -17,8 +17,6 @@
 package com.android.bedstead.remoteframeworkclasses.processor;
 
 import com.android.bedstead.remoteframeworkclasses.processor.annotations.RemoteFrameworkClasses;
-import com.android.bedstead.testapis.parser.TestApisParser;
-import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 
 import com.google.android.enterprise.connectedapps.annotations.CrossUser;
 import com.google.auto.service.AutoService;
@@ -41,11 +39,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.Generated;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.lang.model.SourceVersion;
@@ -97,9 +95,18 @@ public final class Processor extends AbstractProcessor {
     private static final ImmutableSet<String> ALLOWLISTED_METHODS =
             loadList("/apis/allowlisted-methods.txt");
 
-    /** A set of all classes listed in test-current.txt. */
-    static final ImmutableSet<ClassSignature> CLASSES_LISTED_IN_TEST_CURRENT_FILE =
-            loadClassesListedInTestCurrentFile();
+    // TODO(b/332847045): get resource from TestApisReflection target
+    static final ImmutableSet<String> ALLOWLISTED_TEST_CLASSES =
+            loadList("/apis/allowlisted-test-classes.txt");
+    private static ImmutableSet<String> loadList(String filename) {
+        try {
+            return ImmutableSet.copyOf(Resources.toString(
+                    Processor.class.getResource(filename),
+                    StandardCharsets.UTF_8).split("\n"));
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not read file", e);
+        }
+    }
 
     /**
      * The TestApisReflection module generates proxy classes used to access TestApi classes and
@@ -211,7 +218,8 @@ public final class Processor extends AbstractProcessor {
                 Apis.forClass(frameworkClass.getQualifiedName().toString(),
                         processingEnv.getTypeUtils(), processingEnv.getElementUtils()), elements)
                 .stream()
-                .filter(api -> !usesBlocklistedType(api, allowListedMethods, elements))
+                .filter(t -> t.isTestApi ||
+                        !usesBlocklistedType(t.method, allowListedMethods, elements))
                 .collect(Collectors.toSet());
 
         generateFrameworkInterface(frameworkClass, apis);
@@ -252,9 +260,7 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods,
-            Elements elements) {
-        ExecutableElement method = api.method;
+    private boolean usesBlocklistedType(ExecutableElement method, Set<MethodSignature> allowListedMethods, Elements elements) {
         if (allowListedMethods.contains(MethodSignature.forMethod(method, elements))) {
             return false; // Special case hacked in methods
         }
@@ -263,13 +269,8 @@ public final class Processor extends AbstractProcessor {
             return true;
         }
 
-        for (int i = 0; i < method.getParameters().size(); i++) {
-            if (i == 0 && api.isTestApi) {
-                // if it is a TestApi, ignore the first parameter as that is the kotlin
-                // extension receiver parameter.
-                continue;
-            }
-            if (isBlocklistedType(method.getParameters().get(i).asType())) {
+        for (VariableElement parameter : method.getParameters()) {
+            if (isBlocklistedType(parameter.asType())) {
                 return true;
             }
         }
@@ -323,23 +324,18 @@ public final class Processor extends AbstractProcessor {
         classBuilder.addJavadoc("<p>For implementation see {@link $T}.\n", implClassName);
 
 
-        classBuilder
-                .addAnnotation(
-                        AnnotationSpec.builder(Generated.class)
-                                .addMember("value", "$S", Processor.class.getName())
-                                .build())
-                .addAnnotation(AnnotationSpec.builder(CrossUser.class)
-                        .addMember("parcelableWrappers",
-                                "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
-                                NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
-                                NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
-                                NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
-                                NULL_PARCELABLE_ACTIVITY_CLASSNAME,
-                                NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
-                                NULL_HANDLER_CALLBACK_CLASSNAME)
-                        .addMember("futureWrappers", "$T.class",
-                                ACCOUNT_MANAGE_FUTURE_WRAPPER_CLASSNAME)
-                        .build());
+        classBuilder.addAnnotation(AnnotationSpec.builder(CrossUser.class)
+                .addMember("parcelableWrappers",
+                        "{$T.class, $T.class, $T.class, $T.class, $T.class, $T.class}",
+                        NULL_PARCELABLE_REMOTE_DEVICE_POLICY_MANAGER_CLASSNAME,
+                        NULL_PARCELABLE_REMOTE_CONTENT_RESOLVER_CLASSNAME,
+                        NULL_PARCELABLE_REMOTE_BLUETOOTH_ADAPTER_CLASSNAME,
+                        NULL_PARCELABLE_ACTIVITY_CLASSNAME,
+                        NULL_PARCELABLE_ACCOUNT_MANAGER_CALLBACK_CLASSNAME,
+                        NULL_HANDLER_CALLBACK_CLASSNAME)
+                .addMember("futureWrappers", "$T.class",
+                        ACCOUNT_MANAGE_FUTURE_WRAPPER_CLASSNAME)
+                .build());
 
         for (Api api : apis) {
             ExecutableElement method = api.method;
@@ -546,15 +542,6 @@ public final class Processor extends AbstractProcessor {
                         .addSuperinterface(interfaceClassName)
                         .addModifiers(Modifier.PUBLIC);
 
-        classBuilder.addAnnotation(
-                        AnnotationSpec.builder(Generated.class)
-                                .addMember("value", "$S", Processor.class.getName())
-                                .build())
-                .addAnnotation(
-                        AnnotationSpec.builder(SuppressWarnings.class)
-                                .addMember("value", "$S", "CheckSignatures")
-                                .build());
-
         classBuilder.addField(ClassName.get(frameworkClass),
                 "mFrameworkClass", Modifier.PRIVATE, Modifier.FINAL);
 
@@ -686,13 +673,13 @@ public final class Processor extends AbstractProcessor {
             }
         }
 
-        filterValidTestApis(filteredMethods, frameworkClass, elements);
+        filterValidTestApis(filteredMethods, frameworkClass, validApis, elements);
 
         return filteredMethods;
     }
 
-    private void filterValidTestApis(Set<Api> filteredMethods, TypeElement frameworkClass,
-            Elements elements) {
+    private void filterValidTestApis(Set<Api> filteredMethods,
+            TypeElement frameworkClass, Apis validApis, Elements elements) {
         Set<ExecutableElement> testMethods = new HashSet<>();
         TypeElement testApisReflectionTypeElement =
                 processingEnv.getElementUtils().getTypeElement(TEST_APIS_REFLECTION_FILE);
@@ -711,14 +698,22 @@ public final class Processor extends AbstractProcessor {
                 continue;
             }
 
-            Api testApi = new Api(method, /* isTestApi= */ true);
-            if (filteredMethods.contains(testApi)) {
-                System.out.println("Api " + methodSignature.getName() + " is already added, "
-                        + "probably because it is marked as another type of Api as well.");
-                continue;
-            }
+            Optional<MethodSignature> validTestApi = validApis.methods().stream().filter(a ->
+                    methodSignature.getName().equals(a.getName()) &&
+                            methodSignature.getReturnType().equals(a.getReturnType()) &&
+                            methodSignature.mExceptions.equals(a.mExceptions) &&
+                            methodSignature.mParameterTypes.containsAll(a.mParameterTypes))
+                    .findFirst();
 
-            filteredMethods.add(testApi);
+            if (validTestApi.isPresent()) {
+                if (method.getModifiers().contains(Modifier.PROTECTED)) {
+                    System.out.println(methodSignature + " is protected. Dropping");
+                } else {
+                    filteredMethods.add(new Api(method, /* isTestApi= */ true));
+                }
+            } else {
+                System.out.println("No matching public API for TestApi " + methodSignature);
+            }
         }
     }
 
@@ -772,23 +767,6 @@ public final class Processor extends AbstractProcessor {
                 .map(p -> p.asType().toString()).collect(
                         Collectors.joining(",")) + ")";
     }
-
-    private static ImmutableSet<String> loadList(String filename) {
-        try {
-            return ImmutableSet.copyOf(Resources.toString(
-                    Processor.class.getResource(filename),
-                    StandardCharsets.UTF_8).split("\n"));
-        } catch (IOException e) {
-            throw new IllegalStateException("Could not read file", e);
-        }
-    }
-
-    private static ImmutableSet<ClassSignature> loadClassesListedInTestCurrentFile() {
-        return ImmutableSet.copyOf(TestApisParser.parse().stream()
-                .flatMap(p -> p.getClassSignatures().stream())
-                .collect(Collectors.toSet()));
-    }
-
     private static class Api {
         private final ExecutableElement method;
         private final boolean isTestApi;
@@ -803,43 +781,12 @@ public final class Processor extends AbstractProcessor {
             if (this == o) return true;
             if (!(o instanceof Api)) return false;
             Api api = (Api) o;
-            if (Objects.equals(method.getSimpleName(), api.method.getSimpleName())) {
-                if (isTestApi) {
-                    // when comparing a TestApi with a non-TestApi we need to ignore the first
-                    // parameter in the TestApi as that parameter is the kotlin extension receiver
-                    // parameter
-                    if (method.getParameters().size() == api.method.getParameters().size() + 1) {
-                        for (int i = 1; i < method.getParameters().size(); i++) {
-                            if (!method.getParameters().get(i).getSimpleName().equals(
-                                    api.method.getParameters().get(i - 1).getSimpleName())) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                } else {
-                    return method.getParameters().equals(api.method.getParameters());
-                }
-            }
-
-            return false;
+            return isTestApi == api.isTestApi && Objects.equals(method, api.method);
         }
 
         @Override
         public int hashCode() {
-            StringBuilder sb = new StringBuilder();
-            int index = 0;
-            if (isTestApi) {
-                // if it is a TestApi we need to ignore the first
-                // parameter in the TestApi as that is the kotlin extension receiver
-                // parameter
-                index = 1;
-            }
-            for (int i = index; i < method.getParameters().size(); i++) {
-                sb.append(method.getParameters().get(i).getSimpleName());
-            }
-
-            return Objects.hash(method.getSimpleName().toString(), sb.toString());
+            return Objects.hash(method, isTestApi);
         }
     }
 }
