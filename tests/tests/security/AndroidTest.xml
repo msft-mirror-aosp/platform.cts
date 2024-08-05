@@ -55,6 +55,7 @@
         <option name="push" value="SplitBluetoothPermissionTestApp.apk->/data/local/tmp/cts/security/SplitBluetoothPermissionTestApp.apk" />
         <option name="push" value="CtsAppThatRequestCustomCameraPermission.apk->/data/local/tmp/cts/permissions/CtsAppThatRequestCustomCameraPermission.apk" />
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
+        <option name="push" value="CtsEmptyApp.apk->/data/local/tmp/cts/security/CtsEmptyApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
