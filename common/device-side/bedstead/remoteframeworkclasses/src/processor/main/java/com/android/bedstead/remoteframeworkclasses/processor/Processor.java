@@ -218,8 +218,7 @@ public final class Processor extends AbstractProcessor {
                 Apis.forClass(frameworkClass.getQualifiedName().toString(),
                         processingEnv.getTypeUtils(), processingEnv.getElementUtils()), elements)
                 .stream()
-                .filter(t -> t.isTestApi ||
-                        !usesBlocklistedType(t.method, allowListedMethods, elements))
+                .filter(api -> !usesBlocklistedType(api, allowListedMethods, elements))
                 .collect(Collectors.toSet());
 
         generateFrameworkInterface(frameworkClass, apis);
@@ -260,7 +259,8 @@ public final class Processor extends AbstractProcessor {
         return false;
     }
 
-    private boolean usesBlocklistedType(ExecutableElement method, Set<MethodSignature> allowListedMethods, Elements elements) {
+    private boolean usesBlocklistedType(Api api, Set<MethodSignature> allowListedMethods, Elements elements) {
+        ExecutableElement method = api.method;
         if (allowListedMethods.contains(MethodSignature.forMethod(method, elements))) {
             return false; // Special case hacked in methods
         }
@@ -269,8 +269,13 @@ public final class Processor extends AbstractProcessor {
             return true;
         }
 
-        for (VariableElement parameter : method.getParameters()) {
-            if (isBlocklistedType(parameter.asType())) {
+        for (int i = 0; i < method.getParameters().size(); i++) {
+            if (i == 0 && api.isTestApi) {
+                // if it is a TestApi, ignore the first parameter as that is the kotlin
+                // extension receiver parameter.
+                continue;
+            }
+            if (isBlocklistedType(method.getParameters().get(i).asType())) {
                 return true;
             }
         }
@@ -673,13 +678,13 @@ public final class Processor extends AbstractProcessor {
             }
         }
 
-        filterValidTestApis(filteredMethods, frameworkClass, validApis, elements);
+        filterValidTestApis(filteredMethods, frameworkClass, elements);
 
         return filteredMethods;
     }
 
-    private void filterValidTestApis(Set<Api> filteredMethods,
-            TypeElement frameworkClass, Apis validApis, Elements elements) {
+    private void filterValidTestApis(Set<Api> filteredMethods, TypeElement frameworkClass,
+            Elements elements) {
         Set<ExecutableElement> testMethods = new HashSet<>();
         TypeElement testApisReflectionTypeElement =
                 processingEnv.getElementUtils().getTypeElement(TEST_APIS_REFLECTION_FILE);
@@ -698,22 +703,14 @@ public final class Processor extends AbstractProcessor {
                 continue;
             }
 
-            Optional<MethodSignature> validTestApi = validApis.methods().stream().filter(a ->
-                    methodSignature.getName().equals(a.getName()) &&
-                            methodSignature.getReturnType().equals(a.getReturnType()) &&
-                            methodSignature.mExceptions.equals(a.mExceptions) &&
-                            methodSignature.mParameterTypes.containsAll(a.mParameterTypes))
-                    .findFirst();
-
-            if (validTestApi.isPresent()) {
-                if (method.getModifiers().contains(Modifier.PROTECTED)) {
-                    System.out.println(methodSignature + " is protected. Dropping");
-                } else {
-                    filteredMethods.add(new Api(method, /* isTestApi= */ true));
-                }
-            } else {
-                System.out.println("No matching public API for TestApi " + methodSignature);
+            Api testApi = new Api(method, /* isTestApi= */ true);
+            if (filteredMethods.contains(testApi)) {
+                System.out.println("Api " + methodSignature.getName() + " is already added, "
+                        + "probably because it is marked as another type of Api as well.");
+                continue;
             }
+
+            filteredMethods.add(testApi);
         }
     }
 
@@ -781,12 +778,43 @@ public final class Processor extends AbstractProcessor {
             if (this == o) return true;
             if (!(o instanceof Api)) return false;
             Api api = (Api) o;
-            return isTestApi == api.isTestApi && Objects.equals(method, api.method);
+            if (Objects.equals(method.getSimpleName(), api.method.getSimpleName())) {
+                if (isTestApi) {
+                    // when comparing a TestApi with a non-TestApi we need to ignore the first
+                    // parameter in the TestApi as that parameter is the kotlin extension receiver
+                    // parameter
+                    if (method.getParameters().size() == api.method.getParameters().size() + 1) {
+                        for (int i = 1; i < method.getParameters().size(); i++) {
+                            if (!method.getParameters().get(i).getSimpleName().equals(
+                                    api.method.getParameters().get(i - 1).getSimpleName())) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                } else {
+                    return method.getParameters().equals(api.method.getParameters());
+                }
+            }
+
+            return false;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(method, isTestApi);
+            StringBuilder sb = new StringBuilder();
+            int index = 0;
+            if (isTestApi) {
+                // if it is a TestApi we need to ignore the first
+                // parameter in the TestApi as that is the kotlin extension receiver
+                // parameter
+                index = 1;
+            }
+            for (int i = index; i < method.getParameters().size(); i++) {
+                sb.append(method.getParameters().get(i).getSimpleName());
+            }
+
+            return Objects.hash(method.getSimpleName().toString(), sb.toString());
         }
     }
 }
