@@ -180,15 +180,8 @@ public final class MethodSignature {
     }
 
     private static String proxyType(String typeName) {
-        String[] parts = typeName.split("\\.");
-        StringBuilder simpleName = new StringBuilder();
-        for (String p : parts) {
-            if (Character.isUpperCase(p.charAt(0))) {
-                simpleName.append(p);
-            }
-        }
-
-        return TEST_APIS_REFLECTION_PACKAGE + "." + simpleName + "Proxy";
+        return TEST_APIS_REFLECTION_PACKAGE + "." +
+                typeName.substring(typeName.lastIndexOf(".") + 1) + "Proxy";
     }
 
     enum Visibility {
