@@ -19,7 +19,7 @@ package com.android.bedstead.testapisreflection.processor.generators;
 import static com.android.bedstead.testapisreflection.processor.Processor.BLOCKLISTED_TEST_CLASSES;
 
 import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
-import com.android.bedstead.testapisreflection.processor.signatures.ClassSignature;
+import com.android.bedstead.testapis.parser.signatures.ClassSignature;
 
 import com.google.common.collect.ImmutableMap;
 

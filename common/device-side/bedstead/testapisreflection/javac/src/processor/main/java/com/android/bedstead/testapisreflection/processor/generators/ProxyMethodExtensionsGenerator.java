@@ -21,9 +21,9 @@ import static com.android.bedstead.testapisreflection.processor.Processor.PACKAG
 import static com.android.bedstead.testapisreflection.processor.Processor.BLOCKLISTED_TEST_CLASSES;
 
 import com.android.bedstead.testapisreflection.processor.generators.common.CodeGenerator;
-import com.android.bedstead.testapisreflection.processor.signatures.ClassSignature;
-import com.android.bedstead.testapisreflection.processor.signatures.MethodSignature;
-import com.android.bedstead.testapisreflection.processor.signatures.PackageSignature;
+import com.android.bedstead.testapis.parser.signatures.ClassSignature;
+import com.android.bedstead.testapis.parser.signatures.MethodSignature;
+import com.android.bedstead.testapis.parser.signatures.PackageSignature;
 
 import com.squareup.kotlinpoet.FileSpec;
 

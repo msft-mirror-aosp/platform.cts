@@ -38,6 +38,7 @@ java_library_host {
         "kotlinpoet",
         "auto_service_annotations",
         "TestApisReflection_Annotations",
+        "bedstead-testapis-parser",
     ],
     java_resource_dirs: [
         "common/java/",

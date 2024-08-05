@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.testapisreflection.processor.utils;
+package com.android.bedstead.testapis.parser;
 
-import com.android.bedstead.testapisreflection.processor.Processor;
-import com.android.bedstead.testapisreflection.processor.signatures.ClassSignature;
-import com.android.bedstead.testapisreflection.processor.signatures.ConstructorSignature;
-import com.android.bedstead.testapisreflection.processor.signatures.MethodSignature;
-import com.android.bedstead.testapisreflection.processor.signatures.PackageSignature;
+import com.android.bedstead.testapis.parser.signatures.ClassSignature;
+import com.android.bedstead.testapis.parser.signatures.ConstructorSignature;
+import com.android.bedstead.testapis.parser.signatures.MethodSignature;
+import com.android.bedstead.testapis.parser.signatures.PackageSignature;
 
 import com.google.common.io.Resources;
 
@@ -35,13 +34,14 @@ import java.util.Set;
  * Helper class to parse {@code test-current.txt} and fetch TestApis.
  */
 public final class TestApisParser {
-
     private static final String API_FILE = "test-current.txt";
     private static final String API_TXT = initialiseApiTxts();
 
+    private TestApisParser() {}
+
     private static String initialiseApiTxts() {
         try {
-            return Resources.toString(Processor.class.getResource("/apis/" + API_FILE),
+            return Resources.toString(TestApisParser.class.getResource("/apis/" + API_FILE),
                     StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalStateException("Could not read file " + API_FILE);
@@ -161,5 +161,4 @@ public final class TestApisParser {
 
         return packageSignatures;
     }
-
 }

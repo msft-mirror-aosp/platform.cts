@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.testapisreflection.processor.signatures;
+package com.android.bedstead.testapis.parser.signatures;
 
 import java.util.Objects;
 import java.util.Set;
@@ -28,7 +28,8 @@ public final class ClassSignature {
 
     private final String mName;
     private final String mPackageName;
-    private final ConstructorSignature mConstructorSignature;
+    private final ConstructorSignature
+            mConstructorSignature;
     private final Set<MethodSignature> mMethodSignatures;
 
     public ClassSignature(String packageName, String name,

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.testapisreflection.processor.signatures;
+package com.android.bedstead.testapis.parser.signatures;
 
-import static com.android.bedstead.testapisreflection.processor.signatures.MethodSignature.parameterTypes;
+import static com.android.bedstead.testapis.parser.signatures.MethodSignature.parameterTypes;
 
 import com.google.common.collect.ImmutableList;
 
