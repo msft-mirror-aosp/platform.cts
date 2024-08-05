@@ -201,7 +201,6 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -233,18 +232,14 @@ public abstract class ActivityManagerTestBase {
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
     private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
-    private static final List<String> TEST_PACKAGES;
-
-    static {
-        final List<String> testPackages = new ArrayList<>();
-        testPackages.add(TEST_PACKAGE);
-        testPackages.add(SECOND_TEST_PACKAGE);
-        testPackages.add(THIRD_TEST_PACKAGE);
-        testPackages.add("android.server.wm.cts");
-        testPackages.add("android.server.wm.jetpack");
-        testPackages.add("android.server.wm.jetpack.second");
-        TEST_PACKAGES = Collections.unmodifiableList(testPackages);
-    }
+    private static final List<String> TEST_PACKAGES = List.of(
+            TEST_PACKAGE,
+            SECOND_TEST_PACKAGE,
+            THIRD_TEST_PACKAGE,
+            "android.server.wm.cts",
+            "android.server.wm.jetpack",
+            "android.server.wm.jetpack.second"
+    );
 
     protected static final String AM_START_HOME_ACTIVITY_COMMAND =
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
@@ -706,8 +701,9 @@ public abstract class ActivityManagerTestBase {
         }
 
         launchHomeActivityNoWait();
-        // TODO(b/242933292): Consider removing all the tasks belonging to android.server.wm
-        // instead of removing all and then waiting for allActivitiesResumed.
+
+        // TODO(b/355452977): Force stop test packages instead of removing all tasks and then
+        //  waiting for allActivitiesResumed if tests not annotated with @KeepLegacyTaskCleanup.
         removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
 
         runWithShellPermission(() -> {
@@ -742,10 +738,14 @@ public abstract class ActivityManagerTestBase {
         // process if executed first.
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
+
+        // TODO(b/355452977): Force stop test packages instead of removing tasks if tests not
+        //  annotated with @KeepLegacyTaskCleanup.
         removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
         stopTestPackage(TEST_PACKAGE);
         stopTestPackage(SECOND_TEST_PACKAGE);
         stopTestPackage(THIRD_TEST_PACKAGE);
+
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
             mWmState.waitForAllNonHomeActivitiesToDestroyed();
         }
