@@ -334,8 +334,6 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
     }
 
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void autoMirrorDisplay_shouldNotLaunchActivity() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
@@ -343,8 +341,6 @@ public class ActivityBlockingTest {
         assertNoActivityLaunched(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void publicDisplay_shouldNotLaunchActivity() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
@@ -352,8 +348,6 @@ public class ActivityBlockingTest {
         assertNoActivityLaunched(mMonitoredIntent);
     }
 
-    @RequiresFlagsEnabled(
-            {Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void publicAutoMirrorDisplay_shouldNotLaunchActivity() {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder().build(),
