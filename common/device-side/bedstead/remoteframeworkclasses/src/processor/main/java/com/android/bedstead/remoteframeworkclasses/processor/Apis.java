@@ -40,8 +40,7 @@ import javax.lang.model.util.Types;
 public final class Apis {
 
     private static final String[] API_FILES =
-            {"current.txt", "test-current.txt", "wifi-current.txt",
-                    "bluetooth-current.txt", "system-current.txt"};
+            {"current.txt", "wifi-current.txt", "bluetooth-current.txt", "system-current.txt"};
 
     private static final Map<String, String> API_TXTS = initialiseApiTxts();
     private static final Map<String, Apis> sPackageToApi = new HashMap<>();

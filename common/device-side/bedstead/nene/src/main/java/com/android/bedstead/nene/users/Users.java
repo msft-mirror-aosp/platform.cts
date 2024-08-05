@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.users;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
@@ -572,8 +573,7 @@ public final class Users {
         Context context = TestApis.context().instrumentedContext();
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS)) {
-            TestApisReflectionKt.setStopUserOnSwitch(
-                    context.getSystemService(ActivityManager.class), intValue);
+            setStopUserOnSwitch(context.getSystemService(ActivityManager.class), intValue);
         }
     }
 
