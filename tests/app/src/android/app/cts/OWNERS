@@ -4,5 +4,5 @@ per-file Nearby*, UpdateMediaTapToTransfer*.kt = file:platform/frameworks/base:/
 # Bug component: 46626 = per-file DownloadManager*
 per-file DownloadManager* = file:platform/frameworks/base:/core/java/android/os/storage/OWNERS
 
-# Bug component: 41727 = per-file SystemFeaturesTest*
-per-file SystemFeaturesTest* = file:platform/frameworks/av:/camera/OWNERS
+# Bug component: 36137 = per-file SystemFeaturesTest*
+per-file SystemFeaturesTest* = file:platform/frameworks/base:/PACKAGE_MANAGER_OWNERS
