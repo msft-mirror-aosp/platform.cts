@@ -1762,61 +1762,63 @@ public class TelephonyManagerTest {
         boolean getAvailable = initialSpecifiers != null && !initialSpecifiers.isEmpty();
         Log.d(TAG, "getSystemSelectionChannels is " + (getAvailable ? "" : "not ") + "available.");
 
-        List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
-        List<RadioAccessSpecifier> specifiers;
-        for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
-            List<Integer> validBands = new ArrayList<>();
-            for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
-                // Set each band to see which ones are supported by the modem
-                RadioAccessSpecifier specifier = new RadioAccessSpecifier(
-                        accessNetworkType, new int[]{band}, new int[]{});
-                boolean success = trySetSystemSelectionChannels(
-                        Collections.singletonList(specifier), true);
-                if (success) {
-                    validBands.add(band);
+        try {
+            List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
+            List<RadioAccessSpecifier> specifiers;
+            for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
+                List<Integer> validBands = new ArrayList<>();
+                for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
+                    // Set each band to see which ones are supported by the modem
+                    RadioAccessSpecifier specifier = new RadioAccessSpecifier(
+                            accessNetworkType, new int[]{band}, new int[]{});
+                    boolean success = trySetSystemSelectionChannels(
+                            Collections.singletonList(specifier), true);
+                    if (success) {
+                        validBands.add(band);
 
-                    // Try calling the API that doesn't provide feedback.
-                    // We have no way of knowing if it succeeds, so just make sure nothing crashes.
-                    trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
+                        // Try calling the API that doesn't provide feedback.
+                        // We have no way of knowing if it succeeds; just make sure nothing crashes.
+                        trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
 
-                    if (getAvailable) {
-                        // Assert that we get back the value we set.
-                        specifiers = tryGetSystemSelectionChannels();
-                        assertNotNull(specifiers);
-                        assertEquals(1, specifiers.size());
-                        assertEquals(specifier, specifiers.get(0));
+                        if (getAvailable) {
+                            // Assert that we get back the value we set.
+                            specifiers = tryGetSystemSelectionChannels();
+                            assertNotNull(specifiers);
+                            assertEquals(1, specifiers.size());
+                            assertEquals(specifier, specifiers.get(0));
+                        }
                     }
                 }
+                if (!validBands.isEmpty()) {
+                    validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
+                            validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+                }
             }
-            if (!validBands.isEmpty()) {
-                validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
-                        validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+
+            // Call setSystemSelectionChannels with an empty list and verify no error
+            if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                fail("Failed to call setSystemSelectionChannels with an empty list.");
             }
-        }
 
-        // Call setSystemSelectionChannels with an empty list and verify no error
-        if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            fail("Failed to call setSystemSelectionChannels with an empty list.");
-        }
+            // Verify that getSystemSelectionChannels returns all valid specifiers
+            specifiers = tryGetSystemSelectionChannels();
+            // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
+            //assertNotNull(specifiers);
+            //assertEquals(specifiers.size(), validSpecifiers.size());
+            //assertTrue(specifiers.containsAll(validSpecifiers));
 
-        // Verify that getSystemSelectionChannels returns all valid specifiers
-        specifiers = tryGetSystemSelectionChannels();
-        // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
-        //assertNotNull(specifiers);
-        //assertEquals(specifiers.size(), validSpecifiers.size());
-        //assertTrue(specifiers.containsAll(validSpecifiers));
-
-        // Call setSystemSelectionChannels with all valid specifiers to test batch operations
-        if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
-            Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
-        }
-
-        // Reset the values back to the original.
-        if (getAvailable) {
-            trySetSystemSelectionChannels(initialSpecifiers, true);
+            // Call setSystemSelectionChannels with all valid specifiers to test batch operations
+            if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
+                Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
+            }
+        } finally {
+            // Reset the values back to the original.
+            if (getAvailable) {
+                trySetSystemSelectionChannels(initialSpecifiers, true);
+            }
         }
     }
 
