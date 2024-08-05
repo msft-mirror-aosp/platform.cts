@@ -110,7 +110,7 @@ public class XmlWriter {
     /** Generates the data for xTS annotations. */
     public void generateXtsAnnotationMapData(ModuleProfile module) {
         Element moduleElement = mDoc.createElement("test-module");
-        moduleElement.setAttribute("module", module.getModuleName());
+        moduleElement.setAttribute("name", module.getModuleName());
         for (ClassProfile classProfile : module.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
