@@ -438,6 +438,15 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Blocks until the given activity is in resumed state on the given display.
+     */
+    public void waitAndAssertActivityResumed(ComponentName componentName, int displayId) {
+        waitAndAssertActivityResumed(componentName);
+        mWmState.assertResumedActivities("Activity must be on display " + displayId,
+                mapping -> mapping.put(displayId, componentName));
+    }
+
+    /**
      * Blocks until the given activity is gone.
      */
     public void waitAndAssertActivityRemoved(ComponentName componentName) {
