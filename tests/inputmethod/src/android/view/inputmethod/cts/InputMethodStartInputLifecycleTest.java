@@ -76,6 +76,7 @@ import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -109,6 +110,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     }
 
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
+    @Ignore("Disabled temporarily due to input injection isolation issues - b/352772949")
     @Test
     public void testInputConnectionStateWhenScreenStateChanges() throws Exception {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
