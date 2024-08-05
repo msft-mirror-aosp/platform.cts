@@ -40,6 +40,8 @@ import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArraySet;
 
 import androidx.annotation.NonNull;
@@ -48,6 +50,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.PollingCheck;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -64,6 +67,10 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
     public static final int TIMEOUT = 2000;
 
     private static final int INVALID_DEVICE_STATE = -1;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     /**
      * Tests that {@link DeviceStateManager#getSupportedStates()} returns at least one state and

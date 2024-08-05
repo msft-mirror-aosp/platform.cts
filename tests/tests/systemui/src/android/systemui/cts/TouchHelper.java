@@ -25,7 +25,7 @@ import android.view.MotionEvent;
 
 public class TouchHelper {
 
-    private static final long REGULAR_CLICK_LENGTH = 100;
+    private static final long REGULAR_CLICK_LENGTH = 10;
     private final UiAutomation mUiAutomation;
     private long mDownTime = 0;
 

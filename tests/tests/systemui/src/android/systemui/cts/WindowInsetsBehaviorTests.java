@@ -439,14 +439,12 @@ public class WindowInsetsBehaviorTests {
             if (callback != null) {
                 callback.accept(new Point(i, y));
             }
-            mDevice.waitForIdle();
             count++;
         }
 
         if (callback != null) {
             callback.accept(new Point(theRightestLine, y));
         }
-        mDevice.waitForIdle();
         count++;
 
         return count;

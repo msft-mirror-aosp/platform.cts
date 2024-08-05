@@ -18,7 +18,6 @@ package android.view.inputmethod.cts;
 
 import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
 import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
-import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.FLAG_ALT_FOCUSABLE_IM;
 import static android.view.WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN;
@@ -38,7 +37,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
@@ -67,6 +65,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
@@ -75,13 +74,11 @@ import com.android.cts.mockime.MockImeSession;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
@@ -90,12 +87,6 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-
-    // TODO(b/356717219): Decommission this method once IME CTS moves to Bedstead.
-    protected boolean isAutomotive() {
-        final Context context = InstrumentationRegistry.getInstrumentation().getContext();
-        return context.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
-    }
 
     @Test
     public void testImeVisibilityWhenImeFocusableChildPopup() throws Exception {
@@ -243,11 +234,11 @@ public class ImeInsetsVisibilityTest extends EndToEndImeTestBase {
         }
     }
 
+    @RequireNotAutomotive(reason = "IME show picker is disabled on automotive")
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testEditTextPositionAndPersistWhenAboveImeWindowShown() throws Exception {
         Assume.assumeFalse(isPreventImeStartup());
-        Assume.assumeFalse(isAutomotive());  // TODO(b/356717219): Remove once moving to Bedstead.
         final InputMethodManager imm = getImmOrFail();
 
         try (MockImeSession imeSession = MockImeSession.create(
