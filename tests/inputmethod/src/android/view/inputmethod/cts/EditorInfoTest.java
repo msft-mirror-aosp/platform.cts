@@ -184,7 +184,7 @@ public class EditorInfoTest {
         assertEquals(info.getSupportedHandwritingGesturePreviews(), selectGestureSet);
 
         assertNotEquals(info.getSupportedHandwritingGesturePreviews(),
-                info.getSupportedHandwritingGestures());
+                new HashSet<>(info.getSupportedHandwritingGestures()));
 
         info.setSupportedHandwritingGesturePreviews(
                 Stream.of(SelectGesture.class, DeleteGesture.class).collect(Collectors.toSet()));
