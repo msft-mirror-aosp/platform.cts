@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 
 import com.android.bedstead.adb.Adb;
 import com.android.bedstead.harrier.AnnotationExecutor;
+import com.android.bedstead.harrier.DeviceStateComponent;
 import com.android.bedstead.harrier.annotations.FailureMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.usb.Usb;
@@ -36,7 +37,8 @@ import java.lang.annotation.Annotation;
  * Implementation of {@link AnnotationExecutor} for use with Interactive.
  */
 @SuppressWarnings("unused")
-public final class InteractiveAnnotationExecutor implements AnnotationExecutor {
+public final class InteractiveAnnotationExecutor
+        implements AnnotationExecutor, DeviceStateComponent {
 
     // There is a complicated implementation of @UntetheredTest here to make it work with Bedstead
     // with minimal changes to Bedstead. The important things to know are:

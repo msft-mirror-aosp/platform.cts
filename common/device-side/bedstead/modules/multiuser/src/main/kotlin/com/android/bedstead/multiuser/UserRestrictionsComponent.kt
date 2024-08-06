@@ -41,7 +41,7 @@ import org.junit.AssumptionViolatedException
  */
 class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val mProfileOwnersComponent: ProfileOwnersComponent by locator
     private val mDeviceOwnerComponent: DeviceOwnerComponent by locator
     private val mAddedUserRestrictions: MutableMap<UserReference, MutableSet<String>> =
@@ -53,7 +53,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
      * See [EnsureHasUserRestriction]
      */
     fun ensureHasUserRestriction(restriction: String, onUser: UserType) {
-        ensureHasUserRestriction(restriction, deviceState.resolveUserTypeToUser(onUser))
+        ensureHasUserRestriction(restriction, userTypeResolver.toUser(onUser))
     }
 
     private fun ensureHasUserRestriction(restriction: String, onUser: UserReference) {
@@ -142,7 +142,6 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         return true
     }
 
-
     /**
      * See [EnsureDoesNotHaveUserRestriction]
      */
@@ -160,9 +159,10 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
             } catch (e: AdbException) {
                 Log.i(
                     LOG_TAG,
-                    "Unable to clear user restriction as root, trying to clear using"
-                            + " heuristics.",
-                    e)
+                    "Unable to clear user restriction as root, trying to clear using" +
+                            " heuristics.",
+                    e
+                )
                 tryClearUserRestriction(onUser, restriction)
             }
         } else {
@@ -207,8 +207,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
                 return
             }
         }
-        var hasCleared = !devicePolicy().userRestrictions(onUser).isSet(
-            restriction)
+        var hasCleared = !devicePolicy().userRestrictions(onUser).isSet(restriction)
         if (!hasCleared && onUser == users().system()) {
             hasCleared = tryClearUserRestrictionWithDeviceOwner(restriction)
         }
@@ -223,14 +222,14 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
     override fun teardownNonShareableState() {
         mAddedUserRestrictions.toMap().forEach {
             it.value.toList().forEach { restriction ->
-                //below function modifies both collections that we iterate over
+                // below function modifies both collections that we iterate over
                 ensureDoesNotHaveUserRestriction(restriction, it.key)
             }
         }
 
         mRemovedUserRestrictions.toMap().forEach {
             it.value.toList().forEach { restriction ->
-                //below function modifies both collections that we iterate over
+                // below function modifies both collections that we iterate over
                 ensureHasUserRestriction(restriction, it.key)
             }
         }
@@ -280,11 +279,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
             }
             return
         }
-        ensureDoesNotHaveUserRestriction(restriction, deviceState.resolveUserTypeToUser(onUser))
-    }
-
-    override fun releaseResources() {
-        mAddedUserRestrictions.clear()
+        ensureDoesNotHaveUserRestriction(restriction, userTypeResolver.toUser(onUser))
     }
 
     companion object {

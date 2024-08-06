@@ -240,11 +240,6 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
         uninstalledTestApps.clear()
     }
 
-    override fun releaseResources() {
-        testAppProvider.releaseResources()
-        testApps.clear()
-    }
-
     fun addQueryParameters(annotation: AdditionalQueryParameters) {
         _additionalQueryParameters[annotation.forTestApp] = annotation.query
     }

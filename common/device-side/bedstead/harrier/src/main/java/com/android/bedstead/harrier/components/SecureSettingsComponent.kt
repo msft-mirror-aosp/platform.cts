@@ -20,6 +20,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureSecureSettingSet
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.settings
 import com.android.bedstead.nene.users.UserReference
 
@@ -30,7 +31,7 @@ import com.android.bedstead.nene.users.UserReference
  */
 class SecureSettingsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val originalSecureSettings:
             MutableMap<UserReference, MutableMap<String, String?>> = mutableMapOf()
 
@@ -38,7 +39,7 @@ class SecureSettingsComponent(locator: BedsteadServiceLocator) : DeviceStateComp
      * See [EnsureSecureSettingSet]
      */
     fun ensureSecureSettingSet(user: UserType, key: String, value: String) {
-        ensureSecureSettingSet(deviceState.resolveUserTypeToUser(user), key, value)
+        ensureSecureSettingSet(userTypeResolver.toUser(user), key, value)
     }
 
     private fun ensureSecureSettingSet(user: UserReference, key: String, value: String) {
@@ -57,10 +58,6 @@ class SecureSettingsComponent(locator: BedsteadServiceLocator) : DeviceStateComp
                 settings().secure().putString(usersSettings.key, it.key, it.value)
             }
         }
-        originalSecureSettings.clear()
-    }
-
-    override fun releaseResources() {
         originalSecureSettings.clear()
     }
 }

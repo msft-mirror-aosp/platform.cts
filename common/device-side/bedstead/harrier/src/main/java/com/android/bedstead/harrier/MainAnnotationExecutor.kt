@@ -77,6 +77,7 @@ import com.android.bedstead.harrier.components.SecureSettingsComponent
 import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.harrier.components.UserPasswordComponent
 import com.android.bedstead.harrier.components.WifiComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 
 @Suppress("unused")
 class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
@@ -86,7 +87,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     private val contentSuggestionsComponent: ContentSuggestionsComponent by locator
     private val bluetoothComponent: BluetoothComponent by locator
     private val wifiComponent: WifiComponent by locator
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val globalSettingsComponent: GlobalSettingsComponent by locator
     private val secureSettingsComponent: SecureSettingsComponent by locator
     private val propertiesComponent: PropertiesComponent by locator
@@ -112,16 +113,16 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is RequireNotInstantApp -> logic()
             is RequireSystemServiceAvailable -> logic()
             is RequireTargetSdkVersion -> logic()
-            is RequirePackageInstalled -> logic(deviceState)
-            is RequirePackageNotInstalled -> logic(deviceState)
-            is EnsurePackageNotInstalled -> logic(deviceState)
+            is RequirePackageInstalled -> logic(userTypeResolver)
+            is RequirePackageNotInstalled -> logic(userTypeResolver)
+            is EnsurePackageNotInstalled -> logic(userTypeResolver)
             is RequireQuickSettingsSupport -> logic()
-            is RequireHasDefaultBrowser -> logic(deviceState)
+            is RequireHasDefaultBrowser -> logic(userTypeResolver)
             is RequireTelephonySupport -> logic()
-            is EnsurePackageRespondsToIntent -> logic(testAppsComponent, deviceState)
-            is EnsureNoPackageRespondsToIntent -> logic(deviceState)
-            is RequireNoPackageRespondsToIntent -> logic(deviceState)
-            is RequirePackageRespondsToIntent -> logic(deviceState)
+            is EnsurePackageRespondsToIntent -> logic(testAppsComponent, userTypeResolver)
+            is EnsureNoPackageRespondsToIntent -> logic(userTypeResolver)
+            is RequireNoPackageRespondsToIntent -> logic(userTypeResolver)
+            is RequirePackageRespondsToIntent -> logic(userTypeResolver)
             is EnsureBluetoothEnabled -> bluetoothComponent.ensureBluetoothEnabled()
             is EnsureBluetoothDisabled -> bluetoothComponent.ensureBluetoothDisabled()
             is EnsureWifiEnabled -> wifiComponent.ensureWifiEnabled()
@@ -142,7 +143,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is EnsureTestAppInstalled -> testAppsComponent.ensureTestAppInstalled(
                 key,
                 query,
-                deviceState.resolveUserTypeToUser(onUser),
+                userTypeResolver.toUser(onUser),
                 isPrimary
             )
 

@@ -54,8 +54,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 /**
@@ -182,6 +184,8 @@ public class PackageInstallerCujTestBase {
      * Wait for the device idle.
      */
     public static void waitForUiIdle() {
+        // Make sure the application is idle and input windows is up-to-date.
+        sInstrumentation.getUiAutomation().syncInputTransactions();
         sUiDevice.waitForIdle();
     }
 
@@ -258,7 +262,7 @@ public class PackageInstallerCujTestBase {
      * Find the UiObject2 with the {@code name} and the object's package name is
      * {@link #sPackageInstallerPackageName}.
      */
-    public static UiObject2 findPackageInstallerObject(String name) {
+    public static UiObject2 findPackageInstallerObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findPackageInstallerObject(By.text(namePattern), /* checkNull= */ true);
     }
@@ -268,14 +272,15 @@ public class PackageInstallerCujTestBase {
      * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
      * is not null.
      */
-    public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
+    public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull)
+            throws Exception {
         return findObject(getPackageInstallerBySelector(bySelector), checkNull);
     }
 
     /**
      * Find the UiObject2 with the {@code name}.
      */
-    public static UiObject2 findObject(String name) {
+    public static UiObject2 findObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findObject(By.text(namePattern), /* checkNull= */ true);
     }
@@ -285,7 +290,7 @@ public class PackageInstallerCujTestBase {
      * check the object is not null.
      */
     @Nullable
-    public static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull) throws Exception {
         return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
     }
 
@@ -294,7 +299,8 @@ public class PackageInstallerCujTestBase {
      * check the object is not null. The {@code timeoutMs} is the value for waiting time.
      */
     @Nullable
-    public static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs)
+            throws Exception {
         waitForUiIdle();
 
         UiObject2 object = null;
@@ -305,7 +311,12 @@ public class PackageInstallerCujTestBase {
                 if (object != null) {
                     Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
                             + " of object: " + bySelector + ", text: " + object.getText()
-                            + " package: " + object.getApplicationPackage());
+                            + " package: " + object.getApplicationPackage() + ", enabled: "
+                            + object.isEnabled() + ", clickable: " + object.isClickable()
+                            + ", contentDescription: " + object.getContentDescription()
+                            + ", resourceName: " + object.getResourceName() + ", visibleCenter: "
+                            + object.getVisibleCenter());
+                    waitForUiIdle();
                     return object;
                 } else {
                     // Maybe the screen is small. Scroll forward and attempt to click
@@ -315,6 +326,12 @@ public class PackageInstallerCujTestBase {
                 // do nothing
             }
         }
+
+        // dump window hierarchy for debug
+        if (object == null) {
+            dumpWindowHierarchy();
+        }
+
         if (checkNull) {
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
@@ -324,12 +341,29 @@ public class PackageInstallerCujTestBase {
     /**
      * Wait for the UiObject2 with the {@code bySelector} is gone.
      */
-    public static void waitUntilObjectGone(BySelector bySelector) {
+    public static void waitUntilObjectGone(BySelector bySelector) throws Exception {
         if (!sUiDevice.wait(Until.gone(bySelector), WAIT_OBJECT_GONE_TIMEOUT_MS)) {
+            // dump window hierarchy for debug
+            dumpWindowHierarchy();
             fail("The Object: " + bySelector + "did not disappear within "
                     + WAIT_OBJECT_GONE_TIMEOUT_MS + " milliseconds");
         }
         waitForUiIdle();
+    }
+
+    /**
+     * Dump current window hierarchy to help debug UI
+     */
+    public static void dumpWindowHierarchy() throws InterruptedException, IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        sUiDevice.dumpWindowHierarchy(outputStream);
+        String windowHierarchy = outputStream.toString(StandardCharsets.UTF_8.name());
+
+        Log.w(TAG, "Window hierarchy:");
+        for (String line : windowHierarchy.split("\n")) {
+            Thread.sleep(10);
+            Log.w(TAG, line);
+        }
     }
 
     /**

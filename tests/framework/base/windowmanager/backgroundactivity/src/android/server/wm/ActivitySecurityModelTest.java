@@ -18,10 +18,12 @@ package android.server.wm;
 
 import static android.server.wm.backgroundactivity.common.CommonComponents.COMMON_FOREGROUND_ACTIVITY_EXTRAS;
 
+import android.content.ComponentName;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.security.Flags;
 
 import org.junit.Rule;
@@ -320,6 +322,74 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
                 .thenAssertTaskStack(
                         APP_A.FOREGROUND_ACTIVITY,
                         APP_B.FOREGROUND_ACTIVITY,
+                        APP_A.FOREGROUND_ACTIVITY);
+    }
+
+
+    /*
+     * Launch the Settings' MANAGE_UNKNOWN_APP_SOURCES action on top of the test app's
+     * activity, then try to launch the test app's activity on top of the Settings activity
+     * and ensure it's blocked.
+     * Targets: A(curr), Settings
+     * Setup: A Settings | (bottom -- top)
+     * Launcher: A
+     * Started: A
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    public void testActivitySandwichWithSystem_launchBlocked() {
+        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
+
+        ComponentName capturedSettingsActivity = new ActivityStartVerifier()
+                .setupTaskWithForegroundActivity(APP_A)
+                .startFromForegroundActivity(APP_A)
+                .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                .executeAndWaitForFocusLoss(APP_A.FOREGROUND_ACTIVITY)
+                .thenAssertTaskHasLostFocus(
+                        APP_A.FOREGROUND_ACTIVITY);
+
+        // Current State: A B
+        // Test - A launches A - fails
+        new ActivityStartVerifier()
+                .startFromForegroundActivity(APP_A)
+                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .executeAndAssertLaunch(/*succeeds*/ false)
+                .thenAssertTaskStack(
+                        capturedSettingsActivity,
+                        APP_A.FOREGROUND_ACTIVITY);
+    }
+
+    /*
+     * Launch the Settings' MANAGE_UNKNOWN_APP_SOURCES action on top of the test app's
+     * activity, then try to launch the test app's activity on top of the Settings activity
+     * and verify it's allowed.
+     * Targets: A(curr), Settings
+     * Setup: A Settings | (bottom -- top)
+     * Launcher: A
+     * Started: A
+     */
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    public void testActivitySandwichWithSystem_launchAllowed() {
+        BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
+
+        ComponentName capturedSettingsActivity = new ActivityStartVerifier()
+                .setupTaskWithForegroundActivity(APP_A)
+                .startFromForegroundActivity(APP_A)
+                .action(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
+                .executeAndWaitForFocusLoss(APP_A.FOREGROUND_ACTIVITY)
+                .thenAssertTaskHasLostFocus(
+                        APP_A.FOREGROUND_ACTIVITY);
+
+        // Current State: A B
+        // Test - A launches A - fails
+        new ActivityStartVerifier()
+                .startFromForegroundActivity(APP_A)
+                .activity(APP_A.FOREGROUND_ACTIVITY)
+                .executeAndAssertLaunch(/*succeeds*/ true)
+                .thenAssertTaskStack(
+                        APP_A.FOREGROUND_ACTIVITY,
+                        capturedSettingsActivity,
                         APP_A.FOREGROUND_ACTIVITY);
     }
 }

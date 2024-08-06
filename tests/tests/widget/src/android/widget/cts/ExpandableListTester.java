@@ -107,12 +107,13 @@ public class ExpandableListTester {
             final int childrenCount = mAdapter.getChildrenCount(groupIndex);
             for (int childIndex = 0; childIndex < childrenCount; childIndex++) {
                 // Check child index in context menu
+                final int curIndex = index;
                 mListUtil.arrowScrollToSelectedPosition(index);
                 menuListener.expectChildContextMenu(groupIndex, childIndex);
-                View child = mExpandableListView.getChildAt(index
-                        - mExpandableListView.getFirstVisiblePosition());
                 WidgetTestUtils.runOnMainAndDrawSync(mActivityTestRule, mExpandableListView,
-                        () -> mExpandableListView.showContextMenuForChild(child));
+                        () -> mExpandableListView.showContextMenuForChild(
+                        mExpandableListView.getChildAt(curIndex
+                        - mExpandableListView.getFirstVisiblePosition())));
                 Assert.assertNull(menuListener.getErrorMessage(), menuListener.getErrorMessage());
                 index++;
             }

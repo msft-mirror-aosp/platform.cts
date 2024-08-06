@@ -662,6 +662,9 @@
   <option name="compatibility:include-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_nonPreferredIndex"/>
   <option name="compatibility:include-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms"/>
   <option name="compatibility:include-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlBackPressureTest#testSurfaceTransaction_setEnableBackPressure"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceActivity android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests#testResumedWhenRecreatedFromInNonFocusedTask"/>
+  <option name="compatibility:include-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#isProvisioningAllowed_hasDeviceOwner_returnsFalse"/>
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />

@@ -21,6 +21,7 @@ import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureDefaultContentSuggestionsServiceEnabled
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.content
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.users.UserReference
@@ -33,7 +34,7 @@ import com.android.bedstead.testapp.TestApp
  */
 class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val mOriginalDefaultContentSuggestionsServiceEnabled:
             MutableMap<UserReference, Boolean> = mutableMapOf()
@@ -55,7 +56,7 @@ class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceState
      * See [EnsureHasTestContentSuggestionsService]
      */
     fun ensureHasTestContentSuggestionsService(user: UserType) {
-        ensureHasTestContentSuggestionsService(deviceState.resolveUserTypeToUser(user))
+        ensureHasTestContentSuggestionsService(userTypeResolver.toUser(user))
     }
 
     private fun ensureHasTestContentSuggestionsService(user: UserReference) {
@@ -70,7 +71,7 @@ class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceState
      */
     fun ensureDefaultContentSuggestionsServiceEnabled(user: UserType, enabled: Boolean) {
         ensureDefaultContentSuggestionsServiceEnabled(
-            deviceState.resolveUserTypeToUser(user),
+            userTypeResolver.toUser(user),
             enabled
         )
     }
@@ -87,11 +88,6 @@ class ContentSuggestionsComponent(locator: BedsteadServiceLocator) : DeviceState
             mOriginalDefaultContentSuggestionsServiceEnabled[user] = currentValue
         }
         content().suggestions().setDefaultServiceEnabled(value = enabled)
-    }
-
-    override fun releaseResources() {
-        mTemporaryContentSuggestionsServiceSet.clear()
-        mOriginalDefaultContentSuggestionsServiceEnabled.clear()
     }
 
     override fun teardownShareableState() {

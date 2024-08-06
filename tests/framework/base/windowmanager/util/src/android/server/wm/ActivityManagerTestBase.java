@@ -76,6 +76,7 @@ import static android.server.wm.ActivityLauncher.launchActivityFromExtras;
 import static android.server.wm.CommandSession.KEY_FORWARD;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
+import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -408,10 +409,15 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
+        waitForActivityState(timeoutMs, componentName, STATE_RESUMED);
+    }
+
+    protected void waitForActivityState(int timeoutMs, ComponentName componentName,
+            String expectedState) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
-            if (mWmState.hasActivityState(componentName, STATE_RESUMED)) {
+            if (mWmState.hasActivityState(componentName, expectedState)) {
                 SystemClock.sleep(200);
                 mWmState.computeState();
                 break;
@@ -702,9 +708,14 @@ public abstract class ActivityManagerTestBase {
 
         launchHomeActivityNoWait();
 
-        // TODO(b/355452977): Force stop test packages instead of removing all tasks and then
-        //  waiting for allActivitiesResumed if tests not annotated with @KeepLegacyTaskCleanup.
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            // Remove all tasks and then wait for allActivitiesResumed.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        } else {
+            // Stop any residual tasks from the test package.
+            forceStopAllTestPackages();
+        }
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -719,8 +730,11 @@ public abstract class ActivityManagerTestBase {
         // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
         // restarts can interfere with the test state. To avoid that, its better to wait for all
         // the activities to come in the resumed state.
-        mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
-                + "be either empty or resumed");
+        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
+                    "Root Tasks should be either empty or resumed");
+        }
         mUserHelper = new UserHelper(mContext);
         mUserId = mContext.getUserId();
     }
@@ -739,12 +753,11 @@ public abstract class ActivityManagerTestBase {
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
 
-        // TODO(b/355452977): Force stop test packages instead of removing tasks if tests not
-        //  annotated with @KeepLegacyTaskCleanup.
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        stopTestPackage(TEST_PACKAGE);
-        stopTestPackage(SECOND_TEST_PACKAGE);
-        stopTestPackage(THIRD_TEST_PACKAGE);
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        }
+        forceStopAllTestPackages();
 
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
             mWmState.waitForAllNonHomeActivitiesToDestroyed();
@@ -759,6 +772,12 @@ public abstract class ActivityManagerTestBase {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
+    }
+
+    private void forceStopAllTestPackages() {
+        stopTestPackage(TEST_PACKAGE);
+        stopTestPackage(SECOND_TEST_PACKAGE);
+        stopTestPackage(THIRD_TEST_PACKAGE);
     }
 
     /** This should only be called if keyguard is still locked unexpectedly. */
