@@ -15,6 +15,6 @@
 
 <dynamicConfig>
     <entry key="media_files_url">
-    <value>https://dl.google.com/android/xts/cts/tests/tests/media/decoder/CtsMediaDecoderTestCases-2.2.zip</value>
+    <value>https://dl.google.com/android/xts/cts/tests/tests/media/decoder/CtsMediaDecoderTestCases-2.3.zip</value>
     </entry>
 </dynamicConfig>
