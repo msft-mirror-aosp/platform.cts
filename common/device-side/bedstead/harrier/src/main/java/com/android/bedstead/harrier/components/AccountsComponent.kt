@@ -27,7 +27,8 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.nene.TestApis.accounts
+import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.accounts.AccountReference
@@ -48,7 +49,7 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     private val accountAuthenticators:
             MutableMap<UserReference, RemoteAccountAuthenticator> = mutableMapOf()
     private val testAppsComponent: TestAppsComponent by locator
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
 
     /**
      * Get the default account defined with [EnsureHasAccount].
@@ -65,10 +66,17 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     }
 
     /**
+     * Access harrier-managed accounts on the instrumented user.
+     */
+    fun accounts(): RemoteAccountAuthenticator {
+        return accounts(users().instrumented())
+    }
+
+    /**
      * Access harrier-managed accounts on the given user.
      */
     fun accounts(user: UserType): RemoteAccountAuthenticator {
-        return accounts(deviceState.resolveUserTypeToUser(user))
+        return accounts(userTypeResolver.toUser(user))
     }
 
     /**
@@ -85,7 +93,7 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
      * See [EnsureHasAccountAuthenticator]
      */
     fun ensureHasAccountAuthenticator(onUser: UserType) {
-        val user: UserReference = deviceState.resolveUserTypeToUser(onUser)
+        val user: UserReference = userTypeResolver.toUser(onUser)
         // We don't use .install() so we can rely on the default testapp sharing/uninstall logic
         testAppsComponent.ensureTestAppInstalled(
             REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP,
@@ -153,7 +161,7 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
             }
         } else {
             ensureHasNoAccounts(
-                deviceState.resolveUserTypeToUser(userType),
+                userTypeResolver.toUser(userType),
                 allowPreCreatedAccounts,
                 failureMode
             )
@@ -175,7 +183,7 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
             }
         }
 
-        var accounts = accounts().all(user)
+        var accounts = TestApis.accounts().all(user)
 
         // If allowPreCreatedAccounts is enabled, that means it's okay to have
         // pre created accounts on the device.
@@ -212,11 +220,5 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
             }
             devicePolicy().calculateHasIncompatibleAccounts()
         }
-    }
-
-    override fun releaseResources() {
-        createdAccounts.clear()
-        accounts.clear()
-        accountAuthenticators.clear()
     }
 }
