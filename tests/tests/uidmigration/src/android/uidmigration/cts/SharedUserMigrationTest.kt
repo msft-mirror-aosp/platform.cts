@@ -91,8 +91,10 @@ class SharedUserMigrationTest {
         assertTrue(installPackage(InstallTest.APK4))
         val newPkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_ZERO)
         assertNull(newPkgInfo.sharedUserId)
-        assertEquals(checkNotNull(pkgInfo.applicationInfo).uid,
-		     checkNotNull(newPkgInfo.applicationInfo).uid)
+        assertEquals(
+            checkNotNull(pkgInfo.applicationInfo).uid,
+		     checkNotNull(newPkgInfo.applicationInfo).uid
+        )
     }
 
     private fun testBestEffort(uid: Int) {
@@ -145,6 +147,45 @@ class SharedUserMigrationTest {
                 BEST_EFFORT -> testBestEffort(uid)
             }
         }
+
+        tearDown()
+    }
+
+    @Test
+    fun testAppInstallAfterDeleteKeepData() = withStrategy {
+        migrationStrategy = NEW_INSTALL_ONLY
+
+        assertTrue(installPackage(InstallTest.APK))
+        var pkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_MATCH_UNINSTALLED_PACKAGES)
+        assertNotNull(pkgInfo.sharedUserId)
+        // Uninstall the app containing sharedUserId with "-k".
+        uninstallPackageWithKeepData(Const.INSTALL_TEST_PKG)
+        // Reinstall should not change appId.
+        assertTrue(installPackage(InstallTest.APK))
+        pkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_MATCH_UNINSTALLED_PACKAGES)
+        assertNotNull(pkgInfo.sharedUserId)
+        // Uninstall the app containing sharedUserId with "-k".
+        uninstallPackageWithKeepData(Const.INSTALL_TEST_PKG)
+        // Should not allow upgrading to an APK that directly removes sharedUserId.
+        assertFalse(installPackage(InstallTest.APK3))
+        // Upgrading an APK with sharedUserMaxSdkVersion set should not change its UID.
+        assertTrue(installPackage(InstallTest.APK4))
+        pkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_MATCH_UNINSTALLED_PACKAGES)
+        assertNotNull(pkgInfo.sharedUserId)
+
+        // Uninstall all and install a new pkg leaving shared UID
+        uninstallPackage(Const.INSTALL_TEST_PKG)
+        assertTrue(installPackage(InstallTest.APK4))
+        pkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_MATCH_UNINSTALLED_PACKAGES)
+        assertNull(pkgInfo.sharedUserId)
+        // Uninstall the app containing sharedUserId with "-k".
+        uninstallPackageWithKeepData(Const.INSTALL_TEST_PKG)
+        // Should not allow rejoining the shared UID
+        assertFalse(installPackage(InstallTest.APK))
+        // Upgrading an APK with sharedUserMaxSdkVersion set should not change its UID.
+        assertTrue(installPackage(InstallTest.APK4))
+        pkgInfo = mPm.getPackageInfo(Const.INSTALL_TEST_PKG, FLAG_MATCH_UNINSTALLED_PACKAGES)
+        assertNull(pkgInfo.sharedUserId)
 
         tearDown()
     }
