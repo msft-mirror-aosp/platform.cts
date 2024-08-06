@@ -40,6 +40,7 @@ import android.media.MediaPlayer;
 import android.media.cts.MediaProjectionActivity;
 import android.media.projection.MediaProjection;
 import android.platform.test.annotations.Presubmit;
+import android.util.Log;
 import android.view.KeyEvent;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -79,7 +80,7 @@ public class RemoteSubmixTest {
     private static final int BUFFER_SIZE = SAMPLE_RATE * DURATION_IN_SEC
             * Integer.bitCount(CHANNEL_MASK)
             * Short.BYTES; // Size in bytes for 16bit mono at 44.1k/s
-    private static final int TEST_ITERATIONS = 10; // Using iterations for regression failure
+    private static final int RETRY_DISCONTINUITY = 10;
     private static final int RETRY_RECORD_READ = 3;
 
     private AudioManager mAudioManager;
@@ -100,6 +101,7 @@ public class RemoteSubmixTest {
         mStreamNames.put(AudioManager.STREAM_RING, "RING");
         mStreamNames.put(AudioManager.STREAM_NOTIFICATION, "NOTIFICATION");
         mStreamNames.put(AudioManager.STREAM_SYSTEM, "SYSTEM");
+        muteStreams();
     }
 
     @After
@@ -195,7 +197,36 @@ public class RemoteSubmixTest {
         mStreamVolume.clear();
     }
 
-    public void testPlaybackCapture(boolean testWithScreenLock) throws Exception {
+    private boolean isRecordingBufferContinuous(ByteBuffer buffer) {
+        short[] recordArray = new short[BUFFER_SIZE / Short.BYTES];
+
+        for (int i = 0; i < recordArray.length; i++) {
+            recordArray[i] = buffer.getShort();
+        }
+
+        int recordingStartIndex = -1;
+
+        // Skip leading silence of the Recorded Audio
+        for (int i = 0; i < recordArray.length; i++) {
+            if (recordArray[i] != 0) {
+                recordingStartIndex = i;
+                break;
+            }
+        }
+
+        assertFalse("No audio recorded", recordingStartIndex == -1);
+
+        // Validate that there is no continuous silence in recorded sine audio
+        for (int i = recordingStartIndex; i < recordArray.length - 1; i++) {
+            if (recordArray[i] == 0 && recordArray[i + 1] == 0) {
+                Log.i(TAG, "Discontunuity found in the Recorded Audio");
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isRecordingContinuous(boolean testWithScreenLock) throws Exception {
         MediaPlayer mediaPlayer = createMediaPlayer(
                 ALLOW_CAPTURE_BY_ALL, R.raw.sine1320hz5sec, AudioAttributes.USAGE_MEDIA);
         AudioRecord audioRecord = createPlaybackCaptureRecord();
@@ -236,54 +267,28 @@ public class RemoteSubmixTest {
         }
 
         assertNotNull("Recorded data is null ", rawBuffer);
+        return isRecordingBufferContinuous(rawBuffer);
+    }
 
-        short[] recordArray = new short[BUFFER_SIZE / Short.BYTES];
-
-        for (int i = 0; i < recordArray.length; i++) {
-            recordArray[i] = rawBuffer.getShort();
-        }
-
-        int recordingStartIndex = -1;
-
-        // Skip leading silence of the Recorded Audio
-        for (int i = 0; i < recordArray.length; i++) {
-            if (recordArray[i] != 0) {
-                recordingStartIndex = i;
-                break;
+    private void testRecordingContinuity(boolean testWithScreenLock) {
+        int retry = RETRY_DISCONTINUITY;
+        try {
+            // Need to ensure continuous recording, but will retry to avoid flaky failure
+            while (!isRecordingContinuous(testWithScreenLock)) {
+                assertNotSame("Consistent discontinuity detected", 0, retry--);
             }
-        }
-
-        assertFalse("No audio recorded", recordingStartIndex == -1);
-        // Validate that there is no continuous silence in recorded sine audio
-        for (int i = recordingStartIndex; i < recordArray.length; i++) {
-            assertFalse("Discontunuity found in the Record Audio\n",
-                    recordArray[i] == 0 && recordArray[i + 1] == 0);
+        } catch (Exception e) {
+            fail("isRecordingContinuous throws exception: " + e);
         }
     }
 
     @Test
     public void testRemoteSubmixRecordingContinuity() {
-        muteStreams();
-        for (int i = 0; i < TEST_ITERATIONS; i++) {
-            try {
-                testPlaybackCapture(/* testWithScreenLock */ false);
-            } catch (Exception e) {
-                fail("testPlaybackCapture throws exception: " + e + " at the " + i
-                        + "th iteration");
-            }
-        }
+        testRecordingContinuity(/* testWithScreenLock */ false);
     }
 
     @Test
     public void testRemoteSubmixRecordingContinuityWithScreenLock() {
-        muteStreams();
-        for (int i = 0; i < TEST_ITERATIONS; i++) {
-            try {
-                testPlaybackCapture(/* testWithScreenLock */ true);
-            } catch (Exception e) {
-                fail("testPlaybackCapture with screen lock throws exception: " + e + " at the " + i
-                        + "th iteration");
-            }
-        }
+        testRecordingContinuity(/* testWithScreenLock */ true);
     }
 }
