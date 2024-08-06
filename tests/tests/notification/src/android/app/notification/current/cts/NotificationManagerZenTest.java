@@ -166,6 +166,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     private static final String MATCHES_CALL_FILTER_CLASS =
             TEST_APP + ".MatchesCallFilterTestActivity";
     private static final String MINIMAL_LISTENER_CLASS = TEST_APP + ".TestNotificationListener";
+    private static final int ZEN_EFFECTS_WAIT_MS = 600;
 
     private final String NAME = "name";
     private ComponentName CONFIG_ACTIVITY;
@@ -2349,14 +2350,14 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
                 new Condition(rule.getConditionId(), "summary", Condition.STATE_TRUE));
         assertThat(mNotificationManager.getCurrentInterruptionFilter()).isEqualTo(
                 INTERRUPTION_FILTER_ALL);
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isColorDisplayManagerSaturationActivated()).isTrue();
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "summary", Condition.STATE_FALSE));
         assertThat(mNotificationManager.getCurrentInterruptionFilter()).isEqualTo(
                 INTERRUPTION_FILTER_ALL);
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isColorDisplayManagerSaturationActivated()).isFalse();
 
         mNotificationManager.removeAutomaticZenRule(ruleId);
@@ -2710,12 +2711,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "yeah", Condition.STATE_TRUE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isColorDisplayManagerSaturationActivated()).isTrue();
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "nope", Condition.STATE_FALSE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isColorDisplayManagerSaturationActivated()).isFalse();
     }
 
@@ -2731,12 +2732,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "yeah", Condition.STATE_TRUE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(getWallpaperManagerDimAmount()).isNonZero();
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "nope", Condition.STATE_FALSE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(getWallpaperManagerDimAmount()).isZero();
     }
 
@@ -2753,12 +2754,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "yeah", Condition.STATE_TRUE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isTrue();
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "nope", Condition.STATE_FALSE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isFalse();
     }
 
@@ -2776,13 +2777,13 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "yeah", Condition.STATE_TRUE,
                         Condition.SOURCE_USER_ACTION));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isUiModeManagerThemeOverlayActive()).isTrue();
 
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "nope", Condition.STATE_FALSE,
                         Condition.SOURCE_USER_ACTION));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
     }
 
@@ -2801,7 +2802,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "yeah", Condition.STATE_TRUE,
                         Condition.SOURCE_SCHEDULE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
 
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse(); // Not yet applied.
 
@@ -2812,7 +2813,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mNotificationManager.setAutomaticZenRuleState(ruleId,
                 new Condition(rule.getConditionId(), "nope", Condition.STATE_FALSE,
                         Condition.SOURCE_SCHEDULE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
 
         assertThat(isUiModeManagerThemeOverlayActive()).isTrue(); // Not yet applied.
 
@@ -2840,20 +2841,20 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         mNotificationManager.setAutomaticZenRuleState(withDisableAmbientDisplayId,
                 new Condition(withDisableAmbientDisplay.getConditionId(), "ad",
                         Condition.STATE_TRUE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isTrue();
         assertThat(isColorDisplayManagerSaturationActivated()).isFalse();
 
         mNotificationManager.setAutomaticZenRuleState(withGrayscaleId,
                 new Condition(withGrayscale.getConditionId(), "gs", Condition.STATE_TRUE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isTrue();
         assertThat(isColorDisplayManagerSaturationActivated()).isTrue();
 
         mNotificationManager.setAutomaticZenRuleState(withDisableAmbientDisplayId,
                 new Condition(withDisableAmbientDisplay.getConditionId(), "ad",
                         Condition.STATE_FALSE));
-        Thread.sleep(300); // Effects are applied asynchronously.
+        Thread.sleep(ZEN_EFFECTS_WAIT_MS); // Effects are applied asynchronously.
         assertThat(isPowerManagerAmbientDisplaySuppressed()).isFalse();
         assertThat(isColorDisplayManagerSaturationActivated()).isTrue();
     }
