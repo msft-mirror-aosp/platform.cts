@@ -474,4 +474,7 @@
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
 
+    <!-- b/352807937 -->
+    <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[foldable:3:REAR_DISPLAY_STATE] android.view.inputmethod.cts.InputMethodStartInputLifecycleTest#testInputConnectionStateWhenScreenStateChanges" />
+
 </configuration>
