@@ -44,8 +44,4 @@ class PropertiesComponent : DeviceStateComponent {
         }
         originalProperties.clear()
     }
-
-    override fun releaseResources() {
-        originalProperties.clear()
-    }
 }

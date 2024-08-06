@@ -23,7 +23,6 @@ import static com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSki
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
 import static com.android.bedstead.harrier.annotations.UsesAnnotationExecutorKt.getAnnotationExecutorClass;
 import static com.android.bedstead.harrier.annotations.UsesTestRuleExecutorKt.getTestRuleExecutorClass;
-import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.utils.StringLinesDiff.DEVICE_POLICY_STANDARD_LINES_DIFFERENCE;
 import static com.android.bedstead.nene.utils.Versions.meetsSdkVersionRequirements;
@@ -42,7 +41,6 @@ import com.android.bedstead.enterprise.EnterpriseComponent;
 import com.android.bedstead.enterprise.ProfileOwnersComponent;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -77,9 +75,7 @@ import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
-import com.android.bedstead.testapp.TestAppQueryBuilder;
 import com.android.eventlib.EventLogs;
-import com.android.queryable.annotations.Query;
 
 import junit.framework.AssertionFailedError;
 
@@ -98,7 +94,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,11 +138,6 @@ public final class DeviceState extends HarrierRule {
     private final int mMinSdkVersion;
     private int mMinSdkVersionCurrentTest;
 
-    private static final String TV_PROFILE_TYPE_NAME = "com.android.tv.profile";
-    private static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
-    private static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
-
-
     // We timeout 10 seconds before the infra would timeout
     private static final Duration MAX_TEST_DURATION =
             Duration.ofMillis(
@@ -170,39 +160,7 @@ public final class DeviceState extends HarrierRule {
 
     private final BedsteadServiceLocator mLocator = new BedsteadServiceLocator();
 
-    private final List<TestRuleExecutor> mTestRuleExecutors = new ArrayList<>();
-
-    public static final class Builder {
-
-        private Duration mMaxTestDuration = MAX_TEST_DURATION;
-
-        private Builder() {
-
-        }
-
-        public Builder maxTestDuration(Duration maxTestDuration) {
-            mMaxTestDuration = maxTestDuration;
-            return this;
-        }
-
-        public DeviceState build() {
-            return new DeviceState(mMaxTestDuration);
-        }
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public DeviceState(Duration maxTestDuration) {
-        mLocator.loadModules(new MainLocatorModule(this));
-        mUsersComponent = mLocator.get(UsersComponent.class);
-        mEnterpriseComponent = mLocator.get(EnterpriseComponent.class);
-        mDeviceOwnerComponent = mLocator.get(DeviceOwnerComponent.class);
-        mProfileOwnersComponent = mLocator.get(ProfileOwnersComponent.class);
-        mDeviceAdminComponent = mLocator.get(DeviceAdminComponent.class);
-        mTestAppsComponent = mLocator.get(TestAppsComponent.class);
-        mAccountsComponent = mLocator.get(AccountsComponent.class);
         mMaxTestDuration = maxTestDuration;
         mSkipTestTeardown = TestApis.instrumentation().arguments().getBoolean(
                 SKIP_TEST_TEARDOWN_KEY, false);
@@ -230,6 +188,18 @@ public final class DeviceState extends HarrierRule {
         return mLocator.get(clazz);
     }
 
+    private UsersComponent usersComponent() {
+        return getDependency(UsersComponent.class);
+    }
+
+    private EnterpriseComponent enterpriseComponent() {
+        return getDependency(EnterpriseComponent.class);
+    }
+
+    private AccountsComponent accountsComponent() {
+        return getDependency(AccountsComponent.class);
+    }
+
     @Override
     void setSkipTestTeardown(boolean skipTestTeardown) {
         mSkipTestTeardown = skipTestTeardown;
@@ -253,7 +223,7 @@ public final class DeviceState extends HarrierRule {
     @Override
     protected void releaseResources() {
         Log.i(LOG_TAG, "Releasing resources");
-        mLocator.releaseResources();
+        mLocator.clearDependencies();
         mRegisteredBroadcastReceivers.clear();
 
         Log.i(LOG_TAG, "Shutting down test thread executor");
@@ -323,7 +293,7 @@ public final class DeviceState extends HarrierRule {
             Log.d(LOG_TAG, "Tearing down state for test " + testName);
 
             // Teardown any external rule this test depends on.
-            for (TestRuleExecutor externalRuleExecutor : mTestRuleExecutors) {
+            for (TestRuleExecutor externalRuleExecutor : mLocator.getAllTestRuleExecutors()) {
                 externalRuleExecutor.teardown(/* deviceState= */ this);
             }
 
@@ -338,7 +308,7 @@ public final class DeviceState extends HarrierRule {
         }
     }
 
-    void prepareTestState(Description description) throws Throwable {
+    void prepareTestState(Description description) {
         String testName = description.getMethodName();
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
@@ -358,7 +328,7 @@ public final class DeviceState extends HarrierRule {
 
         mMinSdkVersionCurrentTest = mMinSdkVersion;
         List<Annotation> annotations = getAnnotations(description);
-        applyAnnotations(annotations, /* isTest= */ true);
+        applyAnnotations(annotations);
 
         List<Annotation> testRulesExecutorAnnotations = annotations.stream()
                 .filter(a -> a.annotationType().getAnnotation(UsesTestRuleExecutor.class) != null)
@@ -368,36 +338,21 @@ public final class DeviceState extends HarrierRule {
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
 
-    private void applyAnnotations(List<Annotation> annotations, boolean isTest) throws Throwable {
+    private void applyAnnotations(List<Annotation> annotations) {
         Log.d(LOG_TAG, "Applying annotations: " + annotations);
         for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
 
             if (annotation instanceof RequireSdkVersion requireSdkVersionAnnotation) {
-
-                if (requireSdkVersionAnnotation.reason().isEmpty()) {
-                    requireSdkVersion(
-                            requireSdkVersionAnnotation.min(),
-                            requireSdkVersionAnnotation.max(),
-                            requireSdkVersionAnnotation.failureMode());
-                } else {
-                    requireSdkVersion(
-                            requireSdkVersionAnnotation.min(),
-                            requireSdkVersionAnnotation.max(),
-                            requireSdkVersionAnnotation.failureMode(),
-                            requireSdkVersionAnnotation.reason());
+                requireSdkVersion(requireSdkVersionAnnotation);
+            } else {
+                Class<? extends Annotation> annotationType = annotation.annotationType();
+                UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
+                        annotationType.getAnnotation(UsesAnnotationExecutor.class);
+                if (usesAnnotationExecutorAnnotation != null) {
+                    var executor = usesAnnotationExecutor(usesAnnotationExecutorAnnotation);
+                    executor.applyAnnotation(annotation);
                 }
-
-                continue;
-            }
-
-            Class<? extends Annotation> annotationType = annotation.annotationType();
-            UsesAnnotationExecutor usesAnnotationExecutorAnnotation =
-                    annotationType.getAnnotation(UsesAnnotationExecutor.class);
-            if (usesAnnotationExecutorAnnotation != null) {
-                var executor = usesAnnotationExecutor(usesAnnotationExecutorAnnotation);
-                executor.applyAnnotation(annotation);
-                continue;
             }
         }
 
@@ -405,17 +360,21 @@ public final class DeviceState extends HarrierRule {
                 /* max= */ Integer.MAX_VALUE, FailureMode.SKIP);
     }
 
-    private static TestAppQueryBuilder getDpcQueryFromAnnotation(Annotation annotation) {
-        try {
-            Method queryMethod = annotation.annotationType().getMethod("dpc");
-            Query query = (Query) queryMethod.invoke(annotation);
-
-            return new TestAppProvider().query(query);
-        } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            Log.i(LOG_TAG, "Unable to get dpc query value for "
-                    + annotation.annotationType().getName(), e);
+    private void requireSdkVersion(RequireSdkVersion requireSdkVersion) {
+        if (requireSdkVersion.reason().isEmpty()) {
+            requireSdkVersion(
+                    requireSdkVersion.min(),
+                    requireSdkVersion.max(),
+                    requireSdkVersion.failureMode()
+            );
+        } else {
+            requireSdkVersion(
+                    requireSdkVersion.min(),
+                    requireSdkVersion.max(),
+                    requireSdkVersion.failureMode(),
+                    requireSdkVersion.reason()
+            );
         }
-        return new TestAppProvider().query(); // No dpc specified - use any
     }
 
     private List<Annotation> getAnnotations(Description description) {
@@ -511,7 +470,7 @@ public final class DeviceState extends HarrierRule {
 
                     try {
                         List<Annotation> annotations = new ArrayList<>(getAnnotations(description));
-                        applyAnnotations(annotations, /* isTest= */ false);
+                        applyAnnotations(annotations);
                     } catch (AssumptionViolatedException e) {
                         Log.i(LOG_TAG, "Assumption failed during class setup", e);
                         mSkipTests = true;
@@ -651,14 +610,6 @@ public final class DeviceState extends HarrierRule {
     }
 
     private static final String LOG_TAG = "DeviceState";
-
-    private final UsersComponent mUsersComponent;
-    private final EnterpriseComponent mEnterpriseComponent;
-    private final DeviceOwnerComponent mDeviceOwnerComponent;
-    private final ProfileOwnersComponent mProfileOwnersComponent;
-    private final DeviceAdminComponent mDeviceAdminComponent;
-    private final TestAppsComponent mTestAppsComponent;
-    private final AccountsComponent mAccountsComponent;
     private final List<BlockingBroadcastReceiver> mRegisteredBroadcastReceivers = new ArrayList<>();
 
     /**
@@ -672,7 +623,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed work profile
      */
     public UserReference workProfile() {
-        return workProfile(/* forUser= */ UserType.INITIAL_USER);
+        return enterpriseComponent().workProfile();
     }
 
     /**
@@ -684,7 +635,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed work profile for the given user
      */
     public UserReference workProfile(UserType forUser) {
-        return workProfile(resolveUserTypeToUser(forUser));
+        return enterpriseComponent().workProfile(forUser);
     }
 
     /**
@@ -696,7 +647,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed work profile for the given user
      */
     public UserReference workProfile(UserReference forUser) {
-        return profile(MANAGED_PROFILE_TYPE_NAME, forUser);
+        return enterpriseComponent().workProfile(forUser);
     }
 
     /**
@@ -708,7 +659,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed profile for the given user
      */
     public UserReference profile(String profileType, UserType forUser) {
-        return profile(profileType, resolveUserTypeToUser(forUser));
+        return usersComponent().profile(profileType, forUser);
     }
 
     /**
@@ -727,26 +678,6 @@ public final class DeviceState extends HarrierRule {
     }
 
     /**
-     * Get the {@link UserReference} of the profile of the given type for the given user.
-     *
-     * <p>This should only be used to get profiles managed by Harrier (using either the
-     * annotations or calls to the {@link DeviceState} class.
-     *
-     * @throws IllegalStateException if there is no harrier-managed profile for the given user
-     */
-    public UserReference profile(String profileType, UserReference forUser) {
-        com.android.bedstead.nene.users.UserType resolvedUserType =
-                TestApis.users().supportedType(profileType);
-
-        if (resolvedUserType == null) {
-            throw new IllegalStateException("Can not have a profile of type " + profileType
-                    + " as they are not supported on this device");
-        }
-
-        return mUsersComponent.profile(resolvedUserType, forUser);
-    }
-
-    /**
      * Get the {@link UserReference} of the tv profile for the current user
      *
      * <p>This should only be used to get tv profiles managed by Harrier (using either the
@@ -755,7 +686,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed tv profile
      */
     public UserReference tvProfile() {
-        return tvProfile(/* forUser= */ UserType.INSTRUMENTED_USER);
+        return usersComponent().tvProfile();
     }
 
     /**
@@ -767,7 +698,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed tv profile
      */
     public UserReference tvProfile(UserType forUser) {
-        return tvProfile(resolveUserTypeToUser(forUser));
+        return usersComponent().tvProfile(forUser);
     }
 
     /**
@@ -779,7 +710,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed tv profile
      */
     public UserReference tvProfile(UserReference forUser) {
-        return profile(TV_PROFILE_TYPE_NAME, forUser);
+        return usersComponent().tvProfile(forUser);
     }
 
     /**
@@ -791,7 +722,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed clone profile
      */
     public UserReference cloneProfile() {
-        return cloneProfile(/* forUser= */ UserType.INITIAL_USER);
+        return usersComponent().cloneProfile();
     }
 
     /**
@@ -803,7 +734,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed clone profile
      */
     public UserReference cloneProfile(UserType forUser) {
-        return cloneProfile(resolveUserTypeToUser(forUser));
+        return usersComponent().cloneProfile(forUser);
     }
 
     /**
@@ -815,7 +746,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed clone profile
      */
     public UserReference cloneProfile(UserReference forUser) {
-        return profile(CLONE_PROFILE_TYPE_NAME, forUser);
+        return usersComponent().cloneProfile(forUser);
     }
 
     /**
@@ -827,7 +758,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed private profile
      */
     public UserReference privateProfile() {
-        return privateProfile(/* forUser= */ UserType.INITIAL_USER);
+        return usersComponent().privateProfile();
     }
 
     /**
@@ -839,7 +770,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed private profile
      */
     public UserReference privateProfile(UserType forUser) {
-        return privateProfile(resolveUserTypeToUser(forUser));
+        return usersComponent().privateProfile(forUser);
     }
 
     /**
@@ -851,7 +782,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed private profile
      */
     public UserReference privateProfile(UserReference forUser) {
-        return profile(PRIVATE_PROFILE_TYPE_NAME, forUser);
+        return usersComponent().privateProfile(forUser);
     }
 
     /**
@@ -868,11 +799,10 @@ public final class DeviceState extends HarrierRule {
      * @deprecated Use {@link #initialUser()} to ensure compatibility with Headless System User
      * Mode devices.
      */
+    @SuppressWarnings("deprecation")
     @Deprecated
     public UserReference primaryUser() {
-        return TestApis.users().all()
-                .stream().filter(UserReference::isPrimary).findFirst()
-                .orElseThrow(IllegalStateException::new);
+        return TestApis.users().primary();
     }
 
     /**
@@ -884,7 +814,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no harrier-managed secondary user
      */
     public UserReference secondaryUser() {
-        return mUsersComponent.user(SECONDARY_USER_TYPE_NAME);
+        return usersComponent().user(SECONDARY_USER_TYPE_NAME);
     }
 
     /**
@@ -893,7 +823,7 @@ public final class DeviceState extends HarrierRule {
      * @throws IllegalStateException if there is no "other" user
      */
     public UserReference otherUser() {
-        return mUsersComponent.otherUser();
+        return usersComponent().otherUser();
     }
 
     /**
@@ -1048,52 +978,10 @@ public final class DeviceState extends HarrierRule {
     }
 
     /**
-     * Creates appropriate {@link UserReference} for the {@link UserType}
-     */
-    public UserReference resolveUserTypeToUser(UserType userType) {
-        switch (userType) {
-            case SYSTEM_USER:
-                return TestApis.users().system();
-            case INSTRUMENTED_USER:
-                return TestApis.users().instrumented();
-            case CURRENT_USER:
-                return TestApis.users().current();
-            case PRIMARY_USER:
-                return primaryUser();
-            case SECONDARY_USER:
-                return secondaryUser();
-            case WORK_PROFILE:
-                return workProfile();
-            case TV_PROFILE:
-                return tvProfile();
-            case DPC_USER:
-                return dpc().user();
-            case INITIAL_USER:
-                return TestApis.users().initial();
-            case ADDITIONAL_USER:
-                return mUsersComponent.additionalUser();
-            case CLONE_PROFILE:
-                return cloneProfile();
-            case PRIVATE_PROFILE:
-                return privateProfile();
-            case ADMIN_USER:
-                return TestApis.users().all().stream().sorted(
-                                Comparator.comparing(UserReference::id))
-                        .filter(UserReference::isAdmin)
-                        .findFirst().orElseThrow(
-                                () -> new IllegalStateException("No admin user on device"));
-            case ANY:
-                throw new IllegalStateException("ANY UserType can not be used here");
-            default:
-                throw new IllegalArgumentException("Unknown user type " + userType);
-        }
-    }
-
-    /**
      * Returns the additional user specified by annotation
      */
     public UserReference additionalUser() {
-        return mUsersComponent.additionalUser();
+        return usersComponent().additionalUser();
     }
 
     void teardownNonShareableState() {
@@ -1122,7 +1010,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the device owner is not a RemoteDPC then an exception will be thrown
      */
     public RemoteDpc deviceOwner() {
-        return mDeviceOwnerComponent.deviceOwner();
+        return getDependency(DeviceOwnerComponent.class).deviceOwner();
     }
 
 
@@ -1145,11 +1033,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
      */
     public RemoteDpc profileOwner(UserType onUser) {
-        if (onUser == null) {
-            throw new NullPointerException();
-        }
-
-        return profileOwner(resolveUserTypeToUser(onUser));
+        return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
     }
 
     /**
@@ -1160,7 +1044,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the profile owner is not a RemoteDPC then an exception will be thrown.
      */
     public RemoteDpc profileOwner(UserReference onUser) {
-        return mProfileOwnersComponent.profileOwner(onUser);
+        return getDependency(ProfileOwnersComponent.class).profileOwner(onUser);
     }
 
     /**
@@ -1170,7 +1054,7 @@ public final class DeviceState extends HarrierRule {
      * If no Harrier-managed device admin exists, an exception will be thrown.
      */
     public RemoteDeviceAdmin deviceAdmin() {
-        return mDeviceAdminComponent.deviceAdmin(EnsureHasDeviceAdmin.DEFAULT_KEY);
+        return getDependency(DeviceAdminComponent.class).deviceAdmin();
     }
 
     /**
@@ -1180,7 +1064,7 @@ public final class DeviceState extends HarrierRule {
      * If no Harrier-managed device admin exists for the given key, an exception will be thrown.
      */
     public RemoteDeviceAdmin deviceAdmin(String key) {
-        return mDeviceAdminComponent.deviceAdmin(key);
+        return getDependency(DeviceAdminComponent.class).deviceAdmin(key);
     }
 
     /**
@@ -1188,7 +1072,7 @@ public final class DeviceState extends HarrierRule {
      * the delegating DPC not the delegate.
      */
     public RemotePolicyManager dpcOnly() {
-        return mEnterpriseComponent.dpcOnly();
+        return enterpriseComponent().dpcOnly();
     }
 
     /**
@@ -1211,7 +1095,7 @@ public final class DeviceState extends HarrierRule {
      * <p>If the profile owner or device owner is not a RemoteDPC then an exception will be thrown.
      */
     public RemotePolicyManager dpc() {
-        return mEnterpriseComponent.dpc();
+        return enterpriseComponent().dpc();
     }
 
 
@@ -1219,7 +1103,7 @@ public final class DeviceState extends HarrierRule {
      * Get the Device Policy Management Role Holder.
      */
     public RemoteDevicePolicyManagerRoleHolder dpmRoleHolder() {
-        return mEnterpriseComponent.dpmRoleHolder();
+        return enterpriseComponent().dpmRoleHolder();
     }
 
     /**
@@ -1229,7 +1113,7 @@ public final class DeviceState extends HarrierRule {
      * automatically remove test apps use the {@link EnsureTestAppInstalled} annotation.
      */
     public TestAppProvider testApps() {
-        return mTestAppsComponent.getTestAppProvider();
+        return getDependency(TestAppsComponent.class).getTestAppProvider();
     }
 
     /**
@@ -1243,42 +1127,42 @@ public final class DeviceState extends HarrierRule {
      * Get a test app installed with `@EnsureTestAppInstalled` with the given key.
      */
     public TestAppInstance testApp(String key) {
-        return mTestAppsComponent.testApp(key);
+        return getDependency(TestAppsComponent.class).testApp(key);
     }
 
     /**
      * Access harrier-managed accounts on the instrumented user.
      */
     public RemoteAccountAuthenticator accounts() {
-        return accounts(TestApis.users().instrumented());
+        return accountsComponent().accounts();
     }
 
     /**
      * Access harrier-managed accounts on the given user.
      */
     public RemoteAccountAuthenticator accounts(UserType user) {
-        return accounts(resolveUserTypeToUser(user));
+        return accountsComponent().accounts(user);
     }
 
     /**
      * Access harrier-managed accounts on the given user.
      */
     public RemoteAccountAuthenticator accounts(UserReference user) {
-        return mAccountsComponent.accounts(user);
+        return accountsComponent().accounts(user);
     }
 
     /**
      * Get the default account defined with {@link EnsureHasAccount}.
      */
     public AccountReference account() {
-        return mAccountsComponent.account();
+        return accountsComponent().account();
     }
 
     /**
      * Get the account defined with {@link EnsureHasAccount} with a given key.
      */
     public AccountReference account(String key) {
-        return mAccountsComponent.account(key);
+        return accountsComponent().account(key);
     }
 
     @Override
@@ -1327,7 +1211,6 @@ public final class DeviceState extends HarrierRule {
             TestRuleExecutor externalRuleExecutor =
                     usesTestRuleExecutor(usesTestRuleExecutorAnnotation);
             externalRuleExecutor.applyTestRule(/* deviceState= */ this, annotation, description);
-            mTestRuleExecutors.add(externalRuleExecutor);
         }
     }
 }
