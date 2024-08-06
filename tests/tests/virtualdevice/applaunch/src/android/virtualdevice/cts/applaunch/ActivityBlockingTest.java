@@ -16,16 +16,19 @@
 
 package android.virtualdevice.cts.applaunch;
 
+import static android.app.ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR;
+import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -35,6 +38,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.companion.virtual.VirtualDeviceManager.ActivityListener;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
@@ -42,8 +46,10 @@ import android.companion.virtual.flags.Flags;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
@@ -56,6 +62,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -410,8 +417,58 @@ public class ActivityBlockingTest {
         mRule.sendIntentToDisplay(mMonitoredIntent, mVirtualDisplay);
         verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
                 eq(mVirtualDisplay.getDisplay().getDisplayId()),
-                eq(mMonitoredIntent.getComponent()), anyInt());
+                eq(mMonitoredIntent.getComponent()), anyInt(), any());
         assertNoActivityLaunched(mMonitoredIntent);
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void blockedActivity_intentSenderPassedToListener() {
+        createVirtualDeviceAndTrustedDisplay();
+        EmptyActivity emptyActivity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
+        Intent blockedIntent = new Intent(mContext, CannotDisplayOnRemoteActivity.class);
+        emptyActivity.startActivity(blockedIntent);
+
+        var intentSender = ArgumentCaptor.forClass(IntentSender.class);
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
+                eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                eq(blockedIntent.getComponent()), anyInt(), intentSender.capture());
+        assertThat(intentSender.getValue()).isNotNull();
+        assertThat(intentSender.getValue().getCreatorPackage())
+                .isEqualTo(mContext.getPackageName());
+        assertThat(intentSender.getValue().getCreatorUserHandle()).isEqualTo(mContext.getUser());
+
+        // Ensure that the intent can be sent to another display. For this it needs to go into a
+        // new task.
+        Intent fillInIntent = new Intent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        Bundle activityOptions = ActivityOptions.makeBasic()
+                .setPendingIntentBackgroundActivityStartMode(MODE_BACKGROUND_ACTIVITY_START_ALLOWED)
+                .setLaunchDisplayId(DEFAULT_DISPLAY)
+                .toBundle();
+        try {
+            emptyActivity.startIntentSender(intentSender.getValue(), fillInIntent,
+                    /* flagsMask= */ 0, /* flagsValues= */ 0, /* extraFlags= */ 0, activityOptions);
+        } catch (IntentSender.SendIntentException e) {
+            fail("No exception expected: " + e);
+        }
+        mRule.waitAndAssertActivityResumed(blockedIntent.getComponent(), DEFAULT_DISPLAY);
+    }
+
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    @Test
+    public void blockedActivity_resultExpected_intentSenderNotPassedToListener() {
+        createVirtualDeviceAndTrustedDisplay();
+        EmptyActivity emptyActivity =
+                mRule.startActivityOnDisplaySync(mVirtualDisplay, EmptyActivity.class);
+        Intent blockedIntent = new Intent(mContext, CannotDisplayOnRemoteActivity.class);
+        emptyActivity.startActivityForResult(blockedIntent, /* requestCode= */ 0);
+
+        var intentSender = ArgumentCaptor.forClass(IntentSender.class);
+        verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
+                eq(mVirtualDisplay.getDisplay().getDisplayId()),
+                eq(blockedIntent.getComponent()), anyInt(), intentSender.capture());
+        assertThat(intentSender.getValue()).isNull();
     }
 
     private void createVirtualDeviceAndNonTrustedDisplay() {
@@ -460,7 +517,7 @@ public class ActivityBlockingTest {
         if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
             verify(mActivityListener, timeout(TIMEOUT_MILLIS)).onActivityLaunchBlocked(
                     eq(display.getDisplay().getDisplayId()),
-                    eq(intent.getComponent()), anyInt());
+                    eq(intent.getComponent()), anyInt(), any());
         }
         assertBlockedAppStreamingActivityLaunched(display);
     }
