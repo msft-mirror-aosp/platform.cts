@@ -102,9 +102,6 @@ public class CallLogTest extends InstrumentationTestCase {
             new PhoneAccountHandle(TELEPHONY_COMPONENT_NAME, "android.cts.CallLogTest.2");
     // Instance vars
     private ContentResolver mContentResolver;
-    private CallLogGenerator mCallLogGenerator;
-    private int mMaxCallLogEntriesPerSim;
-
 
     // Class to objectify the call log data (returned from a Cursor object)
     public class LogEntry {
@@ -154,8 +151,6 @@ public class CallLogTest extends InstrumentationTestCase {
         // Sets up this package as default dialer in super.
         super.setUp();
         mContentResolver = getInstrumentation().getContext().getContentResolver();
-        mCallLogGenerator = new CallLogGenerator(getInstrumentation().getContext());
-        mMaxCallLogEntriesPerSim = getMaxCallLogEntriesPerSim(getInstrumentation().getContext());
     }
 
     @Override
@@ -521,34 +516,38 @@ public class CallLogTest extends InstrumentationTestCase {
         if (!android.provider.Flags.allowConfigMaximumCallLogEntriesPerSim()) {
             return;
         }
+        final CallLogGenerator callLogGenerator =
+                new CallLogGenerator(getInstrumentation().getContext());
+        final int maxCallLogEntriesPerSim =
+                getMaxCallLogEntriesPerSim(getInstrumentation().getContext());
         try {
             getInstrumentation().getUiAutomation()
                     .adoptShellPermissionIdentity(Manifest.permission.READ_VOICEMAIL);
-            mCallLogGenerator.generateCallLogs(
-                    SIM_PHONE_ACCOUNT_HANDLE_1, mMaxCallLogEntriesPerSim);
-            mCallLogGenerator.generateCallLogs(
-                    SIM_PHONE_ACCOUNT_HANDLE_2, mMaxCallLogEntriesPerSim);
+            callLogGenerator.generateCallLogs(
+                    SIM_PHONE_ACCOUNT_HANDLE_1, maxCallLogEntriesPerSim);
+            callLogGenerator.generateCallLogs(
+                    SIM_PHONE_ACCOUNT_HANDLE_2, maxCallLogEntriesPerSim);
             assertEquals(
-                    mMaxCallLogEntriesPerSim,
-                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
+                    maxCallLogEntriesPerSim,
+                    callLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
             assertEquals(
-                    mMaxCallLogEntriesPerSim,
-                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
+                    maxCallLogEntriesPerSim,
+                    callLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
 
-            Uri uri = mCallLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_1);
+            Uri uri = callLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_1);
             assertNotNull(uri);
-            uri = mCallLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_2);
+            uri = callLogGenerator.addCallLog(SIM_PHONE_ACCOUNT_HANDLE_2);
             assertNotNull(uri);
 
             assertEquals(
-                    mMaxCallLogEntriesPerSim,
-                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
+                    maxCallLogEntriesPerSim,
+                    callLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_1));
             assertEquals(
-                    mMaxCallLogEntriesPerSim,
-                    mCallLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
+                    maxCallLogEntriesPerSim,
+                    callLogGenerator.getCallLogSize(SIM_PHONE_ACCOUNT_HANDLE_2));
         } finally {
-            mCallLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1);
-            mCallLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_2);
+            callLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_1);
+            callLogGenerator.deleteCallLogs(SIM_PHONE_ACCOUNT_HANDLE_2);
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
