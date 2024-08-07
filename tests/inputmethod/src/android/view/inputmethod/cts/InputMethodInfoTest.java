@@ -298,6 +298,10 @@ public class InputMethodInfoTest {
         assertEquals(mInputMethodSubtype.getLocale(), subtype.getLocale());
         assertEquals(mInputMethodSubtype.getMode(), subtype.getMode());
         assertEquals(mInputMethodSubtype.getNameResId(), subtype.getNameResId());
+        if (mFlagsValueProvider.getBoolean(Flags.FLAG_IME_SWITCHER_REVAMP_API)) {
+            assertEquals(mInputMethodSubtype.getLayoutLabelResource(),
+                    subtype.getLayoutLabelResource());
+        }
         assertEquals(mInputMethodSubtype.hashCode(), subtype.hashCode());
         assertEquals(mInputMethodSubtype.isAuxiliary(), subtype.isAuxiliary());
         assertEquals(mInputMethodSubtype.overridesImplicitlyEnabledSubtype(),
