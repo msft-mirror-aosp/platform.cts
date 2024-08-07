@@ -1546,7 +1546,7 @@ public class CardEmulationTest {
         }
 
         void notifyPollingLoop(String className, List<PollingFrame> receivedFrames) {
-            if (receivedFrames == null) {
+            if (receivedFrames == null || receivedFrames.isEmpty()) {
                 return;
             }
             mReceivedFrames.addAll(receivedFrames);
