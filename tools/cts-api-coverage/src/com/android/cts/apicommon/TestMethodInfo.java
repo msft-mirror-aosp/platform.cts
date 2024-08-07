@@ -13,17 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier
 
-import kotlin.reflect.KClass
+package com.android.cts.apicommon;
 
-class MainLocatorModule(private val deviceState: DeviceState) : BedsteadServiceLocator.Module {
-    override fun <T : Any> getDependency(clazz: KClass<T>): T? {
-        val dependency: Any? = when (clazz) {
-            DeviceState::class -> deviceState
-            else -> null
-        }
-        @Suppress("UNCHECKED_CAST") // the compiler can't check generic types
-        return dependency as T?
-    }
-}
+/** A class to record basic information of a CTS test method. */
+public record TestMethodInfo(
+        String moduleName,
+        String packageName,
+        String className,
+        String testName,
+        String signature
+) {}

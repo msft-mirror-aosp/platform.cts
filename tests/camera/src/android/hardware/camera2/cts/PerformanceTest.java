@@ -1396,6 +1396,7 @@ public class PerformanceTest {
                 }
                 timestamp1 = timestamp2;
             }
+            imageListener.reset();
 
             mReportLog.addValue("reduce_jitter", reduceJitter, ResultType.NEUTRAL,
                     ResultUnit.NONE);
@@ -2201,12 +2202,16 @@ public class PerformanceTest {
         private final LinkedBlockingQueue<TimestampHolder> mTimestampQueue =
                 new LinkedBlockingQueue<TimestampHolder>();
 
+        private boolean mReaderIsValid = true;
+
         SimpleTimestampListener(boolean timestampIsRealtime) {
             mUseRealtime = timestampIsRealtime;
         }
 
         @Override
-        public void onImageAvailable(ImageReader reader) {
+        public synchronized void onImageAvailable(ImageReader reader) {
+            if (!mReaderIsValid) return;
+
             try {
                 Image image = null;
                 image = reader.acquireNextImage();
@@ -2237,6 +2242,13 @@ public class PerformanceTest {
         public TimestampHolder getNextTimestampHolder() {
             TimestampHolder holder = mTimestampQueue.poll();
             return holder;
+        }
+
+        /**
+         * Reset the listener to stop handling callbacks.
+         */
+        public synchronized void reset() {
+            mReaderIsValid = false;
         }
     }
 

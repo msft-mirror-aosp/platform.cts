@@ -122,6 +122,35 @@ public final class Users {
     }
 
     /**
+     * Gets a {@link UserReference} of the first human user on the device.
+     *
+     * @deprecated Use {@link #initial()} to ensure compatibility with Headless System User
+     * Mode devices.
+     */
+    @Deprecated
+    public UserReference primary() {
+        return all()
+                .stream()
+                .filter(UserReference::isPrimary)
+                .findFirst()
+                .orElseThrow(IllegalStateException::new);
+    }
+
+    /**
+     * Gets a {@link UserReference} of the first admin user on the device.
+     *
+     * @throws IllegalStateException when there's no admin
+     */
+    public UserReference admin() {
+        return all()
+                .stream()
+                .sorted(Comparator.comparing(UserReference::id))
+                .filter(UserReference::isAdmin)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No admin user on device"));
+    }
+
+    /**
      * Gets a {@link UserReference} for the initial user for the device.
      *
      * <p>This will be the {@link #system()} user on most systems.</p>
