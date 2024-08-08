@@ -876,16 +876,19 @@ def main():
           ]
         return_string = ''
         for num_try in range(NUM_TRIES):
-          # Handle manual lighting control redirected stdout in test
-          if (test in _LIGHTING_CONTROL_TESTS and
-              not testing_flash_with_controller):
-            print('Turn lights OFF in rig and press <ENTER> to continue.')
-
-          # pylint: disable=subprocess-run-check
-          with open(
-              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'w') as fp:
-            output = subprocess.run(cmd, stdout=fp)
-          # pylint: enable=subprocess-run-check
+          # Saves to mobly test summary file
+          # print only messages for manual lighting control testing
+          output = subprocess.Popen(
+              cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+          )
+          with output.stdout, open(
+              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'wb'
+          ) as file:
+            for line in iter(output.stdout.readline, b''):
+              out = line.decode('utf-8').strip()
+              if '<ENTER>' in out: print(out)
+              file.write(line)
+          output.wait()
 
           # Parse mobly logs to determine PASS/FAIL(*)/SKIP & socket FAILs
           with open(
