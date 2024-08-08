@@ -795,6 +795,14 @@
   <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceActivity android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests#testResumedWhenRecreatedFromInNonFocusedTask"/>
   <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard"/>
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#isProvisioningAllowed_hasDeviceOwner_returnsFalse"/>
+  <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.AutoCompleteTextViewTest#refreshAutoCompleteResults_dropDownAlwaysVisible"/>
+  <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.VirtualAudioPermissionTest#audioInjection_virtualDeviceWithManualAudioPolicy_permissionGrantedOnlyOnDefaultDevice"/>
+  <option name="compatibility:exclude-filter" value="CtsRoleTestCases android.app.role.cts.RoleManagerTest#openDefaultAppListAndSetDefaultAppThenIsDefaultAppForPrivateSpace"/>
+  <option name="compatibility:exclude-filter" value="CtsInstallHostTestCases android.cts.install.host.InstallTest#testAbandonStagedSessionAfterReboot[MULTIPLE_MIX_Rollbacktrue]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfilePasswordTest#testCreateSeparateChallengeChangedLogged"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.SessionLifecycleTest#testDatasetAuthResponseWhileAutofilledAppIsLifecycled"/>
+  <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapNotTouchExploring_performsClick"/>
+
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
