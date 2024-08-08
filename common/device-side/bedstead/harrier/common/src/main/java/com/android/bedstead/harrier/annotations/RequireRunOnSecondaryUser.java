@@ -49,6 +49,9 @@ public @interface RequireRunOnSecondaryUser {
      * Should we ensure that we are switched to the given user.
      *
      * <p>ANY will be treated as TRUE if no other annotation has forced a switch.
+     *
+     * <p>However, ANY will be treated as FALSE to prevent user switching to a secondary user
+     * on the driver display when testing with a visible background user.
      */
     OptionalBoolean switchedToUser() default TRUE;
 

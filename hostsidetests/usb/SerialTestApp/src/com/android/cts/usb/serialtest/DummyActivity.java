@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 
-package android.security.cts.dynamicpermissiontestattackerapp
+package com.android.cts.usb.serialtest;
 
-import android.app.Service
-import android.content.Intent
-import android.os.IBinder
+import android.app.Activity;
 
-class RemovePermissionService : Service() {
-    private val binder = object : IRemovePermissionService.Stub() {
-        override fun removePermission(permissionName: String) {
-            packageManager.removePermission(permissionName)
-        }
-    }
-
-    override fun onBind(intent: Intent): IBinder = binder
+public class DummyActivity extends Activity {
 }
