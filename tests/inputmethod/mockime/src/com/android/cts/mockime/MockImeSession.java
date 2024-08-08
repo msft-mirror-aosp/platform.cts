@@ -315,7 +315,7 @@ public class MockImeSession implements AutoCloseable {
         if (MultiUserUtils.getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
                 .stream()
                 .anyMatch(info -> getMockImeComponentName().equals(info.getComponent()))) {
-            throw new IllegalStateException();
+            throw new IllegalStateException("MockIME should not be already enabled.");
         }
 
         // Make sure to set up additional subtypes before launching MockIme.
@@ -355,10 +355,19 @@ public class MockImeSession implements AutoCloseable {
 
         String imeId = getImeId();
         executeImeCmd("enable", imeId);
-        executeImeCmd("set", imeId);
+        if (!imeSettings.mSuppressSetIme) {
+            executeImeCmd("set", imeId);
 
-        PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
-                () -> getImeId().equals(getCurrentInputMethodId()));
+            PollingCheck.check("Make sure that MockIME becomes available", TIMEOUT_MILLIS,
+                    () -> getImeId().equals(getCurrentInputMethodId()));
+        } else {
+            PollingCheck.check("Make sure that MockIME becomes enabled", TIMEOUT_MILLIS, () ->
+                    MultiUserUtils
+                            .getEnabledInputMethodListAsUser(mContext, mUiAutomation, mTargetUser)
+                            .stream()
+                            .anyMatch(
+                                    info -> getMockImeComponentName().equals(info.getComponent())));
+        }
     }
 
     @Override

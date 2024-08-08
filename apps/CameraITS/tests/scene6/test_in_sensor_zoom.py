@@ -90,11 +90,13 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       output_surfaces[0].update(
           {'useCase': its_session_utils.USE_CASE_CROPPED_RAW}
       )
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
       # Capture RAW images with different zoom ratios with stream use case
       # CROPPED_RAW set
       for _, z in enumerate(z_list):
         req['android.control.zoomRatio'] = z
-        cam.do_3a(out_surfaces=output_surfaces)
+        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+          cam.do_3a(out_surfaces=output_surfaces)
         cap_zoomed_raw = cam.do_capture(
             req,
             output_surfaces,

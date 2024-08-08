@@ -19,6 +19,7 @@ package com.android.cts.apimap;
 import com.android.cts.apicommon.ApiClass;
 import com.android.cts.apicommon.ApiCoverage;
 import com.android.cts.apicommon.ApiPackage;
+import com.android.cts.apicommon.TestMethodInfo;
 import com.android.cts.ctsprofiles.ClassProfile;
 import com.android.cts.ctsprofiles.MethodProfile;
 import com.android.cts.ctsprofiles.ModuleProfile;
@@ -94,7 +95,7 @@ public class CallGraphManager {
                 visitedComponents.add(tarjan.getComponentID(methodSignature));
                 // Do recursive search for API calls.
                 resolveMethodCoveredApis(stack, visitedComponents, tarjan);
-                markCoveredApisWithCaller(methodSignature, apiCoverage);
+                markCoveredApisWithCaller(methodProfile, apiCoverage);
             }
         }
         markCoveredApisWithoutCaller(apiCoverage);
@@ -185,7 +186,15 @@ public class CallGraphManager {
     }
 
     /** Marks that APIs are called by the given CTS test method. */
-    private void markCoveredApisWithCaller(String methodSignature, ApiCoverage apiCoverage) {
+    private void markCoveredApisWithCaller(MethodProfile methodProfile, ApiCoverage apiCoverage) {
+        String methodSignature = methodProfile.getMethodSignatureWithClass();
+        TestMethodInfo testMethodInfo = new TestMethodInfo(
+                mModule.getModuleName(),
+                methodProfile.getPackageName(),
+                methodProfile.getClassName(),
+                methodProfile.getMethodName(),
+                String.format("[%s] %s", mModule.getModuleName(), methodSignature)
+        );
         CoveredApiCache apiCache = mCoveredApiCaches.get(methodSignature);
         if (apiCache == null) {
             return;
@@ -199,7 +208,7 @@ public class CallGraphManager {
             if (apiClass != null) {
                 apiClass.markConstructorCoveredTest(
                         apiConstructor.getMethodParams(),
-                        String.format("[%s] %s", mModule.getModuleName(), methodSignature)
+                        testMethodInfo
                 );
             }
         }
@@ -210,7 +219,7 @@ public class CallGraphManager {
                 apiClass.markMethodCoveredTest(
                         apiMethod.getMethodName(),
                         apiMethod.getMethodParams(),
-                        String.format("[%s] %s", mModule.getModuleName(), methodSignature)
+                        testMethodInfo
                 );
             }
         }

@@ -669,6 +669,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
      */
     @Test
     public void testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         enableService();
 
         // Set expectations.

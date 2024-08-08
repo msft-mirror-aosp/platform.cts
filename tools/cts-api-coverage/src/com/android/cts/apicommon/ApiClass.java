@@ -116,33 +116,33 @@ public class ApiClass implements Comparable<ApiClass>, HasCoverage {
 
     /** Look for a matching constructor and mark it as covered by the given test method */
     public void markConstructorCoveredTest(
-            List<String> parameterTypes, String testMethod) {
+            List<String> parameterTypes, TestMethodInfo testMethodInfo) {
         if (mSuperClass != null) {
             // Mark matching constructors in the superclass
-            mSuperClass.markConstructorCoveredTest(parameterTypes, testMethod);
+            mSuperClass.markConstructorCoveredTest(parameterTypes, testMethodInfo);
         }
         Optional<ApiConstructor> apiConstructor = getConstructor(parameterTypes);
-        apiConstructor.ifPresent(constructor -> constructor.setCoveredTest(testMethod));
+        apiConstructor.ifPresent(constructor -> constructor.setCoveredTest(testMethodInfo));
     }
 
 
     /** Look for a matching method and if found and mark it as covered by the given test method */
     public void markMethodCoveredTest(
-            String name, List<String> parameterTypes, String testMethod) {
+            String name, List<String> parameterTypes, TestMethodInfo testMethodInfo) {
         if (mSuperClass != null) {
             // Mark matching methods in the super class
-            mSuperClass.markMethodCoveredTest(name, parameterTypes, testMethod);
+            mSuperClass.markMethodCoveredTest(name, parameterTypes, testMethodInfo);
         }
         if (!mInterfaceMap.isEmpty()) {
             // Mark matching methods in the interfaces
             for (ApiClass mInterface : mInterfaceMap.values()) {
                 if (mInterface != null) {
-                    mInterface.markMethodCoveredTest(name, parameterTypes, testMethod);
+                    mInterface.markMethodCoveredTest(name, parameterTypes, testMethodInfo);
                 }
             }
         }
         Optional<ApiMethod> apiMethod = getMethod(name, parameterTypes);
-        apiMethod.ifPresent(method -> method.setCoveredTest(testMethod));
+        apiMethod.ifPresent(method -> method.setCoveredTest(testMethodInfo));
     }
 
     /** Look for a matching constructor and mark it as covered */

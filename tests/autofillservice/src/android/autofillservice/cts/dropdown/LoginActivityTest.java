@@ -1260,7 +1260,9 @@ public class LoginActivityTest extends LoginActivityCommonTestCase {
                 // Make sure the overlay is removed
                 mActivity.runOnUiThread(() -> {
                     WindowManager windowManager = mContext.getSystemService(WindowManager.class);
-                    windowManager.removeView(overlay[0]);
+                    if (overlay[0] != null) {
+                        windowManager.removeView(overlay[0]);
+                    }
                 });
             } catch (Exception e) {
                 mSafeCleanerRule.add(e);

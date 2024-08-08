@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-package android.security.cts.dynamicpermissiontestattackerapp;
+package com.android.cts.apicommon;
 
-interface IRemovePermissionService {
-    void removePermission(in String permissionName);
-}
+/** A class to record basic information of a CTS test method. */
+public record TestMethodInfo(
+        String moduleName,
+        String packageName,
+        String className,
+        String testName,
+        String signature
+) {}
