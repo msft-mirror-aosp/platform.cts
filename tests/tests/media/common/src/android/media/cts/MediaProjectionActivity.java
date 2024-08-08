@@ -64,9 +64,9 @@ public class MediaProjectionActivity extends Activity {
     public static final String SCREEN_SHARE_OPTIONS_RESOURCE_ID =
             SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
     public static final String ENTIRE_SCREEN_STRING_RES_NAME =
-            "screen_share_permission_dialog_option_entire_screen";
+            "media_projection_entry_app_permission_dialog_option_text_entire_screen";
     public static final String SINGLE_APP_STRING_RES_NAME =
-            "screen_share_permission_dialog_option_single_app";
+            "media_projection_entry_app_permission_dialog_option_text_single_app";
 
     private MediaProjectionManager mProjectionManager;
     private MediaProjection mMediaProjection;
