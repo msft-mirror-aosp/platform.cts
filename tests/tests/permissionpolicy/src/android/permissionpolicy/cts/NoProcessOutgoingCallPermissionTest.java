@@ -20,6 +20,7 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommand;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.role.RoleManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -86,7 +87,8 @@ public class NoProcessOutgoingCallPermissionTest {
     public void testProcessOutgoingCall() throws InterruptedException {
         final PackageManager pm = mContext.getPackageManager();
         if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY) ||
-                !pm.hasSystemFeature(PackageManager.FEATURE_SIP_VOIP)) {
+                !pm.hasSystemFeature(PackageManager.FEATURE_SIP_VOIP)
+                || !hasDialerRole(mContext)) {
             return;
         }
 
@@ -135,6 +137,11 @@ public class NoProcessOutgoingCallPermissionTest {
             Log.e(LOG_TAG, xtrs.toString());
             mSystemBroadcastLatch.countDown();
         }
+    }
+
+    public static boolean hasDialerRole(Context context) {
+        final RoleManager rm = context.getSystemService(RoleManager.class);
+        return (rm.isRoleAvailable(RoleManager.ROLE_DIALER));
     }
 
 }
