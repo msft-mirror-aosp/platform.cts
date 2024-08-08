@@ -41,6 +41,7 @@ FLASH_MODE_TO_CLICKS = types.MappingProxyType({
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JPG_FORMAT_STR = '.jpg'
+LOCATION_ON_TXT = 'Turn on'
 OK_BUTTON_TXT = 'OK'
 TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
@@ -199,6 +200,9 @@ def launch_and_take_capture(dut, pkg_name):
     if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=DONE_BUTTON_TXT).click.wait()
+    if dut.ui(text=LOCATION_ON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=LOCATION_ON_TXT).click.wait()
 
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
