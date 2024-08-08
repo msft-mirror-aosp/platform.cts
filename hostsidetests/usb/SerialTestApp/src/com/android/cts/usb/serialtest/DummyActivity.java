@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package android.security.cts.dynamicpermissiontestattackerapp;
+package com.android.cts.usb.serialtest;
 
-interface IRemovePermissionService {
-    void removePermission(in String permissionName);
+import android.app.Activity;
+
+public class DummyActivity extends Activity {
 }
