@@ -267,21 +267,31 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
                 .height();
     }
 
-    public static void setActivityOrientationActivityHandlesOrientationChanges(
+    public void setActivityOrientationActivityHandlesOrientationChanges(
             TestActivity activity, int orientation) {
         // Make sure that the provided orientation is a fixed orientation
         assertTrue(orientation == ORIENTATION_PORTRAIT || orientation == ORIENTATION_LANDSCAPE);
-        // Do nothing if the orientation already matches
-        if (activity.getResources().getConfiguration().orientation == orientation) {
-            return;
+        // When the display is close to square, the app config orientation may always be landscape
+        // excluding the system insets. Rotate the device away from the current orientation to
+        // change the activity/hinge orientation instead of requesting an orientation change to
+        // the specified orientation.
+        // TODO(b/358463936): Checking for square display should ideally be done at the callsites
+        // of this method not within this method.
+        if (isCloseToSquareDisplay()) {
+            rotateFromCurrentOrientation(activity);
+        } else {
+            // Do nothing if the orientation already matches
+            if (activity.getResources().getConfiguration().orientation == orientation) {
+                return;
+            }
+            activity.resetLayoutCounter();
+            // Change the orientation
+            activity.setRequestedOrientation(orientation == ORIENTATION_PORTRAIT
+                    ? SCREEN_ORIENTATION_PORTRAIT : SCREEN_ORIENTATION_LANDSCAPE);
+            // Wait for the activity to layout, which will happen after the orientation change
+            waitForOrFail("Activity orientation must be updated",
+                    () -> activity.getResources().getConfiguration().orientation == orientation);
         }
-        activity.resetLayoutCounter();
-        // Change the orientation
-        activity.setRequestedOrientation(orientation == ORIENTATION_PORTRAIT
-                ? SCREEN_ORIENTATION_PORTRAIT : SCREEN_ORIENTATION_LANDSCAPE);
-        // Wait for the activity to layout, which will happen after the orientation change
-        waitForOrFail("Activity orientation must be updated",
-                () -> activity.getResources().getConfiguration().orientation == orientation);
     }
 
     public static void enterPipActivityHandlesConfigChanges(TestActivity activity) {
@@ -314,6 +324,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         // excluding the system insets. Rotate the device away from the current orientation to
         // change the activity/hinge orientation instead of requesting an orientation change to
         // the specified orientation.
+        // TODO(b/358463936): Checking for square display should ideally be done at the callsites
+        // of this method not within this method.
         if (isCloseToSquareDisplay()) {
             rotateFromCurrentOrientation(activity);
         } else {
