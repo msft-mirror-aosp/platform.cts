@@ -19,11 +19,14 @@ package com.android.bedstead.nene.activities;
 import static android.cts.testapisreflection.TestApisReflectionKt.getDisplayId;
 import static android.Manifest.permission.REAL_GET_TASKS;
 import static android.os.Build.VERSION_CODES.Q;
+import static android.os.Build.VERSION_CODES.S;
 
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY_STACKS;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY_TASKS;
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.ActivityTaskManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -46,6 +49,8 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -179,9 +184,22 @@ public final class Activities {
     }
 
     private void removeRootTasksWithActivityTypes(int[] activityTypes) {
-        try (PermissionContext p = TestApis.permissions().withPermission(
-                MANAGE_ACTIVITY_TASKS)) {
-            sActivityTaskManagerProxy.removeRootTasksWithActivityTypes(activityTypes);
+        if (Versions.meetsMinimumSdkVersionRequirement(S)) {
+            try (PermissionContext p = TestApis.permissions().withPermission(
+                    MANAGE_ACTIVITY_TASKS)) {
+                sActivityTaskManagerProxy.removeRootTasksWithActivityTypes(activityTypes);
+            }
+        } else {
+            try (PermissionContext p = TestApis.permissions().withPermission(
+                    MANAGE_ACTIVITY_STACKS)) {
+                Method method = ActivityTaskManager.class.getDeclaredMethod(
+                        "removeStacksWithActivityTypes",
+                        new Class<?>[]{int[].class});
+                method.invoke(TestApis.context().instrumentedContext().getSystemService(
+                        ActivityTaskManager.class), ALL_ACTIVITY_TYPE_BUT_HOME);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new NeneException("Error clearing all activities activity pre S", e);
+            }
         }
     }
 
