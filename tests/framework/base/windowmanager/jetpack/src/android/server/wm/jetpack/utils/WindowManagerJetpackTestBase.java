@@ -28,6 +28,10 @@ import static android.content.pm.PackageManager.FEATURE_SCREEN_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
+import static android.view.Surface.ROTATION_0;
+import static android.view.Surface.ROTATION_180;
+import static android.view.Surface.ROTATION_270;
+import static android.view.Surface.ROTATION_90;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -53,6 +57,8 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.RotationSession;
+import android.server.wm.WindowManagerState;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -287,23 +293,48 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         activity.waitForConfigurationChange();
     }
 
-    public static void setActivityOrientationActivityDoesNotHandleOrientationChanges(
+    public void setActivityOrientationActivityDoesNotHandleOrientationChanges(
             TestActivity activity, int orientation) {
         // Make sure that the provided orientation is a fixed orientation
         assertTrue(orientation == ORIENTATION_PORTRAIT || orientation == ORIENTATION_LANDSCAPE);
-        // Do nothing if the orientation already matches
-        if (activity.getResources().getConfiguration().orientation == orientation) {
-            return;
+        // When the display is close to square, the app config orientation may always be landscape
+        // excluding the system insets. Rotate the device away from the current orientation to
+        // change the activity/hinge orientation instead of requesting an orientation change to
+        // the specified orientation.
+        if (isCloseToSquareDisplay()) {
+            rotateFromCurrentOrientation(activity);
+        } else {
+            // Do nothing if the orientation already matches
+            if (activity.getResources().getConfiguration().orientation == orientation) {
+                return;
+            }
+            TestActivity.resetResumeCounter();
+            // Change the orientation
+            activity.setRequestedOrientation(orientation == ORIENTATION_PORTRAIT
+                    ? SCREEN_ORIENTATION_PORTRAIT : SCREEN_ORIENTATION_LANDSCAPE);
+            // The activity will relaunch because it does not handle the orientation change, so wait
+            // for the activity to be resumed again
+            assertTrue(activity.waitForOnResume());
+            // Check that orientation matches
+            assertEquals(orientation, activity.getResources().getConfiguration().orientation);
         }
-        TestActivity.resetResumeCounter();
-        // Change the orientation
-        activity.setRequestedOrientation(orientation == ORIENTATION_PORTRAIT
-                ? SCREEN_ORIENTATION_PORTRAIT : SCREEN_ORIENTATION_LANDSCAPE);
-        // The activity will relaunch because it does not handle the orientation change, so wait
-        // for the activity to be resumed again
-        assertTrue(activity.waitForOnResume());
-        // Check that orientation matches
-        assertEquals(orientation, activity.getResources().getConfiguration().orientation);
+    }
+
+    private void rotateFromCurrentOrientation(TestActivity activity) {
+        ComponentName activityName = activity.getComponentName();
+        mWmState.computeState(activityName);
+        final WindowManagerState.Task task = mWmState.getTaskByActivity(activityName);
+        final int displayId = mWmState.getRootTask(task.getRootTaskId()).mDisplayId;
+        final RotationSession rotationSession = createManagedRotationSession();
+        final int currentDeviceRotation = getDeviceRotation(displayId);
+        final int newDeviceRotation =
+                currentDeviceRotation == ROTATION_0 || currentDeviceRotation == ROTATION_180 ?
+                        ROTATION_90 : ROTATION_0;
+        rotationSession.set(newDeviceRotation);
+        waitForOrFail("Activity display rotation must be updated",
+                () -> activity.getResources().getConfiguration().windowConfiguration
+                        .getRotation() == newDeviceRotation);
+        assertEquals(newDeviceRotation, getDeviceRotation(displayId));
     }
 
     /**
