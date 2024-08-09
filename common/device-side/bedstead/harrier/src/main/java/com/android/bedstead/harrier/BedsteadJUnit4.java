@@ -27,6 +27,7 @@ import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
@@ -239,7 +240,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
             // Default to MIDDLE if no cost is found on the annotation.
-            return AnnotationPriorityRunPrecedence.MIDDLE;
+            return AnnotationCostRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
         }
