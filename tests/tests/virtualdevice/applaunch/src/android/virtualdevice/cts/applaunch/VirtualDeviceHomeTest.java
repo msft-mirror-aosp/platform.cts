@@ -292,7 +292,7 @@ public class VirtualDeviceHomeTest {
                 new VirtualDeviceParams.Builder().setHomeComponent(homeComponent).build());
         virtualDevice.addActivityListener(mContext.getMainExecutor(), mActivityListener);
         mVirtualDisplay = mRule.createManagedVirtualDisplay(
-                virtualDevice, virtualDisplayConfigBuilder.setHomeSupported(true).build());
+                virtualDevice, virtualDisplayConfigBuilder.setHomeSupported(true));
     }
 
     private void sendHomeIntentOnVirtualDisplay() {
