@@ -55,6 +55,8 @@ import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_OF
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_SCREEN_ON;
 import static android.app.NotificationManager.Policy.SUPPRESSED_EFFECT_STATUS_BAR;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
+import static android.service.notification.Condition.STATE_FALSE;
+import static android.service.notification.Condition.STATE_TRUE;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.truth.Truth.assertThat;
@@ -2982,6 +2984,124 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         intent.putExtra(EXTRA_AUTOMATIC_ZEN_RULE_ID, id);
         final ResolveInfo resolveInfo = pm.resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull(resolveInfo);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    public void setAutomaticZenRuleState_manualActivation() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-on",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
+
+        // User manually activates -> it's active.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates -> it's inactive.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // And app can activate and deactivate.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @Test
+    public void setAutomaticZenRuleState_manualDeactivation() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+
+        // App activates rule.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates -> it's inactive.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @Test
+    public void setAutomaticZenRuleState_respectsManuallyActivated() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-on",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
+
+        // App thinks rule should be inactive.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // Manually activate -> it's active.
+        runAsSystemUi(() -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // App says it should be inactive, but it's ignored.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // App says it should be active. No change now...
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // ... but when the app wants to deactivate next time, it works.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @Test
+    public void setAutomaticZenRuleState_respectsManuallyDeactivated() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
+
+        // App activates rule.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates -> it's inactive.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // App says it should be active, but it's ignored.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // App says it should be inactive. No change now...
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // ... but when the app wants to activate next time, it works.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
     }
 
     // TODO(b/340238181): enable the tests for visible background user.

@@ -255,7 +255,7 @@ public final class DeviceState extends HarrierRule {
 
                     AssertionError assertionError = new AssertionError(
                             "Timed out executing test " + description.getDisplayName()
-                                    + " after " + MAX_TEST_DURATION, e);
+                                    + " after " + mMaxTestDuration.getSeconds() + " seconds", e);
                     assertionError.setStackTrace(stack);
                     onTestFailed(assertionError);
                     throw assertionError;

@@ -90,7 +90,6 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                             or DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
                 )
-                .build()
         )!!
         mRule.assumeActivityLaunchSupported(mVirtualDisplay.display.displayId)
         // Wait for any pending transitions
