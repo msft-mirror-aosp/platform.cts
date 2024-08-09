@@ -13,8 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package android.input.cts
+package com.android.cts.input
 
 import android.Manifest
 import android.app.Activity

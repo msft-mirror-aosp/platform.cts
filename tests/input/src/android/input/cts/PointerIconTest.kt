@@ -29,6 +29,7 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DefaultPointerSpeedRule
 import com.android.cts.input.TestPointerDevice
+import com.android.cts.input.VirtualDisplayActivityScenarioRule
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import kotlin.test.assertNotNull
 import org.junit.After
