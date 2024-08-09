@@ -21,14 +21,11 @@ import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.view.Display.DEFAULT_DISPLAY;
-
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_ACTIVE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_CONTENT_VISIBLE;
 import static androidx.window.extensions.area.WindowAreaComponent.SESSION_STATE_INACTIVE;
-
 import static com.android.compatibility.common.util.PollingCheck.waitFor;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -47,7 +44,7 @@ import android.os.PowerManager;
 import android.platform.test.annotations.LargeTest;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
-import android.server.wm.jetpack.utils.ExtensionUtil;
+import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
 import android.server.wm.jetpack.utils.TestRearDisplayActivity;
@@ -216,7 +213,7 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 // If the state does not put the device into the rear display presentation state,
                 // and the state is not one where the device is folded, the status should be
                 // available.
-                if (ExtensionUtil.getWindowExtensions().getVendorApiLevel() >= 4
+                if (ExtensionsUtil.getWindowExtensions().getVendorApiLevel() >= 4
                         && mCurrentDeviceState == mRearDisplayPresentationState) {
                     waitAndAssert(() -> mWindowAreaPresentationStatus.getWindowAreaStatus()
                             == WindowAreaComponent.STATUS_ACTIVE);
@@ -519,10 +516,6 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
             pressWakeupButton();
             pressUnlockButton();
         }
-    }
-
-    private boolean isKeyguardLocked() {
-        return mKeyguardManager != null && mKeyguardManager.isKeyguardLocked();
     }
 
     private void waitAndAssert(PollingCheck.PollingCheckCondition condition) {
