@@ -807,4 +807,8 @@
     <!-- b/352807937 -->
     <option name="compatibility:exclude-filter" value="CtsInputMethodTestCases[foldable:3:REAR_DISPLAY_STATE] android.view.inputmethod.cts.InputMethodStartInputLifecycleTest#testInputConnectionStateWhenScreenStateChanges" />
 
+    <!-- b/358008915 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.TopicsApiLoggingHostTest#testGetTopicsLog" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.UiApiLoggingHostTest#testStartSettingMainActivityAndGetUiLog" />
+
 </configuration>
