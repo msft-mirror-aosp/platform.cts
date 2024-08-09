@@ -31,10 +31,8 @@ import static android.server.wm.lifecycle.LifecycleConstants.ON_START;
 import static android.server.wm.lifecycle.LifecycleConstants.ON_STOP;
 import static android.server.wm.lifecycle.TransitionVerifier.checkOrder;
 import static android.server.wm.lifecycle.TransitionVerifier.transition;
-
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ALWAYS;
 import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
-
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -46,10 +44,10 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestActivityWithId2;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
-import android.server.wm.jetpack.utils.TestValueCountConsumer;
 import android.server.wm.lifecycle.EventLog;
 import android.server.wm.lifecycle.EventLog.EventLogClient;
 import android.server.wm.lifecycle.EventTracker;
