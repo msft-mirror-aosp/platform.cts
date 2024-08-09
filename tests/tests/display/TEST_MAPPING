@@ -6,10 +6,6 @@
         {
           // TODO(b/247135992)
           "exclude-filter": "android.display.cts.DisplayManagerTest#testCreateVirtualDisplayFromShell"
-        },
-        {
-          // TODO(b/270222666)
-          "exclude-filter": "android.display.cts.VirtualDisplayTest#testVirtualDisplayWithRequestedRefreshRate"
         }
       ]
     },

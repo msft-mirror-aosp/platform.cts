@@ -16,7 +16,6 @@
 
 package android.media.mediaediting.cts;
 
-import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
@@ -275,7 +274,6 @@ public final class VideoResolutionTest {
     ExportTestResult result = new TransformerAndroidTestRunner.Builder(context, transformer).build()
         .run(testId, editedMediaItem);
     Format muxedFormat = MediaEditingUtil.getMuxedWidthHeight(result.filePath);
-    assertThat(muxedFormat.width).isEqualTo(outWidth);
-    assertThat(muxedFormat.height).isEqualTo(outHeight);
+    MediaEditingUtil.validateOutput(muxedFormat, outWidth, outHeight);
   }
 }

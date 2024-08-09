@@ -194,7 +194,10 @@ public class KeyAttestationTest {
     public void testEcAttestation_StrongBox() throws Exception {
         assumeTrue("This test is only applicable to devices with StrongBox",
                 TestUtils.hasStrongBox(getContext()));
-
+        // Exempt older versions due to increased coverage of this test beyond VTS,
+        // requiring exceptions for implementations frozen to an older VSR.
+        assumeTrue(TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                Attestation.KM_VERSION_KEYMINT_3));
         testEcAttestation(true);
     }
 
@@ -655,6 +658,10 @@ public class KeyAttestationTest {
     public void testRsaAttestation_StrongBox() throws Exception {
         assumeTrue("This test is only applicable to devices with StrongBox",
                 TestUtils.hasStrongBox(getContext()));
+        // Exempt older versions due to increased coverage of this test beyond VTS,
+        // requiring exceptions for implementations frozen to an older VSR.
+        assumeTrue(TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                Attestation.KM_VERSION_KEYMINT_3));
         testRsaAttestation(true);
     }
 

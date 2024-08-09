@@ -40,7 +40,6 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -80,7 +79,6 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoRes(int)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
-    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",
@@ -122,7 +120,6 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoBitmap(Bitmap)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
-    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",

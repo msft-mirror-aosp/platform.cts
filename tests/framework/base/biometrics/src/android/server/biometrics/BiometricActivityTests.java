@@ -61,7 +61,6 @@ public class BiometricActivityTests extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
-    @Ignore("b/356789161")
     @Test
     public void testBiometricOnly_authenticateFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -187,7 +186,6 @@ public class BiometricActivityTests extends BiometricTestBase {
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
     @Test
-    @Ignore("b/356789161")
     public void testBiometricOnly_rejectThenAuthenticate() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties prop : mSensorProperties) {

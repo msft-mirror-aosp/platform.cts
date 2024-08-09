@@ -157,7 +157,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
         }
     }
 
-    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setConfirmationRequired",

@@ -109,7 +109,7 @@ public final class ActivityManagerAppStartInfoTest {
     private PackageManager mPackageManager;
 
     private int mStubPackageUid;
-    private int mCurrentUserId;
+    private int mTestRunningUserId;
 
     @Before
     public void setUp() throws Exception {
@@ -117,16 +117,17 @@ public final class ActivityManagerAppStartInfoTest {
         mContext = mInstrumentation.getContext();
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mPackageManager = mContext.getPackageManager();
-        mCurrentUserId = UserHandle.getUserId(Process.myUid());
+        mTestRunningUserId = UserHandle.getUserId(Process.myUid());
 
-        executeShellCmd("pm install -r --force-queryable " + STUB_APK);
+        executeShellCmd("pm install --user %d -r --force-queryable " + STUB_APK,
+                mTestRunningUserId);
 
         mStubPackageUid = mPackageManager.getPackageUid(STUB_PACKAGE_NAME, 0);
     }
 
     @After
     public void tearDown() throws Exception {
-        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+        executeShellCmd("am force-stop --user %d " + STUB_PACKAGE_NAME, mTestRunningUserId);
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
     }
 
@@ -155,8 +156,8 @@ public final class ActivityManagerAppStartInfoTest {
     public void testActivityStart() throws Exception {
         clearHistoricalStartInfo();
 
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        executeShellCmd("am start --user %d -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY, mTestRunningUserId);
 
         ApplicationStartInfo info = waitForAppStart();
 
@@ -181,19 +182,19 @@ public final class ActivityManagerAppStartInfoTest {
         clearHistoricalStartInfo();
 
         // Start the test app and wait for it to complete
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        executeShellCmd("am start --user %d -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY, mTestRunningUserId);
         waitForAppStart();
 
         // Now force stop the app
-        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+        executeShellCmd("am force-stop --user %d " + STUB_PACKAGE_NAME, mTestRunningUserId);
 
         // Clear records again, we don't want to check the previous one.
         clearHistoricalStartInfo();
 
         // Start the app again
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        executeShellCmd("am start --user %d -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY, mTestRunningUserId);
 
         // Obtain the start record and confirm it shows having been force stopped
         ApplicationStartInfo info = waitForAppStart();
@@ -207,18 +208,19 @@ public final class ActivityManagerAppStartInfoTest {
         clearHistoricalStartInfo();
 
         // Start the test app and wait for it to complete
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        executeShellCmd("am start --user %d -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY, mTestRunningUserId);
         waitForAppStart();
 
         // Now force stop the app
-        executeShellCmd("am force-stop " + STUB_PACKAGE_NAME);
+        executeShellCmd("am force-stop --user %d " + STUB_PACKAGE_NAME, mTestRunningUserId);
 
         // Clear records again, we don't want to check the previous one here.
         clearHistoricalStartInfo();
 
         // Start the app with flag to immediately exit
-        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_CRASH); // action to perform
         sleep(1000);
@@ -227,8 +229,8 @@ public final class ActivityManagerAppStartInfoTest {
         clearHistoricalStartInfo();
 
         // Start the app again
-        executeShellCmd("am start -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
-                + SIMPLE_ACTIVITY);
+        executeShellCmd("am start --user %d -n " + STUB_PACKAGE_NAME + "/" + STUB_PACKAGE_NAME
+                + SIMPLE_ACTIVITY, mTestRunningUserId);
 
         // Obtain the start record and confirm it shows having not been force stopped
         ApplicationStartInfo info = waitForAppStart();
@@ -244,7 +246,7 @@ public final class ActivityManagerAppStartInfoTest {
     public void testAppRemoved() throws Exception {
         testActivityStart();
 
-        executeShellCmd("pm uninstall " + STUB_PACKAGE_NAME);
+        executeShellCmd("pm uninstall --user %d " + STUB_PACKAGE_NAME, mTestRunningUserId);
 
         List<ApplicationStartInfo> list =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -266,7 +268,8 @@ public final class ActivityManagerAppStartInfoTest {
         ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
 
         // Start the app and have it query its own start info record.
-        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_QUERY_START); // action to perform
 
@@ -303,8 +306,9 @@ public final class ActivityManagerAppStartInfoTest {
         ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
 
         // Start the app and have it add the provided timestamp to its start record.
-        executeShellCmd(
-                "am start -n %s/%s%s --ei %s %d --ei %s %d --el %s %d --ei %s %d --el %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s "
+                        + "--ei %s %d --ei %s %d --el %s %d --ei %s %d --el %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_ADD_TIMESTAMP, // action to perform
                 REQUEST_KEY_TIMESTAMP_KEY_FIRST, FIRST_TIMESTAMP_KEY, // first timestamp key
@@ -343,7 +347,8 @@ public final class ActivityManagerAppStartInfoTest {
 
         ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 1);
 
-        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_LISTENER_ADD_ONE); // action to perform
 
@@ -371,7 +376,8 @@ public final class ActivityManagerAppStartInfoTest {
 
         ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 2);
 
-        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION,
                 REQUEST_VALUE_LISTENER_ADD_MULTIPLE); // action to perform
@@ -406,7 +412,8 @@ public final class ActivityManagerAppStartInfoTest {
 
         ResultReceiverFilter receiver = new ResultReceiverFilter(REPLY_ACTION_COMPLETE, 2);
 
-        executeShellCmd("am start -n %s/%s%s --ei %s %d",
+        executeShellCmd("am start --user %d -n %s/%s%s --ei %s %d",
+                mTestRunningUserId, // test running user ID
                 STUB_PACKAGE_NAME, STUB_PACKAGE_NAME, SIMPLE_ACTIVITY, // package/activity to start
                 REQUEST_KEY_ACTION, REQUEST_VALUE_LISTENER_ADD_REMOVE); // action to perform
 

@@ -372,8 +372,7 @@ public class CardEmulationTest {
     public void testTypeAPollingLoopToDefault() {
         assumeTrue(getVsrApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
         ComponentName originalDefault = null;
-        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        adapter.notifyHceDeactivated();
+        mAdapter.notifyHceDeactivated();
         try {
             originalDefault = setDefaultPaymentService(CustomHostApduService.class);
             ArrayList<PollingFrame> frames = new ArrayList<PollingFrame>(6);
@@ -388,7 +387,7 @@ public class CardEmulationTest {
                     CustomHostApduService.class.getName());
         } finally {
             setDefaultPaymentService(originalDefault);
-            adapter.notifyHceDeactivated();
+            mAdapter.notifyHceDeactivated();
         }
     }
 

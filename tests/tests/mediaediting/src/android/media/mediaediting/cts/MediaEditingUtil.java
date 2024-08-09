@@ -21,6 +21,8 @@ import static androidx.media3.common.MimeTypes.VIDEO_H265;
 import static androidx.media3.common.util.Assertions.checkState;
 import static androidx.media3.common.util.Assertions.checkStateNotNull;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 
@@ -303,5 +305,36 @@ public final class MediaEditingUtil {
     checkStateNotNull(mediaFormat);
     checkState(mediaFormat.containsKey(MediaFormat.KEY_PROFILE));
     return mediaFormat.getInteger(MediaFormat.KEY_PROFILE, -1);
+  }
+
+  public static void validateOutput(Format muxedOutputFormat, int expectedWidth,
+      int expectedHeight) {
+    // Some devices (See b/222095724) under-report their encoding capabilities.
+    // The supported height reported for H265@3840x2160 is 2144, and
+    // H264@1920x1080 is 1072 and 1088. See b/229825948 and b/353850926.
+    if (expectedWidth >= expectedHeight) {
+      if (expectedWidth == 1920 && expectedHeight == 1080) {
+        assertThat(muxedOutputFormat.height).isAnyOf(expectedHeight, 1072, 1088);
+      } else if (expectedWidth == 3840 && expectedHeight == 2160) {
+        assertThat(muxedOutputFormat.height).isAnyOf(expectedHeight, 2144);
+      } else {
+        assertThat(muxedOutputFormat.height).isEqualTo(expectedHeight);
+      }
+      assertThat(muxedOutputFormat.width).isEqualTo(expectedWidth);
+    } else {
+      // Encoders commonly support higher maximum widths than maximum heights.
+      // VideoTranscodingSamplePipeline#getSurfaceInfo may rotate frame before encoding, so the
+      // encoded frame's width >= height, and sets rotationDegrees in the output Format to ensure
+      // the frame is displayed in the correct orientation.
+      assertThat(muxedOutputFormat.rotationDegrees).isEqualTo(90);
+      if (expectedWidth == 1080 && expectedHeight == 1920) {
+        assertThat(muxedOutputFormat.height).isAnyOf(expectedWidth, 1072, 1088);
+      } else if (expectedWidth == 2160 && expectedHeight == 3840) {
+        assertThat(muxedOutputFormat.height).isAnyOf(expectedWidth, 2144);
+      } else {
+        assertThat(muxedOutputFormat.height).isEqualTo(expectedWidth);
+      }
+      assertThat(muxedOutputFormat.width).isEqualTo(expectedHeight);
+    }
   }
 }

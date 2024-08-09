@@ -28,6 +28,7 @@ import static android.view.WindowInsets.Type.systemBars;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
@@ -796,6 +797,16 @@ public class TextureViewTest {
 
         final Bitmap bitmap = activity.getContents(compareFunction.getConfig(),
                 compareFunction.getColorSpace());
+
+        assumeFalse(
+                "Got a fixed-point bitmap, skipping extended fp16 test",
+                Bitmap.Config.RGBA_F16.equals(compareFunction.getConfig())
+                        && !Bitmap.Config.RGBA_F16.equals(bitmap.getConfig()));
+
+        assumeFalse(
+                "FP16 not supported by the driver, skipping extended fp16 test",
+                activity.eglFloatExtensionUnsupported()
+                        && Bitmap.Config.RGBA_F16.equals(compareFunction.getConfig()));
 
         // If GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING is GL_SRGB, then glClear will treat the input
         // color as linear and write a converted sRGB color into the framebuffer.
