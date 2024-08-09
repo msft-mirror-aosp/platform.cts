@@ -323,4 +323,8 @@
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
 
+    <!-- b/358008915 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.TopicsApiLoggingHostTest#testGetTopicsLog" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.UiApiLoggingHostTest#testStartSettingMainActivityAndGetUiLog" />
+
 </configuration>
