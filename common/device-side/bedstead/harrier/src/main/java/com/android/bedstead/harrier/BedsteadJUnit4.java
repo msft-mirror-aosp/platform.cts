@@ -59,7 +59,6 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -464,7 +463,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
 
         return new ArrayList<>(methods);
     }

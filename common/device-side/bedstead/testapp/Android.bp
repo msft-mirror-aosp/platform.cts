@@ -91,7 +91,6 @@ android_test {
         "androidx.test.ext.junit",
         "truth",
         "testng", // for assertThrows
-        "bedstead-performance-analyzer"
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
