@@ -301,7 +301,7 @@ public class ActivityBlockingTest {
 
         // Create a new display that will have custom policy.
         VirtualDisplay customPolicyDisplay = mRule.createManagedVirtualDisplay(
-                mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         final int customPolicyDisplayId = customPolicyDisplay.getDisplay().getDisplayId();
 
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
@@ -498,8 +498,7 @@ public class ActivityBlockingTest {
         mVirtualDevice.addActivityListener(mContext.getMainExecutor(), mActivityListener);
         mVirtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder()
-                        .setFlags(virtualDisplayFlags)
-                        .build());
+                        .setFlags(virtualDisplayFlags));
     }
 
     /**
