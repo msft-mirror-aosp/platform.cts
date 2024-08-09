@@ -87,7 +87,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsSecureLock());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
     }
 
