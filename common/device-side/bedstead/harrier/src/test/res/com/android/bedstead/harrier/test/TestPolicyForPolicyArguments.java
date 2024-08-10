@@ -25,14 +25,11 @@ import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 import java.util.Set;
 
 /**
- * Policy for keyguard disable features
- *
- * See {@code DevicePolicyManager#setKeyguardDisabledFeatures(ComponentName, int)} for more
- * details.
+ * Policy for testing policy arguments.
  */
 @EnterprisePolicy(
         dpc = APPLIED_BY_DEVICE_OWNER | APPLIES_TO_OWN_USER)
-public final class TestPolicy extends PolicyArguments<Integer> {
+public final class TestPolicyForPolicyArguments extends PolicyArguments<Integer> {
 
     public static final int POLICY_ARGUMENT_ONE = 2;
     public static final int POLICY_ARGUMENT_TWO = 4;
