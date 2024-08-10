@@ -18,10 +18,14 @@ package android.server.biometrics;
 
 import static android.server.biometrics.Components.CLASS_2_BIOMETRIC_ACTIVITY;
 import static android.server.biometrics.Components.CLASS_2_BIOMETRIC_OR_CREDENTIAL_ACTIVITY;
+import static android.server.biometrics.Components.CONFIRM_DEVICE_CREDENTIAL_TEST_ACTIVITY;
 
+import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_IDLE;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_PAUSED;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_STARTED_UI_SHOWING;
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_SHOWING_DEVICE_CREDENTIAL;
+
+import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -34,6 +38,7 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.biometrics.util.BiometricCallbackHelper;
 import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.Utils;
@@ -43,8 +48,10 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -426,6 +433,53 @@ public class BiometricActivityTests extends BiometricTestBase {
         assertEquals(callbackState.toString(), 1, callbackState.mNumAuthAccepted);
         assertEquals(callbackState.toString(), 0, callbackState.mAcquiredReceived.size());
         assertEquals(callbackState.toString(), 0, callbackState.mErrorsReceived.size());
+    }
+
+    @ApiTest(apis = {"android.app.KeyguardManager#createConfirmDeviceCredentialIntent"})
+    @Test
+    public void testConfirmDeviceCredentialActivityDismiss_whenSwitchToSettings() throws Exception {
+        assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        // Test behavior for each sensor when biometrics are enrolled
+        try (CredentialSession credentialSession = new CredentialSession()) {
+            credentialSession.setCredential();
+            for (SensorProperties prop : mSensorProperties) {
+                if (prop.getSensorStrength() == SensorProperties.STRENGTH_CONVENIENCE) {
+                    continue;
+                }
+
+                try (BiometricTestSession session =
+                             mBiometricManager.createTestSession(prop.getSensorId());
+                     ActivitySession cdcActivitySession =
+                             new ActivitySession(this, CONFIRM_DEVICE_CREDENTIAL_TEST_ACTIVITY)) {
+
+                    waitForAllUnenrolled();
+                    enrollForSensor(session, prop.getSensorId());
+                    // Launch test activity to call createConfirmDeviceCredentialIntent()
+                    launchActivityAndWaitForResumed(cdcActivitySession);
+
+                    // Biometric prompt ui should show
+                    waitForState(STATE_AUTH_STARTED_UI_SHOWING);
+                    final UiObject2 actualTitle = findView(TITLE_VIEW);
+                    assertThat(actualTitle.getText()).isEqualTo("title");
+
+                    // Switch to settings activity
+                    goToSettings();
+
+                    // Biometric prompt ui should dismiss
+                    mInstrumentation.waitForIdleSync();
+                    waitForState(STATE_AUTH_IDLE);
+                    assertEquals("Failed to become idle after authenticating",
+                            STATE_AUTH_IDLE, getCurrentState().mState);
+                }
+            }
+        }
+    }
+
+
+    private void goToSettings() {
+        SystemUtil.runShellCommand(
+                "am start -W --user current -a " + Settings.ACTION_SETTINGS);
     }
 
 }

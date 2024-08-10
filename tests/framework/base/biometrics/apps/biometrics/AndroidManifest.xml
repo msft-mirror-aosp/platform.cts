@@ -30,7 +30,9 @@
         <activity android:name="android.server.biometrics.Class2BiometricActivity"
             android:exported="true"/>
         <activity android:name="android.server.biometrics.Class3BiometricActivity"
-            android:exported="true"/>
+                  android:exported="true"/>
+        <activity android:name="android.server.biometrics.ConfirmDeviceCredentialTestActivity"
+                  android:exported="true"/>
     </application>
 
 </manifest>
