@@ -252,7 +252,7 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         return activity.getWindowManager().getMaximumWindowMetrics().getBounds();
     }
 
-    public static void setActivityOrientationActivityHandlesOrientationChanges(
+    public void setActivityOrientationActivityHandlesOrientationChanges(
             TestActivity activity, int orientation) {
         // Make sure that the provided orientation is a fixed orientation
         assertTrue(orientation == ORIENTATION_PORTRAIT || orientation == ORIENTATION_LANDSCAPE);
