@@ -69,8 +69,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.bouncycastle.asn1.ASN1Encoding;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DEREncodableVector;
+import org.bouncycastle.asn1.DERInteger;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
@@ -473,8 +473,8 @@ public class ImportWrappedKeyTest {
             int keyFormat, DERSequence authorizationList, boolean correctWrappingRequired)
             throws Exception {
         // Build description
-        ASN1EncodableVector descriptionItems = new ASN1EncodableVector();
-        descriptionItems.add(new ASN1Integer(keyFormat));
+        DEREncodableVector descriptionItems = new DEREncodableVector();
+        descriptionItems.add(new DERInteger(keyFormat));
         descriptionItems.add(authorizationList);
         DERSequence wrappedKeyDescription = new DERSequence(descriptionItems);
 
@@ -515,9 +515,9 @@ public class ImportWrappedKeyTest {
         // Remove GCM tag from end of output
         encryptedSecureKey = Arrays.copyOfRange(encryptedSecureKey, 0, len - tagSize);
 
-        // Build ASN.1 encoded sequence WrappedKeyWrapper
-        ASN1EncodableVector items = new ASN1EncodableVector();
-        items.add(new ASN1Integer(WRAPPED_FORMAT_VERSION));
+        // Build ASN.1 DER encoded sequence WrappedKeyWrapper
+        DEREncodableVector items = new DEREncodableVector();
+        items.add(new DERInteger(WRAPPED_FORMAT_VERSION));
         items.add(new DEROctetString(encryptedEphemeralKeys));
         items.add(new DEROctetString(iv));
         items.add(wrappedKeyDescription);
@@ -527,27 +527,27 @@ public class ImportWrappedKeyTest {
     }
 
     private DERSequence makeSymKeyAuthList(int size, int algo) {
-        ASN1EncodableVector allPurposes = new ASN1EncodableVector();
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_ENCRYPT));
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_DECRYPT));
+        DEREncodableVector allPurposes = new DEREncodableVector();
+        allPurposes.add(new DERInteger(KM_PURPOSE_ENCRYPT));
+        allPurposes.add(new DERInteger(KM_PURPOSE_DECRYPT));
         DERSet purposeSet = new DERSet(allPurposes);
         DERTaggedObject purpose =
                 new DERTaggedObject(true, removeTagType(KM_TAG_PURPOSE), purposeSet);
         DERTaggedObject algorithm =
-                new DERTaggedObject(true, removeTagType(KM_TAG_ALGORITHM), new ASN1Integer(algo));
+                new DERTaggedObject(true, removeTagType(KM_TAG_ALGORITHM), new DERInteger(algo));
         DERTaggedObject keySize =
-                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new ASN1Integer(size));
+                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new DERInteger(size));
 
-        ASN1EncodableVector allBlockModes = new ASN1EncodableVector();
-        allBlockModes.add(new ASN1Integer(KM_MODE_ECB));
-        allBlockModes.add(new ASN1Integer(KM_MODE_CBC));
+        DEREncodableVector allBlockModes = new DEREncodableVector();
+        allBlockModes.add(new DERInteger(KM_MODE_ECB));
+        allBlockModes.add(new DERInteger(KM_MODE_CBC));
         DERSet blockModeSet = new DERSet(allBlockModes);
         DERTaggedObject blockMode =
                 new DERTaggedObject(true, removeTagType(KM_TAG_BLOCK_MODE), blockModeSet);
 
-        ASN1EncodableVector allPaddings = new ASN1EncodableVector();
-        allPaddings.add(new ASN1Integer(KM_PAD_PKCS7));
-        allPaddings.add(new ASN1Integer(KM_PAD_NONE));
+        DEREncodableVector allPaddings = new DEREncodableVector();
+        allPaddings.add(new DERInteger(KM_PAD_PKCS7));
+        allPaddings.add(new DERInteger(KM_PAD_NONE));
         DERSet paddingSet = new DERSet(allPaddings);
         DERTaggedObject padding =
                 new DERTaggedObject(true, removeTagType(KM_TAG_PADDING), paddingSet);
@@ -556,7 +556,7 @@ public class ImportWrappedKeyTest {
                 new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
 
         // Build sequence
-        ASN1EncodableVector allItems = new ASN1EncodableVector();
+        DEREncodableVector allItems = new DEREncodableVector();
         allItems.add(purpose);
         allItems.add(algorithm);
         allItems.add(keySize);
@@ -576,40 +576,40 @@ public class ImportWrappedKeyTest {
     }
 
     private DERSequence makeRsaAuthList(int size) {
-        ASN1EncodableVector allPurposes = new ASN1EncodableVector();
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_ENCRYPT));
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_DECRYPT));
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_SIGN));
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_VERIFY));
+        DEREncodableVector allPurposes = new DEREncodableVector();
+        allPurposes.add(new DERInteger(KM_PURPOSE_ENCRYPT));
+        allPurposes.add(new DERInteger(KM_PURPOSE_DECRYPT));
+        allPurposes.add(new DERInteger(KM_PURPOSE_SIGN));
+        allPurposes.add(new DERInteger(KM_PURPOSE_VERIFY));
         DERSet purposeSet = new DERSet(allPurposes);
         DERTaggedObject purpose =
                 new DERTaggedObject(true, removeTagType(KM_TAG_PURPOSE), purposeSet);
 
         DERTaggedObject algorithm =
                 new DERTaggedObject(true, removeTagType(KM_TAG_ALGORITHM),
-                                    new ASN1Integer(KM_ALGORITHM_RSA));
+                                    new DERInteger(KM_ALGORITHM_RSA));
         DERTaggedObject keySize =
-                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new ASN1Integer(size));
+                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new DERInteger(size));
 
-        ASN1EncodableVector allDigests = new ASN1EncodableVector();
-        allDigests.add(new ASN1Integer(KM_DIGEST_NONE));
-        allDigests.add(new ASN1Integer(KM_DIGEST_MD5));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA1));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_224));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_256));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_384));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_512));
+        DEREncodableVector allDigests = new DEREncodableVector();
+        allDigests.add(new DERInteger(KM_DIGEST_NONE));
+        allDigests.add(new DERInteger(KM_DIGEST_MD5));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA1));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_224));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_256));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_384));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_512));
         DERSet digestSet = new DERSet(allDigests);
         DERTaggedObject digest =
                 new DERTaggedObject(true, removeTagType(KM_TAG_DIGEST), digestSet);
 
-        ASN1EncodableVector allPaddings = new ASN1EncodableVector();
-        allPaddings.add(new ASN1Integer(KM_PAD_PKCS7));
-        allPaddings.add(new ASN1Integer(KM_PAD_NONE));
-        allPaddings.add(new ASN1Integer(KM_PAD_RSA_OAEP));
-        allPaddings.add(new ASN1Integer(KM_PAD_RSA_PSS));
-        allPaddings.add(new ASN1Integer(KM_PAD_RSA_PKCS1_1_5_ENCRYPT));
-        allPaddings.add(new ASN1Integer(KM_PAD_RSA_PKCS1_1_5_SIGN));
+        DEREncodableVector allPaddings = new DEREncodableVector();
+        allPaddings.add(new DERInteger(KM_PAD_PKCS7));
+        allPaddings.add(new DERInteger(KM_PAD_NONE));
+        allPaddings.add(new DERInteger(KM_PAD_RSA_OAEP));
+        allPaddings.add(new DERInteger(KM_PAD_RSA_PSS));
+        allPaddings.add(new DERInteger(KM_PAD_RSA_PKCS1_1_5_ENCRYPT));
+        allPaddings.add(new DERInteger(KM_PAD_RSA_PKCS1_1_5_SIGN));
         DERSet paddingSet = new DERSet(allPaddings);
         DERTaggedObject padding =
                 new DERTaggedObject(true, removeTagType(KM_TAG_PADDING), paddingSet);
@@ -618,7 +618,7 @@ public class ImportWrappedKeyTest {
                 new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
 
         // Build sequence
-        ASN1EncodableVector allItems = new ASN1EncodableVector();
+        DEREncodableVector allItems = new DEREncodableVector();
         allItems.add(purpose);
         allItems.add(algorithm);
         allItems.add(keySize);
@@ -630,24 +630,24 @@ public class ImportWrappedKeyTest {
     }
 
     private DERSequence makeEcAuthList(int size) {
-        ASN1EncodableVector allPurposes = new ASN1EncodableVector();
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_SIGN));
-        allPurposes.add(new ASN1Integer(KM_PURPOSE_VERIFY));
+        DEREncodableVector allPurposes = new DEREncodableVector();
+        allPurposes.add(new DERInteger(KM_PURPOSE_SIGN));
+        allPurposes.add(new DERInteger(KM_PURPOSE_VERIFY));
         DERSet purposeSet = new DERSet(allPurposes);
         DERTaggedObject purpose =
                 new DERTaggedObject(true, removeTagType(KM_TAG_PURPOSE), purposeSet);
 
         DERTaggedObject algorithm =
                 new DERTaggedObject(true, removeTagType(KM_TAG_ALGORITHM),
-                                    new ASN1Integer(KM_ALGORITHM_EC));
+                                    new DERInteger(KM_ALGORITHM_EC));
         DERTaggedObject keySize =
-                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new ASN1Integer(size));
+                new DERTaggedObject(true, removeTagType(KM_TAG_KEY_SIZE), new DERInteger(size));
 
-        ASN1EncodableVector allDigests = new ASN1EncodableVector();
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_224));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_256));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_384));
-        allDigests.add(new ASN1Integer(KM_DIGEST_SHA_2_512));
+        DEREncodableVector allDigests = new DEREncodableVector();
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_224));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_256));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_384));
+        allDigests.add(new DERInteger(KM_DIGEST_SHA_2_512));
         DERSet digestSet = new DERSet(allDigests);
         DERTaggedObject digest =
                 new DERTaggedObject(true, removeTagType(KM_TAG_DIGEST), digestSet);
@@ -656,7 +656,7 @@ public class ImportWrappedKeyTest {
                 new DERTaggedObject(true, removeTagType(KM_TAG_NO_AUTH_REQUIRED), DERNull.INSTANCE);
 
         // Build sequence
-        ASN1EncodableVector allItems = new ASN1EncodableVector();
+        DEREncodableVector allItems = new DEREncodableVector();
         allItems.add(purpose);
         allItems.add(algorithm);
         allItems.add(keySize);

@@ -16,10 +16,10 @@
 
 package com.android.bedstead.nene.packages;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.setKeepUninstalledPackages;
 import static com.android.bedstead.permissions.CommonPermissions.KEEP_UNINSTALLED_PACKAGES;
 
 import android.content.pm.PackageManager;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 
 import androidx.annotation.CheckResult;
@@ -61,7 +61,7 @@ public final class KeepUninstalledPackagesBuilder {
 
         try (PermissionContext p =
                     TestApis.permissions().withPermission(KEEP_UNINSTALLED_PACKAGES)) {
-            TestApisReflectionKt.setKeepUninstalledPackages(packageManager, mPackages);
+            setKeepUninstalledPackages(packageManager, mPackages);
         }
     }
 

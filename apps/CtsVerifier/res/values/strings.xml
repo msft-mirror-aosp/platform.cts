@@ -4411,7 +4411,10 @@ You should be prompted to select credentials; choose the ones you just installed
         Set \'%s\' user restriction by turning on the switch below.
     </string>
     <string name="disallow_add_user">Disallow add user</string>
-    <string name="disallow_add_user_action">Accessing the multiple users settings page, or if the device allows access to the page, then attempting to enable the feature </string>
+    <string name="disallow_add_user_action">  -  If accessing the \'Users\' settings page is disabled, then try to access it.
+        \n  -  If accessing \'Users\' page is allowed, then attempt to enable the feature.
+        \n  -  Or if the device allows enabling the feature, then click \"Add user\"
+        \nThe specific action that triggers the dialog will depend on the device. If any of the actions above triggers a dialog, then consider this step successful </string>
     <string name="disallow_adjust_volume">Disallow adjust volume</string>
     <string name="disallow_adjust_volume_action">Adjusting the volume\n
         NOTE: If the device does not support volume adjustment in Settings app please skip this test and mark it as passing.\n</string>
@@ -4491,7 +4494,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_disallow_remove_user_info">
         Please press \'Create uninitialized user\' to create a user that is not set up. Then press the
         \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Multiple users\' setting. \n
+        Then press \'Go\' to open \'Users\' setting. \n
         Click the managed user to open settings.\n\n
 
         Mark this test as passed if:\n\n
@@ -4502,7 +4505,7 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="managed_user_disallow_remove_user_info">
         Please press the \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Multiple users\' setting. \n\n
+        Then press \'Go\' to open \'Users\' setting. \n\n
 
         Mark this test as passed if all of the following conditions are met:\n\n
         - The \"Delete managed user from this device\" option in the overflow menu is disabled\n
@@ -4958,13 +4961,21 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_disallow_user_switch_info">
         Press \'Create uninitialized user\' to create a user that is not setup.
         Then press \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open multiple users settings.
+        Then press \'Go\' to open \'Users\' settings.
         Confirm that:\n
         \n
         - Main switch is disabled and in off position\n
+        - Tapping main switch shows a \"Blocked by work policy\" dialog.\n
         \n
-        In additional, if quick settings is available, confirm that user switcher is hidden or
-        disabled.
+        In addition, if quick settings is available, confirm that user switcher is hidden or
+        disabled.\n
+        \n
+        The following steps apply only if the created user is visible on Users page. Confirm that:\n
+        \n
+        - Pressing on managed user opens user details page.\n
+        - \"Switch to managed user\" is disabled\n
+        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
+        \n
         Use the Back button to return to this page.
     </string>
     <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>

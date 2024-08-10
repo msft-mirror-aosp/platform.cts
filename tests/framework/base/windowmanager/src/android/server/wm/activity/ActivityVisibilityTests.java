@@ -205,7 +205,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -639,7 +639,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnAttrNoLockScreen() {
         assumeTrue(supportsLockScreen());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -702,7 +702,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnShowOnLockAttr() {
         assumeTrue(supportsLockScreen());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -743,7 +743,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnAttrRemove() {
         assumeTrue(supportsLockScreen());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -768,7 +768,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnSingleTask() {
         assumeTrue(supportsLockScreen());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
@@ -813,7 +813,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
         assumeTrue(supportsLockScreen());
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();

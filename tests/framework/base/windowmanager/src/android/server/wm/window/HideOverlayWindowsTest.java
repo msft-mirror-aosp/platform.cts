@@ -44,7 +44,6 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.app.Components;
-import android.view.Display;
 import android.view.MotionEvent;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
@@ -262,7 +261,7 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     }
 
     private MotionEvent touchCenterOfBoundsAndWaitForMotionEvent(Rect bounds) {
-        mTouchHelper.tapOnCenter(bounds, Display.DEFAULT_DISPLAY);
+        mTouchHelper.tapOnCenter(bounds, getMainDisplayId());
         return mTouchReceiver.getMotionEvent();
     }
 

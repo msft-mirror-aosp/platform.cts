@@ -23,6 +23,7 @@ import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -872,6 +873,10 @@ object DevicePolicy {
     fun canUsbDataSignalingBeDisabled(): Boolean {
         return devicePolicyManager.canUsbDataSignalingBeDisabled()
     }
+
+    /** See [DevicePolicyManager#getLastBugReportRequestTime] */
+    @Experimental
+    fun getLastBugReportRequestTime() = devicePolicyManager.lastBugReportRequestTime
 
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),

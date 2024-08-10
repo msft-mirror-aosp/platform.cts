@@ -219,7 +219,7 @@ public class VirtualAudioPermissionTest {
         mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
         mVirtualDeviceId = mVirtualDevice.getDeviceId();
         mVirtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(mVirtualDevice,
-                VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         mVirtualDisplayId = mVirtualDisplay.getDisplay().getDisplayId();
     }
 

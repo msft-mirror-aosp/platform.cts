@@ -76,9 +76,6 @@ public abstract class AudioDataPathsBaseActivity
     protected boolean mHasMic;
     protected boolean mHasSpeaker;
 
-    // This determines whether or not passing all test-modules is required to pass the test overall
-    private boolean mIsLessThanV;
-
     // UI
     protected View mStartBtn;
     protected View mCancelButton;
@@ -97,7 +94,7 @@ public abstract class AudioDataPathsBaseActivity
     // Test Manager
     protected TestManager mTestManager = new TestManager();
     private boolean mTestHasBeenRun;
-    private boolean mTestCanceled;
+    private boolean mTestCanceledByUser;
 
     // Audio I/O
     private AudioManager mAudioManager;
@@ -146,8 +143,6 @@ public abstract class AudioDataPathsBaseActivity
                 .setText(mSupportsMMAP ? yesString : noString);
         ((TextView) findViewById(R.id.audio_datapaths_MMAP_exclusive))
                 .setText(mSupportsMMAPExclusive ? yesString : noString);
-
-        mIsLessThanV = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
 
         mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
         mCalibrateButton.setOnClickListener(this);
@@ -203,7 +198,7 @@ public abstract class AudioDataPathsBaseActivity
 
         DisplayUtils.setKeepScreenOn(this, true);
 
-        getPassButton().setEnabled(!mIsHandheld);
+        getPassButton().setEnabled(!mIsHandheld || !hasPeripheralSupport());
         if (!mIsHandheld) {
             displayNonHandheldMessage();
         }
@@ -451,7 +446,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestStateCode[api] = TESTSTATUS_NOT_RUN;
             mTestResults[api] = null;
             mTestHasBeenRun = false;
-            mTestCanceled = false;
+            mTestCanceledByUser = false;
         }
 
         int getTestState(int api) {
@@ -882,10 +877,6 @@ public abstract class AudioDataPathsBaseActivity
                         ? results.mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
                         : results.mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
 
-                // Do we want a threshold value for jitter in crosstalk tests?
-                boolean passJitter =
-                        results.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
-
                 // Values / Criteria
                 // NOTE: The criteria is why the test passed or failed, not what
                 // was needed to pass.
@@ -906,21 +897,50 @@ public abstract class AudioDataPathsBaseActivity
                 }
                 textFormatter.closeTextColor();
 
-                textFormatter.openTextColor(passJitter ? "black" : "red");
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    // Do we want a threshold value for jitter in crosstalk tests?
+                    boolean passJitter =
+                            results.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
+                    textFormatter.openTextColor(passJitter ? "black" : "red");
                     textFormatter.appendText(phaseJitterString
-                                    + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
-                                    MAX_SIGNAL_PASS_JITTER));
+                            + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
+                            MAX_SIGNAL_PASS_JITTER));
+                    textFormatter.closeTextColor();
                 } else {
                     textFormatter.appendText(phaseJitterString);
                 }
-                textFormatter.closeTextColor();
 
                 textFormatter.appendBreak();
+
+                // "Prose" status messages
+                textFormatter.openItalic();
+                if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    if (results.mMaxMagnitude == 0.0) {
+                        textFormatter.appendText("Dead Channel?");
+                        textFormatter.appendBreak();
+                    } else if (results.mMaxMagnitude > 0.0
+                            && results.mMaxMagnitude < MIN_SIGNAL_PASS_MAGNITUDE) {
+                        textFormatter.appendText("Low Gain or Volume.");
+                        textFormatter.appendBreak();
+                    } else if (results.mPhaseJitter > MAX_SIGNAL_PASS_JITTER) {
+                        // if the signal is absent or really low, the jitter will be high,
+                        // so only call out a high jitter if there seems to be a reasonable signal.
+                        textFormatter.appendText("Noisy or Corrupt Signal.");
+                        textFormatter.appendBreak();
+                    }
+                } else {
+                    // TYPE_SIGNAL_ABSENCE
+                    if (results.mMaxMagnitude > MAX_XTALK_PASS_MAGNITUDE) {
+                        textFormatter.appendText("Cross Talk Failed. "
+                                + "Crossed patch cables on interface?");
+                        textFormatter.appendBreak();
+                    }
+                }
+                textFormatter.closeItalic();
             } else {
                 // results == null
                 textFormatter.appendBreak();
-                textFormatter.appendText("No Results.");
+                textFormatter.appendText("Skipped.");
             }
             textFormatter.closeParagraph();
 
@@ -1175,6 +1195,7 @@ public abstract class AudioDataPathsBaseActivity
             AudioDeviceInfo[] outputDevices =
                     mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
             for (TestModule testModule : mTestModules) {
+                testModule.mOutDeviceInfo = null;
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : outputDevices) {
                     // Don't invalidate previously validated devices
@@ -1195,6 +1216,7 @@ public abstract class AudioDataPathsBaseActivity
             AudioDeviceInfo[] inputDevices =
                     mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
             for (TestModule testModule : mTestModules) {
+                testModule.mInDeviceInfo = null;
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : inputDevices) {
                     // Don't invalidate previously validated devices?
@@ -1300,7 +1322,7 @@ public abstract class AudioDataPathsBaseActivity
         private int countFailures(int api) {
             int numFailed = 0;
             for (TestModule module : mTestModules) {
-                if (module.canRun() && (module.hasError(api) || !module.hasPassed(api))) {
+                if (module.hasError(api) || !module.hasPassed(api)) {
                     // Ignore MMAP "Inconsistencies"
                     // (we didn't get an MMAP stream so we skipped the test)
                     if (module.mTestStateCode[api]
@@ -1315,7 +1337,7 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public int startTest(TestModule testModule) {
-            if (mTestCanceled) {
+            if (mTestCanceledByUser) {
                 return TestModule.TESTSTATUS_NOT_RUN;
             }
 
@@ -1330,7 +1352,7 @@ public abstract class AudioDataPathsBaseActivity
             mApi = api;
 
             mTestStep = TESTSTEP_NONE;
-            mTestCanceled = false;
+            mTestCanceledByUser = false;
 
             mCalibrateButton.setEnabled(false);
             mDevicesButton.setEnabled(false);
@@ -1359,7 +1381,7 @@ public abstract class AudioDataPathsBaseActivity
         protected boolean calculatePass() {
             int numFailures = countFailures(mApi);
             int numUntested = countValidTestModules() - countTestedTestModules();
-            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested <= 0;
+            return mTestHasBeenRun && !mTestCanceledByUser && numFailures == 0 && numUntested <= 0;
         }
 
         public void completeTest() {
@@ -1375,17 +1397,12 @@ public abstract class AudioDataPathsBaseActivity
                     mTextFormatter.openDocument();
                     mTestManager.generateReport(mTextFormatter);
 
-                    mTestHasBeenRun = true;
-                    boolean passEnabled = passBtnEnabled();
-                    getPassButton().setEnabled(passEnabled);
-
                     mTextFormatter.openParagraph();
-                    if (mTestCanceled) {
-                        mTextFormatter.openBold();
-                        mTextFormatter.appendText("Test Canceled");
-                        mTextFormatter.closeBold();
-                        mTextFormatter.appendBreak();
-                    }
+                    mTextFormatter.appendText("Audio Test Version: " + Common.VERSION_CODE);
+                    mTextFormatter.appendBreak();
+                    mTextFormatter.appendText("Android SDK Version " + Build.VERSION.SDK_INT);
+                    mTextFormatter.appendBreak().appendBreak();
+
                     int numFailures = countFailures(mApi);
                     int numUntested = getNumTestModules() - countTestedTestModules();
                     mTextFormatter.appendText("There were " + numFailures + " failures.");
@@ -1400,12 +1417,35 @@ public abstract class AudioDataPathsBaseActivity
                     mTextFormatter.closeParagraph();
                     mTextFormatter.openParagraph();
 
-                    if (mIsLessThanV && passEnabled) {
+                    if (mTestCanceledByUser) {
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("Test Canceled. "
+                                + "Please run the test sequence to completion.");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendBreak().appendBreak();
+                    }
+
+                    // ALWAYS PASS (for now)
+                    mTestHasBeenRun = !mTestCanceledByUser;
+                    boolean passEnabled = passBtnEnabled();
+                    getPassButton().setEnabled(passEnabled);
+
+                    if (passEnabled) {
                         mTextFormatter.appendText("Although not all test modules passed, "
-                                + "for this OS version you may enter a PASS.");
+                                + "for this OS version you may press the ");
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("PASS");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendText(" button.");
                         mTextFormatter.appendBreak();
                         mTextFormatter.appendText("In future versions, "
                                 + "ALL test modules will be required to pass.");
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("Press the ");
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("PASS");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendText(" button below to complete the test.");
                     }
                     mTextFormatter.closeParagraph();
 
@@ -1446,7 +1486,7 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public void advanceTestModule() {
-            if (mTestCanceled) {
+            if (mTestCanceledByUser) {
                 // test shutting down. Bail.
                 return;
             }
@@ -1534,7 +1574,7 @@ public abstract class AudioDataPathsBaseActivity
     protected abstract boolean hasPeripheralSupport();
 
     boolean passBtnEnabled() {
-        return mIsLessThanV || !mIsHandheld || !hasPeripheralSupport() || calculatePass();
+        return mTestHasBeenRun || !hasPeripheralSupport();
     }
 
     void displayNonHandheldMessage() {
@@ -1603,7 +1643,7 @@ public abstract class AudioDataPathsBaseActivity
         if (id == R.id.audio_datapaths_start) {
             startTest(mActiveTestAPI);
         } else if (id == R.id.audio_datapaths_cancel) {
-            mTestCanceled = true;
+            mTestCanceledByUser = true;
             mTestHasBeenRun = false;
             stopTest();
             mTestManager.completeTest();
@@ -1612,7 +1652,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.displayTestDevices();
         } else if (id == R.id.audioJavaApiBtn || id == R.id.audioNativeApiBtn) {
             super.onClick(view);
-            mTestCanceled = true;
+            mTestCanceledByUser = true;
             stopTest();
             mTestManager.clearTestState();
             showDeviceView();

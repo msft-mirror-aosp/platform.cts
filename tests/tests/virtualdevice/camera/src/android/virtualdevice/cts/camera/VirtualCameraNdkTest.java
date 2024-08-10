@@ -22,7 +22,6 @@ import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENT
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.common.VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -103,7 +102,7 @@ public class VirtualCameraNdkTest {
                         .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
                         .build());
         mVirtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
-                TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
     }
 
     @Test

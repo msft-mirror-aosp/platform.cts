@@ -35,11 +35,11 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
-import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
+import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -905,12 +905,13 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
     public void testRequestProvisionSubscriberIds() {
         if (!shouldTestSatellite()) return;
 
-        final AtomicReference<List<ProvisionSubscriberId>> enabled = new AtomicReference<>();
+        final AtomicReference<List<SatelliteSubscriberInfo>> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
-        OutcomeReceiver<List<ProvisionSubscriberId>, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<List<SatelliteSubscriberInfo>, SatelliteManager.SatelliteException>
+                receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(List<ProvisionSubscriberId> result) {
+                    public void onResult(List<SatelliteSubscriberInfo> result) {
                         Log.d(TAG, "onResult: result.size=" + result.size());
                         enabled.set(result);
                     }
@@ -964,8 +965,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
 
         final AtomicReference<Boolean> enabled = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
-        final List<ProvisionSubscriberId> list = new ArrayList<>(
-                Collections.singleton(new ProvisionSubscriberId("09876543", 12345, "")));
+        final List<SatelliteSubscriberInfo> list = new ArrayList<>(
+                Collections.singleton(new SatelliteSubscriberInfo("09876543", 12345, "")));
         OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
                 new OutcomeReceiver<>() {
                     @Override

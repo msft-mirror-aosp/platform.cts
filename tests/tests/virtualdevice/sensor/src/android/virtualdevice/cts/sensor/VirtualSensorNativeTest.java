@@ -101,7 +101,7 @@ public class VirtualSensorNativeTest {
     @Test
     public void activityOnVirtualDisplayGetsVirtualDeviceSensor() {
         VirtualDisplay virtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(
-                mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         NativeSensorTestActivity activity = mVirtualDeviceRule.startActivityOnDisplaySync(
                 virtualDisplay, NativeSensorTestActivity.class);
 

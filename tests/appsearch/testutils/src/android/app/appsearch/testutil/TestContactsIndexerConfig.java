@@ -50,11 +50,6 @@ public class TestContactsIndexerConfig implements ContactsIndexerConfig {
     }
 
     @Override
-    public boolean shouldIndexFirstMiddleAndLastNames() {
-        return DEFAULT_CONTACTS_INDEX_FIRST_MIDDLE_AND_LAST_NAMES;
-    }
-
-    @Override
     public boolean shouldKeepUpdatingOnError() {
         return DEFAULT_CONTACTS_KEEP_UPDATING_ON_ERROR;
     }

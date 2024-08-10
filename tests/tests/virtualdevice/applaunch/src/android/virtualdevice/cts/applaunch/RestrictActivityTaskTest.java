@@ -17,7 +17,6 @@
 package android.virtualdevice.cts.applaunch;
 
 import static android.view.Display.DEFAULT_DISPLAY;
-import static android.virtualdevice.cts.common.VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -31,7 +30,6 @@ import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager;
 import android.content.ComponentName;
 import android.content.Context;
-import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
 import android.platform.test.annotations.AppModeFull;
@@ -140,13 +138,10 @@ public class RestrictActivityTaskTest {
             @NonNull Set<String> displayCategories) {
         final VirtualDeviceManager.VirtualDevice device = mRule.createManagedVirtualDevice();
         device.addActivityListener(mContext.getMainExecutor(), mActivityListener);
-        final VirtualDisplayConfig config = createDefaultVirtualDisplayConfigBuilder()
-                .setDisplayCategories(displayCategories)
-                .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC)
-                .build();
-        final VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(device, config);
+        final VirtualDisplayConfig.Builder builder =
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+                        .setDisplayCategories(displayCategories);
+        final VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(device, builder);
         assertThat(virtualDisplay).isNotNull();
         return virtualDisplay.getDisplay().getDisplayId();
     }

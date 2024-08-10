@@ -247,7 +247,7 @@ public class ConfigChangeTests extends ActivityManagerTestBase {
     }
 
     private void testChangeFontScale(ComponentName activityName, boolean relaunch) {
-        requireRunNotOnVisibleBackgroundNonProfileUser(
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Font scale cannot be modified by visible background users");
         final FontScaleSession fontScaleSession = createManagedFontScaleSession();
         fontScaleSession.set(1.0f);

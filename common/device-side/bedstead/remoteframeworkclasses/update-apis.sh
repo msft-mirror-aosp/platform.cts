@@ -18,5 +18,5 @@ SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cp $SCRIPT_DIR/../../../../../packages/modules/Bluetooth/framework/api/current.txt $SCRIPT_DIR/java/apis/bluetooth-current.txt
 cp $SCRIPT_DIR/../../../../../packages/modules/Wifi/framework/api/current.txt $SCRIPT_DIR/java/apis/wifi-current.txt
 cp $SCRIPT_DIR/../../../../../frameworks/base/core/api/current.txt $SCRIPT_DIR/java/apis/current.txt
-cp $SCRIPT_DIR/../../../../../frameworks/base/core/api/test-current.txt $SCRIPT_DIR/java/apis/test-current.txt
 cp $SCRIPT_DIR/../../../../../frameworks/base/core/api/system-current.txt $SCRIPT_DIR/java/apis/system-current.txt
+cp $SCRIPT_DIR/../../../../../frameworks/base/core/api/test-current.txt $SCRIPT_DIR/../testapisparser/java/apis/test-current.txt

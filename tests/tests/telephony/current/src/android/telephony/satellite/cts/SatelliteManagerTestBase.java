@@ -47,7 +47,6 @@ import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
-import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
 import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
@@ -56,6 +55,7 @@ import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
+import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
@@ -1401,14 +1401,15 @@ public class SatelliteManagerTestBase {
         return infos.stream().anyMatch(info -> info.getSubscriptionId() == subId);
     }
 
-    protected static Pair<List<ProvisionSubscriberId>, Integer> requestProvisionSubscriberIds() {
-        final AtomicReference<List<ProvisionSubscriberId>> list = new AtomicReference<>();
+    protected static Pair<List<SatelliteSubscriberInfo>, Integer> requestProvisionSubscriberIds() {
+        final AtomicReference<List<SatelliteSubscriberInfo>> list = new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<List<ProvisionSubscriberId>, SatelliteManager.SatelliteException> receiver =
+        OutcomeReceiver<List<SatelliteSubscriberInfo>, SatelliteManager.SatelliteException>
+                receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(List<ProvisionSubscriberId> result) {
+                    public void onResult(List<SatelliteSubscriberInfo> result) {
                         list.set(result);
                         latch.countDown();
                     }

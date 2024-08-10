@@ -401,7 +401,8 @@ public class VirtualDisplayTest {
     public void createVirtualDisplay_nullExecutorButNonNullCallback_shouldThrow() {
         assertThrows(NullPointerException.class,
                 () -> mVirtualDevice.createVirtualDisplay(
-                        VirtualDeviceRule.DEFAULT_VIRTUAL_DISPLAY_CONFIG, /*executor=*/ null,
+                        VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder().build(),
+                        /* executor= */ null,
                         new VirtualDisplay.Callback() {
                         }));
     }

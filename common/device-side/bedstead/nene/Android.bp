@@ -96,6 +96,7 @@ android_test {
         "truth",
         "testng", // for assertThrows
         "modules-utils-binary-xml",
+        "TestApisReflection",
     ],
     data: [":NeneTestApp1"],
     manifest: "src/test/AndroidManifest.xml",
