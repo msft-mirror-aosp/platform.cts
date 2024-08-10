@@ -1043,6 +1043,7 @@ public class DeviceStateTest {
         assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
     }
 
+    @Ignore("b/358355868: Until we readd RemoteDeviceAdmin test apps that use specific policies")
     @Test
     @EnsureHasDeviceAdmin(dpc = @Query(usesPolicies = @IntegerSetQuery(contains = {
             USES_POLICY_EXPIRE_PASSWORD})))

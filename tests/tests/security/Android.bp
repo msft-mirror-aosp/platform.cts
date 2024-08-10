@@ -99,6 +99,7 @@ android_test {
         ":RolePermissionOverrideTestApp",
         ":SplitBluetoothPermissionTestApp",
         ":CertBlocklistTestApp",
+        ":UpdatedDynamicPermissionTestAttackerApp",
     ],
 }
 
