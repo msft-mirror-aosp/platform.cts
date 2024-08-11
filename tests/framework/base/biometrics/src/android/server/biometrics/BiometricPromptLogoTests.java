@@ -16,8 +16,6 @@
 
 package android.server.biometrics;
 
-import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -40,7 +38,6 @@ import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -68,7 +65,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void test_setLogoRes_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -80,7 +77,6 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoRes(int)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
-    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",
@@ -90,7 +86,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void test_setLogoRes_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -110,7 +106,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void test_setLogoBitmap_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -122,7 +118,6 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoBitmap(Bitmap)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
-    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",
@@ -132,7 +127,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void test_setLogoBitmap_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -154,7 +149,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoRes",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void test_setLogoResAndBitmap_throwsException() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
