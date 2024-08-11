@@ -54,6 +54,7 @@ import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
 import com.android.bedstead.harrier.components.TestAppsComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
@@ -191,7 +192,7 @@ fun RequireTargetSdkVersion.logic() {
     )
 }
 
-fun RequirePackageInstalled.logic(deviceState: DeviceState) {
+fun RequirePackageInstalled.logic(userTypeResolver: UserTypeResolver) {
     val pkg = packages().find(value)
     if (onUser == UserType.ANY) {
         checkFailOrSkip(
@@ -202,13 +203,13 @@ fun RequirePackageInstalled.logic(deviceState: DeviceState) {
     } else {
         checkFailOrSkip(
             "$value is required to be installed for $onUser",
-            pkg.installedOnUser(deviceState.resolveUserTypeToUser(onUser)),
+            pkg.installedOnUser(userTypeResolver.toUser(onUser)),
             failureMode
         )
     }
 }
 
-fun RequirePackageNotInstalled.logic(deviceState: DeviceState) {
+fun RequirePackageNotInstalled.logic(userTypeResolver: UserTypeResolver) {
     val pkg = packages().find(value)
     if (onUser == UserType.ANY) {
         checkFailOrSkip(
@@ -219,19 +220,19 @@ fun RequirePackageNotInstalled.logic(deviceState: DeviceState) {
     } else {
         checkFailOrSkip(
             "$value is required to be not installed for $onUser",
-            !pkg.installedOnUser(deviceState.resolveUserTypeToUser(onUser)),
+            !pkg.installedOnUser(userTypeResolver.toUser(onUser)),
             failureMode
         )
     }
 }
 
 @SuppressLint("CheckResult")
-fun EnsurePackageNotInstalled.logic(deviceState: DeviceState) {
+fun EnsurePackageNotInstalled.logic(userTypeResolver: UserTypeResolver) {
     val pkg = packages().find(value)
     if (onUser == UserType.ANY) {
         pkg.uninstallFromAllUsers()
     } else {
-        pkg.uninstall(deviceState.resolveUserTypeToUser(onUser))
+        pkg.uninstall(userTypeResolver.toUser(onUser))
     }
 }
 
@@ -243,8 +244,8 @@ fun RequireQuickSettingsSupport.logic() {
     )
 }
 
-fun RequireHasDefaultBrowser.logic(deviceState: DeviceState) {
-    val user: UserReference = deviceState.resolveUserTypeToUser(forUser)
+fun RequireHasDefaultBrowser.logic(userTypeResolver: UserTypeResolver) {
+    val user: UserReference = userTypeResolver.toUser(forUser)
     checkFailOrSkip(
         "User: $user does not have a default browser",
         roles().hasBrowserRoleHolderAsUser(user),
@@ -263,9 +264,9 @@ fun RequireTelephonySupport.logic() {
 
 fun EnsurePackageRespondsToIntent.logic(
     testAppsComponent: TestAppsComponent,
-    deviceState: DeviceState
+    userTypeResolver: UserTypeResolver
 ) {
-    val userReference = deviceState.resolveUserTypeToUser(user)
+    val userReference = userTypeResolver.toUser(user)
     val packageResponded = packages().queryIntentActivities(
         userReference,
         Intent(intent.action),
@@ -296,9 +297,9 @@ fun EnsurePackageRespondsToIntent.logic(
     }
 }
 
-fun EnsureNoPackageRespondsToIntent.logic(deviceState: DeviceState) {
+fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     packages().queryIntentActivities(
-        deviceState.resolveUserTypeToUser(user),
+        userTypeResolver.toUser(user),
         Intent(intent.action),
         /* flags= */ 0
     ).forEach { resolveInfoWrapper ->
@@ -307,13 +308,13 @@ fun EnsureNoPackageRespondsToIntent.logic(deviceState: DeviceState) {
             value = packageName,
             onUser = user,
             priority = MIDDLE
-        ).logic(deviceState)
+        ).logic(userTypeResolver)
     }
 }
 
-fun RequirePackageRespondsToIntent.logic(deviceState: DeviceState) {
+fun RequirePackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val packageResponded = packages().queryIntentActivities(
-        deviceState.resolveUserTypeToUser(user),
+        userTypeResolver.toUser(user),
         Intent(intent.action),
         /* flags= */ 0
     ).size > 0
@@ -332,9 +333,9 @@ fun RequirePackageRespondsToIntent.logic(deviceState: DeviceState) {
     }
 }
 
-fun RequireNoPackageRespondsToIntent.logic(deviceState: DeviceState) {
+fun RequireNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
     val noPackageResponded = packages().queryIntentActivities(
-        deviceState.resolveUserTypeToUser(user),
+        userTypeResolver.toUser(user),
         Intent(intent.action),
         /* flags= */ 0
     ).isEmpty()

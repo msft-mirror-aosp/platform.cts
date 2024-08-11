@@ -23,6 +23,7 @@ import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 
@@ -34,13 +35,13 @@ import com.android.bedstead.nene.users.UserReference
 class UserPasswordComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
     private val mUsersSetPasswords: MutableList<UserReference> = mutableListOf()
-    private val deviceState: DeviceState by locator
+    private val userTypeResolver: UserTypeResolver by locator
 
     /**
      * See [EnsurePasswordSet]
      */
     fun ensurePasswordSet(forUser: UserType, password: String) {
-        val user: UserReference = deviceState.resolveUserTypeToUser(forUser)
+        val user: UserReference = userTypeResolver.toUser(forUser)
         if (user.hasLockCredential() && user.lockCredentialEquals(password)) {
             return
         }
@@ -57,7 +58,7 @@ class UserPasswordComponent(locator: BedsteadServiceLocator) : DeviceStateCompon
      * See [EnsurePasswordNotSet]
      */
     fun ensurePasswordNotSet(forUser: UserType) {
-        val user = deviceState.resolveUserTypeToUser(forUser)
+        val user = userTypeResolver.toUser(forUser)
         if (!user.hasLockCredential()) {
             return
         }
