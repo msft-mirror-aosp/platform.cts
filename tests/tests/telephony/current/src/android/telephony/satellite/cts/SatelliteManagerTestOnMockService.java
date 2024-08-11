@@ -73,11 +73,11 @@ import android.telephony.satellite.AntennaDirection;
 import android.telephony.satellite.AntennaPosition;
 import android.telephony.satellite.NtnSignalStrength;
 import android.telephony.satellite.PointingInfo;
-import android.telephony.satellite.ProvisionSubscriberId;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteSessionStats;
+import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.stub.NTRadioTechnology;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.util.Log;
@@ -238,6 +238,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             long registerError = sSatelliteManager.registerForProvisionStateChanged(
                     getContext().getMainExecutor(), satelliteProvisionStateCallback);
             assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+            assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
 
             assertTrue(provisionSatellite());
 
@@ -373,6 +374,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         long registerError = sSatelliteManager.registerForProvisionStateChanged(
                 getContext().getMainExecutor(), satelliteProvisionStateCallback);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
 
         if (isSatelliteProvisioned()) {
             logd("testProvisionSatelliteService: dreprovision");
@@ -412,52 +414,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(provisionSatellite());
         assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
         assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        sSatelliteManager.unregisterForProvisionStateChanged(
-                satelliteProvisionStateCallback);
-
-        revokeSatellitePermission();
-    }
-
-    @Test
-    public void testProvisioningApiNotSupportedByVendorService() {
-        if (!shouldTestSatelliteWithMockService()) return;
-
-        logd("testProvisioningApiNotSupportedByVendorService: start");
-        grantSatellitePermission();
-
-        SatelliteProvisionStateCallbackTest satelliteProvisionStateCallback =
-                new SatelliteProvisionStateCallbackTest();
-        long registerError = sSatelliteManager.registerForProvisionStateChanged(
-                getContext().getMainExecutor(), satelliteProvisionStateCallback);
-        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
-
-        if (isSatelliteProvisioned()) {
-            logd("testProvisioningApiNotSupportedByVendorService: dreprovision");
-            assertTrue(deprovisionSatellite());
-            assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-            assertFalse(satelliteProvisionStateCallback.isProvisioned);
-        }
-
-        sMockSatelliteServiceManager.setProvisioningApiSupported(false);
-
-        logd("testProvisioningApiNotSupportedByVendorService: provision satellite service");
-        assertTrue(provisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        assertTrue(isSatelliteProvisioned());
-
-        logd("testProvisioningApiNotSupportedByVendorService: dreprovision satellite service");
-        assertTrue(deprovisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertFalse(satelliteProvisionStateCallback.isProvisioned);
-        assertFalse(isSatelliteProvisioned());
-
-        logd("testProvisioningApiNotSupportedByVendorService: restore provision state");
-        sMockSatelliteServiceManager.setProvisioningApiSupported(true);
-        assertTrue(provisionSatellite());
-        assertTrue(satelliteProvisionStateCallback.waitUntilResult(1));
-        assertTrue(satelliteProvisionStateCallback.isProvisioned);
-        assertTrue(isSatelliteProvisioned());
         sSatelliteManager.unregisterForProvisionStateChanged(
                 satelliteProvisionStateCallback);
 
@@ -4153,7 +4109,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 SubscriptionManager::getAllSubscriptionInfoList);
         grantSatellitePermission();
         try {
-            Pair<List<ProvisionSubscriberId>, Integer> pairResult = requestProvisionSubscriberIds();
+            Pair<List<SatelliteSubscriberInfo>, Integer> pairResult =
+                    requestProvisionSubscriberIds();
             if (pairResult == null) {
                 fail("requestProvisionSubscriberIds List<ProvisionSubscriberId> null");
                 revokeSatellitePermission();
@@ -4162,20 +4119,20 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
             SubscriptionInfo prioritySubsInfo = null;
             if (pairResult.first.size() > 0) {
-                ProvisionSubscriberId provisionSubscriberId = pairResult.first.get(0);
+                SatelliteSubscriberInfo satelliteSubscriberInfo = pairResult.first.get(0);
                 // is ntn only supported SubscriptionInfo exist
                 for (SubscriptionInfo info : infos) {
-                    if (provisionSubscriberId == null) {
+                    if (satelliteSubscriberInfo == null) {
                         fail("requestProvisionSubscriberIds provisionSubscriberId null");
                         revokeSatellitePermission();
                         return;
                     }
-                    if (info.getIccId().equals(provisionSubscriberId.getSubscriberId())) {
+                    if (info.getIccId().equals(satelliteSubscriberInfo.getSubscriberId())) {
                         prioritySubsInfo = info;
                     }
                 }
                 assertNotNull(prioritySubsInfo);
-                assertFalse(isProvisioned(provisionSubscriberId.getSubscriberId()));
+                assertFalse(isProvisioned(satelliteSubscriberInfo.getSubscriberId()));
             } else {
                 assertNull(prioritySubsInfo);
             }

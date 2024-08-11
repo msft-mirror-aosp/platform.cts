@@ -18,6 +18,7 @@ package android.car.cts.app;
 
 import android.app.Activity;
 import android.car.Car;
+import android.car.test.util.DiskUtils;
 import android.car.watchdog.CarWatchdogManager;
 import android.car.watchdog.IoOveruseStats;
 import android.car.watchdog.ResourceOveruseStats;
@@ -30,9 +31,7 @@ import androidx.annotation.GuardedBy;
 
 import java.io.File;
 import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +55,7 @@ public final class CarWatchdogTestActivity extends Activity {
     private String mDumpMessage = "";
     private Car mCar;
     private File mTestDir;
+    private File mTestFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,6 +65,8 @@ public final class CarWatchdogTestActivity extends Activity {
         try {
             mTestDir =
                     Files.createTempDirectory(getFilesDir().toPath(), "testDir").toFile();
+            mTestFile = new File(mTestDir, Long.toString(System.nanoTime()));
+            mTestFile.createNewFile();
         } catch (IOException e) {
             setDumpMessage("ERROR: " + e.getMessage());
             finish();
@@ -183,6 +185,11 @@ public final class CarWatchdogTestActivity extends Activity {
         if (mCar != null) {
             mCar.disconnect();
         }
+        if (mTestFile.delete()) {
+            Log.i(TAG, "Deleted file '" + mTestFile.getAbsolutePath() + "' successfully");
+        } else {
+            Log.e(TAG, "Failed to delete file '" + mTestFile.getAbsolutePath() + "'");
+        }
         if (mTestDir.delete()) {
             Log.i(TAG, "Deleted directory '" + mTestDir.getAbsolutePath() + "' successfully");
         } else {
@@ -222,78 +229,28 @@ public final class CarWatchdogTestActivity extends Activity {
         return listener;
     }
 
-    private boolean writeToDisk(long bytes) {
-        File uniqueFile = new File(mTestDir, Long.toString(System.nanoTime()));
-        boolean result = writeToFile(uniqueFile, bytes);
-        if (uniqueFile.delete()) {
-            Log.i(TAG, "Deleted file: " + uniqueFile.getAbsolutePath());
-        } else {
-            Log.e(TAG, "Failed to delete file: " + uniqueFile.getAbsolutePath());
-        }
-        return result;
-    }
-
-    private boolean writeToFile(File uniqueFile, long bytes) {
-        long writtenBytes = 0;
-        try (FileOutputStream fos = new FileOutputStream(uniqueFile)) {
-            Log.d(TAG, "Attempting to write " + bytes + " bytes");
-            writtenBytes = writeToFos(fos, bytes);
-            if (writtenBytes < bytes) {
-                setDumpMessage("ERROR: Failed to write '" + bytes
+    private boolean writeToDisk(long size) {
+        try {
+            long writtenBytes = DiskUtils.writeToDisk(mTestFile, size);
+            if (writtenBytes < size) {
+                setDumpMessage("ERROR: Failed to write '" + size
                         + "' bytes to disk. '" + writtenBytes
-                        + "' bytes were successfully written, while '" + (bytes - writtenBytes)
+                        + "' bytes were successfully written, while '" + (size - writtenBytes)
                         + "' bytes were pending at the moment the exception occurred.");
                 return false;
             }
-            fos.getFD().sync();
-            // Wait for the IO event to propagate to the system
-            Thread.sleep(DISK_DELAY_MS);
-            return true;
         } catch (IOException | InterruptedException e) {
             String message;
             if (e instanceof IOException) {
-                message = "I/O exception";
+                message = e.getMessage();
             } else {
                 message = "Thread interrupted";
-                Thread.currentThread().interrupt();
-            }
-            if (writtenBytes > 0) {
-                message += " after successfully writing to disk.";
             }
             Log.e(TAG, message, e);
             setDumpMessage("ERROR: " + message);
             return false;
         }
-    }
-
-    private long writeToFos(FileOutputStream fos, long remainingBytes) {
-        Runtime runtime = Runtime.getRuntime();
-        long totalBytesWritten = 0;
-        while (remainingBytes != 0) {
-            // The total available free memory can be calculated by adding the currently allocated
-            // memory that is free plus the total memory available to the process which hasn't been
-            // allocated yet.
-            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
-                    + runtime.freeMemory();
-            int writeBytes = Math.toIntExact(Math.min(totalFreeMemory, remainingBytes));
-            try {
-                fos.write(new byte[writeBytes]);
-            }  catch (InterruptedIOException e) {
-                Thread.currentThread().interrupt();
-                continue;
-            } catch (IOException e) {
-                Log.e(TAG, "I/O exception while writing " + writeBytes + " to disk", e);
-                return totalBytesWritten;
-            }
-            totalBytesWritten += writeBytes;
-            remainingBytes -= writeBytes;
-            if (writeBytes > 0 && remainingBytes > 0) {
-                Log.i(TAG, "Total bytes written: " + totalBytesWritten + "/"
-                        + (totalBytesWritten + remainingBytes));
-            }
-        }
-        Log.d(TAG, "Write completed.");
-        return totalBytesWritten;
+        return true;
     }
 
     private long fetchRemainingBytes(long minWrittenBytes) {

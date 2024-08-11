@@ -32,7 +32,7 @@ import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.TextBoundsInfo;
 import android.view.inputmethod.TextBoundsInfoResult;
 import android.widget.EditText;
-import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -149,7 +149,7 @@ public class TextViewTextBoundsInfoTest {
             mEditText.setTypeface(sTypeface);
             mEditText.setText(DEFAULT_TEXT);
             mEditText.setTextSize(TypedValue.COMPLEX_UNIT_PX, TEXT_SIZE);
-            mEditText.setLayoutParams(new FrameLayout.LayoutParams(VIEW_WIDTH, VIEW_HEIGHT));
+            mEditText.setLayoutParams(new LinearLayout.LayoutParams(VIEW_WIDTH, VIEW_HEIGHT));
             // EditText will place the text layout at (paddingLeft, paddingTop) in itself.
             mEditText.setPadding(TEXT_LAYOUT_LEFT, TEXT_LAYOUT_TOP, 0, 0);
             // Set drawables to null, otherwise EditText will use drawable to compute text layout's
