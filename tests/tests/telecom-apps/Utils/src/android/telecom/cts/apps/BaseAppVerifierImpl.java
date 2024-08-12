@@ -16,6 +16,7 @@
 
 package android.telecom.cts.apps;
 
+import static android.os.SystemClock.sleep;
 import static android.telecom.Call.STATE_ACTIVE;
 import static android.telecom.Call.STATE_DISCONNECTED;
 import static android.telecom.Call.STATE_RINGING;
@@ -80,7 +81,9 @@ public class BaseAppVerifierImpl {
             "android.permission.REGISTER_SIM_SUBSCRIPTION";
     private static final String MODIFY_PHONE_STATE_PERMISSION =
             "android.permission.MODIFY_PHONE_STATE";
-    private static final int FOCUS_TIMEOUT_MILLIS = 2000;
+    private static final int FOCUS_TIMEOUT_MILLIS = 3000;
+    private static final int TIME_BETWEEN_FOCUS_ATTEMPTS_MILLIS = 500;
+    private static final int MAX_FOCUS_ATTEMPTS = 10;
 
     /**
      * Audio attributes for a typical music app.
@@ -515,12 +518,26 @@ public class BaseAppVerifierImpl {
      * verify that focus is lost during a call and restored later.
      */
     public void acquireAudioFocusForMusic() {
-        int result = ShellIdentityUtils.invokeMethodWithShellPermissions(mAudioManager,
-                (am) -> {
-                    return am.requestAudioFocus(mMusicFocusRequest);
-                });
-        assertEquals("Failed to acquire focus for media playback in order to verify that "
-                + "media focus is lost in calls.", AudioManager.AUDIOFOCUS_REQUEST_GRANTED, result);
+        final int[] result = {AudioManager.AUDIOFOCUS_REQUEST_FAILED};
+        ShellIdentityUtils.invokeWithShellPermissions(() -> {
+            int attempts = 0;
+            while (result[0] == AudioManager.AUDIOFOCUS_REQUEST_FAILED
+                    && attempts <= MAX_FOCUS_ATTEMPTS) {
+                attempts++;
+                result[0] = mAudioManager.requestAudioFocus(mMusicFocusRequest);
+                if (result[0] == AudioManager.AUDIOFOCUS_REQUEST_FAILED) {
+                    sleep(TIME_BETWEEN_FOCUS_ATTEMPTS_MILLIS);
+                }
+            }
+        });
+        if (result[0] == AudioManager.AUDIOFOCUS_REQUEST_DELAYED) {
+            waitForAndVerifyMusicFocus(new int[]{AudioManager.AUDIOFOCUS_REQUEST_GRANTED});
+        } else {
+            assertEquals("Failed to acquire focus for media playback in order to verify that "
+                            + "media focus is lost in calls.",
+                    AudioManager.AUDIOFOCUS_REQUEST_GRANTED,
+                    result[0]);
+        }
     }
 
     /**
