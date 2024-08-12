@@ -277,6 +277,7 @@ android_test {
         ":HelloInstallerAppUpdated",
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
+        ":CtsDeviceAdminTestApp",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",

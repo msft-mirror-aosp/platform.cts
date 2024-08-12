@@ -19,12 +19,6 @@ package android.input.cts
 import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.hardware.input.InputManager
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
-import android.input.cts.VirtualDisplayActivityScenarioRule.Companion.WIDTH
 import android.view.MotionEvent
 import android.view.MotionEvent.ACTION_MOVE
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -33,6 +27,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.VirtualDisplayActivityScenarioRule
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
+import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.WIDTH
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction

@@ -27,8 +27,10 @@ android_test {
         "androidx.test.core",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
         "junit",
         "truth",
+        "mediaprovider_flags_java_lib",
     ],
 
     srcs: [

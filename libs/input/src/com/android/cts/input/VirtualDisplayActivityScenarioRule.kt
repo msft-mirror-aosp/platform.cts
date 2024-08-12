@@ -13,21 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package android.input.cts
+package com.android.cts.input
 
 import android.Manifest
 import android.app.Activity
 import android.app.ActivityOptions
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
+import android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE
 import android.hardware.display.VirtualDisplay
 import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
+import android.os.Process
 import android.server.wm.WindowManagerStateHelper
 import android.view.Surface
 import androidx.test.platform.app.InstrumentationRegistry
@@ -45,11 +47,13 @@ import org.junit.rules.TestName
  */
 class VirtualDisplayActivityScenarioRule<A : Activity>(
     val testName: TestName,
+    val useSecureDisplay: Boolean,
     val type: Class<A>
 ) : ExternalResource() {
     companion object {
         const val TAG = "VirtualDisplayActivityScenarioRule"
         const val VIRTUAL_DISPLAY_NAME = "CtsTouchScreenTestVirtualDisplay"
+        const val CAPTURE_SECURE_VIDEO_OUTPUT = "android.permission.CAPTURE_SECURE_VIDEO_OUTPUT"
         const val WIDTH = 480
         const val HEIGHT = 800
         const val DENSITY = 160
@@ -67,6 +71,16 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
             testName: TestName
         ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
             testName,
+            /*useSecureDisplay=*/
+            false,
+            A::class.java
+        )
+        inline operator fun <reified A : Activity> invoke(
+            testName: TestName,
+            useSecureDisplay: Boolean
+        ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
+            testName,
+            useSecureDisplay,
             A::class.java
         )
     }
@@ -151,11 +165,39 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
             }
         }, Handler(Looper.getMainLooper()))
         reader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888, 2)
-        virtualDisplay = displayManager.createVirtualDisplay(
-            VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
-            VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT)
-
+        if (useSecureDisplay){
+            virtualDisplay =
+                runWithCaptureSecurePermissionIdentityOverride {
+                    displayManager.createVirtualDisplay(
+                        VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
+                        VIRTUAL_DISPLAY_FLAG_SECURE or VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
+                                VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+                    )
+                }
+        } else {
+            virtualDisplay = displayManager.createVirtualDisplay(
+                VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
+                VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+            )
+        }
         assertTrue(displayCreated.await(5, TimeUnit.SECONDS))
+    }
+
+    private fun runWithCaptureSecurePermissionIdentityOverride(command: () -> VirtualDisplay):
+            VirtualDisplay {
+        InstrumentationRegistry.getInstrumentation().uiAutomation.addOverridePermissionState(
+            Process.myUid(),
+            CAPTURE_SECURE_VIDEO_OUTPUT,
+            PERMISSION_GRANTED
+        )
+        try {
+            return command()
+        } finally {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .clearOverridePermissionStates(
+                    Process.myUid()
+                )
+        }
     }
 
     private fun releaseDisplay() {

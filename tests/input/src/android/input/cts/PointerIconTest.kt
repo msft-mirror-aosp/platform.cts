@@ -16,31 +16,20 @@
 
 package android.input.cts
 
-import android.Manifest.permission.CREATE_VIRTUAL_DEVICE
-import android.Manifest.permission.INJECT_EVENTS
-import android.companion.virtual.VirtualDeviceManager
-import android.companion.virtual.VirtualDeviceManager.VirtualDevice
-import android.companion.virtual.VirtualDeviceParams
-import android.content.Context
 import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Point
 import android.hardware.input.VirtualMouse
-import android.hardware.input.VirtualMouseConfig
-import android.hardware.input.VirtualMouseRelativeEvent
 import android.os.SystemProperties
-import android.view.Display
 import android.view.MotionEvent
 import android.view.PointerIcon
 import android.virtualdevice.cts.common.FakeAssociationRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.cts.input.DefaultPointerSpeedRule
-import com.android.cts.input.UinputDrawingTablet
-import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.TestPointerDevice
+import com.android.cts.input.VirtualDisplayActivityScenarioRule
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import kotlin.test.assertNotNull
 import org.junit.After
@@ -94,7 +83,7 @@ class PointerIconTest {
     ), disableIconPool = false)
 
     @Parameter(0)
-    lateinit var device: PointerDevice
+    lateinit var device: TestPointerDevice
 
     @Before
     fun setUp() {
@@ -228,113 +217,11 @@ class PointerIconTest {
         const val ASSETS_PATH = "tests/input/assets"
         val TEST_OUTPUT_PATH =
             "/sdcard/Download/CtsInputTestCases/" + PointerIconTest::class.java.simpleName
-        val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1);
+        val HW_TIMEOUT_MULTIPLIER = SystemProperties.getInt("ro.hw_timeout_multiplier", 1)
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data(): Iterable<Any> =
-            listOf(PointerDevice.MOUSE, PointerDevice.DRAWING_TABLET)
-    }
-}
-
-enum class PointerDevice {
-
-    MOUSE {
-        private lateinit var virtualDevice: VirtualDevice
-        private lateinit var virtualMouse: VirtualMouse
-
-        override fun setUp(
-            context: Context,
-            display: Display,
-            fakeAssociationRule: FakeAssociationRule
-        ) {
-            val virtualDeviceManager =
-                context.getSystemService(VirtualDeviceManager::class.java)!!
-            runWithShellPermissionIdentity({
-                virtualDevice =
-                    virtualDeviceManager.createVirtualDevice(fakeAssociationRule.associationInfo.id,
-                        VirtualDeviceParams.Builder().build())
-                virtualMouse =
-                    virtualDevice.createVirtualMouse(VirtualMouseConfig.Builder()
-                            .setVendorId(TEST_VENDOR_ID)
-                            .setProductId(TEST_PRODUCT_ID)
-                            .setInputDeviceName("Pointer Icon Test Mouse")
-                            .setAssociatedDisplayId(display.displayId).build())
-            }, CREATE_VIRTUAL_DEVICE, INJECT_EVENTS)
-        }
-
-        override fun hoverMove(dx: Int, dy: Int) {
-            runWithShellPermissionIdentity({
-                virtualMouse.sendRelativeEvent(
-                    VirtualMouseRelativeEvent.Builder()
-                            .setRelativeX(dx.toFloat())
-                            .setRelativeY(dy.toFloat())
-                            .build()
-                )
-            }, CREATE_VIRTUAL_DEVICE)
-        }
-
-        override fun tearDown() {
-            runWithShellPermissionIdentity({
-                if (this::virtualMouse.isInitialized) {
-                    virtualMouse.close()
-                }
-                if (this::virtualDevice.isInitialized) {
-                    virtualDevice.close()
-                }
-            }, CREATE_VIRTUAL_DEVICE)
-        }
-
-        override fun toString(): String = "MOUSE"
-    },
-
-    DRAWING_TABLET {
-        private lateinit var drawingTablet: UinputTouchDevice
-        private lateinit var pointer: Point
-
-        @Suppress("DEPRECATION")
-        override fun setUp(
-            context: Context,
-            display: Display,
-            fakeAssociationRule: FakeAssociationRule
-        ) {
-            val instrumentation = InstrumentationRegistry.getInstrumentation()
-            drawingTablet = UinputDrawingTablet(instrumentation, display)
-            // Start with the pointer in the middle of the display.
-            pointer = Point((display.width - 1) / 2, (display.height - 1) / 2)
-        }
-
-        override fun hoverMove(dx: Int, dy: Int) {
-            pointer.offset(dx, dy)
-            drawingTablet.sendBtn(UinputTouchDevice.BTN_TOOL_PEN, isDown = true)
-            drawingTablet.sendDown(
-                id = 0,
-                location = pointer,
-                toolType = UinputTouchDevice.MT_TOOL_PEN
-            )
-            drawingTablet.sync()
-        }
-
-        override fun tearDown() {
-            if (this::drawingTablet.isInitialized) {
-                drawingTablet.close()
-            }
-        }
-
-        override fun toString(): String = "DRAWING_TABLET"
-    };
-
-    abstract fun setUp(
-        context: Context,
-        display: Display,
-        fakeAssociationRule: FakeAssociationRule
-    )
-
-    abstract fun hoverMove(dx: Int, dy: Int)
-    abstract fun tearDown()
-
-    companion object {
-        const val TEST_VENDOR_ID = 0x18d1
-        const val TEST_PRODUCT_ID = 0xabcd
+            listOf(TestPointerDevice.MOUSE, TestPointerDevice.DRAWING_TABLET)
     }
 }

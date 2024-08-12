@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,24 +13,20 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_library_static {
-    name: "cts-input-lib",
+android_test_helper_app {
+    name: "CtsDeviceAdminTestApp",
+    defaults: ["cts_defaults"],
+
+    srcs: ["src/**/*.java"],
+
     sdk_version: "test_current",
-    srcs: [
-        "src/**/*.java",
-        "src/**/*.kt",
-    ],
-    kotlincflags: [
-        "-Werror",
-    ],
-    static_libs: [
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "CtsVirtualDeviceCommonLib",
-        "cts-wm-util",
-        "com.android.input.flags-aconfig-java",
+
+    test_suites: [
+        "cts",
+        "general-tests",
     ],
 }

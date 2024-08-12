@@ -194,7 +194,7 @@ public class ResultsAssertionsUtils {
         }
     }
 
-    private static void assertImageExifRedacted(InputStream is) throws IOException {
+    public static void assertImageExifRedacted(InputStream is) throws IOException {
         final ExifInterface exif = new ExifInterface(is);
         final float[] latLong = new float[2];
         exif.getLatLong(latLong);
