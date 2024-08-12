@@ -51,6 +51,8 @@ android_test {
         "general-tests",
     ],
     data: [
+        ":CtsArchiveInstallerApp",
+        ":CtsArchiveTestApp",
         ":CtsEmptyTestApp",
         ":CtsEmptyTestAppV2",
         ":CtsEmptyInstallerApp",
