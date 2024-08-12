@@ -98,6 +98,63 @@ public class CustomDescriptionTest extends AbstractLoginActivityTestCase {
     }
 
     @Test
+    @AsbSecurityTest(cveBugId = 286235483)
+    public void testRemoteViewsDoNotSpill() throws Exception {
+        enableService();
+        final RemoteViews regularPresentation = newTemplate(R.layout.two_horizontal_text_fields);
+        RemoteViews badPresentation = newTemplate(R.layout.two_horizontal_text_fields);
+        // Try to access a resource that is not owned by the user
+        // In this case, the URI doesn't exist
+        badPresentation.setImageViewIcon(
+                R.id.icon,
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
+        badPresentation.setTextViewText(R.id.first, "do not display");
+
+        sReplier.addResponse(
+                new CannedFillResponse.Builder()
+                        .setRequiredSavableIds(SAVE_DATA_TYPE_GENERIC, ID_USERNAME)
+                        .setSaveInfoVisitor(
+                                (contexts, builder) -> {
+                                    final AutofillId usernameId =
+                                            findAutofillIdByResourceId(
+                                                    contexts.get(0), ID_USERNAME);
+
+                                    // Validator for sanitization
+                                    final Validator validCondition =
+                                            new RegexValidator(
+                                                    usernameId, Pattern.compile("hello"));
+                                    final CustomDescription customDescription =
+                                            new CustomDescription.Builder(regularPresentation)
+                                                    .batchUpdate(
+                                                            validCondition,
+                                                            new BatchUpdates.Builder()
+                                                                    .updateTemplate(badPresentation)
+                                                                    .build())
+                                                    .build();
+
+                                    builder.addSanitizer(
+                                                    new TextValueSanitizer(
+                                                            Pattern.compile("world"), "hello"),
+                                                    usernameId)
+                                            .setCustomDescription(customDescription);
+                                })
+                        .build());
+
+        // Trigger autofill with custom description
+        mActivity.onPassword(View::requestFocus);
+
+        // Wait for onFill() before proceeding.
+        sReplier.getNextFillRequest();
+
+        // Trigger save.
+        mActivity.onUsername((v) -> v.setText("world"));
+        mActivity.onPassword((v) -> v.setText(LoginActivity.BACKDOOR_PASSWORD_SUBSTRING));
+        mActivity.tapLogin();
+
+        mUiBot.assertSaveNotShowing(1);
+    }
+
+    @Test
     public void testSanitizationBeforeBatchUpdates() throws Exception {
         enableService();
 
