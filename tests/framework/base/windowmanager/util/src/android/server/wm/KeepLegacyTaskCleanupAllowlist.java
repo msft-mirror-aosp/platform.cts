@@ -50,7 +50,6 @@ public class KeepLegacyTaskCleanupAllowlist {
             "android.car.cts.builtin.content.ContextHelperTest",
             "android.grammaticalinflection.cts.GrammaticalInflectionManagerTest",
             "android.hardware.devicestate.cts.DeviceStateManagerTests",
-            "android.keystore.cts.CipherTest",
             "android.localemanager.cts.LocaleManagerOverrideLocaleConfigTest",
             "android.localemanager.cts.LocaleManagerSystemLocaleTest",
             "android.localemanager.cts.LocaleManagerTests",
