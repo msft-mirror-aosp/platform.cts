@@ -50,6 +50,7 @@ import com.android.os.adpf.AdpfSessionTag;
 import com.android.os.adpf.FmqStatus;
 import com.android.os.adpf.PerformanceHintSessionReported;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
@@ -97,6 +98,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
 
     @Before
     public void setUp() throws Exception {
+        checkSupportedHardware();
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -113,6 +115,12 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         DeviceUtils.uninstallStatsdTestApp(getDevice());
         DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP_PKG);
         DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP2_PKG);
+    }
+
+    private void checkSupportedHardware() throws DeviceNotAvailableException {
+        String features = getDevice().executeShellCommand("pm list features");
+        assumeTrue(!features.contains("android.hardware.type.television")
+                && !features.contains("android.hardware.type.watch"));
     }
 
     @Override
