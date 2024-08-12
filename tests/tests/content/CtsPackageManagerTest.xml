@@ -76,6 +76,7 @@
         <option name="push" value="CtsSyncAccountAccessStubs_mdpi-v4.apk->/data/local/tmp/cts/content/CtsSyncAccountAccessStubs_mdpi-v4.apk" />
         <option name="push" value="CtsContentLongUsesPermissionNameTestApp.apk->/data/local/tmp/cts/content/CtsContentLongUsesPermissionNameTestApp.apk" />
         <option name="push" value="CtsContentShellTestApp.apk->/data/local/tmp/cts/content/CtsContentShellTestApp.apk" />
+        <option name="push" value="CtsDeviceAdminTestApp.apk->/data/local/tmp/cts/content/CtsDeviceAdminTestApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
