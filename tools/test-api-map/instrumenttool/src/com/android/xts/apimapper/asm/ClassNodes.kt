@@ -75,6 +75,6 @@ class ClassNodes {
 
     /** @return true if a class has a class initializer. */
     fun hasClassInitializer(className: String): Boolean {
-        return findMethod(className, "<clinit>", "()V") != null
+        return findMethod(className, CLASS_INITIALIZER_NAME, CLASS_INITIALIZER_DESC) != null
     }
 }
