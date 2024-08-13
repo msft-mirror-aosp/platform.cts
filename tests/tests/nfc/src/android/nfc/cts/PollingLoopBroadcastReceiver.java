@@ -27,14 +27,35 @@ public class PollingLoopBroadcastReceiver extends BroadcastReceiver {
 
     private static final String CLASS_NAME_KEY = "class_name";
     private static final String FRAMES_KEY = "frames";
+    private static final String POLLING_LOOP_FIRED = "com.cts.PollingLoopFired";
+    private static final String OBSERVE_MODE_CHANGED = "com.cts.ObserveModeChanged";
+    private static final String PREFERRED_SERVISE_CHANGED = "com.cts.PreferredServiceChanged";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         if (CardEmulationTest.sCurrentPollLoopReceiver != null) {
             String className = intent.getStringExtra(CLASS_NAME_KEY);
-            List<PollingFrame> frames = intent.getParcelableArrayListExtra(FRAMES_KEY,
-                    PollingFrame.class);
-            CardEmulationTest.sCurrentPollLoopReceiver.notifyPollingLoop(className, frames);
+            switch (intent.getAction()) {
+                case POLLING_LOOP_FIRED:
+                    List<PollingFrame> frames = intent.getParcelableArrayListExtra(FRAMES_KEY,
+                            PollingFrame.class);
+                    CardEmulationTest.sCurrentPollLoopReceiver.notifyPollingLoop(className, frames);
+                    break;
+                case OBSERVE_MODE_CHANGED:
+                    if (intent.hasExtra("enabled")) {
+                        boolean  isEnabled = intent.getBooleanExtra("enabled", false);
+                        CardEmulationTest.sCurrentPollLoopReceiver.onObserveModeStateChanged(
+                                className, isEnabled);
+                    }
+                    break;
+                case PREFERRED_SERVISE_CHANGED:
+                    if (intent.hasExtra("preferred")) {
+                        boolean  isPreferred = intent.getBooleanExtra("preferred", false);
+                        CardEmulationTest.sCurrentPollLoopReceiver.onPreferredServiceChanged(
+                                className,  isPreferred);
+                    }
+                    break;
+            }
         }
     }
 }
