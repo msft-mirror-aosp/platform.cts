@@ -131,8 +131,8 @@ public abstract class RequiredMeasurement<T> {
             // value map. If so, the measurement should just be ignored.
             return;
         } else if (!this.measuredValueSet) {
-            throw new IllegalStateException("measured value not set for required measurement "
-                + this.id());
+            throw new IllegalStateException("measured value not set for required measurement:\n"
+                + this);
         }
 
         if (this.measuredValue == null) {
