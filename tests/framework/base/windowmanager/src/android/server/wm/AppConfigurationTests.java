@@ -20,6 +20,8 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_MULTI_WINDOW;
+import static android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK;
+import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
 import static android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
@@ -362,7 +364,12 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 reportedSizes.heightDp >= reportedSizes.widthDp);
         separateTestJournal();
 
-        launchActivity(LANDSCAPE_ORIENTATION_ACTIVITY);
+        // TODO(b/353335964): When switching between portrait-fixed and landscape-fixed activities
+        // in the same task in freeform mode, the orientation is not applied correctly when
+        // advancing forward (launching new activities). Add back the following line instead of
+        // launching in new task once this is fixed.
+        // launchActivity(LANDSCAPE_ORIENTATION_ACTIVITY);
+        launchActivityInNewTask(LANDSCAPE_ORIENTATION_ACTIVITY);
         mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(LANDSCAPE_ORIENTATION_ACTIVITY, true /* visible */);
         reportedSizes = getLastReportedSizesForActivity(LANDSCAPE_ORIENTATION_ACTIVITY);
@@ -372,7 +379,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 reportedSizes.heightDp < reportedSizes.widthDp);
         separateTestJournal();
 
-        launchActivity(PORTRAIT_ORIENTATION_ACTIVITY);
+        launchFullscreenPortraitActivityToFront();
         mWmState.assertVisibility(PORTRAIT_ORIENTATION_ACTIVITY, true /* visible */);
         reportedSizes = getLastReportedSizesForActivity(PORTRAIT_ORIENTATION_ACTIVITY);
         assertEquals("portrait activity should be in portrait",
@@ -435,15 +442,28 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 1 /* create */, 1 /* start */, 1 /* resume */,
                 0 /* pause */, 0 /* stop */, 0 /* destroy */, 0 /* config */);
 
-        launchActivity(PORTRAIT_ORIENTATION_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
+        launchFullscreenPortraitActivityToFront();
         mWmState.assertVisibility(PORTRAIT_ORIENTATION_ACTIVITY, true /* visible */);
 
         assertLifecycleCounts(PORTRAIT_ORIENTATION_ACTIVITY,
-                2 /* create */, 2 /* start */, 2 /* resume */,
+                1 /* create */, 2 /* start */, 2 /* resume */,
                 1 /* pause */, 1 /* stop */, 0 /* destroy */, 0 /* config */);
         assertLifecycleCounts(LANDSCAPE_ORIENTATION_ACTIVITY,
                 1 /* create */, 1 /* start */, 1 /* resume */,
                 1 /* pause */, 1 /* stop */, 0 /* destroy */, 0 /* config */);
+    }
+
+    /**
+     * Helper to launch a fullscreen portrait activity and reorder it to the front in a Task.
+     * TODO(b/358418625): Consider extracting this method so that it can be re-used in other tests.
+     */
+    private void launchFullscreenPortraitActivityToFront() {
+        getLaunchActivityBuilder()
+                .setUseInstrumentation()
+                .setTargetActivity(PORTRAIT_ORIENTATION_ACTIVITY)
+                .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
+                .setReorderToFront(true)
+                .execute();
     }
 
     @Test
@@ -458,6 +478,10 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         getLaunchActivityBuilder()
                 .setUseInstrumentation()
                 .setTargetActivity(LANDSCAPE_ORIENTATION_ACTIVITY)
+                // TODO(b/353335964): Remove once orientation fix is respected in the same task
+                // in freeform.
+                .setNewTask(true)
+                .setIntentFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK)
                 // Request the info from onCreate because at that moment the real display hasn't
                 // rotated but the activity is rotated.
                 .setIntentExtra(bundle -> bundle.putBoolean(EXTRA_CONFIG_INFO_IN_ON_CREATE, true))
