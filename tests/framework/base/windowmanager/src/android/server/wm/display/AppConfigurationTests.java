@@ -59,6 +59,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
@@ -68,13 +69,17 @@ import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.CommandSession.ConfigInfo;
 import android.server.wm.CommandSession.SizeInfo;
+import android.server.wm.DisplayMetricsSession;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.RotationSession;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
+import android.util.Size;
 import android.view.Display;
 import android.window.WindowContainerTransaction;
+
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Test;
 
@@ -676,46 +681,50 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Test that the orientation for a simulated display context derived from an application context
-     * will not change when the device rotates.
+     * Test that the simulated display context derived from an application context will not change
+     * when the base context changes.
      */
     @Test
-    public void testAppContextDerivedDisplayContextOrientationWhenRotating() {
+    @ApiTest(apis = {"android.content.Context#createDisplayContext"})
+    public void testAppContextDerivedDisplayContextWhenBaseContextChanged() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
         assumeTrue("Skipping test: no multi-display support", supportsMultiDisplay());
 
-        assertDisplayContextDoesntChangeOrientationWhenRotating(Activity::getApplicationContext);
+        assertDerivedDisplayContextDoesntChangeWhenBaseActivityChanged(
+                Activity::getApplicationContext);
     }
 
     /**
-     * Test that the orientation for a simulated display context derived from an activity context
-     * will not change when the device rotates.
+     * Test that the simulated display context derived from an activity context will not change
+     * when the base context changes.
      */
     @Test
-    public void testActivityContextDerivedDisplayContextOrientationWhenRotating() {
+    @ApiTest(apis = {"android.content.Context#createDisplayContext"})
+    public void testActivityContextDerivedDisplayContextWhenBaseContextChanged() {
         assumeTrue("Skipping test: no rotation support", supportsRotation());
         assumeTrue("Skipping test: no multi-display support", supportsMultiDisplay());
 
-        assertDisplayContextDoesntChangeOrientationWhenRotating(activity -> activity);
+        assertDerivedDisplayContextDoesntChangeWhenBaseActivityChanged(activity -> activity);
     }
 
     /**
-     * Asserts that the orientation for a simulated display context derived from a base context will
-     * not change when the device rotates.
+     * Asserts that simulated display context derived from a base context will not change when the
+     * base context changes.
      *
      * @param baseContextSupplier function that returns a base context used to created the display
      *                            context.
      *
-     * @see #testAppContextDerivedDisplayContextOrientationWhenRotating
-     * @see #testActivityContextDerivedDisplayContextOrientationWhenRotating
+     * @see #testAppContextDerivedDisplayContextWhenBaseContextChanged
+     * @see #testActivityContextDerivedDisplayContextWhenBaseContextChanged
      */
-    private void assertDisplayContextDoesntChangeOrientationWhenRotating(
+    private void assertDerivedDisplayContextDoesntChangeWhenBaseActivityChanged(
             Function<Activity, Context> baseContextSupplier) {
-        RotationSession rotationSession = createManagedRotationSession();
+        final RotationSession rotationSession = createManagedRotationSession();
         rotationSession.set(ROTATION_0);
 
         TestActivitySession<ConfigChangeHandlingActivity> activitySession
                 = createManagedTestActivitySession();
+        int baseDisplayId = Display.DEFAULT_DISPLAY;
         activitySession.launchTestActivityOnDisplaySync(
                 ConfigChangeHandlingActivity.class,
                 Display.DEFAULT_DISPLAY,
@@ -732,22 +741,63 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         Display simulatedDisplay = dm.getDisplay(displayContent.mId);
         Context simulatedDisplayContext = baseContextSupplier.apply(activity)
                 .createDisplayContext(simulatedDisplay);
-        assertEquals(ORIENTATION_PORTRAIT,
-                simulatedDisplayContext.getResources().getConfiguration().orientation);
+        final Configuration simulatedDisplayContextConfig =
+                simulatedDisplayContext.getResources().getConfiguration();
+        final int origSimulatedDisplayWidth = simulatedDisplayContextConfig.screenWidthDp;
+        final int origSimulatedDisplayHeight = simulatedDisplayContextConfig.screenHeightDp;
+        final int origSimulatedDisplayOrientation = ORIENTATION_PORTRAIT;
+        assertEquals(origSimulatedDisplayOrientation, simulatedDisplayContextConfig.orientation);
 
         separateTestJournal();
 
-        final int[] rotations = {ROTATION_270, ROTATION_180, ROTATION_90, ROTATION_0};
-        for (final int rotation : rotations) {
-            rotationSession.set(rotation);
+        // Resize the base default display
+        final DisplayMetricsSession baseDisplayMetricsSession =
+                createManagedDisplayMetricsSession(baseDisplayId);
+        final ReportedDisplayMetrics origBaseDisplayMetrics =
+                baseDisplayMetricsSession.getInitialDisplayMetrics();
+        final Size origBaseDisplaySize =
+                new Size(origBaseDisplayMetrics.getSize().getWidth(),
+                         origBaseDisplayMetrics.getSize().getHeight());
+        final int origBaseDisplayOrientation =
+                origBaseDisplaySize.getHeight() > origBaseDisplaySize.getWidth()
+                        ? ORIENTATION_PORTRAIT
+                        : ORIENTATION_LANDSCAPE;
+        // Switch the height and width for orientation change and scale to resize
+        final Size overrideSize =
+                new Size((int) (origBaseDisplaySize.getHeight() * 0.9),
+                         (int) (origBaseDisplaySize.getWidth() * 0.9));
+        final int overrideDensity = (int) (origBaseDisplayMetrics.getDensity() * 1.1);
+        baseDisplayMetricsSession.overrideDisplayMetrics(overrideSize, overrideDensity);
 
-            assertRelaunchOrConfigChanged(activity.getComponentName(), 0 /* numRelaunch */,
-                    1 /* numConfigChange */);
-            separateTestJournal();
+        // Check if overrides applied correctly
+        ReportedDisplayMetrics changedBaseDisplayMetrics =
+                baseDisplayMetricsSession.getDisplayMetrics();
+        assertEquals(overrideSize, changedBaseDisplayMetrics.getSize());
+        assertEquals(overrideDensity, changedBaseDisplayMetrics.getDensity());
 
-            assertEquals("Display context orientation must not be changed", ORIENTATION_PORTRAIT,
-                    simulatedDisplayContext.getResources().getConfiguration().orientation);
-        }
+        // Check that the DisplayMetrics-related config of the base display context has changed
+        Context baseDisplayContext = baseContextSupplier.apply(activity);
+        assertNotEquals("Base display context orientation must be changed",
+                origBaseDisplayOrientation,
+                baseDisplayContext.getResources().getConfiguration().orientation);
+        assertNotEquals("Base display context width must be changed",
+                origBaseDisplaySize.getWidth(),
+                baseDisplayContext.getResources().getConfiguration().screenWidthDp);
+        assertNotEquals("Base display context height must be changed",
+                origBaseDisplaySize.getHeight(),
+                baseDisplayContext.getResources().getConfiguration().screenHeightDp);
+
+        // Check that the DisplayMetrics-related config of the simulated display context is not
+        // changed when base base display context has changed
+        assertEquals("Derived display context orientation must not be changed",
+                origSimulatedDisplayOrientation,
+                simulatedDisplayContext.getResources().getConfiguration().orientation);
+        assertEquals("Derived display context width must not be changed",
+                origSimulatedDisplayWidth,
+                simulatedDisplayContext.getResources().getConfiguration().screenWidthDp);
+        assertEquals("Derived display context height must not be changed",
+                origSimulatedDisplayHeight,
+                simulatedDisplayContext.getResources().getConfiguration().screenHeightDp);
     }
 
     /**
