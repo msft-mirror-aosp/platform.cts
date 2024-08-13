@@ -218,7 +218,28 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
             // Also get and cache the default policy for comparison later.
             if (Flags.modesApi()) {
-                mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                if (Flags.modesUi()) {
+                    mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                } else {
+                    // Pre-modes_ui, the "default policy" (for the purposes of merging with missing
+                    // or underspecified policies) is actually the manual policy. Thus we construct
+                    // a ZenPolicy matching the previous setNotificationPolicy() call.
+                    mDefaultPolicy = new ZenPolicy.Builder()
+                            .allowPriorityChannels(true)
+                            .disallowAllSounds()
+                            .allowAlarms(true)
+                            .allowMedia(true)
+                            .allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowConversations(ZenPolicy.CONVERSATION_SENDERS_IMPORTANT)
+                            .allowRepeatCallers(true)
+                            .showAllVisualEffects()
+                            .showInAmbientDisplay(false)
+                            .showPeeking(false)
+                            .showLights(false)
+                            .showFullScreenIntent(false)
+                            .build();
+                }
             }
         });
     }
@@ -3022,10 +3043,14 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     public void setAutomaticZenRuleState_manualDeactivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
         String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-on",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
         Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
                 STATE_FALSE, Condition.SOURCE_USER_ACTION);
         Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
                 STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
 
         // App activates rule.
         mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
@@ -3034,6 +3059,16 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         // User manually deactivates -> it's inactive.
         runAsSystemUi(
                 () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // User manually reactivates -> it's active.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // That manual activation removed the override-deactivate, but didn't put an
+        // override-activate, so app can deactivate when its natural schedule ends.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
