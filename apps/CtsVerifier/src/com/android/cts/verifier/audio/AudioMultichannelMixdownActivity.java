@@ -41,6 +41,7 @@ import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // MegaAudio
+import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSource;
@@ -161,12 +162,14 @@ public class AudioMultichannelMixdownActivity
                                     // SparseChannelAudioSourceProvider)
 
         // A description of the channel being "listened for".
-        final String mDescription;
+        private final String mDescription;
 
         // Leave this null for all but the first phase for a new channel config
         String mHeading;
 
         boolean mPass;
+        final int mPhaseIndex;
+        private static int sNextPhaseIndex = 0;
 
         public double[] mMagnitude;
         public double[] mMaxMagnitude;
@@ -181,6 +184,7 @@ public class AudioMultichannelMixdownActivity
             mOutputMask = outMask;
             mOutputChannel = outChannel;
             mDescription = description;
+            mPhaseIndex = sNextPhaseIndex++;
 
             mMagnitude = new double[IN_CHANNEL_COUNT];
             mMaxMagnitude = new double[IN_CHANNEL_COUNT];
@@ -218,6 +222,29 @@ public class AudioMultichannelMixdownActivity
                         && mPhaseJitter[IN_CHANNEL_LEFT] < MAX_SIGNAL_PASS_JITTER)
                     || (mMagnitude[IN_CHANNEL_RIGHT] >= MIN_SIGNAL_PASS_MAGNITUDE
                         && mPhaseJitter[IN_CHANNEL_RIGHT] < MAX_SIGNAL_PASS_JITTER);
+        }
+
+        public int getPhaseIndex() {
+            return this.mPhaseIndex;
+        }
+
+        String getSummary() {
+            return "(" + getPhaseIndex() + ") " + mDescription
+                + ", ch[" + mOutputChannel + "]";
+        }
+
+        private String megaAudioApiToString(int megaAudioApi) {
+            return (megaAudioApi == BuilderBase.TYPE_JAVA) ? "Java" : "Native";
+        }
+
+        void logBeginning(int audioApi) {
+            Log.d(TAG, "BEGIN_SUB_TEST: " + getSummary() + ", "
+                    + megaAudioApiToString(mAudioApi));
+        }
+
+        void logEnding(int audioApi) {
+            Log.d(TAG, "END_SUB_TEST: " + getSummary() + ", "
+                    + megaAudioApiToString(mAudioApi));
         }
     }
 
@@ -367,7 +394,7 @@ public class AudioMultichannelMixdownActivity
                     sb.append(">> ");
                 }
 
-                sb.append(testPhase.mDescription);
+                sb.append(testPhase.getSummary());
 
                 if (testPhase == currentTestPhase) {
                     sb.append(" <<");
@@ -436,7 +463,7 @@ public class AudioMultichannelMixdownActivity
 
                     // Description
                     String separatorStr = " - ";
-                    mTextFormatter.appendText(testPhase.mDescription + separatorStr);
+                    mTextFormatter.appendText(testPhase.getSummary() + separatorStr);
                     mTextFormatter.openBold();
                     mTextFormatter.appendText((testPhase.mPass
                             ? getString(R.string.audio_general_pass)
@@ -480,36 +507,99 @@ public class AudioMultichannelMixdownActivity
 
             // Pass Criteria
             String requiredString = " - " + getString(R.string.audio_mixdown_required);
+            String notRequiredString = " - " + getString(R.string.audio_mixdown_notrequired);
             String completedString = " - " + getString(R.string.audio_mixdown_completed);
             String notCompletedString = " - " + getString(R.string.audio_mixdown_not_completed);
 
+            // Speaker/Mic
             mTextFormatter.openParagraph();
+            mTextFormatter.openBold();
             mTextFormatter.appendText(getString(R.string.audio_mixdown_micspeaker));
+            mTextFormatter.appendText(mSpeakerMicRequired ? requiredString : notRequiredString);
             if (mSpeakerMicRequired) {
-                mTextFormatter.appendText(requiredString);
+                mTextFormatter.appendText(mSpeakerMicRun ? completedString : notCompletedString);
             }
-            mTextFormatter.appendText(mSpeakerMicRun  ? completedString : notCompletedString);
+            mTextFormatter.closeBold();
 
+            if (mSpeakerMicRequired && !mSpeakerMicRun) {
+                // Ask them to run the Speaker/Mic path
+                mTextFormatter.appendBreak()
+                        .openItalic()
+                        .appendText(getString(R.string.audio_mixdown_runspeakermic))
+                        .closeItalic();
+            }
+
+            // Analog Headset
             mTextFormatter.openParagraph();
+            mTextFormatter.openBold();
             mTextFormatter.appendText(getString(R.string.audio_mixdown_analogheadset));
+            mTextFormatter.appendText(mAnalogJackRequired ? requiredString : notRequiredString);
             if (mAnalogJackRequired) {
-                mTextFormatter.appendText(requiredString);
+                mTextFormatter.appendText(mAnalogJackRun ? completedString : notCompletedString);
             }
-            mTextFormatter.appendText(mAnalogJackRun  ? completedString : notCompletedString);
+            mTextFormatter.closeBold();
 
+            if (mAnalogJackRequired && !mAnalogJackRun) {
+                // Ask them to run the Analog Headset path
+                mTextFormatter.appendBreak()
+                        .openItalic()
+                        .appendText(getString(R.string.audio_mixdown_runanalogheadset))
+                        .closeItalic();
+            }
+
+            // USB Interface
             mTextFormatter.openParagraph();
+            mTextFormatter.openBold();
             mTextFormatter.appendText(getString(R.string.audio_mixdown_usbdevice));
+            mTextFormatter.appendText(mUsbInterfaceRequired ? requiredString : notRequiredString);
             if (mUsbInterfaceRequired) {
-                mTextFormatter.appendText(requiredString);
+                mTextFormatter.appendText(mUsbInterfaceRun ? completedString : notCompletedString);
             }
-            mTextFormatter.appendText(mUsbInterfaceRun ? completedString : notCompletedString);
+            mTextFormatter.closeBold();
 
-            mTextFormatter.openParagraph();
-            mTextFormatter.appendText(getString(R.string.audio_mixdown_usbheadset));
-            if (mUsbHeadsetRequired) {
-                mTextFormatter.appendText(requiredString);
+            if (mUsbInterfaceRequired && !mUsbInterfaceRun) {
+                // Ask them to run the USB Interface path
+                mTextFormatter.appendBreak()
+                        .openItalic()
+                        .appendText(getString(R.string.audio_mixdown_runusbinterface))
+                        .closeItalic();
             }
-            mTextFormatter.appendText(mUsbHeadsetRun ? completedString : notCompletedString);
+
+            // USB Headset
+            mTextFormatter.openParagraph();
+            mTextFormatter.openBold();
+            mTextFormatter.appendText(getString(R.string.audio_mixdown_usbheadset));
+            mTextFormatter.appendText(mUsbHeadsetRequired ? requiredString : notRequiredString);
+            if (mUsbHeadsetRequired) {
+                mTextFormatter.appendText(mUsbHeadsetRun ? completedString : notCompletedString);
+            }
+            mTextFormatter.closeBold();
+
+            if (mUsbHeadsetRequired && !mUsbHeadsetRun) {
+                // Ask them to run the USB Headset path
+                mTextFormatter.appendBreak()
+                        .openItalic()
+                        .appendText(getString(R.string.audio_mixdown_runusbheadset))
+                        .closeItalic();
+            }
+
+            // PASS message
+            if (calculatePass()) {
+                mTextFormatter.openParagraph();
+                // Indicate the PASS state
+                mTextFormatter.openBold();
+                mTextFormatter.appendText("Test PASSES.");
+                mTextFormatter.closeBold();
+                mTextFormatter.appendBreak();
+
+                // Instruct the user to press the PASS button
+                mTextFormatter.appendText("Press the ");
+                mTextFormatter.openBold();
+                mTextFormatter.appendText("PASS");
+                mTextFormatter.closeBold();
+                mTextFormatter.appendText(" button below to complete the test.");
+                mTextFormatter.closeParagraph();
+            }
 
             mTextFormatter.closeDocument();
             mTextFormatter.put(mResultsView);
@@ -566,8 +656,10 @@ public class AudioMultichannelMixdownActivity
 
         mSpeakerMicRequired = mIsHandheld;
 
-        mUsbInterfaceRequired = mUsbHeadsetRequired =
-                AudioDeviceUtils.supportsUsbAudio(this) == AudioDeviceUtils.SUPPORTSDEVICE_YES;
+        mUsbInterfaceRequired = AudioDeviceUtils.supportsUsbAudioInterface(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_YES;
+        mUsbHeadsetRequired = AudioDeviceUtils.supportsUsbAudio(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_YES;
 
         mAnalogJackRequired =
             AudioDeviceUtils.supportsAnalogHeadset(this) == AudioDeviceUtils.SUPPORTSDEVICE_YES;
@@ -758,6 +850,7 @@ public class AudioMultichannelMixdownActivity
         mAnalyzers[IN_CHANNEL_RIGHT].reset();
 
         mWaveView.resetPersistentMaxMagnitude();
+        testPhase.logEnding(mAudioApi);
     }
 
     private void advanceTestPhase() {
@@ -786,6 +879,7 @@ public class AudioMultichannelMixdownActivity
             mTestPhase++;
 
             TestPhase testPhase = mTestManager.getTestPhase(mTestPhase);
+            testPhase.logBeginning(mAudioApi);
             float stateChangeDelay = 0.0f;
             if (mCurrentPlayerMask != testPhase.mOutputMask) {
                 stopDuplex();
