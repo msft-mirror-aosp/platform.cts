@@ -28,9 +28,14 @@
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="throw-if-cmd-fail" value="true" />
+        <!-- Setprop take effect after Bluetooth restart -->
         <option name="run-command" value="setprop persist.log.tag.bluetooth VERBOSE" />
-       <!-- In order for the setprop to take effect everywhere, we need to toggle OFF Bluetooth -->
+
+        <!-- Disable ble services to allow Bluetooth to go full OFF vs BLE_ON -->
+        <option name="run-command" value="settings put global nearby_scanning_enabled 0"/>
+        <option name="run-command" value="settings put global spen_air_action 0"/>
         <option name="run-command" value="settings put global ble_scan_always_enabled 0"/>
+
         <option name="run-command" value="cmd bluetooth_manager disable" />
         <option name="run-command" value="cmd bluetooth_manager wait-for-state:STATE_OFF" />
         <option name="run-command" value="cmd bluetooth_manager enable" />
