@@ -2076,10 +2076,9 @@ public class TunerTest {
             // see if tune still works just in case
             tunerA = new Tuner(mContext, null, 100);
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.tune(feSettings));
-            tunerA.close();
         } finally {
-            tunerA = null;
-            tunerB = null;
+            tunerA.close();
+            tunerB.close();
         }
     }
 
@@ -2148,7 +2147,7 @@ public class TunerTest {
             FrontendStatus status = tunerB.getFrontendStatus(statusCapabilities);
             assertNotNull(status);
         } finally {
-            tunerA = null;
+            tunerA.close();
         }
     }
 
@@ -2356,9 +2355,9 @@ public class TunerTest {
             throw (e);
         } finally {
             cleanupTRMCustomFeResourceMapTest();
-            tunerA = null;
-            tunerB = null;
-            tunerC = null;
+            tunerA.close();
+            tunerB.close();
+            tunerC.close();
         }
     }
 
