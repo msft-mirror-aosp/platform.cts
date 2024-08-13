@@ -51,7 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
@@ -364,6 +363,7 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         separateTestJournal();
 
         launchActivity(LANDSCAPE_ORIENTATION_ACTIVITY);
+        mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(LANDSCAPE_ORIENTATION_ACTIVITY, true /* visible */);
         reportedSizes = getLastReportedSizesForActivity(LANDSCAPE_ORIENTATION_ACTIVITY);
         assertEquals("landscape activity should be in landscape",
@@ -444,53 +444,6 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         assertLifecycleCounts(LANDSCAPE_ORIENTATION_ACTIVITY,
                 1 /* create */, 1 /* start */, 1 /* resume */,
                 1 /* pause */, 1 /* stop */, 0 /* destroy */, 0 /* config */);
-    }
-
-    /**
-     * Test that device orientation is restored when an activity that requests it is no longer
-     * visible.
-     *
-     * TODO(b/139936670, b/112688380): This test case fails on some vendor devices which has
-     * rotation sensing optimization. So this is listed in cts-known-failures.xml.
-     */
-    @Test
-    public void testAppOrientationRequestConfigClears() {
-        assumeTrue("Skipping test: no orientation request support", supportsOrientationRequest());
-
-        separateTestJournal();
-        launchActivity(TEST_ACTIVITY);
-        mWmState.assertVisibility(TEST_ACTIVITY, true /* visible */);
-        final SizeInfo initialReportedSizes = getLastReportedSizesForActivity(TEST_ACTIVITY);
-        final int initialOrientation = initialReportedSizes.orientation;
-
-        // Launch an activity that requests different orientation and check that it will be applied
-        final boolean launchingPortrait;
-        if (initialOrientation == ORIENTATION_LANDSCAPE) {
-            launchingPortrait = true;
-        } else if (initialOrientation == ORIENTATION_PORTRAIT) {
-            launchingPortrait = false;
-        } else {
-            fail("Unexpected orientation value: " + initialOrientation);
-            return;
-        }
-        final ComponentName differentOrientationActivity = launchingPortrait
-                ? PORTRAIT_ORIENTATION_ACTIVITY : LANDSCAPE_ORIENTATION_ACTIVITY;
-        separateTestJournal();
-        launchActivity(differentOrientationActivity);
-        mWmState.assertVisibility(differentOrientationActivity, true /* visible */);
-        final SizeInfo rotatedReportedSizes =
-                getLastReportedSizesForActivity(differentOrientationActivity);
-        assertEquals("Applied orientation must correspond to activity request",
-                launchingPortrait ? 1 : 2, rotatedReportedSizes.orientation);
-
-        // Launch another activity on top and check that its orientation is not affected by previous
-        // activity.
-        separateTestJournal();
-        launchActivity(RESIZEABLE_ACTIVITY);
-        mWmState.assertVisibility(RESIZEABLE_ACTIVITY, true /* visible */);
-        final SizeInfo finalReportedSizes = getLastReportedSizesForActivity(RESIZEABLE_ACTIVITY);
-        assertEquals("Applied orientation must not be influenced by previously visible activity",
-                initialOrientation, finalReportedSizes.orientation);
     }
 
     @Test
@@ -610,9 +563,6 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
     /**
      * Test that device handles moving between two tasks with different orientations.
-     *
-     * TODO(b/139936670, b/112688380): This test case fails on some vendor devices which has
-     * rotation sensing optimization. So this is listed in cts-known-failures.xml.
      */
     @Test
     public void testTaskCloseRestoreFreeOrientation() {
@@ -621,10 +571,11 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         // Start landscape activity.
         launchActivity(RESIZEABLE_ACTIVITY);
         mWmState.assertVisibility(RESIZEABLE_ACTIVITY, true /* visible */);
+        // This should be ActivityInfo#SCREEN_ORIENTATION_UNSPECIFIED (default value of
+        // android:screenOrientation).
         final int initialServerOrientation = mWmState.getLastOrientation();
 
         // Verify fixed-landscape
-        separateTestJournal();
         launchActivityInNewTask(BROADCAST_RECEIVER_ACTIVITY);
         mBroadcastActionTrigger.requestOrientation(SCREEN_ORIENTATION_LANDSCAPE);
         mWmState.waitForLastOrientation(SCREEN_ORIENTATION_LANDSCAPE);
@@ -633,13 +584,12 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         // Verify that activity brought to front is in originally requested orientation.
         mWmState.waitForActivityState(RESIZEABLE_ACTIVITY, STATE_RESUMED);
+        // Note that the actual orientation of the activity can be either portrait or landscape
+        // depending on the sensor, so only verify the "requested orientation".
         mWmState.waitAndAssertLastOrientation("Should come back in original server orientation",
                 initialServerOrientation);
-        assertRelaunchOrConfigChanged(RESIZEABLE_ACTIVITY, 0 /* numRelaunch */,
-                0 /* numConfigChange */);
 
         // Verify fixed-portrait
-        separateTestJournal();
         launchActivityInNewTask(BROADCAST_RECEIVER_ACTIVITY);
         mBroadcastActionTrigger.requestOrientation(SCREEN_ORIENTATION_PORTRAIT);
         mWmState.waitForLastOrientation(SCREEN_ORIENTATION_PORTRAIT);
@@ -650,8 +600,6 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         mWmState.waitForActivityState(RESIZEABLE_ACTIVITY, STATE_RESUMED);
         mWmState.waitAndAssertLastOrientation("Should come back in original server orientation",
                 initialServerOrientation);
-        assertRelaunchOrConfigChanged(RESIZEABLE_ACTIVITY, 0 /* numRelaunch */,
-                0 /* numConfigChange */);
     }
 
     /**
