@@ -49,4 +49,29 @@ public class WalletRoleHolderApduService extends HostApduService {
     public byte[] processCommandApdu(byte[] commandApdu, Bundle extras) {
         return new byte[0];
     }
+    @Override
+    public void onObserveModeStateChanged(boolean isEnabled) {
+        final Intent intent = new Intent();
+        intent.setAction("com.cts.ObserveModeChanged");
+        intent.putExtra("class_name", this.getClass().getName());
+        intent.putExtra("enabled", isEnabled);
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        intent.setComponent(
+                new ComponentName("android.nfc.cts",
+                        "android.nfc.cts.PollingLoopBroadcastReceiver"));
+        sendBroadcast(intent);
+    }
+
+    @Override
+    public void onPreferredServiceChanged(boolean isPreferred) {
+        final Intent intent = new Intent();
+        intent.setAction("com.cts.PreferredServiceChanged");
+        intent.putExtra("class_name", this.getClass().getName());
+        intent.putExtra("preferred", isPreferred);
+        intent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        intent.setComponent(
+                new ComponentName("android.nfc.cts",
+                        "android.nfc.cts.PollingLoopBroadcastReceiver"));
+        sendBroadcast(intent);
+    }
 }

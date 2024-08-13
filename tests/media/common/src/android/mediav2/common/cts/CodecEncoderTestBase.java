@@ -584,7 +584,8 @@ public class CodecEncoderTestBase extends CodecTestBase {
     }
 
     public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
-            OutputManager outputBuff, int frameLimit, boolean saveToMem, boolean muxOutput)
+            OutputManager outputBuff, int frameLimit, boolean saveToMem, boolean muxOutput,
+            boolean isAsync, boolean eosType)
             throws IOException, InterruptedException {
         mSaveToMem = saveToMem;
         mMuxOutput = muxOutput;
@@ -594,7 +595,7 @@ public class CodecEncoderTestBase extends CodecTestBase {
         mActiveRawRes = res;
         mCodec = MediaCodec.createByCodecName(encoder);
         setUpSource(mActiveRawRes.mFileName);
-        configureCodec(mActiveEncCfg.getFormat(), false, true, true);
+        configureCodec(mActiveEncCfg.getFormat(), isAsync, eosType, true);
         mCodec.start();
         doWork(frameLimit);
         queueEOS();
@@ -605,6 +606,16 @@ public class CodecEncoderTestBase extends CodecTestBase {
         mActiveEncCfg = null;
         mSaveToMem = false;
         mMuxOutput = false;
+    }
+
+    /**
+     * Encodes the given raw resource using the specified encoder configuration and manages
+     * the output.
+     */
+    public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,
+            OutputManager outputBuff, int frameLimit, boolean saveToMem, boolean muxOutput)
+            throws IOException, InterruptedException {
+        encodeToMemory(encoder, cfg, res, outputBuff, frameLimit, saveToMem, muxOutput, true, true);
     }
 
     public void encodeToMemory(String encoder, EncoderConfigParams cfg, RawResource res,

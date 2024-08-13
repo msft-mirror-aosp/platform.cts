@@ -1462,8 +1462,10 @@ public class TelephonyManagerTest {
     public void testGetHalVersion() {
         Pair<Integer, Integer> halversion;
         for (int i = TelephonyManager.HAL_SERVICE_DATA;
-                i <= TelephonyManager.HAL_SERVICE_VOICE; i++) {
+                i <= TelephonyManager.HAL_SERVICE_IMS; i++) {
             halversion = mTelephonyManager.getHalVersion(i);
+
+            if (halversion.equals(TelephonyManager.HAL_VERSION_UNSUPPORTED)) continue;
 
             // The version must be valid, and the versions start with 1.0
             assertFalse("Invalid HAL Version (" + halversion + ") of service (" + i + ")",

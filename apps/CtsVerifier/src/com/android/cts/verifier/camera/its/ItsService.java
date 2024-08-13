@@ -18,7 +18,7 @@ package com.android.cts.verifier.camera.its;
 
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -4207,20 +4207,21 @@ public class ItsService extends Service implements SensorEventListener {
 
             CaptureCallbackWaiter captureCallbackWaiter = new CaptureCallbackWaiter();
             // Prepare the reprocess input request
-            for (CaptureRequest.Builder inputReqest : inputRequests) {
+            for (CaptureRequest.Builder inputRequest : inputRequests) {
                 // Remember and clear noise reduction, edge enhancement, and effective exposure
                 // factors.
-                noiseReductionModes.add(inputReqest.get(CaptureRequest.NOISE_REDUCTION_MODE));
-                edgeModes.add(inputReqest.get(CaptureRequest.EDGE_MODE));
-                effectiveExposureFactors.add(inputReqest.get(
+                noiseReductionModes.add(inputRequest.get(CaptureRequest.NOISE_REDUCTION_MODE));
+                edgeModes.add(inputRequest.get(CaptureRequest.EDGE_MODE));
+                effectiveExposureFactors.add(inputRequest.get(
                         CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR));
 
-                inputReqest.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                inputRequest.set(CaptureRequest.NOISE_REDUCTION_MODE,
                         CaptureRequest.NOISE_REDUCTION_MODE_ZERO_SHUTTER_LAG);
-                inputReqest.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_ZERO_SHUTTER_LAG);
-                inputReqest.set(CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR, null);
-                inputReqest.addTarget(mInputImageReader.getSurface());
-                mSession.capture(inputReqest.build(), captureCallbackWaiter, mResultHandler);
+                inputRequest.set(CaptureRequest.EDGE_MODE,
+                        CaptureRequest.EDGE_MODE_ZERO_SHUTTER_LAG);
+                inputRequest.set(CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR, null);
+                inputRequest.addTarget(mInputImageReader.getSurface());
+                mSession.capture(inputRequest.build(), captureCallbackWaiter, mResultHandler);
             }
 
             // Wait for reprocess input images
@@ -5101,7 +5102,7 @@ public class ItsService extends Service implements SensorEventListener {
             return ImageFormat.PRIVATE;
         }
 
-        throw new ItsException("Uknown reprocess format: " + reprocessFormat);
+        throw new ItsException("Unknown reprocess format: " + reprocessFormat);
     }
 
     private boolean isFixedFocusLens(CameraCharacteristics c) {

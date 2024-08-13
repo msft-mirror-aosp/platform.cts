@@ -47,7 +47,6 @@ _PATCH_MARGIN = 50  # pixels
 _RECORDING_DURATION = 400  # milliseconds
 _SENSOR_ORIENTATIONS = (90, 270)
 _SKIP_INITIAL_FRAMES = 15
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _ZOOM_RANGE_UW_W = (0.95, 2.05)  # UW/W crossover range
 _ZOOM_STEP = 0.01
 
@@ -397,10 +396,6 @@ class MultiCameraSwitchTest(its_base_test.ItsBaseTest):
 
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, chart_distance)
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       preview_test_size = preview_processing_utils.get_max_preview_test_size(
           cam, self.camera_id)

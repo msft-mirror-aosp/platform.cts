@@ -20,6 +20,8 @@ import static android.hardware.fingerprint.FingerprintManager.FINGERPRINT_ERROR_
 import static android.hardware.fingerprint.FingerprintManager.FINGERPRINT_ERROR_USER_CANCELED;
 import static android.server.biometrics.fingerprint.Components.AUTH_ON_CREATE_ACTIVITY;
 import static android.server.biometrics.util.Components.EMPTY_ACTIVITY;
+import static android.server.wm.ComponentNameUtils.getActivityName;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -33,6 +35,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricTestSession;
@@ -40,16 +44,17 @@ import android.hardware.biometrics.SensorProperties;
 import android.hardware.fingerprint.FingerprintManager;
 import android.hardware.fingerprint.FingerprintSensorProperties;
 import android.os.Bundle;
+import android.os.Process;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
 import android.server.biometrics.fingerprint.util.FingerprintCallbackHelper;
 import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.TestSessionList;
 import android.server.biometrics.util.Utils;
-import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -71,14 +76,18 @@ import java.util.List;
 
 @SuppressWarnings("deprecation")
 @Presubmit
-public class FingerprintManagerTest extends ActivityManagerTestBase
-        implements TestSessionList.Idler {
+public class FingerprintManagerTest implements TestSessionList.Idler {
     private static final String TAG = "FingerprintManagerTest";
     private static final String DUMPSYS_FINGERPRINT = "dumpsys fingerprint --proto --state";
     private static final int FINGERPRINT_ERROR_VENDOR_BASE = 1000;
     private static final long WAIT_MS = 2000;
     private static final BySelector SELECTOR_BIOMETRIC_PROMPT =
             By.res("com.android.systemui", "biometric_scrollview");
+
+    @NonNull
+    private final Context mContext = getInstrumentation().getContext();
+    @NonNull
+    private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
 
     private SensorStates getSensorStates() throws Exception {
         final byte[] dump = Utils.executeShellCommand(DUMPSYS_FINGERPRINT);
@@ -394,5 +403,15 @@ public class FingerprintManagerTest extends ActivityManagerTestBase
             }
         }
         return testSessions;
+    }
+
+    private void launchActivity(@NonNull ComponentName componentName) {
+        executeShellCommand(getAmStartCmd(componentName));
+    }
+
+    @NonNull
+    private static String getAmStartCmd(@NonNull final ComponentName componentName) {
+        return "am start -W --user " + Process.myUserHandle().getIdentifier()
+                + " -n " + getActivityName(componentName);
     }
 }

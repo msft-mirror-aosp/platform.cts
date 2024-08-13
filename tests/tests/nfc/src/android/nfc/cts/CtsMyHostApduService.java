@@ -33,4 +33,22 @@ public class CtsMyHostApduService extends HostApduService {
                     frames);
         }
     }
+
+    @Override
+    public void onObserveModeStateChanged(boolean isEnabled) {
+        if (CardEmulationTest.sCurrentPollLoopReceiver != null) {
+            CardEmulationTest.sCurrentPollLoopReceiver.onObserveModeStateChanged(
+                    this.getClass().getName(),
+                    isEnabled);
+        }
+    }
+
+    @Override
+    public void onPreferredServiceChanged(boolean isPreferred) {
+        if (CardEmulationTest.sCurrentPollLoopReceiver != null) {
+            CardEmulationTest.sCurrentPollLoopReceiver.onPreferredServiceChanged(
+                    this.getClass().getName(),
+                    isPreferred);
+        }
+    }
 }

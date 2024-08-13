@@ -77,4 +77,8 @@ abstract class AudioMultiApiActivity
             onApiChange(mActiveTestAPI = TEST_API_NATIVE);
         }
     }
+
+    public String audioApiToString(int api) {
+        return (api == TEST_API_JAVA) ? "Java" : "Native";
+    }
 }

@@ -45,6 +45,11 @@ class AutoFlashTest(its_base_test.UiAutomatorItsBaseTest):
   def setup_class(self):
     super().setup_class()
     self.ui_app = _JETPACK_CAMERA_APP_PACKAGE_NAME
+    # restart CtsVerifier to ensure that correct flags are set
+    ui_interaction_utils.force_stop_app(
+        self.dut, its_base_test.CTS_VERIFIER_PKG)
+    self.dut.adb.shell(
+        'am start -n com.android.cts.verifier/.CtsVerifierActivity')
 
   def teardown_test(self):
     ui_interaction_utils.force_stop_app(self.dut, self.ui_app)

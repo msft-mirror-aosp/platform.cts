@@ -45,7 +45,6 @@ _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
 _TABLET_BRIGHTNESS_REAR_CAMERA = '6'  # Target brightness on a supported tablet
 _TABLET_BRIGHTNESS_FRONT_CAMERA = '12'  # Target brightness on a supported
                                         # tablet
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
 _AVG_LUMINANCE_THRESH = 70
@@ -179,11 +178,6 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
-
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()

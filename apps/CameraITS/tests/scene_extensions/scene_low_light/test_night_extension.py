@@ -31,7 +31,6 @@ import low_light_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
 _TABLET_BRIGHTNESS = '6'  # Highest minimum brightness on a supported tablet
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
 
 _AVG_DELTA_LUMINANCE_THRESH = 17
@@ -157,11 +156,6 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
-
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
 
       # Determine capture width, height, and format
       for format_name, format_constant in _IMAGE_FORMATS_TO_CONSTANTS:

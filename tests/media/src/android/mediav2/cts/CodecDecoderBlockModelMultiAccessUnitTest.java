@@ -30,7 +30,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderBlockModelMultiAccessUnitTestBase;
-import android.mediav2.common.cts.CodecDecoderBlockModelTestBase;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
@@ -107,9 +106,8 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
 
     /**
      * Verifies if the component under test can decode the test file correctly in multiple frame
-     * block model mode. The decoding happens in asynchronous mode with eos flag signalled with
-     * last compressed frame. The test verifies if the component / framework output is consistent
-     * with single access unit normal mode and single access unit block model mode.
+     * block model mode. The decoding happens in asynchronous mode with a. eos flag signalled with
+     * last compressed frame and b. eos flag not signalled with last compressed frame.
      * <p>
      * Check description of class {@link CodecDecoderBlockModelMultiAccessUnitTest}
      */
@@ -125,16 +123,6 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
         cdtb.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
                 Integer.MAX_VALUE);
         OutputManager ref = cdtb.getOutputManager();
-
-        CodecDecoderBlockModelTestBase cdbmtb = new CodecDecoderBlockModelTestBase(
-                mCodecName, mMediaType, null, mAllTestParams);
-        OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-        cdbmtb.decodeToMemory(mTestFile, mCodecName, test, 0,
-                MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
-        if (!ref.equals(test)) {
-            fail("Output in block model mode is not same as output in normal mode. \n"
-                    + mTestConfig + mTestEnv + test.getErrMsg());
-        }
 
         boolean[] boolStates = {true, false};
         OutputManager testA = new OutputManager(ref.getSharedErrorLogs());

@@ -92,6 +92,7 @@ TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 'not on our allowlist, please refer to '
                                 f'{TABLET_REQUIREMENTS_URL}')
+TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
@@ -2707,6 +2708,9 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
       f'am start -a android.intent.action.VIEW -t {view_file_type} '
       f'-d {uri_prefix}/sdcard/Download/{file_name}')
   time.sleep(LOAD_SCENE_DELAY_SEC)
+  # Tap tablet to remove gallery buttons
+  tablet.adb.shell(
+      f'input tap {TAP_COORDINATES[0]} {TAP_COORDINATES[1]}')
   rfov_camera_in_rfov_box = (
       math.isclose(
           chart_distance,

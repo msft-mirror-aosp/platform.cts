@@ -28,6 +28,7 @@ import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 
 // MegaAudio
@@ -80,7 +81,7 @@ public class AudioDisconnectActivity
     private TextView mResultsTx;
 
     // Test State
-    private boolean mHasHeadset;
+    private boolean mSupportsHeadset;
     private boolean mIsAudioRunning;
     private volatile int mPlugCount;
 
@@ -143,13 +144,13 @@ public class AudioDisconnectActivity
         static String resultToString(int resultCode) {
             switch (resultCode) {
                 case RESULT_NOTTESTED:
-                    return "NT";
+                    return "NOT TESTED";
 
                 case RESULT_TIMEOUT:
-                    return "TO";
+                    return "TIME OUT";
 
                 case RESULT_SKIPPED:
-                    return "SK";
+                    return "SKIPPED";
 
                 case RESULT_DETECTED:
                     return "OK";
@@ -165,14 +166,14 @@ public class AudioDisconnectActivity
             sb.append("-----------\n");
             sb.append("" + (mDirection == TestConfiguration.IO_INPUT ? "IN" : "OUT")
                     + " " + mSampleRate + " " + mNumChannels
-                    + (isLowLatency() ? " LOW" : "")
-                    + (isExclusive() ? " EX" : "")
+                    + (isLowLatency() ? " Low Latency" : "")
+                    + (isExclusive() ? " Exclusive" : "")
                     + (isMMap() ? " MMAP" : "")
                     + "\n");
             sb.append("insert:" + resultToString(mInsertPlugResult)
                     + " result:" + resultToString(mInsertDisconnectResult));
             sb.append(" remove:" + resultToString(mRemovalPlugResult)
-                    + " result:" + resultToString(mInsertDisconnectResult) + "\n");
+                    + " result:" + resultToString(mRemovalDisconnectResult) + "\n");
 
             return sb.toString();
         }
@@ -436,7 +437,7 @@ public class AudioDisconnectActivity
                 enableTestButtons(true, false);
                 boolean passed = calcTestPass();
                 getPassButton().setEnabled(passed);
-                String passStr = getResources().getString(
+                String passStr = getString(
                         passed ? R.string.audio_general_teststatus_pass
                                : R.string.audio_general_teststatus_fail);
                 mUserPromptTx.setText(passStr);
@@ -515,8 +516,33 @@ public class AudioDisconnectActivity
 
         setTestConfigs();
 
-        enableTestButtons(false, false);
+        // do we have to ask if there headset support, or...
+        // do we know for sure that there IS headset support?, or...
+        mSupportsHeadset =
+                (AudioDeviceUtils.supportsAnalogHeadset(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_YES)
+                || (AudioDeviceUtils.supportsUsbHeadset(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_YES);
+        // do we know for sure that there IS NOT headset support?, or...
+        boolean doesntSupportHeadset =
+                (AudioDeviceUtils.supportsAnalogHeadset(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_NO)
+                        && (AudioDeviceUtils.supportsUsbHeadset(this)
+                        == AudioDeviceUtils.SUPPORTSDEVICE_NO);
 
+        // only leave the headset prompt UI on if we don't know about headset support.
+        if (mSupportsHeadset || doesntSupportHeadset) {
+            hideHasHeadsetUI();
+        }
+
+        enableTestButtons(mSupportsHeadset, false);
+
+        if (doesntSupportHeadset) {
+            String noSupportString = getString(R.string.analog_headset_port_notsupported);
+            String passStr = getString(R.string.audio_general_teststatus_pass);
+            mUserPromptTx.setText(noSupportString + " " + passStr);
+            getPassButton().setEnabled(true);
+        }
         DisplayUtils.setKeepScreenOn(this, true);
     }
 
@@ -625,8 +651,8 @@ public class AudioDisconnectActivity
     }
 
     void hideHasHeadsetUI() {
-        mHasPortQueryText.setText(getResources().getString(
-                R.string.analog_headset_port_detected));
+        mHasPortQueryText.setText(
+                mSupportsHeadset ? getString(R.string.analog_headset_port_detected) : "");
         mHasAnalogPortYesBtn.setVisibility(View.GONE);
         mHasAnalogPortNoBtn.setVisibility(View.GONE);
     }
@@ -640,8 +666,7 @@ public class AudioDisconnectActivity
         if (id == R.id.headset_analog_port_yes) {
             enableTestButtons(true, false);
         } else if (id == R.id.headset_analog_port_no) {
-            String passStr = getResources().getString(
-                    R.string.audio_general_teststatus_pass);
+            String passStr = getString(R.string.audio_general_teststatus_pass);
             mUserPromptTx.setText(passStr);
             getPassButton().setEnabled(true);
             enableTestButtons(false, false);
@@ -660,8 +685,10 @@ public class AudioDisconnectActivity
     public class PluginBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (!mHasHeadset) {
-                mHasHeadset = true;
+            //TODO - We won't need this !mHasHeadset logic when we can be sure
+            // the AudioManager.getSupportedDeviceTypes() method is universally available
+            if (!mSupportsHeadset) {
+                mSupportsHeadset = true;
                 hideHasHeadsetUI();
                 enableTestButtons(true, false);
             }

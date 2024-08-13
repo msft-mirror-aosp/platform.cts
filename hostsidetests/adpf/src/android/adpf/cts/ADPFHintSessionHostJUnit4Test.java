@@ -33,6 +33,7 @@ import static org.junit.Assume.assumeTrue;
 
 import com.android.ddmlib.Log;
 import com.android.ddmlib.testrunner.TestResult.TestStatus;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
@@ -70,6 +71,12 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
 
     private String getProperty(String prop) throws Exception {
         return mDevice.executeShellCommand("getprop " + prop).replace("\n", "");
+    }
+
+    private void checkSupportedHardware() throws DeviceNotAvailableException {
+        String features = mDevice.executeShellCommand("pm list features");
+        assumeTrue(!features.contains("android.hardware.type.television")
+                && !features.contains("android.hardware.type.watch"));
     }
 
     private void checkMinSdkVersion() throws Exception {
@@ -148,6 +155,7 @@ public class ADPFHintSessionHostJUnit4Test extends BaseHostJUnit4Test {
      */
     @Test
     public void testAdpfHintSession() throws Exception {
+        checkSupportedHardware();
         checkMinSdkVersion();
         checkMinVendorApiLevel();
         checkVirtualDevice();
