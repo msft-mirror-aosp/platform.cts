@@ -140,6 +140,8 @@ android_test {
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
         ":AppInstalledOnMultipleUsers",
+        ":SharedUidTestApp1",
+        ":SharedUidTestApp2",
     ],
     per_testcase_directory: true,
 }
