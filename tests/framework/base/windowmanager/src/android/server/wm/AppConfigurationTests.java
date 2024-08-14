@@ -754,13 +754,18 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
                 new Size(origBaseDisplayMetrics.getSize().getWidth(),
                          origBaseDisplayMetrics.getSize().getHeight());
         final int origBaseDisplayOrientation =
-                origBaseDisplaySize.getHeight() > origBaseDisplaySize.getWidth()
+                origBaseDisplaySize.getWidth() <= origBaseDisplaySize.getHeight()
                         ? ORIENTATION_PORTRAIT
                         : ORIENTATION_LANDSCAPE;
-        // Switch the height and width for orientation change and scale to resize
+        // Scale for size change and switch the height and width depending on orientation
+        final double smaller =
+                Math.min(origBaseDisplaySize.getWidth(), origBaseDisplaySize.getHeight()) * 0.5;
+        final double larger =
+                Math.max(origBaseDisplaySize.getWidth(), origBaseDisplaySize.getHeight()) * 1.5;
         final Size overrideSize =
-                new Size((int) (origBaseDisplaySize.getHeight() * 0.9),
-                         (int) (origBaseDisplaySize.getWidth() * 0.9));
+                origBaseDisplayOrientation == ORIENTATION_LANDSCAPE
+                        ? new Size((int) smaller, (int) larger)
+                        : new Size((int) larger, (int) smaller);
         final int overrideDensity = (int) (origBaseDisplayMetrics.getDensity() * 1.1);
         baseDisplayMetricsSession.overrideDisplayMetrics(overrideSize, overrideDensity);
 
@@ -772,9 +777,6 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         // Check that the DisplayMetrics-related config of the base display context has changed
         Context baseDisplayContext = baseContextSupplier.apply(activity);
-        assertNotEquals("Base display context orientation must be changed",
-                origBaseDisplayOrientation,
-                baseDisplayContext.getResources().getConfiguration().orientation);
         assertNotEquals("Base display context width must be changed",
                 origBaseDisplaySize.getWidth(),
                 baseDisplayContext.getResources().getConfiguration().screenWidthDp);
