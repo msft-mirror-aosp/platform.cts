@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.CodecPerformanceTestBase.ScalingFactor.Mode;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
@@ -50,12 +52,12 @@ public class CodecEncoderPerformanceTest extends CodecEncoderPerformanceTestBase
 
     public CodecEncoderPerformanceTest(String decoderName, String testFile, String encoderMime,
             String encoderName, int bitrate, int keyPriority, float scalingFactor,
-            boolean isAsync, int maxBFrames) {
+            Mode scalingFactorMode, boolean isAsync, int maxBFrames) {
         super(decoderName, testFile, encoderMime, encoderName, bitrate, keyPriority, scalingFactor,
-                isAsync, maxBFrames);
+                scalingFactorMode, isAsync, maxBFrames);
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{2}_{3}_{5}_{6}_{7}_{8}")
+    @Parameterized.Parameters(name = "{index}_{0}_{2}_{3}_{5}_{6}_{7}_{8}_{9}")
     public static Collection<Object[]> input() throws IOException {
         final List<Object[]> exhaustiveArgsList = Arrays.asList(new Object[][]{
                 // Filename, Recommended AVC bitrate
@@ -95,19 +97,22 @@ public class CodecEncoderPerformanceTest extends CodecEncoderPerformanceTestBase
                         null, true);
                 for (String encoder : listOfEncoders) {
                     for (int keyPriority : KEY_PRIORITIES_LIST) {
-                        for (float scalingFactor : SCALING_FACTORS_LIST) {
+                        for (ScalingFactor scalingFactor : SCALING_FACTORS_LIST) {
+                            float scalingFactorValue = scalingFactor.getValue();
+                            Mode scalingFactorMode = scalingFactor.getMode();
                             for (boolean isAsync : boolStates) {
-                                if (keyPriority == 1 || (scalingFactor > 0.0
-                                        && scalingFactor <= 1.0)) {
+                                if (keyPriority == 1 || (scalingFactorValue > 0.0
+                                        && scalingFactorValue <= 1.0)) {
                                     argsList.add(
                                             new Object[]{decoder, arg[0], encoderMime, encoder,
-                                                    bitrate, keyPriority, scalingFactor, isAsync,
-                                                    0});
+                                                    bitrate, keyPriority, scalingFactorValue,
+                                                    scalingFactorMode, isAsync, 0});
                                     if (encoderMime.equals("video/avc") || encoderMime.equals(
                                             "video/hevc")) {
                                         argsList.add(
-                                                new Object[]{decoder, arg[0], encoderMime, encoder,
-                                                        bitrate, keyPriority, scalingFactor,
+                                                new Object[]{decoder, arg[0], encoderMime,
+                                                        encoder, bitrate, keyPriority,
+                                                        scalingFactorValue, scalingFactorMode,
                                                         isAsync, 2});
                                     }
                                 }

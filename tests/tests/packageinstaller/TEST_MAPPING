@@ -14,6 +14,9 @@
     },
     {
       "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJTestCases"
     }
   ],
   "presubmit": [
@@ -43,17 +46,6 @@
     },
     {
       "name": "CtsUserRestrictionTestCases"
-    },
-    {
-      "name": "CtsPackageInstallerCUJTestCases",
-      "options":[
-          {
-              "exclude-annotation":"androidx.test.filters.FlakyTest"
-          },
-          {
-              "exclude-annotation":"org.junit.Ignore"
-          }
-      ]
     }
   ],
   "imports": [

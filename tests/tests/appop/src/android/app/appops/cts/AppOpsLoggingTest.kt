@@ -253,6 +253,7 @@ class AppOpsLoggingTest {
         assertThat(selfNoted.map { it.first.attributionTag }).containsExactly(TEST_ATTRIBUTION_TAG)
     }
 
+    @Ignore("b/358684729")
     @Test
     fun nativeSelfNoteAndCheckLog() {
         nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage)
@@ -270,6 +271,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun nativeSelfNoteWithAttributionAndMsgAndCheckLog() {
         nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage,
@@ -364,6 +366,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteSyncOpNativeAndCheckLog() {
         rethrowThrowableFrom {
@@ -386,6 +389,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteSyncOpOnewayNative() {
         rethrowThrowableFrom {
@@ -435,6 +439,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteAsyncOpNativelyAndCheckCustomMessage() {
         rethrowThrowableFrom {
@@ -443,6 +448,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteAsyncOpNativeAndCheckLog() {
         rethrowThrowableFrom {

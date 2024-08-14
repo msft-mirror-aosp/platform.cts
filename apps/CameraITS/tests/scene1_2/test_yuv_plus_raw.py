@@ -107,6 +107,8 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
         camera_id=self.camera_id,
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
+      logical_fov = float(cam.calc_camera_fov(props))
+      minimum_zoom_ratio = float(props['android.control.zoomRatioRange'][0])
       props = cam.override_with_hidden_physical_camera_props(props)
       log_path = os.path.join(self.log_path, _NAME)
 
@@ -152,6 +154,13 @@ class YuvPlusRawTest(its_base_test.ItsBaseTest):
         cam.do_3a(do_af=False)
         req['android.statistics.lensShadingMapMode'] = (
             image_processing_utils.LENS_SHADING_MAP_ON)
+        # Override zoom ratio to min for UW camera to avoid cropping
+        physical_fov = float(cam.calc_camera_fov(props))
+        logging.debug('Logical FOV: %.2f, Physical FOV: %.2f',
+                      logical_fov, physical_fov)
+        if logical_fov < physical_fov:
+          logging.debug('Overriding zoom ratio to min for UW camera')
+          req['android.control.zoomRatio'] = minimum_zoom_ratio
         cap_raw, cap_yuv = cam.do_capture(req, out_surfaces)
         msg = convert_and_compare_captures(cap_raw, cap_yuv, props,
                                            log_path, raw_fmt)
