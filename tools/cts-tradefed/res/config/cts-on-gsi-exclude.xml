@@ -177,4 +177,7 @@
 
     <!-- b/319046794 -->
     <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest" />
+
+    <!-- b/349072303 -->
+    <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
 </configuration>

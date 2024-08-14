@@ -511,8 +511,8 @@ public abstract class BaseDevicePolicyTest extends BaseHostJUnit4Test {
         final CollectingOutputReceiver receiver = new CollectingOutputReceiver();
         // We allow 8min for the command to complete and 4min for the command to start to
         // output something.
-        getDevice().executeShellCommand(
-                "am wait-for-broadcast-idle", receiver, 8, 4, TimeUnit.MINUTES, 0);
+        getDevice().executeShellCommand("am wait-for-broadcast-idle --flush-broadcast-loopers",
+                receiver, 8, 4, TimeUnit.MINUTES, 0);
         final String output = receiver.getOutput();
         if (!output.contains("All broadcast queues are idle!")) {
             CLog.e("Output from 'am wait-for-broadcast-idle': %s", output);

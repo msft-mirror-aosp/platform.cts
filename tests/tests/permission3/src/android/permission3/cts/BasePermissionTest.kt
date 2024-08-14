@@ -323,13 +323,7 @@ abstract class BasePermissionTest {
         waitForIdle()
     }
 
-    protected fun findView(selector: BySelector, expected: Boolean) {
-        val timeoutMs = if (expected) {
-            10000L
-        } else {
-            1000L
-        }
-
+    protected fun findView(selector: BySelector, timeoutMs: Long, expected: Boolean) {
         val exception = try {
             waitFindObject(selector, timeoutMs)
             null
@@ -337,6 +331,17 @@ abstract class BasePermissionTest {
             e
         }
         Assert.assertTrue("Expected to find view: $expected", (exception == null) == expected)
+    }
+
+    protected fun findView(selector: BySelector, expected: Boolean) {
+        val timeoutMs = if (expected) {
+            // Small screens with larger font fail to find views within 10s while scrolling
+            15000L
+        } else {
+            1000L
+        }
+
+        findView(selector, timeoutMs, expected)
     }
 
     protected fun clickPermissionControllerUi(selector: BySelector, timeoutMillis: Long = 20_000) {

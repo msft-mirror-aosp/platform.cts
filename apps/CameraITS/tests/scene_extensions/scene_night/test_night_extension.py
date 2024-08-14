@@ -33,6 +33,7 @@ import opencv_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
 _TABLET_BRIGHTNESS = '12'  # Highest minimum brightness on a supported tablet
+_TABLET_TURN_OFF_TIME_SEC = 2
 _TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
 _MIN_AREA = 0.001  # Circle must be >= 0.1% of image size
@@ -276,6 +277,7 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       # Check that tablet is connected and turn it off to validate lighting
       if self.tablet:
         lighting_control_utils.turn_off_device(self.tablet)
+        time.sleep(_TABLET_TURN_OFF_TIME_SEC)
       else:
         raise AssertionError('Test must be run with tablet.')
 

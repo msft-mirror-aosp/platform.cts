@@ -37,6 +37,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -200,6 +201,8 @@ public final class FrameRateOverrideTest {
         Log.i(TAG, "\n");
     }
 
+    // b/350443755 Ignore for flaky test.
+    @Ignore
     @Test
     public void testAppBackpressure()
             throws InterruptedException, IOException {

@@ -34,6 +34,36 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+/**
+ * Verification of ResourceManagerService functionality.
+ *
+ * This tests codec reclaim by launching 2 activities:
+ * - Activity1: A background activity (that runs in its own process) that creates,
+ *   configures and starts an allowable number of codecs.
+ * - Activity2: A foreground activity (that runs in its own process) that creates,
+ *   configures and starts codecs, which would reclaim codecs from the Activity1.
+ *
+ * The Activity2 is started 5 seconds after Activity1 to give enough time for
+ * Activity1 to use all the codecs available.
+ *
+ * Once started, Activity1 waits for (at most) 15 seconds for a possible exception.
+ * If the expected exception (MediaCodec.CodecException#ERROR_RECLAIMED) was caught,
+ * it will finish/complete the Activity with SUCCESS or FAILED otherwise.
+ *
+ * Once started, Activity2 is expected to successfully create, configure and start the
+ * codecs (possibly by reclaiming a codec from Activity1). This activity ends with SUCCESS
+ * upon successful codec operation or FAILED otherwise.
+ *
+ * The test waits on both the Activities to complete with SUCCESS for the test to PASS.
+ *
+ * Since Activity1 starts vendor supported maximum concurrent codecs, on some devices
+ * this may cause the device to run out of memory before codec reclaimation is signaled.
+ * When the device runs out of memory, lmkd kills the applications (including the test Activities).
+ * Upon lmkd killing test Activities, the test FAILs.
+ * To avoid that, the test reduces the maximum (concurrent) codec instances on low ram devices
+ * to 8 (from 32).
+ * This may result in test not verifying reclaimation.
+ */
 @RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @NonMainlineTest

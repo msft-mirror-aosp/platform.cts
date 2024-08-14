@@ -4525,6 +4525,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="check_new_user_disclaimer">Check new user disclaimer</string>
     <string name="check_new_user_disclaimer_info">
         Please do the following: \n\n
+        0. Grant a permission to CtsVerifier by running \n
+        adb shell pm grant --user current com.android.cts.verifier android.permission.INTERACT_ACROSS_USERS\n\n
         1. Check persistent notification for managed device \n\n
         a). Open the notification UI, verify that there is a notification saying the device is managed.\n
         b). Tap the notification\n
@@ -5976,7 +5978,7 @@ You should be prompted to select credentials; choose the ones you just installed
         The Acoustic Coupling Factor (ACF) will be computed for each case. A successful test expects ACF less than 0.4 for AEC ON,
         and ACF greater than 0.6 for AEC OFF.
         This test requires a quiet environment, and no headphones or similar connected.
-        This test must pass on any device which implements AEC.
+        This test must pass in devices where AEC functionality is mandatory or any device which implements AEC.
     </string>
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>

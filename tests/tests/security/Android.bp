@@ -94,6 +94,7 @@ android_test {
         ":CtsPermissionBackupAppCert34",
         ":CtsPermissionBackupAppCert123",
         ":CtsPermissionBackupAppCert4History124",
+        ":CtsEmptyApp",
     ],
 }
 
@@ -222,6 +223,11 @@ android_test_helper_app {
     resource_dirs: [],
     asset_dirs: [],
     manifest: "testdata/rolepermissionoverridetestapp.xml",
+}
+
+android_test_helper_app {
+    name: "CtsEmptyApp",
+    manifest: "testdata/AndroidManifest_EmptyApp.xml",
 }
 
 android_app_certificate {

@@ -39,23 +39,32 @@ public final class PermissionActivity extends Activity {
             = "com.android.cts.permission.extra.PERMISSION";
     private static final String EXTRA_GRANT_STATE
             = "com.android.cts.permission.extra.GRANT_STATE";
+    private static final String HAS_PERMISSIONS_REQUEST_KEY
+            = "PermissionActivity:hasPermissionRequest";
     private static final int PERMISSION_ERROR = -2;
     private static final int PERMISSIONS_REQUEST_CODE = 100;
 
     private String mPermission;
 
+    private boolean mHasRequestPermission;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        restoreHasRequestPermission(savedInstanceState);
         final Intent received = getIntent();
         Log.d(TAG, "Started with " + received);
 
         final String action = received.getAction();
         mPermission = received.getStringExtra(EXTRA_PERMISSION);
         if (ACTION_REQUEST_PERMISSION.equals(action)) {
-            Log.d(TAG, "Requesting permission " + mPermission);
-            requestPermissions(new String[] {mPermission}, PERMISSIONS_REQUEST_CODE);
+            Log.d(TAG, "Requesting permission " + mPermission +
+                ", mHasRequestPermission " + mHasRequestPermission);
+            if (!mHasRequestPermission) {
+                requestPermissions(new String[] {mPermission}, PERMISSIONS_REQUEST_CODE);
+                mHasRequestPermission = true;
+            }
         } else if (ACTION_CHECK_HAS_PERMISSION.equals(action)) {
             Log.d(TAG, "Checking permission " + mPermission);
             sendResultBroadcast(checkSelfPermission(mPermission));
@@ -77,6 +86,13 @@ public final class PermissionActivity extends Activity {
             Log.d(TAG, "Received valid permission result: " + grantResults[0]);
             sendResultBroadcast(grantResults[0]);
         }
+        mHasRequestPermission = false;
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        storeHasRequestPermission(outState);
     }
 
     private void sendResultBroadcast(int result) {
@@ -85,5 +101,18 @@ public final class PermissionActivity extends Activity {
         broadcast.putExtra(EXTRA_GRANT_STATE, result);
         sendBroadcast(broadcast);
         finish();
+    }
+
+    private void storeHasRequestPermission(Bundle bundle) {
+        if (bundle != null && mHasRequestPermission) {
+            bundle.putBoolean(HAS_PERMISSIONS_REQUEST_KEY, true);
+        }
+    }
+
+    private void restoreHasRequestPermission(Bundle bundle) {
+        if (bundle != null) {
+            mHasRequestPermission = bundle.getBoolean(
+                HAS_PERMISSIONS_REQUEST_KEY, false);
+        }
     }
 }

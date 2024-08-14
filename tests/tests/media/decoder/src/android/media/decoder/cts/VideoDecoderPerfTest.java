@@ -17,7 +17,6 @@
 package android.media.decoder.cts;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -181,7 +180,7 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         mSkipRateChecking = TextUtils.equals("true", bundle.getString("mts-media"));
 
         mUpdatedSwCodec =
-                !TestUtils.isMainlineModuleFactoryVersion("com.google.android.media.swcodec");
+                TestUtils.isUpdatedMainlineModule("com.google.android.media.swcodec");
     }
 
     @After
@@ -217,19 +216,19 @@ public class VideoDecoderPerfTest extends MediaTestBase {
         }
 
         // allow improvements in mainline-updated google-supplied software codecs.
-        boolean fasterIsOk = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
+        boolean fasterAllowed = mUpdatedSwCodec & TestUtils.isMainlineCodec(name);
         String error =
             MediaPerfUtils.verifyAchievableFrameRates(name, mime, width, height,
-                           fasterIsOk,  measuredFps);
-        // Performance numbers only make sense on real devices, so skip on non-real devices
-        if ((MediaUtils.onFrankenDevice() || mSkipRateChecking) && error != null) {
-            if (TestUtils.isMtsMode() && TestUtils.isMainlineCodec(name)) {
-                assumeFalse(error, error.startsWith("Failed to get "));
-            } else {
-                // ensure there is data, but don't insist that it is correct
-                assertFalse(error, error.startsWith("Failed to get "));
-            }
+                           fasterAllowed,  measuredFps);
+        if (error != null && MediaUtils.onFrankenDevice()) {
+            // not a real device; so note it as a non-fatal assumption failure
+            assumeFalse(error, error.startsWith("Failed to get "));
+        } else if (error != null && mSkipRateChecking) {
+            // sometimes speed issues are noted, but non-fatal
+            // this is most often because we're running mts (not mcts, not cts)
+            assumeFalse(error, error.startsWith("Failed to get "));
         } else {
+            // the rest of the time, we insist on performance verification.
             assertNull(error, error);
         }
         mSamplesInMemory.clear();

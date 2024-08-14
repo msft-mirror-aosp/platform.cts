@@ -64,6 +64,7 @@
         <option name="push" value="CtsPermissionBackupAppCert34.apk->/data/local/tmp/cts/security/CtsPermissionBackupAppCert34.apk" />
         <option name="push" value="CtsPermissionBackupAppCert4History124.apk->/data/local/tmp/cts/security/CtsPermissionBackupAppCert4History124.apk" />
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
+        <option name="push" value="CtsEmptyApp.apk->/data/local/tmp/cts/security/CtsEmptyApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

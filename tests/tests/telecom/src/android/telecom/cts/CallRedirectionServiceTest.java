@@ -218,7 +218,7 @@ public class CallRedirectionServiceTest extends BaseTelecomTestWithMockServices 
     }
 
     public void testCantRedirectEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         Bundle extras = new Bundle();
