@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.CodecPerformanceTestBase.ScalingFactor.Mode;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -39,8 +41,8 @@ class CodecDecoderPerformanceTestBase extends CodecPerformanceTestBase {
             new ActivityTestRule<>(CodecTestActivity.class);
 
     public CodecDecoderPerformanceTestBase(String decoderName, String testFile, int keyPriority,
-            float scalingFactor) {
-        super(decoderName, testFile, keyPriority, scalingFactor);
+            float scalingFactor, Mode scalingFactorMode) {
+        super(decoderName, testFile, keyPriority, scalingFactor, scalingFactorMode);
     }
 
     private void setUpFormat(MediaFormat format) throws IOException {
@@ -49,13 +51,15 @@ class CodecDecoderPerformanceTestBase extends CodecPerformanceTestBase {
         mDecoderFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT,
                 MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         mOperatingRateExpected = getMaxOperatingRate(mDecoderName, mDecoderMime);
-        if (mMaxOpRateScalingFactor > 0.0f) {
+        if (mMaxOpRateScalingFactorMode == Mode.VERY_LARGE) {
+            mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, Integer.MAX_VALUE);
+        } else if (mMaxOpRateScalingFactorMode == Mode.ORDINARY) {
             int operatingRateToSet = (int) (mOperatingRateExpected * mMaxOpRateScalingFactor);
             if (mMaxOpRateScalingFactor < 1.0f) {
                 mOperatingRateExpected = operatingRateToSet;
             }
             mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, operatingRateToSet);
-        } else if (mMaxOpRateScalingFactor < 0.0f) {
+        } else if (mMaxOpRateScalingFactorMode == Mode.NEGATIVE) {
             mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, -1);
         }
     }
