@@ -390,22 +390,26 @@ public class StorageStatsTest extends InstrumentationTestCase {
 
         MediaStore.waitForIdle(getContext().getContentResolver());
 
+        // Difference caused by other operations when writing to cache
+        // The longer the writing time, the greater the difference
+        final long difference = Math.max(10 * MB_IN_BYTES, totalAllocated / 100);
+
         // Apps using up some cache space shouldn't change how much we can
         // allocate, or how much we think is free; but it should decrease real
         // disk space.
         if (stats.isQuotaSupported(filesUuid)) {
             assertMostlyEquals(beforeAllocatable,
-                    sm.getAllocatableBytes(filesUuid), 10 * MB_IN_BYTES);
+                    sm.getAllocatableBytes(filesUuid), difference);
             assertMostlyEquals(beforeFree,
-                    stats.getFreeBytes(filesUuid), 10 * MB_IN_BYTES);
+                    stats.getFreeBytes(filesUuid), difference);
         } else {
             assertMostlyEquals(beforeAllocatable - totalAllocated,
-                    sm.getAllocatableBytes(filesUuid), 10 * MB_IN_BYTES);
+                    sm.getAllocatableBytes(filesUuid), difference);
             assertMostlyEquals(beforeFree - totalAllocated,
-                    stats.getFreeBytes(filesUuid), 10 * MB_IN_BYTES);
+                    stats.getFreeBytes(filesUuid), difference);
         }
         assertMostlyEquals(beforeRaw - totalAllocated,
-                filesDir.getUsableSpace(), 10 * MB_IN_BYTES);
+                filesDir.getUsableSpace(), difference);
 
         assertMostlyEquals(targetA, getCacheBytes(PKG_A, user));
         assertMostlyEquals(targetB, getCacheBytes(PKG_B, user));
