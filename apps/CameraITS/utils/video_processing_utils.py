@@ -168,7 +168,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
   suffix to identify the frames for video of each quality. Since there can be
-  multiple key frames, each key frame image will be differentiated with it's
+  multiple key frames, each key frame image will be differentiated with its
   frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
