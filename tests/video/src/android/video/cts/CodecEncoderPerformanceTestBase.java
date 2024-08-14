@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.CodecPerformanceTestBase.ScalingFactor.Mode;
+
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -72,8 +74,8 @@ class CodecEncoderPerformanceTestBase extends CodecPerformanceTestBase {
 
     public CodecEncoderPerformanceTestBase(String decoderName, String testFile, String encoderMime,
             String encoderName, int bitrate, int keyPriority, float scalingFactor,
-            boolean isAsync, int maxBFrames) {
-        super(decoderName, testFile, keyPriority, scalingFactor);
+            Mode scalingFactorMode, boolean isAsync, int maxBFrames) {
+        super(decoderName, testFile, keyPriority, scalingFactor, scalingFactorMode);
         mEncoderMime = encoderMime;
         mEncoderName = encoderName;
         mBitrate = bitrate;
@@ -131,7 +133,10 @@ class CodecEncoderPerformanceTestBase extends CodecPerformanceTestBase {
         mOperatingRateExpected = Math.min(maxOperatingRateDecoder, maxOperatingRateEncoder);
         // As both decoder and encoder are running in concurrently, expected rate is halved
         mOperatingRateExpected /= 2.0;
-        if (mMaxOpRateScalingFactor > 0.0f) {
+        if (mMaxOpRateScalingFactorMode == Mode.VERY_LARGE) {
+            mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, Integer.MAX_VALUE);
+            mEncoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, Integer.MAX_VALUE);
+        } else if (mMaxOpRateScalingFactorMode == Mode.ORDINARY) {
             int operatingRateToSet = (int) (mOperatingRateExpected * mMaxOpRateScalingFactor);
             if (mMaxOpRateScalingFactor < 1.0f) {
                 mOperatingRateExpected = operatingRateToSet;
@@ -145,7 +150,7 @@ class CodecEncoderPerformanceTestBase extends CodecPerformanceTestBase {
 
             mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, operatingRateToSet);
             mEncoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, operatingRateToSet);
-        } else if (mMaxOpRateScalingFactor < 0.0f) {
+        } else if (mMaxOpRateScalingFactorMode == Mode.NEGATIVE) {
             mDecoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, -1);
             mEncoderFormat.setInteger(MediaFormat.KEY_OPERATING_RATE, -1);
         }
