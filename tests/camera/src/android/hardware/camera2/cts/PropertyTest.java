@@ -27,6 +27,8 @@ import android.content.pm.PackageManager;
 import android.hardware.camera2.CameraManager;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -47,8 +49,8 @@ import org.junit.runner.RunWith;
  * Test AndroidManifest properties.
  */
 @RunWith(AndroidJUnit4.class)
+@AppModeFull(reason = "Instant apps can't access Test API")
 public class PropertyTest {
-    private static PackageManager sPackageManager;
     private static final String TAG = "PropertyTest";
     private static final String PROPERTY_APP1_PACKAGE_NAME =
             "com.android.camera2.cts.propertytestapp1";
@@ -61,8 +63,6 @@ public class PropertyTest {
             new TestApp("CameraCtsPropertyTestApp2", PROPERTY_APP2_PACKAGE_NAME, 30,
                     false, "CameraCtsPropertyTestApp2.apk");
 
-    private CameraManager mCameraManager;
-    private Instrumentation mInstrumentation;
     private Context mContext;
     private PackageManager mPackageManager;
 
@@ -83,10 +83,6 @@ public class PropertyTest {
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        sPackageManager = InstrumentationRegistry
-                .getInstrumentation()
-                .getContext()
-                .getPackageManager();
         adoptShellPermissions();
         Uninstall.packages(PROPERTY_APP1_PACKAGE_NAME);
         Uninstall.packages(PROPERTY_APP2_PACKAGE_NAME);
@@ -105,52 +101,64 @@ public class PropertyTest {
 
     @Before
     public void setup() throws Exception {
-        mInstrumentation = InstrumentationRegistry.getInstrumentation();
-        mContext = mInstrumentation.getContext();
+        Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
+        mContext = instrumentation.getContext();
         mPackageManager = mContext.getPackageManager();
     }
 
     @Test
-    @AppModeFull
-    public void testLandscapeToPortraitEnabled() {
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    public void getRotationOverrideInternal_landscapeToPortraitEnabled_returnsOverrideToPortrait() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
-            if (Flags.cameraCompatForFreeform()) {
-                // `App1` has the override enabled.
-                Log.i(TAG, "System property enabled, testing getRotationOverride");
-                assertEquals("getRotationOverride should return"
-                                + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
-                        CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
-                                PROPERTY_APP1_PACKAGE_NAME),
-                        CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
-            } else {
-                // `App1` has the override enabled.
-                Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
-                assertTrue("shouldOverrideToPortrait should return true",
-                        CameraManager.shouldOverrideToPortrait(mPackageManager,
-                                PROPERTY_APP1_PACKAGE_NAME));
-            }
+            // `App1` has the override enabled.
+            Log.i(TAG, "System property enabled, testing getRotationOverride");
+            assertEquals("getRotationOverride should return"
+                            + " ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT",
+                    CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
+                            PROPERTY_APP1_PACKAGE_NAME),
+                    CameraManager.ROTATION_OVERRIDE_OVERRIDE_TO_PORTRAIT);
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property disabled.");
         }
     }
 
     @Test
-    @AppModeFull
-    public void testLandscapeToPortraitDisabled() {
+    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    public void shouldOverrideToPortrait_landscapeToPortraitEnabled_returnsTrue() {
         if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
-            if (Flags.cameraCompatForFreeform()) {
-                // `App2` has the override disabled.
-                Log.i(TAG, "System property enabled, testing getRotationOverride");
-                assertEquals("getRotationOverride should return ROTATION_OVERRIDE_NONE",
-                        CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
-                                PROPERTY_APP2_PACKAGE_NAME), CameraManager.ROTATION_OVERRIDE_NONE);
-            } else {
-                // `App2` has the override disabled.
-                Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
-                assertFalse("shouldOverrideToPortrait should return false",
-                        CameraManager.shouldOverrideToPortrait(mPackageManager,
-                                PROPERTY_APP2_PACKAGE_NAME));
-            }
+            // `App1` has the override enabled.
+            Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
+            assertTrue("shouldOverrideToPortrait should return true",
+                    CameraManager.shouldOverrideToPortrait(mPackageManager,
+                            PROPERTY_APP1_PACKAGE_NAME));
+        } else {
+            Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property disabled.");
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    public void getRotationOverrideInternal_landscapeToPortraitDisabled_returnsOverrideNone() {
+        if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
+            // `App2` has the override disabled.
+            Log.i(TAG, "System property enabled, testing getRotationOverride");
+            assertEquals("getRotationOverride should return ROTATION_OVERRIDE_NONE",
+                    CameraManager.getRotationOverrideInternal(mContext, mPackageManager,
+                            PROPERTY_APP2_PACKAGE_NAME), CameraManager.ROTATION_OVERRIDE_NONE);
+        } else {
+            Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property enabled.");
+        }
+    }
+
+    @Test
+    @RequiresFlagsDisabled(Flags.FLAG_CAMERA_COMPAT_FOR_FREEFORM)
+    public void shouldOverrideToPortrait_landscapeToPortraitDisabled_returnsFalse() {
+        if (SystemProperties.getBoolean(CameraManager.LANDSCAPE_TO_PORTRAIT_PROP, false)) {
+            // `App2` has the override disabled.
+            Log.i(TAG, "System property enabled, testing shouldOverrideToPortrait");
+            assertFalse("shouldOverrideToPortrait should return false",
+                    CameraManager.shouldOverrideToPortrait(mPackageManager,
+                            PROPERTY_APP2_PACKAGE_NAME));
         } else {
             Log.i(TAG, "LANDSCAPE_TO_PORTRAIT_PROP System property enabled.");
         }

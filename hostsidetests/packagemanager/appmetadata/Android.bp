@@ -1,4 +1,4 @@
-// Copyright (C) 2018 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,35 +17,27 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsPackageUninstallTestCases",
+java_test_host {
+    name: "CtsAppMetadataHostTestCases",
     defaults: ["cts_defaults"],
-    static_libs: [
-        "androidx.test.uiautomator_uiautomator",
-        "androidx.test.rules",
-        "compatibility-device-util-axt",
-        "platform-test-annotations",
-        "cts-wm-util",
-        "cts-install-lib",
-        "android.content.pm.flags-aconfig-java",
-        "ShortcutManagerTestUtils",
-    ],
-    resource_dirs: ["res"],
-    srcs: ["src/**/*.java"],
-    sdk_version: "test_current",
-    // Tag this module as a cts test artifact
+    srcs: ["src/**/*.kt"],
+    // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
-        "sts",
     ],
     data: [
-        ":CtsArchiveInstallerApp",
-        ":CtsArchiveTestApp",
         ":CtsEmptyTestApp",
-        ":CtsSelfUninstallingTestApp",
-        ":HelloWorldAppV1",
-        ":HelloWorldAppV2",
+        ":CtsEmptyTestApp_AppMetadataInApk",
+        ":AppMetadataTestApp",
     ],
-    per_testcase_directory: true,
+    libs: [
+        "cts-tradefed",
+        "tradefed",
+        "compatibility-host-util",
+    ],
+    static_libs: [
+        "android.content.pm.flags-aconfig-java-host",
+        "flag-junit-host",
+    ],
 }
