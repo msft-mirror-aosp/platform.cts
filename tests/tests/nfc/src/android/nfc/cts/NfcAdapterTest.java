@@ -576,6 +576,7 @@ public class NfcAdapterTest {
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
             nfcOemExtension.maybeTriggerFirmwareUpdate();
+            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
