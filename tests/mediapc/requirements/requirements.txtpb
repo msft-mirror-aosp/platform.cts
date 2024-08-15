@@ -1601,17 +1601,15 @@ requirements {
   name: "Secure Video Decoder Sessions"
   description: "Secure hardware decoders"
   test_configs: {
-    key: "1080p"
+    key: ""
     value: {
-      id: "1080p"
-      description: "Test config for 1080p"
+      description: "Default test config"
     }
   }
   test_configs: {
-    key: "4k"
+    key: "HDR"
     value: {
-      id: "4k"
-      description: "Test config for 4k"
+      description: "Test config for hdr tests"
     }
   }
   measurements: {
@@ -1630,6 +1628,14 @@ requirements {
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
     }
   }
+  measurements: {
+    key: "is_hdr"
+    value: {
+      description: "Whether the test is HDR or not"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 33
     value {
@@ -1638,11 +1644,16 @@ requirements {
         "MUST support 2 instances of secure hardware video decoder sessions "
         "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
         "concurrently at 1080p resolution@30 fps."
-      test_config_id: "1080p"
       required_values: {
         key: "concurrent_fps"
         value {
           double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: false
         }
       }
     }
@@ -1654,14 +1665,19 @@ requirements {
       specification:
         "MUST support 2 instances of secure hardware video decoder sessions "
         "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
-        "concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit "
-        "(SDR) and 10-bit HDR content. AV1 codec sessions are only required to "
-        "support 1080p resolution even when this requirement calls for 4K."
-      test_config_id: "4k"
+        "concurrently at 1080p resolution@30 fps for both 8-bit "
+        "(SDR) and 10-bit HDR content."
+      test_config_id: "HDR"
       required_values: {
         key: "concurrent_fps"
         value {
           double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: true
         }
       }
     }
@@ -1673,12 +1689,10 @@ requirements {
       specification:
         "MUST support 2 instances of secure hardware video decoder sessions "
         "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
-        "concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit "
+        "concurrently at 1080p resolution@30 fps for both 8-bit "
         "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
-        "more than 1 frame dropped per second. AV1 codec sessions are only "
-        "required to support 1080p resolution even when this requirement calls "
-        "for 4K."
-      test_config_id: "4k"
+        "more than 1 frame dropped per second."
+      test_config_id: "HDR"
       required_values: {
         key: "concurrent_fps"
         value {
@@ -1689,6 +1703,12 @@ requirements {
         key: "frame_drops_per_sec"
         value {
           double_value: 1
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: true
         }
       }
     }
