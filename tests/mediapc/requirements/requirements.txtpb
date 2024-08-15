@@ -1748,6 +1748,14 @@ requirements {
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
     }
   }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 33
     value {
@@ -1758,6 +1766,12 @@ requirements {
         key: "concurrent_fps"
         value {
           double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
         }
       }
     }
@@ -1772,6 +1786,12 @@ requirements {
         key: "concurrent_fps"
         value {
           double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
         }
       }
     }
@@ -1792,6 +1812,12 @@ requirements {
         key: "frame_drops_per_sec"
         value {
           double_value: 1
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
         }
       }
     }
