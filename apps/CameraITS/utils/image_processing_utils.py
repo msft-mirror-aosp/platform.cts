@@ -128,7 +128,7 @@ def capture_scene_image(cam, props, name_with_log_path):
 
 
 def convert_image_to_uint8(image):
-  image *= 255
+  image = image*255
   return image.astype(numpy.uint8)
 
 
