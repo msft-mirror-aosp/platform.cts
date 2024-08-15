@@ -61,10 +61,11 @@ public class ControlledDreamSession {
     public static final int DREAM_LIFECYCLE_ON_ATTACHED_TO_WINDOW = 1;
     public static final int DREAM_LIFECYCLE_ON_DREAMING_STARTED = 2;
     public static final int DREAM_LIFECYCLE_ON_FOCUS_GAINED = 3;
-    public static final int DREAM_LIFECYCLE_ON_WAKEUP = 4;
-    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 5;
-    public static final int DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW = 6;
-    public static final int DREAM_LIFECYCLE_ON_DESTROYED = 7;
+    public static final int DREAM_LIFECYCLE_ON_FOCUS_LOST = 4;
+    public static final int DREAM_LIFECYCLE_ON_WAKEUP = 5;
+    public static final int DREAM_LIFECYCLE_ON_DREAMING_STOPPED = 6;
+    public static final int DREAM_LIFECYCLE_ON_DETACHED_FROM_WINDOW = 7;
+    public static final int DREAM_LIFECYCLE_ON_DESTROYED = 8;
 
     @IntDef(prefix = { "DREAM_LIFECYCLE_" }, value = {
             DREAM_LIFECYCLE_UNKNOWN,
@@ -158,9 +159,8 @@ public class ControlledDreamSession {
         }
 
         public void onFocusChanged(IControlledDream dream, boolean hasFocus) {
-            if (hasFocus) {
-                pushLifecycle(DREAM_LIFECYCLE_ON_FOCUS_GAINED);
-            }
+            pushLifecycle(
+                    hasFocus ? DREAM_LIFECYCLE_ON_FOCUS_GAINED : DREAM_LIFECYCLE_ON_FOCUS_LOST);
         }
 
         public void onDreamingStopped(IControlledDream dream) {

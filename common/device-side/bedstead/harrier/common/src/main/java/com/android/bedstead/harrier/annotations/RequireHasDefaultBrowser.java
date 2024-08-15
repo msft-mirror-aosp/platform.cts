@@ -19,6 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.UserType.INSTRUMENTED_USER;
 
 import com.android.bedstead.harrier.UserType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +30,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(value = RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface RequireHasDefaultBrowser {
     /** Which user type should we check the browser for. */
     UserType forUser() default INSTRUMENTED_USER;

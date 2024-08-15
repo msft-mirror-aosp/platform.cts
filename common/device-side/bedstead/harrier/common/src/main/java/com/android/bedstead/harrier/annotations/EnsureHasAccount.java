@@ -33,6 +33,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureDoesNotHaveUserRestriction(DISALLOW_MODIFY_ACCOUNTS)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 // TODO(263353411): Make this take a query argument the same as remotedpc - instead of individual parameters
 public @interface EnsureHasAccount {
 

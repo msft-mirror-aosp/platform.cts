@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.activities;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.getDisplayId;
 import static android.Manifest.permission.REAL_GET_TASKS;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
@@ -25,12 +26,12 @@ import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.ActivityTaskManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.testapisreflection.ActivityTaskManagerProxy;
-import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
@@ -48,6 +49,8 @@ import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
 import com.android.bedstead.permissions.PermissionContext;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,7 +73,7 @@ public final class Activities {
     private static final int ACTIVITY_TYPE_DREAM = 5;
 
     /** Proxy class to access inaccessible TestApi methods. */
-    private static final ActivityTaskManagerProxy sProxyInstance =
+    private static final ActivityTaskManagerProxy sActivityTaskManagerProxy =
             new ActivityTaskManagerProxy();
 
     private static final String TAG = "BedsteadActivities";
@@ -109,15 +112,15 @@ public final class Activities {
                     TestApis.context().instrumentedContext().getSystemService(
                             ActivityManager.class);
             return activityManager.getRunningTasks(100).stream()
-                    .filter(r -> getDisplayId(r) == Display.DEFAULT_DISPLAY)
+                    .filter(r -> getDisplayIdInternal(r) == Display.DEFAULT_DISPLAY)
                     .map(r -> new ComponentReference(r.topActivity))
                     .collect(Collectors.toList());
         }
     }
 
-    private int getDisplayId(ActivityManager.RunningTaskInfo task) {
+    private int getDisplayIdInternal(ActivityManager.RunningTaskInfo task) {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            return TestApisReflectionKt.getDisplayId(task);
+            return getDisplayId(task);
         }
 
         return Display.DEFAULT_DISPLAY;
@@ -184,12 +187,18 @@ public final class Activities {
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_ACTIVITY_TASKS)) {
-                sProxyInstance.removeRootTasksWithActivityTypes(activityTypes);
+                sActivityTaskManagerProxy.removeRootTasksWithActivityTypes(activityTypes);
             }
         } else {
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_ACTIVITY_STACKS)) {
-                sProxyInstance.removeStacksWithActivityTypes(activityTypes);
+                Method method = ActivityTaskManager.class.getDeclaredMethod(
+                        "removeStacksWithActivityTypes",
+                        new Class<?>[]{int[].class});
+                method.invoke(TestApis.context().instrumentedContext().getSystemService(
+                        ActivityTaskManager.class), ALL_ACTIVITY_TYPE_BUT_HOME);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new NeneException("Error clearing all activities activity pre S", e);
             }
         }
     }

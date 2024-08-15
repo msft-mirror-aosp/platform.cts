@@ -97,13 +97,6 @@ java_defaults {
     ],
     per_testcase_directory: true,
     platform_apis: true,
-    // Tag this module as a cts test artifact
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mts-documentsui",
-        "mcts-documentsui",
-    ],
     min_sdk_version: "29",
     replace_max_sdk_version_placeholder: "current",
 }
@@ -112,6 +105,11 @@ android_test {
     name: "CtsContentTestCases",
     defaults: ["cts_content_defaults"],
 
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     static_libs: [
         "android.security.flags-aconfig-java",
         "flag-junit",
@@ -121,6 +119,10 @@ android_test {
         "src/android/content/cts/**/*.java",
         "BinderPermissionTestService/**/I*.aidl",
         "ContentUriTestApp/**/I*.aidl",
+    ],
+    exclude_srcs: [
+        "src/android/content/cts/AvailableDocumentIntentsTest.java",
+        "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
     ],
     data: [
         ":CtsSyncAccountAccessStubs",
@@ -132,9 +134,32 @@ android_test {
 }
 
 android_test {
+    name: "CtsDocumentContentTestCases",
+    defaults: ["cts_content_defaults"],
+
+    srcs: [
+        "src/android/content/cts/AvailableDocumentIntentsTest.java",
+        "src/android/content/cts/AvailableIntentsActivity.java",
+        "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
+    ],
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mts-documentsui",
+        "mcts-documentsui",
+    ],
+    test_config: "CtsDocumentContentTest.xml",
+}
+
+android_test {
     name: "CtsResourcesTestCases",
     defaults: ["cts_content_defaults"],
 
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     static_libs: [
         "android.content.res.flags-aconfig-java",
     ],
@@ -149,6 +174,10 @@ android_test {
     name: "CtsWindowManagerTestCases",
     defaults: ["cts_content_defaults"],
 
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     srcs: [
         "src/android/content/wm/**/*.java",
     ],
@@ -159,6 +188,10 @@ android_test {
     name: "CtsPackageManagerTestCases",
     defaults: ["cts_content_defaults"],
 
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
     static_libs: [
         "android.content.pm.flags-aconfig-java",
         "android.security.flags-aconfig-java",
@@ -265,6 +298,7 @@ android_test {
         ":HelloInstallerAppUpdated",
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
+        ":CtsDeviceAdminTestApp",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",

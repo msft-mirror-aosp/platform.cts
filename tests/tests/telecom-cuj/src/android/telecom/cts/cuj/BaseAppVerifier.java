@@ -389,4 +389,30 @@ public class BaseAppVerifier {
         }
         mBaseAppVerifierImpl.registerManagedPhoneAccount(newAcct.build());
     }
+
+    /**
+     * Audio focus stuff
+     */
+
+    /**
+     * Acquire media focus for music playback; pretend we are listening to music so that we can
+     * verify that focus is lost during a call and restored later.
+     */
+    public void acquireAudioFocusForMusic() {
+        mBaseAppVerifierImpl.acquireAudioFocusForMusic();
+    }
+
+    /**
+     * Waits to ensure that the music audio focus was one of the expected values
+     */
+    public void waitForAndVerifyMusicFocus(int... expectedValues) {
+        mBaseAppVerifierImpl.waitForAndVerifyMusicFocus(expectedValues);
+    }
+
+    /**
+     * Release media focus for media playback; pretend we are not listening to music any longer.
+     */
+    public void releaseAudioFocusForMusic() {
+        mBaseAppVerifierImpl.releaseAudioFocusForMusic();
+    }
 }

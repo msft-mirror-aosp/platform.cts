@@ -30,7 +30,7 @@ import org.junit.Assert;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class contains utility functions that parse compressed bitstream and returns metadata
@@ -45,7 +45,7 @@ import java.util.HashMap;
  * </ul>
  */
 public class BitStreamUtils {
-    public static int getHashMapVal(HashMap<Integer, Integer> obj, int key) {
+    private static int getHashMapVal(Map<Integer, Integer> obj, int key) {
         Integer val = obj.get(key);
         return val == null ? -1 : val;
     }
@@ -279,29 +279,27 @@ public class BitStreamUtils {
 
     static class AvcParser extends ParserBase {
         private static final int NO_NAL_UNIT_FOUND = -1;
-        private static final HashMap<Integer, Integer> LEVEL_MAP = new HashMap<>() {
-            {
-                put(10, AVCLevel1);
-                put(11, AVCLevel11);
-                put(12, AVCLevel12);
-                put(13, AVCLevel13);
-                put(20, AVCLevel2);
-                put(21, AVCLevel21);
-                put(22, AVCLevel22);
-                put(30, AVCLevel3);
-                put(31, AVCLevel31);
-                put(32, AVCLevel32);
-                put(40, AVCLevel4);
-                put(41, AVCLevel41);
-                put(42, AVCLevel42);
-                put(50, AVCLevel5);
-                put(51, AVCLevel51);
-                put(52, AVCLevel52);
-                put(60, AVCLevel6);
-                put(61, AVCLevel61);
-                put(62, AVCLevel62);
-            }
-        };
+        private static final Map<Integer, Integer> LEVEL_MAP = Map.ofEntries(
+                Map.entry(10, AVCLevel1),
+                Map.entry(11, AVCLevel11),
+                Map.entry(12, AVCLevel12),
+                Map.entry(13, AVCLevel13),
+                Map.entry(20, AVCLevel2),
+                Map.entry(21, AVCLevel21),
+                Map.entry(22, AVCLevel22),
+                Map.entry(30, AVCLevel3),
+                Map.entry(31, AVCLevel31),
+                Map.entry(32, AVCLevel32),
+                Map.entry(40, AVCLevel4),
+                Map.entry(41, AVCLevel41),
+                Map.entry(42, AVCLevel42),
+                Map.entry(50, AVCLevel5),
+                Map.entry(51, AVCLevel51),
+                Map.entry(52, AVCLevel52),
+                Map.entry(60, AVCLevel6),
+                Map.entry(61, AVCLevel61),
+                Map.entry(62, AVCLevel62)
+        );
 
         private int getNalUnitStartOffset(byte[] dataArray, int start, int limit) {
             for (int pos = start; pos + 3 < limit; pos++) {
@@ -425,35 +423,31 @@ public class BitStreamUtils {
         private static final int RASL_R = 9;
         private static final int BLA_W_LP = 16;
         private static final int RSV_IRAP_VCL23 = 23;
-        private static final HashMap<Integer, Integer> LEVEL_MAP_MAIN_TIER = new HashMap<>() {
-            {
-                put(30, HEVCMainTierLevel1);
-                put(60, HEVCMainTierLevel2);
-                put(63, HEVCMainTierLevel21);
-                put(90, HEVCMainTierLevel3);
-                put(93, HEVCMainTierLevel31);
-                put(120, HEVCMainTierLevel4);
-                put(123, HEVCMainTierLevel41);
-                put(150, HEVCMainTierLevel5);
-                put(153, HEVCMainTierLevel51);
-                put(156, HEVCMainTierLevel52);
-                put(180, HEVCMainTierLevel6);
-                put(183, HEVCMainTierLevel61);
-                put(186, HEVCMainTierLevel62);
-            }
-        };
-        private static final HashMap<Integer, Integer> LEVEL_MAP_HIGH_TIER = new HashMap<>() {
-            {
-                put(120, HEVCHighTierLevel4);
-                put(123, HEVCHighTierLevel41);
-                put(150, HEVCHighTierLevel5);
-                put(153, HEVCHighTierLevel51);
-                put(156, HEVCHighTierLevel52);
-                put(180, HEVCHighTierLevel6);
-                put(183, HEVCHighTierLevel61);
-                put(186, HEVCHighTierLevel62);
-            }
-        };
+        private static final Map<Integer, Integer> LEVEL_MAP_MAIN_TIER = Map.ofEntries(
+                Map.entry(30, HEVCMainTierLevel1),
+                Map.entry(60, HEVCMainTierLevel2),
+                Map.entry(63, HEVCMainTierLevel21),
+                Map.entry(90, HEVCMainTierLevel3),
+                Map.entry(93, HEVCMainTierLevel31),
+                Map.entry(120, HEVCMainTierLevel4),
+                Map.entry(123, HEVCMainTierLevel41),
+                Map.entry(150, HEVCMainTierLevel5),
+                Map.entry(153, HEVCMainTierLevel51),
+                Map.entry(156, HEVCMainTierLevel52),
+                Map.entry(180, HEVCMainTierLevel6),
+                Map.entry(183, HEVCMainTierLevel61),
+                Map.entry(186, HEVCMainTierLevel62)
+        );
+        private static final Map<Integer, Integer> LEVEL_MAP_HIGH_TIER = Map.ofEntries(
+                Map.entry(120, HEVCHighTierLevel4),
+                Map.entry(123, HEVCHighTierLevel41),
+                Map.entry(150, HEVCHighTierLevel5),
+                Map.entry(153, HEVCHighTierLevel51),
+                Map.entry(156, HEVCHighTierLevel52),
+                Map.entry(180, HEVCHighTierLevel6),
+                Map.entry(183, HEVCHighTierLevel61),
+                Map.entry(186, HEVCHighTierLevel62)
+        );
 
         private int getNalUnitStartOffset(byte[] dataArray, int start, int limit) {
             for (int pos = start; pos + 3 < limit; pos++) {
@@ -557,31 +551,27 @@ public class BitStreamUtils {
     }
 
     static class Vp9Parser extends ParserBase {
-        private static final HashMap<Integer, Integer> PROFILE_MAP = new HashMap<>() {
-            {
-                put(0, VP9Profile0);
-                put(1, VP9Profile1);
-                put(2, VP9Profile2);
-                put(3, VP9Profile3);
-            }
-        };
-        private static final HashMap<Integer, Integer> LEVEL_MAP = new HashMap<>() {
-            {
-                put(10, VP9Level1);
-                put(11, VP9Level11);
-                put(20, VP9Level2);
-                put(21, VP9Level21);
-                put(30, VP9Level3);
-                put(31, VP9Level31);
-                put(40, VP9Level4);
-                put(41, VP9Level41);
-                put(50, VP9Level5);
-                put(51, VP9Level51);
-                put(60, VP9Level6);
-                put(61, VP9Level61);
-                put(62, VP9Level62);
-            }
-        };
+        private static final Map<Integer, Integer> PROFILE_MAP = Map.ofEntries(
+                Map.entry(0, VP9Profile0),
+                Map.entry(1, VP9Profile1),
+                Map.entry(2, VP9Profile2),
+                Map.entry(3, VP9Profile3)
+        );
+        private static final Map<Integer, Integer> LEVEL_MAP = Map.ofEntries(
+                Map.entry(10, VP9Level1),
+                Map.entry(11, VP9Level11),
+                Map.entry(20, VP9Level2),
+                Map.entry(21, VP9Level21),
+                Map.entry(30, VP9Level3),
+                Map.entry(31, VP9Level31),
+                Map.entry(40, VP9Level4),
+                Map.entry(41, VP9Level41),
+                Map.entry(50, VP9Level5),
+                Map.entry(51, VP9Level51),
+                Map.entry(60, VP9Level6),
+                Map.entry(61, VP9Level61),
+                Map.entry(62, VP9Level62)
+        );
 
         private Pair<Integer, Integer> getProfileLevelFromCSD() { // parse vp9 codecprivate
             int profile = -1, level = -1;
