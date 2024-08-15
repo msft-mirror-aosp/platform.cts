@@ -561,6 +561,8 @@ def get_args():
     parser.add_argument("-r", "--root", action="store_true", help="Run rooted tests. This will ensure that adb is running as root and will include tests annotated as @RequireAdbRoot - which are otherwise excluded.")
     # parser.add_argument("--capture-bugreport-after-crash", action="store_true", help="If true, will capture a bug report on failure due to a process or system server crash")
     parser.add_argument("--timer", action="store", choices=['junit', 'btest'], default='junit', help="Either 'junit' (default) which is the internal junit timer and reflects the numbers shown on dashboards, etc. or 'btest' which tracks the actual time from the start of the test to the result being posted (including bedstead setup and teardown)")
+    parser.add_argument("-l", "--detect-leaks", action="store_true", help="throw an exception when the device_policy state has leaked after a test method execution")
+    parser.add_argument("--skip-teardown", action="store_true", help="skip teardown after executing test class and test methods")
     args = parser.parse_args()
     if not args.build and not args.install and not args.test:
         args.build = True
@@ -780,6 +782,15 @@ class Test:
             command += " -e COEXISTENCE true"
         elif self.args.coexistence == "no":
             command += " -e COEXISTENCE false"
+
+        if self.args.detect_leaks:
+            if self.args.skip_teardown:
+                print("Error. You can't use --skip-teardown together with --detect-leaks")
+                sys.exit(1)
+            command += " -e throw-on-device-policy-leaks true"
+        elif self.args.skip_teardown:
+            command += " -e skip-class-teardown true"
+            command += " -e skip-test-teardown true"
 
         if len(self.class_methods) > 0:
             if any("*" in s for s in self.class_methods):

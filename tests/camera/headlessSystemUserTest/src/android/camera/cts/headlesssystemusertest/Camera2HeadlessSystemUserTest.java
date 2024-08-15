@@ -159,6 +159,8 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
     @RequiresFlagsEnabled(Flags.FLAG_CAMERA_HSUM_PERMISSION)
     @Test
     public void testHeadlessSystemUser_SwitchForegroundUser() throws Exception {
+        int initialUserId = getCurrentUserId();
+        Log.d(TAG, "testHeadlessSystemUser_SwitchForegroundUser: initialUserId=" + initialUserId);
         assumeTrue(mUserManager.isSystemUser());
         assumeTrue("Skipping test for devices which doesn't support multiple users.",
                 UserManager.supportsMultipleUsers());
@@ -176,6 +178,8 @@ public class Camera2HeadlessSystemUserTest extends Camera2ParameterizedTestCase 
                 if (camera != null) {
                     camera.close();
                 }
+                // Switch back to the initial user after each iteration.
+                switchUser(initialUserId);
             }
         }
     }

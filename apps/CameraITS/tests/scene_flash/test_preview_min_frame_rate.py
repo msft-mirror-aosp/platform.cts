@@ -122,7 +122,7 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       logging.debug('preview_file_name: %s', preview_file_name)
       preview_file_name_with_path = os.path.join(
           self.log_path, preview_file_name)
-      preview_frame_rate = video_processing_utils.get_average_frame_rate(
+      preview_frame_rate = video_processing_utils.get_avg_frame_rate(
           preview_file_name_with_path)
       errors = []
       if not math.isclose(

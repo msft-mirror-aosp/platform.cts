@@ -79,6 +79,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -362,7 +363,7 @@ public class ASurfaceControlInputReceiverTest {
                         }
                     }
                     return false;
-                }, WAIT_TIME_S, TimeUnit.SECONDS);
+                }, Duration.ofSeconds(WAIT_TIME_S));
         assertAndDumpWindowState(TAG, "Failed to find embedded SC on top", success);
     }
 
@@ -450,7 +451,7 @@ public class ASurfaceControlInputReceiverTest {
             assertTrue("Failed to wait for child SC to draw",
                     drawCompleteLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             surfaceView.setOnTouchListener(hostTouchListener);
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
     }
 
@@ -538,7 +539,7 @@ public class ASurfaceControlInputReceiverTest {
             assertTrue("Failed to attach ASurfaceControl",
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             surfaceView.setOnTouchListener(hostTouchListener);
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
     }
 

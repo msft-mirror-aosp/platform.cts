@@ -45,6 +45,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.UiAutomation;
 import android.content.ComponentName;
@@ -345,6 +346,109 @@ public class MediaRouter2DeviceTest {
             instance.cancelScanRequest(token);
             instance.unregisterRouteCallback(routeCallback);
         }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
+    })
+    @Test
+    public void screenOffScan_onLocalRouter_allowedWithMediaContentControl()
+            throws InterruptedException {
+        mUiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.DEVICE_POWER, Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        PowerManager pm = mContext.getSystemService(PowerManager.class);
+        pm.goToSleep(SystemClock.uptimeMillis());
+        assertThat(pm.isInteractive()).isFalse();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        MediaRouter2.RouteCallback routeCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
+                        if (routes.stream()
+                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ false)
+                        .build();
+
+        MediaRouter2 localRouter = MediaRouter2.getInstance(mContext);
+        localRouter.registerRouteCallback(mExecutor, routeCallback, preference);
+
+        ScanToken token =
+                localRouter.requestScan(new ScanRequest.Builder().setScreenOffScan(true).build());
+        try {
+            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            localRouter.cancelScanRequest(token);
+            localRouter.unregisterRouteCallback(routeCallback);
+        }
+    }
+
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
+        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
+    })
+    @Test
+    public void screenOffScan_onProxyRouter_allowedWithMediaContentControl()
+            throws InterruptedException {
+        mUiAutomation.adoptShellPermissionIdentity(
+                Manifest.permission.DEVICE_POWER, Manifest.permission.MEDIA_CONTENT_CONTROL);
+
+        PowerManager pm = mContext.getSystemService(PowerManager.class);
+        pm.goToSleep(SystemClock.uptimeMillis());
+        assertThat(pm.isInteractive()).isFalse();
+
+        CountDownLatch latch = new CountDownLatch(1);
+        MediaRouter2.RouteCallback routeCallback =
+                new MediaRouter2.RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(@NonNull List<MediaRoute2Info> routes) {
+                        if (routes.stream()
+                                .anyMatch(r -> r.getFeatures().contains(FEATURE_SAMPLE))) {
+                            latch.countDown();
+                        }
+                    }
+                };
+
+        RouteDiscoveryPreference preference =
+                new RouteDiscoveryPreference.Builder(
+                                List.of(FEATURE_SAMPLE), /* activeScan= */ false)
+                        .build();
+
+        MediaRouter2 localRouter = MediaRouter2.getInstance(mContext);
+        localRouter.registerRouteCallback(mExecutor, routeCallback, preference);
+
+        // MEDIA_CONTENT_CONTROL is available via adoptShellPermissionIdentity.
+        @SuppressLint("MissingPermission")
+        MediaRouter2 proxyRouter = MediaRouter2.getInstance(mContext, mContext.getPackageName());
+        ScanToken token =
+                proxyRouter.requestScan(new ScanRequest.Builder().setScreenOffScan(true).build());
+        try {
+            assertThat(latch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        } finally {
+            proxyRouter.cancelScanRequest(token);
+            localRouter.unregisterRouteCallback(routeCallback);
+        }
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING)
+    @Test
+    public void requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException() {
+        MediaRouter2 localRouter = MediaRouter2.getInstance(mContext);
+        assertThat(localRouter).isNotNull();
+        assertThrows(
+                SecurityException.class,
+                () ->
+                        localRouter.requestScan(
+                                new ScanRequest.Builder().setScreenOffScan(true).build()));
     }
 
     @ApiTest(apis = {"android.media.RouteListingPreference, android.media.MediaRouter2"})

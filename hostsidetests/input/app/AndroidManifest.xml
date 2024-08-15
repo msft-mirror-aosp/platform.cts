@@ -21,10 +21,10 @@
     <application>
         <uses-library android:name="android.test.runner" />
 
-        <activity android:name="android.app.Activity"
-                  android:label="Empty activity for simple tests"
-                  android:turnScreenOn="true"
-                  android:exported="true">
+        <activity android:name="android.input.cts.hostside.app.CaptureEventActivity"
+                  android:label="Activity that captures input events"
+            android:turnScreenOn="true"
+            android:exported="true">
         </activity>
 
     </application>

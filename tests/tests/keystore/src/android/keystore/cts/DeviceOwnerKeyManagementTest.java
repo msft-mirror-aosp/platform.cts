@@ -20,27 +20,11 @@ import static android.app.admin.DevicePolicyManager.ID_TYPE_BASE_INFO;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_IMEI;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_MEID;
 import static android.app.admin.DevicePolicyManager.ID_TYPE_SERIAL;
-import static android.keystore.cts.Attestation.KM_SECURITY_LEVEL_SOFTWARE;
-import static android.keystore.cts.Attestation.KM_SECURITY_LEVEL_STRONG_BOX;
-import static android.keystore.cts.Attestation.KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT;
-import static android.keystore.cts.KeyAttestationTest.verifyCertificateChain;
-import static android.keystore.cts.RootOfTrust.KM_VERIFIED_BOOT_VERIFIED;
-import static android.security.keystore.KeyProperties.DIGEST_NONE;
-import static android.security.keystore.KeyProperties.DIGEST_SHA256;
-import static android.security.keystore.KeyProperties.DIGEST_SHA512;
-import static android.security.keystore.KeyProperties.KEY_ALGORITHM_EC;
-import static android.security.keystore.KeyProperties.PURPOSE_SIGN;
 
 import static com.google.android.attestation.ParsedAttestationRecord.createParsedAttestationRecord;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.admin.DevicePolicyManager;
@@ -75,15 +59,12 @@ import org.junit.Test;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -535,68 +516,6 @@ public class DeviceOwnerKeyManagementTest {
         }
     }
 
-    private boolean checkRootOfTrustForLockedDevice(Attestation attestation) {
-        RootOfTrust rootOfTrust = attestation.getRootOfTrust();
-        assertNotNull(rootOfTrust);
-        assertNotNull(rootOfTrust.getVerifiedBootKey());
-        assertTrue("Verified boot key is only " + rootOfTrust.getVerifiedBootKey().length
-                + " bytes long", rootOfTrust.getVerifiedBootKey().length >= 32);
-        return (rootOfTrust.isDeviceLocked()
-                && (rootOfTrust.getVerifiedBootState() == KM_VERIFIED_BOOT_VERIFIED));
-    }
-
-    private boolean isDeviceLockedAccordingToAttestation(Attestation attestation) {
-        assertThat("Attestation version must be >= 1",
-                attestation.getAttestationVersion(), greaterThanOrEqualTo(1));
-
-        int attestationSecurityLevel = attestation.getAttestationSecurityLevel();
-        switch (attestationSecurityLevel) {
-            case KM_SECURITY_LEVEL_STRONG_BOX:
-            case KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT:
-                assertThat("Attestation security level doesn't match keymaster security level",
-                        attestation.getKeymasterSecurityLevel(), is(attestationSecurityLevel));
-                assertThat("Keymaster version should be greater than or equal to 2.",
-                        attestation.getKeymasterVersion(), greaterThanOrEqualTo(2));
-
-                return checkRootOfTrustForLockedDevice(attestation);
-            case KM_SECURITY_LEVEL_SOFTWARE:
-            default:
-                // TEE attestation has been required since Android 7.0.
-                fail("Unexpected attestation security level: "
-                        + attestation.securityLevelToString(attestationSecurityLevel));
-                break;
-        }
-        return false;
-    }
-
-    private boolean checkDeviceLocked() throws Exception {
-        String keystoreAlias = "check_device_state";
-        KeyGenParameterSpec.Builder builder =
-                new KeyGenParameterSpec.Builder(keystoreAlias, PURPOSE_SIGN)
-                        .setAlgorithmParameterSpec(new ECGenParameterSpec("secp256r1"))
-                        .setAttestationChallenge(new byte[128])
-                        .setDigests(DIGEST_NONE, DIGEST_SHA256, DIGEST_SHA512);
-
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(KEY_ALGORITHM_EC,
-                "AndroidKeyStore");
-        keyPairGenerator.initialize(builder.build());
-        keyPairGenerator.generateKeyPair();
-        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
-        keyStore.load(null);
-
-        try {
-            Certificate []certificates = keyStore.getCertificateChain(keystoreAlias);
-            verifyCertificateChain(certificates, false);
-
-            X509Certificate attestationCert = (X509Certificate) certificates[0];
-
-            return isDeviceLockedAccordingToAttestation(
-                    Attestation.loadFromCertificate(attestationCert));
-        } finally {
-            keyStore.deleteEntry(keystoreAlias);
-        }
-    }
-
     @Test
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#generateKeyPair",
             "android.app.admin.DevicePolicyManager#ID_TYPE_IMEI",
@@ -605,6 +524,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestation() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties
@@ -614,16 +534,9 @@ public class DeviceOwnerKeyManagementTest {
                 + " first_api_level < 14", TestUtils.isGsiImage()
                 && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(false /* useStrongBox */);
         } catch (NeneException e) {
-            // b/291069162, some devices do not allow to set DeviceOwner in an unlocked state. And
-            // unlocked state is allowed while testing on GSI image. If this condition not match
-            // throw the exception.
-            assumeFalse("It is acceptable to fail setting DeviceOwner on GSI build running on"
-                    + " unlocked devices.", (e.getMessage().contains("Error setting device owner")
-                    && TestUtils.isGsiImage() && !isDeviceLocked));
             throw new Exception(e);
         }
     }
@@ -636,6 +549,7 @@ public class DeviceOwnerKeyManagementTest {
     @RequireRunOnSystemUser
     @RequireFeature(PackageManager.FEATURE_DEVICE_ADMIN)
     @RequireFeature(PackageManager.FEATURE_DEVICE_ID_ATTESTATION)
+    @RequireFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
     public void testAllVariationsOfDeviceIdAttestationUsingStrongBox() throws Exception {
         // b/298586194, there are some devices launched with Android T, and they will be receiving
         // only system update and not vendor update, newly added attestation properties
@@ -645,16 +559,9 @@ public class DeviceOwnerKeyManagementTest {
                 + " first_api_level < 14", TestUtils.isGsiImage()
                 && TestUtils.getVendorApiLevel() < Build.VERSION_CODES.UPSIDE_DOWN_CAKE);
 
-        final boolean isDeviceLocked = checkDeviceLocked();
         try (DeviceOwner o = TestApis.devicePolicy().setDeviceOwner(DEVICE_ADMIN_COMPONENT_NAME)) {
             assertAllVariantsOfDeviceIdAttestation(true  /* useStrongBox */);
         } catch (NeneException e) {
-            // b/291069162, some devices do not allow to set DeviceOwner in an unlocked state. And
-            // unlocked state is allowed while testing on GSI image. If this condition not match
-            // throw the exception.
-            assumeFalse("It is acceptable to fail setting DeviceOwner on GSI build running on"
-                    + " unlocked devices.", (e.getMessage().contains("Error setting device owner")
-                    && TestUtils.isGsiImage() && !isDeviceLocked));
             throw new Exception(e);
         }
     }

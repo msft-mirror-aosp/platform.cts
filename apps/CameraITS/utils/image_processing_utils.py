@@ -51,8 +51,6 @@ MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)
     for i in range(MAX_LUT_SIZE)])
-NUM_TRIES = 2
-NUM_FRAMES = 4
 RGB2GRAY_WEIGHTS = (0.299, 0.587, 0.114)
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 
@@ -1238,32 +1236,6 @@ def rotate_img_per_argv(img):
   return img_out
 
 
-def stationary_lens_cap(cam, req, fmt):
-  """Take up to NUM_TRYS caps and save the 1st one with lens stationary.
-
-  Args:
-   cam: open device session
-   req: capture request
-   fmt: format for capture
-
-  Returns:
-    capture
-  """
-  tries = 0
-  done = False
-  reqs = [req] * NUM_FRAMES
-  while not done:
-    logging.debug('Waiting for lens to move to correct location.')
-    cap = cam.do_capture(reqs, fmt)
-    done = (cap[NUM_FRAMES - 1]['metadata']['android.lens.state'] == 0)
-    logging.debug('status: %s', done)
-    tries += 1
-    if tries == NUM_TRIES:
-      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
-                                      tries)
-  return cap[NUM_FRAMES - 1]
-
-
 def compute_image_rms_difference_1d(rgb_x, rgb_y):
   """Calculate the RMS difference between 2 RBG images as 1D arrays.
 
@@ -1522,3 +1494,24 @@ def p3_img_has_wide_gamut(wide_img):
         return True
 
   return False
+
+
+def compute_patch_noise(yuv_img, patch_region):
+  """Computes the noise statistics of a flat patch region in an image.
+
+  For the patch region, the noise statistics are computed for the luma, chroma
+  U, and chroma V channels.
+
+  Args:
+    yuv_img: The openCV YUV image to compute noise statistics for.
+    patch_region: The (x, y, w, h) region to compute noise statistics for.
+  Returns:
+    A dictionary of noise statistics with keys luma, chroma_u, chroma_v.
+  """
+  x, y, w, h = patch_region
+  patch = yuv_img[y : y + h, x : x + w]
+  return {
+      'luma': numpy.std(patch[:, :, 0]),
+      'chroma_u': numpy.std(patch[:, :, 1]),
+      'chroma_v': numpy.std(patch[:, :, 2]),
+  }

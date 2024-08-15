@@ -76,6 +76,8 @@ android_test {
         "flag-junit",
         "android.hardware.biometrics.flags-aconfig-java",
         "android.companion.virtual.flags-aconfig-java",
+        "ui-trace-collector",
+        "collector-device-lib",
     ],
     jni_libs: [
         "libctshardware_jni",
@@ -84,6 +86,9 @@ android_test {
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
+    ],
+    data: [
+        ":TestIme",
     ],
     sdk_version: "test_current",
 }

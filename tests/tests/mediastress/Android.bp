@@ -54,9 +54,8 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
     test_suites: [
+        // b/344653352: drop from cts, mcts-media, and mts-media for now
         "general-tests",
-        "mcts-media",
-        "mts-media",
     ],
     // Include both the 32 and 64 bit versions
     compile_multilib: "both",

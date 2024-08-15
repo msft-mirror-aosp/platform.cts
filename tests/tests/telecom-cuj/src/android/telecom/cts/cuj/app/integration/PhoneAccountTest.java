@@ -17,6 +17,7 @@
 package android.telecom.cts.cuj.app.integration;
 
 import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOUNT_CUSTOM;
+import static android.telecom.cts.apps.TelecomTestApp.SELF_MANAGED_CS_MAIN_ACCOUNT_TRANSACTIONAL;
 import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_MAIN_SUPPLEMENTARY_ACCOUNT;
 import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_APP_SUPPLEMENTARY_HANDLE;
 import static android.telecom.cts.apps.TelecomTestApp.TRANSACTIONAL_PACKAGE_NAME;
@@ -126,6 +127,40 @@ public class PhoneAccountTest extends BaseAppVerifier {
                     SELF_MANAGED_CS_MAIN_ACCOUNT_CUSTOM,
                     1 /* numOfExpectedAccounts */);
         } finally {
+            tearDownApp(voipCsApp);
+        }
+    }
+
+    /**
+     * Verify an application can still register accounts with capability
+     * {@link PhoneAccount#CAPABILITY_SUPPORTS_TRANSACTIONAL_OPERATIONS} and accounts that are
+     * backed by a {@link android.telecom.ConnectionService}.  This ensures that apps can upgrade
+     * from the legacy {@link android.telecom.ConnectionService} method to transactional backed
+     * calling.
+     */
+    @Test
+    public void testTransactionalAccountTest_ConnectionServiceVoipAppMain() throws Exception {
+        if (!mShouldTestTelecom) {
+            return;
+        }
+        AppControlWrapper voipCsApp = null;
+        try {
+            voipCsApp = bindToApp(ConnectionServiceVoipAppMain);
+
+            registerAcctAndVerify(
+                    voipCsApp,
+                    SELF_MANAGED_CS_MAIN_ACCOUNT_TRANSACTIONAL,
+                    2 /* numOfExpectedAccounts */);
+
+            registerAcctAndVerify(
+                    voipCsApp,
+                    SELF_MANAGED_CS_MAIN_ACCOUNT_CUSTOM,
+                    3 /* numOfExpectedAccounts */);
+        } finally {
+            if (voipCsApp != null) {
+                unregisterAcct(voipCsApp, SELF_MANAGED_CS_MAIN_ACCOUNT_TRANSACTIONAL);
+                unregisterAcct(voipCsApp, SELF_MANAGED_CS_MAIN_ACCOUNT_CUSTOM);
+            }
             tearDownApp(voipCsApp);
         }
     }
@@ -383,5 +418,10 @@ public class PhoneAccountTest extends BaseAppVerifier {
         appControlWrapper.unregisterPhoneAccountWithHandle(acct.getAccountHandle());
         assertFalse(isPhoneAccountRegistered(acct.getAccountHandle()));
         assertEquals(numOfExpectedAccounts, appControlWrapper.getAccountHandlesForApp().size());
+    }
+
+    private void unregisterAcct(AppControlWrapper appControlWrapper, PhoneAccount acct)
+            throws RemoteException {
+        appControlWrapper.unregisterPhoneAccountWithHandle(acct.getAccountHandle());
     }
 }

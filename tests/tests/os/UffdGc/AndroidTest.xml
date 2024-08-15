@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="test-suite-tag" value="cts" />
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.ShippingApiLevelModuleController">
         <option name="vsr-min-api-level" value="31" />

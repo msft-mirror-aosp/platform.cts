@@ -19,16 +19,16 @@ package com.android.bedstead.harrier;
 import static android.app.AppOpsManager.OPSTR_START_FOREGROUND;
 import static android.content.pm.PackageManager.PERMISSION_GRANTED;
 
-import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
 import static com.android.bedstead.harrier.UserType.ANY;
 import static com.android.bedstead.harrier.UserType.SECONDARY_USER;
 import static com.android.bedstead.harrier.annotations.RequireAospBuild.GMS_CORE_PACKAGE;
 import static com.android.bedstead.harrier.annotations.RequireCnGmsBuild.CHINA_GOOGLE_SERVICES_FEATURE;
+import static com.android.bedstead.multiuser.UsersComponentKt.user;
 import static com.android.bedstead.nene.appops.AppOpsMode.ALLOWED;
+import static com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo.USES_POLICY_EXPIRE_PASSWORD;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
-import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_BLUETOOTH;
@@ -40,13 +40,19 @@ import static com.google.common.truth.Truth.assertWithMessage;
 import static org.testng.Assert.assertThrows;
 
 import android.app.ActivityManager;
+import android.app.admin.DeviceAdminInfo;
 import android.app.contentsuggestions.ContentSuggestionsManager;
 import android.app.role.RoleManager;
+import android.content.ComponentName;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.UserManager;
 import android.provider.Settings;
 import android.view.contentcapture.ContentCaptureManager;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin;
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.harrier.annotations.EnsureBluetoothDisabled;
@@ -116,7 +122,6 @@ import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnTvProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable;
 import com.android.bedstead.harrier.annotations.RequireUserSupported;
@@ -130,10 +135,12 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeLightMode;
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.policies.DisallowBluetooth;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.nene.devicepolicy.DeviceAdmin;
 import com.android.bedstead.nene.devicepolicy.ProfileOwner;
 import com.android.bedstead.nene.display.Display;
 import com.android.bedstead.nene.display.DisplayProperties;
 import com.android.bedstead.nene.exceptions.NeneException;
+import com.android.bedstead.nene.packages.ComponentReference;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.users.UserReference;
@@ -142,6 +149,7 @@ import com.android.bedstead.testapp.NotFoundException;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.queryable.annotations.IntegerQuery;
+import com.android.queryable.annotations.IntegerSetQuery;
 import com.android.queryable.annotations.Query;
 import com.android.queryable.annotations.StringQuery;
 
@@ -150,6 +158,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Set;
 
 @RunWith(BedsteadJUnit4.class)
 public class DeviceStateTest {
@@ -173,14 +183,8 @@ public class DeviceStateTest {
     private static final String CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE";
     private static final String PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE";
 
-    private static final String USER_RESTRICTION = UserManager.DISALLOW_AUTOFILL;
-    private static final String SECOND_USER_RESTRICTION = UserManager.DISALLOW_AIRPLANE_MODE;
-
-    @Test
-    @RequireRunOnWorkProfile
-    public void workProfile_runningOnWorkProfile_returnsCurrentProfile() {
-        assertThat(sDeviceState.workProfile()).isEqualTo(TestApis.users().instrumented());
-    }
+    private static final String REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX =
+            "com.android.cts.RemoteDeviceAdmin";
 
     @Test
     @EnsureHasTvProfile
@@ -364,20 +368,6 @@ public class DeviceStateTest {
         assertThat(TestApis.users().findUserOfType(
                 TestApis.users().supportedType(SECONDARY_USER_TYPE_NAME))
         ).isNull();
-    }
-
-    @RequireRunOnWorkProfile
-    public void requireRunOnWorkProfileAnnotation_isRunningOnWorkProfile() {
-        assertThat(
-                TestApis.users().instrumented().type().name()).isEqualTo(MANAGED_PROFILE_TYPE_NAME);
-    }
-
-    @Test
-    @RequireRunOnWorkProfile
-    public void requireRunOnWorkProfileAnnotation_workProfileHasProfileOwner() {
-        assertThat(
-                TestApis.devicePolicy().getProfileOwner(TestApis.users().instrumented())
-        ).isNotNull();
     }
 
     @Test
@@ -581,18 +571,6 @@ public class DeviceStateTest {
     }
 
     @Test
-    @RequireRunOnWorkProfile
-    public void requireRunOnProfile_parentIsCurrentUser() {
-        assertThat(TestApis.users().current()).isEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
-    @RequireRunOnWorkProfile(switchedToParentUser = FALSE)
-    public void requireRunOnProfile_specifyNotSwitchedToParentUser_parentIsNotCurrentUser() {
-        assertThat(TestApis.users().current()).isNotEqualTo(sDeviceState.workProfile().parent());
-    }
-
-    @Test
     @RequireNotHeadlessSystemUserMode(reason = "Test")
     public void requireNotHeadlessSystemUserModeAnnotation_notHeadlessSystemUserMode() {
         assertThat(TestApis.users().isHeadlessSystemUserMode()).isFalse();
@@ -787,22 +765,6 @@ public class DeviceStateTest {
                 .testApp().pkg().appOps().get(OPSTR_START_FOREGROUND)).isEqualTo(ALLOWED);
     }
 
-    @Test
-    @RequireRunOnWorkProfile(isOrganizationOwned = true)
-    public void requireRunOnWorkProfile_isOrganizationOwned_organizationOwnedisTrue() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isTrue();
-    }
-
-    @Test
-    @RequireRunOnWorkProfile(isOrganizationOwned = false)
-    public void requireRunOnWorkProfile_isNotOrganizationOwned_organizationOwnedIsFalse() {
-        assertThat(((ProfileOwner) sDeviceState.profileOwner(
-                sDeviceState.workProfile()).devicePolicyController()).isOrganizationOwned())
-                .isFalse();
-    }
-
     //TODO(b/300218365): Test that settings are returned to their original values in teardown.
 
     @EnsureSecureSettingSet(key = "testSecureSetting", value = "testValue")
@@ -904,52 +866,6 @@ public class DeviceStateTest {
         assertThat(TestApis.accounts().all()).isEmpty();
     }
 
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_userRestrictionIsSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_userRestrictionIsNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
-    }
-
-    @EnsureHasUserRestriction(USER_RESTRICTION)
-    @EnsureHasUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isTrue();
-        assertThat(TestApis.devicePolicy().userRestrictions()
-                .isSet(SECOND_USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureDoesNotHaveUserRestriction(USER_RESTRICTION)
-    @EnsureDoesNotHaveUserRestriction(SECOND_USER_RESTRICTION)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_multipleRestrictions_userRestrictionsAreNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(USER_RESTRICTION)).isFalse();
-        assertThat(TestApis.devicePolicy().userRestrictions().isSet(SECOND_USER_RESTRICTION))
-                .isFalse();
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureHasUserRestriction(value = USER_RESTRICTION, onUser = ADDITIONAL_USER)
-    @Test
-    public void ensureHasUserRestrictionAnnotation_differentUser_userRestrictionIsSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
-                .isSet(USER_RESTRICTION)).isTrue();
-    }
-
-    @EnsureHasAdditionalUser
-    @EnsureDoesNotHaveUserRestriction(value = USER_RESTRICTION, onUser = ADDITIONAL_USER)
-    @Test
-    public void ensureDoesNotHaveUserRestrictionAnnotation_differentUser_userRestrictionIsNotSet() {
-        assertThat(TestApis.devicePolicy().userRestrictions(sDeviceState.additionalUser())
-                .isSet(USER_RESTRICTION)).isFalse();
-    }
-
     @EnsureWifiEnabled
     @Test
     public void ensureWifiEnabledAnnotation_wifiIsEnabled() {
@@ -967,16 +883,6 @@ public class DeviceStateTest {
     public void requireSystemServiceAvailable_systemServiceIsAvailable() {
         assertThat(TestApis.context().instrumentedContext()
                 .getSystemService(ContentCaptureManager.class)).isNotNull();
-    }
-
-    @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)
-    @AdditionalQueryParameters(
-            forTestApp = RequireRunOnWorkProfile.DEFAULT_KEY,
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
-    )
-    @Test
-    public void additionalQueryParameters_requireRunOnWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
     }
 
     @EnsureTestAppInstalled(key = EnsureTestAppInstalled.DEFAULT_KEY, isPrimary = true)
@@ -1135,5 +1041,62 @@ public class DeviceStateTest {
     @IncludeLightMode
     public void includeRunOnLightModeDevice_themeIsSet() {
         assertThat(Display.INSTANCE.getDisplayTheme()).isEqualTo(DisplayProperties.Theme.LIGHT);
+    }
+
+    @Ignore("b/358355868: Until we readd RemoteDeviceAdmin test apps that use specific policies")
+    @Test
+    @EnsureHasDeviceAdmin(dpc = @Query(usesPolicies = @IntegerSetQuery(contains = {
+            USES_POLICY_EXPIRE_PASSWORD})))
+    public void ensureHasDeviceAdminAnnotation_queryByPolicy_hasCorrectDeviceAdmin()
+            throws Exception {
+        assertThat(createDeviceAdminInfo(new ComponentReference(
+                sDeviceState.deviceAdmin().componentName())).usesPolicy(
+                USES_POLICY_EXPIRE_PASSWORD)).isTrue();
+    }
+
+    @Test
+    @EnsureHasDeviceAdmin
+    public void ensureHasDeviceAdminAnnotation_hasDeviceAdmin() {
+        assertThat(isRemoteDeviceAdmin(sDeviceState.deviceAdmin().componentName())).isTrue();
+    }
+
+    @Test
+    @EnsureHasNoTestDeviceAdmin
+    public void deviceAdmin_noTestDeviceAdmin_throws() {
+        assertThrows(IllegalStateException.class, sDeviceState::deviceAdmin);
+    }
+
+    @Test
+    @EnsureHasNoTestDeviceAdmin
+    public void ensureHasNoTestDeviceAdminAnnotation_hasNoTestDeviceAdmins() {
+        Set<DeviceAdmin> deviceAdmins = TestApis.devicePolicy().getActiveAdmins();
+
+        assertThat(deviceAdmins.stream().noneMatch(a -> isRemoteDeviceAdmin(a.componentName())))
+                .isTrue();
+    }
+
+    @Test
+    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin1")
+    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin2")
+    public void ensureHasDeviceAdminAnnotation_multipleWithKey_deviceAdmin_returns() {
+        assertThat(isRemoteDeviceAdmin(
+                sDeviceState.deviceAdmin("remoteDeviceAdmin1").componentName())).isTrue();
+        assertThat(isRemoteDeviceAdmin(
+                sDeviceState.deviceAdmin("remoteDeviceAdmin2").componentName())).isTrue();
+    }
+
+    private static boolean isRemoteDeviceAdmin(ComponentName componentName) {
+        return componentName != null
+                && componentName.getPackageName().startsWith(REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX)
+                && componentName.getClassName().equals(
+                componentName.getPackageName() + ".DeviceAdminReceiver");
+    }
+
+    private static DeviceAdminInfo createDeviceAdminInfo(ComponentReference componentReference)
+            throws Exception {
+        ResolveInfo resolveInfo = new ResolveInfo();
+        resolveInfo.activityInfo = TestApis.context().instrumentedContext().getPackageManager()
+                .getReceiverInfo(componentReference.componentName(), PackageManager.GET_META_DATA);
+        return new DeviceAdminInfo(TestApis.context().instrumentedContext(), resolveInfo);
     }
 }

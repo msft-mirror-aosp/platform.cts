@@ -31,6 +31,7 @@ import static android.autofillservice.cts.testcore.Helper.assertFillEventForData
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForDatasetShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForSaveShown;
 import static android.autofillservice.cts.testcore.Helper.assertFillEventForViewEntered;
+import static android.autofillservice.cts.testcore.Helper.assertHasEventMatchingTypeAndFilter;
 import static android.autofillservice.cts.testcore.Helper.assertNoDeprecatedClientState;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilConnected;
 import static android.autofillservice.cts.testcore.InstrumentedAutoFillService.waitUntilDisconnected;
@@ -668,6 +669,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
      */
     @Test
     public void testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         enableService();
 
         // Set expectations.
@@ -687,6 +689,7 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.focusByRelativeId(ID_PASSWORD);
         mUiBot.waitForIdleSync();
         mActivity.onPassword((v) -> v.setText(""));
+        mUiBot.waitForIdleSync();
 
         // Finish the context by login in and it will trigger to check if the save UI should be
         // shown.
@@ -696,10 +699,18 @@ public abstract class FillEventHistoryCommonTestCase extends AbstractLoginActivi
         mUiBot.assertSaveNotShowing(SAVE_DATA_TYPE_PASSWORD);
 
         final List<Event> verifyEvents = InstrumentedAutoFillService.getFillEvents(4);
-        final Event event = verifyEvents.get(3);
 
-        assertThat(event.getNoSaveUiReason()).isEqualTo(NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED);
+        // Due to multi-threading, the TYPE_CONTEXT_COMMITTED event may not be the last one
+        assertHasEventMatchingTypeAndFilter(
+            Event.TYPE_CONTEXT_COMMITTED,
+            event -> {
+              assertThat(event.getNoSaveUiReason()).isEqualTo(
+                          NO_SAVE_UI_REASON_HAS_EMPTY_REQUIRED);
+            },
+            verifyEvents);
     }
+
+
 
     @Test
     public void testContextCommitted_noSaveUi_whileEmptyValueForRequiredIds_noDataset()

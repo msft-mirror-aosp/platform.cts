@@ -134,6 +134,8 @@ public class SizeCompatRestartButtonStatsTests extends DeviceTestCase implements
             CLog.i("Display size has not changed.");
             return;
         }
+        // Wait to make sure metric event is reported.
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
         List<StatsLog.EventMetricData> data = ReportUtils.getEventMetricDataList(getDevice());
         assertThat(data.size()).isEqualTo(1);
 

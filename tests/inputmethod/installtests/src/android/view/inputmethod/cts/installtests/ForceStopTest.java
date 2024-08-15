@@ -21,7 +21,6 @@ import static com.android.compatibility.common.util.SystemUtil.runShellCommandOr
 import android.Manifest;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.text.TextUtils;
@@ -38,7 +37,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireMultiUserSupport;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
@@ -97,8 +95,7 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        testImeRemainsEnabledAfterForceStopMain(currentUser, false /* selectIme */,
-                false /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(currentUser, false /* selectIme */);
     }
 
     /**
@@ -107,37 +104,29 @@ public class ForceStopTest {
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForCurrentUser() {
         final UserReference currentUser = sDeviceState.initialUser();
-        testImeRemainsEnabledAfterForceStopMain(currentUser, true /* selectIme */,
-                false /* backgroundUser */);
+        testImeRemainsEnabledAfterForceStopMain(currentUser, true /* selectIme */);
     }
 
     /**
      * A regression test for Bug 333798837 (for background users).
      */
     @RequireMultiUserSupport
-    @EnsureHasSecondaryUser
-    @EnsureHasAdditionalUser  // Required on Android Automotive
+    @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsEnabledAfterForceStopForBackgroundUser() {
-        final UserReference secondaryUser =
-                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
-        testImeRemainsEnabledAfterForceStopMain(secondaryUser, false /* selectIme */,
-                true /* backgroundUser */);
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, false /* selectIme */);
     }
 
     @RequireMultiUserSupport
-    @EnsureHasSecondaryUser
-    @EnsureHasAdditionalUser  // Required on Android Automotive
+    @EnsureHasAdditionalUser
     @Test
     public void testImeRemainsSelectedAndEnabledAfterForceStopForBackgroundUser() {
-        final UserReference secondaryUser =
-                isRunningOnAuto() ? sDeviceState.additionalUser() : sDeviceState.secondaryUser();
-        testImeRemainsEnabledAfterForceStopMain(secondaryUser, true /* selectIme */,
-                true /* backgroundUser */);
+        final UserReference additionalUser = sDeviceState.additionalUser();
+        testImeRemainsEnabledAfterForceStopMain(additionalUser, true /* selectIme */);
     }
 
-    private void testImeRemainsEnabledAfterForceStopMain(UserReference user,
-            boolean selectIme, boolean backgroundUser) {
+    private void testImeRemainsEnabledAfterForceStopMain(UserReference user, boolean selectIme) {
         final int userId = user.id();
         TestApis.packages().install(user, new File(Ime1Constants.APK_PATH));
         assertImeExistsInApiResult(Ime1Constants.IME_ID, userId);
@@ -160,14 +149,10 @@ public class ForceStopTest {
         // enabled.
         assertImeEnabledInApiResult(Ime1Constants.IME_ID, userId);
 
-        if (selectIme && !backgroundUser) {
+        if (selectIme) {
             // Force-stopping a background user's IME package will unselect the IME.
             assertImeNotCurrentInputMethodInfo(Ime1Constants.IME_ID, userId);
         }
-    }
-
-    private static boolean isRunningOnAuto() {
-        return TestApis.packages().features().contains(PackageManager.FEATURE_AUTOMOTIVE);
     }
 
     private static void forceStopPackage(String packageName, int userId) {

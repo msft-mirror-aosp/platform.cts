@@ -38,6 +38,8 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
 
         setInfoResources(R.string.audio_datapaths_speakermic_test,
                 R.string.audio_datapaths_speakermic_info, -1);
+
+        getPassButton().setEnabled(passBtnEnabled());
     }
 
     void gatherTestModules(TestManager testManager) {
@@ -219,5 +221,10 @@ public class AudioDataPathsSpeakerMicActivity extends AudioDataPathsBaseActivity
 
     void postValidateTestDevices(int numValidTestModules) {
         // NOP
+    }
+
+    protected boolean hasPeripheralSupport() {
+        // we're assuming this for all handheld devices
+        return true;
     }
 }

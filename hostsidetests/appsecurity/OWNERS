@@ -36,7 +36,7 @@ per-file PermissionEscalationTest.java = file:platform/frameworks/base:/core/jav
 per-file RoleSecurityTest.java = file:platform/frameworks/base:/core/java/android/permission/OWNERS
 
 # Data Isolation
-per-file AppDataIsolationTests.java = rickywai@google.com,alanstokes@google.com
+per-file AppDataIsolationTests.java = dipankarb@google.com,shikhamalhotra@google.com
 
 # Use Embedded Dex
 per-file UseEmbeddedDexTest.java = victorhsieh@google.com

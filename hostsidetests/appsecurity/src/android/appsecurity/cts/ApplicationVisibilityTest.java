@@ -127,7 +127,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -151,7 +151,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -229,7 +229,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -253,7 +253,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -276,6 +276,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
 
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
+        final Map<String, String> testArgs = new HashMap<>();
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -291,7 +293,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
                 TEST_WITH_PERMISSION_PKG,
                 ".ApplicationVisibilityCrossUserTest",
                 "testGetPackagesForUidVisibility_anotherUserCrossUserGrant",
-                testUserId);
+                testUserId,
+                testArgs);
     }
 
     @Test
@@ -303,6 +306,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
 
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
+        final Map<String, String> testArgs = new HashMap<>();
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         installTestAppForUser(TEST_WITH_PERMISSION_APK, testUserId);
@@ -318,7 +323,8 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
                 TEST_WITH_PERMISSION_PKG,
                 ".ApplicationVisibilityCrossUserTest",
                 "testGetPackagesForUidVisibility_anotherUserCrossUserNoGrant",
-                testUserId);
+                testUserId,
+                testArgs);
     }
 
     @Test
@@ -331,7 +337,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         // Also install TEST_WITH_PERMISSION_APK in installUSerId for creating across user context
@@ -363,7 +369,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         // Also install TEST_WITH_PERMISSION_APK in installUSerId for creating across user context
@@ -395,7 +401,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         // Also install TEST_WITH_PERMISSION_APK in installUSerId for creating across user context
@@ -427,7 +433,7 @@ public class ApplicationVisibilityTest extends BaseAppSecurityTest {
         final int installUserId = getInstallUserId();
         final int testUserId = getTestUserId();
         final Map<String, String> testArgs = new HashMap<>();
-        testArgs.put("testUser", Integer.toString(installUserId));
+        testArgs.put("installUser", Integer.toString(installUserId));
 
         installTestAppForUser(TINY_APK, installUserId);
         // Also install TEST_WITH_PERMISSION_APK in installUSerId for creating across user context

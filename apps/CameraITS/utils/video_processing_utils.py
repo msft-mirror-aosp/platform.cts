@@ -18,6 +18,7 @@
 # only if supported by the camera device.
 
 
+import dataclasses
 import logging
 import os.path
 import re
@@ -65,19 +66,29 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
-def get_lowest_common_preview_video_size(
-    supported_preview_sizes, supported_video_qualities, min_area):
-  """Returns the common, smallest size above minimum in preview and video.
+@dataclasses.dataclass
+class CommonPreviewSizeData:
+  """Class to store smallest and largest common sizes of preview and video."""
+  smallest_size: str
+  smallest_quality: str
+  largest_size: str
+  largest_quality: str
+
+
+def get_preview_video_sizes_union(cam, camera_id, min_area=0):
+  """Returns largest and smallest common size and quality of preview and video.
 
   Args:
-    supported_preview_sizes: str; preview size (ex. '1920x1080')
-    supported_video_qualities: str; video recording quality and id pair
-    (ex. '480P:4', '720P:5'')
-    min_area: int; filter to eliminate smaller sizes (ex. 640*480)
+    cam: camera object.
+    camera_id: str; camera ID.
+    min_area: int; Optional filter to eliminate smaller sizes (ex. 640*480).
+
   Returns:
-    smallest_common_size: str; smallest, common size between preview and video
-    smallest_common_video_quality: str; video recording quality such as 480P
+    common_size_quality, CommonPreviewSizeData class
   """
+  supported_preview_sizes = set(cam.get_all_supported_preview_sizes(camera_id))
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s', supported_video_qualities)
 
   # Make dictionary on video quality and size according to compatibility
   supported_video_size_to_quality = {}
@@ -87,27 +98,42 @@ def get_lowest_common_preview_video_size(
       video_size = VIDEO_QUALITY_SIZE[video_quality]
       supported_video_size_to_quality[video_size] = video_quality
   logging.debug(
-      'Supported video size to quality: %s', supported_video_size_to_quality)
-
-  # Use areas of video sizes to find the smallest, common size
+      'Supported video size to quality: %s', supported_video_size_to_quality
+  )
+  # Find the intersection of supported preview sizes and video sizes
+  common_sizes = supported_preview_sizes.intersection(
+      supported_video_size_to_quality.keys()
+  )
+  if not common_sizes:
+    raise AssertionError('No common size between Preview and Video!')
+  # Filter common sizes based on min_area
   size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  smallest_common_size = ''
-  smallest_area = float('inf')
-  for size in supported_preview_sizes:
-    if size in supported_video_size_to_quality:
-      area = size_to_area(size)
-      if smallest_area > area >= min_area:
-        smallest_area = area
-        smallest_common_size = size
-  logging.debug('Lowest common size: %s', smallest_common_size)
-
+  common_sizes = (
+      [size for size in common_sizes if size_to_area(size) >= min_area]
+  )
+  if not common_sizes:
+    raise AssertionError(
+        'No common size above min_area between Preview and Video!'
+    )
+  # Use areas of video sizes to find the smallest and largest common size
+  smallest_common_size = min(common_sizes, key=size_to_area)
+  largest_common_size = max(common_sizes, key=size_to_area)
+  logging.debug('Smallest common size: %s', smallest_common_size)
+  logging.debug('Largest common size: %s', largest_common_size)
   # Find video quality of resolution with resolution as key
-  smallest_common_video_quality = (
-      supported_video_size_to_quality[smallest_common_size])
-  logging.debug(
-      'Lowest common size video quality: %s', smallest_common_video_quality)
-
-  return smallest_common_size, smallest_common_video_quality
+  smallest_common_quality = (
+      supported_video_size_to_quality[smallest_common_size]
+  )
+  logging.debug('Smallest common quality: %s', smallest_common_quality)
+  largest_common_quality = supported_video_size_to_quality[largest_common_size]
+  logging.debug('Largest common quality: %s', largest_common_quality)
+  common_size_quality = CommonPreviewSizeData(
+      smallest_size=smallest_common_size,
+      smallest_quality=smallest_common_quality,
+      largest_size=largest_common_size,
+      largest_quality=largest_common_quality
+  )
+  return common_size_quality
 
 
 def log_ffmpeg_version():
@@ -129,7 +155,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
   suffix to identify the frames for video of each quality. Since there can be
-  multiple key frames, each key frame image will be differentiated with it's
+  multiple key frames, each key frame image will be differentiated with its
   frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
@@ -196,50 +222,57 @@ def get_key_frame_to_process(key_frame_files):
   return key_frame_files[-1]
 
 
-def extract_all_frames_from_video(log_path, video_file_name, img_format):
-  """Extracts and returns a list of all extracted frames.
+def extract_all_frames_from_video(
+    log_path, video_file_name, img_format, video_fps=None):
+  """Extracts and returns a list of frames from a video using FFmpeg.
 
-  Ffmpeg tool is used to extract all frames from the video at path
-  <log_path>/<video_file_name>. The extracted key frames will have the name
-  video_file_name with "_frame" suffix to identify the frames for video of each
-  size. Each frame image will be differentiated with its frame index. All
-  extracted key frames will be available in the provided img_format format at
-  the same path as the video file.
+  Extract all frames from the video at path <log_path>/<video_file_name>.
+  The extracted frames will have the name video_file_name with "_frame"
+  suffix to identify the frames for video of each size. Each frame image
+  will be differentiated with its frame index. All extracted rames will be
+  available in the provided img_format format at the same path as the video.
 
   The run time flag '-loglevel quiet' hides the information from terminal.
   In order to see the detailed output of ffmpeg command change the loglevel
   option to 'info'.
 
   Args:
-    log_path: str; path for video file directory
+    log_path: str; directory containing video file.
     video_file_name: str; name of the video file.
-    img_format: str; type of image to export frames into. ex. 'png'
+    img_format: str; desired image format for export frames. ex. 'png'
+    video_fps: str; fps of imported video.
   Returns:
-    key_frame_files: An ordered list of paths for each frame extracted from the
-                     video
+    an ordered list of paths to the extracted frame images.
   """
   logging.debug('Extracting all frames')
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_frame"
   logging.debug('ffmpeg_image_name: %s', ffmpeg_image_name)
   ffmpeg_image_file_names = (
       f'{os.path.join(log_path, ffmpeg_image_name)}_%04d.{img_format}')
-  cmd = [
-      'ffmpeg', '-i', os.path.join(log_path, video_file_name),
-      '-vsync', 'passthrough',  # prevents frame drops during decoding
-      ffmpeg_image_file_names, '-loglevel', 'quiet'
-  ]
-  _ = subprocess.call(cmd,
-                      stdin=subprocess.DEVNULL,
-                      stdout=subprocess.DEVNULL,
-                      stderr=subprocess.DEVNULL)
+  if video_fps:
+    cmd = [
+        'ffmpeg', '-i', os.path.join(log_path, video_file_name),
+        '-r', video_fps,  # force a constant frame rate for reliability
+        ffmpeg_image_file_names, '-loglevel', 'quiet'
+    ]
+  else:
+    cmd = [
+        'ffmpeg', '-i', os.path.join(log_path, video_file_name),
+        '-vsync', 'passthrough',  # prevents frame drops during decoding
+        ffmpeg_image_file_names, '-loglevel', 'quiet'
+    ]
+  subprocess.call(cmd,
+                  stdin=subprocess.DEVNULL,
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL)
 
-  file_list = sorted(
-      [_ for _ in os.listdir(log_path) if (_.endswith(img_format)
-                                           and ffmpeg_image_name in _)])
-  if not file_list:
+  files = sorted(
+      [file for file in os.listdir(log_path) if
+       (file.endswith(img_format) and ffmpeg_image_name in file)])
+  if not files:
     raise AssertionError('No frames extracted. Check source video.')
 
-  return file_list
+  return files
 
 
 def extract_last_key_frame_from_recording(log_path, file_name):
@@ -267,7 +300,7 @@ def extract_last_key_frame_from_recording(log_path, file_name):
   return np_image
 
 
-def get_average_frame_rate(video_file_name_with_path):
+def get_avg_frame_rate(video_file_name_with_path):
   """Get average frame rate assuming variable frame rate video.
 
   Args:

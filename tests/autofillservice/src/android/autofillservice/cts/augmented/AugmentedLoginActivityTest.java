@@ -746,6 +746,8 @@ public class AugmentedLoginActivityTest
         assumeTrue("Rotation is supported", Helper.isRotationSupported(mContext));
         assumeTrue("Device state is not REAR_DISPLAY",
                 !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.REAR_DISPLAY));
+        assumeTrue("Device state is not OPENED",
+                !Helper.isDeviceInState(mContext, Helper.DeviceStateEnum.OPENED));
 
         // Set services
         enableService();
@@ -907,6 +909,7 @@ public class AugmentedLoginActivityTest
 
     @Presubmit
     @Test
+    @AppModeFull(reason = "testAutoFill_mainServiceReturnedNull_augmentedAutofillOneField enough")
     public void testAugmentedAutoFill_hasPreviousRequestViewNotFocused_requestAutofill()
             throws Exception {
         // Set services

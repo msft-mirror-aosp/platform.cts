@@ -21,7 +21,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
 import android.app.Instrumentation;
+import android.content.Intent;
 import android.hardware.input.cts.InputCallback;
 import android.hardware.input.cts.InputCtsActivity;
 import android.os.Bundle;
@@ -69,7 +71,7 @@ public abstract class InputTestCase {
     protected final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     private final InputListener mInputListener;
-    View mDecorView;
+    private View mDecorView;
 
     // Stores the name of the currently running test
     protected String mCurrentTestCase;
@@ -84,13 +86,15 @@ public abstract class InputTestCase {
         mInputListener = new InputListener();
     }
 
-    private ActivityScenario<InputCtsActivity> mActivityRule;
+    private ActivityScenario<Activity> mActivityRule;
 
     @Before
     public void setUp() throws Exception {
         onBeforeLaunchActivity();
-        mActivityRule = ActivityScenario.launch(InputCtsActivity.class, getActivityOptions())
-                .onActivity(activity -> mTestActivity = activity);
+        mActivityRule = ActivityScenario.launch(
+                new Intent(mInstrumentation.getContext(), InputCtsActivity.class),
+                getActivityOptions()
+        ).onActivity(activity -> mTestActivity = (InputCtsActivity) activity);
         mTestActivity.clearUnhandleKeyCode();
         mTestActivity.setInputCallback(mInputListener);
         mDecorView = mTestActivity.getWindow().getDecorView();
@@ -201,26 +205,13 @@ public abstract class InputTestCase {
      * @param actualEvent actual event flag received in the test app.
      */
     void assertAxis(String testCase, MotionEvent expectedEvent, MotionEvent actualEvent) {
-        // Get the absolute location of the test activity, so we can ensure that axis x and axis y
-        // are valid on any surface, including the portrait ones (like car portrait).
-        final int[] locationOnScreen = new int[2];  // position 0 corresponds to x, and 1 to y
-        mDecorView.getLocationOnScreen(locationOnScreen);
-
         for (int i = 0; i < actualEvent.getPointerCount(); i++) {
             for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
                 if (IGNORE_AXES.contains(axis)) continue;
-                float actualAxis = actualEvent.getAxisValue(axis, i);
-
-                // Adjust axis in case this test is running on car portrait surface.
-                if (axis == MotionEvent.AXIS_X) {
-                    actualAxis += locationOnScreen[0];
-                } else if (axis == MotionEvent.AXIS_Y) {
-                    actualAxis += locationOnScreen[1];
-                }
-
                 assertEquals(testCase + " pointer " + i
                                 + " (" + MotionEvent.axisToString(axis) + ")",
-                        expectedEvent.getAxisValue(axis, i), actualAxis, TOLERANCE);
+                        expectedEvent.getAxisValue(axis, i), actualEvent.getAxisValue(axis, i),
+                        TOLERANCE);
             }
         }
     }
@@ -241,7 +232,7 @@ public abstract class InputTestCase {
      */
     private void assertSource(String testCase, InputEvent expected, InputEvent actual) {
         assertNotEquals(testCase + " (source)", InputDevice.SOURCE_CLASS_NONE, actual.getSource());
-        assertTrue(testCase + " (source)", expected.isFromSource(actual.getSource()));
+        assertTrue(testCase + " (source)", actual.isFromSource(expected.getSource()));
     }
 
     /**

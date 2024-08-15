@@ -76,6 +76,7 @@ import static android.server.wm.ActivityLauncher.launchActivityFromExtras;
 import static android.server.wm.CommandSession.KEY_FORWARD;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
+import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -188,6 +189,7 @@ import com.android.compatibility.common.util.AppOpsUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -200,7 +202,6 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -232,21 +233,18 @@ public abstract class ActivityManagerTestBase {
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
     private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
-    private static final List<String> TEST_PACKAGES;
-
-    static {
-        final List<String> testPackages = new ArrayList<>();
-        testPackages.add(TEST_PACKAGE);
-        testPackages.add(SECOND_TEST_PACKAGE);
-        testPackages.add(THIRD_TEST_PACKAGE);
-        testPackages.add("android.server.wm.cts");
-        testPackages.add("android.server.wm.jetpack");
-        testPackages.add("android.server.wm.jetpack.second");
-        TEST_PACKAGES = Collections.unmodifiableList(testPackages);
-    }
+    private static final List<String> TEST_PACKAGES = List.of(
+            TEST_PACKAGE,
+            SECOND_TEST_PACKAGE,
+            THIRD_TEST_PACKAGE,
+            "android.server.wm.cts",
+            "android.server.wm.jetpack",
+            "android.server.wm.jetpack.second"
+    );
 
     protected static final String AM_START_HOME_ACTIVITY_COMMAND =
-            "am start -a android.intent.action.MAIN -c android.intent.category.HOME";
+            "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
+                    + Process.myUserHandle().getIdentifier();
 
     protected static final String MSG_NO_MOCK_IME =
             "MockIme cannot be used for devices that do not support installable IMEs";
@@ -299,6 +297,8 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
+    private UserHelper mUserHelper;
+    protected int mUserId;
 
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
@@ -338,16 +338,20 @@ public abstract class ActivityManagerTestBase {
                         .append(" -f 0x")
                         .append(toHexString(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK))
                         .append(" --display ")
-                        .append(displayId),
+                        .append(displayId)
+                        .append(" --user ")
+                        .append(Process.myUserHandle().getIdentifier()),
                 extras);
     }
 
     protected static String getAmStartCmdInNewTask(final ComponentName activityName) {
-        return "am start -n " + getActivityName(activityName) + " -f 0x18000000";
+        return "am start -n " + getActivityName(activityName) + " -f 0x18000000 --user "
+                + Process.myUserHandle().getIdentifier();
     }
 
     protected static String getAmStartCmdWithData(final ComponentName activityName, String data) {
-        return "am start -n " + getActivityName(activityName) + " -d " + data;
+        return "am start -n " + getActivityName(activityName) + " -d " + data + " --user "
+                + Process.myUserHandle().getIdentifier();
     }
 
     protected static String getAmStartCmdWithNoAnimation(final ComponentName activityName,
@@ -405,10 +409,15 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
+        waitForActivityState(timeoutMs, componentName, STATE_RESUMED);
+    }
+
+    protected void waitForActivityState(int timeoutMs, ComponentName componentName,
+            String expectedState) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
-            if (mWmState.hasActivityState(componentName, STATE_RESUMED)) {
+            if (mWmState.hasActivityState(componentName, expectedState)) {
                 SystemClock.sleep(200);
                 mWmState.computeState();
                 break;
@@ -698,9 +707,15 @@ public abstract class ActivityManagerTestBase {
         }
 
         launchHomeActivityNoWait();
-        // TODO(b/242933292): Consider removing all the tasks belonging to android.server.wm
-        // instead of removing all and then waiting for allActivitiesResumed.
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            // Remove all tasks and then wait for allActivitiesResumed.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        } else {
+            // Stop any residual tasks from the test package.
+            forceStopAllTestPackages();
+        }
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -715,8 +730,13 @@ public abstract class ActivityManagerTestBase {
         // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
         // restarts can interfere with the test state. To avoid that, its better to wait for all
         // the activities to come in the resumed state.
-        mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
-                + "be either empty or resumed");
+        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
+                    "Root Tasks should be either empty or resumed");
+        }
+        mUserHelper = new UserHelper(mContext);
+        mUserId = mContext.getUserId();
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -732,10 +752,13 @@ public abstract class ActivityManagerTestBase {
         // process if executed first.
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        stopTestPackage(TEST_PACKAGE);
-        stopTestPackage(SECOND_TEST_PACKAGE);
-        stopTestPackage(THIRD_TEST_PACKAGE);
+
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        }
+        forceStopAllTestPackages();
+
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
             mWmState.waitForAllNonHomeActivitiesToDestroyed();
         }
@@ -749,6 +772,12 @@ public abstract class ActivityManagerTestBase {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
+    }
+
+    private void forceStopAllTestPackages() {
+        stopTestPackage(TEST_PACKAGE);
+        stopTestPackage(SECOND_TEST_PACKAGE);
+        stopTestPackage(THIRD_TEST_PACKAGE);
     }
 
     /** This should only be called if keyguard is still locked unexpectedly. */
@@ -889,12 +918,6 @@ public abstract class ActivityManagerTestBase {
     protected void triggerBackEventByGesture(int displayId) {
         mTouchHelper.triggerBackEventByGesture(
                 displayId, true /* sync */, false /* waitForAnimations */);
-    }
-
-    protected Bitmap takeScreenshotForBounds(Rect rect) {
-        Bitmap fullBitmap = takeScreenshot();
-        return Bitmap.createBitmap(fullBitmap, rect.left, rect.top,
-                rect.width(), rect.height());
     }
 
     protected void launchActivity(final ComponentName activityName,
@@ -1596,6 +1619,11 @@ public abstract class ActivityManagerTestBase {
     /** @see ObjectTracker#manage(AutoCloseable) */
     protected FontScaleSession createManagedFontScaleSession() {
         return mObjectTracker.manage(new FontScaleSession());
+    }
+
+    /** @see ObjectTracker#manage(AutoCloseable) */
+    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
+        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
     }
 
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
@@ -2627,6 +2655,9 @@ public abstract class ActivityManagerTestBase {
                         .append(" -f 0x20000020");
             }
 
+            // Add user for which activity needs to be started
+            commandBuilder.append(" --user ").append(Process.myUserHandle().getIdentifier());
+
             // Add a flag to ensure we actually mean to launch an activity.
             commandBuilder.append(" --ez " + KEY_LAUNCH_ACTIVITY + " true");
 
@@ -3358,11 +3389,27 @@ public abstract class ActivityManagerTestBase {
     }
 
     /**
+     * Checks whether the test is enabled on visible background users.
+     */
+    protected void assumeRunNotOnVisibleBackgroundNonProfileUser(String message) {
+        assumeFalse(message, mUserHelper.isVisibleBackgroundUser());
+    }
+
+    /**
      * Checks whether the device has automotive split-screen multitasking feature enabled
      */
     protected boolean hasAutomotiveSplitscreenMultitaskingFeature() {
         return mContext.getPackageManager()
                 .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
                         "android.software.car.splitscreen_multitasking") && isCar();
+    }
+
+    /**
+     * Returns the main display assigned to the user.
+     * Note that this returns the DEFAULT_DISPLAY for the current user, and returns the display
+     * assigned to the user if it is a visible background user.
+     */
+    protected int getMainDisplayId() {
+        return mUserHelper.getMainDisplayId();
     }
 }

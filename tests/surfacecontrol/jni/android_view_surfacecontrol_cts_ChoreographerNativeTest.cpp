@@ -198,20 +198,19 @@ static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCal
     verifyCallback(env, cb1, 1, start, NOMINAL_VSYNC_PERIOD * 3);
     std::lock_guard<std::mutex> _l{gLock};
     std::vector<VsyncCallback::FrameTime> frameTimelines = cb1.getTimeline();
-    ALOGD("Test start time = %ld", std::chrono::nanoseconds{start});
-    ALOGD("VsyncCallback frameTime = %ld", cb1.frameTime);
+    ALOGD("Test start time = %lld", std::chrono::nanoseconds{start}.count());
+    ALOGD("VsyncCallback frameTime = %lld", cb1.frameTime.count());
     for (auto [i, lastValue] = std::tuple{0, cb1.frameTime}; i < frameTimelines.size(); i++) {
         auto deadline = std::chrono::nanoseconds{frameTimelines[i].deadline};
-        ALOGD("\tframe timeline #%d: deadline = %ld", i, deadline);
+        ALOGD("\tframe timeline #%d: deadline = %lld", i, deadline.count());
         ASSERT(deadline > std::chrono::nanoseconds{start},
-               "Deadline (%ld) must be after start time (%ld)",
-               deadline, std::chrono::nanoseconds{start});
-        ASSERT(deadline > cb1.frameTime,
-               "Deadline (%ld) must be after frame time (%ld)",
-               deadline, cb1.frameTime);
+               "Deadline (%lld) must be after start time (%lld)", deadline.count(),
+               std::chrono::nanoseconds{start}.count());
+        ASSERT(deadline > cb1.frameTime, "Deadline (%lld) must be after frame time (%lld)",
+               deadline.count(), cb1.frameTime.count());
         ASSERT(deadline > lastValue,
-               "Deadline (%ld) must be greater than last frame deadline (%ld)",
-               deadline, lastValue);
+               "Deadline (%lld) must be greater than last frame deadline (%lld)", deadline.count(),
+               lastValue.count());
         lastValue = deadline;
     }
     // To avoid API fragmentation, enforce there are at least a certain amount of frame timeline
@@ -221,8 +220,9 @@ static void android_view_surfacecontrol_cts_ChoreographerNativeTest_testFrameCal
     const auto threshold = std::chrono::nanoseconds{45ms};
     ASSERT(timeDelta > threshold,
            "Not enough later choices for frame timelines. "
-           "Time delta between start and latest deadline (%ld) must be larger than the threshold (%ld)",
-           timeDelta, threshold);
+           "Time delta between start and latest deadline (%lld) must be larger than the threshold "
+           "(%lld)",
+           timeDelta.count(), threshold.count());
 }
 
 static void

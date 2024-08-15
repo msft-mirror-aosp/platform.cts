@@ -18,6 +18,8 @@ package android.server.wm;
 
 import static android.content.pm.ActivityInfo.CONFIG_SCREEN_SIZE;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
@@ -110,6 +112,14 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         mTargetContext = getInstrumentation().getTargetContext();
     }
 
+    protected boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
+    }
+
+    protected boolean supportsInstallableIme() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS);
+    }
+
     protected DisplayContent getDisplayState(int displayId) {
         return getDisplayState(getDisplaysStates(), displayId);
     }
@@ -156,11 +166,6 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         }
 
         return result;
-    }
-
-    /** @see ObjectTracker#manage(AutoCloseable) */
-    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
-        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
     }
 
     public static class LetterboxAspectRatioSession extends IgnoreOrientationRequestSession {

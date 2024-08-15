@@ -16,6 +16,8 @@
 
 package android.compat.cts;
 
+import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -34,8 +36,10 @@ import com.android.tradefed.device.CollectingByteOutputReceiver;
 import com.android.tradefed.device.CollectingOutputReceiver;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
+import com.android.tradefed.invoker.TestInformation;
 import com.android.tradefed.log.LogUtil.CLog;
 import com.android.tradefed.result.CollectingTestListener;
+import com.android.tradefed.result.ITestInvocationListener;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
@@ -67,6 +71,20 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
     private static final String REMOVE_CONFIG_CMD = "cmd stats config remove %d";
 
     private static final String TEST_RUNNER = "androidx.test.runner.AndroidJUnitRunner";
+
+    private int mTestRunningUserId;
+
+    @Override
+    public void run(TestInformation testInfo, ITestInvocationListener listener)
+            throws DeviceNotAvailableException {
+        // The test runs as the current user in most cases. For secondary_user_on_secondary_display
+        // case, we set mTestRunningUserId from RUN_TEST_AS_USER.
+        mTestRunningUserId = getDevice().getCurrentUser();
+        if (getDevice().isVisibleBackgroundUsersSupported()) {
+            mTestRunningUserId = getRunTestsAsUser(testInfo);
+        }
+        super.run(testInfo, listener);
+    }
 
     @Override
     protected void setUp() throws Exception {
@@ -162,7 +180,8 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
                     getDevice().getIDevice());
             testRunner.setMethodName(testClassName, testMethodName);
             CollectingTestListener listener = new CollectingTestListener();
-            assertThat(getDevice().runInstrumentationTests(testRunner, listener)).isTrue();
+            assertThat(getDevice().runInstrumentationTestsAsUser(
+                    testRunner, mTestRunningUserId, listener)).isTrue();
 
             // Check that device side test occurred as expected
             final TestRunResult result = listener.getCurrentRunResults();
@@ -271,10 +290,9 @@ public class CompatChangeGatingTestCase extends DeviceTestCase implements IBuild
      * Gets the uid of the test app.
      */
     protected int getUid(@Nonnull String packageName) throws DeviceNotAvailableException {
-        int currentUser = getDevice().getCurrentUser();
         String uidLines = getDevice()
                 .executeShellCommand(
-                        "cmd package list packages -U --user " + currentUser + " "
+                        "cmd package list packages -U --user " + mTestRunningUserId + " "
                                 + packageName);
         for (String uidLine : uidLines.split("\n")) {
             if (uidLine.startsWith("package:" + packageName + " uid:")) {

@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="all_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsInputTestCases.apk" />
@@ -56,7 +57,7 @@
         <option name="pull-pattern-keys"
             value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
         <!-- Pull files created by tests, like the output of screenshot tests -->
-        <option name="directory-keys" value="/storage/emulated/0/CtsInputTestCases" />
+        <option name="directory-keys" value="/sdcard/Download/CtsInputTestCases" />
         <option name="collect-on-run-ended-only" value="false" />
     </metrics_collector>
 </configuration>

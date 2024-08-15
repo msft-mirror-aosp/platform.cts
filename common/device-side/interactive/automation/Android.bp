@@ -12,6 +12,7 @@ android_app {
         "InteractiveCommonAndroid",
         "Nene",
         "testng",
+        "uiautomator-helpers",
     ],
     manifest: "src/main/AndroidManifest.xml",
     min_sdk_version: "29",

@@ -16,6 +16,10 @@
 
 package android.mediav2.common.cts;
 
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
+
 import static org.junit.Assert.assertTrue;
 
 import android.annotation.NonNull;
@@ -26,8 +30,6 @@ import android.util.Pair;
 
 import androidx.test.filters.SdkSuppress;
 
-import com.android.media.codec.flags.Flags;
-
 import java.util.ArrayDeque;
 import java.util.LinkedList;
 
@@ -37,7 +39,7 @@ import java.util.LinkedList;
  * in time.
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 public class CodecAsyncHandlerMultiAccessUnits extends CodecAsyncHandler {
     private final LinkedList<Pair<Integer, ArrayDeque<MediaCodec.BufferInfo>>> mCbOutputQueue;
 

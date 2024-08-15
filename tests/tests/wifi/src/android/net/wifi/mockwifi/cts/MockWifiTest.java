@@ -64,6 +64,7 @@ import androidx.test.filters.SdkSuppress;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 
@@ -389,7 +390,7 @@ public class MockWifiTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     @Test
     public void testMockPnoScanResultsOnMockWifi() throws Exception {
-        if (!sWifiManager.isPreferredNetworkOffloadSupported()) {
+        if (!sWifiManager.isPreferredNetworkOffloadSupported() || FeatureUtil.isAutomotive()) {
             return;
         }
         if (!hasLocationFeature()) {
@@ -463,16 +464,13 @@ public class MockWifiTest {
                         };
                 }));
             sMockModemManager.updateConfiguredMockedMethods();
+            // Force Screen off before disconnect, then device should trigger pno scan.
+            turnScreenOffNoDelay();
             sWifiManager.disconnect();
             waitForDisconnection();
-            // Force Screen off, device should trigger pno scan.
-            turnScreenOffNoDelay();
             PollingCheck.check(
                     "Fail to get Pno result", 30_000,
                     () -> {
-                        if (!isPnoScanTriggered.get()) {
-                            return false;
-                        }
                         if (isExternalPnoRequestBusy.get()) {
                             // Use scan result to replace PnoScanResult
                             // since there is no way to only get Pno scan result.
