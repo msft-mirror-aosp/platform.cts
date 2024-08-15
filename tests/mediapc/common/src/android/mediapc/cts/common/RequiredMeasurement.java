@@ -87,7 +87,9 @@ public abstract class RequiredMeasurement<T> {
     public final RequirementConstants.Result meetsPerformanceClass(int mediaPerformanceClass)
             throws IllegalStateException {
 
-        if (!this.measuredValueSet) {
+        if (expectedValues().isEmpty()) {
+            return RequirementConstants.Result.NA;
+        } else if (!this.measuredValueSet) {
             throw new IllegalStateException("measured value not set for required measurement "
                 + this.id());
         }
@@ -131,8 +133,8 @@ public abstract class RequiredMeasurement<T> {
             // value map. If so, the measurement should just be ignored.
             return;
         } else if (!this.measuredValueSet) {
-            throw new IllegalStateException("measured value not set for required measurement "
-                + this.id());
+            throw new IllegalStateException("measured value not set for required measurement:\n"
+                + this);
         }
 
         if (this.measuredValue == null) {
@@ -158,4 +160,5 @@ public abstract class RequiredMeasurement<T> {
                 ResultUnit.NONE);
         }
     }
+
 }
