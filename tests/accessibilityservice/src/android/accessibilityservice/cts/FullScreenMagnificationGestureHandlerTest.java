@@ -64,10 +64,6 @@ import android.graphics.Region;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.view.ViewConfiguration;
 import android.view.WindowInsets;
@@ -81,7 +77,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -141,15 +136,11 @@ public class FullScreenMagnificationGestureHandlerTest {
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
-    private final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
-
     @Rule
     public final RuleChain mRuleChain = RuleChain
             .outerRule(mActivityRule)
             .around(mServiceRule)
-            .around(mDumpOnFailureRule)
-            .around(mCheckFlagsRule);
+            .around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetUp() {
@@ -319,9 +310,7 @@ public class FullScreenMagnificationGestureHandlerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_DELAY_NOTIFICATION_TO_MAGNIFICATION_WHEN_RECENTS_WINDOW_TO_FRONT_TRANSITION)
-    public void testTapNavigationBar_zoomingAndFlagsOn_keepZooming() {
+    public void testTapNavigationBar_zooming_keepZooming() {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
 
@@ -334,24 +323,6 @@ public class FullScreenMagnificationGestureHandlerTest {
         // not cause the magnification zooming out.
         dispatch(click(mNavigationBarTapLocation));
         assertTrue(isZoomed());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(
-            Flags.FLAG_DELAY_NOTIFICATION_TO_MAGNIFICATION_WHEN_RECENTS_WINDOW_TO_FRONT_TRANSITION)
-    public void testTapNavigationBar_zoomingAndFlagsOff_zoomOut() {
-        // Only test when device is in gesture navigation mode.
-        assumeTrue(mIsGestureNavigationMode);
-
-        assertFalse(isZoomed());
-
-        assertGesturesPropagateToView();
-        setZoomByTripleTapping(true);
-
-        // One tap on navigation bar would trigger window transition events, then the events will
-        // cause the magnification zooming out.
-        dispatch(click(mNavigationBarTapLocation));
-        waitOn(mZoomLock, () -> !isZoomed());
     }
 
     @Test

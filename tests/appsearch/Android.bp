@@ -46,6 +46,8 @@ android_test {
     ],
     per_testcase_directory: true,
     min_sdk_version: "31",
+    // For testing @SystemApi(client = MODULE_LIBRARIES) APIs
+    platform_apis: true,
 }
 
 android_test_helper_app {

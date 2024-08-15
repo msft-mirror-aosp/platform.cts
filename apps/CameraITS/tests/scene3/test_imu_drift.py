@@ -227,11 +227,12 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # get largest common preview/video size pylint: disable=line-too-long
-      preview_size = video_processing_utils.get_largest_common_preview_video_size(
-          cam, self.camera_id
+      # get largest size from get_preview_video_sizes_union
+      preview_size = (
+          video_processing_utils.get_preview_video_sizes_union(
+              cam, self.camera_id).largest_size
       )
-      logging.debug('Tested preview resolution: %s', preview_size)
+      logging.debug('Testing preview resolution: %s', preview_size)
 
       # start collecting IMU events
       logging.debug('Collecting IMU events')

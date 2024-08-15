@@ -49,6 +49,8 @@ import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.DeviceStateUtils;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityLauncher;
@@ -134,7 +136,12 @@ public class ExtensionRearDisplayPresentationTest extends WindowManagerJetpackTe
                 mWindowAreaSessionState = sessionStatus;
             };
 
-    @Rule
+    // CheckFlagsRule rule needs to before WindowManagerJetpackTestRule
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 1)
     public final WindowExtensionTestRule mWindowManagerJetpackTestRule =
             new WindowExtensionTestRule(WindowAreaComponent.class);
 

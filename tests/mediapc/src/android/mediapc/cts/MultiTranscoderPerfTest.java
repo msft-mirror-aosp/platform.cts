@@ -25,6 +25,10 @@ import static org.junit.Assert.assertTrue;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.ConcurrentHDRTranscodingSessionsRequirement;
+import android.mediapc.cts.common.Requirements.ConcurrentVideoTranscodingSessionsRequirement;
+import android.mediapc.cts.common.Requirements.VideoTranscodingInstancesRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
 import android.view.Surface;
@@ -259,31 +263,46 @@ public class MultiTranscoderPerfTest extends MultiCodecPerfTestBase {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_5;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_6;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_19;
+        VideoTranscodingInstancesRequirement r5_1__H_1_5;
+        ConcurrentVideoTranscodingSessionsRequirement r5_1__H_1_6;
+        ConcurrentHDRTranscodingSessionsRequirement r5_1__H_1_19;
         if (height > 1080) {
             if (useHighBitDepth) {
-                r5_1__H_1_19 = pce.addR5_1__H_1_19();
+                r5_1__H_1_19 = Requirements.addR5_1__H_1_19().to(pce);
                 r5_1__H_1_19.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_19.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_19.setFrameDropsPerSec(frameDropsPerSec);
             } else {
-                r5_1__H_1_5 = pce.addR5_1__H_1_5_4k();
-                r5_1__H_1_6 = pce.addR5_1__H_1_6_4k();
-                r5_1__H_1_5.setConcurrentInstances(maxInstances);
+                r5_1__H_1_5 = Requirements.addR5_1__H_1_5().withConfig4K().to(pce);
+                r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig4K().to(pce);
+                r5_1__H_1_5.setConcurrentSessions(maxInstances);
                 r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
-                r5_1__H_1_6.setFrameDropsPerSecond(frameDropsPerSec);
+                r5_1__H_1_6.setFrameDropsPerSec(frameDropsPerSec);
             }
         } else if (height == 1080) {
-            r5_1__H_1_5 = pce.addR5_1__H_1_5_1080p();
-            r5_1__H_1_6 = pce.addR5_1__H_1_6_1080p();
-            r5_1__H_1_5.setConcurrentInstances(maxInstances);
+            r5_1__H_1_5 = Requirements.addR5_1__H_1_5().withConfig1080P().to(pce);
+            r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig1080P().to(pce);
+            r5_1__H_1_5.setConcurrentSessions(maxInstances);
             r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
         } else {
-            r5_1__H_1_5 = pce.addR5_1__H_1_5_720p(mDecoderPair.first, mEncoderPair.first, height);
-            r5_1__H_1_6 = pce.addR5_1__H_1_6_720p(mDecoderPair.first, mEncoderPair.first, height);
-            r5_1__H_1_5.setConcurrentInstances(maxInstances);
-            r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
+
+            if (isMPCCodec(mDecoderPair.first, mEncoderPair.first)) {
+                if (isRCodec(mDecoderPair.first, mEncoderPair.first)) {
+                    r5_1__H_1_5 = Requirements.addR5_1__H_1_5().withConfig720P().to(pce);
+                    r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig720P().to(pce);
+                } else if (isVP9Codec(mDecoderPair.first, mEncoderPair.first)) {
+                    r5_1__H_1_5 = Requirements.addR5_1__H_1_5().withConfig720P()
+                            .withVariantVP9().to(pce);
+                    r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig720P()
+                            .withVariantVP9().to(pce);
+                } else {
+                    r5_1__H_1_5 = Requirements.addR5_1__H_1_5().withConfig720P()
+                            .withVariantAV1().to(pce);
+                    r5_1__H_1_6 = Requirements.addR5_1__H_1_6().withConfig720P()
+                            .withVariantAV1().to(pce);
+                }
+                r5_1__H_1_5.setConcurrentSessions(maxInstances);
+                r5_1__H_1_6.setConcurrentFps(achievedFrameRate);
+            }
         }
 
         pce.submitAndCheck();

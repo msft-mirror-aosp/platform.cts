@@ -16,38 +16,40 @@
 
 package android.app.appfunctions.cts
 
+import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.flags.Flags
 import android.content.Context
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.annotations.EnableFlags
+import android.platform.test.flag.junit.SetFlagsRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.common.truth.Truth.assertThat
+import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
+@EnableFlags(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionManagerTest {
     @get:Rule
-    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    val mSetFlagsRule: SetFlagsRule = SetFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-//    private lateinit var mManager: AppFunctionManager
+    private lateinit var mManager: AppFunctionManager
 
     @Before
     fun setup() {
-//        val manager = context.getSystemService(AppFunctionManager::class.java)
-//        assumeNotNull(manager)
-//        mManager = manager
+        val manager = context.getSystemService(AppFunctionManager::class.java)
+        assumeNotNull(manager)
+        mManager = manager
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
     fun checkManagerNotNull() {
-//        // TODO: Replace this with a real test.
-//        assertThat(mManager).isNotNull()
+        assertThat(mManager).isNotNull()
     }
 }

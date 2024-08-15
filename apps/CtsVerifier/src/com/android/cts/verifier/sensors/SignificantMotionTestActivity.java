@@ -16,39 +16,38 @@
 
 package com.android.cts.verifier.sensors;
 
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import com.android.cts.verifier.R;
-import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
-import com.android.cts.verifier.sensors.helpers.SensorTestScreenManipulator;
-
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.cts.helpers.SensorNotSupportedException;
-import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
-import android.hardware.cts.helpers.SuspendStateMonitor;
-import android.hardware.cts.helpers.TestSensorEnvironment;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.TriggerEvent;
 import android.hardware.TriggerEventListener;
+import android.hardware.cts.helpers.SensorNotSupportedException;
+import android.hardware.cts.helpers.SensorTestStateNotSupportedException;
+import android.hardware.cts.helpers.SuspendStateMonitor;
+import android.hardware.cts.helpers.TestSensorEnvironment;
+import android.os.BatteryManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.os.Vibrator;
+
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import android.util.Log;
+
+import com.android.cts.verifier.R;
+import com.android.cts.verifier.sensors.base.SensorCtsVerifierTestActivity;
+import com.android.cts.verifier.sensors.helpers.SensorTestScreenManipulator;
 
 import junit.framework.Assert;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test cases for Significant Motion sensor.
@@ -195,6 +194,11 @@ public class SignificantMotionTestActivity extends SensorCtsVerifierTestActivity
 
     @SuppressWarnings("unused")
     public String testAPWakeUpOnSMDTrigger() throws Throwable {
+        // skip this test if the device does NOT support battery.
+        if (!deviceHasBattery()) {
+            throw new SensorTestStateNotSupportedException(
+                        getString(R.string.battery_saver_test_no_battery_detected));
+        }
 
         setFirstExecutionInstruction(R.string.snsr_significant_motion_ap_suspend);
 
@@ -325,6 +329,12 @@ public class SignificantMotionTestActivity extends SensorCtsVerifierTestActivity
         if (mScreenManipulator != null){
             mScreenManipulator.close();
         }
+    }
+
+    private boolean deviceHasBattery() {
+        final Intent batteryInfo = getApplicationContext().registerReceiver(null,
+                new IntentFilter(Intent.ACTION_BATTERY_CHANGED), RECEIVER_EXPORTED);
+        return batteryInfo.getBooleanExtra(BatteryManager.EXTRA_PRESENT, true);
     }
 
     /**

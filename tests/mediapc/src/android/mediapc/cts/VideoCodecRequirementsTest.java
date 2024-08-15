@@ -173,8 +173,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAV1DecoderReq = pce.addRAV1DecoderReq();
-        rAV1DecoderReq.setAv1DecoderReq(oneCodecDecoding);
+        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
+                Requirements.addR5_1__H_1_14().to(pce);
+        rAV1DecoderReq.setAv1DecoderRequirementBoolean(oneCodecDecoding);
 
         pce.submitAndCheck();
     }
@@ -189,8 +190,9 @@ public class VideoCodecRequirementsTest {
         Set<String> decoderSet = get4k60HwCodecSet(false);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement r4k60HwDecoder = pce.addR4k60HwDecoder();
-        r4k60HwDecoder.set4kHwDecoders(decoderSet.size());
+        Requirements.HardwareDecoder4K60Requirement r4k60HwDecoder =
+                Requirements.addR5_1__H_1_15().to(pce);
+        r4k60HwDecoder.setNumber4KHwDecoders(decoderSet.size());
 
         pce.submitAndCheck();
     }
@@ -205,8 +207,9 @@ public class VideoCodecRequirementsTest {
         Set<String> encoderSet = get4k60HwCodecSet(true);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement r4k60HwEncoder = pce.addR4k60HwEncoder();
-        r4k60HwEncoder.set4kHwEncoders(encoderSet.size());
+        Requirements.HardwareEncoder4K60Requirement r4k60HwEncoder =
+                Requirements.addR5_1__H_1_16().to(pce);
+        r4k60HwEncoder.setNumber4KHwEncoders(encoderSet.size());
 
         pce.submitAndCheck();
     }
@@ -234,9 +237,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAVIFDecoderReq =
-                pce.addRAVIFDecoderReq();
-        rAVIFDecoderReq.setAVIFDecoderReq(isDecoded);
+        Requirements.AVIFBaselineProfileRequirement rAVIFDecoderReq =
+                Requirements.addR5_1__H_1_17().to(pce);
+        rAVIFDecoderReq.setAvifImageDecoderBoolean(isDecoded);
 
         pce.submitAndCheck();
     }
@@ -293,10 +296,8 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAV1EncoderReq = pce.addRAV1EncoderReq();
-        rAV1EncoderReq.setAv1EncResolution(height);
-        rAV1EncoderReq.setAv1EncFps(fps);
-        rAV1EncoderReq.setAv1EncBitrate(1);
+        Requirements.AV1EncoderRequirement rAV1EncoderReq = Requirements.addR5_1__H_1_18().to(pce);
+        rAV1EncoderReq.setAv1EncoderFps(fps);
         pce.submitAndCheck();
     }
 
@@ -343,9 +344,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement HlgEditingSupportReq =
-                pce.addR5_1__H_1_20();
-        HlgEditingSupportReq.setHlgEditingSupportedReq(isFeatureSupported);
+        Requirements.VideoCodecHlgEditingRequirement hlgEditingSupportReq =
+                Requirements.addR5_1__H_1_20().to(pce);
+        hlgEditingSupportReq.setHlgEditing(isFeatureSupported);
 
         pce.submitAndCheck();
     }
@@ -377,9 +378,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement DynamicColorAspectsReq =
-                pce.addR5_1__H_1_21();
-        DynamicColorAspectsReq.setDynamicColorAspectsSupportReq(isSupported);
+        Requirements.VideoCodecDynamicColorAspectRequirement dynamicColorAspectsReq =
+                Requirements.addR5_1__H_1_21().to(pce);
+        dynamicColorAspectsReq.setDynamicColorAspects(isSupported);
 
         pce.submitAndCheck();
     }
@@ -426,9 +427,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement portraitResolutionSupportReq =
-                pce.addR5_1__H_1_22();
-        portraitResolutionSupportReq.setPortraitResolutionSupportreq(isSupported);
+        Requirements.VideoCodecPortraitResolutionRequirement portraitResolutionSupportReq =
+                Requirements.addR5_1__H_1_22().to(pce);
+        portraitResolutionSupportReq.setPortraitResolution(isSupported);
 
         pce.submitAndCheck();
     }

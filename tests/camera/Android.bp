@@ -68,6 +68,7 @@ android_test {
         "androidx.heifwriter_heifwriter",
         "androidx.test.rules",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
         "cts-wm-util",
         "cts-install-lib",
         "androidx.camera_camera-camera2",

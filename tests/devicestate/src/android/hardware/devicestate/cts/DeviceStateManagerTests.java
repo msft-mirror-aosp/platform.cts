@@ -35,10 +35,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.app.PictureInPictureParams;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -395,8 +395,8 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
 
     /**
      * Tests that calling {@link DeviceStateManager#cancelStateRequest()} is successful while the
-     * calling activity is backgrounded provided the request is cancelled by the same process that
-     * sent the request.
+     * calling activity is in picture-in-picture mode provided the request is cancelled by the same
+     * process that sent the request.
      */
     @ApiTest(apis = {
             "android.hardware.devicestate.DeviceStateManager#requestState",
@@ -405,7 +405,7 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
             "android.hardware.devicestate.DeviceState#getIdentifier"})
     @RequiresFlagsEnabled(FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE)
     @Test
-    public void testCancelStateSucceedsBackgrounded_ifAppWasOriginalRequester()
+    public void testCancelStateSucceedsAsPiP_ifAppWasOriginalRequester()
             throws Throwable {
         final DeviceStateManager manager = getDeviceStateManager();
         final List<DeviceState> supportedStates = manager.getSupportedDeviceStates();
@@ -450,10 +450,11 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
         assertEquals(nextState, callback.mCurrentState.getIdentifier());
         assertFalse(activity.requestStateFailed);
 
-        launchHomeActivity();
-        waitAndAssertStoppedActivity(activity.getComponentName());
+        activity.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
+        PollingCheck.waitFor(TIMEOUT, activity::isInPictureInPictureMode);
 
-        activity.cancelOverriddenState(); // reset device state after successful request
+        activity.cancelOverriddenState();
+        PollingCheck.waitFor(TIMEOUT, () -> callback.mCurrentState.getIdentifier() != nextState);
     }
 
     /**
@@ -568,7 +569,6 @@ public class DeviceStateManagerTests extends DeviceStateManagerTestBase {
      * {@link android.Manifest.permission.CONTROL_DEVICE_STATE} permission held.
      */
     @ApiTest(apis = {"android.hardware.devicestate.DeviceStateManager#cancelStateRequest"})
-    @RequiresFlagsDisabled(FLAG_DEVICE_STATE_REQUESTER_CANCEL_STATE)
     @Test(expected = SecurityException.class)
     public void testCancelOverrideRequestWithoutPermission() throws Throwable {
         final DeviceStateManager manager = getDeviceStateManager();
