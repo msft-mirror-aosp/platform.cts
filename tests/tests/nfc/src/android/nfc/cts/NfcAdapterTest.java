@@ -396,7 +396,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForegroundDynamic() {
-        NfcAdapter adapter = createMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
         assumeTrue(adapter.isObserveModeSupported());
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         try {
@@ -415,7 +415,6 @@ public class NfcAdapterTest {
             cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), false);
         }
-        resetMockedInstance();
     }
 
     @Test
@@ -504,11 +503,10 @@ public class NfcAdapterTest {
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testDisallowTransaction_walletRoleEnabled() {
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
-            NfcAdapter adapter = createMockedInstance();
+            NfcAdapter adapter = getDefaultAdapter();
             assumeTrue(adapter.isObserveModeSupported());
             adapter.setObserveModeEnabled(true);
             Assert.assertTrue(adapter.isObserveModeEnabled());
-            resetMockedInstance();
         });
     }
 
