@@ -35,6 +35,7 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
 
     private int mUsbDeviceSupport;
     private int mUsbHeadsetSupport;
+    private boolean mCanRunTest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,15 +43,14 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
 
         mUsbDeviceSupport = AudioDeviceUtils.supportsUsbAudioInterface(this);
         mUsbHeadsetSupport  = AudioDeviceUtils.supportsUsbHeadset(this);
+        mCanRunTest = mUsbDeviceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO
+                || mUsbHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO;
 
         super.onCreate(savedInstanceState);
         setInfoResources(
                 R.string.audio_datapaths_USB_test, R.string.audio_datapaths_USB_info, -1);
 
-        boolean canRunTest = mUsbDeviceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO
-                || mUsbHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO;
-
-        enableTestButtons(canRunTest);
+        enableTestButtons(mCanRunTest);
     }
 
     void gatherTestModules(TestManager testManager) {
@@ -165,5 +165,9 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
         }
 
         enableTestButtons(numValidTestModules != 0);
+    }
+
+    protected boolean hasPeripheralSupport() {
+        return mCanRunTest;
     }
 }

@@ -22,6 +22,7 @@ import com.android.cts.apicommon.ApiCoverage;
 import com.android.cts.apicommon.ApiMethod;
 import com.android.cts.apicommon.ApiPackage;
 import com.android.cts.apicommon.CoverageComparator;
+import com.android.cts.apicommon.TestMethodInfo;
 import com.android.cts.ctsprofiles.ClassProfile;
 import com.android.cts.ctsprofiles.MethodProfile;
 import com.android.cts.ctsprofiles.ModuleProfile;
@@ -59,24 +60,26 @@ public class XmlWriter {
 
     private final Element mXTSApiMapElement;
 
+    private final Element mRootElement;
+
     public XmlWriter() throws ParserConfigurationException {
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder documentBuilder = docFactory.newDocumentBuilder();
         mDoc = documentBuilder.newDocument();
         ProcessingInstruction pi = mDoc.createProcessingInstruction(
-                "xml-stylesheet", "type=\"text/xsl\"  href=\"api-map.xsl\"?>");
+                "xml-stylesheet", "type=\"text/xsl\" href=\"api-coverage.xsl\"");
         SimpleDateFormat format = new SimpleDateFormat(
-                "EEE, MMM d, yyyy h:mm a z", Locale.CHINA);
+                "EEE, MMM d, yyyy h:mm a z", Locale.US);
         String date = format.format(new Date(System.currentTimeMillis()));
-        Element rootElement = mDoc.createElement("api-coverage");
-        rootElement.setAttribute("generatedTime", date);
-        rootElement.setAttribute("title", "cts-m-automation");
-        mDoc.appendChild(rootElement);
-        mDoc.insertBefore(pi, rootElement);
+        mRootElement = mDoc.createElement("api-coverage");
+        mRootElement.setAttribute("generatedTime", date);
+        mRootElement.setAttribute("title", "cts-m-automation");
+        mDoc.appendChild(mRootElement);
+        mDoc.insertBefore(pi, mRootElement);
         mXTSAnnotationMapElement = mDoc.createElement("xts-annotation");
-        rootElement.appendChild(mXTSAnnotationMapElement);
+        mRootElement.appendChild(mXTSAnnotationMapElement);
         mXTSApiMapElement = mDoc.createElement("api");
-        rootElement.appendChild(mXTSApiMapElement);
+        mRootElement.appendChild(mXTSApiMapElement);
     }
 
     /** Dumps the document to an xml file. */
@@ -101,14 +104,14 @@ public class XmlWriter {
                 mXTSApiMapElement.appendChild(createApiPackageElement(pkg, statistics));
             }
         }
-        mXTSApiMapElement.appendChild(createApiTotalElement(
+        mRootElement.appendChild(createApiTotalElement(
                 statistics.mTotalMethods, statistics.mTotalCoveredMethods));
     }
 
     /** Generates the data for xTS annotations. */
     public void generateXtsAnnotationMapData(ModuleProfile module) {
         Element moduleElement = mDoc.createElement("test-module");
-        moduleElement.setAttribute("module", module.getModuleName());
+        moduleElement.setAttribute("name", module.getModuleName());
         for (ClassProfile classProfile : module.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
@@ -144,7 +147,7 @@ public class XmlWriter {
             paramElement.setAttribute("type", parameterType);
             element.appendChild(paramElement);
         }
-        for (String test: constructor.getCoveredTests()) {
+        for (TestMethodInfo test : constructor.getCoveredTests()) {
             element.appendChild(createCoveredByElement(test));
         }
         return element;
@@ -175,15 +178,18 @@ public class XmlWriter {
             paramElement.setAttribute("type", parameterType);
             element.appendChild(paramElement);
         }
-        for (String test: method.getCoveredTests()) {
+        for (TestMethodInfo test : method.getCoveredTests()) {
             element.appendChild(createCoveredByElement(test));
         }
         return element;
     }
 
-    private Element createCoveredByElement(String test) {
+    private Element createCoveredByElement(TestMethodInfo test) {
         Element element = mDoc.createElement("covered-by");
-        element.setAttribute("name", test);
+        element.setAttribute("module", test.moduleName());
+        element.setAttribute("package", test.packageName());
+        element.setAttribute("class", test.className());
+        element.setAttribute("test", test.testName());
         return element;
     }
 

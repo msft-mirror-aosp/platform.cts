@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
+#include <android-base/properties.h>
+#include <android/hardware_buffer.h>
+#include <android/log.h>
 #include <errno.h>
-#include <sys/types.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
 
 #include <limits>
 #include <sstream>
 #include <string>
+#include <thread>
 
-#include <android/hardware_buffer.h>
-#include <android/log.h>
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-//#define LOG_NDEBUG 0
+// #define LOG_NDEBUG 0
 
 #define BAD_VALUE -EINVAL
 #define INVALID_OPERATION -ENOSYS
@@ -45,7 +46,10 @@ using testing::Eq;
 using testing::Ge;
 using testing::NotNull;
 
-#define FORMAT_CASE(x) case AHARDWAREBUFFER_FORMAT_ ## x: os << #x ; break
+#define FORMAT_CASE(x)               \
+    case AHARDWAREBUFFER_FORMAT_##x: \
+        os << #x;                    \
+        break
 
 void PrintAhbFormat(std::ostream& os, uint64_t format) {
     switch (format) {
@@ -68,13 +72,22 @@ void PrintAhbFormat(std::ostream& os, uint64_t format) {
         FORMAT_CASE(R16_UINT);
         FORMAT_CASE(R16G16_UINT);
         FORMAT_CASE(R10G10B10A10_UNORM);
-        default: os << "unknown"; break;
+        default:
+            os << "unknown";
+            break;
     }
 }
 
-#define BITS_CASE(x) case AHARDWAREBUFFER_USAGE_ ## x: os << #x ; break
-#define PRINT_FLAG(x) \
-    do { if (usage & AHARDWAREBUFFER_USAGE_ ## x) { os << #x << " "; } } while (0)
+#define BITS_CASE(x)                \
+    case AHARDWAREBUFFER_USAGE_##x: \
+        os << #x;                   \
+        break
+#define PRINT_FLAG(x)                            \
+    do {                                         \
+        if (usage & AHARDWAREBUFFER_USAGE_##x) { \
+            os << #x << " ";                     \
+        }                                        \
+    } while (0)
 
 void PrintAhbUsage(std::ostream& os, uint64_t usage) {
     if (usage == 0) {
@@ -85,13 +98,15 @@ void PrintAhbUsage(std::ostream& os, uint64_t usage) {
         BITS_CASE(CPU_READ_NEVER);
         BITS_CASE(CPU_READ_RARELY);
         BITS_CASE(CPU_READ_OFTEN);
-        default: break;
+        default:
+            break;
     }
     switch (usage & AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK) {
         BITS_CASE(CPU_WRITE_NEVER);
         BITS_CASE(CPU_WRITE_RARELY);
         BITS_CASE(CPU_WRITE_OFTEN);
-        default: break;
+        default:
+            break;
     }
 
     PRINT_FLAG(GPU_SAMPLED_IMAGE);
@@ -131,7 +146,11 @@ AHardwareBuffer_Desc GetDescription(AHardwareBuffer* buffer) {
     return description;
 }
 
-}  // namespace
+bool IsSoftwareRenderer() {
+    return android::base::GetIntProperty("ro.cpuvulkan.version", 0) > 0;
+}
+
+} // namespace
 
 // GTest printer for AHardwareBuffer_Desc. Has to be in the global namespace.
 void PrintTo(const AHardwareBuffer_Desc& desc, ::std::ostream* os) {
@@ -148,7 +167,7 @@ void PrintTo(const AHardwareBuffer_Desc& desc, ::std::ostream* os) {
 // Equality operators for AHardwareBuffer_Desc. Have to be in the global namespace.
 bool operator==(const AHardwareBuffer_Desc& a, const AHardwareBuffer_Desc& b) {
     return a.width == b.width && a.height == b.height && a.layers == b.layers &&
-        a.usage == b.usage && a.format == b.format;
+            a.usage == b.usage && a.format == b.format;
 }
 bool operator!=(const AHardwareBuffer_Desc& a, const AHardwareBuffer_Desc& b) {
     return !(a == b);
@@ -267,8 +286,7 @@ TEST(AHardwareBufferTest, DescribeSucceeds) {
 struct ClientData {
     int fd;
     AHardwareBuffer* buffer;
-    ClientData(int fd_in, AHardwareBuffer* buffer_in)
-            : fd(fd_in), buffer(buffer_in) {}
+    ClientData(int fd_in, AHardwareBuffer* buffer_in) : fd(fd_in), buffer(buffer_in) {}
 };
 
 static void* clientFunction(void* data) {
@@ -351,10 +369,14 @@ TEST(AHardwareBufferTest, LockAndGetInfoAndUnlockSucceed) {
     void* bufferData = NULL;
 
     // Test invalid usage flag
-    err = AHardwareBuffer_lockAndGetInfo(buffer, ~(AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK | AHARDWAREBUFFER_USAGE_CPU_READ_MASK), -1, NULL, &bufferData, &bytesPerPixel, &bytesPerStride);
+    err = AHardwareBuffer_lockAndGetInfo(buffer,
+                                         ~(AHARDWAREBUFFER_USAGE_CPU_WRITE_MASK |
+                                           AHARDWAREBUFFER_USAGE_CPU_READ_MASK),
+                                         -1, NULL, &bufferData, &bytesPerPixel, &bytesPerStride);
     EXPECT_EQ(BAD_VALUE, err);
 
-    err = AHardwareBuffer_lockAndGetInfo(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL, &bufferData, &bytesPerPixel, &bytesPerStride);
+    err = AHardwareBuffer_lockAndGetInfo(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
+                                         &bufferData, &bytesPerPixel, &bytesPerStride);
 
     if (bytesPerPixel == -1 || bytesPerStride == -1) {
         EXPECT_EQ(INVALID_OPERATION, err);
@@ -390,8 +412,8 @@ TEST(AHardwareBufferTest, LockAndUnlockSucceed) {
     err = AHardwareBuffer_allocate(&desc, &buffer);
     EXPECT_EQ(NO_ERROR, err);
     void* bufferData = NULL;
-    err = AHardwareBuffer_lock(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1,
-          NULL, &bufferData);
+    err = AHardwareBuffer_lock(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
+                               &bufferData);
     EXPECT_EQ(NO_ERROR, err);
     EXPECT_TRUE(bufferData != NULL);
     err = AHardwareBuffer_unlock(buffer, nullptr);
@@ -422,7 +444,7 @@ TEST(AHardwareBufferTest, PlanarLockAndUnlockYuvSucceed) {
     // Lock its planes
     AHardwareBuffer_Planes planes;
     err = AHardwareBuffer_lockPlanes(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
-        &planes);
+                                     &planes);
 
     // Make sure everything looks right
     EXPECT_EQ(NO_ERROR, err);
@@ -469,7 +491,7 @@ TEST(AHardwareBufferTest, PlanarLockAndUnlockYuvP010Succeed) {
     // Lock its planes
     AHardwareBuffer_Planes planes;
     err = AHardwareBuffer_lockPlanes(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
-        &planes);
+                                     &planes);
 
     // Make sure everything looks right
     EXPECT_EQ(NO_ERROR, err);
@@ -521,7 +543,7 @@ TEST(AHardwareBufferTest, PlanarLockAndUnlockRgbaSucceed) {
     // Lock its planes
     AHardwareBuffer_Planes planes;
     err = AHardwareBuffer_lockPlanes(buffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1, NULL,
-        &planes);
+                                     &planes);
 
     // Make sure everything looks right
     EXPECT_EQ(NO_ERROR, err);
@@ -554,17 +576,13 @@ TEST(AHardwareBufferTest, ProtectedContentAndCpuReadIncompatible) {
     buffer = nullptr;
 
     // ...but not if it's a protected buffer.
-    desc.usage =
-        AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT |
-        AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-        AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+    desc.usage = AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT | AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+            AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
     err = AHardwareBuffer_allocate(&desc, &buffer);
     EXPECT_NE(NO_ERROR, err);
 
-    desc.usage =
-        AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT |
-        AHARDWAREBUFFER_USAGE_CPU_READ_RARELY |
-        AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
+    desc.usage = AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT | AHARDWAREBUFFER_USAGE_CPU_READ_RARELY |
+            AHARDWAREBUFFER_USAGE_PROTECTED_CONTENT;
     err = AHardwareBuffer_allocate(&desc, &buffer);
     EXPECT_NE(NO_ERROR, err);
 }
@@ -594,6 +612,102 @@ TEST(AHardwareBufferTest, GetIdSucceed) {
     EXPECT_NE(id2, 0ULL);
 
     EXPECT_NE(id1, id2);
+}
+
+TEST(AHardwareBufferTest, AllocateLockUnlockDeallocateStressTest) {
+    constexpr int kNumThreads = 20;
+    std::vector<std::thread> threads;
+
+    for (int job = 0; job < kNumThreads; ++job) {
+        threads.emplace_back([]() {
+            constexpr int kNumIterations = 10000;
+            for (int i = 0; i < kNumIterations; ++i) {
+                // Allocate
+                AHardwareBuffer* ahwb = nullptr;
+                int error = 0;
+                const AHardwareBuffer_Desc desc = {.width = 1,
+                                                   .height = 1,
+                                                   .layers = 1,
+                                                   .format = AHARDWAREBUFFER_FORMAT_BLOB,
+                                                   .usage = AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+                                                           AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+                                                           AHARDWAREBUFFER_USAGE_GPU_DATA_BUFFER};
+                error = AHardwareBuffer_allocate(&desc, &ahwb);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_allocate failed: " << error;
+                EXPECT_NE(nullptr, ahwb);
+
+                // Lock
+                void* mem = nullptr;
+                error = AHardwareBuffer_lock(ahwb, AHARDWAREBUFFER_USAGE_CPU_WRITE_RARELY, -1,
+                                             nullptr, &mem);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_lock failed: " << error;
+
+                // Unlock
+                error = AHardwareBuffer_unlock(ahwb, /*fence_file_descriptor*/ nullptr);
+                EXPECT_EQ(NO_ERROR, error) << "AHardwareBuffer_unlock failed: " << error;
+
+                // Release
+                AHardwareBuffer_release(ahwb);
+            }
+        });
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+}
+
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, 0, -1, nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
+}
+
+
+// The test tried to lock buffer without cpu access
+TEST(AHardwareBufferTest, WithoutCPUAccessLock) {
+    if (IsSoftwareRenderer()) {
+        ALOGI("Test skipped: device uses software rendering which implicitly handles GPU usages as "
+              "CPU usages.");
+        return;
+    }
+
+    const AHardwareBuffer_Desc ahbDesc {
+        .width = 128,
+        .height = 128,
+        .layers = 1,
+        .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+    };
+    AHardwareBuffer* aHardwareBuffer = nullptr;
+    int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);
+    EXPECT_EQ(NO_ERROR, err);
+
+    AHardwareBuffer_Planes planeInfo = {};
+    err = AHardwareBuffer_lockPlanes(aHardwareBuffer, AHARDWAREBUFFER_USAGE_CPU_READ_RARELY, -1,
+                                     nullptr, &planeInfo);
+    EXPECT_NE(NO_ERROR, err);
+
+    AHardwareBuffer_release(aHardwareBuffer);
 }
 
 } // namespace android

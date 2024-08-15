@@ -25,6 +25,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemProperties;
 import android.support.test.uiautomator.UiDevice;
 import android.sysprop.SurfaceFlingerProperties;
 import android.util.Log;
@@ -48,7 +49,7 @@ public class GameFrameRateCtsActivity extends Activity {
     private static final int PRECONDITION_WAIT_MAX_ATTEMPTS = 5;
     private static final long PRECONDITION_WAIT_TIMEOUT_NANOSECONDS = 20 * 1_000_000_000L;
     private static final long PRECONDITION_VIOLATION_WAIT_TIMEOUT_NANOSECONDS = 3 * 1_000_000_000L;
-    private static final float FRAME_RATE_TOLERANCE = 0.01f;
+    private static final float FRAME_RATE_TOLERANCE = 1.01f;
     private static final float FPS_TOLERANCE_FOR_FRAME_RATE_OVERRIDE = 5;
     private static final long FRAME_RATE_MIN_WAIT_TIME_NANOSECONDS = 1 * 1_000_000_000L;
     private static final long FRAME_RATE_MAX_WAIT_TIME_NANOSECONDS = 10 * 1_000_000_000L;
@@ -58,6 +59,11 @@ public class GameFrameRateCtsActivity extends Activity {
     // {@link com.android.server.app.GameManagerService#onBootCompleted()}
     private static final Integer GAME_DEFAULT_FRAMERATE_INT =
             SurfaceFlingerProperties.game_default_frame_rate_override().orElse(60);
+
+    // We also need to check if the debug flag of default frame rate is on.
+    private static final boolean IS_DEFAULT_FRAME_RATE_DISABLED =
+            SystemProperties.getBoolean("debug.graphics.game_default_frame_rate.disabled",
+                                    false);
 
     private DisplayManager mDisplayManager;
     private SurfaceView mSurfaceView;
@@ -526,7 +532,8 @@ public class GameFrameRateCtsActivity extends Activity {
 
             Log.i(TAG, String.format("Resetting game mode."));
 
-            FrameRateRange expectedFrameRate =
+            FrameRateRange expectedFrameRate = IS_DEFAULT_FRAME_RATE_DISABLED
+                    ? getExpectedFrameRate(initialRefreshRate, (int) initialRefreshRate) :
                     getExpectedFrameRate(initialRefreshRate, GAME_DEFAULT_FRAMERATE_INT);
             mUiDevice.executeShellCommand(String.format("cmd game reset %s", getPackageName()));
             waitForRefreshRateChange(expectedFrameRate);

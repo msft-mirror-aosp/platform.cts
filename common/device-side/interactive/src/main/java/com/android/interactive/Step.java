@@ -20,9 +20,7 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERNAL_SYSTEM
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
-import static com.android.interactive.testrules.TestNameSaver.INTERACTIVE_TEST_NAME;
 
-import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -31,8 +29,10 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.GridLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
@@ -45,9 +45,12 @@ import com.android.interactive.annotations.CacheableStep;
 
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nullable;
 
 /**
  * An atomic manual interaction step.
@@ -107,12 +110,17 @@ public abstract class Step<E> {
         try {
             step = stepClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new AssertionError("Error preparing step", e);
+            throw new AssertionError("Error preparing " + stepClass, e);
         }
 
         // Check if is cached...
         if (sStepCache.containsKey(stepClass)) {
             return (E) sStepCache.get(stepClass);
+        }
+
+        if (step.getValue().isPresent()) {
+            // If the step already has an answer - no need to show it to the user or run automations
+            return step.getValue().get();
         }
 
         if (!sForceManual.get()
@@ -183,8 +191,7 @@ public abstract class Step<E> {
         }
 
         if (TestApis.instrumentation().arguments().getBoolean("ENABLE_MANUAL", false)) {
-            if (!step.getValue().isPresent() && !step.hasFailed()) {
-                // If the step already has an answer - no need to show it to the user
+            if (!step.hasFailed()) {
                 step.interact();
             }
 
@@ -226,7 +233,13 @@ public abstract class Step<E> {
                 step.close();
             }
         }
-        throw new AssertionError("Could not automatically or manually pass test");
+        throw new AssertionError("Could not automatically or manually pass test. "
+                + "Failed at step: " + step);
+    }
+
+    /** Gets the boolean value of an instrumentation argument with a default value. */
+    private static boolean getBooleanArg(String argName, boolean defaultValue) {
+        return TestApis.instrumentation().arguments().getBoolean(argName, defaultValue);
     }
 
     protected final void pass() {
@@ -324,15 +337,48 @@ public abstract class Step<E> {
     /**
      * Shows the prompt with the given instruction.
      *
-     * <p>This should be called before any other methods on this class.
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
      */
     protected void show(String instruction) {
+        showWithListItems(instruction, /* listItems= */ null);
+    }
+
+    /**
+     * Shows the prompt with the given instruction and a list of string items.
+     *
+     * @see #showWithArrayAdapter(String, ArrayAdapter)
+     */
+    protected void showWithListItems(String instruction, @Nullable List<String> listItems) {
+        showWithArrayAdapter(
+                instruction,
+                listItems == null
+                        ? null
+                        : new ArrayAdapter<String>(
+                                TestApis.context().instrumentationContext(),
+                                android.R.layout.simple_list_item_1,
+                                android.R.id.text1,
+                                listItems));
+    }
+
+    /**
+     * Shows the prompt with the given instruction and the {@link ArrayAdapter} to render a list in
+     * the panel.
+     *
+     * <p>This should be called before any other methods on this class.
+     */
+    protected <T> void showWithArrayAdapter(
+            String instruction, @Nullable ArrayAdapter<T> arrayAdapter) {
         mInstructionView =
                 LayoutInflater.from(TestApis.context().instrumentationContext())
                         .inflate(R.layout.instruction, null);
 
         TextView text = mInstructionView.findViewById(R.id.text);
         text.setText(instruction);
+
+        if (arrayAdapter != null) {
+            ListView list = mInstructionView.findViewById(R.id.list);
+            list.setAdapter(arrayAdapter);
+        }
 
         WindowManager.LayoutParams params =
                 new WindowManager.LayoutParams(
@@ -382,33 +428,21 @@ public abstract class Step<E> {
      * instruction view if it's still there.
      */
     protected void close() {
-        if (!mHasTakenScreenshot
-                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+        if (getBooleanArg("TAKE_SCREENSHOT", false) && !mHasTakenScreenshot) {
             mHasTakenScreenshot = true;
-            String testName =
-                    TestApis.context()
-                            .instrumentedContext()
-                            .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
-                            .getString(INTERACTIVE_TEST_NAME, "");
-            ScreenshotUtil.captureScreenshot(
-                    testName.isEmpty()
-                            ? getClass().getCanonicalName()
-                            : testName + "__" + getClass().getSimpleName());
-        }
-        if (mInstructionView != null) {
-            TestApis.context()
-                    .instrumentationContext()
-                    .getMainExecutor()
-                    .execute(
-                            () -> {
-                                try {
-                                    sWindowManager.removeViewImmediate(mInstructionView);
-                                    mInstructionView = null;
-                                } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
-                                    Log.i(LOG_TAG, "Error removing instruction view", e);
-                                }
-                            });
+            Log.i(LOG_TAG, "Test Name: " + ScreenshotUtil.getTestName());
+            String screenshotName = getClass().getSimpleName();
+            if (getBooleanArg("HIDE_INSTRUCTION", false)) {
+                screenshotName = ScreenshotUtil.getTestName() + "__" + screenshotName;
+                doRemoveInstructionView();
+                ScreenshotUtil.captureScreenshotWithDelay(
+                        screenshotName, /* delayInMillis= */ 50L);
+            } else {
+                ScreenshotUtil.captureScreenshot(screenshotName);
+                removeInstructionView();
+            }
+        } else {
+            removeInstructionView();
         }
     }
 
@@ -423,5 +457,29 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /** Removes the instruction view in the main executor if it's still there. */
+    private void removeInstructionView() {
+        if (mInstructionView != null) {
+            TestApis.context()
+                    .instrumentationContext()
+                    .getMainExecutor()
+                    .execute(() -> doRemoveInstructionView());
+        }
+    }
+
+    /** Removes the instruction view in the main thread immdediately if it's still there. */
+    private void doRemoveInstructionView() {
+        if (mInstructionView != null) {
+            try {
+                mInstructionView.setVisibility(View.INVISIBLE);
+                sWindowManager.removeViewImmediate(mInstructionView);
+                mInstructionView = null;
+            } catch (IllegalArgumentException e) {
+                // This can happen if the view is no longer attached
+                Log.i(LOG_TAG, "Error removing instruction view", e);
+            }
+        }
     }
 }

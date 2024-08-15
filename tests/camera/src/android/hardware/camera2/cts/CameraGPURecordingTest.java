@@ -16,12 +16,17 @@
 
 package android.hardware.camera2.cts;
 
+import static android.hardware.camera2.cts.CameraTestUtils.CAPTURE_IMAGE_TIMEOUT_MS;
+
+import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.cts.testcases.Camera2AndroidTestCase;
 import android.media.CamcorderProfile;
+import android.media.Image;
+import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -36,6 +41,7 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 
 import static junit.framework.Assert.assertEquals;
@@ -100,81 +106,110 @@ public class CameraGPURecordingTest extends Camera2AndroidTestCase {
                 Log.i(TAG, "Camera " + id + " does not support CamcorderProfile, skipping");
                 continue;
             }
-            CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
-            // Downgrade if 720p isn't available.
-            if (profile == null) {
-                profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
+            Log.i(TAG, "Testing Camera " + id + " without video snapshot");
+            captureGpuEncoderPath(id, false /*enableVideoSnapshot*/);
+
+            Log.i(TAG, "Testing Camera " + id + " with video snapshot");
+            captureGpuEncoderPath(id, true /*enableVideoSnapshot*/);
+        }
+    }
+
+    private void captureGpuEncoderPath(String id, boolean enableVideoSnapshot) throws Exception {
+
+        CamcorderProfile profile = CamcorderProfile.get(CamcorderProfile.QUALITY_720P);
+        // Downgrade if 720p isn't available.
+        if (profile == null) {
+            profile = CamcorderProfile.get(CamcorderProfile.QUALITY_480P);
+        }
+        // Skip the test if neither of 720 or 480 camcorder profile is available.
+        if (profile == null) {
+            Log.i(TAG, "Camcorder profile not available for camera " + id);
+            return;
+        }
+
+        try {
+            openDevice(id);
+            prepareEncoder(profile);
+            mInputSurface.makeCurrent();
+
+            mSurfaceTextureHolder = new SurfaceTextureHolder();
+            SurfaceTexture surfaceTexture = mSurfaceTextureHolder.getSurfaceTexture();
+            CameraTestUtils.SimpleImageReaderListener imageListener =
+                    new CameraTestUtils.SimpleImageReaderListener();
+            Size snapshotSize = mOrderedStillSizes.get(0);
+            if (enableVideoSnapshot) {
+                createDefaultImageReader(snapshotSize, ImageFormat.JPEG, 1, imageListener);
             }
-            // Skip the test if neither of 720 or 480 camcorder profile is available.
-            if (profile == null) {
-                Log.i(TAG, "Camcorder profile not available for camera " + id);
-                continue;
-            }
-            try {
-                Log.i(TAG, "Testing Camera " + id);
-                openDevice(id);
-                prepareEncoder(profile);
-                mInputSurface.makeCurrent();
+            CaptureRequest.Builder previewRequest = createSessionAndCaptureRequest(surfaceTexture,
+                    enableVideoSnapshot);
+            CameraTestUtils.SimpleCaptureCallback previewListener =
+                    new CameraTestUtils.SimpleCaptureCallback();
 
-                mSurfaceTextureHolder = new SurfaceTextureHolder();
-                SurfaceTexture surfaceTexture = mSurfaceTextureHolder.getSurfaceTexture();
-                CaptureRequest.Builder previewRequest =
-                        createSessionAndCaptureRequest(surfaceTexture);
-                CameraTestUtils.SimpleCaptureCallback previewListener =
-                        new CameraTestUtils.SimpleCaptureCallback();
+            mCameraSession.setRepeatingRequest(previewRequest.build(),
+                    previewListener, mHandler);
 
-                mCameraSession.setRepeatingRequest(previewRequest.build(),
-                        previewListener, mHandler);
+            long startWhen = System.nanoTime();
+            long desiredEnd = startWhen + DURATION_SEC * 1000000000L;
+            int frameCount = 0;
 
-                long startWhen = System.nanoTime();
-                long desiredEnd = startWhen + DURATION_SEC * 1000000000L;
-                int frameCount = 0;
+            while (System.nanoTime() < desiredEnd) {
+                // Feed any pending encoder output into the muxer.
+                drainEncoder(/*endOfStream=*/ false);
 
-                while (System.nanoTime() < desiredEnd) {
-                    // Feed any pending encoder output into the muxer.
-                    drainEncoder(/*endOfStream=*/ false);
-
-                    String fragmentShader = null;
-                    if ((frameCount % 2) != 0) {
-                        fragmentShader = SWAPPED_FRAGMENT_SHADER;
-                    }
-                    mSurfaceTextureHolder.changeFragmentShader(fragmentShader);
-
-                    // Acquire a new frame of input, and render it to the Surface.  If we had a
-                    // GLSurfaceView we could switch EGL contexts and call drawImage() a second
-                    // time to render it on screen.  The texture can be shared between contexts by
-                    // passing the GLSurfaceView's EGLContext as eglCreateContext()'s share_context
-                    // argument.
-                    mSurfaceTextureHolder.awaitNewImage();
-                    mSurfaceTextureHolder.drawImage();
-
-                    frameCount++;
-
-                    // Set the presentation time stamp from the SurfaceTexture's time stamp.  This
-                    // will be used by MediaMuxer to set the PTS in the video.
-                    Log.v(TAG, "present: "
-                            + ((surfaceTexture.getTimestamp() - startWhen) / 1000000.0)
-                            + "ms");
-                    mInputSurface.setPresentationTime(surfaceTexture.getTimestamp());
-
-                    // Submit it to the encoder.  The eglSwapBuffers call will block if the input
-                    // is full, which would be bad if it stayed full until we dequeued an output
-                    // buffer (which we can't do, since we're stuck here).  So long as we fully
-                    // drain the encoder before supplying additional input, the system guarantees
-                    // that we can supply another frame without blocking.
-                    Log.v(TAG, "sending frame to encoder");
-                    mInputSurface.swapBuffers();
+                String fragmentShader = null;
+                if ((frameCount % 2) != 0) {
+                    fragmentShader = SWAPPED_FRAGMENT_SHADER;
                 }
+                mSurfaceTextureHolder.changeFragmentShader(fragmentShader);
 
-                mCameraSession.stopRepeating();
-                previewListener.drain();
-                // send end-of-stream to encoder, and drain remaining output
-                drainEncoder(true);
-            } finally {
-                closeDevice(id);
-                releaseEncoder();
-                releaseSurfaceTexture();
+                // Acquire a new frame of input, and render it to the Surface.  If we had a
+                // GLSurfaceView we could switch EGL contexts and call drawImage() a second
+                // time to render it on screen.  The texture can be shared between contexts by
+                // passing the GLSurfaceView's EGLContext as eglCreateContext()'s share_context
+                // argument.
+                mSurfaceTextureHolder.awaitNewImage();
+                mSurfaceTextureHolder.drawImage();
+
+                frameCount++;
+
+                // Set the presentation time stamp from the SurfaceTexture's time stamp.  This
+                // will be used by MediaMuxer to set the PTS in the video.
+                Log.v(TAG, "present: "
+                        + ((surfaceTexture.getTimestamp() - startWhen) / 1000000.0)
+                        + "ms");
+                mInputSurface.setPresentationTime(surfaceTexture.getTimestamp());
+
+                // Submit it to the encoder.  The eglSwapBuffers call will block if the input
+                // is full, which would be bad if it stayed full until we dequeued an output
+                // buffer (which we can't do, since we're stuck here).  So long as we fully
+                // drain the encoder before supplying additional input, the system guarantees
+                // that we can supply another frame without blocking.
+                Log.v(TAG, "sending frame to encoder");
+                mInputSurface.swapBuffers();
             }
+
+            if (enableVideoSnapshot) {
+                CaptureRequest.Builder snapshotBuilder =
+                        mCamera.createCaptureRequest(CameraDevice.TEMPLATE_VIDEO_SNAPSHOT);
+                snapshotBuilder.addTarget(mReaderSurface);
+                mCameraSession.capture(snapshotBuilder.build(),
+                        new CameraTestUtils.SimpleCaptureCallback(), mHandler);
+
+                Image image = imageListener.getImage(CAPTURE_IMAGE_TIMEOUT_MS);
+                CameraTestUtils.validateImage(image, snapshotSize.getWidth(),
+                        snapshotSize.getHeight(), ImageFormat.JPEG, /*filePath*/null);
+                image.close();
+            }
+
+            mCameraSession.stopRepeating();
+            previewListener.drain();
+            // send end-of-stream to encoder, and drain remaining output
+            drainEncoder(true);
+        } finally {
+            closeDevice(id);
+            releaseEncoder();
+            releaseSurfaceTexture();
+            closeDefaultImageReader();
         }
     }
 
@@ -214,13 +249,16 @@ public class CameraGPURecordingTest extends Camera2AndroidTestCase {
         mMuxerStarted = false;
     }
 
-    private CaptureRequest.Builder createSessionAndCaptureRequest(SurfaceTexture preview)
-            throws Exception {
+    private CaptureRequest.Builder createSessionAndCaptureRequest(SurfaceTexture preview,
+            boolean enableSnapshot) throws Exception {
         Surface previewSurface = new Surface(preview);
         preview.setDefaultBufferSize(640, 480);
 
         ArrayList<Surface> sessionOutputs = new ArrayList<>();
         sessionOutputs.add(previewSurface);
+        if (enableSnapshot && mReaderSurface != null) {
+            sessionOutputs.add(mReaderSurface);
+        }
 
         createSession(sessionOutputs);
 

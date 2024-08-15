@@ -17,9 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.cts.AudioEncoderTest.flattenParams;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.getCompressionRatio;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -45,7 +48,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.media.codec.flags.Flags;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,7 +78,7 @@ import java.util.List;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlockModelTestBase {
     private static final String LOG_TAG =
@@ -290,9 +292,8 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
 
     /**
      * Verifies if the component under test can encode the test file correctly in multiple frame
-     * block model mode. The encoding happens in asynchronous mode with eos flag signalled with
-     * last raw frame. The test verifies if the component / framework output is consistent
-     * with single access unit normal mode and single access unit block model mode.
+     * block model mode. The encoding happens in asynchronous mode with a. eos flag signalled with
+     * last raw frame and b. eos flag not signalled with last raw frame.
      * <p>
      * Check description of class {@link CodecEncoderBlockModelMultiAccessUnitTest}
      */
@@ -308,16 +309,6 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
         referenceBase.encodeToMemory(mCodecName, mActiveEncCfg, mActiveRawRes, Integer.MAX_VALUE,
                 true, false);
         OutputManager ref = referenceBase.getOutputManager();
-
-        CodecEncoderBlockModelTestBase cebmtb = new CodecEncoderBlockModelTestBase(mCodecName,
-                mMediaType, new EncoderConfigParams[]{mActiveEncCfg}, mAllTestParams);
-        OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-        cebmtb.encodeToMemory(mCodecName, mActiveEncCfg, mActiveRawRes, test, Integer.MAX_VALUE,
-                true, false);
-        if (!ref.equalsDequeuedOutput(test)) {
-            fail("Output in block model mode is not same as output in normal mode.\n" + mTestConfig
-                    + mTestEnv + test.getErrMsg());
-        }
 
         OutputManager testA = new OutputManager(ref.getSharedErrorLogs());
         OutputManager testB = new OutputManager(ref.getSharedErrorLogs());

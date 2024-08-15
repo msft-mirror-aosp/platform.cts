@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.Looper;
 import android.os.Process;
 import android.os.UserManager;
@@ -35,6 +36,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 public class CallNotificationTestPlayerListener extends PlayerListener {
 
   private static final String COMMAND_ENABLE = "telecom set-phone-account-enabled";
+  private static final int RING_VOLUME_INDEX = 1;
 
   private TelecomManager mTelecomManager;
   private PhoneAccountHandle mPhoneAccountHandle;
@@ -82,10 +84,20 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
     if (player.getPlaybackState() == Player.STATE_READY) {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
-      mExpectedTotalTime += player.getDuration();
-      mStartTime = System.currentTimeMillis();
-      // Add the duration of the incoming call
-      mExpectedTotalTime += CallNotificationService.DURATION_MS;
+      if (mStartTime == 0) {
+        mStartTime = System.currentTimeMillis();
+        mExpectedTotalTime += player.getDuration();
+        // If the ring volume of device is muted, then the playback continues even when an incoming
+        // call is placed. Thus, set the ring volume to the volume index 1 if it is muted.
+        mAudioManager = mActivity.getSystemService(AudioManager.class);
+        if (mAudioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
+          mAudioManager.setStreamVolume(AudioManager.STREAM_RING, RING_VOLUME_INDEX,
+              0 /*no flag used*/);
+          mRingVolumeUpdated = true;
+        }
+        // Add the duration of the incoming call
+        mExpectedTotalTime += CallNotificationService.DURATION_MS;
+      }
       // Let the ExoPlayer handle audio focus internally
       mActivity.mPlayer.setAudioAttributes(mActivity.mPlayer.getAudioAttributes(), true);
       mTelecomManager = (TelecomManager) mActivity.getApplicationContext().getSystemService(

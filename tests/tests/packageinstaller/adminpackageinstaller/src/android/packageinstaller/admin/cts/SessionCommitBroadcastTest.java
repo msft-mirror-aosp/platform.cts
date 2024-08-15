@@ -35,6 +35,7 @@ import android.os.UserHandle;
 import android.os.UserManager;
 import android.text.TextUtils;
 
+import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.cts.install.lib.Install;
 import com.android.cts.install.lib.InstallUtils;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
  * launcher app.
  */
 @RunWith(BedsteadJUnit4.class)
+@RequireRunOnSystemUser
 public class SessionCommitBroadcastTest extends BasePackageInstallTest {
 
     private static final long BROADCAST_TIMEOUT_SECS = 20;

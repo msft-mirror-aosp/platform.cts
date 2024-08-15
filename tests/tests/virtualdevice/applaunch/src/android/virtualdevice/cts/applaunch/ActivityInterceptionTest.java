@@ -120,6 +120,19 @@ public class ActivityInterceptionTest {
         verifyZeroInteractions(mInterceptor);
     }
 
+    @Test
+    public void interceptorRegistered_withExplicitAction_intentWithoutActionShouldLaunch() {
+        IntentFilter intentFilter = new IntentFilter(ACTION_INTERCEPTED_RECEIVER);
+        mVirtualDevice.registerIntentInterceptor(
+                intentFilter, mContext.getMainExecutor(), mInterceptor);
+
+        Intent intentWithoutAction = new Intent()
+                .setClass(mContext, InterceptedActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        mRule.sendIntentToDisplay(intentWithoutAction, mVirtualDisplay);
+        mRule.waitAndAssertActivityResumed(new ComponentName(mContext, InterceptedActivity.class));
+        verifyZeroInteractions(mInterceptor);
+    }
 
     @Test
     public void differentInterceptorsRegistered_oneIntercepted() {

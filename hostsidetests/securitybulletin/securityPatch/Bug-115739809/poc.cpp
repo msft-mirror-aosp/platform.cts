@@ -221,12 +221,12 @@ static bool checkMessage(InputChannel& server, InputChannel& client, InputMessag
         return false;
     }
 
-    InputMessage clientMsg;
-    result = client.receiveMessage(&clientMsg);
-    if (result != OK) {
+    android::base::Result<InputMessage> clientMsgResult = client.receiveMessage();
+    if (!clientMsgResult.ok()) {
         ALOGE("Could not receive message from the input channel");
         return false;
     }
+    const InputMessage& clientMsg = *clientMsgResult;
     if (serverMsg.header.type != clientMsg.header.type) {
         ALOGE("Types do not match");
         return false;

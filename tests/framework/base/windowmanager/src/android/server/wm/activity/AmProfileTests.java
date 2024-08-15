@@ -158,7 +158,8 @@ public class AmProfileTests extends ActivityManagerTestBase {
             public void execute() {
                 final StringBuilder builder = new StringBuilder();
                 builder.append(String.format("am start -n %s -W -S --start-profiler %s",
-                        getActivityName(activityName), OUTPUT_FILE_PATH));
+                        getActivityName(activityName), OUTPUT_FILE_PATH) + " --user "
+                        + android.os.Process.myUserHandle().getIdentifier());
                 appendProfileParameters(builder, sampling, streaming);
                 mLaunchInjector.setupShellCommand(builder);
                 executeShellCommand(builder.toString());

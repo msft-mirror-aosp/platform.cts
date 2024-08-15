@@ -19,6 +19,7 @@ package android.videocodec.cts;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR;
 import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
+import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
 import static org.junit.Assert.assertEquals;
@@ -226,6 +227,9 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
                 System.arraycopy(arg, 0, argUpdate, 0, arg.length);
                 argUpdate[2] = obj;
                 EncoderConfigParams cfgVar = (EncoderConfigParams) obj;
+                if (cfgVar.mMaxBFrames > cfgVar.mKeyFrameInterval * cfgVar.mFrameRate) {
+                    continue;
+                }
                 String label = String.format("%.2fmbps_%dx%d_%dfps_maxb-%d_%s_i-dist-%d",
                         cfgVar.mBitRate / 1000000., cfgVar.mWidth, cfgVar.mHeight,
                         cfgVar.mFrameRate, cfgVar.mMaxBFrames,
@@ -267,6 +271,11 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
             "android.media.MediaFormat#KEY_FRAME_RATE"})
     @Test
     public void testMinMaxSupport() throws IOException, InterruptedException {
+        if (VNDK_IS_BEFORE_U) {
+            assumeTrue("Frame rate > 240 fps are limited to VNDK U and above.",
+                            mEncCfgParams[0].mFrameRate <= 240);
+        }
+
         MediaFormat format = mEncCfgParams[0].getFormat();
         MediaCodecInfo info = getCodecInfo(mCodecName, mMediaType);
         assumeTrue(mCodecName + " does not support bitrate mode : " + bitRateModeToString(

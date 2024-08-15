@@ -52,7 +52,6 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.compatibility.common.util.AnrMonitor;
 import com.android.compatibility.common.util.DeviceConfigStateHelper;
 import com.android.compatibility.common.util.ShellUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -263,45 +262,14 @@ public class FgsTimeoutTest {
     }
 
     /**
-     * Make sure, if a media_processing fgs doesn't stop, the app gets ANRed.
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    @RequiresFlagsDisabled({Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR,
-                            Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR})
-    public void testAnr() throws Exception {
-        final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
-
-        try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
-                HELPER_PACKAGE)) {
-            final long startTime = SystemClock.uptimeMillis();
-            // Start the service
-            startForegroundService(FGS0, FOREGROUND_SERVICE_TYPE_MEDIA_PROCESSING);
-            waitForMethodCall(FGS0, "onStartCommand");
-            assertFgsRunning(FGS0);
-
-            // Wait for the ANR (timeout + extra duration)
-            final long anrTime = monitor.waitForAnrAndReturnUptime(30_000);
-            // The ANR time should be after the timeout + the ANR grace period.
-            assertThat(anrTime).isAtLeast(startTime + SHORTENED_TIMEOUT + anrExtraTimeout);
-
-            CallProvider.clearMessageQueue();
-        } finally {
-            resetDeviceConfig("fgs_crash_extra_wait_duration");
-        }
-    }
-
-    /**
      * Make sure, if a media_processing fgs doesn't stop, the app crashes.
      */
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
                            Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR})
-    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testCrash() throws Exception {
-        final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
+        final int crashExtraTimeout = 5000;
+        updateDeviceConfig("fgs_crash_extra_wait_duration", crashExtraTimeout);
 
         try {
             // Start the service
@@ -314,7 +282,7 @@ public class FgsTimeoutTest {
             assertFgsRunning(FGS0);
 
             // Wait for the crash + some extra
-            SystemClock.sleep(anrExtraTimeout + 1000);
+            SystemClock.sleep(crashExtraTimeout + 1000);
             assertServiceNotRunning(FGS0);
 
             CallProvider.clearMessageQueue();
@@ -471,7 +439,6 @@ public class FgsTimeoutTest {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    @RequiresFlagsDisabled(Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR)
     public void testStartService_throwsExceptionAfterTimeout() {
         final long serviceStartTime = SystemClock.uptimeMillis();
         // Start the service
@@ -531,39 +498,11 @@ public class FgsTimeoutTest {
     }
 
     @Test
-    @RequiresFlagsDisabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
-    public void testNoAnr_whenFlagDisabled() throws Exception {
-        final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
-
-        try (AnrMonitor monitor = AnrMonitor.start(InstrumentationRegistry.getInstrumentation(),
-                HELPER_PACKAGE)) {
-            // Start the service
-            startForegroundService(FGS2, FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-            waitForMethodCall(FGS2, "onStartCommand");
-            assertFgsRunning(FGS2);
-
-            // Wait for the timeout + anr grace period + extra duration, ANR should not occur
-            monitor.assertNoAnr(SHORTENED_TIMEOUT + anrExtraTimeout + 5000);
-
-            // Stop the service
-            sContext.stopService(new Intent().setComponent(FGS2));
-            waitForMethodCall(FGS2, "onDestroy");
-            assertServiceNotRunning(FGS2);
-
-            CallProvider.ensureNoMoreMessages();
-        } finally {
-            resetDeviceConfig("fgs_crash_extra_wait_duration");
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled({Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK,
-                           Flags.FLAG_GATE_FGS_TIMEOUT_ANR_BEHAVIOR})
+    @RequiresFlagsEnabled(Flags.FLAG_INTRODUCE_NEW_SERVICE_ONTIMEOUT_CALLBACK)
     @RequiresFlagsDisabled(Flags.FLAG_ENABLE_FGS_TIMEOUT_CRASH_BEHAVIOR)
     public void testNoCrash_whenFlagDisabled() throws Exception {
-        final int anrExtraTimeout = 5000;
-        updateDeviceConfig("fgs_crash_extra_wait_duration", anrExtraTimeout);
+        final int crashExtraTimeout = 5000;
+        updateDeviceConfig("fgs_crash_extra_wait_duration", crashExtraTimeout);
 
         try {
             // Start the service
@@ -575,8 +514,8 @@ public class FgsTimeoutTest {
             waitForMethodCall(FGS0, "onTimeout");
             assertFgsRunning(FGS0);
 
-            // Wait for the crash timeout + some extra - no crash or ANR should occur
-            SystemClock.sleep(anrExtraTimeout + 5000);
+            // Wait for the crash timeout + some extra - no crash should occur
+            SystemClock.sleep(crashExtraTimeout + 5000);
             assertFgsRunning(FGS0);
 
             // Stop the service

@@ -124,6 +124,7 @@ android_test {
     ],
     // sdk_version: "test_current",
     platform_apis: true,
+    sdk_version: "test_current",
 }
 
 android_test {
@@ -151,4 +152,5 @@ android_test {
     ],
     // sdk_version: "test_current",
     platform_apis: true,
+    sdk_version: "test_current",
 }

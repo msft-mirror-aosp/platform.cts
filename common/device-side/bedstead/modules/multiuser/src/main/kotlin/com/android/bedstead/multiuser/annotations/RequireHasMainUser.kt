@@ -16,6 +16,7 @@
 package com.android.bedstead.multiuser.annotations
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 
 /**
  * Mark that a test method should only be run on devices which have main users.
@@ -28,6 +29,7 @@ import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 annotation class RequireHasMainUser(
     /** The reason this test requires a main user.  */
     val reason: String,

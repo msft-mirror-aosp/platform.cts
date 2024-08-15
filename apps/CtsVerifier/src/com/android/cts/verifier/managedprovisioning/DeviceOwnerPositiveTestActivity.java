@@ -114,7 +114,8 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
 
         if (ACTION_CHECK_DEVICE_OWNER.equals(getIntent().getAction())) {
             DevicePolicyManager dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                    DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true);
+                    DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true,
+                    /* isSingleUser = */ false);
             if (dpm.isDeviceOwnerApp(getPackageName())) {
                 // Set DISALLOW_ADD_USER on behalf of ManagedProvisioning.
                 dpm.addUserRestriction(DeviceAdminTestReceiver.getReceiverComponentName(),
@@ -537,13 +538,14 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
 
         if (FeatureUtil.supportManagedSecondaryUsers(this)) {
             // Managed user
-            adapter.add(createInteractiveTestItem(this, MANAGED_USER_TEST_ID,
-                    R.string.managed_user_test,
-                    R.string.managed_user_positive_tests_instructions,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_settings_go,
-                                    createCreateManagedUserIntent())}));
+            // b/340154320 Disabled while the teardown of the user is resulting in a crash
+//            adapter.add(createInteractiveTestItem(this, MANAGED_USER_TEST_ID,
+//                    R.string.managed_user_test,
+//                    R.string.managed_user_positive_tests_instructions,
+//                    new ButtonInfo[]{
+//                            new ButtonInfo(
+//                                    R.string.device_owner_settings_go,
+//                                    createCreateManagedUserIntent())}));
 
             // User switcher message
             adapter.add(createInteractiveTestItem(this, USER_SWITCHER_MESSAGE_TEST_ID,
@@ -636,7 +638,10 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         }
 
         // setUsbDataSignalingEnabled
-        if (!FeatureUtil.isTelevision(this) && canUsbDataSignalingBeDisabled()) {
+        // Skipping on aaos since it doesn't have the Settings UI even though USB connection is
+        // supported in HW
+        if (!FeatureUtil.isTelevision(this) && !FeatureUtil.isAutomotive(this)
+                        && canUsbDataSignalingBeDisabled()) {
             adapter.add(createInteractiveTestItem(this, DISABLE_USB_DATA_SIGNALING_TEST_ID,
                     R.string.device_owner_disable_usb_data_signaling_test,
                     R.string.device_owner_disable_usb_data_signaling_test_info,

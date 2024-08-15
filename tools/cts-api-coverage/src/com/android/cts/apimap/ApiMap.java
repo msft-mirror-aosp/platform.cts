@@ -136,8 +136,11 @@ public final class ApiMap {
 
         XmlWriter xmlWriter = new XmlWriter();
         for (Map.Entry<String, Path> jar : jars.entrySet()) {
+            String moduleName = jar.getKey();
+            int dotIndex = moduleName.lastIndexOf('.');
+            moduleName = (dotIndex == -1) ? moduleName : moduleName.substring(0, dotIndex);
             tasks.add(scanJarFile(
-                    service, jar.getValue(), jar.getKey(), apiCoverage));
+                    service, jar.getValue(), moduleName, apiCoverage));
             // Clear tasks when there are too many in the blocking queue to avoid memory issue.
             if (tasks.size() > parallelism * 5) {
                 executeTasks(tasks, xmlWriter);
@@ -207,7 +210,7 @@ public final class ApiMap {
                     if (!className.endsWith(".class")) {
                         continue;
                     }
-                    Pair<String, String> packageClass = Utils.getPackageClass(
+                    Pair<String, String> packageClass = Utils.getPackageClassFromASM(
                             className.substring(0, className.length() - 6));
                     String packageName = packageClass.getFirst();
                     if (ignorePackage(packageName)) {

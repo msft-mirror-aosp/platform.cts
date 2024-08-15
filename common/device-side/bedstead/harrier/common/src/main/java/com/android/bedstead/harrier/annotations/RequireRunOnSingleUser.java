@@ -29,6 +29,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequireRunOnSecondaryUser(switchedToUser = OptionalBoolean.ANY)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 //TODO(b/321906998): Fully implement RequireRunOnSingleUser
 public @interface RequireRunOnSingleUser {
 

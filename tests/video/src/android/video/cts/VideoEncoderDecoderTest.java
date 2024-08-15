@@ -18,7 +18,6 @@ package android.video.cts;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -184,7 +183,7 @@ public class VideoEncoderDecoderTest {
     public void setUp() throws Exception {
         mEncodedOutputBuffer = new LinkedList<Pair<ByteBuffer, BufferInfo>>();
         mUpdatedSwCodec =
-                !TestUtils.isMainlineModuleFactoryVersion("com.google.android.media.swcodec");
+                TestUtils.isUpdatedMainlineModule("com.google.android.media.swcodec");
         // Use time as a seed, hoping to prevent checking pixels in the same pattern
         long now = System.currentTimeMillis();
         mRandom = new Random(now);

@@ -57,8 +57,6 @@ android_test_import {
             apk: "apk/x86/CtsShimPrivUpgrade.apk",
         },
         riscv64: {
-            // This apk has compressed JNI libraries when it shouldn't if it's presigned
-            skip_preprocessed_apk_checks: true,
             apk: "apk/riscv64/CtsShimPrivUpgrade.apk",
         },
     },
@@ -90,8 +88,6 @@ android_test_import {
             apk: "apk/x86/CtsShimPrivUpgradeWrongSHA.apk",
         },
         riscv64: {
-            // This apk has compressed JNI libraries when it shouldn't if it's presigned
-            skip_preprocessed_apk_checks: true,
             apk: "apk/riscv64/CtsShimPrivUpgradeWrongSHA.apk",
         },
     },

@@ -16,6 +16,7 @@
 
 package android.telecom.cts;
 
+import static android.telecom.cts.TestUtils.hasTelephonyFeature;
 import static android.telecom.cts.TestUtils.shouldTestTelecom;
 import static android.telecom.cts.TestUtils.waitOnAllHandlers;
 
@@ -42,6 +43,8 @@ import android.telecom.cts.screeningtestapp.CallScreeningServiceControl;
 import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
 import android.telecom.cts.screeningtestapp.ICallScreeningControl;
 import android.text.TextUtils;
+
+import androidx.test.filters.FlakyTest;
 
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -191,6 +194,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         addIncomingAndVerifyBlocked(false /* addContact */);
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndNoContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -217,6 +222,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         addIncomingAndVerifyBlocked(true /* addContact */);
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndHasContactIncoming() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -240,6 +247,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         assertTrue(mCallScreeningControl.waitForBind());
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndNoContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext)) {
             return;
@@ -261,6 +270,8 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
         assertTrue(mCallScreeningControl.waitForBind());
     }
 
+    // b/355720464
+    @FlakyTest
     public void testNoPermissionAndHasContactOutgoing() throws Exception {
         if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
@@ -282,7 +293,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testAllowCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -331,7 +342,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForOutgoingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -347,7 +358,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPostCallActivityForIncomingEmergencyCall() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !hasTelephonyFeature(mContext)) {
             return;
         }
         setupForEmergencyCalling(TEST_EMERGENCY_NUMBER);

@@ -20,7 +20,10 @@ package {
 android_test_helper_app {
     name: "CtsApplicationVisibilityCrossUserApp",
     defaults: ["cts_defaults"],
-    static_libs: ["androidx.test.rules"],
+    static_libs: [
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+    ],
     srcs: ["src/**/*.java"],
     // tag this module as a cts test artifact
     test_suites: [

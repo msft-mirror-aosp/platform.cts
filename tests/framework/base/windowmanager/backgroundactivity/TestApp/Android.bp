@@ -49,6 +49,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -74,6 +75,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package android.server.wm.backgroundactivity.appa33",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -99,6 +101,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package android.server.wm.backgroundactivity.appb",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -124,6 +127,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package android.server.wm.backgroundactivity.appb33",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -149,6 +153,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package android.server.wm.backgroundactivity.appc",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -174,6 +179,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package android.server.wm.backgroundactivity.appc33",
     ],
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {

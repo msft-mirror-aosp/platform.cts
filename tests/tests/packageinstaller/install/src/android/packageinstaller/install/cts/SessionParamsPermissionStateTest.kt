@@ -31,7 +31,6 @@ import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
-import java.io.File
 import kotlin.test.assertFailsWith
 import org.junit.Before
 import org.junit.BeforeClass
@@ -249,7 +248,7 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
     }
 
     private fun assertPermission(packageInfo: PackageInfo, name: String, granted: Boolean?) {
-        val permissionIndex = packageInfo.requestedPermissions!!.indexOfFirst { it == name }
+        val permissionIndex = packageInfo.requestedPermissions?.indexOfFirst { it == name } ?: -1
 
         if (granted == null) {
             assertThat(permissionIndex).isEqualTo(-1)

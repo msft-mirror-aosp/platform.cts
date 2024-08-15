@@ -80,7 +80,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-        yuv_size = capture_request_utils.get_largest_yuv_format(props)
+        yuv_size = capture_request_utils.get_largest_format('yuv', props)
         size = [yuv_size['width'], yuv_size['height']]
       logging.debug('capture size: %s', size)
       logging.debug('test TOLs: %s', test_tols)
@@ -128,7 +128,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
             fmt = capture_request_utils.FMT_CODE_PRIV
           elif stream['format'] == 'jpeg':
             fmt = capture_request_utils.FMT_CODE_JPEG
-          elif stream['format'] == 'jpegr':
+          elif stream['format'] == its_session_utils.JPEG_R_FMT_STR:
             fmt = capture_request_utils.FMT_CODE_JPEG_R
           elif stream['format'] == 'yuv':
             fmt = capture_request_utils.FMT_CODE_YUV
@@ -143,7 +143,7 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
               fmt != capture_request_utils.FMT_CODE_JPEG_R and
               fmt != capture_request_utils.FMT_CODE_YUV):
             logging.debug(
-                'second stream format %s is not yuv/jpeg/jpegr. Skip',
+                'second stream format %s is not yuv/jpeg/jpeg_r. Skip',
                 stream['format'])
             skip = True
             break

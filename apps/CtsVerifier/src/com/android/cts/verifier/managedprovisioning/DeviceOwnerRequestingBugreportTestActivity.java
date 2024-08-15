@@ -87,7 +87,8 @@ public class DeviceOwnerRequestingBugreportTestActivity extends PassFailButtons.
             switch (action) {
                 case ACTION_CHECK_DEVICE_OWNER_FOR_REQUESTING_BUGREPORT:
                     dpm = TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                            DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true);
+                            DeviceAdminTestReceiver.class, /* forDeviceOwner= */ true,
+                            /* isSingleUser = */ false);
                     if (dpm.isDeviceOwnerApp(getPackageName())) {
                         TestResult.setPassedResult(this, getIntent().getStringExtra(EXTRA_TEST_ID),
                                 null, null);

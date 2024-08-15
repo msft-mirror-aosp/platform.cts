@@ -14,11 +14,11 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_wallpapers",
 }
 
 android_test {
     name: "CtsWallpaperEffectsGenerationServiceTestCases",
-    team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.annotation_annotation",

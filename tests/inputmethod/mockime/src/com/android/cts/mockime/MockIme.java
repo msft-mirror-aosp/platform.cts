@@ -660,6 +660,9 @@ public final class MockIme extends InputMethodService {
                         }
                         return ImeEvent.RETURN_VALUE_UNAVAILABLE;
                     }
+                    case "getImeCaptionBarHeight": {
+                        return mView.getRootWindowInsets().getInsets(captionBar()).bottom;
+                    }
                 }
             }
             return ImeEvent.RETURN_VALUE_UNAVAILABLE;
@@ -1181,7 +1184,18 @@ public final class MockIme extends InputMethodService {
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (!Looper.getMainLooper().isCurrentThread()) {
+            throw new IllegalStateException("onKeyDown must be called on the UI thread");
+        }
         return getTracer().onKeyDown(keyCode, event, () -> super.onKeyDown(keyCode, event));
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (!Looper.getMainLooper().isCurrentThread()) {
+            throw new IllegalStateException("onKeyUp must be called on the UI thread");
+        }
+        return super.onKeyUp(keyCode, event);
     }
 
     @Override
@@ -1388,6 +1402,17 @@ public final class MockIme extends InputMethodService {
         super.onConfigurationChanged(configuration);
         getTracer().onConfigurationChanged(() -> {}, configuration);
         mLastDispatchedConfiguration.setTo(configuration);
+    }
+
+    @Override
+    public void onComputeInsets(Insets outInsets) {
+        if (mSettings != null && mSettings.isZeroInsetsEnabled()) {
+            final int height = getWindow().getWindow().getDecorView().getHeight();
+            outInsets.contentTopInsets = height;
+            outInsets.visibleTopInsets = height;
+        } else {
+            super.onComputeInsets(outInsets);
+        }
     }
 
     /**

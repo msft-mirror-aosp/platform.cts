@@ -34,11 +34,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.os.UserManager;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
@@ -51,6 +54,7 @@ import android.util.Log;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.Timeout;
+import com.android.modules.utils.build.SdkLevel;
 
 import com.google.common.io.BaseEncoding;
 
@@ -152,7 +156,7 @@ public class MediaProviderTestUtils {
                 .getSystemService(StorageManager.class)
                 .getStorageVolume(MediaStore.Files.getContentUri(volumeName));
         return Environment.buildPath(vol.getDirectory(),
-                Environment.DIRECTORY_DOWNLOADS, "android.provider.cts");
+                Environment.DIRECTORY_DOWNLOADS);
     }
 
     public static File stageFile(int resId, File file) throws IOException {
@@ -197,6 +201,16 @@ public class MediaProviderTestUtils {
             }
         }
         return waitUntilExists(file);
+    }
+
+    public static File createMediaInDownloads(int resId, String volumeName) throws Exception {
+        File image = new File(MediaProviderTestUtils.stageDownloadDir(volumeName),
+                "test" + System.nanoTime() + ".mp3");
+        stageFile(resId, image);
+        scanFile(image);
+        // Sleep is needed for images to have different modified_date
+        SystemClock.sleep(2000);
+        return image;
     }
 
     public static Uri stageMedia(int resId, Uri collectionUri) throws IOException {
@@ -429,5 +443,15 @@ public class MediaProviderTestUtils {
             InstrumentationRegistry.getInstrumentation().getUiAutomation()
                     .dropShellPermissionIdentity();
         }
+    }
+
+    /**
+     * @return {@code true} if initial sdk version of the device is at least Android R
+     */
+    public static boolean isDeviceInitialSdkIntR() {
+        // Build.VERSION.DEVICE_INITIAL_SDK_INT is available only Android S onwards
+        int deviceInitialSdkInt = SdkLevel.isAtLeastS() ? Build.VERSION.DEVICE_INITIAL_SDK_INT :
+                SystemProperties.getInt("ro.product.first_api_level", 0);
+        return deviceInitialSdkInt >= Build.VERSION_CODES.R;
     }
 }

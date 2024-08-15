@@ -25,8 +25,8 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
 
   public MultiDeviceTestsActivity() {
     super(
-        R.string.multi_device_tests_dialog_title,
-        R.string.multi_device_tests_dialog_content,
+        R.string.nfc_tests_dialog_title,
+        R.string.nfc_tests_dialog_content,
         new HostTestCategory("Multidevice Tests")
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_conflicting_non_payment",
@@ -79,12 +79,6 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service")
-            .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled")
-            .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch")
             .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service")

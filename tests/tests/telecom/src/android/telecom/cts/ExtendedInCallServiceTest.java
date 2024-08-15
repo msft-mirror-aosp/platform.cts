@@ -41,6 +41,8 @@ import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
 
+import androidx.test.filters.FlakyTest;
+
 import com.android.server.telecom.flags.Flags;
 
 import java.util.List;
@@ -111,6 +113,7 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         assertMuteEndpoint(inCallService, false);
     }
 
+    @FlakyTest(bugId = 344112674)
     public void testSwitchAudioRoutes() {
         if (!mShouldTestTelecom) {
             return;
@@ -880,7 +883,8 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testOnCannedTextResponsesLoaded() {
-        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
+        // Wearable device can skip contact lookup
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext) || mWatchDevice) {
             return;
         }
 

@@ -690,6 +690,30 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    public void testDeviceSmsCapable() {
+        boolean isSmsCapable = mTelephonyManager.isSmsCapable();
+        boolean isDeviceSmsCapable = mTelephonyManager.isDeviceSmsCapable();
+        boolean hasMessagingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_MESSAGING);
+
+        assertEquals("isSmsCapable should return the same as isDeviceSmsCapable",
+                isDeviceSmsCapable, isSmsCapable);
+        assertEquals("config_sms_capable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+                hasMessagingFeature, isDeviceSmsCapable);
+    }
+
+    @Test
+    public void testDeviceVoiceCapable() {
+        boolean isVoiceCapable = mTelephonyManager.isVoiceCapable();
+        boolean isDeviceVoiceCapable = mTelephonyManager.isDeviceVoiceCapable();
+        boolean hasCallingFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING);
+
+        assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
+                isDeviceVoiceCapable, isVoiceCapable);
+        assertEquals("config_voice_capable is not aligned with FEATURE_TELEPHONY_CALLING",
+                hasCallingFeature, isDeviceVoiceCapable);
+    }
+
+    @Test
     public void testHasCarrierPrivilegesViaCarrierConfigs() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         PersistableBundle carrierConfig = mCarrierConfigManager.getConfigForSubId(mTestSub);
@@ -1074,8 +1098,6 @@ public class TelephonyManagerTest {
                 (tm) -> tm.getDeviceId(mTelephonyManager.getSlotIndex()));
         ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.getDeviceSoftwareVersion(mTelephonyManager.getSlotIndex()));
-        ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.getPhoneAccountHandle());
 
         // FEATURE_TELEPHONY_DATA required.
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_DATA)) {
@@ -1121,6 +1143,8 @@ public class TelephonyManagerTest {
         if (hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING)) {
             mTelephonyManager.getVoiceMailNumber();
             mTelephonyManager.getVoiceMailAlphaTag();
+            ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.getPhoneAccountHandle());
         }
 
         //FEATURE_TELEPHONY_IMS required
@@ -1438,8 +1462,10 @@ public class TelephonyManagerTest {
     public void testGetHalVersion() {
         Pair<Integer, Integer> halversion;
         for (int i = TelephonyManager.HAL_SERVICE_DATA;
-                i <= TelephonyManager.HAL_SERVICE_VOICE; i++) {
+                i <= TelephonyManager.HAL_SERVICE_IMS; i++) {
             halversion = mTelephonyManager.getHalVersion(i);
+
+            if (halversion.equals(TelephonyManager.HAL_VERSION_UNSUPPORTED)) continue;
 
             // The version must be valid, and the versions start with 1.0
             assertFalse("Invalid HAL Version (" + halversion + ") of service (" + i + ")",
@@ -1463,6 +1489,7 @@ public class TelephonyManagerTest {
         PhoneAccountHandle handle =
                 telecomManager.getDefaultOutgoingPhoneAccount(PhoneAccount.SCHEME_TEL);
         TelephonyManager telephonyManager = mTelephonyManager.createForPhoneAccountHandle(handle);
+        assertNotNull(telephonyManager);
         String globalSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.getSubscriberId());
         String localSubscriberId = ShellIdentityUtils.invokeMethodWithShellPermissions(
@@ -1480,6 +1507,8 @@ public class TelephonyManagerTest {
     @Test
     @ApiTest(apis = {"android.telephony.TelephonyManager#getPhoneAccountHandle"})
     public void testGetPhoneAccountHandle() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
+
         TelecomManager telecomManager = getContext().getSystemService(TelecomManager.class);
         List<PhoneAccountHandle> callCapableAccounts = telecomManager
                 .getCallCapablePhoneAccounts();
@@ -1762,61 +1791,63 @@ public class TelephonyManagerTest {
         boolean getAvailable = initialSpecifiers != null && !initialSpecifiers.isEmpty();
         Log.d(TAG, "getSystemSelectionChannels is " + (getAvailable ? "" : "not ") + "available.");
 
-        List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
-        List<RadioAccessSpecifier> specifiers;
-        for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
-            List<Integer> validBands = new ArrayList<>();
-            for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
-                // Set each band to see which ones are supported by the modem
-                RadioAccessSpecifier specifier = new RadioAccessSpecifier(
-                        accessNetworkType, new int[]{band}, new int[]{});
-                boolean success = trySetSystemSelectionChannels(
-                        Collections.singletonList(specifier), true);
-                if (success) {
-                    validBands.add(band);
+        try {
+            List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
+            List<RadioAccessSpecifier> specifiers;
+            for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
+                List<Integer> validBands = new ArrayList<>();
+                for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
+                    // Set each band to see which ones are supported by the modem
+                    RadioAccessSpecifier specifier = new RadioAccessSpecifier(
+                            accessNetworkType, new int[]{band}, new int[]{});
+                    boolean success = trySetSystemSelectionChannels(
+                            Collections.singletonList(specifier), true);
+                    if (success) {
+                        validBands.add(band);
 
-                    // Try calling the API that doesn't provide feedback.
-                    // We have no way of knowing if it succeeds, so just make sure nothing crashes.
-                    trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
+                        // Try calling the API that doesn't provide feedback.
+                        // We have no way of knowing if it succeeds; just make sure nothing crashes.
+                        trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
 
-                    if (getAvailable) {
-                        // Assert that we get back the value we set.
-                        specifiers = tryGetSystemSelectionChannels();
-                        assertNotNull(specifiers);
-                        assertEquals(1, specifiers.size());
-                        assertEquals(specifier, specifiers.get(0));
+                        if (getAvailable) {
+                            // Assert that we get back the value we set.
+                            specifiers = tryGetSystemSelectionChannels();
+                            assertNotNull(specifiers);
+                            assertEquals(1, specifiers.size());
+                            assertEquals(specifier, specifiers.get(0));
+                        }
                     }
                 }
+                if (!validBands.isEmpty()) {
+                    validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
+                            validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+                }
             }
-            if (!validBands.isEmpty()) {
-                validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
-                        validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+
+            // Call setSystemSelectionChannels with an empty list and verify no error
+            if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                fail("Failed to call setSystemSelectionChannels with an empty list.");
             }
-        }
 
-        // Call setSystemSelectionChannels with an empty list and verify no error
-        if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            fail("Failed to call setSystemSelectionChannels with an empty list.");
-        }
+            // Verify that getSystemSelectionChannels returns all valid specifiers
+            specifiers = tryGetSystemSelectionChannels();
+            // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
+            //assertNotNull(specifiers);
+            //assertEquals(specifiers.size(), validSpecifiers.size());
+            //assertTrue(specifiers.containsAll(validSpecifiers));
 
-        // Verify that getSystemSelectionChannels returns all valid specifiers
-        specifiers = tryGetSystemSelectionChannels();
-        // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
-        //assertNotNull(specifiers);
-        //assertEquals(specifiers.size(), validSpecifiers.size());
-        //assertTrue(specifiers.containsAll(validSpecifiers));
-
-        // Call setSystemSelectionChannels with all valid specifiers to test batch operations
-        if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
-            Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
-        }
-
-        // Reset the values back to the original.
-        if (getAvailable) {
-            trySetSystemSelectionChannels(initialSpecifiers, true);
+            // Call setSystemSelectionChannels with all valid specifiers to test batch operations
+            if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
+                Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
+            }
+        } finally {
+            // Reset the values back to the original.
+            if (getAvailable) {
+                trySetSystemSelectionChannels(initialSpecifiers, true);
+            }
         }
     }
 
@@ -2740,6 +2771,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             int numFplmnsSet = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.setForbiddenPlmns(FPLMN_TEST));
@@ -2763,6 +2795,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             List<String> targetFplmns = new ArrayList<>();
             for (int i = 0; i < MIN_FPLMN_NUM; i++) {
@@ -2795,6 +2828,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             // Support test for empty SIM
             List<String> targetDummyFplmns = new ArrayList<>();
@@ -2829,6 +2863,7 @@ public class TelephonyManagerTest {
         assumeTrue(supportSetFplmn());
 
         String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
         try {
             ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mTelephonyManager, (tm) -> tm.setForbiddenPlmns(null));
@@ -6995,17 +7030,23 @@ public class TelephonyManagerTest {
             return;
         }
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertTrue(enabled);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7021,15 +7062,21 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
+                    }
+            );
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
-                }
-        );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7092,18 +7139,23 @@ public class TelephonyManagerTest {
                     "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertTrue(enabled);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7119,15 +7171,20 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setNullCipherNotificationsEnabled(true);
-                }
-        );
-
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isNullCipherNotificationsEnabled();
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setNullCipherNotificationsEnabled(true);
+                    }
+            );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isNullCipherNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test

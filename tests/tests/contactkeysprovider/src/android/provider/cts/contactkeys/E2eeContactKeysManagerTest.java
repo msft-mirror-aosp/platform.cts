@@ -18,8 +18,8 @@ package android.provider.cts.contactkeys;
 
 import static android.provider.E2eeContactKeysManager.getMaxKeySizeBytes;
 
-
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.TruthJUnit.assume;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertNull;
@@ -40,7 +40,7 @@ import android.provider.Flags;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -71,32 +71,43 @@ public class E2eeContactKeysManagerTest {
     private static final String HELPER_APP_ACCOUNT_ID = "someAccountId";
     private static final String OWNER_PACKAGE_NAME = "android.provider.cts.contactkeys";
 
-    private E2eeContactKeysManager mContactKeysManager;
-    private Context mContext;
+    private static E2eeContactKeysManager sContactKeysManager;
+    private static Context sContext;
 
-    @Before
-    public void setUp() {
-        mContext = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+    @BeforeClass
+    public static void setUp() {
+        sContext = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
                 .getTargetContext();
-        mContactKeysManager = (E2eeContactKeysManager)
-                mContext.getSystemService(Context.CONTACT_KEYS_SERVICE);
+        sContactKeysManager = (E2eeContactKeysManager)
+                sContext.getSystemService(Context.CONTACT_KEYS_SERVICE);
+
+        // Due to platform issues, the content provider might not be loaded which results
+        // in flaky tests. Here we check that the content provider is loaded
+        boolean contentProviderIsLoaded = true;
+        try {
+            sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        } catch (NullPointerException e) {
+            // Content provider is not loaded, so we skip the tests
+            contentProviderIsLoaded = false;
+        }
+        assume().that(contentProviderIsLoaded).isTrue();
     }
 
     @After
     public void tearDown() {
-        mContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
-        mContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID_2, ACCOUNT_ID);
-        mContactKeysManager.removeE2eeSelfKey(DEVICE_ID, ACCOUNT_ID);
-        mContactKeysManager.removeE2eeSelfKey(DEVICE_ID_2, ACCOUNT_ID);
+        sContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
+        sContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID_2, ACCOUNT_ID);
+        sContactKeysManager.removeE2eeSelfKey(DEVICE_ID, ACCOUNT_ID);
+        sContactKeysManager.removeE2eeSelfKey(DEVICE_ID_2, ACCOUNT_ID);
     }
 
     @Test
     public void testUpdateOrInsertContactKey_insertsNewEntry() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
         E2eeContactKey contactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID);
 
         assertThat(contactKey.getDeviceId()).isEqualTo(DEVICE_ID);
@@ -114,20 +125,20 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateOrInsertContactKey_updatesExistingEntry() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
         int localVerificationState = E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED;
         int remoteVerificationState = E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED;
-        mContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY, DEVICE_ID,
+        sContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY, DEVICE_ID,
                 ACCOUNT_ID, localVerificationState);
-        mContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY, DEVICE_ID,
+        sContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY, DEVICE_ID,
                 ACCOUNT_ID, remoteVerificationState);
 
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE_2);
 
         E2eeContactKey updatedContactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID);
         assertNotNull(updatedContactKey);
         assertThat(updatedContactKey.getKeyValue()).isEqualTo(KEY_VALUE_2);
@@ -142,7 +153,7 @@ public class E2eeContactKeysManagerTest {
         byte[] largeKey = new byte[getMaxKeySizeBytes() + 1];
         Arrays.fill(largeKey, (byte) 42);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                () -> sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID, largeKey));
         assertThat(e).hasMessageThat().contains("Key value length is " + largeKey.length + "."
                 + " Should be more than 0 and less than " + getMaxKeySizeBytes());
@@ -152,7 +163,7 @@ public class E2eeContactKeysManagerTest {
     public void testUpdateOrInsertContactKey_emptyKeyThrows() {
         byte[] emptyKey = new byte[0];
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                () -> sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID, emptyKey));
         assertThat(e).hasMessageThat().contains("Key value length is " + emptyKey.length + "."
                 + " Should be more than 0 and less than " + getMaxKeySizeBytes());
@@ -161,14 +172,14 @@ public class E2eeContactKeysManagerTest {
     @Test
     public void testUpdateOrInsertContactKey_nullKeyThrows() {
         assertThrows(NullPointerException.class,
-                () -> mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                () -> sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID, null));
     }
 
     @Test
     public void testGetContactKey_returnsNullForNonexistentEntry() {
         E2eeContactKey contactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID,
                         ACCOUNT_ID);
 
         assertNull(contactKey);
@@ -176,22 +187,22 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testGetOwnerContactKeys_returnsEntriesForCaller() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID_2, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID_2, ACCOUNT_ID,
                 KEY_VALUE_2);
 
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getOwnerE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getOwnerE2eeContactKeys(LOOKUP_KEY);
 
         assertThat(contactKeys.size()).isEqualTo(2);
     }
 
     @Test
     public void testGetAllContactKeys_callerIsSameAsOwner() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
 
         assertThat(contactKeys.size()).isEqualTo(1);
         E2eeContactKey actualKey = contactKeys.get(0);
@@ -210,7 +221,7 @@ public class E2eeContactKeysManagerTest {
         // Creates a contact key by another owner
         startHelperApp();
 
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
 
         // This also verifies that the keys created by an app (CtsContactKeysProviderInvisibleApp)
         // that is not queryable by CTS test are not visible
@@ -230,21 +241,21 @@ public class E2eeContactKeysManagerTest {
     @Test
     public void testGetAllContactKeys_returnsEmptyListForNonexistentEntries() {
         List<E2eeContactKey> contactKeys =
-                mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+                sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
 
         assertThat(contactKeys.size()).isEqualTo(0);
     }
 
     @Test
     public void testUpdateContactKeyLocalVerificationState_updatesState() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
-        mContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY, DEVICE_ID,
+        sContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY, DEVICE_ID,
                 ACCOUNT_ID, E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
 
         E2eeContactKey updatedContactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
         assertThat(updatedContactKey.getLocalVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
     }
@@ -252,12 +263,12 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateContactKeyLocalVerificationState_illegalState() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
         int illegalVerificationState = 4;
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY,
+                () -> sContactKeysManager.updateE2eeContactKeyLocalVerificationState(LOOKUP_KEY,
                         DEVICE_ID, ACCOUNT_ID, illegalVerificationState));
         assertThat(e).hasMessageThat().contains("Verification state value "
                 + illegalVerificationState + " is not supported");
@@ -266,11 +277,11 @@ public class E2eeContactKeysManagerTest {
     @Test
     public void testUpdateContactKeyLocalVerificationState_securityExceptionThrows() {
         startHelperApp();
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
 
         SecurityException e = assertThrows(SecurityException.class,
-                () ->mContactKeysManager.updateE2eeContactKeyLocalVerificationState(
+                () -> sContactKeysManager.updateE2eeContactKeyLocalVerificationState(
                         HELPER_APP_LOOKUP_KEY, HELPER_APP_DEVICE_ID,
                         HELPER_APP_ACCOUNT_ID, HELPER_APP_PACKAGE,
                         E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED));
@@ -283,11 +294,11 @@ public class E2eeContactKeysManagerTest {
     @Test
     public void testUpdateContactKeyRemoteVerificationState_securityExceptionThrows() {
         startHelperApp();
-        List<E2eeContactKey> contactKeys = mContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
+        List<E2eeContactKey> contactKeys = sContactKeysManager.getAllE2eeContactKeys(LOOKUP_KEY);
         assertThat(contactKeys.size()).isEqualTo(1);
 
         SecurityException e = assertThrows(SecurityException.class,
-                () ->mContactKeysManager.updateE2eeContactKeyRemoteVerificationState(
+                () -> sContactKeysManager.updateE2eeContactKeyRemoteVerificationState(
                         HELPER_APP_LOOKUP_KEY, HELPER_APP_DEVICE_ID,
                         HELPER_APP_ACCOUNT_ID, HELPER_APP_PACKAGE,
                         E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED));
@@ -299,26 +310,26 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateContactKeyRemoteVerificationState_updatesState() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
-        mContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY, DEVICE_ID,
+        sContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY, DEVICE_ID,
                 ACCOUNT_ID, E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
 
         E2eeContactKey updatedContactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
         assertThat(updatedContactKey.getRemoteVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
     }
 
     @Test
     public void testUpdateContactKeyRemoteVerificationState_illegalState() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
         int illegalVerificationState = 4;
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY,
+                () -> sContactKeysManager.updateE2eeContactKeyRemoteVerificationState(LOOKUP_KEY,
                         DEVICE_ID, ACCOUNT_ID, illegalVerificationState));
         assertThat(e).hasMessageThat().contains("Verification state value "
                 + illegalVerificationState + " is not supported");
@@ -326,21 +337,21 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testRemoveContactKey_deletesEntry() {
-        mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
+        sContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
 
-        mContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
+        sContactKeysManager.removeE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
 
         E2eeContactKey contactKey =
-                mContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
+                sContactKeysManager.getE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID);
         assertNull(contactKey);
     }
 
     @Test
     public void testUpdateOrInsertSelfKey_insertsNewEntry() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
-        E2eeSelfKey newSelfKey = mContactKeysManager.getE2eeSelfKey(DEVICE_ID,
+        E2eeSelfKey newSelfKey = sContactKeysManager.getE2eeSelfKey(DEVICE_ID,
                 ACCOUNT_ID);
         assertNotNull(newSelfKey);
         assertThat(newSelfKey.getDeviceId()).isEqualTo(DEVICE_ID);
@@ -351,11 +362,11 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateOrInsertSelfKey_updatesExistingEntry() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE_2);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE_2);
 
-        E2eeSelfKey updatedSelfKey = mContactKeysManager.getE2eeSelfKey(DEVICE_ID,
+        E2eeSelfKey updatedSelfKey = sContactKeysManager.getE2eeSelfKey(DEVICE_ID,
                 ACCOUNT_ID);
         assertNotNull(updatedSelfKey);
         assertThat(updatedSelfKey.getKeyValue()).isEqualTo(KEY_VALUE_2);
@@ -366,7 +377,7 @@ public class E2eeContactKeysManagerTest {
         byte[] largeKey = new byte[getMaxKeySizeBytes() + 1];
         Arrays.fill(largeKey, (byte) 42);
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID,
+                () -> sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID,
                         ACCOUNT_ID, largeKey));
         assertThat(e).hasMessageThat().contains("Key value length is " + largeKey.length + "."
                 + " Should be more than 0 and less than "
@@ -377,7 +388,7 @@ public class E2eeContactKeysManagerTest {
     public void testUpdateOrInsertSelfKey_emptyKeyThrows() {
         byte[] emptyKey = new byte[0];
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID,
+                () -> sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID,
                         ACCOUNT_ID, emptyKey));
         assertThat(e).hasMessageThat().contains("Key value length is " + emptyKey.length + "."
                 + " Should be more than 0 and less than "
@@ -386,12 +397,12 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateSelfKeyRemoteVerificationState_updatesState() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
-        mContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(DEVICE_ID,
+        sContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(DEVICE_ID,
                 ACCOUNT_ID, E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
 
-        E2eeSelfKey updatedSelfKey = mContactKeysManager.getE2eeSelfKey(DEVICE_ID,
+        E2eeSelfKey updatedSelfKey = sContactKeysManager.getE2eeSelfKey(DEVICE_ID,
                 ACCOUNT_ID);
         assertThat(updatedSelfKey.getRemoteVerificationState())
                 .isEqualTo(E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED);
@@ -400,11 +411,11 @@ public class E2eeContactKeysManagerTest {
     @Test
     public void testUpdateSelfKeyRemoteVerificationState_securityExceptionThrows() {
         startHelperApp();
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
         assertThat(selfKeys.size()).isEqualTo(1);
 
         SecurityException e = assertThrows(SecurityException.class,
-                () ->mContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(
+                () -> sContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(
                         HELPER_APP_DEVICE_ID, HELPER_APP_ACCOUNT_ID,
                         HELPER_APP_PACKAGE, E2eeContactKeysManager.VERIFICATION_STATE_VERIFIED));
         assertThat(e).hasMessageThat().contains("The caller must have the "
@@ -415,11 +426,11 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testUpdateSelfKeyRemoteVerificationState_illegalState() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
         int illegalVerificationState = 4;
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
-                () -> mContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(DEVICE_ID,
+                () -> sContactKeysManager.updateE2eeSelfKeyRemoteVerificationState(DEVICE_ID,
                         ACCOUNT_ID, illegalVerificationState));
         assertThat(e).hasMessageThat().contains("Verification state value "
                 + illegalVerificationState + " is not supported");
@@ -427,9 +438,9 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testGetSelfKey_returnsExpectedSelfKey() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
-        E2eeSelfKey selfKey = mContactKeysManager.getE2eeSelfKey(DEVICE_ID,
+        E2eeSelfKey selfKey = sContactKeysManager.getE2eeSelfKey(DEVICE_ID,
                 ACCOUNT_ID);
 
         assertNotNull(selfKey);
@@ -440,26 +451,26 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testGetSelfKey_returnsNullForNonexistentEntry() {
-        E2eeSelfKey selfKey = mContactKeysManager.getE2eeSelfKey(DEVICE_ID, ACCOUNT_ID);
+        E2eeSelfKey selfKey = sContactKeysManager.getE2eeSelfKey(DEVICE_ID, ACCOUNT_ID);
 
         assertNull(selfKey);
     }
 
     @Test
     public void testGetOwnerSelfKeys_returnsEntriesForCaller() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID_2, ACCOUNT_ID, KEY_VALUE_2);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID_2, ACCOUNT_ID, KEY_VALUE_2);
 
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getOwnerE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getOwnerE2eeSelfKeys();
 
         assertThat(selfKeys.size()).isEqualTo(2);
     }
 
     @Test
     public void testGetAllSelfKeys_callerIsSameAsOwner() {
-        mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
+        sContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
 
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
 
         assertThat(selfKeys.size()).isEqualTo(1);
         E2eeSelfKey actualKey = selfKeys.get(0);
@@ -476,7 +487,7 @@ public class E2eeContactKeysManagerTest {
         // Creates a self key by another owner
         startHelperApp();
 
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
 
         // This also verifies that the keys created by an app (CtsContactKeysProviderInvisibleApp)
         // that is not queryable by CTS test are not visible
@@ -493,7 +504,7 @@ public class E2eeContactKeysManagerTest {
 
     @Test
     public void testGetAllSelfKeys_returnsEmptyListForNonexistentEntries() {
-        List<E2eeSelfKey> selfKeys = mContactKeysManager.getAllE2eeSelfKeys();
+        List<E2eeSelfKey> selfKeys = sContactKeysManager.getAllE2eeSelfKeys();
 
         assertThat(selfKeys.size()).isEqualTo(0);
     }
@@ -503,6 +514,7 @@ public class E2eeContactKeysManagerTest {
      */
     private void startHelperApp() {
         Intent intent = new Intent();
+        intent.putExtra("request_stop", false);
         intent.setComponent(new ComponentName(
                 HELPER_APP_PACKAGE,
                 HELPER_APP_CLASS));
@@ -510,7 +522,7 @@ public class E2eeContactKeysManagerTest {
                 .getTargetContext().startForegroundService(intent);
         // Wait as service start (that includes creation of the keys) is not immediate
         try {
-            Thread.sleep(500);
+            Thread.sleep(1000);
         } catch (Exception e) {
             // Do nothing
         }
@@ -521,14 +533,18 @@ public class E2eeContactKeysManagerTest {
      */
     private void stopHelperApp() {
         Intent intent = new Intent();
+        intent.putExtra("request_stop", true);
         intent.setComponent(new ComponentName(
                 HELPER_APP_PACKAGE,
                 HELPER_APP_CLASS));
+        // Sometimes the service is stopped before it gets a chance to call startForeground(),
+        // this way by calling startService() with a special flag we can guarantee that it'll be
+        // called first
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
-                .getTargetContext().stopService(intent);
+                .getTargetContext().startService(intent);
         // Wait as service stop (that includes removal of the keys) is not immediate
         try {
-            Thread.sleep(500);
+            Thread.sleep(1000);
         } catch (Exception e) {
             // Do nothing
         }

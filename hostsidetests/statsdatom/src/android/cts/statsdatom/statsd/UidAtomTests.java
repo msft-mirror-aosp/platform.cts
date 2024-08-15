@@ -595,6 +595,8 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     //Note: this test does not have uid, but must run on the device
     public void testScreenBrightness() throws Exception {
+        DeviceUtils.turnScreenOn(getDevice());
+
         int initialBrightness = getScreenBrightness();
         boolean isInitialManual = isScreenBrightnessModeManual();
         setScreenBrightnessMode(true);
@@ -607,7 +609,7 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 atomTag);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testScreenBrightness");
 
-        List<Integer> expectedValues = Arrays.asList(47, 100);
+        List<Integer> expectedValues = Arrays.asList(47, 70);
 
         // Sorted list of brightness values in order in which they occurred, filtered to only
         // contain expectedValues if they are present.

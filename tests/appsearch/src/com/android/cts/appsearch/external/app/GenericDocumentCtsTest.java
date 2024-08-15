@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.GenericDocument;
+import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -36,10 +37,6 @@ import java.util.Objects;
 public class GenericDocumentCtsTest {
     private static final byte[] sByteArray1 = new byte[] {(byte) 1, (byte) 2, (byte) 3};
     private static final byte[] sByteArray2 = new byte[] {(byte) 4, (byte) 5, (byte) 6, (byte) 7};
-    private static final EmbeddingVector sEmbedding1 =
-            new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
-    private static final EmbeddingVector sEmbedding2 =
-            new EmbeddingVector(new float[] {4.4f, 5.5f, 6.6f, 7.7f}, "my_model_v2");
     private static final GenericDocument sDocumentProperties1 =
             new GenericDocument.Builder<>(
                             "namespace", "sDocumentProperties1", "sDocumentPropertiesSchemaType1")
@@ -1089,6 +1086,11 @@ public class GenericDocumentCtsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentEquals_identicalWithEmbeddingValues() {
+        EmbeddingVector embedding1 =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+        EmbeddingVector embedding2 =
+                new EmbeddingVector(new float[] {4.4f, 5.5f, 6.6f, 7.7f}, "my_model_v2");
+
         GenericDocument document1 =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
@@ -1098,7 +1100,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyBoolean("booleanKey1", true, false, true)
                         .setPropertyString(
                                 "stringKey1", "test-value1", "test-value2", "test-value3")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .build();
         GenericDocument document2 =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
@@ -1109,7 +1111,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyBoolean("booleanKey1", true, false, true)
                         .setPropertyString(
                                 "stringKey1", "test-value1", "test-value2", "test-value3")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .build();
         assertThat(document1).isEqualTo(document2);
         assertThat(document1.hashCode()).isEqualTo(document2.hashCode());
@@ -1118,11 +1120,16 @@ public class GenericDocumentCtsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentEquals_differentOrderWithEmbeddingValues() {
+        EmbeddingVector embedding1 =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+        EmbeddingVector embedding2 =
+                new EmbeddingVector(new float[] {4.4f, 5.5f, 6.6f, 7.7f}, "my_model_v2");
+
         GenericDocument document1 =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
                         .setPropertyLong("longKey1", 1L, 2L, 3L)
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .setPropertyDouble("doubleKey1", 1.0, 2.0, 3.0)
                         .setPropertyBoolean("booleanKey1", true, false, true)
                         .setPropertyString(
@@ -1138,7 +1145,7 @@ public class GenericDocumentCtsTest {
                                 "stringKey1", "test-value1", "test-value2", "test-value3")
                         .setPropertyDouble("doubleKey1", 1.0, 2.0, 3.0)
                         .setPropertyLong("longKey1", 1L, 2L, 3L)
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .build();
         assertThat(document1).isEqualTo(document2);
         assertThat(document1.hashCode()).isEqualTo(document2.hashCode());
@@ -1147,6 +1154,9 @@ public class GenericDocumentCtsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentGetEmbeddingValue() {
+        EmbeddingVector embedding =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+
         GenericDocument document =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
@@ -1156,7 +1166,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyDouble("doubleKey1", 1.0)
                         .setPropertyBoolean("booleanKey1", true)
                         .setPropertyString("stringKey1", "test-value1")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1)
+                        .setPropertyEmbedding("embeddingKey1", embedding)
                         .build();
         assertThat(document.getId()).isEqualTo("id1");
         assertThat(document.getTtlMillis()).isEqualTo(1L);
@@ -1192,13 +1202,18 @@ public class GenericDocumentCtsTest {
                 .containsExactly("test-value1");
         assertThat((EmbeddingVector[]) document.getProperty("embeddingKey1"))
                 .asList()
-                .containsExactly(sEmbedding1)
+                .containsExactly(embedding)
                 .inOrder();
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentGetArrayEmbeddingValues() {
+        EmbeddingVector embedding1 =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+        EmbeddingVector embedding2 =
+                new EmbeddingVector(new float[] {4.4f, 5.5f, 6.6f, 7.7f}, "my_model_v2");
+
         GenericDocument document =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
@@ -1207,7 +1222,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyBoolean("booleanKey1", true, false, true)
                         .setPropertyString(
                                 "stringKey1", "test-value1", "test-value2", "test-value3")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .build();
 
         assertThat(document.getId()).isEqualTo("id1");
@@ -1230,7 +1245,7 @@ public class GenericDocumentCtsTest {
                 .inOrder();
         assertThat(document.getPropertyEmbeddingArray("embeddingKey1"))
                 .asList()
-                .containsExactly(sEmbedding1, sEmbedding2)
+                .containsExactly(embedding1, embedding2)
                 .inOrder();
     }
 
@@ -1259,6 +1274,9 @@ public class GenericDocumentCtsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentInvalid_setNullEmbeddingValues() {
+        EmbeddingVector embedding =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+
         GenericDocument.Builder<?> builder =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1");
         EmbeddingVector nullEmbedding = null;
@@ -1268,12 +1286,17 @@ public class GenericDocumentCtsTest {
                 () ->
                         builder.setPropertyEmbedding(
                                 "propEmbeddings",
-                                new EmbeddingVector[] {sEmbedding1, nullEmbedding}));
+                                new EmbeddingVector[] {embedding, nullEmbedding}));
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocument_toBuilderWithEmbeddingValues() {
+        EmbeddingVector embedding1 =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+        EmbeddingVector embedding2 =
+                new EmbeddingVector(new float[] {4.4f, 5.5f, 6.6f, 7.7f}, "my_model_v2");
+
         GenericDocument document1 =
                 new GenericDocument.Builder<>(/* namespace= */ "", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
@@ -1281,13 +1304,13 @@ public class GenericDocumentCtsTest {
                         .setPropertyDouble("doubleKey1", 1.0, 2.0, 3.0)
                         .setPropertyBoolean("booleanKey1", true, false, true)
                         .setPropertyString("stringKey1", "String1", "String2", "String3")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1, sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding1, embedding2)
                         .build();
         GenericDocument document2 =
                 new GenericDocument.Builder<>(document1)
                         .setId("id2")
                         .setNamespace("namespace2")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding2)
                         .setPropertyLong("longKey2", 10L)
                         .clearProperty("booleanKey1")
                         .build();
@@ -1306,7 +1329,7 @@ public class GenericDocumentCtsTest {
         assertThat(document1.getPropertyLongArray("longKey2")).isNull();
         assertThat(document1.getPropertyEmbeddingArray("embeddingKey1"))
                 .asList()
-                .containsExactly(sEmbedding1, sEmbedding2)
+                .containsExactly(embedding1, embedding2)
                 .inOrder();
 
         // Make sure the new doc contains the expected values
@@ -1317,7 +1340,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyLong("longKey2", 10L)
                         .setPropertyDouble("doubleKey1", 1.0, 2.0, 3.0)
                         .setPropertyString("stringKey1", "String1", "String2", "String3")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding2)
+                        .setPropertyEmbedding("embeddingKey1", embedding2)
                         .build();
         assertThat(document2).isEqualTo(expectedDoc);
     }
@@ -1325,6 +1348,9 @@ public class GenericDocumentCtsTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
     public void testDocumentGetPropertyNamesWithEmbeddingValue() {
+        EmbeddingVector embedding =
+                new EmbeddingVector(new float[] {1.1f, 2.2f, 3.3f}, "my_model_v1");
+
         GenericDocument document =
                 new GenericDocument.Builder<>("namespace", "id1", "schemaType1")
                         .setCreationTimestampMillis(5L)
@@ -1334,7 +1360,7 @@ public class GenericDocumentCtsTest {
                         .setPropertyDouble("doubleKey1", 1.0)
                         .setPropertyBoolean("booleanKey1", true)
                         .setPropertyString("stringKey1", "test-value1")
-                        .setPropertyEmbedding("embeddingKey1", sEmbedding1)
+                        .setPropertyEmbedding("embeddingKey1", embedding)
                         .build();
         assertThat(document.getPropertyNames())
                 .containsExactly(
@@ -1349,5 +1375,40 @@ public class GenericDocumentCtsTest {
                         IllegalArgumentException.class,
                         () -> new EmbeddingVector(new float[] {}, "my_model"));
         assertThat(exception).hasMessageThat().contains("Embedding values cannot be empty.");
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC)
+    public void testWriteToParcel() {
+        GenericDocument inDoc =
+                new GenericDocument.Builder<>("namespace", "id1", "schema1")
+                        .setScore(42)
+                        .setPropertyString("propString", "Hello")
+                        .setPropertyBytes("propBytes", new byte[][] {{1, 2}})
+                        .setPropertyDocument(
+                                "propDocument",
+                                new GenericDocument.Builder<>("namespace", "id2", "schema2")
+                                        .setPropertyString("propString", "Goodbye")
+                                        .setPropertyBytes("propBytes", new byte[][] {{3, 4}})
+                                        .build())
+                        .build();
+
+        // Serialize the document
+        Parcel parcel = Parcel.obtain();
+        inDoc.writeToParcel(parcel, /* flags= */ 0);
+
+        // Deserialize the document
+        parcel.setDataPosition(0);
+        GenericDocument document = GenericDocument.createFromParcel(parcel);
+        parcel.recycle();
+
+        // Compare results
+        assertThat(document.getPropertyString("propString")).isEqualTo("Hello");
+        assertThat(document.getPropertyBytesArray("propBytes")).isEqualTo(new byte[][] {{1, 2}});
+        assertThat(document.getPropertyDocument("propDocument").getPropertyString("propString"))
+                .isEqualTo("Goodbye");
+        assertThat(document.getPropertyDocument("propDocument").getPropertyBytesArray("propBytes"))
+                .isEqualTo(new byte[][] {{3, 4}});
     }
 }

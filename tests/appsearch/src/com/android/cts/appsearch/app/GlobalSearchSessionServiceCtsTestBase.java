@@ -63,6 +63,7 @@ import androidx.test.filters.SdkSuppress;
 
 import com.android.cts.appsearch.ICommandReceiver;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -74,6 +75,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -81,6 +83,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * This class can be extended by tests in platforms like Android Framework and GMSCore which host an
@@ -478,6 +481,71 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
                                 .build()));
 
         assertPackageCanAccess(EMAIL_DOCUMENT, PKG_A);
+        assertPackageCannotAccess(PKG_B);
+    }
+
+    @SdkSuppress(minSdkVersion = 34)
+    @Test
+    public void testAllowPackageAccess_polymorphism() throws Exception {
+        // Create two types, Person and Artist, where Artist is a child type of Person.
+        AppSearchSchema personSchema =
+                new AppSearchSchema.Builder("Person")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("name")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        AppSearchSchema artistSchema =
+                new AppSearchSchema.Builder("Artist")
+                        .addParentType("Person")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("name")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+
+        // Allow PKG_A to access Person, but not allow to access Artist.
+        mDb.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(personSchema)
+                                .addSchemas(artistSchema)
+                                .setSchemaTypeVisibilityForPackage(
+                                        "Person",
+                                        /*visible=*/ true,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .setSchemaTypeVisibilityForPackage(
+                                        "Artist",
+                                        /*visible=*/ false,
+                                        new PackageIdentifier(PKG_A, PKG_A_CERT_SHA256))
+                                .build())
+                .get();
+
+        // Index a person document and an artist document
+        GenericDocument personDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id1", "Person")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyString("name", TEXT)
+                        .build();
+        GenericDocument artistDoc =
+                new GenericDocument.Builder<>(NAMESPACE_NAME, "id2", "Artist")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyString("name", TEXT)
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(personDoc)
+                                .addGenericDocuments(artistDoc)
+                                .build()));
+
+        // Check that PKG_A can only access personDoc
+        assertPackageCanAccess(List.of(personDoc), PKG_A);
         assertPackageCannotAccess(PKG_B);
     }
 
@@ -1798,29 +1866,29 @@ public abstract class GlobalSearchSessionServiceCtsTestBase {
         }
     }
 
-    private void assertPackageCannotAccess(String pkg) throws Exception {
-        GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
-                bindToHelperService(pkg);
-        try {
-            ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
-            List<String> results = commandReceiver.globalSearch(TEXT);
-            assertThat(results).isEmpty();
-        } finally {
-            serviceConnection.unbind();
-        }
-    }
-
-    private void assertPackageCanAccess(GenericDocument expectedDocument, String pkg)
+    private void assertPackageCanAccess(List<GenericDocument> expectedDocuments, String pkg)
             throws Exception {
         GlobalSearchSessionServiceCtsTestBase.TestServiceConnection serviceConnection =
                 bindToHelperService(pkg);
         try {
             ICommandReceiver commandReceiver = serviceConnection.getCommandReceiver();
             List<String> results = commandReceiver.globalSearch(TEXT);
-            assertThat(results).containsExactly(expectedDocument.toString());
+            assertThat(results).containsExactlyElementsIn(
+                    expectedDocuments.stream()
+                            .map(GenericDocument::toString)
+                            .collect(Collectors.toList()));
         } finally {
             serviceConnection.unbind();
         }
+    }
+
+    private void assertPackageCannotAccess(String pkg) throws Exception {
+        assertPackageCanAccess(Collections.emptyList(), pkg);
+    }
+
+    private void assertPackageCanAccess(GenericDocument expectedDocument, String pkg)
+            throws Exception {
+        assertPackageCanAccess(ImmutableList.of(expectedDocument), pkg);
     }
 
     private void indexGloballySearchableDocument(String pkg, String databaseName, String namespace,

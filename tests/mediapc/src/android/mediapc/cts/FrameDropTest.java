@@ -17,6 +17,7 @@
 package android.mediapc.cts;
 
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Utils;
 
 import androidx.test.filters.LargeTest;
@@ -40,24 +41,24 @@ import java.util.Collection;
 public class FrameDropTest extends FrameDropTestBase {
     private static final String LOG_TAG = FrameDropTest.class.getSimpleName();
 
-    public FrameDropTest(String mimeType, String decoderName, boolean isAsync) {
-        super(mimeType, decoderName, isAsync);
+    public FrameDropTest(String mediaType, String decoderName, boolean isAsync) {
+        super(mediaType, decoderName, isAsync);
     }
 
     @Rule
     public final TestName mTestName = new TestName();
 
-    // Returns the list of parameters with mimeTypes and their hardware decoders
+    // Returns the list of parameters with mediaTypes and their hardware decoders
     // combining with sync and async modes.
-    // Parameters {0}_{1}_{2} -- Mime_DecoderName_isAsync
+    // Parameters {0}_{1}_{2} -- MediaType_DecoderName_isAsync
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}")
     public static Collection<Object[]> inputParams() {
         return prepareArgumentsList(null);
     }
 
     private int testDecodeToSurface(int frameRate, String[] testFiles) throws Exception {
-        PlaybackFrameDrop playbackFrameDrop = new PlaybackFrameDrop(mMime, mDecoderName, testFiles,
-                mSurface, frameRate, mIsAsync);
+        PlaybackFrameDrop playbackFrameDrop = new PlaybackFrameDrop(mMediaType, mDecoderName,
+                testFiles, mSurface, frameRate, mIsAsync);
         return playbackFrameDrop.getFrameDropCount();
     }
 
@@ -76,14 +77,13 @@ public class FrameDropTest extends FrameDropTestBase {
         int frameRate = 30;
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_R = pce.addR5_3__H_1_1_R();
+        Requirements.FrameDropRequirement r5_3__H_1_1_R =
+                Requirements.addR5_3__H_1_1().withConfig1080P30Fps().to(pce);
 
-        String[] testFiles = new String[]{m1080p30FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m1080p30FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
-        r5_3__H_1_1_R.setFramesDropped(framesDropped);
-        r5_3__H_1_1_R.setFrameRate(frameRate);
-        r5_3__H_1_1_R.setTestResolution(1080);
+        r5_3__H_1_1_R.setFrameDropsPer30Sec(framesDropped);
         pce.submitAndCheck();
     }
 
@@ -102,14 +102,13 @@ public class FrameDropTest extends FrameDropTestBase {
         int frameRate = 60;
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_ST = pce.addR5_3__H_1_1_ST();
+        Requirements.FrameDropRequirement r5_3__H_1_1_ST =
+                Requirements.addR5_3__H_1_1().withConfig1080P60Fps().to(pce);
 
-        String[] testFiles = new String[]{m1080p60FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m1080p60FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
-        r5_3__H_1_1_ST.setFramesDropped(framesDropped);
-        r5_3__H_1_1_ST.setFrameRate(frameRate);
-        r5_3__H_1_1_ST.setTestResolution(1080);
+        r5_3__H_1_1_ST.setFrameDropsPer30Sec(framesDropped);
         pce.submitAndCheck();
     }
 
@@ -122,20 +121,19 @@ public class FrameDropTest extends FrameDropTestBase {
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirement="2.2.7.1/5.3/H-1-1")
     public void test4k() throws Exception {
-        Assume.assumeTrue("Test is limited to U performance class devices or devices that do not " +
-                        "advertise performance class",
-                Utils.isUPerfClass() || !Utils.isPerfClass());
+        Assume.assumeTrue("Test is limited to U,V performance class devices or devices that do"
+                        + "not advertise performance class",
+                Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         int frameRate = 60;
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.FrameDropRequirement r5_3__H_1_1_U = pce.addR5_3__H_1_1_U();
+        Requirements.FrameDropRequirement r5_3__H_1_1_U =
+                Requirements.addR5_3__H_1_1().withConfig4K60Fps().to(pce);
 
-        String[] testFiles = new String[]{m2160p60FpsTestFiles.get(mMime)};
+        String[] testFiles = new String[]{m2160p60FpsTestFiles.get(mMediaType)};
         int framesDropped = testDecodeToSurface(frameRate, testFiles);
 
-        r5_3__H_1_1_U.setFramesDropped(framesDropped);
-        r5_3__H_1_1_U.setFrameRate(frameRate);
-        r5_3__H_1_1_U.setTestResolution(2160);
+        r5_3__H_1_1_U.setFrameDropsPer30Sec(framesDropped);
         pce.submitAndCheck();
     }
 }

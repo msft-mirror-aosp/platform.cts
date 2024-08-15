@@ -33,4 +33,5 @@ android_test_helper_app {
     // Uncomment when b/78787392 is fixed
     // sdk_version: "system_test_current",
     platform_apis: true,
+    sdk_version: "test_current",
 }

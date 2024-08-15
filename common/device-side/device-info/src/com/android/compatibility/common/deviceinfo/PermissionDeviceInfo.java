@@ -51,6 +51,7 @@ public class PermissionDeviceInfo extends DeviceInfo {
         collectSignaturePermissionAllowlist(store, "vendor");
         collectSignaturePermissionAllowlist(store, "product");
         collectSignaturePermissionAllowlist(store, "system-ext");
+        collectSignaturePermissionAllowlist(store, "apex");
         store.endArray(); // "signature_permission_allowlists"
     }
 

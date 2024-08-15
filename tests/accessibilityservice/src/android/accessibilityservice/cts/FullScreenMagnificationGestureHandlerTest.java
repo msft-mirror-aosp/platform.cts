@@ -46,6 +46,7 @@ import static org.junit.Assume.assumeTrue;
 import android.accessibility.cts.common.AccessibilityDumpOnFailureRule;
 import android.accessibility.cts.common.InstrumentedAccessibilityService;
 import android.accessibility.cts.common.InstrumentedAccessibilityServiceTestRule;
+import android.accessibility.cts.common.ShellCommandBuilder;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
 import android.accessibilityservice.GestureDescription.StrokeDescription;
@@ -63,10 +64,6 @@ import android.graphics.Region;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.view.ViewConfiguration;
 import android.view.WindowInsets;
@@ -80,7 +77,6 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.GestureNavSwitchHelper;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -104,6 +100,10 @@ public class FullScreenMagnificationGestureHandlerTest {
 
     // Taps with interval over than this timeout should not be detected as contiguous taps.
     private static final int CONTIGUOUS_TAPS_DETECT_TIMEOUT = 400;
+
+    // See Settings.Secure.ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED
+    private static final String ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED =
+            "accessibility_single_finger_panning_enabled";
 
     private static UiAutomation sUiAutomation;
 
@@ -136,15 +136,11 @@ public class FullScreenMagnificationGestureHandlerTest {
     private AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
 
-    private final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
-
     @Rule
     public final RuleChain mRuleChain = RuleChain
             .outerRule(mActivityRule)
             .around(mServiceRule)
-            .around(mDumpOnFailureRule)
-            .around(mCheckFlagsRule);
+            .around(mDumpOnFailureRule);
 
     @BeforeClass
     public static void oneTimeSetUp() {
@@ -162,6 +158,12 @@ public class FullScreenMagnificationGestureHandlerTest {
         assumeTrue(hasTouchscreen);
         assumeFalse("Magnification is not supported on Automotive.",
                 isAutomotive(mInstrumentation.getTargetContext()));
+
+        // Disable Singer Finger Panning to test the original behavior
+        // TODO: add test cases for single finger panning scenario (b/342089257)
+        ShellCommandBuilder.create(sUiAutomation)
+                .putSecureSetting(ACCESSIBILITY_SINGLE_FINGER_PANNING_ENABLED, "0")
+                .run();
 
         // Backup and reset magnification settings.
         mOriginalIsMagnificationCapabilities = getSecureSettingInt(
@@ -308,9 +310,7 @@ public class FullScreenMagnificationGestureHandlerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_DELAY_NOTIFICATION_TO_MAGNIFICATION_WHEN_RECENTS_WINDOW_TO_FRONT_TRANSITION)
-    public void testTapNavigationBar_zoomingAndFlagsOn_keepZooming() {
+    public void testTapNavigationBar_zooming_keepZooming() {
         // Only test when device is in gesture navigation mode.
         assumeTrue(mIsGestureNavigationMode);
 
@@ -323,24 +323,6 @@ public class FullScreenMagnificationGestureHandlerTest {
         // not cause the magnification zooming out.
         dispatch(click(mNavigationBarTapLocation));
         assertTrue(isZoomed());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(
-            Flags.FLAG_DELAY_NOTIFICATION_TO_MAGNIFICATION_WHEN_RECENTS_WINDOW_TO_FRONT_TRANSITION)
-    public void testTapNavigationBar_zoomingAndFlagsOff_zoomOut() {
-        // Only test when device is in gesture navigation mode.
-        assumeTrue(mIsGestureNavigationMode);
-
-        assertFalse(isZoomed());
-
-        assertGesturesPropagateToView();
-        setZoomByTripleTapping(true);
-
-        // One tap on navigation bar would trigger window transition events, then the events will
-        // cause the magnification zooming out.
-        dispatch(click(mNavigationBarTapLocation));
-        waitOn(mZoomLock, () -> !isZoomed());
     }
 
     @Test

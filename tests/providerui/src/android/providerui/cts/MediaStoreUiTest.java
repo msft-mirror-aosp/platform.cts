@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
 import android.app.Instrumentation;
@@ -147,7 +148,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -176,7 +177,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_throwsWithoutPermission() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -191,7 +192,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetDocumentUri_symmetry_externalStorageProvider() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile();
         clearDocumentsUi();
@@ -214,7 +215,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testGetMediaUriAccess_mediaDocumentsProvider() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         prepareFile("TEST");
         clearDocumentsUi();
@@ -236,7 +237,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_success() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         final String rawText = "TEST";
         // Stage a text file which contains raw text "TEST"
@@ -279,7 +280,7 @@ public class MediaStoreUiTest {
 
     @Test
     public void testOpenFile_onMediaDocumentsProvider_failsWithoutAccess() throws Exception {
-        if (!supportsHardware()) return;
+        assumeTrue(supportsHardware());
 
         String rawText = "TEST";
         // Read and write grants will be provided to the file associated with this pair.

@@ -35,6 +35,7 @@ import android.server.wm.TestJournalProvider;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -95,6 +96,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setFeminine_returnFeminineAfterReCreating() {
         TestJournalProvider.TestJournalContainer.start();
         launchActivity(TEST_APP_MAIN_ACTIVITY);
@@ -109,6 +111,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setMasculine_returnMasculineAfterReCreating() {
         TestJournalProvider.TestJournalContainer.start();
         launchActivity(TEST_APP_MAIN_ACTIVITY);
@@ -123,6 +126,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     public void testSetApplicationGender_setMasculine_returnMasculineWithoutReCreating() {
         launchActivity(TEST_APP_HANDLE_CONFIG_CHANGE);
         TestJournalProvider.TestJournalContainer.start();
@@ -137,6 +141,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test
+    @CddTest(requirements = {"3.19/C-0-1"})
     @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
     public void testGetSystemGrammaticalGender_setMasculineForSysApp_returnMasculineToSysApp() {
         mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(
@@ -155,6 +160,7 @@ public class GrammaticalInflectionManagerTest extends ActivityManagerTestBase {
     }
 
     @Test(expected = SecurityException.class)
+    @CddTest(requirements = {"3.19/C-0-1"})
     @RequiresFlagsEnabled(Flags.FLAG_SYSTEM_TERMS_OF_ADDRESS_ENABLED)
     public void testGetSystemGrammaticalGender_setNeutralForSysApp_throwExceptionTo3rdApp() {
         mOriginalGrammaticalGender = SystemUtil.runShellCommand(String.format(

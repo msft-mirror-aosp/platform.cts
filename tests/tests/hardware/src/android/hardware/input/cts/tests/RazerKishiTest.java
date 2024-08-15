@@ -31,6 +31,7 @@ public class RazerKishiTest extends InputHidTestCase {
     // Simulates the behavior of Razer Kishi gamepad.
     public RazerKishiTest() {
         super(R.raw.razer_kishi_register);
+        addDelayAfterSetup();
     }
 
     @Test

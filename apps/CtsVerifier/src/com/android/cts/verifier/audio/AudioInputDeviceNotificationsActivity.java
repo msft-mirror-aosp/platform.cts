@@ -32,15 +32,18 @@ import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
  * wired headset (or microphone) and noting the presence (or absence) of notifications.
  */
 public class AudioInputDeviceNotificationsActivity extends AudioWiredDeviceBaseActivity {
-    Context mContext;
+    private Context mContext;
 
-    TextView mConnectView;
-    TextView mDisconnectView;
-    TextView mInfoView;
+    private TextView mConnectView;
+    private TextView mDisconnectView;
+    private TextView mInfoView;
 
-    boolean mHandledInitialAddedMessage = false;
-    boolean mConnectReceived = false;
-    boolean mDisconnectReceived = false;
+    private AudioManager mAudioManager;
+    private TestAudioDeviceCallback mConnectionCallback;
+
+    private boolean mHandledInitialAddedMessage = false;
+    private boolean mConnectReceived = false;
+    private boolean mDisconnectReceived = false;
 
     private class TestAudioDeviceCallback extends AudioDeviceCallback {
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
@@ -98,8 +101,8 @@ public class AudioInputDeviceNotificationsActivity extends AudioWiredDeviceBaseA
                     }
                 });
 
-        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-        audioManager.registerAudioDeviceCallback(new TestAudioDeviceCallback(), null);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
+        mConnectionCallback = new TestAudioDeviceCallback();
 
         // "Honor System" buttons
         super.setup();
@@ -109,6 +112,18 @@ public class AudioInputDeviceNotificationsActivity extends AudioWiredDeviceBaseA
         setPassFailButtonClickListeners();
 
         calculatePass();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionCallback, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionCallback);
+        super.onStop();
     }
 
     @Override

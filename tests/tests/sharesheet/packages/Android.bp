@@ -31,6 +31,7 @@ android_test_helper_app {
         "android.sharesheet.cts.packages.activitylabeltester",
     ],
     manifest: "AndroidManifest-ActivityLabelTester.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -47,6 +48,7 @@ android_test_helper_app {
         "android.sharesheet.cts.packages.intentfilterlabeltester",
     ],
     manifest: "AndroidManifest-IntentFilterLabelTester.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -63,6 +65,7 @@ android_test_helper_app {
         "android.sharesheet.cts.packages.excludetester",
     ],
     manifest: "AndroidManifest-ExcludeTester.xml",
+    sdk_version: "test_current",
 }
 
 android_test_helper_app {
@@ -79,4 +82,5 @@ android_test_helper_app {
         "android.sharesheet.cts.packages.alternatetype",
     ],
     manifest: "AndroidManifest-AlternateType.xml",
+    sdk_version: "test_current",
 }

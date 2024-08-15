@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsSliceTestCases",
+    team: "trendy_team_launcher",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [

@@ -17,6 +17,7 @@
 package android.media.bettertogether.cts;
 
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
+import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_FIXED;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 
 import android.annotation.NonNull;
@@ -64,6 +65,9 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
 
     public static final String ROUTE_ID7_STATIC_GROUP = "route_id7_static_group";
     public static final String ROUTE_NAME7 = "Sample Route 7 - Static Group";
+
+    public static final String ROUTE_ID8_SYSTEM_TYPE = "route_id8_system_type";
+    public static final String ROUTE_NAME8 = "Sample Route 8 - System Type";
 
     public static final int INITIAL_VOLUME = 30;
     public static final int VOLUME_MAX = 100;
@@ -138,6 +142,12 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
                         .setVolumeMax(VOLUME_MAX)
                         .addFeature(FEATURE_SPECIAL)
                         .build();
+        MediaRoute2Info route8 =
+                new MediaRoute2Info.Builder(ROUTE_ID8_SYSTEM_TYPE, ROUTE_NAME8)
+                        .setVolumeHandling(PLAYBACK_VOLUME_FIXED)
+                        .setType(MediaRoute2Info.TYPE_BLUETOOTH_A2DP)
+                        .addFeature(FEATURE_SAMPLE)
+                        .build();
         MediaRoute2Info routeSpecial =
                 new MediaRoute2Info.Builder(ROUTE_ID_SPECIAL_FEATURE, ROUTE_NAME_SPECIAL_FEATURE)
                         .addFeature(FEATURE_SAMPLE)
@@ -163,6 +173,7 @@ public class StubMediaRoute2ProviderService extends MediaRoute2ProviderService {
         mRoutes.put(route5.getId(), route5);
         mRoutes.put(route6.getId(), route6);
         mRoutes.put(route7.getId(), route7);
+        mRoutes.put(route8.getId(), route8);
         mRoutes.put(routeSpecial.getId(), routeSpecial);
         mRoutes.put(fixedVolumeRoute.getId(), fixedVolumeRoute);
         mRoutes.put(variableVolumeRoute.getId(), variableVolumeRoute);

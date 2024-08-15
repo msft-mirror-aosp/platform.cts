@@ -27,6 +27,6 @@
     <string name="test_extra_chooser_targets_label">ECT target</string>
     <string name="test_extra_initial_intents_label">EII target</string>
     <string name="test_preview_title">Preview title</string>
-    <string name="test_preview_text">Preview text</string>
+    <string name="test_preview_text">http://developer.android.com/</string>
     <string name="test_alternate_app_label">Alternate A</string>
 </resources>

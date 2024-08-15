@@ -16,6 +16,8 @@
 
 package com.android.bedstead.harrier.annotations.meta;
 
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -29,6 +31,7 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasNoUserAnnotation {
     /** The name of the user type which should not be present. */
     String value();

@@ -17,18 +17,18 @@ package com.android.bedstead.harrier
 
 import com.android.bedstead.nene.utils.Assert.assertThrows
 import com.google.common.truth.Truth.assertThat
-import kotlin.reflect.KClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-@Suppress("UNCHECKED_CAST", "UNUSED_PARAMETER")
+@Suppress("UNUSED_PARAMETER")
 @RunWith(JUnit4::class)
 class BedsteadServiceLocatorTest {
 
     @Test
-    fun emptyDI_getDependencyThrowsException() {
+    fun emptyLocator_getDependencyThrowsException() {
         class ClassNotSupportedByBedsteadServiceLocatorReflection(parameter: String)
+
         val locator = BedsteadServiceLocator()
 
         assertThrows(IllegalStateException::class.java) {
@@ -43,21 +43,10 @@ class BedsteadServiceLocatorTest {
     }
 
     @Test
-    fun callGetFewTimes_executeGetDependencyOnce_dependencyInstanceIsReused() {
+    fun callGetFewTimes_dependencyInstanceIsReused() {
         class ExampleClass
 
         val locator = BedsteadServiceLocator()
-        var howManyTimesExecuted = 0
-        locator.loadModules(object : BedsteadServiceLocator.Module {
-            override fun <T : Any> getDependency(clazz: KClass<T>): T? {
-                howManyTimesExecuted += 1
-                return if (clazz == ExampleClass::class) {
-                    ExampleClass() as T
-                } else {
-                    null
-                }
-            }
-        })
 
         val result1 = locator.get(ExampleClass::class)
         val result2 = locator.get(ExampleClass::class)
@@ -67,12 +56,11 @@ class BedsteadServiceLocatorTest {
         assertThat(result1).isSameInstanceAs(result2)
         assertThat(result1).isSameInstanceAs(result3)
         assertThat(result1).isSameInstanceAs(result4)
-        assertThat(howManyTimesExecuted).isEqualTo(1)
         assertThat(locator.getAllDependencies().size).isEqualTo(1)
     }
 
     @Test
-    fun getClassWithoutTheModule_classesAreCreatedByReflection() {
+    fun getClassWithDependencies_allClassesAreCreatedByReflection() {
         class ClassWithoutParameters
         class ClassWithLocatorParameter(locator: BedsteadServiceLocator)
         class ExampleClass(locator: BedsteadServiceLocator) {
@@ -86,5 +74,24 @@ class BedsteadServiceLocatorTest {
         assertThat(exampleClass.classWithoutParameters).isNotNull()
         assertThat(exampleClass.classWithLocatorParameter).isNotNull()
         assertThat(locator.getAllDependencies().size).isEqualTo(3)
+    }
+
+    private class FirstClass(locator: BedsteadServiceLocator) {
+        val secondClass: SecondClass by locator
+    }
+
+    private class SecondClass(locator: BedsteadServiceLocator) {
+        val firstClass: FirstClass by locator
+    }
+
+    @Test
+    fun circularDependencies_dependencyIsCreatedByDelegate() {
+        val locator = BedsteadServiceLocator()
+
+        val firstClass: FirstClass = locator.get()
+        val secondClass: SecondClass = locator.get()
+
+        assertThat(firstClass.secondClass).isNotNull()
+        assertThat(secondClass.firstClass).isNotNull()
     }
 }

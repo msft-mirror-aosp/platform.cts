@@ -22,11 +22,14 @@
 
     <application android:hardwareAccelerated="true">
         <uses-library android:name="android.test.runner" />
-        <activity android:name="android.acceleration.HardwareAcceleratedActivity" />
+        <activity android:name="android.acceleration.HardwareAcceleratedActivity"
+                  android:exported="true"/>
         <activity android:name="android.acceleration.SoftwareAcceleratedActivity"
-                android:hardwareAccelerated="false" />
+                android:hardwareAccelerated="false"
+                android:exported="true"/>
         <activity android:name="android.acceleration.WindowFlagHardwareAcceleratedActivity"
-                android:hardwareAccelerated="false" />
+                android:hardwareAccelerated="false"
+                android:exported="true"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

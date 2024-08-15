@@ -160,10 +160,12 @@ public class SurfaceViewTests extends ActivityTestBase {
         a.start();
         return a;
     }
+
     private final Screenshotter mScreenshotter = testPositionInfo -> {
-        Bitmap source = getInstrumentation().getUiAutomation().takeScreenshot();
+        Bitmap source = getInstrumentation().getUiAutomation().takeScreenshot(
+            getActivity().getWindow());
         return Bitmap.createBitmap(source,
-                testPositionInfo.screenOffset.x, testPositionInfo.screenOffset.y,
+                testPositionInfo.surfaceOffset.x, testPositionInfo.surfaceOffset.y,
                 TEST_WIDTH, TEST_HEIGHT);
     };
 

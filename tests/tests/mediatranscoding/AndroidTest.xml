@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk30ModuleController" />
@@ -33,5 +34,8 @@
         <!-- test-timeout unit is ms, value = 15 min -->
         <option name="test-timeout" value="900000" />
         <option name="runtime-hint" value="15m" />
+        <!-- CtsXXX  skips the module tests ... -->
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
+        <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
 </configuration>

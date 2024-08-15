@@ -37,6 +37,9 @@ _CMAP_BLUE = ('black', 'blue', 'lightblue')
 _CMAP_GREEN = ('black', 'green', 'lightgreen')
 _CMAP_RED = ('black', 'red', 'lightcoral')
 _CMAP_SIZE = 6  # 6 inches
+_NUM_RAW_CHANNELS = 4  # R, Gr, Gb, B
+
+LENS_SHADING_MAP_ON = 1
 
 # The matrix is from JFIF spec
 DEFAULT_YUV_TO_RGB_CCM = numpy.matrix([[1.000, 0.000, 1.402],
@@ -48,8 +51,6 @@ MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)
     for i in range(MAX_LUT_SIZE)])
-NUM_TRIES = 2
-NUM_FRAMES = 4
 RGB2GRAY_WEIGHTS = (0.299, 0.587, 0.114)
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 
@@ -141,6 +142,146 @@ def assert_capture_width_and_height(cap, width, height):
             width, height, cap['width'], cap['height']
         )
     )
+
+
+def apply_lens_shading_map(color_plane, black_level, white_level, lsc_map):
+  """Apply the lens shading map to the color plane.
+
+  Args:
+    color_plane: 2D np array for color plane with values [0.0, 1.0].
+    black_level: float; black level for the color plane.
+    white_level: int; full scale for the color plane.
+    lsc_map: 2D np array lens shading matching size of color_plane.
+
+  Returns:
+    color_plane with lsc applied.
+  """
+  logging.debug('color plane pre-lsc min, max: %.4f, %.4f',
+                numpy.min(color_plane), numpy.max(color_plane))
+  color_plane = (numpy.multiply((color_plane * white_level - black_level),
+                                lsc_map)
+                 + black_level) / white_level
+  logging.debug('color plane post-lsc min, max: %.4f, %.4f',
+                numpy.min(color_plane), numpy.max(color_plane))
+  return color_plane
+
+
+def populate_lens_shading_map(img_shape, lsc_map):
+  """Helper function to create LSC coeifficients for RAW image.
+
+  Args:
+    img_shape: tuple; RAW image shape.
+    lsc_map: 2D low resolution array with lens shading map values.
+
+  Returns:
+    value for lens shading map at point (x, y) in the image.
+  """
+  img_w, img_h = img_shape[1], img_shape[0]
+  map_w, map_h = lsc_map.shape[1], lsc_map.shape[0]
+
+  x, y = numpy.meshgrid(numpy.arange(img_w), numpy.arange(img_h))
+
+  # (u,v) is lsc map location, values [0, map_w-1], [0, map_h-1]
+  # Vectorized calculations
+  u = x * (map_w - 1) / (img_w - 1)
+  v = y * (map_h - 1) / (img_h - 1)
+  u_min = numpy.floor(u).astype(int)
+  v_min = numpy.floor(v).astype(int)
+  u_frac = u - u_min
+  v_frac = v - v_min
+  u_max = numpy.where(u_frac > 0, u_min + 1, u_min)
+  v_max = numpy.where(v_frac > 0, v_min + 1, v_min)
+
+  # Gather LSC values, handling edge cases (optional)
+  lsc_tl = lsc_map[(v_min, u_min)]
+  lsc_tr = lsc_map[(v_min, u_max)]
+  lsc_bl = lsc_map[(v_max, u_min)]
+  lsc_br = lsc_map[(v_max, u_max)]
+
+  # Bilinear interpolation (vectorized)
+  lsc_t = lsc_tl * (1 - u_frac) + lsc_tr * u_frac
+  lsc_b = lsc_bl * (1 - u_frac) + lsc_br * u_frac
+
+  return lsc_t * (1 - v_frac) + lsc_b * v_frac
+
+
+def unpack_lsc_map_from_metadata(metadata):
+  """Get lens shading correction map from metadata and turn into 3D array.
+
+  Args:
+    metadata: dict; metadata from RAW capture.
+
+  Returns:
+    3D numpy array of lens shading maps.
+  """
+  lsc_metadata = metadata['android.statistics.lensShadingCorrectionMap']
+  lsc_map_w, lsc_map_h = lsc_metadata['width'], lsc_metadata['height']
+  lsc_map = lsc_metadata['map']
+  logging.debug(
+      'lensShadingCorrectionMap (H, W): (%d, %d)', lsc_map_h, lsc_map_w
+  )
+  return numpy.array(lsc_map).reshape(lsc_map_h, lsc_map_w, _NUM_RAW_CHANNELS)
+
+
+def convert_raw_capture_to_rgb_image(cap_raw, props, raw_fmt,
+                                     log_path_with_name):
+  """Convert a RAW captured image object to a RGB image.
+
+  Args:
+    cap_raw: A RAW capture object as returned by its_session_utils.do_capture.
+    props: camera properties object (of static values).
+    raw_fmt: string of type 'raw', 'raw10', 'raw12'.
+    log_path_with_name: string with test name and save location.
+
+  Returns:
+    RGB float-3 image array, with pixel values in [0.0, 1.0].
+  """
+  shading_mode = cap_raw['metadata']['android.shading.mode']
+  lens_shading_map_mode = cap_raw[
+      'metadata'].get('android.statistics.lensShadingMapMode')
+  lens_shading_applied = props['android.sensor.info.lensShadingApplied']
+  control_af_mode = cap_raw['metadata']['android.control.afMode']
+  focus_distance = cap_raw['metadata']['android.lens.focusDistance']
+  logging.debug('%s capture AF mode: %s', raw_fmt, control_af_mode)
+  logging.debug('%s capture focus distance: %s', raw_fmt, focus_distance)
+  logging.debug('%s capture shading mode: %d', raw_fmt, shading_mode)
+  logging.debug('lensShadingMapApplied: %r', lens_shading_applied)
+  logging.debug('lensShadingMapMode: %s', lens_shading_map_mode)
+
+  # Split RAW to RGB conversion in 2 to allow LSC application (if needed).
+  r, gr, gb, b = convert_capture_to_planes(cap_raw, props=props)
+
+  # get from metadata, upsample, and apply
+  if lens_shading_map_mode == LENS_SHADING_MAP_ON:
+    logging.debug('Applying lens shading map')
+    plot_name_stem_with_log_path = f'{log_path_with_name}_{raw_fmt}'
+    black_levels = get_black_levels(props, cap_raw)
+    white_level = int(props['android.sensor.info.whiteLevel'])
+    lsc_maps = unpack_lsc_map_from_metadata(cap_raw['metadata'])
+    plot_lsc_maps(lsc_maps, 'metadata', plot_name_stem_with_log_path)
+    lsc_map_fs_r = populate_lens_shading_map(r.shape, lsc_maps[:, :, 0])
+    lsc_map_fs_gr = populate_lens_shading_map(gr.shape, lsc_maps[:, :, 1])
+    lsc_map_fs_gb = populate_lens_shading_map(gb.shape, lsc_maps[:, :, 2])
+    lsc_map_fs_b = populate_lens_shading_map(b.shape, lsc_maps[:, :, 3])
+    plot_lsc_maps(
+        numpy.dstack((lsc_map_fs_r, lsc_map_fs_gr, lsc_map_fs_gb,
+                      lsc_map_fs_b)),
+        'fullscale', plot_name_stem_with_log_path
+    )
+    r = apply_lens_shading_map(
+        r[:, :, 0], black_levels[0], white_level, lsc_map_fs_r
+    )
+    gr = apply_lens_shading_map(
+        gr[:, :, 0], black_levels[1], white_level, lsc_map_fs_gr
+    )
+    gb = apply_lens_shading_map(
+        gb[:, :, 0], black_levels[2], white_level, lsc_map_fs_gb
+    )
+    b = apply_lens_shading_map(
+        b[:, :, 0], black_levels[3], white_level, lsc_map_fs_b
+    )
+  img = convert_raw_to_rgb_image(r, gr, gb, b, props, cap_raw['metadata'])
+  return img
 
 
 def convert_capture_to_rgb_image(cap,
@@ -704,6 +845,21 @@ def convert_y8_to_rgb_image(y_plane, w, h):
   return rgb.astype(numpy.float32) / 255.0
 
 
+def write_rgb_uint8_image(img, file_name):
+  """Save a uint8 numpy array image to a file.
+
+  Supported formats: PNG, JPEG, and others; see PIL docs for more.
+
+  Args:
+   img: numpy image array data.
+   file_name: path of file to save to; the extension specifies the format.
+  """
+  if img.dtype != 'uint8':
+    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
+  else:
+    Image.fromarray(img, 'RGB').save(file_name)
+
+
 def write_image(img, fname, apply_gamma=False, is_yuv=False):
   """Save a float-3 numpy array image to a file.
 
@@ -1080,32 +1236,6 @@ def rotate_img_per_argv(img):
   return img_out
 
 
-def stationary_lens_cap(cam, req, fmt):
-  """Take up to NUM_TRYS caps and save the 1st one with lens stationary.
-
-  Args:
-   cam: open device session
-   req: capture request
-   fmt: format for capture
-
-  Returns:
-    capture
-  """
-  tries = 0
-  done = False
-  reqs = [req] * NUM_FRAMES
-  while not done:
-    logging.debug('Waiting for lens to move to correct location.')
-    cap = cam.do_capture(reqs, fmt)
-    done = (cap[NUM_FRAMES - 1]['metadata']['android.lens.state'] == 0)
-    logging.debug('status: %s', done)
-    tries += 1
-    if tries == NUM_TRIES:
-      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
-                                      tries)
-  return cap[NUM_FRAMES - 1]
-
-
 def compute_image_rms_difference_1d(rgb_x, rgb_y):
   """Calculate the RMS difference between 2 RBG images as 1D arrays.
 
@@ -1364,3 +1494,24 @@ def p3_img_has_wide_gamut(wide_img):
         return True
 
   return False
+
+
+def compute_patch_noise(yuv_img, patch_region):
+  """Computes the noise statistics of a flat patch region in an image.
+
+  For the patch region, the noise statistics are computed for the luma, chroma
+  U, and chroma V channels.
+
+  Args:
+    yuv_img: The openCV YUV image to compute noise statistics for.
+    patch_region: The (x, y, w, h) region to compute noise statistics for.
+  Returns:
+    A dictionary of noise statistics with keys luma, chroma_u, chroma_v.
+  """
+  x, y, w, h = patch_region
+  patch = yuv_img[y : y + h, x : x + w]
+  return {
+      'luma': numpy.std(patch[:, :, 0]),
+      'chroma_u': numpy.std(patch[:, :, 1]),
+      'chroma_v': numpy.std(patch[:, :, 2]),
+  }

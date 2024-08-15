@@ -60,10 +60,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
-import com.android.cts.install.lib.Install;
-import com.android.cts.install.lib.InstallUtils;
 import com.android.cts.install.lib.TestApp;
-import com.android.cts.install.lib.Uninstall;
 import com.android.modules.utils.build.SdkLevel;
 
 import com.google.common.io.ByteStreams;
@@ -309,47 +306,6 @@ public class TranscodeTestUtils {
         }
 
         return appOps.unsafeCheckOpNoThrow(op, uid, packageName) == AppOpsManager.MODE_ALLOWED;
-    }
-
-    /**
-     * Installs a {@link TestApp} and grants it storage permissions.
-     */
-    public static void installAppWithStoragePermissions(TestApp testApp)
-            throws Exception {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        try {
-            final String packageName = testApp.getPackageName();
-            uiAutomation.adoptShellPermissionIdentity(
-                    Manifest.permission.INSTALL_PACKAGES, Manifest.permission.DELETE_PACKAGES);
-            if (InstallUtils.getInstalledVersion(packageName) != -1) {
-                Uninstall.packages(packageName);
-            }
-            Install.single(testApp).commit();
-            assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(1);
-
-            grantPermission(packageName, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            grantPermission(packageName, Manifest.permission.READ_EXTERNAL_STORAGE);
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
-        }
-    }
-
-    /**
-     * Uninstalls a {@link TestApp}.
-     */
-    public static void uninstallApp(TestApp testApp) throws Exception {
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        try {
-            final String packageName = testApp.getPackageName();
-            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
-
-            Uninstall.packages(packageName);
-            assertThat(InstallUtils.getInstalledVersion(packageName)).isEqualTo(-1);
-        } catch (Exception e) {
-            Log.e(TAG, "Exception occurred while uninstalling app: " + testApp, e);
-        } finally {
-            uiAutomation.dropShellPermissionIdentity();
-        }
     }
 
     /**

@@ -50,6 +50,7 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
     private HandlerThread mHandlerThread;
     private Handler mHandler;
     private int mImageBoundToSurfaceId;
+    private boolean mQueueOverflowed;
     private Function<ImageAndAttributes, Boolean> mPredicate;
 
     public static class ImageAndAttributes {
@@ -70,6 +71,7 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
                 Log.w(LOG_TAG, "image queue is at full capacity, releasing oldest image to"
                         + " make space for image just received");
                 releaseImage(mQueue.poll());
+                mQueueOverflowed = true;
             }
             Image image = reader.acquireNextImage();
             Log.d(LOG_TAG, "received image" + image);
@@ -121,6 +123,7 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
         mReader.setOnImageAvailableListener(this, mHandler);
         mReaderSurface = mReader.getSurface();
         mImageBoundToSurfaceId = surfaceId;
+        mQueueOverflowed = false;
         mPredicate = predicate;
         Log.v(LOG_TAG, String.format(Locale.getDefault(), "Created ImageReader size (%dx%d),"
                 + " format %d, maxNumImages %d", width, height, format, maxNumImages));
@@ -141,6 +144,10 @@ public class ImageSurface implements ImageReader.OnImageAvailableListener {
                     mPredicate.apply(new ImageAndAttributes(image, mImageBoundToSurfaceId)));
         }
         image.close();
+    }
+
+    public boolean hasQueueOverflowed() {
+        return mQueueOverflowed;
     }
 
     public void release() {

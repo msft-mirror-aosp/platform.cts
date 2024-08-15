@@ -194,7 +194,10 @@ public class KeyAttestationTest {
     public void testEcAttestation_StrongBox() throws Exception {
         assumeTrue("This test is only applicable to devices with StrongBox",
                 TestUtils.hasStrongBox(getContext()));
-
+        // Exempt older versions due to increased coverage of this test beyond VTS,
+        // requiring exceptions for implementations frozen to an older VSR.
+        assumeTrue(TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                Attestation.KM_VERSION_KEYMINT_3));
         testEcAttestation(true);
     }
 
@@ -655,6 +658,10 @@ public class KeyAttestationTest {
     public void testRsaAttestation_StrongBox() throws Exception {
         assumeTrue("This test is only applicable to devices with StrongBox",
                 TestUtils.hasStrongBox(getContext()));
+        // Exempt older versions due to increased coverage of this test beyond VTS,
+        // requiring exceptions for implementations frozen to an older VSR.
+        assumeTrue(TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                Attestation.KM_VERSION_KEYMINT_3));
         testRsaAttestation(true);
     }
 
@@ -1053,9 +1060,8 @@ public class KeyAttestationTest {
             return;
         }
         assumeTrue("Curve25519 Key attestation supported from KeyMint v2 and above.",
-                getContext().getPackageManager()
-                        .hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE,
-                                Attestation.KM_VERSION_KEYMINT_2));
+                TestUtils.hasKeystoreVersion(false /*isStrongBoxBased*/,
+                        Attestation.KM_VERSION_KEYMINT_2));
 
         if (getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PC)) {
             return;

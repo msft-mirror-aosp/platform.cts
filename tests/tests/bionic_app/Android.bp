@@ -22,6 +22,7 @@ cc_test_library {
 
 android_test {
     name: "CtsBionicAppTestCases",
+    team: "trendy_team_native_tools_libraries",
     defaults: ["cts_defaults"],
     static_libs: ["ctstestrunner-axt"],
     srcs: ["**/*.java"],

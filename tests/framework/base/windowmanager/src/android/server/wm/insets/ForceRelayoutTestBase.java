@@ -59,6 +59,7 @@ public class ForceRelayoutTestBase {
                                 statusBars() | navigationBars())));
         assumeFalse(isCar() && remoteInsetsControllerControlsSystemBars());
 
+        activity.mFocused.await(3, TimeUnit.SECONDS);
         InstrumentationRegistry.getInstrumentation()
                 .runOnMainSync(
                         () -> {
@@ -67,7 +68,7 @@ public class ForceRelayoutTestBase {
                             activity.getWindow().setSoftInputMode(softInputMode);
                             activity.getWindow().getInsetsController().hide(systemBars());
                         });
-        activity.mZeroInsets.await(180, TimeUnit.SECONDS);
+        activity.mZeroInsets.await(3, TimeUnit.SECONDS);
         InstrumentationRegistry.getInstrumentation()
                 .runOnMainSync(
                         () -> {
@@ -83,6 +84,7 @@ public class ForceRelayoutTestBase {
 
     public static class TestActivity extends Activity {
         WindowInsets mLastContentInsets;
+        final CountDownLatch mFocused = new CountDownLatch(1);
         final CountDownLatch mZeroInsets = new CountDownLatch(1);
 
         volatile boolean mLayoutHappened;
@@ -122,6 +124,13 @@ public class ForceRelayoutTestBase {
             getWindow().setDecorFitsSystemWindows(false);
             getWindow().getAttributes().layoutInDisplayCutoutMode =
                     LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
+        }
+
+        @Override
+        public void onWindowFocusChanged(boolean hasFocus) {
+            if (hasFocus) {
+                mFocused.countDown();
+            }
         }
     }
 

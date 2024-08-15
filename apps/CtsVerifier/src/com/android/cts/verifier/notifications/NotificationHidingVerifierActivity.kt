@@ -47,7 +47,7 @@ import com.android.compatibility.common.util.CddTest
 import com.android.cts.verifier.PassFailButtons
 import com.android.cts.verifier.R
 
-@CddTest(requirements = ["9.8.2/C-0-6,C-3-1,C-3-2,C-3-3"])
+@CddTest(requirements = ["9.8.2"])
 class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
     private lateinit var mediaProjectionServiceIntent: Intent
@@ -416,7 +416,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         private const val REQUEST_PROJECTION_CODE = 1
         private const val PERSON = "Person"
         private const val FGS = "Media Projection FGS"
-        private const val SENSITIVE_TEXT = "Sensitive Text code 123 123"
+        private const val SENSITIVE_TEXT = "Sensitive Text login code is 397964"
         private const val FGS_MESSAGE = "FGS Running"
     }
 

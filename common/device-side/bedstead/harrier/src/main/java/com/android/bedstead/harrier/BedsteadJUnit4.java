@@ -19,6 +19,15 @@ package com.android.bedstead.harrier;
 import static com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermissionKt.ensureDoesNotHavePermission;
 import static com.android.bedstead.permissions.annotations.EnsureHasPermissionKt.ensureHasPermission;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
@@ -26,7 +35,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.HiddenApiTest;
 import com.android.bedstead.harrier.annotations.IntTestParameter;
@@ -46,19 +54,13 @@ import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.StringTestParameter;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
-import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RepeatingAnnotation;
 import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -238,7 +240,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
             // Default to MIDDLE if no cost is found on the annotation.
-            return AnnotationPriorityRunPrecedence.MIDDLE;
+            return AnnotationCostRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
         }
@@ -454,7 +456,6 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         methods.addAll(testClass.getAnnotatedMethods(Test.class));
         methods.addAll(testClass.getAnnotatedMethods(PolicyAppliesTest.class));
-        methods.addAll(testClass.getAnnotatedMethods(com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest.class));
         methods.addAll(testClass.getAnnotatedMethods(PolicyDoesNotApplyTest.class));
         methods.addAll(testClass.getAnnotatedMethods(CanSetPolicyTest.class));
         methods.addAll(testClass.getAnnotatedMethods(CannotSetPolicyTest.class));
@@ -464,6 +465,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
+        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
 
         return new ArrayList<>(methods);
     }
@@ -689,7 +691,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.toList();
+            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -794,7 +796,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        comparator.thenComparing((o1, o2) -> {
+        var unused = comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -1167,7 +1169,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     HarrierRule getHarrierRule() {
         if (mHarrierRule == null) {
-            classRules();
+            var unused = classRules();
         }
         return mHarrierRule;
     }

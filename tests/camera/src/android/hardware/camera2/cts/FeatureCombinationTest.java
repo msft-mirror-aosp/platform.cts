@@ -19,7 +19,7 @@ package android.hardware.camera2.cts;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.JPEG_R;
-import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM;
+import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.MAXIMUM_16_9;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.PRIV;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S1080P;
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes.S720P;
@@ -30,9 +30,10 @@ import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithPa
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigWithParamsSupportedChecked;
 
 import static junit.framework.Assert.assertEquals;
-import static junit.framework.Assert.assertNotNull;
+
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -476,14 +477,16 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     public void testVPerfClassRequirements() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.HLGCombinationRequirement hlgCombinationRequirement =
                 pce.addR7_5__H_1_19();
         // Note: This must match the required stream combinations defined in [7.5/H-1-19]
         final int[][] hlg10Combinations = {
                 // HLG10 preview + JPEG Snapshot
-                {PRIV, S1080P, JPEG, MAXIMUM},
-                {PRIV, S720P, JPEG, MAXIMUM},
+                {PRIV, S1080P, JPEG, MAXIMUM_16_9},
+                {PRIV, S720P, JPEG, MAXIMUM_16_9},
         };
         String rearId =  CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());

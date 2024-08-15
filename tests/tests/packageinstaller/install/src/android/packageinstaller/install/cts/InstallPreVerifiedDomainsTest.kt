@@ -63,6 +63,20 @@ class InstallPreVerifiedDomainsTest : PackageInstallerTestBase() {
 
     @RequiresFlagsEnabled(Flags.FLAG_SET_PRE_VERIFIED_DOMAINS)
     @Test
+    fun testSetPreVerifiedDomainsAfterSessionCommit() {
+        val (sessionId, session) = createSession(0, false, null)
+        writeAndCommitSession(TEST_APK_NAME, session)
+        assertThrows(
+                "setPreVerifiedDomains not allowed after commit",
+                SecurityException::class.java,
+                ThrowingRunnable {
+                    session.setPreVerifiedDomains(testDomains)
+                }
+        )
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_SET_PRE_VERIFIED_DOMAINS)
+    @Test
     fun testSetPreVerifiedDomainsNotInstantAppInstaller() {
         val defaultInstantAppInstaller: ComponentName? = pm.getInstantAppInstallerComponent()
         uiAutomation.adoptShellPermissionIdentity(android.Manifest.permission.ACCESS_INSTANT_APPS)

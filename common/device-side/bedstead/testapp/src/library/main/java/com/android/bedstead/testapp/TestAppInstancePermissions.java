@@ -21,6 +21,8 @@ import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.permissions.PermissionsController;
 import com.android.bedstead.nene.utils.Versions;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -59,6 +61,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermission(String... permissions) {
         TestAppPermissionContext context =
                 new TestAppPermissionContext(this);
@@ -90,6 +93,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersion(int sdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(sdkVersion, sdkVersion, permissions);
     }
@@ -116,6 +120,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionAtLeast(
             int minSdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(minSdkVersion, Versions.ANY, permissions);
@@ -143,6 +148,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionAtMost(
             int maxSdkVersion, String... permissions) {
         return withPermissionOnVersionBetween(Versions.ANY, maxSdkVersion, permissions);
@@ -170,6 +176,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withPermissionOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... permissions) {
         TestAppPermissionContext context =
@@ -198,6 +205,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withoutPermission(String... permissions) {
         TestAppPermissionContext context =
                 new TestAppPermissionContext(this);
@@ -225,6 +233,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOp(String... appOps) {
         TestAppPermissionContext context =
                 new TestAppPermissionContext(this);
@@ -254,6 +263,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOpOnVersion(int sdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(sdkVersion, sdkVersion, appOps);
     }
@@ -278,6 +288,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOpOnVersionAtLeast(int minSdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(minSdkVersion, Versions.ANY, appOps);
     }
@@ -302,6 +313,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOpOnVersionAtMost(int maxSdkVersion, String... appOps) {
         return withAppOpOnVersionBetween(Versions.ANY, maxSdkVersion, appOps);
     }
@@ -326,6 +338,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withAppOpOnVersionBetween(
             int minSdkVersion, int maxSdkVersion, String... appOps) {
         TestAppPermissionContext context =
@@ -354,6 +367,7 @@ public final class TestAppInstancePermissions implements PermissionsController {
      * }
      */
     @Override
+    @CanIgnoreReturnValue
     public TestAppPermissionContext withoutAppOp(String... appOps) {
         TestAppPermissionContext context = new TestAppPermissionContext(this);
         mPermissionContexts.add(context);

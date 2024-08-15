@@ -24,7 +24,7 @@ android_test_helper_app {
         "src/**/*.aidl",
     ],
     sdk_version: "current",
-    min_sdk_version: "34",
+    min_sdk_version: "30",
     target_sdk_version: "34",
     defaults: [
         "cts_defaults",

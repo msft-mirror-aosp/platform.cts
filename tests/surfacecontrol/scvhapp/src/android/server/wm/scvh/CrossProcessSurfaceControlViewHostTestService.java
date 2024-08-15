@@ -36,7 +36,9 @@ import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public class CrossProcessSurfaceControlViewHostTestService extends Service {
@@ -47,10 +49,7 @@ public class CrossProcessSurfaceControlViewHostTestService extends Service {
     private Handler mHandler;
 
     class MotionRecordingView extends View {
-        boolean mGotEvent = false;
-        boolean mGotObscuredEvent = false;
-
-        private CountDownLatch mReceivedTouchLatch = new CountDownLatch(1);
+        BlockingQueue<MotionEvent> mEvents = new LinkedBlockingQueue<>();
 
         MotionRecordingView(Context c) {
             super(c);
@@ -58,33 +57,8 @@ public class CrossProcessSurfaceControlViewHostTestService extends Service {
 
         public boolean onTouchEvent(MotionEvent e) {
             super.onTouchEvent(e);
-            synchronized (this) {
-                mGotEvent = true;
-                if ((e.getFlags() & MotionEvent.FLAG_WINDOW_IS_OBSCURED) != 0) {
-                    mGotObscuredEvent = true;
-                }
-            }
-            mReceivedTouchLatch.countDown();
+            mEvents.add(MotionEvent.obtain(e));
             return true;
-        }
-
-        boolean gotEvent() {
-            synchronized (this) {
-                return mGotEvent;
-            }
-        }
-
-        boolean gotObscuredTouch() {
-            synchronized (this) {
-                return mGotObscuredEvent;
-            }
-        }
-
-        void waitOnEvent() {
-            try {
-                mReceivedTouchLatch.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-            }
         }
     }
 
@@ -126,6 +100,16 @@ public class CrossProcessSurfaceControlViewHostTestService extends Service {
             }
         }
 
+        @Nullable
+        @Override
+        public MotionEvent getMotionEvent() {
+            try {
+                return mView.mEvents.poll(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         @Override
         public SurfaceControlViewHost.SurfacePackage getSurfacePackage(IBinder hostInputToken) {
             final CountDownLatch latch = new CountDownLatch(1);
@@ -141,18 +125,6 @@ public class CrossProcessSurfaceControlViewHostTestService extends Service {
                 return null;
             }
             return mSurfaceControlViewHost.getSurfacePackage();
-        }
-
-        @Override
-        public boolean getViewIsTouched() {
-            drainHandler();
-            mView.waitOnEvent();
-            return mView.gotEvent();
-        }
-
-        @Override
-        public boolean getViewIsTouchedAndObscured() {
-            return getViewIsTouched() && mView.gotObscuredTouch();
         }
 
         @Override

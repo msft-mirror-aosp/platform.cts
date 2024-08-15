@@ -33,9 +33,11 @@ ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
 ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
+CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_31CM = 13.5  # cm
-CHART_HEIGHT_22CM = 9.5  # cm
+CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
+CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_90CM = 90.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -51,6 +53,9 @@ CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
 CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
 CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
+CV2_CONTRAST_ALPHA = 1.25  # contrast
+CV2_CONTRAST_BETA = 0  # brightness
+CV2_THESHOLD_LOWER_BLACK = 0
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
 CV2_BLACK = (0, 0, 0)
 CV2_BLUE = (0, 0, 255)
@@ -84,6 +89,8 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
+SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -197,6 +204,8 @@ def calc_chart_scaling(chart_distance, camera_fov):
       chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
   is_chart_distance_31cm = math.isclose(
       chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_90cm = math.isclose(
+      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
 
   if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
     chart_scaling = SCALE_WIDE_IN_22CM_RIG
@@ -204,14 +213,16 @@ def calc_chart_scaling(chart_distance, camera_fov):
     chart_scaling = SCALE_TELE_IN_22CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
     chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif (fov <= FOV_THRESH_TELE25 and
-        is_chart_distance_31cm or
-        chart_distance > CHART_DISTANCE_31CM):
+  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE25_IN_31CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
+    chart_scaling = SCALE_CHART_67_PERCENT
   elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE_IN_31CM_RIG
+  elif chart_distance > CHART_DISTANCE_31CM:
+    chart_scaling = SCALE_CHART_33_PERCENT
   return chart_scaling
 
 
@@ -292,7 +303,7 @@ class Chart(object):
       scale_factor: float; scaling factor for chart search
     """
     req = capture_request_utils.auto_capture_request()
-    cap_chart = image_processing_utils.stationary_lens_cap(cam, req, fmt)
+    cap_chart = capture_request_utils.stationary_lens_capture(cam, req, fmt)
     img_3a = image_processing_utils.convert_capture_to_rgb_image(
         cap_chart, props)
     img_3a = image_processing_utils.rotate_img_per_argv(img_3a)
@@ -965,14 +976,29 @@ def find_aruco_markers(input_img, output_img_path):
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  # Early return if sufficient markers found
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected.')
+    cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
+    image_processing_utils.write_image(input_img / 255, output_img_path)
+    return corners, ids, rejected_params
+  # Try with high-contrast greyscale if needed
+  logging.debug('Trying ArUco marker detection with greyscale image.')
+  bw_img = convert_image_to_high_contrast_black_white(input_img)
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
+      bw_img, aruco_dict, parameters=parameters)
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected with greyscale image.')
+  # Handle case where no markers are found
   if ids is None:
-    e_msg = 'ArUco markers not detected.'
-    raise AssertionError(e_msg)
-  logging.debug('Number of ArUco markers detected: %d', len(ids))
+    image_processing_utils.write_image(input_img/255, output_img_path)
+    raise AssertionError('ArUco markers not detected.')
+  # Log and save results
+  logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-  image_processing_utils.write_image(input_img/255, output_img_path)
+  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+  image_processing_utils.write_image(bw_img / 255, output_img_path)
   return corners, ids, rejected_params
 
 
@@ -1029,42 +1055,6 @@ def get_patch_from_aruco_markers(
                 CV2_RED_NORM, CV2_LINE_THICKNESS)
   return input_img[red_corner[1]:gray_corner[1],
                    red_corner[0]:gray_corner[0]].copy()
-
-
-def get_slanted_edge_from_patch(input_img):
-  """Returns the slanted edge patch from the input img.
-
-  Args:
-    input_img: input img in numpy array with ArUco markers
-      to be detected
-  Returns: Numpy float image array of the slanted edge patch
-  """
-  slanted_edge_coordinates = {}
-  parameters = cv2.aruco.DetectorParameters_create()
-  # ArUco markers used are 4x4
-  aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  _, _, rejected_params = cv2.aruco.detectMarkers(
-      input_img, aruco_dict, parameters=parameters)
-  logging.debug('rejected_params: %s', rejected_params)
-  final_corner = {}
-  for corner in rejected_params:
-    final_corner = corner.reshape(4, 2)
-
-  slanted_edge_coordinates[0] = tuple(map(int, final_corner[0]))
-  slanted_edge_coordinates[3] = tuple(map(int, final_corner[3]))
-  square_w = abs(final_corner[0][1] - final_corner[3][1])
-  slanted_edge_coordinates[1] = (final_corner[0][0] +
-                                 square_w, final_corner[0][1])
-  slanted_edge_coordinates[2] = (final_corner[3][0] +
-                                 square_w, final_corner[3][1])
-  logging.debug('slanted_edge_coordinates: %s', slanted_edge_coordinates)
-  top_left = tuple(map(int, slanted_edge_coordinates[0]))
-  bottom_right = tuple(map(int, slanted_edge_coordinates[2]))
-  cv2.rectangle(input_img, top_left, bottom_right,
-                CV2_RED_NORM, CV2_LINE_THICKNESS)
-  slanted_edge = input_img[top_left[1]:bottom_right[1],
-                           top_left[0]:bottom_right[0]]
-  return slanted_edge
 
 
 def get_chart_boundary_from_aruco_markers(
@@ -1178,3 +1168,28 @@ def define_metering_rectangle_values(
     meter_rects.append(meter_rect)
   logging.debug('metering rects: %s', meter_rects)
   return meter_rects
+
+
+def convert_image_to_high_contrast_black_white(
+    img, contrast=CV2_CONTRAST_ALPHA, brightness=CV2_CONTRAST_BETA):
+  """Convert capture to high contrast black and white image.
+
+  Args:
+    img: numpy array of image.
+    contrast: gain parameter between the value of 0 to 3.
+    brightness: bias parameter between the value of 1 to 100.
+  Returns:
+    high_contrast_img: high contrast black and white image.
+  """
+  copy_img = numpy.ndarray.copy(img)
+  uint8_img = image_processing_utils.convert_image_to_uint8(copy_img)
+  gray_img = convert_to_y(uint8_img)
+  img_bw = cv2.convertScaleAbs(
+      gray_img, alpha=contrast, beta=brightness)
+  _, high_contrast_img = cv2.threshold(
+      numpy.uint8(img_bw), CV2_THESHOLD_LOWER_BLACK, CH_FULL_SCALE,
+      cv2.THRESH_BINARY + cv2.THRESH_OTSU
+  )
+  high_contrast_img = numpy.expand_dims(
+      (CH_FULL_SCALE - high_contrast_img), axis=2)
+  return high_contrast_img

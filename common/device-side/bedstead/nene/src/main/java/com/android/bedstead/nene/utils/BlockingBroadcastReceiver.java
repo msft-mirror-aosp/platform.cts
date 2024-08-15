@@ -28,6 +28,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -155,6 +157,7 @@ public class BlockingBroadcastReceiver extends BroadcastReceiver implements Auto
         }
     }
 
+    @CanIgnoreReturnValue
     public BlockingBroadcastReceiver register() {
         for (IntentFilter intentFilter : mIntentFilters) {
             mContext.registerReceiver(this, intentFilter,
@@ -164,6 +167,7 @@ public class BlockingBroadcastReceiver extends BroadcastReceiver implements Auto
         return this;
     }
 
+    @CanIgnoreReturnValue
     @SuppressLint("NewApi")
     public BlockingBroadcastReceiver registerForAllUsers() {
         for (IntentFilter intentFilter : mIntentFilters) {
@@ -190,8 +194,9 @@ public class BlockingBroadcastReceiver extends BroadcastReceiver implements Auto
      * Wait until the broadcast and return the received broadcast intent. {@code null} is returned
      * if no broadcast with expected action is received within {@link #mTimeoutSeconds} seconds.
      */
-    public @Nullable
-    Intent awaitForBroadcast() {
+    @CanIgnoreReturnValue
+    @Nullable
+    public Intent awaitForBroadcast() {
         return awaitForBroadcast(mTimeoutSeconds * 1000);
     }
 

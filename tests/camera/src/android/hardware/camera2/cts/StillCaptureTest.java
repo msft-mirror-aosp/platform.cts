@@ -247,7 +247,10 @@ public class StillCaptureTest extends Camera2SurfaceViewTestCase {
 
         List<OutputConfiguration> outputConfigs = new ArrayList<>();
         OutputConfiguration previewConfig = new OutputConfiguration(mPreviewSurface);
-        previewConfig.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+        if (mStaticInfo.isCapabilitySupported(CameraCharacteristics
+                    .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+            previewConfig.setDynamicRangeProfile(DynamicRangeProfiles.HLG10);
+        }
         outputConfigs.add(previewConfig);
         outputConfigs.add(new OutputConfiguration(mReaderSurface));
         mSessionListener = new BlockingSessionCallback();

@@ -1281,4 +1281,18 @@ public class TestUtils {
         return ((Build.VERSION.SDK_INT == 34 && Build.VERSION.PREVIEW_SDK_INT >= 1)
                 || Build.VERSION.SDK_INT >= 35);
     }
+
+    /**
+     * Returns whether the device has a StrongBox backed KeyStore or Hardware based Keystore
+     * with provided version and newer.
+     */
+    public static boolean hasKeystoreVersion(boolean isStrongBoxBased, int version) {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        if (isStrongBoxBased) {
+            return context.getPackageManager()
+                    .hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE, version);
+        }
+        return context.getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_HARDWARE_KEYSTORE, version);
+    }
 }

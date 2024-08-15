@@ -13,6 +13,7 @@
 # limitations under the License.
 """Verify preview is stable during phone movement."""
 
+import concurrent.futures
 import logging
 import os
 
@@ -27,7 +28,8 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 # 1080P with 16:9 aspect ratio, 720P and VGA resolutions
 _TARGET_PREVIEW_SIZES = ('1920x1080', '1280x720', '640x480')
-_TEST_REQUIRED_MPC = 33
+_TEST_REQUIRED_MPC_FRONT = 34
+_TEST_REQUIRED_MPC_REAR = 33
 _ZOOM_RATIO_UW = 0.9
 _ZOOM_RATIO_W = 1.0
 
@@ -65,6 +67,16 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
   """
 
   def test_preview_stabilization(self):
+    # Use a pool of threads to execute asynchronously
+    with concurrent.futures.ThreadPoolExecutor() as analysis_executor:
+      self._test_preview_stabilization(analysis_executor)
+
+  def _test_preview_stabilization(self, executor):
+    """Tests stabilization using an injected ThreadPoolExecutor for analysis.
+
+    Args:
+      executor: a ThreadPoolExecutor to analyze recordings asynchronously.
+    """
     rot_rig = {}
     log_path = self.log_path
 
@@ -91,9 +103,17 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
                     supported_stabilization_modes)
       media_performance_class = its_session_utils.get_media_performance_class(
           self.dut.serial)
-      if media_performance_class >= _TEST_REQUIRED_MPC and not should_run:
-        its_session_utils.raise_mpc_assertion_error(
-            _TEST_REQUIRED_MPC, _NAME, media_performance_class)
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['FRONT']):
+        if (media_performance_class >= _TEST_REQUIRED_MPC_FRONT
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_FRONT, _NAME, media_performance_class)
+      else:
+        if (media_performance_class >= _TEST_REQUIRED_MPC_REAR
+            and not should_run):
+          its_session_utils.raise_mpc_assertion_error(
+              _TEST_REQUIRED_MPC_REAR, _NAME, media_performance_class)
 
       camera_properties_utils.skip_unless(should_run)
 
@@ -111,7 +131,8 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
       # If device doesn't support UW, only test W
       # If device's UW's zoom ratio is bigger than 0.9x, use that value
       test_zoom_ratios = [_ZOOM_RATIO_W]
-      if zoom_range[0] < _ZOOM_RATIO_W:
+      if (zoom_range[0] < _ZOOM_RATIO_W and
+          first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
         test_zoom_ratios.append(max(_ZOOM_RATIO_UW, zoom_range[0]))
 
       # Initialize rotation rig
@@ -142,14 +163,19 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
           # Verify stabilization was applied to preview stream
           stabilization_result[preview_size] = (
-              preview_processing_utils.verify_preview_stabilization(
+              executor.submit(
+                  preview_processing_utils.verify_preview_stabilization,
                   recording_obj, gyro_events, _NAME, log_path, facing,
-                  zoom_ratio)
+                  zoom_ratio
+              )
           )
 
       # Assert PASS/FAIL criteria
       test_failures = []
-      for _, result_per_size in stabilization_result.items():
+      for preview_size, result_per_size_future in stabilization_result.items():
+        result_per_size = result_per_size_future.result()
+        logging.debug('Stabilization result for %s: %s',
+                      preview_size, result_per_size)
         if result_per_size['failure'] is not None:
           test_failures.append(result_per_size['failure'])
 
@@ -159,4 +185,3 @@ class PreviewStabilizationTest(its_base_test.ItsBaseTest):
 
 if __name__ == '__main__':
   test_runner.main()
-

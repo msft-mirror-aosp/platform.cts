@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.enterprise.annotations;
+package com.android.bedstead.enterprise.annotations
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner.DO_PO_PRIORITY
 import com.android.bedstead.harrier.HarrierRule
@@ -22,6 +22,7 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.INSTRUMENTED_USER
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor
 import com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN
 import com.android.queryable.annotations.Query
 import com.google.auto.value.AutoAnnotation
@@ -58,13 +59,16 @@ import com.google.auto.value.AutoAnnotation
 @RequireFeature(FEATURE_DEVICE_ADMIN)
 // TODO(b/206441366): Add instant app support
 @RequireNotInstantApp(reason = "Instant Apps cannot run Enterprise Tests")
-annotation class EnsureHasProfileOwner(val onUser: UserType = INSTRUMENTED_USER,
-                                       val key: String = DEFAULT_KEY,
-                                       val dpc: Query = Query(),
-                                       val isPrimary: Boolean = false,
-                                       val useParentInstance: Boolean = false,
-                                       val affiliationIds: Array<String> = [],
-                                       val priority: Int = DO_PO_PRIORITY)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
+annotation class EnsureHasProfileOwner(
+    val onUser: UserType = INSTRUMENTED_USER,
+    val key: String = DEFAULT_KEY,
+    val dpc: Query = Query(),
+    val isPrimary: Boolean = false,
+    val useParentInstance: Boolean = false,
+    val affiliationIds: Array<String> = [],
+    val priority: Int = DO_PO_PRIORITY
+)
 
 const val DEFAULT_KEY = "profileOwner"
 

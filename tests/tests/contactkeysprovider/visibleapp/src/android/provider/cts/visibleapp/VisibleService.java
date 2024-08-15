@@ -16,6 +16,9 @@
 
 package android.provider.cts.visibleapp;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -47,12 +50,38 @@ public class VisibleService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Context context = this.getApplicationContext();
+
+        String channelId = "myChannelVS";
+        NotificationChannel channel = new NotificationChannel(channelId,
+                "Channel title",
+                NotificationManager.IMPORTANCE_DEFAULT);
+
+        ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE))
+                .createNotificationChannel(channel);
+
+        Notification notification = new Notification.Builder(this.getApplicationContext(),
+                channelId)
+                .setContentTitle("This is a test notification")
+                .setContentText("This is a test notification")
+                .setShortcutId("shareShortcut")
+                .setSmallIcon(17301651)
+                .build();
+
+        startForeground(100, notification);
+
         mContactKeysManager = context.getSystemService(E2eeContactKeysManager.class);
         mContactKeysManager.updateOrInsertE2eeContactKey(LOOKUP_KEY, DEVICE_ID, ACCOUNT_ID,
                 KEY_VALUE);
         mContactKeysManager.updateOrInsertE2eeSelfKey(DEVICE_ID, ACCOUNT_ID, KEY_VALUE);
         List<E2eeContactKeysManager.E2eeSelfKey> list = mContactKeysManager.getAllE2eeSelfKeys();
-        Log.w("MainService", "Test CP3: " + list.size());
+        Log.w("MainService", "onStart() visible service CP3: " + list.size());
+
+        if (intent != null) {
+            boolean stopService = intent.getBooleanExtra("request_stop", false);
+            if (stopService) {
+                stopSelf();
+            }
+        }
         return START_STICKY;
     }
 

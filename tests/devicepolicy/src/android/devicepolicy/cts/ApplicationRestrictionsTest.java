@@ -37,19 +37,19 @@ import android.devicepolicy.cts.utils.BundleUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.UserTest;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.ApplicationRestrictions;
 import com.android.bedstead.harrier.policies.ApplicationRestrictionsManagingPackage;
 import com.android.bedstead.harrier.policies.DmrhOnlyApplicationRestrictions;
@@ -499,10 +499,18 @@ public final class ApplicationRestrictionsTest {
         });
     }
 
+    /**
+     * Verifies that DMRH and DPC can both set application restrictions without overwriting each
+     * other.
+     *
+     * To ensure this works correctly on HSUM, make sure DMRH, DPC and the TestApp all run on the
+     * instrumented user, using test annotations.
+     */
     @Postsubmit(reason = "New test")
     @EnsureHasDevicePolicyManagerRoleHolder
-    @EnsureHasDeviceOwner(isPrimary = true)
+    @EnsureHasProfileOwner(isPrimary = true)
     @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
+    @RequireRunOnInitialUser
     @Test
     public void dpcAndRoleHolderSetApplicationRestrictions_doesNotOverlap() {
         skipRoleHolderTestIfFlagNotEnabled();

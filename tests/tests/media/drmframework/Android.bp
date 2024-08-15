@@ -18,6 +18,7 @@ package {
         "Android-Apache-2.0",
         "cts_tests_tests_media_license",
     ],
+    default_team: "trendy_team_android_media_drm",
 }
 
 android_test {
@@ -63,7 +64,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-media",
-        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "current",

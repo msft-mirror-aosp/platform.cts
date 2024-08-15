@@ -37,6 +37,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.HardwarePropertiesManager;
 import android.os.UserHandle;
@@ -82,8 +83,28 @@ public final class TestAppSystemServiceFactory {
      * Gets the proper {@link DevicePolicyManager} instance to be used by the test.
      */
     public static DevicePolicyManager getDevicePolicyManager(Context context,
+            Class<? extends BroadcastReceiver> receiverClass, boolean forDeviceOwner,
+            boolean isSingleUserMode) {
+        return getSystemService(context, DevicePolicyManager.class, receiverClass, forDeviceOwner,
+                isSingleUserMode);
+    }
+
+    /**
+     * Gets the proper {@link DevicePolicyManager} instance to be used by the test.
+     */
+    public static DevicePolicyManager getDevicePolicyManager(Context context,
             Class<? extends BroadcastReceiver> receiverClass, boolean forDeviceOwner) {
-        return getSystemService(context, DevicePolicyManager.class, receiverClass, forDeviceOwner);
+        return getDevicePolicyManager(context, receiverClass, forDeviceOwner,
+                isSingleUser(context));
+    }
+
+    /**
+     * Gets the proper {@link WifiManager} instance to be used by device owner tests.
+     */
+    public static WifiManager getWifiManager(Context context,
+            Class<? extends BroadcastReceiver> receiverClass, boolean isSingleUserMode) {
+        return getSystemService(context, WifiManager.class, receiverClass,
+                /* forDeviceOwner= */ true, isSingleUserMode);
     }
 
     /**
@@ -92,7 +113,14 @@ public final class TestAppSystemServiceFactory {
     public static WifiManager getWifiManager(Context context,
             Class<? extends BroadcastReceiver> receiverClass) {
         return getSystemService(context, WifiManager.class, receiverClass,
-                /* forDeviceOwner= */ true);
+                /* forDeviceOwner= */ true, isSingleUser(context));
+    }
+
+    private static boolean isSingleUser(Context context) {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+                && SystemUtil.runWithShellPermissionIdentity(() ->
+                context.getSystemService(DevicePolicyManager.class).getHeadlessDeviceOwnerMode()
+                        == HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER);
     }
 
     /**
@@ -101,7 +129,7 @@ public final class TestAppSystemServiceFactory {
     public static HardwarePropertiesManager getHardwarePropertiesManager(Context context,
             Class<? extends BroadcastReceiver> receiverClass) {
         return getSystemService(context, HardwarePropertiesManager.class, receiverClass,
-                /* forDeviceOwner= */ true);
+                /* forDeviceOwner= */ true, isSingleUser(context));
     }
 
     /**
@@ -110,7 +138,7 @@ public final class TestAppSystemServiceFactory {
     public static UserManager getUserManager(Context context,
             Class<? extends BroadcastReceiver> receiverClass) {
         return getSystemService(context, UserManager.class, receiverClass,
-                /* forDeviceOwner= */ true);
+                /* forDeviceOwner= */ true, isSingleUser(context));
     }
 
     /**
@@ -119,7 +147,7 @@ public final class TestAppSystemServiceFactory {
     public static GenericManager getGenericManager(Context context,
             Class<? extends BroadcastReceiver> receiverClass) {
         return getSystemService(context, GenericManager.class, receiverClass,
-                /* forDeviceOwner= */ true);
+                /* forDeviceOwner= */ true, isSingleUser(context));
     }
 
     private static void assertHasRequiredReceiver(Context context) {
@@ -173,7 +201,8 @@ public final class TestAppSystemServiceFactory {
     }
 
     private static <T> T getSystemService(Context context, Class<T> serviceClass,
-            Class<? extends BroadcastReceiver> receiverClass, boolean forDeviceOwner) {
+            Class<? extends BroadcastReceiver> receiverClass, boolean forDeviceOwner,
+            boolean isSingleUserMode) {
         ServiceManagerWrapper<T> wrapper = null;
         Class<?> wrappedClass;
 
@@ -236,10 +265,7 @@ public final class TestAppSystemServiceFactory {
 
         int userId = context.getUserId();
         if (userId == UserHandle.USER_SYSTEM || !Utils.isHeadlessSystemUserMode()
-                || SystemUtil.runWithShellPermissionIdentity(
-                        () -> context.getSystemService(
-                                DevicePolicyManager.class).getHeadlessDeviceOwnerMode()
-                        == HEADLESS_DEVICE_OWNER_MODE_SINGLE_USER)) {
+                || isSingleUserMode) {
             Log.i(TAG, "get(): returning 'pure' DevicePolicyManager for user " + userId);
             return manager;
         }

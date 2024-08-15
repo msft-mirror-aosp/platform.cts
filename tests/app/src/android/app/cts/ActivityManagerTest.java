@@ -22,11 +22,7 @@ import static android.app.ActivityManager.PROCESS_CAPABILITY_FOREGROUND_MICROPHO
 import static android.app.ActivityManager.PROCESS_CAPABILITY_POWER_RESTRICTED_NETWORK;
 import static android.app.ActivityManager.PROCESS_CAPABILITY_USER_RESTRICTED_NETWORK;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
-import static android.content.ComponentCallbacks2.TRIM_MEMORY_BACKGROUND;
-import static android.content.ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
-import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL;
-import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW;
-import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE;
+import static android.app.usage.UsageStatsManager.STANDBY_BUCKET_RESTRICTED;
 import static android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN;
 import static android.content.Intent.ACTION_MAIN;
 import static android.content.Intent.CATEGORY_HOME;
@@ -78,13 +74,11 @@ import android.app.stubs.MockService;
 import android.app.stubs.RemoteActivity;
 import android.app.stubs.ScreenOnActivity;
 import android.app.stubs.TestHomeActivity;
-import android.app.stubs.TrimMemService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ConfigurationInfo;
 import android.content.pm.PackageManager;
@@ -114,12 +108,8 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.RestrictedBuildTest;
 import android.provider.DeviceConfig;
 import android.provider.Settings;
-import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.settings.SettingsSession;
-import android.util.ArrayMap;
-import android.util.ArraySet;
 import android.util.Log;
-import android.util.Pair;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
@@ -920,14 +910,6 @@ public final class ActivityManagerTest {
         assertTrue(timeReceiver.mTimeUsed != 0);
     }
 
-    /**
-     * Checks whether the device is automotive
-     */
-    private static boolean isAutomotive(Context context) {
-        PackageManager pm = context.getPackageManager();
-        return pm.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
-    }
-
     @Test
     public void testHomeVisibilityListener() throws Exception {
         assumeFalse("With platforms that have no home screen, no need to test", noHomeScreen());
@@ -945,19 +927,8 @@ public final class ActivityManagerTest {
                 (am) -> am.addHomeVisibilityListener(Runnable::run, homeVisibilityListener));
 
         try {
-            PackageManager pm = mTargetContext.getPackageManager();
-            // In multi-task mode with split screen there can be more than one application that is
-            // visible and to user. An activity with category HOME might not be visible when HOME
-            // intent is fired.
-            // Hence, when in PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING mode
-            // do not check that HOME is visible.
-            if (!pm.hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
-                    "android.software.car.splitscreen_multitasking")
-                    || !isAutomotive(mTargetContext)) {
-                // Make sure we got the first notification that the home screen is visible.
-                assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
-            }
-
+            // Make sure we got the first notification that the home screen is visible.
+            assertTrue(currentHomeScreenVisibility.poll(WAIT_TIME, TimeUnit.MILLISECONDS));
             // Launch a basic activity to obscure the home screen.
             Intent intent = new Intent(Intent.ACTION_MAIN);
             intent.setClassName(SIMPLE_PACKAGE_NAME, SIMPLE_PACKAGE_NAME + SIMPLE_ACTIVITY);
@@ -1853,6 +1824,8 @@ public final class ActivityManagerTest {
         final WatchUidRunner[] watchers = initWatchUidRunners(packageNames, WAITFOR_MSEC * 2);
 
         try {
+            mInstrumentation.getUiAutomation().revokeRuntimePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
             // Set the PACKAGE_NAME_APP1 into rare bucket
             runShellCommand(mInstrumentation, "am set-standby-bucket "
                     + PACKAGE_NAME_APP1 + " rare");
@@ -1893,8 +1866,15 @@ public final class ActivityManagerTest {
             // Restrict the PACKAGE_NAME_APP1
             runShellCommand(mInstrumentation, "am set-standby-bucket "
                     + PACKAGE_NAME_APP1 + " restricted");
-            // Sleep a while to let it take effect.
-            Thread.sleep(WAITFOR_MSEC);
+            waitUntilTrue(WAITFOR_MSEC, () -> {
+                try {
+                    final int bucket = Integer.getInteger(runShellCommand(mInstrumentation,
+                            "am get-standby-bucket " + PACKAGE_NAME_APP1));
+                    return bucket == STANDBY_BUCKET_RESTRICTED;
+                } catch (Exception e) {
+                    return false;
+                }
+            });
 
             final Intent intent = new Intent();
             final CountDownLatch[] latch = new CountDownLatch[] {new CountDownLatch(1)};
@@ -1939,6 +1919,8 @@ public final class ActivityManagerTest {
                     () -> mActivityManager.forceStopPackage(packageName)));
 
             forEach(watchers, watcher -> watcher.finish());
+            mInstrumentation.getUiAutomation().grantRuntimePermission(PACKAGE_NAME_APP1,
+                    android.Manifest.permission.ACCESS_BACKGROUND_LOCATION);
         }
     }
 

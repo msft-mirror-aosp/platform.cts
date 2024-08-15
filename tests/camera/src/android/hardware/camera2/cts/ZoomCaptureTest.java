@@ -31,6 +31,7 @@ import android.hardware.camera2.CaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Build;
+import android.os.ConditionVariable;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 import android.util.Range;
@@ -50,6 +51,7 @@ import org.junit.runners.Parameterized;
 import org.junit.Test;
 
 import static android.hardware.camera2.CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_SENSOR_CROP_REGION;
+import static android.hardware.camera2.cts.CameraTestUtils.CAMERA_CLOSE_TIMEOUT_MS;
 import static android.hardware.camera2.cts.CameraTestUtils.CAPTURE_RESULT_TIMEOUT_MS;
 import static android.hardware.camera2.cts.CameraTestUtils.SimpleCaptureCallback;
 import static junit.framework.Assert.*;
@@ -319,7 +321,17 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
             }
 
         } finally {
-            closeDefaultImageReader();
+            // Ensure that the default image reader is closed within the same thread
+            // that also executes the registered image listener.
+            ConditionVariable closeCondition = new ConditionVariable(/*opened*/false);
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    closeDefaultImageReader();
+                    closeCondition.open();
+                }
+            });
+            assertTrue(closeCondition.block(CAMERA_CLOSE_TIMEOUT_MS));
         }
     }
 
@@ -333,12 +345,13 @@ public class ZoomCaptureTest extends Camera2AndroidTestCase {
 
         @Override
         public void onImageAvailable(ImageReader reader) {
-            Image img = mReader.acquireNextImage();
-            assertNotNull("Unable to acquire the latest image", img);
-            CameraTestUtils.validateImage(img, mMaxSize.getWidth(), mMaxSize.getHeight(),
-                    mImageFormat, mDebugFileNameBase);
-            Log.e(TAG, "Image verification done");
-            img.close();
+           Image img;
+           while ((mReader != null) && ((img = mReader.acquireNextImage()) != null)) {
+               CameraTestUtils.validateImage(img, mMaxSize.getWidth(), mMaxSize.getHeight(),
+                       mImageFormat, mDebugFileNameBase);
+               Log.e(TAG, "Image verification done");
+               img.close();
+           }
         }
     }
 }

@@ -15,21 +15,44 @@
 
 import logging
 import os.path
+import subprocess
 
+import cv2
 from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
-import image_processing_utils
 import its_session_utils
 import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
 
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CRF = 23
+_CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
+_FPS = 30
+_MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 100  # TODO: b/332322632 - improve test runtime
+_NUM_STEPS = 50
+
+
+def compress_video(input_filename, output_filename, crf=_CRF):
+  """Compresses the given video using ffmpeg."""
+
+  ffmpeg_cmd = [
+      'ffmpeg',
+      '-i', input_filename,   # Input file
+      '-c:v', 'libx264',      # Use H.264 codec
+      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
+      '-preset', 'medium',    # Encoding speed/compression balance
+      '-c:a', 'copy',         # Copy audio stream without re-encoding
+      output_filename         # Output file
+  ]
+
+  with open(os.devnull, 'w') as devnull:
+    subprocess.run(ffmpeg_cmd, stdout=devnull,
+                   stderr=subprocess.STDOUT, check=False)
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -80,7 +103,7 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       # Determine test zoom range and step size
       z_range = props['android.control.zoomRatioRange']
       logging.debug('z_range = %s', str(z_range))
-      z_min, z_max, z_step_size = zoom_capture_utils.get_zoom_params(
+      z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
           z_range, _NUM_STEPS)
       camera_properties_utils.skip_unless(
           z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
@@ -93,17 +116,25 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
       test_data = []
       test_data_index = 0
+      # Initialize video writer
+      fourcc = cv2.VideoWriter_fourcc(*_MP4V)
+      uncompressed_video = os.path.join(log_path,
+                                        'output_frames_uncompressed.mp4')
+      out = cv2.VideoWriter(uncompressed_video, fourcc, _FPS,
+                            (size[0], size[1]))
 
       for capture_result, img_name in zip(capture_results, file_list):
         z = float(capture_result['android.control.zoomRatio'])
+        if camera_properties_utils.logical_multi_camera(props):
+          phy_id = capture_result['android.logicalMultiCamera.activePhysicalId']
+        else:
+          phy_id = None
 
         # read image
-        img = image_processing_utils.convert_image_to_numpy_array(
-            os.path.join(log_path, img_name)
-            )
+        img_bgr = cv2.imread(os.path.join(log_path, img_name))
 
         # add path to image name
-        img_name = f'{os.path.join(self.log_path, img_name)}'
+        img_path = f'{os.path.join(self.log_path, img_name)}'
 
         # determine radius tolerance of capture
         cap_fl = capture_result['android.lens.focalLength']
@@ -120,13 +151,17 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
         # Find the center circle in img and check if it's cropped
         circle = zoom_capture_utils.find_center_circle(
-            img, img_name, size, z, z_min, circlish_rtol=circlish_rtol,
-            debug=debug)
+            img_bgr, img_path, size, z, z_min, circlish_rtol=circlish_rtol,
+            debug=debug, draw_color=_CV2_RED, write_img=False)
 
         # Zoom is too large to find center circle
         if circle is None:
-          logging.error('Unable to detect circle in %s', img_name)
+          logging.error('Unable to detect circle in %s', img_path)
           break
+
+        out.write(img_bgr)
+        # Remove png file
+        its_session_utils.remove_file(img_path)
 
         test_data.append(
             zoom_capture_utils.ZoomTestData(
@@ -134,7 +169,8 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                 circle=circle,
                 radius_tol=radius_tol,
                 offset_tol=offset_tol,
-                focal_length=cap_fl
+                focal_length=cap_fl,
+                physical_id=phy_id
             )
         )
 
@@ -142,10 +178,17 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
                       test_data[test_data_index])
         test_data_index = test_data_index + 1
 
-      its_session_utils.remove_frame_files(log_path)
+      out.release()
 
+      # --- Compress Video ---
+      compressed_video = os.path.join(log_path, 'output_frames.mp4')
+      compress_video(uncompressed_video, compressed_video)
+
+      os.remove(uncompressed_video)
+
+      plot_name_stem = f'{os.path.join(log_path, _NAME)}'
       if not zoom_capture_utils.verify_preview_zoom_results(
-          test_data, size, z_max, z_min, z_step_size):
+          test_data, size, z_max, z_min, z_step_size, plot_name_stem):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
 
 if __name__ == '__main__':

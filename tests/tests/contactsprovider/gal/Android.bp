@@ -15,4 +15,5 @@ android_test_helper_app {
     srcs: ["src/**/*.java"],
 
     min_sdk_version: "30",
+    sdk_version: "test_current",
 }

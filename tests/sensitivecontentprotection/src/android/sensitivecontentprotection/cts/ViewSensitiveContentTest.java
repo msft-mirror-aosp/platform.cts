@@ -31,7 +31,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.projection.MediaProjection;
 import android.os.UserManager;
-import android.permission.flags.Flags;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -45,7 +44,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -82,15 +80,8 @@ public class ViewSensitiveContentTest {
         startMediaProjection();
     }
 
-    @After
-    public void teardown() {
-        if (Flags.sensitiveContentImprovements()) {
-            ToastVerifier.Companion.waitForNoToast();
-        }
-    }
-
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlocked() {
         // SensitiveContentActivity layout has a sensitive view, screen capture should be blocked.
@@ -101,7 +92,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForUsername() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -109,7 +100,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPassword() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -117,7 +108,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardNumber() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -125,7 +116,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardCVV() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -133,7 +124,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCreditCardExpirationDate() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint(
@@ -141,7 +132,7 @@ public class ViewSensitiveContentTest {
     }
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForCredentials() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint("credential");
@@ -150,7 +141,7 @@ public class ViewSensitiveContentTest {
 
 
     @Test
-    @CddTest(requirements = {"9.8.2/C-3-4"})
+    @CddTest(requirements = {"9.8.2"})
     @RequiresFlagsEnabled(FLAG_SENSITIVE_CONTENT_APP_PROTECTION)
     public void testScreenCaptureIsBlockedForPasswordAuto() {
         verifyScreenCaptureIsBlockedForSensitiveAutofillHint("passwordAuto");
@@ -189,6 +180,9 @@ public class ViewSensitiveContentTest {
         try (ActivityScenario<SensitiveContentActivity> ignored =
                      ActivityScenario.launch(SensitiveContentActivity.class)) {
             ToastVerifier.Companion.verifyToastShowsAndGoes();
+        }
+        finally {
+            ToastVerifier.Companion.waitForNoToast();
         }
     }
 

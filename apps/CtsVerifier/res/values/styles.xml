@@ -18,4 +18,6 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
     </style>
+    <style name="FullscreenTheme" parent="android:Theme.Holo.NoActionBar.Fullscreen">
+    </style>
 </resources>

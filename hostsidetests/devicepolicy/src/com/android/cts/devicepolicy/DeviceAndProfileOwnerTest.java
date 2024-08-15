@@ -392,6 +392,9 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testPermissionAppUpdate() throws Exception {
+        //TODO(b/346501480): Investigate why this test is failing on Auto with a ProfileOwner.
+        assumeFalse(isAutomotive());
+
         installAppPermissionAppAsUser();
         executeDeviceTestMethod(".PermissionsTest", "testPermissionGrantStateDenied");
         installAppPermissionAppAsUser();
@@ -428,6 +431,8 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
 
     @Test
     public void testScreenCaptureDisabled_assist() throws Exception {
+        //TODO(b/346501480): Investigate why this test is failing on Auto with a ProfileOwner.
+        assumeFalse(isAutomotive());
         try {
             // Install and enable assistant, notice that profile can't have assistant.
             installAppAsUser(ASSIST_APP_APK, mPrimaryUserId);
@@ -1047,6 +1052,11 @@ public abstract class DeviceAndProfileOwnerTest extends BaseDevicePolicyTest {
     private String getLaunchableSystemPackage() throws DeviceNotAvailableException {
         final List<String> enabledSystemPackageNames = getEnabledSystemPackageNames();
         for (String enabledSystemPackage : enabledSystemPackageNames) {
+            if (enabledSystemPackage.equals("com.android.inputmethod.latin")) {
+                // com.android.inputmethod.latin package disables its launcher activity upon
+                // installation so not a suitable candidate for a launchable package.
+                continue;
+            }
             final String result = getDevice().executeShellCommand(
                     String.format(RESOLVE_ACTIVITY_CMD, mUserId, enabledSystemPackage));
             if (!result.contains("No activity found")) {

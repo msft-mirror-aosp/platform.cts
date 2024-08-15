@@ -122,6 +122,6 @@ public class VideoEncoderQualityRegressionCodecTest extends VideoEncoderQualityR
         }
         Predicate<Double> predicate = bdRate -> bdRate < 0d;
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, null, true, predicate);
+                FRAME_RATE, null, true, predicate, false);
     }
 }

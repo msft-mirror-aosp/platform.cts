@@ -41,4 +41,5 @@ android_test_helper_app {
         "cts",
         "sts",
     ],
+    sdk_version: "test_current",
 }

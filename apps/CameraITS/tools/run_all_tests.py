@@ -56,6 +56,7 @@ EXTRA_VERSION = 'camera.its.extra.VERSION'
 CURRENT_ITS_VERSION = '1.0'  # version number to sync with CtsVerifier
 EXTRA_CAMERA_ID = 'camera.its.extra.CAMERA_ID'
 EXTRA_RESULTS = 'camera.its.extra.RESULTS'
+EXTRA_TABLET_NAME = 'camera.its.extra.TABLET_NAME'
 TIME_KEY_START = 'start'
 TIME_KEY_END = 'end'
 VALID_CONTROLLERS = ('arduino', 'canakit')
@@ -72,9 +73,9 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_1/2/... are same scene split to load balance run times for scenes
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
-    'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
-    'scene8', 'scene9',
+    'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
+    'scene6', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -112,6 +113,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene0': None,
     'scene1_1': 'A grey card covering at least the middle 30% of the scene',
     'scene1_2': 'A grey card covering at least the middle 30% of the scene',
+    'scene1_3': 'A grey card covering at least the middle 30% of the scene, '
+                'without a white border like scene1_1 or scene1_2',
     'scene2_a': 'The picture with 3 faces in tests/scene2_a/scene2_a.png',
     'scene2_b': 'The picture with 3 faces in tests/scene2_b/scene2_b.png',
     'scene2_c': 'The picture with 3 faces in tests/scene2_c/scene2_c.png',
@@ -156,7 +159,8 @@ _SCENE_REQ = types.MappingProxyType({
                    'See tests/scene_video/scene_video.mp4',
 })
 
-SUB_CAMERA_TESTS = types.MappingProxyType({
+# Made mutable to allow for test augmentation based on first API level
+SUB_CAMERA_TESTS = {
     'scene0': (
         'test_jitter',
         'test_metadata',
@@ -189,7 +193,7 @@ SUB_CAMERA_TESTS = types.MappingProxyType({
     'sensor_fusion': (
         'test_sensor_fusion',
     ),
-})
+}
 
 _LIGHTING_CONTROL_TESTS = (
     'test_auto_flash.py',
@@ -210,12 +214,13 @@ _SUB_CAMERA_LEVELS = 2
 MOBLY_TEST_SUMMARY_TXT_FILE = 'test_mobly_summary.txt'
 
 
-def report_result(device_id, camera_id, results):
+def report_result(device_id, camera_id, tablet_name, results):
   """Sends a pass/fail result to the device, via an intent.
 
   Args:
    device_id: The ID string of the device to report the results to.
    camera_id: The ID string of the camera for which to report pass/fail.
+   tablet_name: The tablet name to identify model and build.
    results: a dictionary contains all ITS scenes as key and result/summary of
             current ITS run. See test_report_result unit test for an example.
   """
@@ -238,6 +243,7 @@ def report_result(device_id, camera_id, results):
   json_results = json.dumps(results)
   cmd = (f"{adb} shell am broadcast -a {ACTION_ITS_RESULT} --es {EXTRA_VERSION}"
          f" {CURRENT_ITS_VERSION} --es {EXTRA_CAMERA_ID} {camera_id} --es "
+         f"{EXTRA_TABLET_NAME} {tablet_name} --es "
          f"{EXTRA_RESULTS} \'{json_results}\'")
   its_device_utils.run(cmd)
 
@@ -352,7 +358,7 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
       logging.info('Capturing an image to check the test scene')
       cap = cam.do_capture(req, fmt)
       img = image_processing_utils.convert_capture_to_rgb_image(cap)
-      img_name = os.path.join(out_path, f'test_{scene}.jpg')
+      img_name = os.path.join(out_path, f'test_{scene.replace("/", "_")}.jpg')
       logging.info('Please check scene setup in %s', img_name)
       image_processing_utils.write_image(img, img_name)
       choice = input(f'Is the image okay for ITS {scene}? (Y/N)').lower()
@@ -520,6 +526,17 @@ def is_device_folded(device_id):
   return False
 
 
+def augment_sub_camera_tests(first_api_level):
+  """Adds certain tests to SUB_CAMERA_TESTS depending on first_api_level.
+
+  Args:
+    first_api_level: First api level of the device.
+  """
+  if (first_api_level >= its_session_utils.ANDROID15_API_LEVEL):
+    logging.debug('Augmenting sub camera tests')
+    SUB_CAMERA_TESTS['scene6'] = ('test_in_sensor_zoom',)
+
+
 def main():
   """Run all the Camera ITS automated tests.
 
@@ -609,6 +626,9 @@ def main():
   device_id = get_device_serial_number('dut', config_file_contents)
   # Enable external storage on DUT to send summary report to CtsVerifier.apk
   enable_external_storage(device_id)
+
+  # Add to SUB_CAMERA_TESTS depending on first_api_level
+  augment_sub_camera_tests(its_session_utils.get_first_api_level(device_id))
 
   # Verify that CTS Verifier is installed
   its_session_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
@@ -861,16 +881,19 @@ def main():
           ]
         return_string = ''
         for num_try in range(NUM_TRIES):
-          # Handle manual lighting control redirected stdout in test
-          if (test in _LIGHTING_CONTROL_TESTS and
-              not testing_flash_with_controller):
-            print('Turn lights OFF in rig and press <ENTER> to continue.')
-
-          # pylint: disable=subprocess-run-check
-          with open(
-              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'w') as fp:
-            output = subprocess.run(cmd, stdout=fp)
-          # pylint: enable=subprocess-run-check
+          # Saves to mobly test summary file
+          # print only messages for manual lighting control testing
+          output = subprocess.Popen(
+              cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+          )
+          with output.stdout, open(
+              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'wb'
+          ) as file:
+            for line in iter(output.stdout.readline, b''):
+              out = line.decode('utf-8').strip()
+              if '<ENTER>' in out: print(out)
+              file.write(line)
+          output.wait()
 
           # Parse mobly logs to determine PASS/FAIL(*)/SKIP & socket FAILs
           with open(
@@ -1000,7 +1023,7 @@ def main():
     if num_testbeds is None or testbed_index == _MAIN_TESTBED:
       logging.info('Reporting camera %s ITS results to CtsVerifier', camera_id)
       logging.info('ITS results to CtsVerifier: %s', results)
-      report_result(device_id, camera_id, results)
+      report_result(device_id, camera_id, tablet_name, results)
     else:
       write_result(testbed_index, device_id, camera_id, results)
 
@@ -1043,7 +1066,7 @@ def main():
                             'model/type/build/revision.',
                             device_id, parsed_id)
               return
-            report_result(device_id, parsed_camera, parsed_results)
+            report_result(device_id, parsed_camera, tablet_name, parsed_results)
           for temp_file in glob.glob('testbed_*.tmp'):
             os.remove(temp_file)
           break

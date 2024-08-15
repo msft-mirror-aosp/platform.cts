@@ -63,6 +63,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.ApplicationInfoFlags;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.PackageInfoFlags;
+import android.content.pm.ResolveInfo;
 import android.content.pm.cts.PackageManagerShellCommandInstallTest.PackageBroadcastReceiver;
 import android.content.pm.cts.util.AbandonAllPackageSessionsRule;
 import android.graphics.Bitmap;
@@ -266,6 +267,98 @@ public class PackageInstallerArchiveTest {
 
         recycleBitmap(overlaidIcon, overlaidBitmap);
         recycleBitmap(rawIcon, rawBitmap);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void archiveApp_getApplicationIcon_draftSessionOverlayDisabledIfLauncherOverlayDisabled()
+            throws Exception {
+        installPackage(PACKAGE_NAME, APK_PATH);
+        runWithShellPermissionIdentity(
+                () -> {
+                    mPackageInstaller.requestArchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mArchiveIntentSender));
+                    assertThat(mArchiveIntentSender.mStatus.get(5, TimeUnit.SECONDS)).isEqualTo(
+                            PackageInstaller.STATUS_SUCCESS);
+                },
+                Manifest.permission.DELETE_PACKAGES);
+
+        final String launcherPackageName = getCurrentLauncherPackage();
+        final boolean previousMode = getLauncherCloudOverlayMode(launcherPackageName);
+        // First, enable the overlay in the current launcher and fetch the app icon. This app icon
+        // should contain the overlay.
+        setLauncherCloudOverlayMode(launcherPackageName, /* enabled= */ true);
+        ApplicationInfo applicationInfo = mPackageManager.getPackageInfo(PACKAGE_NAME,
+                PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+        Drawable overlaidIcon = mPackageManager.getApplicationIcon(applicationInfo);
+        Bitmap overlaidBitmap = drawableToBitmap(overlaidIcon);
+        // Then, disable the overlay in the launcher and check the draft icon. This icon should not
+        // contain the overlay.
+        setLauncherCloudOverlayMode(launcherPackageName, /* enabled= */ false);
+        try {
+            SessionListener sessionListener = new SessionListener();
+            mPackageInstaller.registerSessionCallback(sessionListener,
+                    new Handler(Looper.getMainLooper()));
+
+            runWithShellPermissionIdentity(
+                    () -> mPackageInstaller.requestUnarchive(PACKAGE_NAME,
+                            new IntentSender((IIntentSender) mUnarchiveIntentSender)),
+                    Manifest.permission.INSTALL_PACKAGES);
+            assertThat(sUnarchiveReceiverPackageName.get(5, TimeUnit.SECONDS)).isEqualTo(
+                    PACKAGE_NAME);
+            assertThat(sUnarchiveReceiverAllUsers.get(10, TimeUnit.MILLISECONDS)).isFalse();
+            int unarchiveId = sUnarchiveId.get(10, TimeUnit.MILLISECONDS);
+
+            int draftSessionId = sessionListener.mSessionIdCreated.get(5, TimeUnit.SECONDS);
+            PackageInstaller.SessionInfo sessionInfo = mPackageInstaller.getSessionInfo(
+                    draftSessionId);
+            assertThat(unarchiveId).isEqualTo(draftSessionId);
+            Bitmap rawBitmap = sessionInfo.getAppIcon();
+            assertNotNull(rawBitmap);
+            assertThat(overlaidBitmap.sameAs(rawBitmap)).isFalse();
+
+            recycleBitmap(overlaidIcon, overlaidBitmap);
+            rawBitmap.recycle();
+
+            PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                    PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+            params.setUnarchiveId(unarchiveId);
+            params.appPackageName = PACKAGE_NAME;
+            int sessionId = mPackageInstaller.createSession(params);
+            assertThat(unarchiveId).isEqualTo(sessionId);
+            mPackageInstaller.abandonSession(sessionId);
+        } finally {
+            // Reset the overlay mode
+            setLauncherCloudOverlayMode(launcherPackageName, previousMode);
+        }
+    }
+
+    private String getCurrentLauncherPackage() {
+        return runWithShellPermissionIdentity(
+                () -> {
+                    ResolveInfo resolveInfo = mPackageManager
+                            .resolveActivity(new Intent(Intent.ACTION_MAIN)
+                                    .addCategory(Intent.CATEGORY_HOME),
+                                    PackageManager.MATCH_DEFAULT_ONLY);
+                    if (resolveInfo == null || resolveInfo.activityInfo == null) {
+                        return null;
+                    }
+                    return resolveInfo.activityInfo.packageName;
+                });
+    }
+
+    private void setLauncherCloudOverlayMode(String launcherPackageName, boolean enabled) {
+        final String command = String.format(
+                "appops set --user %d %s android:archive_icon_overlay %s",
+                ActivityManager.getCurrentUser(), launcherPackageName, enabled ? "0" : "1");
+        SystemUtil.runShellCommand(command);
+    }
+
+    private boolean getLauncherCloudOverlayMode(String launcherPackageName) {
+        final String command = String.format(
+                "appops get --user %d %s android:archive_icon_overlay",
+                ActivityManager.getCurrentUser(), launcherPackageName);
+        return SystemUtil.runShellCommand(command).trim().equals("0");
     }
 
     @Test

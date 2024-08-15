@@ -85,7 +85,11 @@ public class MethodAnalyzer extends MethodVisitor {
             if (!(obj instanceof Handle handle)) {
                 continue;
             }
-            handleMethodCall(handle.getOwner(), handle.getName(), handle.getDesc());
+            try {
+                handleMethodCall(handle.getOwner(), handle.getName(), handle.getDesc());
+            } catch (RuntimeException e) {
+                // TODO(slotus): handle the exception
+            }
         }
     }
 
@@ -109,15 +113,7 @@ public class MethodAnalyzer extends MethodVisitor {
         ClassProfile classProfile = mModule.getOrCreateClass(
                 packageName, className, mApiCoverage);
         MethodProfile callMethod = classProfile.getOrCreateMethod(name, params);
-        if (classProfile.isApiClass()) {
-            if (name.equals("<init>")) {
-                mMethod.addApiConstructorCall(callMethod);
-            } else {
-                mMethod.addApiMethodCall(callMethod);
-            }
-        } else {
-            mMethod.addCommonMethodCall(callMethod);
-        }
+        mMethod.addMethodCall(callMethod);
     }
 
     private static boolean shouldRecordMethodCall(String packageName, String className) {

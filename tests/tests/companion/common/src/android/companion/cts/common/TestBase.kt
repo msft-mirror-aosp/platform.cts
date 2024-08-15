@@ -201,6 +201,20 @@ abstract class TestBase {
     fun simulateDeviceEventDeviceUnlocked(userId: Int) {
         runShellCommand("cmd companiondevice simulate-device-event-device-unlocked $userId")
     }
+
+    fun startObservingDevicePresenceByUuid(userId: Int, packageName: String, uuid: String) {
+        runShellCommand(
+            "cmd companiondevice start-observing-device-presence-uuid " +
+                    "$userId $packageName $uuid"
+        )
+    }
+
+    fun stopObservingDevicePresenceByUuid(userId: Int, packageName: String, uuid: String) {
+        runShellCommand(
+            "cmd companiondevice stop-observing-device-presence-uuid " +
+                    "$userId $packageName $uuid"
+        )
+    }
 }
 
 const val TAG = "CtsCompanionDeviceManagerTestCases"
