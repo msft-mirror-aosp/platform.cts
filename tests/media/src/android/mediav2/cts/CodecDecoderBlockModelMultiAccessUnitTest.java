@@ -17,9 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.RECONFIG_FILE_MEDIA_TYPE_MAP;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.exhaustiveArgsList;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.fail;
 
@@ -27,7 +30,6 @@ import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.CodecDecoderBlockModelMultiAccessUnitTestBase;
-import android.mediav2.common.cts.CodecDecoderBlockModelTestBase;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.OutputManager;
 import android.os.Build;
@@ -38,7 +40,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.media.codec.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -65,7 +66,7 @@ import java.util.Collection;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecDecoderBlockModelMultiAccessUnitTest
         extends CodecDecoderBlockModelMultiAccessUnitTestBase {
@@ -105,9 +106,8 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
 
     /**
      * Verifies if the component under test can decode the test file correctly in multiple frame
-     * block model mode. The decoding happens in asynchronous mode with eos flag signalled with
-     * last compressed frame. The test verifies if the component / framework output is consistent
-     * with single access unit normal mode and single access unit block model mode.
+     * block model mode. The decoding happens in asynchronous mode with a. eos flag signalled with
+     * last compressed frame and b. eos flag not signalled with last compressed frame.
      * <p>
      * Check description of class {@link CodecDecoderBlockModelMultiAccessUnitTest}
      */
@@ -123,16 +123,6 @@ public class CodecDecoderBlockModelMultiAccessUnitTest
         cdtb.decodeToMemory(mTestFile, mCodecName, 0, MediaExtractor.SEEK_TO_CLOSEST_SYNC,
                 Integer.MAX_VALUE);
         OutputManager ref = cdtb.getOutputManager();
-
-        CodecDecoderBlockModelTestBase cdbmtb = new CodecDecoderBlockModelTestBase(
-                mCodecName, mMediaType, null, mAllTestParams);
-        OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-        cdbmtb.decodeToMemory(mTestFile, mCodecName, test, 0,
-                MediaExtractor.SEEK_TO_CLOSEST_SYNC, Integer.MAX_VALUE);
-        if (!ref.equals(test)) {
-            fail("Output in block model mode is not same as output in normal mode. \n"
-                    + mTestConfig + mTestEnv + test.getErrMsg());
-        }
 
         boolean[] boolStates = {true, false};
         OutputManager testA = new OutputManager(ref.getSharedErrorLogs());

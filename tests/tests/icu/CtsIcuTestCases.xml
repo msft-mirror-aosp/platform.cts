@@ -18,10 +18,12 @@
     <option name="config-descriptor:metadata" key="component" value="libcore" />
     <!-- Disable instant mode since ICU does not interact with system server. -->
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
     <!-- Enable multi-lib since ICU4J is backed by native codes in libcore and ICU4C. -->
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsIcuTestCases.apk" />

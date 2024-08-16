@@ -19,6 +19,7 @@ package android.multiuser.cts;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
+import static android.Manifest.permission.MANAGE_USERS;
 import static android.Manifest.permission.MODIFY_QUIET_MODE;
 import static android.Manifest.permission.QUERY_USERS;
 import static android.content.pm.PackageManager.FEATURE_MANAGED_USERS;
@@ -39,8 +40,8 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
@@ -87,6 +88,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
 
@@ -168,6 +170,7 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#isAdminUser"})
     @EnsureHasAdditionalUser(installInstrumentedApp = TRUE)
+    @EnsureDoesNotHavePermission({CREATE_USERS, QUERY_USERS, MANAGE_USERS})
     public void testIsAdminUserForOtherUserContextFailsWithoutPermission() {
         UserReference additionalUser = sDeviceState.additionalUser();
         additionalUser.switchTo();
@@ -178,7 +181,13 @@ public final class UserManagerTest {
         }
 
         UserManager um = userContext.getSystemService(UserManager.class);
-        assertThrows(SecurityException.class, () -> um.isAdminUser());
+        try {
+            um.isAdminUser();
+            fail("Expecting Exception to be thrown when permission is not granted.");
+        } catch (Exception e) {
+            assertTrue("Expected SecurityException, but got " + e.getClass().getSimpleName(),
+                    e instanceof SecurityException);
+        }
     }
 
     /**
@@ -234,6 +243,7 @@ public final class UserManagerTest {
     @Test
     @ApiTest(apis = {"android.os.UserManager#isUserForeground"})
     @RequireRunOnInitialUser
+    @EnsureDoesNotHavePermission({MANAGE_USERS, INTERACT_ACROSS_USERS})
     public void testIsUserForeground_differentContext_noPermission() throws Exception {
         // Skip test for devices that support only a single user, since we cannot get a different
         // user's context for such devices.
@@ -241,7 +251,13 @@ public final class UserManagerTest {
         Context context = getContextForOtherUser();
         UserManager um = context.getSystemService(UserManager.class);
 
-        assertThrows(SecurityException.class, () -> um.isUserForeground());
+        try {
+            um.isUserForeground();
+            fail("Expecting Exception to be thrown when permission is not granted.");
+        } catch (Exception e) {
+            assertTrue("Expected SecurityException, but got " + e.getClass().getSimpleName(),
+                    e instanceof SecurityException);
+        }
     }
 
     @Test

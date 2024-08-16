@@ -38,7 +38,7 @@ public class WebViewHostSideURLUtilTest extends CompatChangeGatingTestCase {
     private boolean isVanillaIceCreamBuildFlagEnabled() throws DeviceNotAvailableException {
         String output =
                 runCommand("device_config get build android.os.android_os_build_vanilla_ice_cream");
-        return Boolean.parseBoolean(output);
+        return Boolean.parseBoolean(output.strip());
     }
 
     public void testGuessFileNameChangeDisabled() throws Exception {

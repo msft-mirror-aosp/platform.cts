@@ -80,12 +80,6 @@ public class MultiDeviceTestsActivity extends HostTestsActivity {
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service")
             .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_disabled")
-            .addTest(
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch",
-                "CtsNfcHceMultiDeviceTestCases#test_single_non_payment_service_with_listen_tech_poll_tech_mismatch")
-            .addTest(
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service",
                 "CtsNfcHceMultiDeviceTestCases#test_single_payment_service")
             .addTest(

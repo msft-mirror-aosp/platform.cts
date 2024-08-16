@@ -1199,6 +1199,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testAddSubscriptionToExistingGroupForEsim() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC)
+            && hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // Set subscription group with current sub Id.
         int subId = SubscriptionManager.getDefaultSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;

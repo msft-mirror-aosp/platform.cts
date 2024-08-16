@@ -44,7 +44,7 @@ public class MediaProjectionTests {
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
     private static final String SPINNER_RESOURCE_ID =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_spinner";
+            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final UiDevice mDevice =
@@ -73,7 +73,8 @@ public class MediaProjectionTests {
         sysUiResources = InstrumentationRegistry.getInstrumentation().getContext()
                 .getPackageManager().getResourcesForApplication(SYSTEM_UI_PACKAGE);
 
-        final String singleAppResName = "screen_share_permission_dialog_option_single_app";
+        final String singleAppResName =
+            "media_projection_entry_app_permission_dialog_option_text_single_app";
 
         int singleAppResId = sysUiResources.getIdentifier(
                 singleAppResName, "string", SYSTEM_UI_PACKAGE);

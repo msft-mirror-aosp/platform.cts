@@ -19,7 +19,6 @@ package android.companion.cts.core
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.BLUETOOTH_SCAN
 import android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE
-import android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE
 import android.companion.DevicePresenceEvent.EVENT_BLE_APPEARED
 import android.companion.DevicePresenceEvent.EVENT_BLE_DISAPPEARED
 import android.companion.DevicePresenceEvent.EVENT_BT_CONNECTED
@@ -62,18 +61,11 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val request_A = ObservingDevicePresenceRequest.Builder().setUuid(UUID_A).build()
-    private val request_B = ObservingDevicePresenceRequest.Builder().setUuid(UUID_B).build()
+
     override fun tearDown() {
         PrimaryCompanionService.clearDeviceUuidPresence()
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request_A)
-            cdm.stopObservingDevicePresence(request_B)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_B.toString())
 
         super.tearDown()
     }
@@ -104,24 +96,6 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
                 cdm.stopObservingDevicePresence(request_A)
             }
         }
-
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-                cdm.startObservingDevicePresence(request_A)
-        }
-
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-                cdm.stopObservingDevicePresence(request_A)
-        }
     }
 
     @Test
@@ -138,14 +112,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
 
     @Test
     fun test_startObservingDeviceUuidPresence_singleDevice() {
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.startObservingDevicePresence(request_A)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
@@ -159,29 +126,15 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         PrimaryCompanionService.getCurrentEvent()
                 ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
 
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request_A)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         assertValidCompanionDeviceServicesUnbind()
     }
 
     @Test
     fun test_startObservingDeviceUuidPresence_multiDevices() {
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.startObservingDevicePresence(request_A)
-            cdm.startObservingDevicePresence(request_B)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_B.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
@@ -225,15 +178,8 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
                 expected = 0
         )
 
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request_B)
-            cdm.stopObservingDevicePresence(request_A)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_B.toString())
 
         assertValidCompanionDeviceServicesUnbind()
     }
@@ -257,14 +203,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
                 ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
 
         // Start observing by UUID.
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.startObservingDevicePresence(request_A)
-        }
+        startObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitDeviceUuidConnect(UUID_A)
@@ -283,14 +222,7 @@ class ObservingDeviceUuidEventTest : CoreTestBase() {
         simulateDeviceUuidEvent(UUID_A, EVENT_BT_DISCONNECTED)
 
         // Lastly, stop observing by UUID.
-        withShellPermissionIdentity(
-            REQUEST_OBSERVE_DEVICE_UUID_PRESENCE,
-            REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE,
-            BLUETOOTH_CONNECT,
-            BLUETOOTH_SCAN
-        ) {
-            cdm.stopObservingDevicePresence(request_A)
-        }
+        stopObservingDevicePresenceByUuid(userId, targetPackageName, UUID_A.toString())
 
         // Service should be unbound.
         assertValidCompanionDeviceServicesUnbind()

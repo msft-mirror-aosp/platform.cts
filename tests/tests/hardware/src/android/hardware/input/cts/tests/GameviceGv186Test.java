@@ -34,6 +34,7 @@ public class GameviceGv186Test extends InputHidTestCase {
 
     public GameviceGv186Test() {
         super(R.raw.gamevice_gv186_register);
+        addDelayAfterSetup();
     }
 
     @Override

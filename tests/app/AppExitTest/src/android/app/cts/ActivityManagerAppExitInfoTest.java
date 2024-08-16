@@ -186,6 +186,7 @@ public final class ActivityManagerAppExitInfoTest {
     private SettingsSession<String> mHiddenApiSettings;
     private int mProcSeqNum;
     private String mFreezerTimeout;
+    private boolean mIsProfilingPss;
     private boolean mHeartbeatDead;
 
     @Before
@@ -217,6 +218,9 @@ public final class ActivityManagerAppExitInfoTest {
         mHiddenApiSettings.set("*");
         mFreezerTimeout = executeShellCmd(
                 "device_config get activity_manager_native_boot freeze_debounce_timeout");
+        mIsProfilingPss = !Flags.removeAppProfilerPssCollection()
+                || (Settings.Global.getInt(mContext.getContentResolver(),
+                        Settings.Global.FORCE_ENABLE_PSS_PROFILING, 0) == 1);
 
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity(
                 android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE);
@@ -532,7 +536,7 @@ public final class ActivityManagerAppExitInfoTest {
             }
             // make sure we have cached process killed
             String output = executeShellCmd("dumpsys activity lru");
-            if (output == null && output.indexOf(" cch+") == -1) {
+            if (output == null || output.indexOf(" cch+") == -1) {
                 break;
             }
         }
@@ -825,7 +829,7 @@ public final class ActivityManagerAppExitInfoTest {
         assertNotNull(dump);
         String lastPss = null;
         String lastRss = null;
-        if (!Flags.removeAppProfilerPssCollection()) {
+        if (mIsProfilingPss) {
             lastPss = extractMemString(dump, " lastPss=", ' ');
             lastRss = extractMemString(dump, " lastRss=", '\n');
         } else {
@@ -851,7 +855,7 @@ public final class ActivityManagerAppExitInfoTest {
                 ApplicationExitInfo.REASON_PERMISSION_CHANGE, null, null, now, now2);
 
         // Also verify that we get the expected meminfo
-        if (!Flags.removeAppProfilerPssCollection()) {
+        if (mIsProfilingPss) {
             assertEquals(lastPss, DebugUtils.sizeValueToString(
                     info.getPss() * 1024, new StringBuilder()));
         }
@@ -885,7 +889,7 @@ public final class ActivityManagerAppExitInfoTest {
         assertNotNull(dump);
         String lastPss = null;
         String lastRss = null;
-        if (!Flags.removeAppProfilerPssCollection()) {
+        if (mIsProfilingPss) {
             lastPss = extractMemString(dump, " lastPss=", ' ');
             lastRss = extractMemString(dump, " lastRss=", '\n');
         } else {
@@ -915,7 +919,7 @@ public final class ActivityManagerAppExitInfoTest {
         assertEquals(revokeReason, info.getDescription());
 
         // Also verify that we get the expected meminfo
-        if (!Flags.removeAppProfilerPssCollection()) {
+        if (mIsProfilingPss) {
             assertEquals(lastPss, DebugUtils.sizeValueToString(
                     info.getPss() * 1024, new StringBuilder()));
         }

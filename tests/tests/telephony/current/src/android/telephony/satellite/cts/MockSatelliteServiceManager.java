@@ -393,7 +393,7 @@ class MockSatelliteServiceManager {
         }
 
         try {
-            if (!setSatelliteServicePackageName(PACKAGE)) {
+            if (!setSatelliteServicePackageName(PACKAGE, true)) {
                 loge("Failed to set satellite service package name");
                 return false;
             }
@@ -415,7 +415,7 @@ class MockSatelliteServiceManager {
         }
 
         try {
-            if (!setSatelliteServicePackageName(EXTERNAL_SATELLITE_PACKAGE)) {
+            if (!setSatelliteServicePackageName(EXTERNAL_SATELLITE_PACKAGE, null)) {
                 loge("Failed to set satellite service package name");
                 return false;
             }
@@ -512,7 +512,7 @@ class MockSatelliteServiceManager {
     boolean restoreSatelliteServicePackageName() {
         logd("restoreSatelliteServicePackageName");
         try {
-            if (!setSatelliteServicePackageName(null)) {
+            if (!setSatelliteServicePackageName(null, null)) {
                 loge("Failed to restore satellite service package name");
                 return false;
             }
@@ -1208,20 +1208,8 @@ class MockSatelliteServiceManager {
         mSatelliteService.clearSatelliteEnabledForCarrier();
     }
 
-    /**
-     * Set whether provisioning API should be supported
-     */
-    void setProvisioningApiSupported(boolean provisioningApiSupported) {
-        if (mSatelliteService == null) {
-            loge("setProvisioningApiSupported: mSatelliteService is null");
-            return;
-        }
-        mSatelliteService.setProvisioningApiSupported(provisioningApiSupported);
-    }
-
     @NonNull List<String> getPlmnListFromOverlayConfig() {
-        String[] plmnArr = readStringArrayFromOverlayConfig(
-                R.array.config_satellite_providers);
+        String[] plmnArr = readStringArrayFromOverlayConfig("config_satellite_providers");
         return Arrays.stream(plmnArr).toList();
     }
 
@@ -1303,12 +1291,14 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @NonNull private String[] readStringArrayFromOverlayConfig(@ArrayRes int id) {
+    @NonNull private String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
         String[] strArray = null;
         try {
-            strArray = mInstrumentation.getContext().getResources().getStringArray(id);
+            strArray = mInstrumentation.getContext().getResources().getStringArray(
+                    Resources.getSystem().getIdentifier(resourceName, "array", "android"));
         } catch (Resources.NotFoundException ex) {
-            loge("readStringArrayFromOverlayConfig: id= " + id + ", ex=" + ex);
+            loge("readStringArrayFromOverlayConfig: resourceName = "
+                    + resourceName + ", ex = " + ex);
         }
         if (strArray == null) {
             strArray = new String[0];
@@ -1351,10 +1341,17 @@ class MockSatelliteServiceManager {
         }
     }
 
-    private boolean setSatelliteServicePackageName(@Nullable String packageName) {
+    private boolean setSatelliteServicePackageName(@Nullable String packageName,
+            @Nullable Boolean provisioned) {
+        String option = packageName;
+
+        if (provisioned != null) {
+            option = option + " -p " + (provisioned ? "true" : "false");
+        }
+
         try {
-            TelephonyUtils.executeShellCommand(
-                    mInstrumentation, SET_SATELLITE_SERVICE_PACKAGE_NAME_CMD + packageName);
+            TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_SERVICE_PACKAGE_NAME_CMD + option);
             return true;
         } catch (Exception ex) {
             loge("setSatelliteServicePackageName: ex= " + ex);

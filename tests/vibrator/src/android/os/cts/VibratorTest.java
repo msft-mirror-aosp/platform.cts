@@ -18,6 +18,7 @@ package android.os.cts;
 
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -35,16 +36,19 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.media.AudioAttributes;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
+import android.os.vibrator.Flags;
 import android.os.vibrator.VibratorFrequencyProfile;
-import android.os.vibrator.cts.VibratorTestActivity;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
-import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -75,17 +79,16 @@ import java.util.concurrent.Executors;
 public class VibratorTest {
     private static final String SYSTEM_VIBRATOR_LABEL = "SystemVibrator";
 
-    @Rule
-    public ActivityScenarioRule<VibratorTestActivity> mActivityRule =
-            new ActivityScenarioRule<>(VibratorTestActivity.class);
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    @Rule
+    @Rule(order = 1)
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.ACCESS_VIBRATOR_STATE);
+                    getRequiredPrivilegedPermissions());
 
-    @Rule
+    @Rule(order = 2)
     public final MockitoRule mMockitoRule = MockitoJUnit.rule();
 
     /**
@@ -399,6 +402,17 @@ public class VibratorTest {
                 assertStartsVibrating("predefined effect id=" + PREDEFINED_EFFECTS[i]);
             }
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testVibrateVendorEffect() {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        VibrationEffect effect = VibrationEffect.createVendorEffect(vendorData);
+        // Just make sure it doesn't crash when this is called; we don't really have a way to test
+        // if a generic vendor effect starts a vibration.
+        mVibrator.vibrate(effect);
     }
 
     @Test
@@ -731,6 +745,18 @@ public class VibratorTest {
                                     vibrateDescription != null ? "for " + vibrateDescription : "")))
                     .onVibratorStateChanged(eq(expected));
         }
+    }
+
+    private static String[] getRequiredPrivilegedPermissions() {
+        if (Flags.vendorVibrationEffects()) {
+            return new String[]{
+                    android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+                    android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
+            };
+        }
+        return new String[] {
+            android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+        };
     }
 
     /**

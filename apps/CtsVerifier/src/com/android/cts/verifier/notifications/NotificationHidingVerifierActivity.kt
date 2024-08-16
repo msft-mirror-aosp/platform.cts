@@ -47,7 +47,7 @@ import com.android.compatibility.common.util.CddTest
 import com.android.cts.verifier.PassFailButtons
 import com.android.cts.verifier.R
 
-@CddTest(requirements = ["9.8.2/C-0-6,C-3-1,C-3-2,C-3-3"])
+@CddTest(requirements = ["9.8.2"])
 class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
     private lateinit var mediaProjectionServiceIntent: Intent

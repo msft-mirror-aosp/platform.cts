@@ -35,6 +35,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureDoesNotHaveUserRestrictionGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureDoesNotHaveUserRestriction {
     /** The restriction to be set. */
     String value();

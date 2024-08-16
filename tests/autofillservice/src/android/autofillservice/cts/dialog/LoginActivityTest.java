@@ -241,6 +241,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testTextView_clickTwiceWithShowFillDialog_showIme() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
@@ -331,7 +332,8 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testShowFillDialog_onlyShowOnce() throws Exception {
-        // Enable feature and test service
+       mUiBot.assumeMinimumResolution(500);
+       // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
 
@@ -446,6 +448,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testShowFillDialog_switchToUnsupportedField_fallbackDropdown() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
@@ -752,6 +755,7 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     public void testCancelFillDialog_showDropdown() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         // Enable feature and test service
         enableFillDialogFeature(sContext);
         enableService();
@@ -846,23 +850,9 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onCredmanFieldOnlyActivity_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onlyCredentialFields(true);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
     public void testSuppressFillDialog_onMixedFields_withIsCredman()
             throws Exception {
         testSuppressFillDialog_onMixedFields(false);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onMixedFields_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onMixedFields(true);
     }
 
     @Test

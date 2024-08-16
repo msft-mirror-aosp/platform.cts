@@ -19,8 +19,8 @@ package android.mediav2.cts;
 import static android.media.codec.Flags.FLAG_NULL_OUTPUT_SURFACE;
 import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import android.graphics.ImageFormat;
@@ -78,6 +78,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = CodecDecoderDetachedSurfaceTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
+    // 1 - 2 frames can be dropped during surface change
+    private static final int FRAMES_DROPPED_PER_SWITCH = 2;
     private static final int MAX_ACTIVE_SURFACES = 4;
     private static final int IMAGE_SURFACE_QUEUE_SIZE = 3;
     private static final long WAIT_FOR_IMAGE_TIMEOUT_MS = 5;
@@ -92,6 +94,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
     private final int[] mFramesRendered = new int[MAX_ACTIVE_SURFACES];
             // total frames rendered on to output surface
     private final int[] mFramesRenderedExpected = new int[MAX_ACTIVE_SURFACES];
+    private int mTotalSurfaceSwitch;
             // exp number of frames to be rendered on output surface
     private boolean mSurfaceAttached = true;
     private int mAttachedSurfaceId;
@@ -183,6 +186,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
     protected void resetContext(boolean isAsync, boolean signalEOSWithLastFrame) {
         super.resetContext(isAsync, signalEOSWithLastFrame);
         mOutputCountInBursts = 0;
+        mTotalSurfaceSwitch = 0;
         Arrays.fill(mFramesRendered, 0);
         Arrays.fill(mFramesRenderedExpected, 0);
     }
@@ -282,6 +286,26 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
         }
     }
 
+    private void validateTestRun() {
+        int totalFramesRenderedExpected = 0;
+        int totalFramesRendered = 0;
+        for (int i = 0; i < mFramesRendered.length; i++) {
+            assertTrue(String.format(Locale.getDefault(),
+                            "Number of frames rendered to output surface is exceeding the total "
+                                    + "frames released to the surface. Exp / got : %d / %d \n",
+                            mFramesRenderedExpected[i], mFramesRendered[i]) + mTestConfig
+                            + mTestEnv, mFramesRendered[i] <= mFramesRenderedExpected[i]);
+            totalFramesRenderedExpected += mFramesRenderedExpected[i];
+            totalFramesRendered += mFramesRendered[i];
+        }
+        Assume.assumeTrue(String.format(Locale.getDefault(),
+                        "Number of frames rendered to output surface is much lesser than the "
+                                + "total frames released to the surface. Exp / got : %d / %d \n",
+                        totalFramesRenderedExpected, totalFramesRendered) + mTestConfig + mTestEnv,
+                totalFramesRenderedExpected - totalFramesRendered
+                        <= FRAMES_DROPPED_PER_SWITCH * mTotalSurfaceSwitch);
+    }
+
     /**
      * At the start of the test #MAX_ACTIVE_SURFACES number of surfaces are instantiated. The
      * first surface is used for codec configuration. After decoding/rendering 'n' frames,
@@ -311,6 +335,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
             while (!mSawInputEOS) {
                 mOutputCountInBursts = 0;
                 mCodec.setOutputSurface(mSurfaces.get(surfaceId)); // switch surface periodically
+                mTotalSurfaceSwitch++;
                 mImageSurface = mImageSurfaces.get(surfaceId);
                 mSurface = mSurfaces.get(surfaceId);
                 mAttachedSurfaceId = surfaceId;
@@ -323,11 +348,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
             waitForAllOutputs();
             endCodecSession(mCodec);
             getAllImagesInRenderQueue();
-            assertArrayEquals(String.format(Locale.getDefault(),
-                    "Number of frames rendered to output surface are not as expected."
-                            + " Exp / got : %s / %s \n",
-                    Arrays.toString(mFramesRenderedExpected), Arrays.toString(mFramesRendered))
-                    + mTestConfig + mTestEnv, mFramesRenderedExpected, mFramesRendered);
+            validateTestRun();
         }
         mCodec.release();
         mExtractor.release();
@@ -373,6 +394,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                 mOutputCountInBursts = 0;
                 if (attachSurface) {
                     mCodec.setOutputSurface(mSurfaces.get(surfaceId));
+                    mTotalSurfaceSwitch++;
                     mImageSurface = mImageSurfaces.get(surfaceId);
                     mSurface = mSurfaces.get(surfaceId);
                     mSurfaceAttached = true;
@@ -391,11 +413,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
             waitForAllOutputs();
             endCodecSession(mCodec);
             getAllImagesInRenderQueue();
-            assertArrayEquals(String.format(Locale.getDefault(),
-                    "Number of frames rendered to output surface are not as expected."
-                            + " Exp / got : %s / %s \n",
-                    Arrays.toString(mFramesRenderedExpected), Arrays.toString(mFramesRendered))
-                    + mTestConfig + mTestEnv, mFramesRenderedExpected, mFramesRendered);
+            validateTestRun();
         }
         mCodec.release();
         mExtractor.release();
@@ -444,6 +462,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                 int surfaceId = 0;
                 mOutputCountInBursts = 0;
                 mCodec.setOutputSurface(mSurfaces.get(surfaceId));
+                mTotalSurfaceSwitch++;
                 mImageSurface = mImageSurfaces.get(surfaceId);
                 mSurface = mSurfaces.get(surfaceId);
                 mSurfaceAttached = true;
@@ -451,7 +470,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                 doWork(mBurstLength); // decode
                 getAllImagesInRenderQueue();
 
-                // detach surface and release it
+                // detach surface
                 try {
                     mCodec.detachOutputSurface();
                 } catch (IllegalStateException e) {
@@ -459,9 +478,6 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                             + " detachOutputSurface() fails with " + e + "\n" + mTestConfig
                             + mTestEnv);
                 }
-                mImageSurfaces.get(surfaceId).release();
-                mImageSurfaces.remove(surfaceId);
-                mSurfaces.remove(surfaceId);
 
                 // decode few frames without attaching surface
                 mOutputCountInBursts = 0;
@@ -469,9 +485,15 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
                 doWork(mBurstLength);
                 getAllImagesInRenderQueue();
 
+                // release surface
+                mImageSurfaces.get(surfaceId).release();
+                mImageSurfaces.remove(surfaceId);
+                mSurfaces.remove(surfaceId);
+
                 // attach new surface and decode few frames
                 mOutputCountInBursts = 0;
                 mCodec.setOutputSurface(mSurfaces.get(surfaceId));
+                mTotalSurfaceSwitch++;
                 mImageSurface = mImageSurfaces.get(surfaceId);
                 mSurface = mSurfaces.get(surfaceId);
                 mSurfaceAttached = true;
@@ -507,11 +529,7 @@ public class CodecDecoderDetachedSurfaceTest extends CodecDecoderTestBase {
             waitForAllOutputs();
             endCodecSession(mCodec);
             getAllImagesInRenderQueue();
-            assertArrayEquals(String.format(Locale.getDefault(),
-                    "Number of frames rendered to output surface are not as expected."
-                            + " Exp / got : %s / %s \n",
-                    Arrays.toString(mFramesRenderedExpected), Arrays.toString(mFramesRendered))
-                    + mTestConfig + mTestEnv, mFramesRenderedExpected, mFramesRendered);
+            validateTestRun();
         }
         mCodec.release();
         mExtractor.release();

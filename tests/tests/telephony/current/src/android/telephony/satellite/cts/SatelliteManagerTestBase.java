@@ -17,6 +17,7 @@
 package android.telephony.satellite.cts;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -54,10 +55,12 @@ import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
+import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.uwb.UwbManager;
 
 import androidx.test.InstrumentationRegistry;
@@ -707,7 +710,7 @@ public class SatelliteManagerTestBase {
                         return false;
                     }
                 } catch (Exception ex) {
-                    loge("onNtnSignalStrengthChanged: Got exception=" + ex);
+                    loge("onSatelliteCommunicationAllowedStateChanged: Got exception=" + ex);
                     return false;
                 }
             }
@@ -1396,5 +1399,47 @@ public class SatelliteManagerTestBase {
 
     private static boolean isSubIdInInfoList(List<SubscriptionInfo> infos, int subId) {
         return infos.stream().anyMatch(info -> info.getSubscriptionId() == subId);
+    }
+
+    protected static Pair<List<SatelliteSubscriberProvisionStatus>, Integer>
+            requestSatelliteSubscriberProvisionStatus() {
+        final AtomicReference<List<SatelliteSubscriberProvisionStatus>> list =
+                new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<List<SatelliteSubscriberProvisionStatus>,
+                SatelliteManager.SatelliteException>
+                receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(List<SatelliteSubscriberProvisionStatus> result) {
+                        list.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestSatelliteSubscriberProvisionStatus(
+                getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            loge("requestSatelliteSubscriberProvisionStatus ex=" + ex);
+            return null;
+        }
+
+        Integer error = errorCode.get();
+        if (error == null) {
+            assertTrue(list.get().size() > 0);
+            return new Pair<>(list.get(), error);
+        } else {
+            assertFalse(list.get().size() > 0);
+            return null;
+        }
     }
 }

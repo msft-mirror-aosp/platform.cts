@@ -54,6 +54,7 @@ android_test {
     },
     sdk_version: "test_current",
     data: [
+        ":CtsDirectBootAwareIme",
         ":CtsInputMethod1",
         ":CtsInputMethod2",
         ":CtsInputMethodStandaloneTestApp",

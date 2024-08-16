@@ -44,6 +44,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 
+import com.android.compatibility.common.util.BitmapUtils;
+
+import org.junit.Assert;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -573,5 +577,55 @@ class Utils {
         parcel.setDataPosition(0);
         T clone = creator.createFromParcel(parcel);
         return clone;
+    }
+
+    public static void assertScreenshotsAreEqual(Bitmap before, Bitmap after, String testName,
+            String localDir) {
+        if (!BitmapUtils.compareBitmaps(before, after)) {
+            File beforeFile = null;
+            File afterFile = null;
+            try {
+                beforeFile = dumpBitmap(before, testName + "-golden.png", localDir);
+                afterFile = dumpBitmap(after, testName + "-test.png", localDir);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error dumping bitmap", e);
+            }
+            Assert.fail(
+                    "Screenshots do not match (check " + beforeFile + " and " + afterFile + ")");
+        }
+    }
+
+    private static File dumpBitmap(Bitmap bitmap, String filename, String localDir)
+            throws IOException {
+        File file = createFile(filename, localDir);
+        if (file == null) return null;
+        Log.i(LOG_TAG, "Dumping bitmap at " + file);
+        BitmapUtils.saveBitmap(bitmap, file.getParent(), file.getName());
+        return file;
+
+    }
+
+    private static File createFile(String filename, String localDir) throws IOException {
+        File dir = getLocalDirectory(localDir);
+        File file = new File(dir, filename);
+        if (file.exists()) {
+            Log.v(LOG_TAG, "Deleting file " + file);
+            file.delete();
+        }
+        if (!file.createNewFile()) {
+            Log.e(LOG_TAG, "couldn't create new file");
+            return null;
+        }
+        return file;
+    }
+
+    private static File getLocalDirectory(String localDir) {
+        File dir = new File(localDir);
+        dir.mkdirs();
+        if (!dir.exists()) {
+            Log.e(LOG_TAG, "couldn't create directory");
+            return null;
+        }
+        return dir;
     }
 }

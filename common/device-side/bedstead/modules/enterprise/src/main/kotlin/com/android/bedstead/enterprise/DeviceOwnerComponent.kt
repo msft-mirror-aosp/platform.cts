@@ -20,10 +20,11 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.AnnotationExecutorUtil
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
+import com.android.bedstead.harrier.components.AccountsComponent
+import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -46,10 +47,11 @@ import org.junit.AssumptionViolatedException
  */
 class DeviceOwnerComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
+    private val accountsComponent: AccountsComponent by locator
     private val usersComponent: UsersComponent by locator
     private val enterpriseComponent: EnterpriseComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
+    private val testAppComponent: TestAppsComponent by locator
     private var hasChangedDeviceOwner = false
     private var originalDeviceOwner: DevicePolicyController? = null
     private var originalDeviceOwnerType: Int? = null
@@ -84,18 +86,19 @@ class DeviceOwnerComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
      * See [EnsureHasDeviceOwner]
      */
     fun ensureHasDeviceOwner(
-        failureMode: FailureMode,
-        isPrimary: Boolean,
-        headlessDeviceOwnerType: EnsureHasDeviceOwner.HeadlessDeviceOwnerType,
-        affiliationIds: MutableSet<String>,
-        type: Int,
-        key: String,
-        dpcQuery: TestAppQueryBuilder
+        failureMode: FailureMode = FailureMode.FAIL,
+        isPrimary: Boolean = false,
+        headlessDeviceOwnerType: EnsureHasDeviceOwner.HeadlessDeviceOwnerType =
+            EnsureHasDeviceOwner.HeadlessDeviceOwnerType.NONE,
+        affiliationIds: MutableSet<String> = mutableSetOf(),
+        type: Int = DeviceOwnerType.DEFAULT,
+        key: String = EnsureHasDeviceOwner.DEFAULT_KEY,
+        dpcQuery: TestAppQueryBuilder = TestAppProvider().query()
     ) {
         // TODO(scottjonathan): Should support non-remotedpc device owner (default to remotedpc)
         var dpcQueryMutable = dpcQuery
         dpcQueryMutable.applyAnnotation(
-            deviceState.mAdditionalQueryParameters.getOrDefault(key, null)
+            testAppComponent.additionalQueryParameters.getOrDefault(key, null)
         )
         if (dpcQueryMutable.isEmptyQuery) {
             dpcQueryMutable = TestAppProvider()
@@ -158,16 +161,16 @@ class DeviceOwnerComponent(locator: BedsteadServiceLocator) : DeviceStateCompone
             removeAllNonTestUsers(failureMode)
 
             if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-                deviceState.ensureHasNoAccounts(
+                accountsComponent.ensureHasNoAccounts(
                     UserType.ANY,
-                    /* allowPreCreatedAccounts= */ true,
+                    allowPreCreatedAccounts = true,
                     FailureMode.FAIL
                 )
             } else {
                 // Prior to U this only checked the system user
-                deviceState.ensureHasNoAccounts(
+                accountsComponent.ensureHasNoAccounts(
                     UserType.SYSTEM_USER,
-                    /* allowPreCreatedAccounts= */ true,
+                    allowPreCreatedAccounts = true,
                     FailureMode.FAIL
                 )
             }

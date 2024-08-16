@@ -120,6 +120,7 @@ class ParamShadingModeTest(its_base_test.ItsBaseTest):
 
       # define fmt
       mono_camera = camera_properties_utils.mono_camera(props)
+      camera_properties_utils.log_minimum_focus_distance(props)
       cam.do_3a(mono_camera=mono_camera)
       cap_fmt = {'format': 'yuv', 'width': _VGA_W, 'height': _VGA_H}
       logging.debug('Capture format: %s', str(cap_fmt))

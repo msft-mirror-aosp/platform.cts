@@ -159,6 +159,28 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_DEFAULT);
     }
 
+    @Test
+    public void testMetadataParsing_nonexistentSettingsActivity()
+            throws PackageManager.NameNotFoundException {
+        final String testDreamClassName =
+                "android.app.dream.cts.app/.TestDreamServiceWithNonexistentSettings";
+        final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
+
+        assertThat(metadata.settingsActivity).isNull();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_DEFAULT);
+    }
+
+    @Test
+    public void testMetadataParsing_noPackage_nonexistentSettingsActivity()
+            throws PackageManager.NameNotFoundException {
+        final String testDreamClassName =
+                "android.app.dream.cts.app/.TestDreamServiceNoPackageNonexistentSettings";
+        final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
+
+        assertThat(metadata.settingsActivity).isNull();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_DEFAULT);
+    }
+
     private DreamService.DreamMetadata getDreamMetadata(String dreamComponent)
             throws PackageManager.NameNotFoundException {
         final ServiceInfo si = mContext.getPackageManager().getServiceInfo(
@@ -274,10 +296,13 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         // Confirm and enter credentials
         injectKey(KeyEvent.KEYCODE_SPACE, true, true);
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_LOST);
+
+        // Ensure keyguard is still visible
+        mWmState.assertKeyguardShowingAndOccluded();
         lockScreenSession.enterAndConfirmLockCredential();
 
-        // Assert keyguard is gone
-        mWmState.waitAndAssertKeyguardGone();
+        mWmState.waitForHomeActivityVisible();
 
         dreamSession.stop();
     }
@@ -338,10 +363,13 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
         // Confirm and enter credentials
         injectKey(KeyEvent.KEYCODE_SPACE, true, true);
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_LOST);
+
+        // Ensure keyguard is still visible
+        mWmState.assertKeyguardShowingAndOccluded();
         lockScreenSession.enterAndConfirmLockCredential();
 
-        // Assert keyguard is gone
-        mWmState.waitAndAssertKeyguardGone();
+        mWmState.waitForHomeActivityVisible();
 
         dreamSession.stop();
     }

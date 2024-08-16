@@ -47,6 +47,22 @@ STABILIZATION_MODE_OFF = 0
 STABILIZATION_MODE_PREVIEW = 2
 LENS_OPTICAL_STABILIZATION_MODE_ON = 1
 
+_M_TO_CM = 100
+
+
+def log_minimum_focus_distance(props):
+  """Log the minimum focus distance for debugging AF issues.
+
+  Args:
+    props: Camera properties object.
+  """
+  min_fd_diopters = props['android.lens.info.minimumFocusDistance']
+  if min_fd_diopters:  # not equal to 0
+    min_fd_cm = 1 / min_fd_diopters * _M_TO_CM
+    logging.debug('Minimum focus distance (cm): %.2f', min_fd_cm)
+  else:
+    logging.debug('Fixed focus camera')
+
 
 def check_front_or_rear_camera(props):
   """Raises an error if not LENS_FACING FRONT or BACK.
@@ -160,6 +176,18 @@ def sensor_fusion(props):
      Boolean. True if camera and motion sensor timestamps in same time domain.
   """
   return props.get('android.sensor.info.timestampSource') == 1
+
+
+def burst_capture_capable(props):
+  """Returns whether a device supports burst capture.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if the device supports burst capture.
+  """
+  return 6 in props.get('android.request.availableCapabilities', [])
 
 
 def logical_multi_camera(props):
@@ -746,6 +774,18 @@ def dynamic_range_ten_bit(props):
       'android.request.availableCapabilities']
 
 
+def intrinsic_calibration(props):
+  """Returns whether a device supports android.lens.intrinsicCalibration.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if device supports android.lens.intrinsicCalibratino.
+  """
+  return props.get('android.lens.intrinsicCalibration') is not None
+
+
 def get_intrinsic_calibration(props, metadata, debug, fd=None):
   """Get intrinsicCalibration and create intrisic matrix.
 
@@ -758,7 +798,7 @@ def get_intrinsic_calibration(props, metadata, debug, fd=None):
     fd: float; focal length from capture metadata.
 
   Returns:
-    intrinsic transformation matrix
+    numpy array for intrinsic transformation matrix or None
     k = [[f_x, s, c_x],
          [0, f_y, c_y],
          [0,   0,   1]]
@@ -1067,6 +1107,25 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
 
 
 def optical_stabilization_supported(props):
