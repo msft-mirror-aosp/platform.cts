@@ -4186,13 +4186,15 @@ public class TelephonyManagerTest {
                     verifyExpectedGetAllowedNetworkType(reason);
                 }
             } catch (SecurityException se) {
-                fail("testSetAllowedNetworkTypes: SecurityException not expected");
+                Log.e(TAG, "SecurityException not expected", se);
+                mUnexpectedException = true;
             }
         }
 
         private CountDownLatch mLatch;
         private int mExpectedReason;
         private long mExpectedAllowedNetworkType;
+        public boolean mUnexpectedException = false;
         public void setExpectedAllowedNetworkType(
                 int expectedReason, long expectedAllowedNetworkType, int expectedLatchcount) {
             mExpectedReason = expectedReason;
@@ -4274,6 +4276,8 @@ public class TelephonyManagerTest {
         // Unregister telephony callback
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                 (tm) -> tm.unregisterTelephonyCallback(listener));
+
+        assertFalse(listener.mUnexpectedException);
     }
 
     @Test
