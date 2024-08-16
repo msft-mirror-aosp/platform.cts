@@ -199,8 +199,9 @@ public class MultiDisplayKeyguardTests extends MultiDisplayTestBase {
         lockScreenSession.setLockCredential();
 
         // Create decored system screen
+        // We choose virtual display here, so inject key code won't be blocked by Overlay display.
         final DisplayContent decoredSystemDisplay = virtualDisplaySession
-                .setSimulateDisplay(true)
+                .setPublicDisplay(true)
                 .setShowSystemDecorations(true)
                 .createDisplay();
         final int decoredSystemDisplayId = decoredSystemDisplay.mId;

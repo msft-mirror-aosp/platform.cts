@@ -82,6 +82,7 @@ android_test {
         "flag-junit",
         "android.permission.flags-aconfig-java",
         "CtsVirtualDeviceCommonLib",
+        "Harrier",
     ],
 
     jni_libs: [
@@ -90,7 +91,6 @@ android_test {
         "libbinder",
         "libbpf_bcc",
         "libc++",
-        "libcgrouprc",
         "libcrypto",
         "libcutils",
         "libdl_android",
@@ -139,6 +139,8 @@ android_test {
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
         ":AppInstalledOnMultipleUsers",
+        ":SharedUidTestApp1",
+        ":SharedUidTestApp2",
     ],
     per_testcase_directory: true,
 }

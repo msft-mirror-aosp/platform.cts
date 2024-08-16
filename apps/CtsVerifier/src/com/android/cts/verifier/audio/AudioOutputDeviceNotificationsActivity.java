@@ -32,15 +32,18 @@ import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
  * insert/remove a wired headset and noting the presence (or absence) of notifications.
  */
 public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBaseActivity {
-    Context mContext;
+    private Context mContext;
 
-    TextView mConnectView;
-    TextView mDisconnectView;
-    TextView mInfoView;
+    private AudioManager mAudioManager;
+    private TestAudioDeviceCallback mConnectCallback;
 
-    boolean mHandledInitialAddedMessage = false;
-    boolean mConnectReceived = false;
-    boolean mDisconnectReceived = false;
+    private TextView mConnectView;
+    private TextView mDisconnectView;
+    private TextView mInfoView;
+
+    private boolean mHandledInitialAddedMessage = false;
+    private boolean mConnectReceived = false;
+    private boolean mDisconnectReceived = false;
 
     private class TestAudioDeviceCallback extends AudioDeviceCallback {
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
@@ -98,8 +101,8 @@ public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBase
                     }
                 });
 
-        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-        audioManager.registerAudioDeviceCallback(new TestAudioDeviceCallback(), null);
+        mAudioManager = mContext.getSystemService(AudioManager.class);
+        mConnectCallback = new TestAudioDeviceCallback();
 
         // "Honor System" buttons
         super.setup();
@@ -109,6 +112,18 @@ public class AudioOutputDeviceNotificationsActivity extends AudioWiredDeviceBase
         setPassFailButtonClickListeners();
 
         calculatePass();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectCallback, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectCallback);
+        super.onStop();
     }
 
     @Override

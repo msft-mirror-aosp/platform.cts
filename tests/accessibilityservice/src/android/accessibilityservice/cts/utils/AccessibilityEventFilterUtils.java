@@ -58,6 +58,7 @@ public class AccessibilityEventFilterUtils {
         TypeSafeMatcher<AccessibilityEvent> matchResourceName = new PropertyMatcher<>(
                 ResourceName, "Resource name",
                 (event, expect) -> event.getSource() != null
+                        && event.getSource().getViewIdResourceName() != null
                         && event.getSource().getViewIdResourceName().equals(expect));
         return (both(new AccessibilityEventTypeMatcher(eventType)).and(matchResourceName))::matches;
     }

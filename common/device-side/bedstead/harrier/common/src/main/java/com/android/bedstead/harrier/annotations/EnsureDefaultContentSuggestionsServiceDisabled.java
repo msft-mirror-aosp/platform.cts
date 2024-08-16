@@ -34,6 +34,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsureDefaultContentSuggestionsServiceDisabled {
 
     /** Which user type the service must be disabled on. */

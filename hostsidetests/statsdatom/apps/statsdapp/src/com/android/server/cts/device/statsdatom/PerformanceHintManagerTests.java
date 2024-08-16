@@ -18,6 +18,7 @@ package com.android.server.cts.device.statsdatom;
 
 import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND;
 import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_REGULAR_HINT_SESSIONS;
+import static android.adpf.atom.common.ADPFAtomTestConstants.ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_COLUMN_KEY;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_COLUMN_VALUE;
 import static android.adpf.atom.common.ADPFAtomTestConstants.CONTENT_URI_STRING;
@@ -51,7 +52,8 @@ import java.util.concurrent.TimeUnit;
 
 public class PerformanceHintManagerTests {
     private static final String TAG = PerformanceHintManagerTests.class.getSimpleName();
-    private static final String ADPF_ATOM_TEST_PKG = "android.adpf.atom.app";
+    private static final String ADPF_ATOM_TEST_GAME_PKG = "android.adpf.atom.app";
+    private static final String ADPF_ATOM_TEST_APP_PKG = "android.adpf.atom.app2";
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
@@ -69,13 +71,13 @@ public class PerformanceHintManagerTests {
         // Launch the app
         Context appContext = ApplicationProvider.getApplicationContext();
         final Intent intent = appContext.getPackageManager()
-                .getLaunchIntentForPackage(ADPF_ATOM_TEST_PKG);
+                .getLaunchIntentForPackage(ADPF_ATOM_TEST_GAME_PKG);
         intent.putExtra(INTENT_ACTION_KEY, ACTION_CREATE_DEAD_TIDS_THEN_GO_BACKGROUND);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         appContext.startActivity(intent);
 
         // Wait for the app to appear
-        device.wait(Until.hasObject(By.pkg(ADPF_ATOM_TEST_PKG).depth(0)), 2000);
+        device.wait(Until.hasObject(By.pkg(ADPF_ATOM_TEST_GAME_PKG).depth(0)), 2000);
         device.waitForIdle();
         Log.d(TAG, "Wait for idle finished");
 
@@ -120,11 +122,66 @@ public class PerformanceHintManagerTests {
         // Initialize UiDevice instance
         UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
         // Launch the app
+        launchApp(device, ADPF_ATOM_TEST_GAME_PKG, ACTION_CREATE_REGULAR_HINT_SESSIONS);
+    }
+
+    @Test
+    public void testAdpfSessionSnapshotTwoAppsOn() {
+        Context context = InstrumentationRegistry.getContext();
+        PerformanceHintManager phm = context.getSystemService(PerformanceHintManager.class);
+
+        assertNotNull(phm);
+        assumeTrue(phm.getPreferredUpdateRateNanos() != -1);
+
+        // Initialize UiDevice instance
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+
+        // Launch the apps
+        // first we test two apps creating APP/GAME sessions
+        // Here the HWUI sessions should be created upon app activity starting
+        launchApp(device, ADPF_ATOM_TEST_APP_PKG, ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE);
+        launchApp(device, ADPF_ATOM_TEST_GAME_PKG, ACTION_CREATE_REGULAR_HINT_SESSIONS);
+    }
+
+    @Test
+    public void testAdpfSessionSnapshotTwoAppsOnKillOne() throws Exception {
+        Context context = InstrumentationRegistry.getContext();
+        PerformanceHintManager phm = context.getSystemService(PerformanceHintManager.class);
+
+        assertNotNull(phm);
+
+        // If the device does not support ADPF hint session,
+        // getPreferredUpdateRateNanos() returns -1.
+        // We only test the devices supporting it and will check
+        // if assumption fails in PerformanceHintManagerStatsTests#testCreateHintSessionStatsd
+        assumeTrue(phm.getPreferredUpdateRateNanos() != -1);
+
+        // Initialize UiDevice instance
+        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+
+        // Launch the apps
+        // first we test two apps creating APP/GAME sessions
+        // Here the HWUI sessions should be created upon app activity starting
+        launchApp(device, ADPF_ATOM_TEST_APP_PKG, ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE);
+        launchApp(device, ADPF_ATOM_TEST_GAME_PKG, ACTION_CREATE_REGULAR_HINT_SESSIONS);
+
+        // Force stop one app to have HintManagerService to close the sessions associated to
+        // the UID of the killed app.
+        device.executeShellCommand("am force-stop " + ADPF_ATOM_TEST_APP_PKG);
+        device.waitForIdle();
+    }
+
+    private void launchApp(UiDevice device, String pkgName, String intentActionValue) {
         Context appContext = ApplicationProvider.getApplicationContext();
         final Intent intent = appContext.getPackageManager()
-                .getLaunchIntentForPackage(ADPF_ATOM_TEST_PKG);
-        intent.putExtra(INTENT_ACTION_KEY, ACTION_CREATE_REGULAR_HINT_SESSIONS);
+                .getLaunchIntentForPackage(pkgName);
+        intent.putExtra(INTENT_ACTION_KEY, intentActionValue);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         appContext.startActivity(intent);
+
+        // Wait for the app to appear
+        device.wait(Until.hasObject(By.pkg(pkgName).depth(0)), 2000);
+        device.waitForIdle();
+        Log.d(TAG, "Wait for " + pkgName + " idle finished");
     }
 }

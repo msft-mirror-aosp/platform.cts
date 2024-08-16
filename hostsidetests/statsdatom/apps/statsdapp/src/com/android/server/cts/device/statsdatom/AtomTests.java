@@ -550,7 +550,7 @@ public class AtomTests {
 
         setScreenBrightness(47);
         sleep(500);
-        setScreenBrightness(100);
+        setScreenBrightness(70);
         sleep(500);
 
 

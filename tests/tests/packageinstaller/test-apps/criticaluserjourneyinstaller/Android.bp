@@ -33,3 +33,20 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsInstallerCujTestInstallerV2",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifestV2.xml",
+    srcs: ["src/**/*.java"],
+
+    static_libs: [
+        "androidx.legacy_legacy-support-v4",
+    ],
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}

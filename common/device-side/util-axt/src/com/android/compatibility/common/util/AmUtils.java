@@ -36,7 +36,9 @@ public class AmUtils {
     }
 
     public static void runKill(String packageName, boolean wait) throws Exception {
-        SystemUtil.runShellCommandForNoOutput("am kill --user cur " + packageName);
+        SystemUtil.runShellCommandForNoOutput(
+                "am kill --user " + android.os.Process.myUserHandle().getIdentifier() + " "
+                        + packageName);
 
         if (!wait) {
             return;

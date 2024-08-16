@@ -57,7 +57,6 @@ import static android.window.DisplayAreaOrganizer.FEATURE_UNDEFINED;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
@@ -101,8 +100,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 // split-screen UI where every app opens in MULTI_WINDOW mode.
                 ? WINDOWING_MODE_MULTI_WINDOW
                 : WINDOWING_MODE_FULLSCREEN;
-        mWmState.assertFrontStack("Fullscreen stack must be the front stack.",
-                expectedWindowingMode, ACTIVITY_TYPE_STANDARD);
+        mWmState.assertFrontStackOnDisplay("Fullscreen stack must be the front stack.",
+                expectedWindowingMode, ACTIVITY_TYPE_STANDARD, getMainDisplayId());
         mWmState.assertVisibility(TRANSLUCENT_ACTIVITY, true);
         mWmState.assertHomeActivityVisible(true);
     }
@@ -206,6 +205,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity() {
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
+
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         testTurnScreenOnActivity(lockScreenSession, activityClient,
@@ -251,8 +253,7 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
     @Test
     public void testTurnScreenOnActivity_slowLaunch() {
-        // TODO(b/348662989): Remove skipping the test for car ui portrait
-        assumeFalse(hasAutomotiveSplitscreenMultitaskingFeature());
+
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         final ActivitySessionClient activityClient = createManagedActivityClientSession();
         // The activity will be paused first because the flags turn-screen-on and show-when-locked
@@ -385,13 +386,14 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
             return;
         }
         mWmState.computeState();
-        final int homeTaskDisplayAreaFeatureId =
-                mWmState.getTaskDisplayAreaFeatureId(mWmState.getHomeActivityName());
-
+        // Gets the task display area feature id for the home activity on the display
+        final int homeTaskDisplayAreaFeatureId = mWmState.getTaskDisplayAreaFeatureIdOnDisplay(
+                mWmState.getHomeActivityName(), getMainDisplayId());
         // Start LaunchingActivity and BroadcastReceiverActivity in two separate tasks.
         getLaunchActivityBuilder().setTargetActivity(BROADCAST_RECEIVER_ACTIVITY)
                 .setWindowingMode(WINDOWING_MODE_FULLSCREEN)
                 .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
+                .setDisplayId(getMainDisplayId())
                 .setIntentFlags(FLAG_ACTIVITY_NEW_TASK).execute();
         waitAndAssertResumedActivity(BROADCAST_RECEIVER_ACTIVITY,"Activity must be resumed");
         final int taskId = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getTaskId();
@@ -414,7 +416,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
         if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
             // TODO(b/300009006): remove this if condition when root tasks setup is moved to SysUI.
-            mWmState.assertHomeActivityVisible(false);
+            // Pass in the display id since home activity can be present on multiple displays for
+            // visible background users
+            mWmState.assertHomeActivityVisible(false, getMainDisplayId());
         }
     }
 
@@ -437,9 +441,9 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
 
         // If home activity is present we will launch the activities into the same TDA as the home,
         // otherwise we will launch the second activity into the same TDA as the first one.
-        int launchTaskDisplayAreaFeatureId = hasHomeScreen()
-                ? mWmState.getTaskDisplayAreaFeatureId(mWmState.getHomeActivityName())
-                : FEATURE_UNDEFINED;
+        int launchTaskDisplayAreaFeatureId =
+                hasHomeScreen() ? mWmState.getTaskDisplayAreaFeatureIdOnDisplay(
+                        mWmState.getHomeActivityName(), getMainDisplayId()) : FEATURE_UNDEFINED;
 
         // Launch an activity that calls "moveTaskToBack" to finish itself.
         launchActivityOnTaskDisplayArea(MOVE_TASK_TO_BACK_ACTIVITY, WINDOWING_MODE_FULLSCREEN,
@@ -635,6 +639,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnAttrNoLockScreen() {
         assumeTrue(supportsLockScreen());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.disableLockScreen().sleepDevice();
@@ -696,6 +702,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnShowOnLockAttr() {
         assumeTrue(supportsLockScreen());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.sleepDevice();
@@ -735,6 +743,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnAttrRemove() {
         assumeTrue(supportsLockScreen());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.sleepDevice();
@@ -758,6 +768,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnSingleTask() {
         assumeTrue(supportsLockScreen());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.sleepDevice();
@@ -801,6 +813,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
     @Test
     public void testTurnScreenOnActivity_withRelayout() {
         assumeTrue(supportsLockScreen());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
 
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.sleepDevice();

@@ -37,6 +37,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasNoProfileAnnotation("android.os.usertype.profile.PRIVATE")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasNoPrivateProfile {
     /** Which user type the private profile should not be attached to. */
     UserType forUser() default INSTRUMENTED_USER;

@@ -406,7 +406,7 @@ public class ChoreographerTest {
             assertTrue("Number of frame timelines " + frameData.getFrameTimelines().length
                             + " should be greater than 0",
                     frameData.getFrameTimelines().length > 0);
-            long lastValue = frameData.getFrameTimeNanos();
+            long previousDeadline = 0;
             for (Choreographer.FrameTimeline frameTimeline : frameData.getFrameTimelines()) {
                 long deadline = frameTimeline.getDeadlineNanos();
                 assertTrue("Deadline " + deadline + " must be after start time " + mPostTimeNanos,
@@ -414,9 +414,9 @@ public class ChoreographerTest {
                 mDeadlineAssertPassed = mDeadlineAssertPassed
                         && deadline > frameData.getFrameTimeNanos();
                 assertTrue("Deadline " + deadline + " must be after the previous frame deadline "
-                                + lastValue,
-                        deadline > lastValue);
-                lastValue = deadline;
+                                + previousDeadline,
+                        deadline > previousDeadline);
+                previousDeadline = deadline;
             }
             mCallbackComplete.countDown();
         }

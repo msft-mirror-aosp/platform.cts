@@ -28,7 +28,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull
-public class InstallationViaSessionTest extends PackageInstallerCujTestBase {
+public class InstallationViaSessionTest extends InstallationTestBase {
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {

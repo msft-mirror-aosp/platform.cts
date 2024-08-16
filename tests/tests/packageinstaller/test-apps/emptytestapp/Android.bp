@@ -36,6 +36,7 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsEmptyTestAppV2",
     resource_dirs: ["res_v2"],
+    manifest: "AndroidManifest_v2.xml",
     defaults: ["cts_defaults"],
     sdk_version: "current",
     min_sdk_version: "23",
@@ -93,10 +94,10 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
-    name: "CtsEmptyTestApp_LowTargetSdk",
+    name: "CtsEmptyTestApp_RejectedByVerifier",
     defaults: ["cts_defaults"],
     target_sdk_version: "18",
-    manifest: "AndroidManifest_LowTargetSdk.xml",
+    manifest: "AndroidManifest_RejectedByVerifier.xml",
     // tag this module as a cts test artifact
     test_suites: [
         "arcts",

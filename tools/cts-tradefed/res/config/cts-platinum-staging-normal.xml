@@ -20,36 +20,80 @@
     <option name="compatibility:include-filter" value="AndroidTest_MultiUser com.android.sdksandbox.tests.cts.inprocess.SdkSandboxRestrictionsTest#testSandboxCannotAccess_MediaStoreApi" />
 
     <!-- CtsAccessibilityServiceTestCases -->
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#clear_cacheInvalidated" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#disable_cacheDisabled" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#enable_cacheEnabled" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#getChild_descendantNotPrefetched" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#getChild_descendantPrefetched" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#getParent_ancestorsPrefetched" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#invalidateNode_subtreeInCacheInvalidated" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#queryNode_nodeIsInCache" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_prefetchWithA11yWindowInfo" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_prefetchWithRootInActiveWindow" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testRequest_withMultiplePrefetchingStrategies_throwsException" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityCacheTest#testUiAutomation_clearCache_cacheInvalidated" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityDragAndDropTest#testStartDrag_eventSentAndActionsUpdated" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEmbeddedHierarchyTest#testEmbeddedViewCanBeFound" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEmbeddedHierarchyTest#testEmbeddedViewHasCorrectBoundAfterHostViewMove" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityActionRetained" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_changingValueUpdatesChildren_noFirst" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_changingValueUpdatesChildren_yesFirst" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_checkAdsProperty_bottomUp" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_checkAdsProperty_topDown" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_excludedFromParent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_hiddenFromEventPropagation" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_hiddenFromSearches" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_hiddenIfFilterTouchesWhenObscured" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_innerChildHidden" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testAccessibilityDataSensitive_nodeMatchesViewProperty" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testActionArgumentScrollAmountFloat" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testDirectAccessibilityConnection_AccessibilityManagerEnabled" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testDirectAccessibilityConnection_CanDisable" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testDirectAccessibilityConnection_CanPerformAction" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testInterrupt_notifiesService" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testLabelForReportedToAccessibility" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testOnMotionEvent_ignoresTouchscreenEventWhenTouchExplorationEnabled" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testPackageNameCannotBeFaked" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testPackageNameCannotBeFakedAppWidget" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testSetMinDurationBetweenContentChanges" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTooltipTextActionsReportedToAccessibility" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTooltipTextReportedToAccessibility" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTouchDelegateInfoReportedToAccessibility" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTraversalAfterReportedToAccessibility" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeNotificationStateChangedAccessibilityEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewClickedAccessibilityEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewFocusedAccessibilityEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewLongClickedAccessibilityEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewSelectedAccessibilityEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testTypeViewTextChangedAccessibilityEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityEndToEndTest#testViewHeadingReportedToAccessibility" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testActionClearAccessibilityFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testChangeFocusColor_expectedColorIsChanged" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testFindAccessibilityFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testInitialStateNoAccessibilityFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testOnlyOneNodeHasAccessibilityFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityFocusAndInputFocusSyncTest#testScreenReaderFocusableAttribute_reportedToAccessibility" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testAngledPinch_looksReasonable" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testClickAt_producesDownThenUp" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testContinuedGesture_nextGestureDoesntContinue_isCancelled" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGestureDispatchTest#testSlowSwipe_shouldNotContainMovesForTinyMovement" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionHome" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityGlobalActionsTest#testPerformGlobalActionRecents" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testDefaultImplementation" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testInputConnection_requestIme" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testOnUpdateSelectionForInProcessA11yIme" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testSelectionChange_notRequestIme" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityImeTest#testSelectionChange_requestIme" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testClearMetaKeyStates" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testCommitText" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testDeleteSurroundingText" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testGetCursorCapsMode" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testGetSurroundingText" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testPerformContextMenuAction" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testPerformEditorAction" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testSendKeyEvent" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityInputConnectionTest#testSetSelection" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityMagnificationTest#testResetCurrentMagnificationRegion_WindowMode_regionIsEmpty" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityOverlayTest#testA11yServiceShowsWindowEmbeddedOverlayWithCallback_shouldAppearAndDisappear" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityOverlayTest#testA11yServiceShowsWindowEmbeddedOverlayWithoutCallback_shouldAppearAndDisappear" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityPaneTest#windowLikeViewSettersWork_andNewValuesReportedToAccessibility" />
@@ -59,41 +103,60 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testClickableSpan_shouldWorkFromAccessibilityService" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testEditableTextView_shouldExposeAndRespondToImeEnterAction" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testEditableTextView_shouldExposeAndRespondToSetTextAction" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testExtraRendering_viewGroupShouldNotProvideLayoutParamsWhenNotRequested" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testImageSpan_accessibilityServiceShouldSeeContentDescription" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testNotEditableTextView_shouldNotExposeOrRespondToSetTextAction" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testTextLocation_testLocationBoundary_locationShouldBeLimitationLength" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testTextLocations_textViewShouldProvideWhenRequested" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testTextLocations_withRequestPreparer_shouldHoldOffUntilReady" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testTextLocations_withUnresponsiveRequestPreparer_shouldTimeout" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextActionTest#testUrlSpan_shouldWorkFromAccessibilityService" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityCharacterOverContentDescription" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityCharacterOverText" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityCharacterOverTextExtend" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityLineOverText" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityLineOverTextExtend" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityParagraphOverText" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityWordOverEditTextWithContentDescription" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testActionNextAndPreviousAtGranularityWordOverText" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testSelectionDoesNotMoveFocus" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testSelectionMovesFocus" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testSelectionPositionForNonEditableView" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testSetSelectionInContentDescription" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityTextTraversalTest#testTextEditingActions" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testAccessibilityImportanceReportingForImportantView" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testAccessibilityImportanceReportingForUnimportantView" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDescendantsOfNotImportantViewReportedInOrder1" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDescendantsOfNotImportantViewReportedInOrder3" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDrawingOrderGettingAllViewsFollowsXmlOrder" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDrawingOrderRootNodeHasIndex0" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testDrawingOrderWithCustomDrawingOrder" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testSetViewGone_receiveSubtreeEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityViewTreeReportingTest#testSetViewInvisible_receiveSubtreeEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testFindByContentDescription" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testFindByText" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testGetEventSource" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testGetWindowsOnAllDisplays_resultIsSortedByLayerDescending" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testGetWindows_resultIsSortedByLayerDescending" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testInteractWithAppWindow" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testNoWindowsAccessIfFlagNotSet" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testObjectContract" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionClearSelection" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionClick" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionLongClick" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionSelect" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformActionSetAndClearFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testPerformCustomAction" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseAllWindows" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseWindow" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowQueryTest#testTraverseWindowFromEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#moveFocusToAnotherDisplay_movesActiveAndFocusWindow" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#moveFocusToAnotherWindow_generatesEventsAndMovesActiveAndFocus" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#showNotTouchableWindow_activityWindowIsNotVisible" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#testChangeAccessibilityFocusWindow_getEvent" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#testDisableWindowAnimations" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#testUpdatedWindowTitle_generatesEventAndIsReturnedByGetTitle" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.AccessibilityWindowReportingTest#testWindowAddedMovedAndRemoved_generatesEventsForAllThree" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.BrailleDisplayControllerTest#connect_defaultExecutor_isSuccessful" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.BrailleDisplayControllerTest#connect_unableToGetReportDescriptor_returnsErrors" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testDoubleTapAccessibilityFocus_performsClick" />
@@ -103,6 +166,7 @@
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testDoubleTapNoFocus_doesNotPerformClick" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testGestureDetectionPassthrough_initiatesTouchExploration" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapTouchExploring_performsClick" />
+    <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSlowSwipe_initiatesTouchExploration" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testThreeFingerMovement_shouldDelegate" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testTwoFingerDrag_dispatchesEventsBetweenFingers" />
     <option name="compatibility:include-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchInteractionControllerTest#testDoubleTap_producesSingleInteraction" />
@@ -141,6 +205,7 @@
 
     <!-- CtsAdServicesPermissionsAppOptOutEndToEndTests -->
     <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_fledgeFetchAndJoinCustomAudience" />
+    <option name="compatibility:include-filter" value="CtsAdServicesPermissionsAppOptOutEndToEndTests com.android.adservices.tests.permissions.PermissionsAppOptOutTest#testNoEnrollment_reportImpression" />
 
     <!-- CtsAlarmManagerTestCases -->
     <option name="compatibility:include-filter" value="CtsAlarmManagerTestCases android.alarmmanager.cts.InstantAppsTests#elapsedRealtimeAlarm" />
@@ -199,42 +264,185 @@
     <option name="compatibility:include-filter" value="CtsAppSearchTestCases android.app.appsearch.cts.functions.AppFunctionManagerCtsTest#executeAppFunction_success" />
 
     <!-- CtsAppSecurityHostTestCases -->
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#rebootWithDuplicatePermission" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAdbInstallFile_full" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAppFailAccessPrivateData_full" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAppUpgradeDifferentCerts_full" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_differentPermissionGroup_fail" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_differentProtectionLevel_fail" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_samePermissionGroup_success" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_sameProtectionLevel_success" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testUninstallRemovesData_full" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeBadPubKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeMissingPubKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeNoPubKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testMultipleUpgradeKSWithSigningKey" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testMultipleUpgradeKSWithUpgradeKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testNoKSToUpgradeKS" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeDefinerSigPermGained" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeDefinerSigPermLost" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSECToRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSRsaToEC" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSToNoKS" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithMultipleUpgradeKeySetsFirstKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithSigningUpgradeKey" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithUpgradeKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithWrongKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithWrongSigningKey" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeSharedUser" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeSigPermGained" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeSigPermLost" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcp6Ports" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackTcpPorts" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackUdp6Ports" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoListeningLoopbackUdpPorts" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoRemotelyAccessibleListeningTcp6Ports" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoRemotelyAccessibleListeningTcpPorts" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoRemotelyAccessibleListeningUdpPorts" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testCorrectCertUsedFromPkcs7SignedDataCertsSet" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallEmpty" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallEphemeralRequiresV2Signature" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallNegativeModulus" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallNoApkSignatureSchemeBlock" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallOriginalSucceeds" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallTargetSdk30WithV1Signers" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallTargetSdk30WithV1V2Signers" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallTwoSigners" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerMD5withRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA1withDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA1withECDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA1withRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA224withDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA224withECDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA224withRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA256withDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA256withECDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA256withRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA384withECDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA384withRSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA512withECDSA" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1OneSignerSHA512withRSA" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1SignatureOnlyDoesNotVerify" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2ContentDigestMismatch" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2IgnoresUnknownSignatureAlgorithms" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2MultipleSignersGetApkContentsSigners" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2OneSignerOneSignature" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsMismatchBetweenPublicKeyAndCertificate" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsMismatchBetweenSignaturesAndDigestsBlocks" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsSignerBlockWithNoCertificates" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsWhenMissingCode" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2SignatureDoesNotVerify" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2StrippedFails" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneBroken" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneWithoutSignatures" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneWithoutSupportedSignatures" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2UnknownPairIgnoredInApkSigningBlock" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV31UpdateAfterRotation" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3AppSignedWithOldKeyUpdatedLineageDeniesShUidCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3CommonSignerInLineageNoCaps" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3CommonSignerInLineageWithPermCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3FirstAppOnlySignedByNewKeyLastAppOldKey" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3HasMultiplePlatformSigners" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3HasMultipleSigners" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotation" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationGetApkContentsSigners" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationGetSignatures" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationGetSigningCertificates" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasDuplicateSigningCertificateHistory" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasSigningCertificate" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasSigningCertificateByUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasSigningCertificateByUidSha256" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasSigningCertificateSha256" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationMultipleHops" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationOlderSharedUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationOlderSharedUidNoCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationOlderSigPerm" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationOlderSigPermNoCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationSharedUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationSharedUidNoCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationSigPerm" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationSigPermNoCap" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationToAncestor" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationToAncestorWithRollback" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationWrongPor" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3MultipleAppsOneDeniesOldKeySharedUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3MultipleAppsOneUpdatedToDenyOldKeySharedUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3MultipleSignersInLineageGetSigningCertificateHistory" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3NoRotationSharedUid" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3NoRotationSigPerm" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3PorSignerMismatch" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SharedUidDeniedOnlyRotatedUpdateAllowed" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SigPermDoubleDefNewerNoCapFails" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SigPermDoubleDefNewerSucceeds" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SigPermDoubleDefOlderNoCapFails" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SigPermDoubleDefOlderSucceeds" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3SigPermDoubleDefSameNoCapSucceeds" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3TwoSharedUidAppsWithDivergedLineages" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3UpdateAfterRotation" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3WithRestoredCapabilityInSharedUserId" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3WithRevokedCapabilityInSharedUserId" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV41LegacyV4[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV41UpdateAfterRotation[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV41WrongBlockId[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV41WrongDigest[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4UpdateAfterRotation[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4With10MBytesAdditionalDataFails[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4With128BytesAdditionalDataSucceeds[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4With128BytesAdditionalDataSucceeds[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4With256BytesAdditionalDataFails[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithDifferentBlockSize[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithMerkleTreeBitsFlipped[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithNoMerkleTree[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2NoVeritySigner[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2NoVeritySigner[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2SignerDoesNotVerify[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2Signer[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2Signer[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2V3SignerDoesNotVerify[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2V3Signer[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2V3Signer[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2VeritySigner[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV2VeritySigner[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3NoVeritySigner[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3NoVeritySigner[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3SignerDoesNotVerify[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3Signer[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3Signer[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3VeritySigner[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithV3VeritySigner[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWithTrailingDataInMerkleTree[1]" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongBlockSize[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongRawRootHash[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongSignatureBytesSize[1]" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongSignatureBytes[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testKnownSignerPermCurrentSignerNotInResource" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testKnownSignerPermGrantedWhenCurrentSignerInResource" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testKnownSignerPermGrantedWhenSignerInLineageInResource" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testKnownSignerPermSignerInLineageMatchesStringConst" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testKnownSignerPermSignerInLineageMatchesStringResource" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testSharedKeyInSeparateLineageRetainsDeclaredCapabilities" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV1SchemeSignatureCertNotReencoded" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV2SchemeSignatureCertNotReencoded" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31BlockStrippedWithV3StrippingProtectionAttrSet" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31BlockWithMultipleSignersUsesCorrectSigner" />
     <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31RotationTargetModifiedReportedByV3" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31RotationTargetsDevRelease" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31SignersTargetPAnd100001PlatformUsesTargetPSigner" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31TargetLaterThanDevicePlatformUsesOriginalKey" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31TargetTPlatformUsesRotatedKey" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31UpdateV3ToFromV31Succeeds" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV2NonIncMismatchingKeyUpgradeFails[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV2NonIncMismatchingKeyUpgradeFails[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV2NonIncSameKeyUpgradeSucceeds[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV2NonIncSameKeyUpgradeSucceeds[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncMismatchedRotatedKeyUpgradeFails[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncMismatchedRotatedKeyUpgradeFails[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncMismatchingKeyUpgradeFails[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncMismatchingKeyUpgradeFails[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncRotatedKeyUpgradeSucceeds[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncRotatedKeyUpgradeSucceeds[1]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[0]" />
+    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV4IncToV3NonIncSameKeyUpgradeSucceeds[1]" />
 
     <!-- CtsAppTestCases -->
     <option name="compatibility:include-filter" value="CtsAppTestCases android.app.cts.ActivityManagerFgsBgStartTest#testFgsLocationPendingIntent" />
@@ -460,87 +668,6 @@
     <option name="compatibility:include-filter" value="CtsBugreportTestCases android.bugreport.cts.BugreportManagerTest#testRemoteBugreport" />
     <option name="compatibility:include-filter" value="CtsBugreportTestCases android.bugreport.cts.BugreportManagerTest#testWearBugreport" />
     <option name="compatibility:include-filter" value="CtsBugreportTestCases android.bugreport.cts.BugreportManagerTest#testWifiBugreport" />
-
-    <!-- CtsCameraTestCases -->
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.camera.cts.HeifWriterTest#testHeif[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testChainedOperation[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testCreateSessions[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraDeviceTest#testSessionParametersStateLeak[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraExtensionSessionTest#testConcurrentSessions[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testAutoframing[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testDigitalZoom[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testExtendedSceneModes[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureRequestTest#testFocusDistanceControl[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testCameraCaptureResultAllKeys[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testPartialResult[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.CaptureResultTest#testResultTimestamps[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testDngRenderingByBitmapFactor[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.DngCreatorTest#testRaw16JpegConsistency[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassExtensionCharacteristics[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testLandscapeToPortraitOverride[0]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testSPerfClassJpegSizes[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testAllOutputYUVResolutions[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testDynamicDepth[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testFlexibleYuv[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testJpegR[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testLongProcessingRepeatingFlexibleYuv[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.ImageReaderTest#testP010[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testActivePhysicalId[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.LogicalCameraDeviceTest#testBasicPhysicalRequests[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeCameraDeviceTest#testCameraDevicePrepareSurface[0]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.NativeImageReaderTest#testJpeg[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testMultipleCapture" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testZoomSettingsOverrideLatencyInFrom1x" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testZoomSettingsOverrideLatencyInWithUltraWide" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.PerformanceTest#testZoomSettingsOverrideLatencyOutTo1x" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RecordingTest#testBasic10BitRecordingAV1[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.RobustnessTest#testBasicTriggerSequence[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.SimpleObjectsTest#colorSpaceProfilesTest" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StaticMetadataTest#testCapabilities[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAePrecaptureTriggerCancelJpegCapture[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testAllocateBitmap[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testJpegExif[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testTakePictureZsl[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.StillCaptureTest#testTakePicture[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.camera2.cts.SurfaceViewExtensionPreviewTest#testExtensionPreview[1]" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraGLTest#testSetPreviewTextureBothCallbacks" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraGLTest#testSetPreviewTexturePreviewCallback" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraGLTest#testSetPreviewTextureTextureCallback" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#test3ALockInteraction" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testAutoExposureLock" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testAutoWhiteBalanceLock" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testCameraExternalConnected" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testCancelAutofocus" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testDisplayOrientation" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testEnableShutterSound" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFaceDetection" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testFocusAreas" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testGetParameterDuringFocus" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testImmediateZoom" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testInvalidParameters" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegCallbackStartPreview" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegExif" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testJpegThumbnailSize" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testLockUnlock" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testMeteringAreas" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testMultipleCameras" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testMustPlayShutterSound" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testParameters" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewCallbackWithBuffer" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewCallbackWithPicture" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewFormats" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testPreviewFpsRange" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testRecordingHint" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSceneMode" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSetOneShotPreviewCallback" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSetPreviewDisplay" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testSmoothZoom" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testStabilizationOneShotPreviewCallback" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.CameraTest#testTakePicture" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.cts.LegacyCameraPerformanceTest#testLegacyApiPerformance" />
-    <option name="compatibility:include-filter" value="CtsCameraTestCases android.hardware.multiprocess.camera.cts.CameraEvictionTest#testCamera2AccessCallbackInSplitMode" />
 
     <!-- CtsCompanionDeviceManagerCoreTestCases -->
     <option name="compatibility:include-filter" value="CtsCompanionDeviceManagerCoreTestCases android.companion.cts.core.DeviceEventTest#test_classic_bt_device_event" />
@@ -1394,6 +1521,7 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#setUserProvisioningState_withRequiredPermission_doesNotThrowSecurityException" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#isActivePasswordSufficient_passwordDoesNotSatisfyRestriction_false[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#isActivePasswordSufficient_passwordSatisfiesRestriction_true[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner]" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ResetPasswordWithTokenTest#setResetPasswordToken_notPermitted_throwsSecurityException[IncludeRunOnFinancedDeviceOwnerUser]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.RingtoneTest#getActualDefaultRingtoneUri_matchesSettingsProviderRingtone[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner][ALARM]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.RingtoneTest#getActualDefaultRingtoneUri_syncParentSoundsIsTrue_returnsDefaultRingtone[IncludeRunOnProfileOwnerProfileWithNoDeviceOwner][ALARM]" />
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.SafeBootTest#setUserRestriction_disallowSafeBoot_cannotSet_throwsException[IncludeRunOnOrganizationOwnedProfileOwner]" />
@@ -2075,6 +2203,7 @@
     <!-- CtsMediaBetterTogetherTestCases -->
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaRouter2Test#testGetRoutes[WORK_PROFILE]" />
     <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionManagerTest#testOnMediaKeyEventDispatchedListener" />
+    <option name="compatibility:include-filter" value="CtsMediaBetterTogetherTestCases android.media.bettertogether.cts.MediaSessionTest#testSetMediaButtonReceiver_service" />
 
     <!-- CtsMediaCUJSmallTest -->
     <option name="compatibility:include-filter" value="CtsMediaCUJSmallTest android.media.cujsmalltest.cts.CtsMediaShortFormPlaybackTest#testVideoPlayback[2_Hevc_480p_5sec_OrientationTest]" />
@@ -2479,8 +2608,6 @@
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#confirmInstantInstallationFails" />
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#sessionWithImmutablePendingIntent" />
     <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.SessionTest#withPrivilegedPermissions_canAccessResolvedPath" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership" />
-    <option name="compatibility:include-filter" value="CtsPackageInstallTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified" />
 
     <!-- CtsPackageManagerHostTestCases -->
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ApplicationVisibilityTest#testApplicationListCrossUserGrant" />
@@ -2500,11 +2627,9 @@
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testDisableSystemApp" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testDisableUpdatedSystemApp" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppPriorities" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppUpgradePrioritiesPreservedOnReboot" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testPrivilegedAppUpgradeRestricted" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testSystemAppPriorities" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testUninstallDisabledUpdatedSystemApp_remainingDisabled" />
-    <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.PrivilegedUpdateTests#testUpdatedSystemAppPreservedOnReboot" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalHiddenSettingsKeysNotReadableWithoutAnnotation" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalHiddenSettingsKeysReadableWhenTestOnly" />
     <option name="compatibility:include-filter" value="CtsPackageManagerHostTestCases android.appsecurity.cts.ReadableSettingsFieldsTest#testGlobalNonHiddenSettingsKeysAreReadable" />
@@ -3002,6 +3127,10 @@
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#surfaceViewSurfaceLifecycleFollowsAttachmentWithOverlaps" />
     <option name="compatibility:include-filter" value="CtsUiRenderingTestCases android.uirendering.cts.testclasses.SurfaceViewTests#testMovingWhiteSurfaceView" />
 
+    <!-- CtsUpdateOwnershipEnforcementTestCases -->
+    <option name="compatibility:include-filter" value="CtsUpdateOwnershipEnforcementTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership" />
+    <option name="compatibility:include-filter" value="CtsUpdateOwnershipEnforcementTestCases android.packageinstaller.install.cts.UpdateOwnershipEnforcementTest#getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified" />
+
     <!-- CtsUwbTestCases -->
     <option name="compatibility:include-filter" value="CtsUwbTestCases android.uwb.cts.UwbManagerTest#testFiraRangingSessionPauseResume" />
 
@@ -3398,6 +3527,7 @@
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testRequestImageRef" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetNetworkAvailable" />
     <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewTest#testSetSafeBrowsingAllowlistWithValidList" />
+    <option name="compatibility:include-filter" value="CtsWebkitTestCases android.webkit.cts.WebViewZoomTest#testZoomByNonPowerOfTwoIncrements" />
 
     <!-- CtsWidgetTestCases -->
     <option name="compatibility:include-filter" value="CtsWidgetTestCases android.widget.cts.AbsListViewTest#testAccessTranscriptMode" />

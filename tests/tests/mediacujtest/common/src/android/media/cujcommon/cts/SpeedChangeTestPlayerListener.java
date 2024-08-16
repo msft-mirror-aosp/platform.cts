@@ -48,7 +48,7 @@ public class SpeedChangeTestPlayerListener extends PlayerListener {
 
   @Override
   public void onEventsPlaybackStateChanged(@NonNull Player player) {
-    if (player.getPlaybackState() == Player.STATE_READY) {
+    if (mExpectedTotalTime == 0 && player.getPlaybackState() == Player.STATE_READY) {
       // At the first media transition player is not ready. So, add duration of
       // first clip when player is ready
       mExpectedTotalTime += player.getDuration();

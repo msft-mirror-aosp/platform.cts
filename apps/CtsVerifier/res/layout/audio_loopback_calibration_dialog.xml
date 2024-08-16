@@ -14,81 +14,86 @@
      limitations under the License.
 -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
-
-    <!-- devices -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/audio_general_Input"/>
-
-    <Spinner
-        android:id="@+id/input_devices_spinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/audio_general_Output"/>
-
-    <Spinner
-        android:id="@+id/output_devices_spinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-    <!-- Player Controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginStart="10dp"
-        style="?android:attr/buttonBarStyle">
-        <Button
-            android:text="@string/audio_general_left"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/audio_calibration_left"
-            style="?android:attr/buttonBarButtonStyle"/>
-        <Button
-            android:text="@string/audio_general_right"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/audio_calibration_right"
-            style="?android:attr/buttonBarButtonStyle"/>
-        <Button
-            android:text="@string/audio_general_stop"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/audio_calibration_stop"
-            style="?android:attr/buttonBarButtonStyle"/>
-        <Button
-            android:text="@string/audio_general_done"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/audio_calibration_done"
-            style="?android:attr/buttonBarButtonStyle"/>
-    </LinearLayout>
-
-    <com.android.cts.verifier.audio.audiolib.WaveScopeView
-        android:id="@+id/uap_recordWaveView"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"/>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fitsSystemWindows="@bool/fit_system_windows"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    style="@style/RootLayoutPadding">
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="fill_parent"
+        android:fitsSystemWindows="@bool/fit_system_windows"
         android:orientation="vertical"
-        android:layout_marginTop="5dp">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
 
-        <WebView
-            android:id="@+id/audio_calibration_info"
+        <!-- devices -->
+        <TextView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"/>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:text="@string/audio_general_Input"/>
 
-</LinearLayout>
+        <Spinner
+            android:id="@+id/input_devices_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/audio_general_Output"/>
+
+        <Spinner
+            android:id="@+id/output_devices_spinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Player Controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginStart="10dp"
+            style="?android:attr/buttonBarStyle"
+            android:id="@+id/audio_calibration_process">
+            <Button
+                android:text="@string/audio_general_left"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_calibration_left"
+                style="?android:attr/buttonBarButtonStyle"/>
+            <Button
+                android:text="@string/audio_general_right"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_calibration_right"
+                style="?android:attr/buttonBarButtonStyle"/>
+            <Button
+                android:text="@string/audio_general_stop"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_calibration_stop"
+                style="?android:attr/buttonBarButtonStyle"/>
+            <Button
+                android:text="@string/audio_general_done"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:id="@+id/audio_calibration_done"
+                style="?android:attr/buttonBarButtonStyle"/>
+        </LinearLayout>
+
+        <com.android.cts.verifier.audio.audiolib.WaveScopeView
+            android:id="@+id/uap_recordWaveView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:orientation="vertical"
+            android:layout_marginTop="5dp"
+            android:id="@+id/audio_calibration_info">
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

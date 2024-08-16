@@ -21,7 +21,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import android.app.Activity;
 import android.app.Instrumentation;
+import android.content.Intent;
 import android.hardware.input.cts.InputCallback;
 import android.hardware.input.cts.InputCtsActivity;
 import android.os.Bundle;
@@ -84,13 +86,15 @@ public abstract class InputTestCase {
         mInputListener = new InputListener();
     }
 
-    private ActivityScenario<InputCtsActivity> mActivityRule;
+    private ActivityScenario<Activity> mActivityRule;
 
     @Before
     public void setUp() throws Exception {
         onBeforeLaunchActivity();
-        mActivityRule = ActivityScenario.launch(InputCtsActivity.class, getActivityOptions())
-                .onActivity(activity -> mTestActivity = activity);
+        mActivityRule = ActivityScenario.launch(
+                new Intent(mInstrumentation.getContext(), InputCtsActivity.class),
+                getActivityOptions()
+        ).onActivity(activity -> mTestActivity = (InputCtsActivity) activity);
         mTestActivity.clearUnhandleKeyCode();
         mTestActivity.setInputCallback(mInputListener);
         mDecorView = mTestActivity.getWindow().getDecorView();
@@ -228,7 +232,7 @@ public abstract class InputTestCase {
      */
     private void assertSource(String testCase, InputEvent expected, InputEvent actual) {
         assertNotEquals(testCase + " (source)", InputDevice.SOURCE_CLASS_NONE, actual.getSource());
-        assertTrue(testCase + " (source)", expected.isFromSource(actual.getSource()));
+        assertTrue(testCase + " (source)", actual.isFromSource(expected.getSource()));
     }
 
     /**

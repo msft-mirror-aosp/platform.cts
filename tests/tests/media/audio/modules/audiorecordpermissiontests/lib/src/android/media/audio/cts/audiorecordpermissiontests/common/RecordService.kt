@@ -48,33 +48,26 @@ open class RecordService : Service() {
     var mFuture : Future<Any>? = null
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val shouldFg = intent.getBooleanExtra(EXTRA_IS_FOREGROUND, false)
-        Log.i(TAG, "Receive onStartCommand action: ${intent.getAction()}, fg: ${shouldFg}" + intent)
+        Log.i(TAG, "Receive onStartCommand action: ${intent.getAction()}")
         when (intent.getAction()) {
             PREFIX + ACTION_START_RECORD -> {
                 if (mIsRecording.compareAndSet(false, true)) {
-                    try {
-                        if (shouldFg) {
-                            Log.i(TAG, "Going foreground with capabilities " + getCapabilities())
-                            startForeground(1, buildNotification(), getCapabilities())
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "exception", e)
-                        throw e
-                    }
                     mFuture = mExecutor.submit(::record, Object())
                 }
             }
-            PREFIX + ACTION_CLEANUP -> {
-                cleanup()
+            PREFIX + ACTION_START_FOREGROUND -> {
+                Log.i(TAG, "Going foreground with capabilities " + getCapabilities())
+                startForeground(1, buildNotification(), getCapabilities())
             }
+            PREFIX + ACTION_STOP_FOREGROUND -> stopForeground(STOP_FOREGROUND_REMOVE)
+            PREFIX + ACTION_TEARDOWN -> teardown()
         }
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         Log.i(TAG, "onDestroy")
-        cleanup()
+        teardown()
         mExecutor.shutdown()
     }
 
@@ -94,7 +87,7 @@ open class RecordService : Service() {
     /**
      * If recording, stop recording, send response intent, and stop the service
      */
-    private fun cleanup() {
+    private fun teardown() {
         if (mIsRecording.compareAndSet(true, false)) {
             mFuture!!.get()
             mFuture = null
@@ -127,31 +120,36 @@ open class RecordService : Service() {
 
         audioRecord.startRecording()
         var isSilenced = true
+        var isStarted = false
         val data = ShortArray(bufferSizeInBytes / 2)
+
+        val WARMUP = 800 // 25ms
+        var warmupFrames = 0;
+        while (warmupFrames < WARMUP) {
+            warmupFrames += audioRecord.read(data, 0, data.size).also {
+                if (it < 0) throw IllegalStateException("AudioRecord read invalid $it")
+            }
+        }
 
         while (mIsRecording.get()) {
             val result = audioRecord.read(data, 0, data.size)
             if (result < 0) {
-                throw IllegalStateException("AudioRecord read invalid result: " + result)
+                throw IllegalStateException("AudioRecord read invalid result: $result")
             } else if (result == 0) {
                 continue
             }
-            val power = data.take(result).map {abs(it.toInt())}.sum()
-            if (isSilenced && power != 0) {
-                mExecutor.execute {
-                    Log.i(TAG, "BEGAN_RECEIVE_AUDIO")
-                    sendBroadcast(Intent(PREFIX + ACTION_BEGAN_RECEIVE_AUDIO)
-                            .setPackage(TARGET_PACKAGE))
+            val newIsSilenced = data.take(result).map {abs(it.toInt())}.sum() == 0
+            if (!isStarted || isSilenced != newIsSilenced) {
+                (if (newIsSilenced) ACTION_BEGAN_RECEIVE_SILENCE else ACTION_BEGAN_RECEIVE_AUDIO)
+                        .let {
+                    mExecutor.execute {
+                        Log.i(TAG, it)
+                        sendBroadcast(Intent(PREFIX + it).setPackage(TARGET_PACKAGE))
+                    }
                 }
-                isSilenced = false
-            } else if (!isSilenced && power == 0) {
-                mExecutor.execute {
-                    Log.i(TAG, "BEGAN_RECEIVE_SILENCE")
-                    sendBroadcast(Intent(PREFIX + ACTION_BEGAN_RECEIVE_SILENCE)
-                            .setPackage(TARGET_PACKAGE))
-                }
-                isSilenced = true
             }
+            isSilenced = newIsSilenced
+            isStarted = true
         }
         audioRecord.stop()
         audioRecord.release()

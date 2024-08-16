@@ -45,9 +45,12 @@ import com.android.os.StatsLog;
 import com.android.os.adpf.ADPFSystemComponentInfo;
 import com.android.os.adpf.AdpfExtensionAtoms;
 import com.android.os.adpf.AdpfHintSessionTidCleanup;
+import com.android.os.adpf.AdpfSessionSnapshot;
 import com.android.os.adpf.AdpfSessionTag;
+import com.android.os.adpf.FmqStatus;
 import com.android.os.adpf.PerformanceHintSessionReported;
 import com.android.tradefed.build.IBuildInfo;
+import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.result.TestDescription;
 import com.android.tradefed.result.TestResult;
 import com.android.tradefed.result.TestRunResult;
@@ -78,8 +81,14 @@ import java.util.List;
 public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
     private static final String DEVICE_TEST_CLASS = ".PerformanceHintManagerTests";
-    private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String ADPF_ATOM_APP_PKG = "android.adpf.atom.app";
+    private static final String ADPF_ATOM_APP2_PKG = "android.adpf.atom.app2";
     private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
+    private static final String ADPF_ATOM_APP2_APK = "CtsStatsdAdpfApp2.apk";
+
+    private static final int SESSION_TAG_APP = AdpfSessionTag.APP_VALUE;
+    private static final int SESSION_TAG_GAME = AdpfSessionTag.GAME_VALUE;
+    private static final int SESSION_TAG_HWUI = AdpfSessionTag.HWUI_VALUE;
 
     private IBuildInfo mCtsBuild;
 
@@ -89,11 +98,13 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
 
     @Before
     public void setUp() throws Exception {
+        checkSupportedHardware();
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP_APK, ADPF_ATOM_APP_PKG, mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP2_APK, ADPF_ATOM_APP2_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
@@ -102,6 +113,14 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
+        DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP_PKG);
+        DeviceUtils.uninstallTestApp(getDevice(), ADPF_ATOM_APP2_PKG);
+    }
+
+    private void checkSupportedHardware() throws DeviceNotAvailableException {
+        String features = getDevice().executeShellCommand("pm list features");
+        assumeTrue(!features.contains("android.hardware.type.television")
+                && !features.contains("android.hardware.type.watch"));
     }
 
     @Override
@@ -115,7 +134,6 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         final int androidSApiLevel = 31; // android.os.Build.VERSION_CODES.S
         final int firstApiLevel = Integer.parseInt(
                 DeviceUtils.getProperty(getDevice(), "ro.product.first_api_level"));
-        final int sessionTagApp = AdpfSessionTag.APP_VALUE;
         final long testTargetDuration = 12345678L;
         final String testMethod = "testCreateHintSession";
         final TestDescription desc = TestDescription.fromString(
@@ -151,7 +169,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
                 assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
                 assertThat(a0.getSessionId()).isNotNull();
                 assertThat(a0.getTidCount()).isEqualTo(1);
-                assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagApp);
+                assertThat(a0.getSessionTag().getNumber()).isEqualTo(SESSION_TAG_APP);
             }
         }
         if (!found) {
@@ -215,6 +233,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
                 DeviceUtils.getProperty(getDevice(), "debug.sf.enable_adpf_cpu_hint"));
         final boolean isHwuiHintEnabled = Boolean.parseBoolean(
                 DeviceUtils.getProperty(getDevice(), "debug.hwui.use_hint_manager"));
+        final int fmqOtherStatus = FmqStatus.OTHER_STATUS_VALUE;
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.ADPF_SYSTEM_COMPONENT_INFO_FIELD_NUMBER);
         AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
@@ -225,6 +244,7 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         ADPFSystemComponentInfo a0 = data.get(0).getAdpfSystemComponentInfo();
         assertThat(a0.getSurfaceflingerCpuHintEnabled()).isEqualTo(isSurfaceFlingerCpuHintEnabled);
         assertThat(a0.getHwuiHintEnabled()).isEqualTo(isHwuiHintEnabled);
+        assertThat(a0.getFmqSupported().getNumber()).isNotEqualTo(fmqOtherStatus);
     }
 
     @Test
@@ -277,5 +297,178 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
         if (!found) {
             fail("Failed to find an event data belonging to the test process in data: " + data);
         }
+    }
+
+    private class ExpectedSnapshotResults {
+        public long testTargetDuration;
+        public boolean shouldFindAppSession;
+        public boolean shouldFindGameSession;
+        public boolean shouldFindHwuiSession;
+        public int minTidCount;
+        public int minConcurrentSession;
+        public int minConcurrentAppSession;
+        public int minPowerEfficientSession;
+        ExpectedSnapshotResults(long testTargetDuration, boolean shouldFindAppSession,
+                boolean shouldFindGameSession, boolean shouldFindHwuiSession,
+                int minTidCount, int minConcurrentSession,
+                int minConcurrentAppSession, int minPowerEfficientSession) {
+            this.testTargetDuration = testTargetDuration;
+            this.shouldFindAppSession = shouldFindAppSession;
+            this.shouldFindGameSession = shouldFindGameSession;
+            this.shouldFindHwuiSession = shouldFindHwuiSession;
+            this.minTidCount = minTidCount;
+            this.minConcurrentSession = minConcurrentSession;
+            this.minConcurrentAppSession = minConcurrentAppSession;
+            this.minPowerEfficientSession = minPowerEfficientSession;
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ADPF_SESSION_TAG)
+    public void testAdpfSessionSnapshotTwoAppsOnThenRestore() throws Exception {
+        final String testMethod = "testAdpfSessionSnapshotTwoAppsOn";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
+        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AdpfExtensionAtoms.ADPF_SESSION_SNAPSHOT_FIELD_NUMBER);
+        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
+                DEVICE_TEST_CLASS, testMethod);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        // Trigger atom pull
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
+
+        ExpectedSnapshotResults expectedSnapshotResults =
+                new ExpectedSnapshotResults(12345678L,
+                        /* shouldFindAppSession */ true,
+                        /* shouldFindGameSession */true,
+                        /* shouldFindHwuiSession */ true,
+                        /* minTidCount */ 1,
+                        /* minConcurrentSession */ 1,
+                        /* minConcurrentAppSession */ 3,
+                        /* minPowerEfficientSession */ 0);
+
+        checkPulledSessionSnapshots(expectedSnapshotResults);
+
+        // After the first pull here we test if the snapshots are restored correctly
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        // Trigger atom pull one more
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        checkPulledSessionSnapshots(expectedSnapshotResults);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ADPF_SESSION_TAG)
+    public void testAdpfSessionSnapshotTwoAppsOnKillOneThenRestore() throws Exception {
+        final String testMethod = "testAdpfSessionSnapshotTwoAppsOnKillOne";
+        final TestDescription desc = TestDescription.fromString(
+                DEVICE_TEST_PKG + DEVICE_TEST_CLASS + "#" + testMethod);
+        ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
+                AdpfExtensionAtoms.ADPF_SESSION_SNAPSHOT_FIELD_NUMBER);
+        TestRunResult testRunResult = DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(),
+                DEVICE_TEST_CLASS, testMethod);
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        // Trigger atom pull
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+
+        TestResult result = testRunResult.getTestResults().get(desc);
+        assertNotNull(result);
+        TestStatus status = result.getStatus();
+        assumeFalse(status == TestStatus.ASSUMPTION_FAILURE);
+        assertThat(status).isEqualTo(TestStatus.PASSED);
+
+        ExpectedSnapshotResults expectedSnapshotResults =
+                new ExpectedSnapshotResults(12345678L,
+                        /* shouldFindAppSession */ true,
+                        /* shouldFindGameSession */true,
+                        /* shouldFindHwuiSession */ true,
+                        /* minTidCount */ 1,
+                        /* minConcurrentSession */ 1,
+                        /* minConcurrentAppSession */ 3,
+                        /* minPowerEfficientSession */ 0);
+
+        // Here even the app has been killed, snapshot should still record that the number of
+        // maximum concurrent session is greater than 0, precisely 1.
+        checkPulledSessionSnapshots(expectedSnapshotResults);
+
+        // Here we validate that the killed app is not restored back to the snapshot
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+        // Trigger atom pull one more
+        AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
+        RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
+
+        // update expected snapshot results that we don't expect to see an APP session.
+        expectedSnapshotResults.shouldFindAppSession = false;
+
+        checkPulledSessionSnapshots(expectedSnapshotResults);
+    }
+
+    private void checkPulledSessionSnapshots(ExpectedSnapshotResults expectedSnapshotResults)
+            throws Exception {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        AdpfExtensionAtoms.registerAllExtensions(registry);
+
+        List<AtomsProto.Atom> data = ReportUtils.getGaugeMetricAtoms(getDevice(),
+                registry, false);
+        assertFalse(data.isEmpty());
+        boolean foundApp = false;
+        boolean foundGame = false;
+        boolean foundHwui = false;
+
+        for (AtomsProto.Atom atom : data) {
+            if (atom.hasExtension(AdpfExtensionAtoms.adpfSessionSnapshot)) {
+                AdpfSessionSnapshot a0 = atom.getExtension(
+                        AdpfExtensionAtoms.adpfSessionSnapshot);
+                int sessionTag = a0.getSessionTag().getNumber();
+                if (a0.getTargetDurationNsList()
+                        .contains(expectedSnapshotResults.testTargetDuration)) {
+                    if (sessionTag == SESSION_TAG_APP) {
+                        foundApp = true;
+                        assertThat(a0.getMaxConcurrentSession())
+                                .isAtLeast(expectedSnapshotResults.minConcurrentAppSession);
+                    } else if (sessionTag == SESSION_TAG_GAME) {
+                        foundGame = true;
+                    }
+                    assertThat(a0.getUid()).isGreaterThan(10000); // Not a system service UID.
+                    checkSnapshotCommonData(a0, expectedSnapshotResults);
+                } else if (sessionTag == SESSION_TAG_HWUI) {
+                    foundHwui = true;
+                    assertNotNull(a0.getTargetDurationNsList());
+                    checkSnapshotCommonData(a0, expectedSnapshotResults);
+                }
+            }
+        }
+
+        final boolean isHwuiHintEnabled = Boolean.parseBoolean(
+                DeviceUtils.getProperty(getDevice(), "debug.hwui.use_hint_manager"));
+        if (foundApp != expectedSnapshotResults.shouldFindAppSession) {
+            fail("Failed to find an APP session snapshot in: " + data);
+        }
+        if (foundGame != expectedSnapshotResults.shouldFindGameSession) {
+            fail("Failed to find a Game session snapshot in: " + data);
+        }
+        if ((foundHwui != expectedSnapshotResults.shouldFindHwuiSession) && isHwuiHintEnabled) {
+            fail("Failed to find a HWUI session snapshot in: " + data);
+        }
+    }
+
+    private void checkSnapshotCommonData(AdpfSessionSnapshot snapshot,
+            ExpectedSnapshotResults expectedSnapshotResults) {
+        assertThat(snapshot.getMaxConcurrentSession())
+                .isAtLeast(expectedSnapshotResults.minConcurrentSession);
+        assertThat(snapshot.getMaxTidCount()).isAtLeast(expectedSnapshotResults.minTidCount);
+        assertThat(snapshot.getNumPowerEfficientSession())
+                .isAtLeast(expectedSnapshotResults.minPowerEfficientSession);
     }
 }

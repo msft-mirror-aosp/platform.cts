@@ -312,6 +312,8 @@ public class CipherTest {
 
         public DeviceLockSession() throws Exception {
             setUp();
+            assumeRunNotOnVisibleBackgroundNonProfileUser(
+                    "Keyguard not supported for visible background users");
             mLockCredential = new LockScreenSession(mInstrumentation, mWmState);
             mLockCredential.setLockCredential();
         }

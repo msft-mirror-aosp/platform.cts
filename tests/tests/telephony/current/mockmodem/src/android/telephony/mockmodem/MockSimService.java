@@ -19,6 +19,7 @@ package android.telephony.mockmodem;
 import android.content.Context;
 import android.hardware.radio.sim.AppStatus;
 import android.hardware.radio.sim.PinState;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Xml;
 
@@ -26,7 +27,11 @@ import org.xmlpull.v1.XmlPullParser;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class MockSimService {
     /* Support SIM card identify */
@@ -39,6 +44,7 @@ public class MockSimService {
     /* Type of SIM IO command */
     public static final int COMMAND_READ_BINARY = 0xb0;
     public static final int COMMAND_GET_RESPONSE = 0xc0;
+    public static final int COMMAND_SELECT = 0xa4;
 
     /* EF Id definition */
     public static final int EF_ICCID = 0x2FE2;
@@ -58,6 +64,11 @@ public class MockSimService {
     private static final String MOCK_EF_TAG = "EF";
     private static final String MOCK_EF_DIR_TAG = "EFDIR";
     private static final String MOCK_ADF_TAG = "ADF";
+    // ADF used for SIM-IO through logical channel (iccOpenLogicalChannel) instead of iccIoForApp
+    // with which MOCK_ADF_TAG is used
+    private static final String MOCK_ADFLC_TAG = "ADF-LC";
+    // Each tag represent a command-respond APDU IO
+    private static final String MOCK_IO_TAG = "IO";
 
     /* Support SIM slot */
     private static final int MOCK_SIM_SLOT_1 = 0;
@@ -124,6 +135,35 @@ public class MockSimService {
 
     private AppStatus[] mSimApp;
     private ArrayList<SimAppData> mSimAppList;
+
+    // Key: AID Value: list of SIM IO (command-respond) data
+    private final Map<String, List<SimIoData>> mSimIoDataMap = new HashMap<>();
+
+    // TODO: switch to @AutoValue?
+    public static final class SimIoData {
+        public final String mFileId;
+        public final String mCommand;
+        public final String mSw1;
+        public final String mSw2;
+        public final String mResponse;
+
+        public SimIoData(String fileid, String command, String sw1, String sw2, String response) {
+            mFileId = fileid;
+            mCommand = command;
+            mSw1 = sw1;
+            mSw2 = sw2;
+            mResponse = response;
+        }
+
+        public String toString() {
+            return "SimIoData: "
+                    + "fileid=" + mFileId
+                    + ", cmd=" + mCommand
+                    + ", sw1=" + mSw1
+                    + ", sw2=" + mSw2
+                    + ", response=" + mResponse;
+        }
+    }
 
     public class SimAppData {
         private static final int EF_INFO_DATA = 0;
@@ -631,10 +671,12 @@ public class MockSimService {
             boolean mocksim_validation = false;
             boolean mocksim_pf_validatiion = false;
             boolean mocksim_mf_validation = false;
+            boolean mocksim_adflc_validation = false;
             int appidx = 0;
             int fd_lock = 0;
             int sc_lock = 0;
             String adf_aid = "";
+            String adflc_aid = "";
 
             input = mContext.getAssets().open(file);
             parser.setInput(input, null);
@@ -867,6 +909,31 @@ public class MockSimService {
                                     }
                                     break;
                             }
+                        } else if (mocksim_validation && MOCK_ADFLC_TAG.equals(parser.getName())) {
+                            String aid = parser.getAttributeValue(0);
+                            String name = parser.getAttributeValue(1);
+                            Log.d(mTag,
+                                    "Found " + MOCK_ADFLC_TAG + ", aid=" + aid + ", name=" + name);
+                            if (!TextUtils.isEmpty(aid)) {
+                                adflc_aid = aid;
+                                synchronized (mSimIoDataMap) {
+                                    mSimIoDataMap.put(aid, new ArrayList<>());
+                                }
+                            }
+                            mocksim_adflc_validation = true;
+                        } else if (mocksim_adflc_validation
+                                && MOCK_IO_TAG.equals(parser.getName())) {
+                            String fileid = parser.getAttributeValue(0);
+                            String command = parser.getAttributeValue(1);
+                            String sw1 = parser.getAttributeValue(2);
+                            String sw2 = parser.getAttributeValue(3);
+                            String response = parser.nextText();
+                            synchronized (mSimIoDataMap) {
+                                mSimIoDataMap.get(adflc_aid).add(
+                                        new SimIoData(fileid, command, sw1, sw2, response));
+                            }
+                            Log.d(mTag, "Found " + MOCK_IO_TAG + ": fileid=" + fileid + " command="
+                                    + command + " adflc_aid=" + adflc_aid);
                         }
                         break;
                     case XmlPullParser.END_TAG:
@@ -876,6 +943,9 @@ public class MockSimService {
                             mocksim_mf_validation = false;
                         } else if (mocksim_validation && MOCK_ADF_TAG.equals(parser.getName())) {
                             adf_aid = "";
+                        } else if (mocksim_validation && MOCK_ADFLC_TAG.equals(parser.getName())) {
+                            mocksim_adflc_validation = false;
+                            adflc_aid = "";
                         }
                         break;
                 }
@@ -1202,5 +1272,11 @@ public class MockSimService {
             }
         }
         return imsi;
+    }
+
+    public Map<String, List<SimIoData>> getSimIoMap() {
+        synchronized (mSimIoDataMap) {
+            return Collections.unmodifiableMap(mSimIoDataMap);
+        }
     }
 }

@@ -84,6 +84,8 @@ import android.util.Log
 import android.util.Size
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
@@ -95,7 +97,9 @@ import org.junit.Assert.fail
 import org.junit.Assume.assumeNoException
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
@@ -121,6 +125,14 @@ private external fun nativeStartStopAudioRecord(
 
 @AppModeFull(reason = "Test relies on other app to connect to. Instant apps can't see other apps")
 class AppOpsLoggingTest {
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
+
     private val context = InstrumentationRegistry.getInstrumentation().targetContext as Context
     private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
@@ -241,6 +253,7 @@ class AppOpsLoggingTest {
         assertThat(selfNoted.map { it.first.attributionTag }).containsExactly(TEST_ATTRIBUTION_TAG)
     }
 
+    @Ignore("b/358684729")
     @Test
     fun nativeSelfNoteAndCheckLog() {
         nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage)
@@ -258,6 +271,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun nativeSelfNoteWithAttributionAndMsgAndCheckLog() {
         nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage,
@@ -352,6 +366,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteSyncOpNativeAndCheckLog() {
         rethrowThrowableFrom {
@@ -374,6 +389,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteSyncOpOnewayNative() {
         rethrowThrowableFrom {
@@ -423,6 +439,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteAsyncOpNativelyAndCheckCustomMessage() {
         rethrowThrowableFrom {
@@ -431,6 +448,7 @@ class AppOpsLoggingTest {
         }
     }
 
+    @Ignore("b/358684729")
     @Test
     fun noteAsyncOpNativeAndCheckLog() {
         rethrowThrowableFrom {
@@ -458,8 +476,11 @@ class AppOpsLoggingTest {
 
     /**
      * Realistic end-to-end test for getting bluetooth scan results
+     * (b/347614488 - BT scan does not support visible background users at the moment,
+     * so skipping this test for secondary_user_on_secondary_display)
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     fun getBTScanResults() {
         assumeTrue("Device does not support bluetooth",
                 context.packageManager.hasSystemFeature(FEATURE_BLUETOOTH))
