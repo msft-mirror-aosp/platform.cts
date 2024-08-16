@@ -27,7 +27,6 @@ import static android.server.wm.app.Components.ENTRY_POINT_ALIAS_ACTIVITY;
 import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
 import static android.server.wm.app.Components.SINGLE_TASK_ACTIVITY;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +48,8 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
 
     @Test
     public void testDashD() {
-        executeShellCommand("am start -n " + getActivityName(TEST_ACTIVITY) + " -D");
+        executeShellCommand("am start --user " + mUserId + " -n " + getActivityName(TEST_ACTIVITY)
+                + " -D");
 
         mWmState.waitForDebuggerWindowVisible(TEST_ACTIVITY);
         WindowManagerState.Activity activity = mWmState.getActivity(TEST_ACTIVITY);
@@ -80,9 +80,9 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
         // Start LaunchingActivity again and finish TestActivity
         final int flags =
                 FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP | FLAG_ACTIVITY_SINGLE_TOP;
-        executeShellCommand("am start -W -f " + flags + " -n " + getActivityName(LAUNCHING_ACTIVITY)
-                + " --display " + DEFAULT_DISPLAY);
-        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, DEFAULT_DISPLAY,
+        executeShellCommand("am start --user " + mUserId + " -W -f " + flags + " -n "
+                + getActivityName(LAUNCHING_ACTIVITY));
+        waitAndAssertTopResumedActivity(LAUNCHING_ACTIVITY, getMainDisplayId(),
                 "Activity must be launched.");
     }
 
@@ -101,16 +101,16 @@ public class AmStartOptionsTests extends ActivityManagerTestBase {
 
     private void startActivityAndVerifyResult(final ComponentName entryActivity,
             final ComponentName actualActivity, boolean shouldStart) {
-        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
 
         // Pass in different data only when cold starting. This is to make the intent
         // different in subsequent warm/hot launches, so that the entrypoint alias
         // activity is always started, but the actual activity is not started again
         // because of the NEW_TASK and singleTask flags.
-        executeShellCommand("am start -n " + getActivityName(entryActivity) + " -W --display "
-                + DEFAULT_DISPLAY + (shouldStart ? " -d about:blank" : ""));
+        executeShellCommand("am start --user " + mUserId + " -n " + getActivityName(entryActivity)
+                + " -W " + (shouldStart ? " -d about:blank" : ""));
 
-        waitAndAssertTopResumedActivity(actualActivity, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(actualActivity, getMainDisplayId(),
                 "Activity must be launched");
     }
 

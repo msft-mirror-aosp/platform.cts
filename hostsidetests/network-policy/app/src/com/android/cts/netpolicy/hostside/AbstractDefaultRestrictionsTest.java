@@ -18,9 +18,10 @@ package com.android.cts.netpolicy.hostside;
 
 import static android.app.ActivityManager.PROCESS_STATE_LAST_ACTIVITY;
 
-import static org.junit.Assume.assumeTrue;
-
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import com.android.server.net.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -29,6 +30,7 @@ import org.junit.Test;
 /**
  * Base class for default, always-on network restrictions.
  */
+@RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
 abstract class AbstractDefaultRestrictionsTest extends AbstractRestrictBackgroundNetworkTestCase {
 
     @Before
@@ -39,7 +41,6 @@ abstract class AbstractDefaultRestrictionsTest extends AbstractRestrictBackgroun
         removePowerSaveModeExceptIdleWhitelist(TEST_APP2_PKG);
 
         registerBroadcastReceiver();
-        assumeTrue("Feature not enabled", isNetworkBlockedForTopSleepingAndAbove());
     }
 
     @After

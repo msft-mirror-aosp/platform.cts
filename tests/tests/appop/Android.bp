@@ -91,7 +91,6 @@ android_test {
         "libbinder",
         "libbpf_bcc",
         "libc++",
-        "libcgrouprc",
         "libcrypto",
         "libcutils",
         "libdl_android",
@@ -140,6 +139,8 @@ android_test {
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
         ":AppInstalledOnMultipleUsers",
+        ":SharedUidTestApp1",
+        ":SharedUidTestApp2",
     ],
     per_testcase_directory: true,
 }

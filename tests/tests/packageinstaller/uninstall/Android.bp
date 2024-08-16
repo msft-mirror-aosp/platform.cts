@@ -40,6 +40,7 @@ android_test {
         "sts",
     ],
     data: [
+        ":CtsArchiveInstallerApp",
         ":CtsArchiveTestApp",
         ":CtsEmptyTestApp",
         ":CtsSelfUninstallingTestApp",

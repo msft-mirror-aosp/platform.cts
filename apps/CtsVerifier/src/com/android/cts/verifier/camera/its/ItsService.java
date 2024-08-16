@@ -18,7 +18,7 @@ package com.android.cts.verifier.camera.its;
 
 import static android.hardware.camera2.cts.CameraTestUtils.MaxStreamSizes;
 
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -179,7 +179,7 @@ public class ItsService extends Service implements SensorEventListener {
     private static final long PIPELINE_WARMUP_TIME_MS = 2000;
 
     // Time given PreviewRecorder to record green buffer frames
-    private static final long BUFFER_FRAMES_MS = 600;
+    private static final long PADDED_FRAMES_MS = 600;
 
     // State transition timeouts, in ms.
     private static final long TIMEOUT_IDLE_MS = 2000;
@@ -3080,7 +3080,7 @@ public class ItsService extends Service implements SensorEventListener {
         double zoomRatio = cmdObj.optDouble("zoomRatio");
         // Override with zoomStart if zoomRatio was not specified
         zoomRatio = (Double.isNaN(zoomRatio)) ? cmdObj.optDouble("zoomStart") : zoomRatio;
-        boolean paddedFramesAtEnd = cmdObj.optBoolean("paddedFramesAtEnd", false);
+        boolean paddedFrames = cmdObj.optBoolean("paddedFrames", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
         // Record surface size and HDRness.
@@ -3126,17 +3126,42 @@ public class ItsService extends Service implements SensorEventListener {
             long dynamicRangeProfile = hlg10Enabled ? DynamicRangeProfiles.HLG10 :
                     DynamicRangeProfiles.STANDARD;
             pr.startRecording();
+            if (paddedFrames) {
+                Logt.v(TAG, "Record Green frames at the beginning of the video");
+                pr.overrideCameraFrames(true);
+
+                // MediaRecorder APIs don't specify whether they're synchronous or asynchronous,
+                // and different vendors seem to have interpret this differently. This delay
+                // allows for MediaRecorder to complete the `startRecording` routine before
+                // streaming frames from the camera. b/348332718
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare", e);
+                }
+            }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
                     recordingResultListener, extraConfigs);
+            if (paddedFrames) {
+                Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
+                try {
+                    Thread.sleep(PADDED_FRAMES_MS);
+                } catch (InterruptedException e) {
+                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                }
+
+                Logt.v(TAG, "Record Camera frames after green frames");
+                pr.overrideCameraFrames(false);
+            }
 
             action.execute();
 
-            if (paddedFramesAtEnd) {
-                pr.recordGreenFrames();
+            if (paddedFrames) {
+                pr.overrideCameraFrames(true);
                 try {
-                    Thread.sleep(BUFFER_FRAMES_MS);
+                    Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
                     Logt.e(TAG, "Interrupted while waiting for green frames", e);
                 }
@@ -4182,20 +4207,21 @@ public class ItsService extends Service implements SensorEventListener {
 
             CaptureCallbackWaiter captureCallbackWaiter = new CaptureCallbackWaiter();
             // Prepare the reprocess input request
-            for (CaptureRequest.Builder inputReqest : inputRequests) {
+            for (CaptureRequest.Builder inputRequest : inputRequests) {
                 // Remember and clear noise reduction, edge enhancement, and effective exposure
                 // factors.
-                noiseReductionModes.add(inputReqest.get(CaptureRequest.NOISE_REDUCTION_MODE));
-                edgeModes.add(inputReqest.get(CaptureRequest.EDGE_MODE));
-                effectiveExposureFactors.add(inputReqest.get(
+                noiseReductionModes.add(inputRequest.get(CaptureRequest.NOISE_REDUCTION_MODE));
+                edgeModes.add(inputRequest.get(CaptureRequest.EDGE_MODE));
+                effectiveExposureFactors.add(inputRequest.get(
                         CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR));
 
-                inputReqest.set(CaptureRequest.NOISE_REDUCTION_MODE,
+                inputRequest.set(CaptureRequest.NOISE_REDUCTION_MODE,
                         CaptureRequest.NOISE_REDUCTION_MODE_ZERO_SHUTTER_LAG);
-                inputReqest.set(CaptureRequest.EDGE_MODE, CaptureRequest.EDGE_MODE_ZERO_SHUTTER_LAG);
-                inputReqest.set(CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR, null);
-                inputReqest.addTarget(mInputImageReader.getSurface());
-                mSession.capture(inputReqest.build(), captureCallbackWaiter, mResultHandler);
+                inputRequest.set(CaptureRequest.EDGE_MODE,
+                        CaptureRequest.EDGE_MODE_ZERO_SHUTTER_LAG);
+                inputRequest.set(CaptureRequest.REPROCESS_EFFECTIVE_EXPOSURE_FACTOR, null);
+                inputRequest.addTarget(mInputImageReader.getSurface());
+                mSession.capture(inputRequest.build(), captureCallbackWaiter, mResultHandler);
             }
 
             // Wait for reprocess input images
@@ -4853,7 +4879,10 @@ public class ItsService extends Service implements SensorEventListener {
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
                         + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
                         + " phyid = "
-                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
+                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
+                        + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
+                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);
@@ -5073,7 +5102,7 @@ public class ItsService extends Service implements SensorEventListener {
             return ImageFormat.PRIVATE;
         }
 
-        throw new ItsException("Uknown reprocess format: " + reprocessFormat);
+        throw new ItsException("Unknown reprocess format: " + reprocessFormat);
     }
 
     private boolean isFixedFocusLens(CameraCharacteristics c) {

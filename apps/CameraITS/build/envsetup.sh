@@ -84,16 +84,21 @@ done
 
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
+echo -e "If using an environment manager, please run the command \"rename_libtinfo\" to handle cleanup.\n\n"
 
-# Rename libtinfo.so.6
-python_paths=$(which python)
-for python_path in $python_paths
-do
-  env_dir=${python_path%/python*}"/../../"
-  files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
-  for f in $files_to_rename
-  do
-    echo "Renaming potentially problematic file $f"
-    mv "$f" "$f.bak"
-  done
-done
+# Function to rename libtinfo.so.6 (if using an environment manager)
+function rename_libtinfo() {
+    echo "Trying to rename libtinfo.so.6"
+    python_paths=$(which python)
+    for python_path in $python_paths
+    do
+      env_dir=${python_path%/python*}"/../../"
+      files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
+      for f in $files_to_rename
+      do
+          echo "Renaming potentially problematic file $f"
+          mv "$f" "$f.bak"
+      done
+    done
+}
+

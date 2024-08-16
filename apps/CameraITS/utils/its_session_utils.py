@@ -72,6 +72,7 @@ TABLET_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
@@ -91,6 +92,7 @@ TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 'not on our allowlist, please refer to '
                                 f'{TABLET_REQUIREMENTS_URL}')
+TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
@@ -1005,7 +1007,7 @@ class ItsSession(object):
                                              sweep_zoom,
                                              ae_target_fps_min=None,
                                              ae_target_fps_max=None,
-                                             pad_frames_at_end=False):
+                                             padded_frames=False):
     """Issue a preview request with dynamic zoom and read back output object.
 
     The resolution of the preview and its recording will be determined by
@@ -1024,8 +1026,8 @@ class ItsSession(object):
         step_duration (float) sleep in ms between zoom ratios
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
-      pad_frames_at_end: boolean; Whether to add additional frames at the end of
-        recording to workaround issue with MediaRecorder.
+      padded_frames: boolean; Whether to add additional frames at the beginning
+        and end of recording to workaround issue with MediaRecorder.
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -1051,7 +1053,7 @@ class ItsSession(object):
     cmd['stepSize'] = step_size
     cmd['stepDuration'] = step_duration
     cmd['hlg10Enabled'] = False
-    cmd['paddedFramesAtEnd'] = pad_frames_at_end
+    cmd['paddedFrames'] = padded_frames
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
@@ -2706,6 +2708,9 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
       f'am start -a android.intent.action.VIEW -t {view_file_type} '
       f'-d {uri_prefix}/sdcard/Download/{file_name}')
   time.sleep(LOAD_SCENE_DELAY_SEC)
+  # Tap tablet to remove gallery buttons
+  tablet.adb.shell(
+      f'input tap {TAP_COORDINATES[0]} {TAP_COORDINATES[1]}')
   rfov_camera_in_rfov_box = (
       math.isclose(
           chart_distance,

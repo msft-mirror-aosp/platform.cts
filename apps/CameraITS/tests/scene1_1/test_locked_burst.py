@@ -66,6 +66,7 @@ class LockedBurstTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Converge 3A prior to capture.
+      camera_properties_utils.log_minimum_focus_distance(props)
       cam.do_3a(do_af=True, lock_ae=True, lock_awb=True,
                 mono_camera=mono_camera)
 

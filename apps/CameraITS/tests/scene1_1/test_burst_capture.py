@@ -64,6 +64,7 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
       req = capture_request_utils.auto_capture_request()
       if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
         req['android.noiseReduction.mode'] = _NR_MODE_FAST
+      camera_properties_utils.log_minimum_focus_distance(props)
       cam.do_3a()
       caps = cam.do_capture([req] * _NUM_TEST_FRAMES)
       img = image_processing_utils.convert_capture_to_rgb_image(

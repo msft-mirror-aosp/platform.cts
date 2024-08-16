@@ -33,6 +33,7 @@ import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -476,6 +477,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     public void testVPerfClassRequirements() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         CameraRequirement.HLGCombinationRequirement hlgCombinationRequirement =
                 pce.addR7_5__H_1_19();

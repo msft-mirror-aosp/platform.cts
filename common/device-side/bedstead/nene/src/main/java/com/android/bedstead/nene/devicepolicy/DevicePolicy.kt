@@ -23,6 +23,7 @@ import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -576,20 +577,43 @@ object DevicePolicy {
         return DevicePolicyResources.sInstance
     }
 
+    @JvmOverloads
+    fun setActiveAdmin(user: UserReference = TestApis.users().instrumented(),
+                       componentName: ComponentName): DeviceAdmin {
+        TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                CommonPermissions.MANAGE_DEVICE_ADMINS)
+                .use {
+                    devicePolicyManager(user).setActiveAdmin(componentName,
+                            /* refreshing= */ true, user.id())
+                }
+
+        Poll.forValue("Active admins") { getActiveAdmins(user) }
+                .toMeet { i: Set<DeviceAdmin> ->
+                    i.contains(
+                            DeviceAdmin.of(componentName.packageName, componentName))
+                }
+                .errorOnFail()
+                .await()
+
+        return DeviceAdmin(user, TestApis.packages().find(componentName.packageName), componentName)
+    }
+
     /**
      * Get active admins on the given user.
      */
     @JvmOverloads
-    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<ComponentReference> {
+    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<DeviceAdmin> {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
-                .use {
-                    val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
-                    return activeAdmins.stream()
-                            .map { component: ComponentName? -> ComponentReference(component) }
-                            .collect(
-                                    Collectors.toSet()
-                            )
-                }
+            .use {
+                val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
+                return activeAdmins.stream()
+                    .map { component: ComponentName ->
+                        DeviceAdmin.of(component.packageName, component)
+                    }
+                    .collect(
+                        Collectors.toSet()
+                    )
+            }
     }
 
     /**
@@ -850,6 +874,10 @@ object DevicePolicy {
         return devicePolicyManager.canUsbDataSignalingBeDisabled()
     }
 
+    /** See [DevicePolicyManager#getLastBugReportRequestTime] */
+    @Experimental
+    fun getLastBugReportRequestTime() = devicePolicyManager.lastBugReportRequestTime
+
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),
         Disabled(1),
@@ -865,7 +893,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.W)) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

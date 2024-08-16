@@ -17,28 +17,46 @@
 package com.android.cts.input
 
 import android.app.Instrumentation
+import android.graphics.Matrix
 import android.graphics.Point
 import android.hardware.input.InputManager
 import android.os.Handler
 import android.os.Looper
+import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display
 import android.view.Surface
+import android.view.View
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
 import java.util.concurrent.TimeUnit
+import kotlin.math.round
 
-private fun rotateFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
-    return when (display.rotation) {
-        Surface.ROTATION_0 -> Point(x, y)
-        Surface.ROTATION_90 -> Point(display.mode.physicalWidth - 1 - y, x)
-        Surface.ROTATION_180 -> Point(
-            display.mode.physicalWidth - 1 - x,
-            display.mode.physicalHeight - 1 - y
-        )
-        Surface.ROTATION_270 -> Point(y, display.mode.physicalHeight - 1 - x)
-        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
+    val displayInfos = CtsWindowInfoUtils.getWindowAndDisplayState().second
+
+    var displayTransform: Matrix? = null
+    for (displayInfo in displayInfos) {
+        if (displayInfo.displayId == display.displayId) {
+            displayTransform = displayInfo.transform
+        }
     }
+
+    if (displayTransform == null) {
+        throw IllegalStateException(
+            "failed to find display transform for display ${display.displayId}")
+    }
+
+    // The display transform is the transform from physical display space to
+    // logical display space. We need to go from logical display space to
+    // physical display space so we take the inverse transform.
+    val inverseTransform = Matrix()
+    displayTransform.invert(inverseTransform)
+
+    val point = floatArrayOf(x.toFloat(), y.toFloat())
+    inverseTransform.mapPoints(point)
+
+    return Point(round(point[0]).toInt(), round(point[1]).toInt())
 }
 
 /**
@@ -182,6 +200,15 @@ open class UinputTouchDevice(
         uinputDevice.close()
     }
 
+    fun tapOnViewCenter(view: View) {
+        val xy = IntArray(2)
+        view.getLocationOnScreen(xy)
+        val x = xy[0] + view.width / 2
+        val y = xy[1] + view.height / 2
+        val pointer = touchDown(x, y)
+        pointer.lift()
+    }
+
     private val pointerIds = mutableSetOf<Int>()
 
     /**
@@ -222,7 +249,7 @@ open class UinputTouchDevice(
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, rotateFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
             sync()
         }
 
@@ -236,7 +263,7 @@ open class UinputTouchDevice(
             if (!active) {
                 throw IllegalStateException("Pointer $id is not active, can't move to ($x, $y)")
             }
-            sendMove(id, rotateFromScreenToTouchDeviceSpace(x, y, display))
+            sendMove(id, transformFromScreenToTouchDeviceSpace(x, y, display))
             sync()
         }
 
@@ -288,6 +315,16 @@ open class UinputTouchDevice(
         const val MT_TOOL_PEN = 1
         const val MT_TOOL_PALM = 2
         const val INVALID_TRACKING_ID = -1
+
+        /**
+         * The allowed error when making assertions on touch coordinates.
+         *
+         * Coordinates are transformed from logical display space to physical display space and
+         * then rounded to the nearest integer, introducing error. The epsilon value effectively
+         * sets the maximum allowed scaling factor for a display. This value allows a maximum scale
+         * factor of 2.
+         */
+        const val TOUCH_COORDINATE_EPSILON = 1.001f
 
         fun toolBtnForFingerCount(numFingers: Int): Int {
             return when (numFingers) {
