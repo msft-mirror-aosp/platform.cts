@@ -77,7 +77,8 @@ class CheckAlignmentTest(its_base_test.ItsBaseTest):
   def test_check_alignment(self):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
-        camera_id=self.camera_id) as cam:
+        camera_id=self.camera_id,
+        hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       name_with_log_path = os.path.join(self.log_path, _NAME)

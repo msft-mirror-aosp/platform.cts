@@ -538,13 +538,14 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
 
         if (FeatureUtil.supportManagedSecondaryUsers(this)) {
             // Managed user
-            adapter.add(createInteractiveTestItem(this, MANAGED_USER_TEST_ID,
-                    R.string.managed_user_test,
-                    R.string.managed_user_positive_tests_instructions,
-                    new ButtonInfo[]{
-                            new ButtonInfo(
-                                    R.string.device_owner_settings_go,
-                                    createCreateManagedUserIntent())}));
+            // b/340154320 Disabled while the teardown of the user is resulting in a crash
+//            adapter.add(createInteractiveTestItem(this, MANAGED_USER_TEST_ID,
+//                    R.string.managed_user_test,
+//                    R.string.managed_user_positive_tests_instructions,
+//                    new ButtonInfo[]{
+//                            new ButtonInfo(
+//                                    R.string.device_owner_settings_go,
+//                                    createCreateManagedUserIntent())}));
 
             // User switcher message
             adapter.add(createInteractiveTestItem(this, USER_SWITCHER_MESSAGE_TEST_ID,

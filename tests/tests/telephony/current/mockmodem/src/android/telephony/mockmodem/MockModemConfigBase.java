@@ -112,6 +112,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     private RegistrantList[] mCardStatusChangedRegistrants;
     private RegistrantList[] mSimAppDataChangedRegistrants;
     private RegistrantList[] mSimInfoChangedRegistrants;
+    private RegistrantList[] mSimIoDataChangedRegistrants;
 
     // ***** IRadioNetwork RegistrantLists
     private RegistrantList[] mServiceStateChangedRegistrants;
@@ -143,6 +144,7 @@ public class MockModemConfigBase implements MockModemConfigInterface {
         mCardStatusChangedRegistrants = new RegistrantList[mNumOfPhone];
         mSimAppDataChangedRegistrants = new RegistrantList[mNumOfPhone];
         mSimInfoChangedRegistrants = new RegistrantList[mNumOfPhone];
+        mSimIoDataChangedRegistrants = new RegistrantList[mNumOfPhone];
         // IRadioNetwork registrants
         mServiceStateChangedRegistrants = new RegistrantList[mNumOfPhone];
         // IRadioVoice registrants
@@ -199,6 +201,10 @@ public class MockModemConfigBase implements MockModemConfigInterface {
 
             if (mSimInfoChangedRegistrants != null && mSimInfoChangedRegistrants[i] == null) {
                 mSimInfoChangedRegistrants[i] = new RegistrantList();
+            }
+
+            if (mSimIoDataChangedRegistrants != null && mSimIoDataChangedRegistrants[i] == null) {
+                mSimIoDataChangedRegistrants[i] = new RegistrantList();
             }
 
             if (mServiceStateChangedRegistrants != null
@@ -416,6 +422,10 @@ public class MockModemConfigBase implements MockModemConfigInterface {
                                     new AsyncResult(null, mCardStatus[physicalSimSlot], null));
                             mSimAppDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
                                     new AsyncResult(null, mSimAppList[physicalSimSlot], null));
+                            mSimIoDataChangedRegistrants[mLogicalSlotId].notifyRegistrants(
+                                    new AsyncResult(null,
+                                            mSimService[mLogicalSlotId].getSimIoMap(),
+                                            null));
                         } else {
                             Log.e(mTAG, "Load Sim card failed.");
                         }
@@ -941,6 +951,16 @@ public class MockModemConfigBase implements MockModemConfigInterface {
     @Override
     public void unregisterForSimInfoChanged(int logicalSlotId, Handler h) {
         mSimInfoChangedRegistrants[logicalSlotId].remove(h);
+    }
+
+    @Override
+    public void registerForSimIoDataChanged(int logicalSlotId, Handler h, int what, Object obj) {
+        mSimIoDataChangedRegistrants[logicalSlotId].addUnique(h, what, obj);
+    }
+
+    @Override
+    public void unregisterForSimIoDataChanged(int logicalSlotId, Handler h) {
+        mSimIoDataChangedRegistrants[logicalSlotId].remove(h);
     }
 
     // ***** IRadioNetwork notification implementation

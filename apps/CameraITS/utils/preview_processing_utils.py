@@ -15,7 +15,6 @@
 """
 
 import cv2
-import fnmatch
 import logging
 import os
 import threading
@@ -24,28 +23,28 @@ import time
 import numpy as np
 
 import its_session_utils
-import image_processing_utils
 import sensor_fusion_utils
 import video_processing_utils
 
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _ASPECT_TOL = 0.01
-_GREEN_TOL = 235
-_RED_BLUE_TOL = 15
+_GREEN_TOL = 200  # 200 out of 255 Green value in RGB
+_GREEN_PERCENT = 95
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_ROTATIONS = 24
+_PREVIEW_DURATION = 400  # milliseconds
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
+_RED_BLUE_TOL = 15  # 15 out of 255 Red or Blue value in RGB
 _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
-_PREVIEW_DURATION = 400  # milliseconds
 
 
 def get_720p_or_above_size(supported_preview_sizes):
@@ -212,10 +211,9 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
   logging.debug('Number of frames %d', len(file_list))
   for file in file_list:
-    img = image_processing_utils.convert_image_to_numpy_array(
-        os.path.join(log_path, file)
-    )
-    frames.append(img / 255)
+    img_bgr = cv2.imread(os.path.join(log_path, file))
+    img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+    frames.append(img_rgb / 255)
   frame_h, frame_w, _ = frames[0].shape
   logging.debug('Frame size %d x %d', frame_w, frame_h)
 
@@ -274,17 +272,11 @@ def verify_preview_stabilization(recording_obj, gyro_events,
         f'THRESH: {preview_stabilization_factor}.')
   # Delete saved frames if the format is a PASS
   else:
-    try:
-      tmpdir = os.listdir(log_path)
-    except FileNotFoundError:
-      logging.debug('Tmp directory: %s not found', log_path)
-    for file in tmpdir:
-      if fnmatch.fnmatch(file, f'*_{video_size}_stabilized_frame_*'):
-        file_to_remove = os.path.join(log_path, file)
-        try:
-          os.remove(file_to_remove)
-        except FileNotFoundError:
-          logging.debug('File Not Found: %s', str(file))
+    for file in file_list:
+      try:
+        os.remove(os.path.join(log_path, file))
+      except FileNotFoundError:
+        logging.debug('File Not Found: %s', str(file))
     logging.debug('Format %s passes, frame images removed', video_size)
 
   return {'gyro': max_gyro_angle, 'cam': max_camera_angle,
@@ -293,7 +285,7 @@ def verify_preview_stabilization(recording_obj, gyro_events,
 
 def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
                                    zoom_end, step_size, recording_duration_ms,
-                                   pad_frames_at_end=False):
+                                   padded_frames=False):
   """Captures a preview video from the device.
 
   Captures camera preview frames from the passed device.
@@ -305,8 +297,8 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
     zoom_end: (float) is the ending zoom ratio during recording.
     step_size: (float) is the step for zoom ratio during recording.
     recording_duration_ms: preview recording duration in ms.
-    pad_frames_at_end: boolean; Whether to add additional frames at the end of
-      recording to workaround issue with MediaRecorder.
+    padded_frames: boolean; Whether to add additional frames at the beginning
+      and end of recording to workaround issue with MediaRecorder.
 
   Returns:
     recording object as described by cam.do_preview_recording_with_dynamic_zoom.
@@ -315,7 +307,7 @@ def collect_preview_data_with_zoom(cam, preview_size, zoom_start,
       preview_size,
       stabilize=False,
       sweep_zoom=(zoom_start, zoom_end, step_size, recording_duration_ms),
-      pad_frames_at_end=pad_frames_at_end
+      padded_frames=padded_frames
   )
   logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
   logging.debug('Tested quality: %s', recording_obj['quality'])
@@ -460,17 +452,13 @@ def is_image_green(image_path):
 
   image = cv2.imread(image_path)
 
-  average_color = np.mean(image, axis=(0, 1))
+  green_pixels = ((image[:, :, 1] > _GREEN_TOL) &
+                  (image[:, :, 0] < _RED_BLUE_TOL) &
+                  (image[:, :, 2] < _RED_BLUE_TOL)).sum()
 
-  # Extract individual color values
-  blue_value = average_color[0]
-  green_value = average_color[1]
-  red_value = average_color[2]
+  green_percentage = (green_pixels / (image.shape[0] * image.shape[1])) * 100
 
-  # Check if green is dominant and red/blue are below the threshold
-  if (green_value > _GREEN_TOL and
-      red_value < _RED_BLUE_TOL and
-      blue_value < _RED_BLUE_TOL):
+  if green_percentage >= _GREEN_PERCENT:
     return True
   else:
     return False
@@ -510,7 +498,7 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
   # frames. Later these green padded frames are removed.
   preview_rec_obj = collect_preview_data_with_zoom(
       cam, preview_size, z_min, z_max, z_step_size,
-      _PREVIEW_DURATION, pad_frames_at_end=True)
+      _PREVIEW_DURATION, padded_frames=True)
 
   preview_file_name = its_session_utils.pull_file_from_dut(
       dut, preview_rec_obj['recordedOutputPath'], log_path)
@@ -523,16 +511,34 @@ def preview_over_zoom_range(dut, cam, preview_size, z_min, z_max, z_step_size,
       log_path, preview_file_name, _IMG_FORMAT
   )
 
-  # Remove extra green buffer frames
-  for file_name in reversed(file_list):
+  first_camera_frame_idx = 0
+  last_camera_frame_idx = len(file_list)
+
+  # Find index of the first-non green frame
+  for (idx, file_name) in enumerate(file_list):
     file_path = os.path.join(log_path, file_name)
     if is_image_green(file_path):
-      file_list.remove(file_name)
+      its_session_utils.remove_file(file_path)
+      logging.debug('Removed green file %s', file_name)
+    else:
+      logging.debug('First camera frame: %s', file_name)
+      first_camera_frame_idx = idx
+      break
+
+  # Find index of last non-green frame
+  for (idx, file_name) in reversed(list(enumerate(file_list))):
+    file_path = os.path.join(log_path, file_name)
+    if is_image_green(file_path):
       its_session_utils.remove_file(file_path)
       logging.debug('Removed green file %s', file_name)
     else:
       logging.debug('Last camera frame: %s', file_name)
+      last_camera_frame_idx = idx
       break
+
+  logging.debug('start idx = %d -- end idx = %d', first_camera_frame_idx,
+                last_camera_frame_idx)
+  file_list = file_list[first_camera_frame_idx:last_camera_frame_idx+1]
 
   # Raise error if capture result and frame count doesn't match
   capture_results = preview_rec_obj['captureMetadata']

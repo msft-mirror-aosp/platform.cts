@@ -55,7 +55,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 import java.util.function.Supplier;
 
 @SmallTest
@@ -78,7 +78,7 @@ public class LocationInWindowTests {
                 LayoutParams.FLAG_LAYOUT_IN_SCREEN | LayoutParams.FLAG_LAYOUT_INSET_DECOR,
                 PixelFormat.TRANSLUCENT);
         assertTrue("Failed to reach stable window geometry",
-                waitForStableWindowGeometry(5, TimeUnit.SECONDS));
+                waitForStableWindowGeometry(Duration.ofSeconds(5)));
     }
 
     @Test

@@ -270,9 +270,20 @@ public class AudioDeviceUtils {
     //
     // USB Device Support
     //
-    private static final int USBVENDORID_GOOGLE = 6353;
-    private static final int USBPRODUCTID_GOOGLEADAPTER_A = 0x5025;
-    private static final int USBPRODUCTID_GOOGLEADAPTER_B = 0x5034;
+    private static final int USB_VENDORID_GOOGLE = 0x18D1;
+    private static final int USB_PRODUCTID_GOOGLE_ADAPTER_A = 0x5025;
+    private static final int USB_PRODUCTID_GOOGLE_ADAPTER_B = 0x5034;
+    private static final int USB_VENDORID_XUMEE = 0x0BDA;
+    private static final int USB_PRODUCTID_XUMEE_ADAPTER = 0x4BE2;
+    private static final int USB_VENDORID_MOSHI = 0x282B;
+    private static final int USB_PRODUCTID_MOSHI_ADAPTER = 0x0033;
+    private static final int USB_VENDORID_ANKER = 0x0572;
+    private static final int USB_PRODUCTID_ANKER_ADAPTER = 0x1B08;
+    // This is the difference in round-trip latency over USB compared to the Google adapter.
+    // Measured using OboeTester.
+    private static final double USB_LATENCY_OFFSET_ANKER_MILLIS = 3.23; // higher than Google
+    private static final int USB_VENDORID_REALTEK_ALC5686 = 0x0BDA;
+    private static final int USB_PRODUCTID_REALTEK_ALC5686_ADAPTER = 0x4BD1;
 
     /**
      * Returns the UsbDevice corresponding to any connected USB peripheral.
@@ -297,33 +308,53 @@ public class AudioDeviceUtils {
 
     /**
      * Determines if the specified UsbDevice is a validated USB Audio headset adapter.
-     * At this time, only the Google, USB-C adapter has been determined to be fully compatible.
+     * Valid adapters have low latency and no echo cancellation.
      * @param usbDevice the device to test.
-     * @param displayWarning if true, display a warning dialog
-     * @param context The application context
      * @return true if the specified UsbDevice is a valid USB Audio headset adapter.
      */
-    public static boolean isUsbHeadsetValidForTest(UsbDevice usbDevice,
-                                                   boolean displayWarning, Context context) {
-        boolean isValid = usbDevice != null
-                && usbDevice.getVendorId() == USBVENDORID_GOOGLE
-                && (usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER_A
-                    || usbDevice.getProductId() == USBPRODUCTID_GOOGLEADAPTER_B);
-
-        if (!isValid && displayWarning) {
-            UsbDeviceWarningDialog warningDialog = new UsbDeviceWarningDialog(context);
-            warningDialog.show();
+    public static boolean isUsbHeadsetValidForTest(UsbDevice usbDevice) {
+        if (usbDevice != null) {
+            final int vId = usbDevice.getVendorId();
+            final int pId = usbDevice.getProductId();
+            if (vId == USB_VENDORID_GOOGLE && (pId == USB_PRODUCTID_GOOGLE_ADAPTER_A
+                                               || pId == USB_PRODUCTID_GOOGLE_ADAPTER_B)) {
+                return true;
+            }
+            if (vId == USB_VENDORID_XUMEE && pId == USB_PRODUCTID_XUMEE_ADAPTER) return true;
+            if (vId == USB_VENDORID_MOSHI && pId == USB_PRODUCTID_MOSHI_ADAPTER) return true;
+            if (vId == USB_VENDORID_ANKER && pId == USB_PRODUCTID_ANKER_ADAPTER) return true;
+            if (vId == USB_VENDORID_REALTEK_ALC5686
+                    && pId == USB_PRODUCTID_REALTEK_ALC5686_ADAPTER) return true;
         }
+        return false;
+    }
 
-        return isValid;
+    /**
+     * Get latency added by the USB adapter relative to the Google Adapter in msec.
+     * @param usbDevice the USB device that may have a latency offset
+     * @return latency dfiference in msec
+     */
+    public static double getUsbLatencyOffsetMillis(UsbDevice usbDevice) {
+        if (usbDevice.getVendorId() == USB_VENDORID_ANKER
+                && usbDevice.getProductId() == USB_PRODUCTID_ANKER_ADAPTER) {
+            return USB_LATENCY_OFFSET_ANKER_MILLIS;
+        } else {
+            return 0.0;
+        }
+    }
+
+    public static class UsbDeviceReport {
+        public boolean isValid;
+        public double latencyOffset; // round-trip latency relative to Google
     }
 
     /**
      * Checks for any connected USB peripheral that is a valid USB Audio headset adapter.
      * Displays a warning dialog if validity can not be determined.
      * @param context The application context.
+     * @return a report with information about validity and latency
      */
-    public static void validateUsbDevice(Context context) {
+    public static UsbDeviceReport validateUsbDevice(Context context) {
         AudioManager audioManager = context.getSystemService(AudioManager.class);
 
         // Determine if the connected device is a USB Headset
@@ -343,12 +374,20 @@ public class AudioDeviceUtils {
             }
         }
 
+        UsbDeviceReport report = new UsbDeviceReport();
         if (inputUsbHeadset != null && outputUsbHeadset != null) {
-            // Now see if it is the (fully-functional) Google adapter
+            // Now see if it is a compatible USB adapter
             UsbDevice usbDevice = AudioDeviceUtils.getConnectedUsbDevice(context);
             if (usbDevice != null) {
-                AudioDeviceUtils.isUsbHeadsetValidForTest(usbDevice, true, context);
+                if (AudioDeviceUtils.isUsbHeadsetValidForTest(usbDevice)) {
+                    report.isValid = true;
+                    report.latencyOffset = getUsbLatencyOffsetMillis(usbDevice);
+                } else {
+                    UsbDeviceWarningDialog warningDialog = new UsbDeviceWarningDialog(context);
+                    warningDialog.show();
+                }
             }
         }
+        return report;
     }
 }

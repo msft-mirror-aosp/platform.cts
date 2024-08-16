@@ -87,4 +87,8 @@ bootstrap_go_package {
     name: "templatefns",
     pkgPath: "cts/test/mediapc/requirements/templatefns",
     srcs: ["templatefns.go"],
+    deps: [
+        "golang-protobuf-proto",
+        "requirements_go_proto",
+    ],
 }

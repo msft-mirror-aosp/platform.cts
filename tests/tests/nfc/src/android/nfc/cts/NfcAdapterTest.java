@@ -1,6 +1,7 @@
 package android.nfc.cts;
 
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -23,10 +24,17 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.nfc.*;
+import android.nfc.AvailableNfcAntenna;
+import android.nfc.Flags;
+import android.nfc.INfcAdapter;
+import android.nfc.NfcAdapter;
+import android.nfc.NfcAntennaInfo;
+import android.nfc.NfcOemExtension;
+import android.nfc.Tag;
+import android.nfc.TechListParcel;
 import android.nfc.cardemulation.CardEmulation;
-import android.os.Bundle;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -79,7 +87,7 @@ public class NfcAdapterTest {
         // when creating a mocked adapter.
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assume.assumeNotNull(adapter);
-        Assume.assumeTrue(adapter.enable());
+        Assume.assumeTrue(NfcUtils.enableNfc(adapter, mContext));
         mSavedService = (INfcAdapter) (
             new FieldReader(adapter, adapter.getClass().getDeclaredField("sService")).read());
     }
@@ -173,7 +181,7 @@ public class NfcAdapterTest {
     @Test
     public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
-        when(mService.enableReaderOption(anyBoolean())).thenReturn(true);
+        when(mService.enableReaderOption(anyBoolean(), anyString())).thenReturn(true);
         boolean result = adapter.enableReaderOption(true);
         Assert.assertTrue(result);
         resetMockedInstance();
@@ -388,7 +396,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForegroundDynamic() {
-        NfcAdapter adapter = createMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
         assumeTrue(adapter.isObserveModeSupported());
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         try {
@@ -407,7 +415,6 @@ public class NfcAdapterTest {
             cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), false);
         }
-        resetMockedInstance();
     }
 
     @Test
@@ -496,11 +503,10 @@ public class NfcAdapterTest {
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testDisallowTransaction_walletRoleEnabled() {
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
-            NfcAdapter adapter = createMockedInstance();
+            NfcAdapter adapter = getDefaultAdapter();
             assumeTrue(adapter.isObserveModeSupported());
             adapter.setObserveModeEnabled(true);
             Assert.assertTrue(adapter.isObserveModeEnabled());
-            resetMockedInstance();
         });
     }
 
@@ -568,6 +574,7 @@ public class NfcAdapterTest {
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
             nfcOemExtension.maybeTriggerFirmwareUpdate();
+            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }

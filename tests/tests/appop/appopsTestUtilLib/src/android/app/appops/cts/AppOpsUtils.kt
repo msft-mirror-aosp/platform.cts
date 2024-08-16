@@ -44,7 +44,8 @@ const val TEST_ATTRIBUTION_TAG = "testAttribution"
  * not be reset even when calling this method.
  */
 fun reset(packageName: String): String {
-    return runCommand("appops reset $packageName")
+    val userId = InstrumentationRegistry.getInstrumentation().targetContext.userId
+    return runCommand("appops reset --user $userId $packageName")
 }
 
 /**
@@ -58,7 +59,8 @@ fun setOpMode(packageName: String, opStr: String, mode: Int): String {
         MODE_DEFAULT -> "default"
         else -> throw IllegalArgumentException("Unexpected app op type")
     }
-    val command = "appops set $packageName $opStr $modeStr"
+    val userId = InstrumentationRegistry.getInstrumentation().targetContext.userId
+    val command = "appops set --user $userId $packageName $opStr $modeStr"
     return runCommand(command)
 }
 
@@ -118,7 +120,8 @@ inline fun <T> runWithShellPermissionIdentity(runnable: () -> T): T {
  * Format: "SEND_SMS: allow; time=+23h12m54s980ms ago; rejectTime=+1h10m23s180ms"
  */
 private fun getOpState(packageName: String, opStr: String): String {
-    return runCommand("appops get $packageName $opStr")
+    val userId = InstrumentationRegistry.getInstrumentation().targetContext.userId
+    return runCommand("appops get --user $userId $packageName $opStr")
 }
 
 /**

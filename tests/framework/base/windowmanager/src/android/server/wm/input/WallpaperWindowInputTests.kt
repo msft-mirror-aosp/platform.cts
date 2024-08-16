@@ -20,10 +20,10 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Point
 import android.hardware.display.DisplayManager
-import android.os.SystemProperties
 import android.platform.test.annotations.Presubmit
 import android.server.wm.ActivityManagerTestBase
 import android.server.wm.CliIntentExtra
+import android.server.wm.CtsWindowInfoUtils.waitForWindowOnTop
 import android.server.wm.TestJournalProvider
 import android.server.wm.annotation.Group2
 import android.server.wm.app.Components
@@ -31,7 +31,8 @@ import android.server.wm.app.Components.TestInteractiveLiveWallpaperKeys
 import android.view.Display.DEFAULT_DISPLAY
 import android.view.InputDevice
 import android.view.MotionEvent
-import android.view.WindowManager
+import android.window.WindowInfosListenerForTest
+import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -39,10 +40,12 @@ import com.android.cts.input.inputeventmatchers.withSource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.allOf
 import org.junit.After
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Assume.assumeTrue
 import org.junit.Before
@@ -91,7 +94,11 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
                 enableWallpaperTouch
             )
         )
-        mWmState.waitAndAssertWindowShown(WindowManager.LayoutParams.TYPE_WALLPAPER, true)
+        val found = waitForWindowOnTop(5.seconds.toJavaDuration())
+            { windowInfo: WindowInfosListenerForTest.WindowInfo ->
+                windowInfo.name.contains(Components.WALLPAPER_TARGET_ACTIVITY.className)
+            }
+        assertTrue(found)
         TestJournalProvider.TestJournalContainer.start()
         val task = mWmState.getTaskByActivity(Components.WALLPAPER_TARGET_ACTIVITY)
         val bounds = task.bounds
@@ -99,7 +106,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
         val yOnScreen = bounds.height() / 2
         val pointer = touchScreen.touchDown(xOnScreen, yOnScreen)
 
-        val event = waitForMotionEventFromTestJournal(2.seconds * HW_TIMEOUT_MULTIPLIER)
+        val event = waitForMotionEventFromTestJournal(2.seconds)
         /**
          * If the wallpaper touches are enabled, we should receive the motion event. Otherwise, the
          * motion event should not reach the wallpaper.
@@ -107,7 +114,7 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
         if (enableWallpaperTouch) {
             assertThat(event, allOf(
                 withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(Point(xOnScreen, yOnScreen)),
+                withCoords(Point(xOnScreen, yOnScreen), UinputTouchDevice.TOUCH_COORDINATE_EPSILON),
                 withSource(InputDevice.SOURCE_TOUCHSCREEN)
             ))
         } else {
@@ -165,9 +172,5 @@ class WallpaperWindowInputTests : ActivityManagerTestBase() {
     companion object {
         private const val TAG = "WallpaperWindowInputTests"
         private val TIME_SLICE = 50.milliseconds
-        private val HW_TIMEOUT_MULTIPLIER: Int = SystemProperties.getInt(
-            "ro.hw_timeout_multiplier",
-            1
-        )
     }
 }

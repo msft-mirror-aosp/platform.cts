@@ -73,6 +73,7 @@ public class MainActivity extends Activity {
     private static final String EXTRA_INSTALLER_APK_V2_URI = "extra_installer_apk_v2_uri";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
+    private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
@@ -89,6 +90,8 @@ public class MainActivity extends Activity {
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_PACKAGE_URI_FOR_RESULT = 4;
     private static final int EVENT_REQUEST_INSTALLER_INTENT_WITH_ACTION_VIEW = 5;
     private static final int REQUEST_CODE = 311;
+    private static String sTestPackageName;
+
 
     private PackageInstaller mPackageInstaller;
     private RequestInstallerReceiver mRequestInstallerReceiver;
@@ -103,6 +106,7 @@ public class MainActivity extends Activity {
             mRequestInstallerReceiver = new RequestInstallerReceiver();
             getApplicationContext().registerReceiver(mRequestInstallerReceiver,
                     new IntentFilter(ACTION_REQUEST_INSTALLER), Context.RECEIVER_EXPORTED);
+            sTestPackageName = getIntent().getStringExtra(EXTRA_TEST_PACKAGE_NAME);
             copyTestFiles();
         }
     }
@@ -114,6 +118,16 @@ public class MainActivity extends Activity {
             mNotifyReady = false;
             sendInstallerResponseBroadcast(getApplicationContext(), STATUS_CUJ_INSTALLER_READY);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mRequestInstallerReceiver != null) {
+            getApplicationContext().unregisterReceiver(mRequestInstallerReceiver);
+            mRequestInstallerReceiver = null;
+        }
+        sTestPackageName = null;
     }
 
     private void cleanUp() {
@@ -153,7 +167,7 @@ public class MainActivity extends Activity {
 
     private static void sendInstallerResponseBroadcast(Context context, int status) {
         final Intent intent = new Intent(ACTION_RESPONSE_INSTALLER);
-        intent.setPackage(TEST_PACKAGE_NAME);
+        intent.setPackage(sTestPackageName);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         intent.putExtra(EXTRA_STATUS, status);
         context.sendBroadcast(intent);

@@ -23,7 +23,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
-    <option name="config-descriptor:metadata" key="parameter" value="multiuser" />
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/packageinstaller" />
@@ -54,8 +53,6 @@
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
-        <option name="push" value="CtsArchiveInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveInstallerApp.apk" />
-        <option name="push" value="CtsArchiveTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveTestApp.apk" />
         <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp.apk" />
         <option name="push" value="CtsEmptyTestAppV2.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestAppV2.apk" />
         <option name="push" value="CtsEmptyTestApp_pl.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_pl.apk" />

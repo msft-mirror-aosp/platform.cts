@@ -2078,10 +2078,9 @@ public class TunerTest {
             // see if tune still works just in case
             tunerA = new Tuner(mContext, null, 100);
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.tune(feSettings));
-            tunerA.close();
         } finally {
-            tunerA = null;
-            tunerB = null;
+            tunerA.close();
+            tunerB.close();
         }
     }
 
@@ -2150,7 +2149,7 @@ public class TunerTest {
             FrontendStatus status = tunerB.getFrontendStatus(statusCapabilities);
             assertNotNull(status);
         } finally {
-            tunerA = null;
+            tunerA.close();
         }
     }
 
@@ -2358,9 +2357,9 @@ public class TunerTest {
             throw (e);
         } finally {
             cleanupTRMCustomFeResourceMapTest();
-            tunerA = null;
-            tunerB = null;
-            tunerC = null;
+            tunerA.close();
+            tunerB.close();
+            tunerC.close();
         }
     }
 
@@ -2530,7 +2529,7 @@ public class TunerTest {
     }
 
     private TunerFrontendInfo tunerFrontendInfo(
-            int handle, int frontendType, int exclusiveGroupId) {
+            long handle, int frontendType, int exclusiveGroupId) {
         TunerFrontendInfo info = new TunerFrontendInfo();
         info.handle = handle;
         info.type = frontendType;
@@ -2574,9 +2573,9 @@ public class TunerTest {
         }
     }
 
-    private void assignFeResource(int clientId, int frontendType,
-                                  boolean expectedResult, int expectedHandle) {
-        int[] feHandle = new int[1];
+    private void assignFeResource(
+            int clientId, int frontendType, boolean expectedResult, long expectedHandle) {
+        long[] feHandle = new long[1];
         TunerFrontendRequest request = new TunerFrontendRequest();
         request.clientId = clientId;
         request.frontendType = frontendType;

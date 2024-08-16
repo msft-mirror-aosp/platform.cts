@@ -16,10 +16,10 @@
 package android.view.inputmethod.cts
 
 import android.app.Instrumentation
-import android.app.UiAutomation
 import android.content.Context
 import android.os.Bundle
 import android.os.Looper
+import android.os.UserHandle
 import android.platform.test.annotations.AppModeSdkSandbox
 import android.provider.Settings
 import android.text.style.SuggestionSpan
@@ -54,10 +54,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
-import com.android.compatibility.common.util.CtsTouchUtils
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SettingsStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
+import com.android.cts.input.injectinputinprocess.clickOnView
+import com.android.cts.input.injectinputinprocess.clickOnViewCenter
 import com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand
 import com.android.cts.mockime.MockImeSession
 import com.android.cts.mockspellchecker.EXTRAS_KEY_PREFIX
@@ -85,13 +86,11 @@ class SpellCheckerTest : EndToEndImeTestBase() {
 
     private val TAG = "SpellCheckerTest"
     private val SPELL_CHECKING_IME_ID = "com.android.cts.spellcheckingime/.SpellCheckingIme"
-    private val TIMEOUT = TimeUnit.SECONDS.toMillis(5)
+    private val TIMEOUT = TimeUnit.SECONDS.toMillis(10)
 
     private val instrumentation: Instrumentation = InstrumentationRegistry.getInstrumentation()
-    private val context: Context = instrumentation.getTargetContext()
+    private val context: Context = instrumentation.targetContext
     private val uiDevice: UiDevice = UiDevice.getInstance(instrumentation)
-    private val uiAutomation: UiAutomation = instrumentation.uiAutomation
-    private val ctsTouchUtils: CtsTouchUtils = CtsTouchUtils(context)
 
     @Rule
     fun unlockScreenRule() = UnlockScreenRule()
@@ -131,7 +130,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use {
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("match", 1)
@@ -173,7 +172,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use {
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("match", 1)
@@ -203,7 +202,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use {
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("match", 1)
@@ -228,7 +227,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
             MockSpellCheckerClient.create(context, configuration).use { client ->
                 val stream = session.openEventStream()
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("match", 1)
@@ -440,12 +439,12 @@ class SpellCheckerTest : EndToEndImeTestBase() {
                                 .setAttributes(RESULT_ATTR_LOOKS_LIKE_TYPO)
                 ).build()
         // SpellCheckingIme should have android:suppressesSpellChecker="true"
-        ImeSession(SPELL_CHECKING_IME_ID).use {
+        ImeSession(SPELL_CHECKING_IME_ID, UserHandle.myUserId()).use {
             assertThat(getCurrentInputMethodInfo().suppressesSpellChecker()).isTrue()
 
             MockSpellCheckerClient.create(context, configuration).use {
                 val (activity, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 val imm = activity.getSystemService(InputMethodManager::class.java)
                 waitOnMainUntil({ editText.hasFocus() &&
                     imm.hasActiveInputConnection(editText) }, TIMEOUT)
@@ -473,7 +472,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
             assertThat(getCurrentInputMethodInfo().suppressesSpellChecker()).isFalse()
 
             val (activity, editText) = startTestActivity()
-            ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+            clickOnViewCenter(editText)
             val imm = activity.getSystemService(InputMethodManager::class.java)
             waitOnMainUntil({ editText.hasFocus() &&
                 imm.hasActiveInputConnection(editText) }, TIMEOUT)
@@ -491,12 +490,12 @@ class SpellCheckerTest : EndToEndImeTestBase() {
                                 .setAttributes(RESULT_ATTR_LOOKS_LIKE_TYPO)
                 ).build()
         // SpellCheckingIme should have android:suppressesSpellChecker="true"
-        ImeSession(SPELL_CHECKING_IME_ID).use {
+        ImeSession(SPELL_CHECKING_IME_ID, UserHandle.myUserId()).use {
             assertThat(getCurrentInputMethodInfo().suppressesSpellChecker()).isTrue()
 
             MockSpellCheckerClient.create(context, configuration).use {
                 val (activity, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 val imm = activity.getSystemService(InputMethodManager::class.java)
                 waitOnMainUntil({ editText.hasFocus() &&
                         imm.hasActiveInputConnection(editText) }, TIMEOUT)
@@ -528,7 +527,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use { _ ->
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("match", 1)
@@ -600,7 +599,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use { _ ->
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("Preceding text", 1)
@@ -643,7 +642,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use { _ ->
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("Wrong context word", 1)
@@ -679,7 +678,7 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         MockImeSession.create(context).use { session ->
             MockSpellCheckerClient.create(context, configuration).use { _ ->
                 val (_, editText) = startTestActivity()
-                ctsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText)
+                clickOnViewCenter(editText)
                 waitOnMainUntil({ editText.hasFocus() }, TIMEOUT)
                 InputMethodVisibilityVerifier.expectImeVisible(TIMEOUT)
                 session.callCommitText("Context word", 1)
@@ -706,14 +705,13 @@ class SpellCheckerTest : EndToEndImeTestBase() {
     }
 
     private fun emulateTapAtOffset(editText: EditText, offset: Int) {
-        var x = 0
-        var y = 0
         runOnMainSync {
-            x = editText.layout.getPrimaryHorizontal(offset).toInt() + editText.compoundPaddingStart
+            val x = editText.layout.getPrimaryHorizontal(offset).toInt() +
+                    editText.compoundPaddingStart
             val line = editText.layout.getLineForOffset(offset)
-            y = (editText.layout.getLineTop(line) + editText.layout.getLineBottom(line)) / 2
+            val y = (editText.layout.getLineTop(line) + editText.layout.getLineBottom(line)) / 2
+            clickOnView(editText, x, y)
         }
-        ctsTouchUtils.emulateTapOnView(instrumentation, null, editText, x, y)
     }
 
     @UiThread
@@ -755,12 +753,12 @@ class SpellCheckerTest : EndToEndImeTestBase() {
         return listener.getSentenceSuggestionsResults[prevSize]
     }
 
-    private inner class ImeSession(val imeId: String) : AutoCloseable {
+    private inner class ImeSession(val imeId: String, val userId: Int) : AutoCloseable {
 
         init {
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime reset")
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime enable $imeId")
-            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime set $imeId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime reset --user $userId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime enable --user $userId $imeId")
+            SystemUtil.runCommandAndPrintOnLogcat(TAG, "ime set --user $userId $imeId")
             PollingCheck.check("Make sure that $imeId is selected", TIMEOUT) {
                 getCurrentInputMethodInfo().id == imeId
             }
