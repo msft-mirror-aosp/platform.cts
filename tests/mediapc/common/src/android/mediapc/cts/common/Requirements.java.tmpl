@@ -18,6 +18,7 @@
     {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
     {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
     {{- else if eq $c.String "COMPARISON_CONFIG" -}}INFO
+    {{- else if eq $c.String "COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL" -}}CAM_HW_LEVEL_GTE
     {{- else }}{{$c}}
     {{- end }}
 {{- end -}}
