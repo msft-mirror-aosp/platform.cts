@@ -844,23 +844,48 @@ def correct_faces_for_crop(faces, img, crop):
   """Correct face rectangles for sensor crop.
 
   Args:
-    faces: list of dicts with face information
+    faces: list of dicts with face information relative to sensor's
+      aspect ratio
     img: np image array
-    crop: dict of crop region size with 'top, right, left, bottom' as keys
+    crop: dict of crop region size with 'top', 'right', 'left', 'bottom'
+      as keys to desired region of the sensor to read out
   Returns:
     list of face locations (left, right, top, bottom) corrected
   """
   faces_corrected = []
-  cw, ch = crop['right'] - crop['left'], crop['bottom'] - crop['top']
+  crop_w = crop['right'] - crop['left']
+  crop_h = crop['bottom'] - crop['top']
   logging.debug('crop region: %s', str(crop))
-  w = img.shape[1]
-  h = img.shape[0]
+  img_w, img_h = img.shape[1], img.shape[0]
+  crop_aspect_ratio = crop_w / crop_h
+  img_aspect_ratio = img_w / img_h
   for rect in [face['bounds'] for face in faces]:
     logging.debug('rect: %s', str(rect))
-    left = int(round((rect['left'] - crop['left']) * w / cw))
-    right = int(round((rect['right'] - crop['left']) * w / cw))
-    top = int(round((rect['top'] - crop['top']) * h / ch))
-    bottom = int(round((rect['bottom'] - crop['top']) * h / ch))
+    if crop_aspect_ratio >= img_aspect_ratio:
+      # Sensor width is being cropped, so we need to adjust the horizontal
+      # coordinates of the face rectangles to account for the crop.
+      # Since we are converting from sensor coordinates to image coordinates
+      img_crop_h_ratio = img_h / crop_h
+      scaled_crop_w = crop_w * img_crop_h_ratio
+      excess_w = (img_w - scaled_crop_w) / 2
+      left = int(
+          round((rect['left'] - crop['left']) * img_crop_h_ratio + excess_w))
+      right = int(
+          round((rect['right'] - crop['left']) * img_crop_h_ratio + excess_w))
+      top = int(round((rect['top'] - crop['top']) * img_crop_h_ratio))
+      bottom = int(round((rect['bottom'] - crop['top']) * img_crop_h_ratio))
+    else:
+      # Sensor height is being cropped, so we need to adjust the vertical
+      # coordinates of the face rectangles to account for the crop.
+      img_crop_w_ratio = img_w / crop_w
+      scaled_crop_h = crop_h * img_crop_w_ratio
+      excess_w = (img_h - scaled_crop_h) / 2
+      left = int(round((rect['left'] - crop['left']) * img_crop_w_ratio))
+      right = int(round((rect['right'] - crop['left']) * img_crop_w_ratio))
+      top = int(
+          round((rect['top'] - crop['top']) * img_crop_w_ratio + excess_w))
+      bottom = int(
+          round((rect['bottom'] - crop['top']) * img_crop_w_ratio + excess_w))
     faces_corrected.append([left, right, top, bottom])
   logging.debug('faces_corrected: %s', str(faces_corrected))
   return faces_corrected
