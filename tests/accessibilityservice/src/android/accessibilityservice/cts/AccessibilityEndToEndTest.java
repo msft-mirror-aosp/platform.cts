@@ -932,6 +932,12 @@ public class AccessibilityEndToEndTest {
             throws Throwable {
         mActivity.waitForEnterAnimationComplete();
 
+        if (isAutomotive(sInstrumentation.getTargetContext())) {
+            // Add some more delay before reading the coordinates of views as in MultiWindow,
+            // transitions and resize of DA requires some extra time that affect its final
+            // position. waitForStableGeometry is not available on Android S.
+            SystemClock.sleep(1000);
+        }
         final Resources resources = sInstrumentation.getTargetContext().getResources();
         final int touchableSize = resources.getDimensionPixelSize(
                 R.dimen.button_touchable_width_increment_amount);
