@@ -298,13 +298,10 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
             }
             r5_1__H_1_10.setConcurrentFps(achievedFrameRate);
         } else if (bothSecure) {
-            SecureVideoDecoderSessionsRequirement r5_1__H_1_9;
-            if (height > 1080) {
-                r5_1__H_1_9 = Requirements.addR5_1__H_1_9().withConfig4K().to(pce);
-                r5_1__H_1_9.setFrameDropsPerSec(frameDropsPerSec);
-            } else {
-                r5_1__H_1_9 = Requirements.addR5_1__H_1_9().withConfig1080P().to(pce);
-            }
+            SecureVideoDecoderSessionsRequirement r5_1__H_1_9 = (height > 1080)
+                    ? Requirements.addR5_1__H_1_9().withConfigHdr().to(pce)
+                    : Requirements.addR5_1__H_1_9().to(pce);
+            r5_1__H_1_9.setFrameDropsPerSec(frameDropsPerSec);
             r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
         } else {
             PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_1;
