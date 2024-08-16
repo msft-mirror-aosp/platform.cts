@@ -21,8 +21,9 @@ import android.app.appfunctions.flags.Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER
 import android.app.appsearch.GenericDocument
 import android.os.Bundle
 import android.os.Parcel
-import android.platform.test.annotations.EnableFlags
-import android.platform.test.flag.junit.SetFlagsRule
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.appsearch.flags.Flags.FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC
 import com.android.compatibility.common.util.ApiTest
@@ -32,13 +33,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@EnableFlags(
+@RequiresFlagsEnabled(
     FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC,
     FLAG_ENABLE_APP_FUNCTION_MANAGER
 )
 class ExecuteAppFunctionRequestTest {
     @get:Rule
-    val mSetFlagsRule: SetFlagsRule = SetFlagsRule()
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @ApiTest(
         apis = [
