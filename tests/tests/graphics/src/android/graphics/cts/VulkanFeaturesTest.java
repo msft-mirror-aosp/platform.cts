@@ -426,7 +426,7 @@ public class VulkanFeaturesTest {
                     "externalFenceFeatures", 0x3 /* importable + exportable */));
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-7, 3.3.1/C-0-12")
+    @CddTest(requirement = "7.1.4.2/C-1-7,3.3.1/C-0-12")
     @Test
     public void testVulkanRequiredExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanDevices.length > 0);

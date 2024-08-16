@@ -13,6 +13,9 @@
       "name": "CtsContentProviderTestsWithVisibility"
     },
     {
+      "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
       "name": "CtsPackageInstallerCUJTestCases"
     }
   ],
