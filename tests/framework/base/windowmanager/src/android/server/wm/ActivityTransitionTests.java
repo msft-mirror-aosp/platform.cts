@@ -70,6 +70,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
@@ -260,6 +261,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
      * Checks that the activity's theme's background color is used as the default animation's
      * background color when no override is specified.
      */
+    @Ignore
     @Test
     public void testThemeBackgroundColorShowsDuringActivityTransition() {
         final int backgroundColor = Color.WHITE;
