@@ -92,6 +92,7 @@ android_library {
         "ctsmediautil",
         "DpmWrapper",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
         "com_android_wm_shell_flags_lib",
     ],
 

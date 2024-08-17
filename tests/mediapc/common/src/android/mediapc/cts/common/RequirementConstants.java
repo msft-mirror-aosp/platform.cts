@@ -16,6 +16,8 @@
 
 package android.mediapc.cts.common;
 
+import android.hardware.camera2.cts.helpers.StaticMetadata;
+
 import java.util.function.BiPredicate;
 
 /**
@@ -225,6 +227,8 @@ public class RequirementConstants {
     public static final BiPredicate<Integer, Integer> INTEGER_GTE = RequirementConstants.gte();
     public static final BiPredicate<Integer, Integer> INTEGER_LTE = RequirementConstants.lte();
     public static final BiPredicate<Integer, Integer> INTEGER_EQ = RequirementConstants.eq();
+    public static final BiPredicate<Integer, Integer> INTEGER_CAM_HW_LEVEL_GTE =
+            RequirementConstants.camHwLevelGte();
 
     public static final BiPredicate<Double, Double> DOUBLE_INFO = RequirementConstants.info();
     public static final BiPredicate<Double, Double> DOUBLE_GT = RequirementConstants.gt();
@@ -325,6 +329,23 @@ public class RequirementConstants {
             @Override
             public String toString() {
                 return "True. For info only";
+            }
+        };
+    }
+
+    /**
+    * Creates a >= predicate for camera hardware level
+    */
+    private static BiPredicate<Integer, Integer> camHwLevelGte() {
+        return new BiPredicate<Integer, Integer>() {
+            @Override
+            public boolean test(Integer actual, Integer expected) {
+                return StaticMetadata.hardwareLevelPredicate(actual, expected);
+            }
+
+            @Override
+            public String toString() {
+                return "Camera Hardware Level Greater than or equal to";
             }
         };
     }
