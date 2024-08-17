@@ -1261,6 +1261,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         } catch (TimeoutException e) {
             fail("Accessibility events should be received as expected " + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1305,6 +1306,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             fail("TYPE_VIEW_HOVER_ENTER from buttonTarget should be received as expected "
                     + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1336,6 +1338,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                             filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
                                     buttonResourceName), DEFAULT_TIMEOUT_MS));
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1424,14 +1427,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
     public void testAccessibilityDataSensitive_canObserveHoverEvent() {
         final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(true);
+        final long time = SystemClock.uptimeMillis();
+        final View view = mActivity.findViewById(R.id.innerView);
+        final int[] viewLocation = new int[2];
+        view.getLocationOnScreen(viewLocation);
+        final int x = viewLocation[0] + view.getWidth() / 2;
+        final int y = viewLocation[1] + view.getHeight() / 2;
         try {
-            final long time = SystemClock.uptimeMillis();
-            final View view = mActivity.findViewById(R.id.innerView);
-            final int[] viewLocation = new int[2];
-            view.getLocationOnScreen(viewLocation);
-            final int x = viewLocation[0] + view.getWidth() / 2;
-            final int y = viewLocation[1] + view.getHeight() / 2;
-
             service.setEventFilter(
                     filterForEventTypeWithResource(
                             AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
@@ -1440,6 +1442,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             injectHoverEvent(time, true, x, y);
             service.waitOnEvent(DEFAULT_TIMEOUT_MS, "Expected TYPE_VIEW_HOVER_ENTER event");
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), x, y);
             service.disableSelfAndRemove();
         }
     }
@@ -2473,6 +2476,14 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             int xOnScreen, int yOnScreen) {
         final long eventTime = isFirstHoverEvent ? SystemClock.uptimeMillis() : downTime;
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_HOVER_MOVE,
+                xOnScreen, yOnScreen, 0);
+        event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        sInstrumentation.sendPointerSync(event);
+        event.recycle();
+    }
+
+    private static void injectHoverExit(long eventTime, int xOnScreen, int yOnScreen) {
+        MotionEvent event = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_HOVER_EXIT,
                 xOnScreen, yOnScreen, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         sInstrumentation.sendPointerSync(event);
