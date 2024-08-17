@@ -461,6 +461,35 @@
   <option name="compatibility:include-filter" value="CtsPdfModuleTestCases"/>
   <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases"/>
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission"/>
+  <option name="compatibility:include-filter" value="CtsContactsProviderTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHibernationTestCases"/>
+  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases1"/>
+  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases3"/>
+  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases2"/>
+  <option name="compatibility:include-filter" value="CtsTextClassifierTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSharesheetTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests"/>
+  <option name="compatibility:include-filter" value="CtsUiAutomationTestCases"/>
+  <option name="compatibility:include-filter" value="CtsProtoTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppSetIdEndToEndTest"/>
+  <option name="compatibility:include-filter" value="CtsSettingsTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAdServicesPermissionsNoPermEndToEndTests"/>
+  <option name="compatibility:include-filter" value="CtsNetSecConfigPrePCleartextTrafficTestCases"/>
+  <option name="compatibility:include-filter" value="CtsInstantAppTests"/>
+  <option name="compatibility:include-filter" value="ResourceObserverNativeTest"/>
+  <option name="compatibility:include-filter" value="CtsInputHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsNotificationExtendersTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeIndependentGroupRebootHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsExerciseRouteTestCases"/>
+  <option name="compatibility:include-filter" value="CtsInstantAppsHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeChangedGroupAppUpdateHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUseEmbeddedDexHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeSingleAppRebootHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesNotAllPermissionsAreGranted"/>
+  <option name="compatibility:include-filter" value="CtsCrashDetailHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsFgsBootCompletedTestCases"/>
+  <option name="compatibility:include-filter" value="CtsFgsTimeoutTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter"/>
 
     <!--Exclude Filters -->
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
@@ -804,7 +833,55 @@
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfilePasswordTest#testCreateSeparateChallengeChangedLogged"/>
   <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.SessionLifecycleTest#testDatasetAuthResponseWhileAutofilledAppIsLifecycled"/>
   <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapNotTouchExploring_performsClick"/>
-
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[784]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[801]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[807]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[830]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[866]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[879]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[936]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[950]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1040]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1044]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1067]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1083]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1087]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1093]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1094]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1099]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1111]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1112]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1121]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1126]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1130]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1134]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1139]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1143]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1164]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1175]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1191]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1201]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1214]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1219]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1220]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1226]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1352]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1382]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1406]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1415]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1420]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1427]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1438]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1446]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1472]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1476]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1480]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1491]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1495]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1507]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1532]"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1556]"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.WidgetTransitionTest#testCollection_sendBroadcast"/>
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
