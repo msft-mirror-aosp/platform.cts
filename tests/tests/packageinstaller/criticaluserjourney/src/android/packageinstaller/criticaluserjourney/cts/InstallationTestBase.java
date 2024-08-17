@@ -82,6 +82,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static final String EXTRA_INSTALLER_APK_V2_URI = "extra_installer_apk_v2_uri";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
+    private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
@@ -193,14 +194,17 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
         intent.setAction(ACTION_LAUNCH_INSTALLER);
-        Uri testApkUri = FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, apkFile);
-        Uri testApkV2Uri = FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, apkV2File);
+
+        final String contentAuthority = sContext.getPackageName() + AUTHORITY_NAME;
+        Uri testApkUri = FileProvider.getUriForFile(sContext, contentAuthority, apkFile);
+        Uri testApkV2Uri = FileProvider.getUriForFile(sContext, contentAuthority, apkV2File);
         Uri installerApkV2Uri =
-                FileProvider.getUriForFile(sContext, CONTENT_AUTHORITY, installerApkV2File);
+                FileProvider.getUriForFile(sContext, contentAuthority, installerApkV2File);
 
         intent.putExtra(EXTRA_TEST_APK_URI, testApkUri.toString());
         intent.putExtra(EXTRA_TEST_APK_V2_URI, testApkV2Uri.toString());
         intent.putExtra(EXTRA_INSTALLER_APK_V2_URI, installerApkV2Uri.toString());
+        intent.putExtra(EXTRA_TEST_PACKAGE_NAME, sContext.getPackageName());
 
         // grant read uri permission to the installer
         sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkUri,

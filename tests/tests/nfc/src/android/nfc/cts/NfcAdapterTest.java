@@ -87,7 +87,7 @@ public class NfcAdapterTest {
         // when creating a mocked adapter.
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assume.assumeNotNull(adapter);
-        Assume.assumeTrue(adapter.enable());
+        Assume.assumeTrue(NfcUtils.enableNfc(adapter, mContext));
         mSavedService = (INfcAdapter) (
             new FieldReader(adapter, adapter.getClass().getDeclaredField("sService")).read());
     }

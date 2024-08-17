@@ -55,7 +55,7 @@ import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
-import android.telephony.satellite.SatelliteSubscriberInfo;
+import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
@@ -1401,15 +1401,18 @@ public class SatelliteManagerTestBase {
         return infos.stream().anyMatch(info -> info.getSubscriptionId() == subId);
     }
 
-    protected static Pair<List<SatelliteSubscriberInfo>, Integer> requestProvisionSubscriberIds() {
-        final AtomicReference<List<SatelliteSubscriberInfo>> list = new AtomicReference<>();
+    protected static Pair<List<SatelliteSubscriberProvisionStatus>, Integer>
+            requestSatelliteSubscriberProvisionStatus() {
+        final AtomicReference<List<SatelliteSubscriberProvisionStatus>> list =
+                new AtomicReference<>();
         final AtomicReference<Integer> errorCode = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<List<SatelliteSubscriberInfo>, SatelliteManager.SatelliteException>
+        OutcomeReceiver<List<SatelliteSubscriberProvisionStatus>,
+                SatelliteManager.SatelliteException>
                 receiver =
                 new OutcomeReceiver<>() {
                     @Override
-                    public void onResult(List<SatelliteSubscriberInfo> result) {
+                    public void onResult(List<SatelliteSubscriberProvisionStatus> result) {
                         list.set(result);
                         latch.countDown();
                     }
@@ -1421,11 +1424,12 @@ public class SatelliteManagerTestBase {
                     }
                 };
 
-        sSatelliteManager.requestProvisionSubscriberIds(getContext().getMainExecutor(), receiver);
+        sSatelliteManager.requestSatelliteSubscriberProvisionStatus(
+                getContext().getMainExecutor(), receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
         } catch (InterruptedException ex) {
-            loge("requestProvisionSubscriberIds ex=" + ex);
+            loge("requestSatelliteSubscriberProvisionStatus ex=" + ex);
             return null;
         }
 
@@ -1436,44 +1440,6 @@ public class SatelliteManagerTestBase {
         } else {
             assertFalse(list.get().size() > 0);
             return null;
-        }
-    }
-
-    protected static boolean isProvisioned(String subscriberId) {
-        final AtomicReference<Boolean> supported = new AtomicReference<>();
-        final AtomicReference<Integer> errorCode = new AtomicReference<>();
-        CountDownLatch latch = new CountDownLatch(1);
-        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
-                new OutcomeReceiver<>() {
-                    @Override
-                    public void onResult(Boolean result) {
-                        supported.set(result);
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void onError(SatelliteManager.SatelliteException exception) {
-                        errorCode.set(exception.getErrorCode());
-                        latch.countDown();
-                    }
-                };
-
-        sSatelliteManager.requestIsProvisioned(subscriberId, getContext().getMainExecutor(),
-                receiver);
-        try {
-            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
-        } catch (InterruptedException ex) {
-            return false;
-        }
-
-        Integer error = errorCode.get();
-        Boolean isSupported = supported.get();
-        if (error == null) {
-            assertNotNull(isSupported);
-            return isSupported;
-        } else {
-            assertNull(isSupported);
-            return false;
         }
     }
 }

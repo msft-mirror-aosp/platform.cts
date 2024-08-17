@@ -308,7 +308,7 @@ public final class Requirements {
             {{- $c := $m.GetComparison}}
             {{- if eq $c.String "COMPARISON_CONFIG" }}
             {{- range $s := $r.GetSpecs }}
-            {{- if eq $s.GetTestConfigId $t.GetId }}
+            {{- if eq $s.GetTestConfigId $t_id }}
             {{- with index $s.GetRequiredValues $m_id}}
             req.setMeasuredValue("{{$m_id}}",
                 {{- template "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}});

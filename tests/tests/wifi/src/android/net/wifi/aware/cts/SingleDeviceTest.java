@@ -633,6 +633,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(true));
 
+        // Disable autojoin to reduce the flakiness
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.allowAutojoinGlobal(false));
+
         // Turn on Wi-Fi
         mWifiLock = mWifiManager.createWifiLock(TAG);
         mWifiLock.acquire();
@@ -672,6 +676,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(mWasVerboseLoggingEnabled));
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.allowAutojoinGlobal(true));
 
         super.tearDown();
         Thread.sleep(INTERVAL_BETWEEN_TESTS_SECS * 1000);

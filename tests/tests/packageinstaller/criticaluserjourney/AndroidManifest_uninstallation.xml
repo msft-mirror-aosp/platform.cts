@@ -15,27 +15,14 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="android.packageinstaller.criticaluserjourney.cts" >
+          package="android.packageinstaller.criticaluserjourney.cts.uninstallation" >
 
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
-    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
-
-    <application android:label="Cts Package Installer CUJ Tests">
-        <uses-library android:name="android.test.runner" />
-
-        <provider android:authorities="android.packageinstaller.criticaluserjourney.cts.fileprovider"
-            android:name="androidx.core.content.FileProvider"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-    </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:functionalTest="true"
-                     android:targetPackage="android.packageinstaller.criticaluserjourney.cts"
-                     android:label="Package Installer CUJ Tests"/>
+                     android:targetPackage="android.packageinstaller.criticaluserjourney.cts.uninstallation"
+                     android:label="Package Installer CUJ Uninstallation Tests"/>
 
 </manifest>

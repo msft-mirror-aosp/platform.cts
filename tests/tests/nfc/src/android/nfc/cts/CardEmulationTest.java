@@ -1993,6 +1993,30 @@ public class CardEmulationTest {
         setMockService();
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
+    @Test
+    public void testOverrideRoutingTable() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        final Activity activity = createAndResumeActivity();
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        Assert.assertThrows(SecurityException.class,
+                () -> instance.overrideRoutingTable(activity, CardEmulation.DH, null));
+        instance.setPreferredService(activity,
+                new ComponentName(mContext, CtsMyHostApduService.class));
+        instance.overrideRoutingTable(activity, CardEmulation.DH, null);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
+    @Test
+    public void testRecoverRoutingTable() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        final Activity activity = createAndResumeActivity();
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        instance.recoverRoutingTable(activity);
+    }
+
     private Activity createAndResumeActivity() {
         ensureUnlocked();
         Intent intent
