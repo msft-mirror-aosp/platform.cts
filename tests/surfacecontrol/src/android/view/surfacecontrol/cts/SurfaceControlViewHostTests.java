@@ -1148,6 +1148,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         @Override
         protected void onDetachedFromWindow() {
+            if (mPackage == null) {
+                return;
+            }
             mPackage.notifyDetachedFromWindow();
         }
 

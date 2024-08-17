@@ -66,8 +66,7 @@ import java.util.regex.Pattern;
 public class PackageInstallerCujTestBase {
     public static final String TAG = "PackageInstallerCujTestBase";
 
-    public static final String CONTENT_AUTHORITY =
-            "android.packageinstaller.criticaluserjourney.cts.fileprovider";
+    public static final String AUTHORITY_NAME = ".fileprovider";
     public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
     public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
     public static final String INSTALLER_LABEL = "CTS CUJ Installer";
