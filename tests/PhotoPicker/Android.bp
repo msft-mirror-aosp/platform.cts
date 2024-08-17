@@ -47,7 +47,9 @@ android_test {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
         "cts-install-lib",
+        "flag-junit",
         "Harrier",
         "modules-utils-build",
+        "mediaprovider_flags_java_lib",
     ],
 }

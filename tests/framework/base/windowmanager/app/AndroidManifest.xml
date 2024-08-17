@@ -325,12 +325,10 @@
              android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"/>
         <activity android:name=".PortraitOrientationActivity"
              android:exported="true"
-             android:screenOrientation="portrait"
-             android:documentLaunchMode="always"/>
+             android:screenOrientation="portrait"/>
         <activity android:name=".LandscapeOrientationActivity"
              android:exported="true"
-             android:screenOrientation="landscape"
-             android:documentLaunchMode="always"/>
+             android:screenOrientation="landscape"/>
         <activity android:name=".MoveTaskToBackActivity"
              android:exported="true"
              android:launchMode="singleInstance"/>

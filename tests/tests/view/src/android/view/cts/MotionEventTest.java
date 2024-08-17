@@ -1117,9 +1117,13 @@ public class MotionEventTest {
                 withDownTime(javaMotionEvent.getDownTime()),
                 withMotionAction(javaMotionEvent.getAction()),
                 InputEventMatchersKt.withCoords(
-                        new PointF(javaMotionEvent.getX(), javaMotionEvent.getY())
+                        new PointF(javaMotionEvent.getX(), javaMotionEvent.getY()),
+                        InputEventMatchersKt.EPSILON
                 ),
-                withRawCoords(new PointF(javaMotionEvent.getRawX(), javaMotionEvent.getRawY())),
+                withRawCoords(
+                        new PointF(javaMotionEvent.getRawX(), javaMotionEvent.getRawY()),
+                        InputEventMatchersKt.EPSILON
+                ),
                 withDeviceId(javaMotionEvent.getDeviceId()),
                 withEdgeFlags(javaMotionEvent.getEdgeFlags()),
                 withMetaState(javaMotionEvent.getMetaState()),
