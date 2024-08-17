@@ -3,9 +3,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
      xmlns:tools="http://schemas.android.com/tools"
      package="com.test.sdk1_1"
-     android:versionCode="1">
+     android:versionCode="3">
 
-    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="35"/>
 
     <application android:allowBackup="true"
          android:debuggable="true"
@@ -24,14 +24,22 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <service android:name=".FakeService" android:exported="true" />
+        <receiver android:name=".FakeReceiver" android:exported="true" />
+        <provider android:name=".FakeProvider"
+                  android:authorities="com.test.sdk1_1.FakeProvider"
+                  android:exported="true" />
 
-        <sdk-library android:name="com.test.sdk1" android:versionMajor="1" />
+        <sdk-library android:name="com.test.sdk1" android:versionMajor="2" />
 
         <!-- (b/197936012) Remove startup provider due to test timeout issue -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
             tools:node="remove" />
+
+        <property android:name="com.test.sdk1_1.TEST_PROPERTY"
+                  android:value="com.test.sdk1_1.testp1" />
 
     </application>
 
