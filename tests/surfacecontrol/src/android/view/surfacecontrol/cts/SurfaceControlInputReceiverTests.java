@@ -69,6 +69,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
@@ -346,7 +347,7 @@ public class SurfaceControlInputReceiverTests {
         // bounds should be obtained instead of off-setting which is needed to tap at right place.
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
         assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(coordRelativeToWindow)));
+                withCoords(coordRelativeToWindow, InputEventMatchersKt.EPSILON)));
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
