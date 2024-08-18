@@ -30,10 +30,12 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.util.Log;
+import android.util.Pair;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.window.WindowInfosListenerForTest;
+import android.window.WindowInfosListenerForTest.DisplayInfo;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
 import androidx.annotation.NonNull;
@@ -55,6 +57,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -75,7 +78,7 @@ public class CtsWindowInfoUtils {
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
      * @param uiAutomation Pass in a uiAutomation to use. If null is passed in, the default will
      *                     be used. Passing non null is only needed if the test has a custom version
-     *                     of uiAutomtation since retrieving a uiAutomation could overwrite it.
+     *                     of uiAutomation since retrieving a uiAutomation could overwrite it.
      * @return True if the provided predicate is true for any invocation before
      * the timeout is reached. False otherwise.
      */
@@ -85,15 +88,16 @@ public class CtsWindowInfoUtils {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
 
-        Consumer<List<WindowInfo>> checkPredicate = windowInfos -> {
-            if (satisfied.get()) {
-                return;
-            }
-            if (predicate.test(windowInfos)) {
-                satisfied.set(true);
-                latch.countDown();
-            }
-        };
+        BiConsumer<List<WindowInfo>, List<DisplayInfo>> checkPredicate =
+                (windowInfos, displayInfos) -> {
+                    if (satisfied.get()) {
+                        return;
+                    }
+                    if (predicate.test(windowInfos)) {
+                        satisfied.set(true);
+                        latch.countDown();
+                    }
+                };
 
         var waitForWindow = new ThrowingRunnable() {
             @Override
@@ -257,7 +261,7 @@ public class CtsWindowInfoUtils {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
 
-        var windowNotOccluded = new Consumer<List<WindowInfo>>() {
+        var windowNotOccluded = new BiConsumer<List<WindowInfo>, List<DisplayInfo>>() {
             private Timer mTimer = new Timer();
             private TimerTask mTask = null;
             private Rect mPreviousBounds = new Rect(0, 0, -1, -1);
@@ -271,7 +275,7 @@ public class CtsWindowInfoUtils {
             }
 
             @Override
-            public void accept(List<WindowInfo> windowInfos) {
+            public void accept(List<WindowInfo> windowInfos, List<DisplayInfo> displayInfos) {
                 if (satisfied.get()) {
                     return;
                 }
@@ -414,38 +418,40 @@ public class CtsWindowInfoUtils {
         var previousBounds = new HashMap<IBinder, Rect>();
         var currentBounds = new HashMap<IBinder, Rect>();
 
-        Consumer<List<WindowInfo>> consumer = windowInfos -> {
-            if (satisfied.get()) {
-                return;
-            }
+        BiConsumer<List<WindowInfo>, List<DisplayInfo>> consumer =
+                (windowInfos, displayInfos) -> {
+                    if (satisfied.get()) {
+                        return;
+                    }
 
-            currentBounds.clear();
-            for (var windowInfo : windowInfos) {
-                currentBounds.put(windowInfo.windowToken, windowInfo.bounds);
-            }
+                    currentBounds.clear();
+                    for (var windowInfo : windowInfos) {
+                        currentBounds.put(windowInfo.windowToken, windowInfo.bounds);
+                    }
 
-            if (currentBounds.equals(previousBounds)) {
-                // No changes detected. Let the previously scheduled timer task continue.
-                return;
-            }
+                    if (currentBounds.equals(previousBounds)) {
+                        // No changes detected. Let the previously scheduled timer task continue.
+                        return;
+                    }
 
-            previousBounds.clear();
-            previousBounds.putAll(currentBounds);
+                    previousBounds.clear();
+                    previousBounds.putAll(currentBounds);
 
-            // Something has changed. Cancel the previous timer task and schedule a new task
-            // to countdown the latch in 200ms.
-            if (task[0] != null) {
-                task[0].cancel();
-            }
-            task[0] = new TimerTask() {
-                @Override
-                public void run() {
-                    satisfied.set(true);
-                    latch.countDown();
-                }
-            };
-            timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
-        };
+                    // Something has changed. Cancel the previous timer task and schedule a new task
+                    // to countdown the latch in 200ms.
+                    if (task[0] != null) {
+                        task[0].cancel();
+                    }
+                    task[0] =
+                            new TimerTask() {
+                                @Override
+                                public void run() {
+                                    satisfied.set(true);
+                                    latch.countDown();
+                                }
+                            };
+                    timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
+                };
 
         runWithSurfaceFlingerPermission(() -> {
             var listener = new WindowInfosListenerForTest();
@@ -726,5 +732,68 @@ public class CtsWindowInfoUtils {
         }
 
         assertTrue(message, condition);
+    }
+
+    /**
+     * Get the current window and display state.
+     */
+    public static Pair<List<WindowInfo>, List<DisplayInfo>> getWindowAndDisplayState()
+            throws InterruptedException {
+        var consumer =
+                new BiConsumer<List<WindowInfo>, List<DisplayInfo>>() {
+                    private CountDownLatch mLatch = new CountDownLatch(1);
+                    private boolean mComplete = false;
+
+                    List<WindowInfo> mWindowInfos;
+                    List<DisplayInfo> mDisplayInfos;
+
+                    @Override
+                    public void accept(List<WindowInfo> windows, List<DisplayInfo> displays) {
+                        if (mComplete || windows.isEmpty() || displays.isEmpty()) {
+                            return;
+                        }
+                        mComplete = true;
+                        mWindowInfos = windows;
+                        mDisplayInfos = displays;
+                        mLatch.countDown();
+                    }
+
+                    void await() throws InterruptedException {
+                        mLatch.await(5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
+                    }
+
+                    Pair<List<WindowInfo>, List<DisplayInfo>> getState() {
+                        return new Pair(mWindowInfos, mDisplayInfos);
+                    }
+                };
+
+        var waitForState =
+                new ThrowingRunnable() {
+                    @Override
+                    public void run() throws InterruptedException {
+                        var listener = new WindowInfosListenerForTest();
+                        try {
+                            listener.addWindowInfosListener(consumer);
+                            consumer.await();
+                        } finally {
+                            listener.removeWindowInfosListener(consumer);
+                        }
+                    }
+                };
+
+        var uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        Set<String> shellPermissions = uiAutomation.getAdoptedShellPermissions();
+        if (shellPermissions.isEmpty()) {
+            SystemUtil.runWithShellPermissionIdentity(
+                    uiAutomation, waitForState, Manifest.permission.ACCESS_SURFACE_FLINGER);
+        } else if (shellPermissions.contains(Manifest.permission.ACCESS_SURFACE_FLINGER)) {
+            waitForState.run();
+        } else {
+            throw new IllegalStateException(
+                    "getWindowAndDisplayState called with adopted shell permissions that don't"
+                            + " include ACCESS_SURFACE_FLINGER");
+        }
+
+        return consumer.getState();
     }
 }
