@@ -18,6 +18,7 @@
     {{- else if eq $c.String "COMPARISON_GREATER_THAN_OR_EQUAL" -}}GTE
     {{- else if eq $c.String "COMPARISON_INFO_ONLY" -}}INFO
     {{- else if eq $c.String "COMPARISON_CONFIG" -}}INFO
+    {{- else if eq $c.String "COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL" -}}CAM_HW_LEVEL_GTE
     {{- else }}{{$c}}
     {{- end }}
 {{- end -}}
@@ -308,7 +309,7 @@ public final class Requirements {
             {{- $c := $m.GetComparison}}
             {{- if eq $c.String "COMPARISON_CONFIG" }}
             {{- range $s := $r.GetSpecs }}
-            {{- if eq $s.GetTestConfigId $t.GetId }}
+            {{- if eq $s.GetTestConfigId $t_id }}
             {{- with index $s.GetRequiredValues $m_id}}
             req.setMeasuredValue("{{$m_id}}",
                 {{- template "MeasurementValue" Dict "RequiredValue" . "MeasurementType" $mt}});

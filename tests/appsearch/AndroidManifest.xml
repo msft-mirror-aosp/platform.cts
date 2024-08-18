@@ -37,7 +37,6 @@
                   android:exported="true"/>
         <service android:name="android.app.appsearch.testutil.functions.TestAppFunctionService"
                  android:exported="true"
-                 android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
                  android:process=":appfunctions">
             <intent-filter>
                 <action android:name="android.app.appsearch.functions.AppFunctionService"/>

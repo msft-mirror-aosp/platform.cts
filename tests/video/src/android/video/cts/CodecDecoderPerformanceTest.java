@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.CodecPerformanceTestBase.ScalingFactor.Mode;
+
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaFormat;
@@ -39,11 +41,11 @@ public class CodecDecoderPerformanceTest extends CodecDecoderPerformanceTestBase
     private static final String LOG_TAG = CodecDecoderPerformanceTest.class.getSimpleName();
 
     public CodecDecoderPerformanceTest(String decoderName, String testFile, int keyPriority,
-            float scalingFactor) {
-        super(decoderName, testFile, keyPriority, scalingFactor);
+            float scalingFactor, Mode scalingFactorMode) {
+        super(decoderName, testFile, keyPriority, scalingFactor, scalingFactorMode);
     }
 
-    @Parameterized.Parameters(name = "{index}_{0}_{2}_{3}")
+    @Parameterized.Parameters(name = "{index}_{0}_{2}_{3}_{4}")
     public static Collection<Object[]> input() throws IOException {
         final String[] fileList = new String[]{
                 // Video - Filename
@@ -104,10 +106,13 @@ public class CodecDecoderPerformanceTest extends CodecDecoderPerformanceTestBase
                     false);
             for (String decoder : listOfDecoders) {
                 for (int keyPriority : KEY_PRIORITIES_LIST) {
-                    for (float scalingFactor : SCALING_FACTORS_LIST) {
-                        if (keyPriority == 1 || (scalingFactor > 0.0 && scalingFactor <= 1.0)) {
+                    for (ScalingFactor scalingFactor : SCALING_FACTORS_LIST) {
+                        float scalingFactorValue = scalingFactor.getValue();
+                        Mode scalingFactorMode = scalingFactor.getMode();
+                        if (keyPriority == 1 || (scalingFactorValue > 0.0
+                                && scalingFactorValue <= 1.0)) {
                             argsList.add(new Object[]{decoder, fileName, keyPriority,
-                                    scalingFactor});
+                                    scalingFactorValue, scalingFactorMode});
                         }
                     }
                 }

@@ -22,6 +22,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.GenericDocument;
+import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1374,5 +1375,40 @@ public class GenericDocumentCtsTest {
                         IllegalArgumentException.class,
                         () -> new EmbeddingVector(new float[] {}, "my_model"));
         assertThat(exception).hasMessageThat().contains("Embedding values cannot be empty.");
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC)
+    public void testWriteToParcel() {
+        GenericDocument inDoc =
+                new GenericDocument.Builder<>("namespace", "id1", "schema1")
+                        .setScore(42)
+                        .setPropertyString("propString", "Hello")
+                        .setPropertyBytes("propBytes", new byte[][] {{1, 2}})
+                        .setPropertyDocument(
+                                "propDocument",
+                                new GenericDocument.Builder<>("namespace", "id2", "schema2")
+                                        .setPropertyString("propString", "Goodbye")
+                                        .setPropertyBytes("propBytes", new byte[][] {{3, 4}})
+                                        .build())
+                        .build();
+
+        // Serialize the document
+        Parcel parcel = Parcel.obtain();
+        inDoc.writeToParcel(parcel, /* flags= */ 0);
+
+        // Deserialize the document
+        parcel.setDataPosition(0);
+        GenericDocument document = GenericDocument.createFromParcel(parcel);
+        parcel.recycle();
+
+        // Compare results
+        assertThat(document.getPropertyString("propString")).isEqualTo("Hello");
+        assertThat(document.getPropertyBytesArray("propBytes")).isEqualTo(new byte[][] {{1, 2}});
+        assertThat(document.getPropertyDocument("propDocument").getPropertyString("propString"))
+                .isEqualTo("Goodbye");
+        assertThat(document.getPropertyDocument("propDocument").getPropertyBytesArray("propBytes"))
+                .isEqualTo(new byte[][] {{3, 4}});
     }
 }
