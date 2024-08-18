@@ -505,22 +505,20 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
             final int displayX = surfaceLocation[0] + viewX;
             final int displayY = surfaceLocation[1] + viewY;
-            final long downTime = SystemClock.uptimeMillis();
 
             UinputTouchDevice.Pointer pointer = mTouchScreen.touchDown(displayX, displayY);
             pointer.lift();
 
             PollingCheck.waitFor(() -> (events.size() == 2));
-            final float epsilon = 0.001f;
             events.forEach(e -> {
                 assertEquals("Expected to get the x coordinate in View space.",
-                        viewX, e.getX(), epsilon);
+                        viewX, e.getX(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get the y coordinate in View space.",
-                        viewY, e.getY(), epsilon);
+                        viewY, e.getY(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get raw x coordinate in Display space.",
-                        displayX, e.getRawX(), epsilon);
+                        displayX, e.getRawX(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
                 assertEquals("Expected to get raw y coordinate in Display space.",
-                        displayY, e.getRawY(), epsilon);
+                        displayY, e.getRawY(), UinputTouchDevice.TOUCH_COORDINATE_EPSILON);
             });
         }
     }
@@ -1150,6 +1148,9 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
 
         @Override
         protected void onDetachedFromWindow() {
+            if (mPackage == null) {
+                return;
+            }
             mPackage.notifyDetachedFromWindow();
         }
 

@@ -41,6 +41,7 @@ import com.android.cts.verifier.libs.ui.PlainTextFormatter;
 import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // MegaAudio
+import org.hyphonate.megaaudio.common.BuilderBase;
 import org.hyphonate.megaaudio.common.StreamBase;
 import org.hyphonate.megaaudio.duplex.DuplexAudioManager;
 import org.hyphonate.megaaudio.player.sources.SparseChannelAudioSource;
@@ -161,12 +162,14 @@ public class AudioMultichannelMixdownActivity
                                     // SparseChannelAudioSourceProvider)
 
         // A description of the channel being "listened for".
-        final String mDescription;
+        private final String mDescription;
 
         // Leave this null for all but the first phase for a new channel config
         String mHeading;
 
         boolean mPass;
+        final int mPhaseIndex;
+        private static int sNextPhaseIndex = 0;
 
         public double[] mMagnitude;
         public double[] mMaxMagnitude;
@@ -181,6 +184,7 @@ public class AudioMultichannelMixdownActivity
             mOutputMask = outMask;
             mOutputChannel = outChannel;
             mDescription = description;
+            mPhaseIndex = sNextPhaseIndex++;
 
             mMagnitude = new double[IN_CHANNEL_COUNT];
             mMaxMagnitude = new double[IN_CHANNEL_COUNT];
@@ -218,6 +222,29 @@ public class AudioMultichannelMixdownActivity
                         && mPhaseJitter[IN_CHANNEL_LEFT] < MAX_SIGNAL_PASS_JITTER)
                     || (mMagnitude[IN_CHANNEL_RIGHT] >= MIN_SIGNAL_PASS_MAGNITUDE
                         && mPhaseJitter[IN_CHANNEL_RIGHT] < MAX_SIGNAL_PASS_JITTER);
+        }
+
+        public int getPhaseIndex() {
+            return this.mPhaseIndex;
+        }
+
+        String getSummary() {
+            return "(" + getPhaseIndex() + ") " + mDescription
+                + ", ch[" + mOutputChannel + "]";
+        }
+
+        private String megaAudioApiToString(int megaAudioApi) {
+            return (megaAudioApi == BuilderBase.TYPE_JAVA) ? "Java" : "Native";
+        }
+
+        void logBeginning(int audioApi) {
+            Log.d(TAG, "BEGIN_SUB_TEST: " + getSummary() + ", "
+                    + megaAudioApiToString(mAudioApi));
+        }
+
+        void logEnding(int audioApi) {
+            Log.d(TAG, "END_SUB_TEST: " + getSummary() + ", "
+                    + megaAudioApiToString(mAudioApi));
         }
     }
 
@@ -367,7 +394,7 @@ public class AudioMultichannelMixdownActivity
                     sb.append(">> ");
                 }
 
-                sb.append(testPhase.mDescription);
+                sb.append(testPhase.getSummary());
 
                 if (testPhase == currentTestPhase) {
                     sb.append(" <<");
@@ -436,7 +463,7 @@ public class AudioMultichannelMixdownActivity
 
                     // Description
                     String separatorStr = " - ";
-                    mTextFormatter.appendText(testPhase.mDescription + separatorStr);
+                    mTextFormatter.appendText(testPhase.getSummary() + separatorStr);
                     mTextFormatter.openBold();
                     mTextFormatter.appendText((testPhase.mPass
                             ? getString(R.string.audio_general_pass)
@@ -823,6 +850,7 @@ public class AudioMultichannelMixdownActivity
         mAnalyzers[IN_CHANNEL_RIGHT].reset();
 
         mWaveView.resetPersistentMaxMagnitude();
+        testPhase.logEnding(mAudioApi);
     }
 
     private void advanceTestPhase() {
@@ -851,6 +879,7 @@ public class AudioMultichannelMixdownActivity
             mTestPhase++;
 
             TestPhase testPhase = mTestManager.getTestPhase(mTestPhase);
+            testPhase.logBeginning(mAudioApi);
             float stateChangeDelay = 0.0f;
             if (mCurrentPlayerMask != testPhase.mOutputMask) {
                 stopDuplex();
