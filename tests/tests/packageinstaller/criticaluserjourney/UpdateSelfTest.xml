@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 
-<configuration description="Config for CTS Packageinstaller CUJ test cases">
+<configuration description="Config for CTS Packageinstaller CUJ update self test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="packagemanager" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -45,7 +45,7 @@
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
-        <option name="test-file-name" value="CtsPackageInstallerCUJTestCases.apk" />
+        <option name="test-file-name" value="CtsPackageInstallerCUJUpdateSelfTestCases.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.SettingsPreparer">
@@ -68,7 +68,6 @@
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
-        <option name="package" value="android.packageinstaller.criticaluserjourney.cts" />
-        <option name="runtime-hint" value="2m" />
+        <option name="package" value="android.packageinstaller.criticaluserjourney.cts.updateself" />
     </test>
 </configuration>
