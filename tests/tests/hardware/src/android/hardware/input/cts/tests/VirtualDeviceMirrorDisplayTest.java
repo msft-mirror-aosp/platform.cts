@@ -59,7 +59,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
@@ -374,8 +373,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                         inputSize /* axisSize */)));
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-            Flags.FLAG_CONSISTENT_DISPLAY_FLAGS, Flags.FLAG_VIRTUAL_STYLUS})
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     public void virtualStylus_touchEvent() {
         VirtualStylus stylus = VirtualInputDeviceCreator.createAndPrepareStylus(mVirtualDevice,
