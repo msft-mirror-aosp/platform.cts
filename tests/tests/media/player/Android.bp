@@ -18,12 +18,12 @@ package {
         "Android-Apache-2.0",
         "cts_tests_tests_media_license", // CC-BY
     ],
-    default_team: "trendy_team_android_media_solutions",
+    default_team: "trendy_team_android_media_solutions_playback",
 }
 
 android_test {
     name: "CtsMediaPlayerTestCases",
-    team: "trendy_team_android_media_audio_framework",
+    team: "trendy_team_android_media_solutions_playback",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",

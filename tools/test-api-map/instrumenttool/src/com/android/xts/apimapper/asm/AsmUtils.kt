@@ -20,6 +20,18 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.Type
 
+/** Name of the class initializer method. */
+const val CLASS_INITIALIZER_NAME = "<clinit>"
+
+/** Descriptor of the class initializer methods. */
+const val CLASS_INITIALIZER_DESC = "()V"
+
+/** Descriptor of the constructor. */
+const val CTOR_DESC = "()V"
+
+/** Name of the constructor. */
+const val CTOR_NAME = "<init>"
+
 /** Convert the class name to jvm format. */
 fun String.toJvmClassName(): String {
     return this.replace('.', '/')
@@ -28,6 +40,15 @@ fun String.toJvmClassName(): String {
 /** Convert the class name from jvm format. */
 fun String.toHumanReadableClassName(): String {
     return this.replace('/', '.')
+}
+
+/** Convert the class name from jvm format. */
+fun String.toHumanReadableDesc(): String {
+    val params = ArrayList<String>()
+    Type.getArgumentTypes(this).forEach {
+        params.add(it.className.replace("\\$", "."))
+    }
+    return params.joinToString(",")
 }
 
 /** Extract the class name from a .class file. */

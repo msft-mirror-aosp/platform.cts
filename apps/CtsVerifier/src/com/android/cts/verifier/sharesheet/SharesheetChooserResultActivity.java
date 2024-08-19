@@ -28,6 +28,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Looper;
 import android.service.chooser.ChooserResult;
 import android.service.chooser.Flags;
 import android.util.Log;
@@ -98,7 +99,7 @@ abstract class SharesheetChooserResultActivity extends PassFailButtons.Activity 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mHandler = getMainThreadHandler();
+        mHandler = new Handler(Looper.getMainLooper());
         if (!Flags.enableChooserResult()) {
             // If the API isn't enabled, immediately let the test pass.
             Toast.makeText(this, R.string.sharesheet_skipping_for_flag, Toast.LENGTH_LONG).show();

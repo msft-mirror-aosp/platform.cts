@@ -19,8 +19,9 @@ package android.app.appfunctions.cts
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.flags.Flags
 import android.content.Context
-import android.platform.test.annotations.EnableFlags
-import android.platform.test.flag.junit.SetFlagsRule
+import android.platform.test.annotations.RequiresFlagsEnabled
+import android.platform.test.flag.junit.CheckFlagsRule
+import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -31,10 +32,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-@EnableFlags(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionManagerTest {
     @get:Rule
-    val mSetFlagsRule: SetFlagsRule = SetFlagsRule()
+    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()

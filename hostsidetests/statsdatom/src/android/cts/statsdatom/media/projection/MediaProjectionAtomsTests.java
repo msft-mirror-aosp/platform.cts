@@ -81,6 +81,7 @@ public class MediaProjectionAtomsTests extends BaseHostJUnit4Test implements IBu
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
+        DeviceUtils.turnScreenOn(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
         DeviceUtils.installTestApp(getDevice(), TEST_APK, TEST_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
