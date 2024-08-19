@@ -124,12 +124,11 @@ def main():
   # Run tests
   for root, _, files in os.walk(TESTS_DIR):
     for file in files:
-      if file.endswith('_test.py'):
+      if file.endswith('-py-ctsv'):
         test_name = os.path.splitext(file)[0]
         test_file_path = os.path.join(root, file)
         logging.info('Start running test: %s', test_name)
         cmd = [
-            'python3',
             test_file_path,  # Use the full path to the test file
             '-c',
             CONFIG_FILE,
