@@ -39,6 +39,7 @@ from mobly import base_test
 from mobly import test_runner
 from mobly import utils
 from mobly.controllers import android_device
+from mobly.controllers import android_device_lib
 from mobly.snippet import errors
 
 _LOG = logging.getLogger(__name__)
@@ -163,7 +164,13 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         If a PN532 serial path is found, it uses this to configure the device. Otherwise, set up a
         second phone as a reader device.
         """
-        devices = self.register_controller(android_device)[:2]
+        self.pn532 = None
+
+        try:
+            devices = self.register_controller(android_device)[:2]
+        except android_device_lib.errors.Error:
+            _LOG.warning("Could not register Android device.")
+            return
         if len(devices) == 1:
             self.emulator = devices[0]
         else:
@@ -191,7 +198,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         else:
             _LOG.info("No value provided for pn532_serial_path. Defaulting to two-device " +
                       "configuration.")
-            self.pn532 = None
             if len(devices) < 2:
                 raise Exception("Two devices are not present.")
             try:
@@ -206,8 +212,12 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Turns emulator/reader screen on and unlocks between tests as some tests will
         turn the screen off.
         """
+        asserts.assert_true(hasattr(self, 'emulator'), "Emulator device is not set.")
+        asserts.assert_true(hasattr(self, 'reader') or self.pn532 is not None,
+                        "Reader device or PN532 is not set.")
         asserts.assert_true(hasattr(self.emulator, 'nfc_emulator'),
                                    "NFC emulator snippet is not installed.")
+
         self.emulator.nfc_emulator.logInfo("*** TEST START: " + self.current_test_info.name +
                                            " ***")
         asserts.skip_if(
@@ -925,15 +935,16 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None)
 
     def teardown_test(self):
-        if hasattr(self.emulator, 'nfc_emulator'):
+        if hasattr(self, 'emulator') and hasattr(self.emulator, 'nfc_emulator'):
             self.emulator.nfc_emulator.closeActivity()
             self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name +
                                                " ***")
+        param_list = []
         if self.pn532:
             self.pn532.reset_buffers()
             self.pn532.mute()
             param_list = [[self.emulator]]
-        elif hasattr(self.reader, 'nfc_reader'):
+        elif hasattr(self, 'reader') and hasattr(self.reader, 'nfc_reader'):
             self.reader.nfc_reader.closeActivity()
             self.reader.nfc_reader.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
             param_list = [[self.emulator], [self.reader]]
