@@ -36,6 +36,7 @@ android_test {
         "Harrier",
         "CtsSurfaceValidatorLib",
         "android.companion.virtual.flags-aconfig-java",
+        "Harrier",
     ],
     libs: ["android.test.base"],
     // Tag this module as a cts test artifact

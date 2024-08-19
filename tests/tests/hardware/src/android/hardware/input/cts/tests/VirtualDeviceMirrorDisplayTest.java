@@ -40,11 +40,11 @@ import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.WindowManagerStateHelper;
+import android.util.DisplayMetrics;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.Surface;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.filters.SmallTest;
@@ -86,14 +86,12 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
     void onSetUp() {
         // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
         // display. Use the same size for the virtual display to avoid scaling the mirrored content.
-        mDisplayWidth = mTestActivity.getDisplay().getMode().getPhysicalWidth();
-        mDisplayHeight = mTestActivity.getDisplay().getMode().getPhysicalHeight();
-        int rotation = mTestActivity.getDisplay().getRotation();
-        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
-            int tmp = mDisplayWidth;
-            mDisplayWidth = mDisplayHeight;
-            mDisplayHeight = tmp;
-        }
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        // Using Display#getRealMetrics to fetch the logical display size
+        //noinspection deprecation
+        mTestActivity.getDisplay().getRealMetrics(displayMetrics);
+        mDisplayWidth = displayMetrics.widthPixels;
+        mDisplayHeight = displayMetrics.heightPixels;
         mVirtualDevice = mRule.createManagedVirtualDevice();
         mVirtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder(
