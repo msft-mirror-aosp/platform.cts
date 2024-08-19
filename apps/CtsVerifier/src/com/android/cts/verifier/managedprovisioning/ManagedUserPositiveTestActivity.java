@@ -217,7 +217,7 @@ public class ManagedUserPositiveTestActivity extends PassFailButtons.TestListAct
         return new Intent(this, CommandReceiverActivity.class)
                 .putExtra(CommandReceiverActivity.EXTRA_COMMAND,
                         CommandReceiverActivity.COMMAND_SET_ORGANIZATION_NAME)
-                .putExtra(CommandReceiverActivity.EXTRA_USE_CURRENT_USER_DPM, true)
+                .putExtra(CommandReceiverActivity.EXTRA_USE_CURRENT_USER_DPM, false)
                 .putExtra(CommandReceiverActivity.EXTRA_ORGANIZATION_NAME, "Foo, Inc.");
     }
 }

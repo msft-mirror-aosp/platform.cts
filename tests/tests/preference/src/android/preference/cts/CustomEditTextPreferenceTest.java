@@ -16,7 +16,10 @@
 
 package android.preference.cts;
 
+import android.Manifest;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class CustomEditTextPreferenceTest
         extends ActivityInstrumentationTestCase2<PreferencesFromXml> {
@@ -31,7 +34,9 @@ public class CustomEditTextPreferenceTest
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = (PreferencesFromXml) getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                () -> (PreferencesFromXml) getActivity(),
+                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
         mEditTextPref = (CustomEditTextPreference) mActivity.findPreference(
                 "custom_edittext_pref_1");
     }

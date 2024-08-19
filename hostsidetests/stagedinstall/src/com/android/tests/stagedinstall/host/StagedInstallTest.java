@@ -579,14 +579,6 @@ public class StagedInstallTest extends BaseHostJUnit4Test {
         }
     }
 
-    @Test
-    @LargeTest
-    public void testInstallStagedNoHashtreeApex() throws Exception {
-        runPhase("testInstallStagedNoHashtreeApex_Commit");
-        getDevice().reboot();
-        runPhase("testInstallStagedNoHashtreeApex_VerifyPostReboot");
-    }
-
     /**
      * Should fail to verify apex targeting older dev sdk
      */

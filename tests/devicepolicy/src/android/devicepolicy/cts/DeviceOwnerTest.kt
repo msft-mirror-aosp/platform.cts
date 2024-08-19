@@ -16,7 +16,10 @@
 package android.devicepolicy.cts
 
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.pm.PackageManager
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
@@ -30,10 +33,9 @@ import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
 import com.android.bedstead.harrier.annotations.UserTest
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.devicepolicy.DeviceAdmin
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.packages.ComponentReference
@@ -196,10 +198,12 @@ class DeviceOwnerTest {
             // admin for a short while
             Poll.forValue(
                     "Active admins"
-            ) {
-                TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
-            }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
+            ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
         }
@@ -231,8 +235,14 @@ class DeviceOwnerTest {
             // admin for a short while
             Poll.forValue(
                     "Active admins"
-            ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
+            ) {
+                TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
+            }
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
         }
@@ -268,7 +278,11 @@ class DeviceOwnerTest {
             Poll.forValue(
                     "Active admins"
             ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
-                    .toMeet { !it.contains(TEST_ONLY_DPC_COMPONENT) }
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
+                    }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
         }
@@ -320,11 +334,13 @@ class DeviceOwnerTest {
         } finally {
             // After attempting and failing to set the device owner, it will remain as an active
             // admin for a short while
-            Poll.forValue("Active admins") {
-                TestApis.devicePolicy().getActiveAdmins(TestApis.users().system())
-            }
-                    .toMeet { i: Set<ComponentReference> ->
-                        !i.contains(NOT_TEST_ONLY_DPC_COMPONENT)
+            Poll.forValue(
+                    "Active admins"
+            ) { TestApis.devicePolicy().getActiveAdmins(TestApis.users().system()) }
+                    .toMeet { i: Set<DeviceAdmin> -> !i.contains(
+                            DeviceAdmin.of(TEST_ONLY_DPC.packageName(),
+                                    ComponentName(
+                                            TEST_ONLY_DPC.packageName(), "DeviceAdminReceiver")))
                     }
                     .errorOnFail("Expected active admins to not contain DPC")
                     .await()
@@ -372,15 +388,12 @@ class DeviceOwnerTest {
     @Test
     @Postsubmit(reason = "new test")
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#isProvisioningAllowed"])
+    @EnsureHasDeviceOwner
     fun getIsProvisioningAllowed_forManagedDevice_setupWizardIsComplete_returnsFalse() {
         TestApis.users().instrumented().setupComplete = true
-        remoteDpcTestApp.install().use {
-            assertThat(
-                    devicePolicyManager.isProvisioningAllowed(
-                            DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE
-                    )
-            ).isFalse()
-        }
+        assertThat(devicePolicyManager.isProvisioningAllowed(
+            DevicePolicyManager.ACTION_PROVISION_MANAGED_DEVICE
+        )).isFalse()
     }
 
     @RequireFeature(PackageManager.FEATURE_SECURE_LOCK_SCREEN)

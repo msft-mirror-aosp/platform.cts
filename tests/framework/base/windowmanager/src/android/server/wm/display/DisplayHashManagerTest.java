@@ -77,6 +77,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.Set;
@@ -314,7 +315,7 @@ public class DisplayHashManagerTest {
             wm.updateViewLayout(mMainView, windowParams);
         });
         mInstrumentation.waitForIdleSync();
-        waitForStableWindowGeometry(WAIT_TIMEOUT_S, TimeUnit.SECONDS);
+        waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIMEOUT_S));
 
         mSyncDisplayHashResultCallback.reset();
         mTestView.generateDisplayHash(mPhashAlgorithm, null, mExecutor,

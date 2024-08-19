@@ -45,7 +45,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-permission",
-        "mcts-permission",
     ],
     sdk_version: "test_current",
     data: [

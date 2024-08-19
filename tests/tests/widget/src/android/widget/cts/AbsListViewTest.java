@@ -66,6 +66,7 @@ import android.widget.AbsListView.OnScrollListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EdgeEffect;
+import android.widget.FrameLayout;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -734,9 +735,12 @@ public class AbsListViewTest {
     @Test
     public void testGetContextMenuInfo() throws Throwable {
         final MyListView listView = new MyListView(mContext, mAttributeSet);
+        final FrameLayout contentView = new FrameLayout(mContext);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(listView);
 
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, listView, () ->  {
-            mActivityRule.getActivity().setContentView(listView);
+            mActivityRule.getActivity().setContentView(contentView);
             listView.setAdapter(mCountriesAdapter);
             listView.setSelection(2);
         });
@@ -936,9 +940,12 @@ public class AbsListViewTest {
         // Note that we're not using spy() due to Mockito not being able to spy on ListView,
         // at least yet.
         final MyListView listView = new MyListView(mContext, mAttributeSet);
+        final FrameLayout contentView = new FrameLayout(mContext);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(listView);
 
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, listView, () -> {
-            mActivityRule.getActivity().setContentView(listView);
+            mActivityRule.getActivity().setContentView(contentView);
             listView.setAdapter(mCountriesAdapter);
             listView.setTextFilterEnabled(true);
         });
@@ -1280,9 +1287,12 @@ public class AbsListViewTest {
     @Test
     public void testRequestChildRectangleOnScreen_onScrollChangedCalled() throws Throwable {
         final MyListView listView = new MyListView(mContext, mAttributeSet);
+        final FrameLayout contentView = new FrameLayout(mContext);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(listView);
 
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, listView, () -> {
-            mActivityRule.getActivity().setContentView(listView);
+            mActivityRule.getActivity().setContentView(contentView);
             listView.setAdapter(mCountriesAdapter);
         });
         View row = listView.getChildAt(0);
@@ -1305,9 +1315,12 @@ public class AbsListViewTest {
     @Test
     public void testEnterKey() throws Throwable {
         final MyListView listView = new MyListView(mContext, mAttributeSet);
+        final FrameLayout contentView = new FrameLayout(mContext);
+        contentView.setFitsSystemWindows(true);
+        contentView.addView(listView);
 
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule, listView, () -> {
-            mActivityRule.getActivity().setContentView(listView);
+            mActivityRule.getActivity().setContentView(contentView);
             listView.setAdapter(mCountriesAdapter);
             listView.setTextFilterEnabled(true);
             listView.requestFocus();

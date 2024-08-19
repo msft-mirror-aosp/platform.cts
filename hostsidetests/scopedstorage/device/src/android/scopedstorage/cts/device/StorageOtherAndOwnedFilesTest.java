@@ -42,6 +42,7 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.filters.SdkSuppress;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -75,8 +76,12 @@ public class StorageOtherAndOwnedFilesTest {
      */
     @BeforeClass
     public static void init() throws Exception {
-        DeviceTestUtils.checkUISupported();
         pollForPermission(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED, true);
+    }
+
+    @Before
+    public void setUp() {
+        DeviceTestUtils.checkUISupported();
     }
 
     @After

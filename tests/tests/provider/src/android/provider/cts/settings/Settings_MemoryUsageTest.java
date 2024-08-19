@@ -24,6 +24,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.os.Process;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.Settings;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -65,6 +66,7 @@ public class Settings_MemoryUsageTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have WRITE_SETTINGS permission")
     public void testMemoryUsageExceeded() {
         expectThrows(Exception.class,
                 () -> Settings.System.putString(

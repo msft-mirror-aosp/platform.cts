@@ -69,8 +69,8 @@ class CodecEncoderTest final : public CodecTestBase {
                      const char* separator);
     ~CodecEncoderTest();
 
-    bool testSimpleEncode(const char* encoder, const char* srcPath);
-    bool testReconfigure(const char* encoder, const char* srcPath);
+    bool testSimpleEncode(const char* encoder, const char* srcPath, int frameLimit);
+    bool testReconfigure(const char* encoder, const char* srcPath, int frameLimit);
     bool testSetForceSyncFrame(const char* encoder, const char* srcPath);
     bool testAdaptiveBitRate(const char* encoder, const char* srcPath);
     bool testOnlyEos(const char* encoder);
@@ -387,7 +387,7 @@ void CodecEncoderTest::updateBitrate(AMediaFormat* format, int bitrate) {
     AMediaCodec_setParameters(mCodec, format);
 }
 
-bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath) {
+bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath, int frameLimit) {
     setUpSource(srcPath);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     /* TODO(b/149027258) */
@@ -418,7 +418,7 @@ bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath
                                StringFormat("Codec name mismatch act/got: %s/%s", encoder, name))
                 if (!configureCodec(format, isAsync, eosType, true)) return false;
                 RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
-                if (!doWork(INT32_MAX)) return false;
+                if (!doWork(frameLimit)) return false;
                 if (!queueEOS()) return false;
                 if (!waitForAllOutputs()) return false;
                 RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
@@ -434,7 +434,7 @@ bool CodecEncoderTest::testSimpleEncode(const char* encoder, const char* srcPath
     return true;
 }
 
-bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath) {
+bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath, int frameLimit) {
     setUpSource(srcPath);
     RETURN_IF_NULL(mInputData, StringFormat("unable to open input file %s", srcPath))
     auto configRef = mReconfBuff;
@@ -442,14 +442,14 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath)
         auto format = mFormats[1];
         RETURN_IF_NULL(format,
                        std::string{"encountered error during deserialization of media format"})
-        RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, INT32_MAX, format, configRef),
+        RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, frameLimit, format, configRef),
                         StringFormat("encodeToMemory failed for file: %s codec: %s \n format: %s",
                                      srcPath, encoder, AMediaFormat_toString(format)))
     }
     auto format = mFormats[0];
     RETURN_IF_NULL(format, std::string{"encountered error during deserialization of media format"})
     auto ref = mRefBuff;
-    RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, INT32_MAX, format, ref),
+    RETURN_IF_FALSE(encodeToMemory(srcPath, encoder, frameLimit, format, ref),
                     StringFormat("encodeToMemory failed for file: %s codec: %s \n format: %s",
                                  srcPath, encoder, AMediaFormat_toString(format)))
 
@@ -480,7 +480,7 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath)
         if (true) mSaveToMem = false;
         else mSaveToMem = true;
         test->reset();
-        if (!doWork(INT32_MAX)) return false;
+        if (!doWork(frameLimit)) return false;
         if (!queueEOS()) return false;
         if (!waitForAllOutputs()) return false;
         RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
@@ -492,7 +492,7 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath)
         if (!reConfigureCodec(format, !isAsync, false, true)) return false;
         RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
         test->reset();
-        if (!doWork(INT32_MAX)) return false;
+        if (!doWork(frameLimit)) return false;
         if (!queueEOS()) return false;
         if (!waitForAllOutputs()) return false;
         RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
@@ -505,7 +505,7 @@ bool CodecEncoderTest::testReconfigure(const char* encoder, const char* srcPath)
             if (!reConfigureCodec(mFormats[1], isAsync, false, true)) return false;
             RETURN_IF_FAIL(AMediaCodec_start(mCodec), "AMediaCodec_start failed")
             test->reset();
-            if (!doWork(INT32_MAX)) return false;
+            if (!doWork(frameLimit)) return false;
             if (!queueEOS()) return false;
             if (!waitForAllOutputs()) return false;
             RETURN_IF_FAIL(AMediaCodec_stop(mCodec), "AMediaCodec_stop failed")
@@ -674,14 +674,14 @@ bool CodecEncoderTest::testAdaptiveBitRate(const char* encoder, const char* srcP
 
 static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, jstring jsrcPath,
                                        jstring jMediaType, jstring jCfgParams, jstring jSeparator,
-                                       jobject jRetMsg) {
+                                       jobject jRetMsg, jint jFrameLimit) {
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
     const char* cEncoder = env->GetStringUTFChars(jEncoder, nullptr);
     const char* cCfgParams = env->GetStringUTFChars(jCfgParams, nullptr);
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest = new CodecEncoderTest(cMediaType, cCfgParams, nullptr, cSeparator);
-    bool isPass = codecEncoderTest->testSimpleEncode(cEncoder, csrcPath);
+    bool isPass = codecEncoderTest->testSimpleEncode(cEncoder, csrcPath, jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -699,7 +699,7 @@ static jboolean nativeTestSimpleEncode(JNIEnv* env, jobject, jstring jEncoder, j
 static jboolean nativeTestReconfigure(JNIEnv* env, jobject, jstring jEncoder, jstring jsrcPath,
                                       jstring jMediaType, jstring jCfgParams,
                                       jstring jReconfigCfgParams, jstring jSeparator,
-                                      jobject jRetMsg) {
+                                      jobject jRetMsg, jint jFrameLimit) {
     bool isPass;
     const char* csrcPath = env->GetStringUTFChars(jsrcPath, nullptr);
     const char* cMediaType = env->GetStringUTFChars(jMediaType, nullptr);
@@ -711,7 +711,7 @@ static jboolean nativeTestReconfigure(JNIEnv* env, jobject, jstring jEncoder, js
     const char* cSeparator = env->GetStringUTFChars(jSeparator, nullptr);
     auto codecEncoderTest =
             new CodecEncoderTest(cMediaType, cCfgParams, cReconfigCfgParams, cSeparator);
-    isPass = codecEncoderTest->testReconfigure(cEncoder, csrcPath);
+    isPass = codecEncoderTest->testReconfigure(cEncoder, csrcPath, jFrameLimit);
     std::string msg = isPass ? std::string{} : codecEncoderTest->getErrorMsg();
     delete codecEncoderTest;
     jclass clazz = env->GetObjectClass(jRetMsg);
@@ -803,11 +803,11 @@ int registerAndroidMediaV2CtsEncoderTest(JNIEnv* env) {
     const JNINativeMethod methodTable[] = {
             {"nativeTestSimpleEncode",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/StringBuilder;)Z",
+             "String;Ljava/lang/StringBuilder;I)Z",
              (void*)nativeTestSimpleEncode},
             {"nativeTestReconfigure",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"
-             "String;Ljava/lang/String;Ljava/lang/StringBuilder;)Z",
+             "String;Ljava/lang/String;Ljava/lang/StringBuilder;I)Z",
              (void*)nativeTestReconfigure},
             {"nativeTestSetForceSyncFrame",
              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/"

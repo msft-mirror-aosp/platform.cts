@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsBluetoothTestCases",
+    team: "trendy_team_bluetooth",
     defaults: ["cts_defaults"],
     static_libs: [
         "ctstestrunner-axt",
@@ -40,7 +41,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-bluetooth",
-        "mcts-bluetooth",
     ],
     min_sdk_version: "Tiramisu",
 }

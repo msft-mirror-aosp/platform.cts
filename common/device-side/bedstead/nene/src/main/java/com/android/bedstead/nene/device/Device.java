@@ -28,9 +28,9 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
+import com.android.bedstead.permissions.PermissionContext;
 
 /** Helper methods related to the device. */
 public final class Device {
@@ -81,6 +81,22 @@ public final class Device {
 
         Boolean unused2 = Poll.forValue("isScreenOn", this::isScreenOn)
                 .toBeEqualTo(true)
+                .errorOnFail()
+                .await();
+    }
+
+    /**
+     * Turn the screen off.
+     */
+    public void sleep() {
+        String unused1 = ShellCommand.builder("input keyevent")
+                .addOperand("KEYCODE_SLEEP")
+                .allowEmptyOutput(true)
+                .validate(String::isEmpty)
+                .executeOrThrowNeneException("Error sleeping device");
+
+        Boolean unused2 = Poll.forValue("isScreenOn", this::isScreenOn)
+                .toBeEqualTo(false)
                 .errorOnFail()
                 .await();
     }

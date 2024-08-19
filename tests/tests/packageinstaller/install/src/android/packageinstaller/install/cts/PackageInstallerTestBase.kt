@@ -341,7 +341,8 @@ open class PackageInstallerTestBase {
     }
 
     /**
-     * Start an installation via an Intent
+     * Start an installation via an Intent. By default, it uses an intent to install
+     * the `CtsEmptyTestApp`
      */
     protected fun startInstallationViaIntent(
         intent: Intent = getInstallationIntent(),
@@ -349,10 +350,10 @@ open class PackageInstallerTestBase {
         return installDialogStarter.activity.startActivityForResult(intent)
     }
 
-    protected fun getInstallationIntent(): Intent {
-        val apkFile = File(context.filesDir, TEST_APK_NAME)
+    protected fun getInstallationIntent(apkName: String = TEST_APK_NAME): Intent {
+        val apkFile = File(context.filesDir, apkName)
         if (!apkFile.exists()) {
-            File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(target = apkFile, overwrite = true)
+            File(TEST_APK_LOCATION, apkName).copyTo(target = apkFile, overwrite = true)
         }
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = FileProvider.getUriForFile(context, CONTENT_AUTHORITY, apkFile)
@@ -387,9 +388,12 @@ open class PackageInstallerTestBase {
         return pm.getPackageInfo(packageName, flags)
     }
 
-    fun assertNotInstalled() {
+    fun assertNotInstalled(
+        packageName: String = TEST_APK_PACKAGE_NAME,
+        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
+    ) {
         try {
-            pm.getPackageInfo(TEST_APK_PACKAGE_NAME, PackageManager.PackageInfoFlags.of(0))
+            pm.getPackageInfo(packageName, flags)
             Assert.fail("Package should not be installed")
         } catch (expected: PackageManager.NameNotFoundException) {
         }

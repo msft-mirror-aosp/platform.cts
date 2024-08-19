@@ -16,7 +16,7 @@
 
 package android.settings.cts;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
@@ -42,6 +42,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(BedsteadJUnit4.class)
 public class SettingsIntentsInWorkProfileTest {
+    private static final String TEST_PACKAGE = "package:com.android.settings";
 
     @ClassRule
     @Rule
@@ -58,7 +59,7 @@ public class SettingsIntentsInWorkProfileTest {
     @RequireRunOnWorkProfile
     public void settingActivity_launchManageWriteSettingsIntent_shouldNotCrash() {
         final Intent intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-        intent.setData(Uri.parse("package:com.android.vending"));
+        intent.setData(Uri.parse(TEST_PACKAGE));
         startActivity(intent);
     }
 
@@ -66,7 +67,7 @@ public class SettingsIntentsInWorkProfileTest {
     @RequireRunOnWorkProfile
     public void settingActivity_launchAppUsageIntent_shouldNotCrash() {
         final Intent intent = new Intent(Settings.ACTION_APP_USAGE_SETTINGS);
-        intent.putExtra(Intent.EXTRA_PACKAGE_NAME, "package:com.android.vending");
+        intent.putExtra(Intent.EXTRA_PACKAGE_NAME, TEST_PACKAGE);
         startActivity(intent);
     }
 
@@ -74,7 +75,7 @@ public class SettingsIntentsInWorkProfileTest {
     @RequireRunOnWorkProfile
     public void settingActivity_launchApplicationDetailsIntent_shouldNotCrash() {
         final Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-        intent.setData(Uri.parse("package:com.android.vending"));
+        intent.setData(Uri.parse(TEST_PACKAGE));
         startActivity(intent);
     }
 
@@ -93,7 +94,7 @@ public class SettingsIntentsInWorkProfileTest {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         final ResolveInfo ri = packageManager.resolveActivity(intent,
                 PackageManager.MATCH_DEFAULT_ONLY);
-        assertNotNull(ri);
+        assumeTrue(ri != null); // Skip the test if target package cannot handle this intent
         targetContext.startActivity(intent);
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }

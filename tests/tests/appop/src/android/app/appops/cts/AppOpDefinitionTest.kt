@@ -224,6 +224,7 @@ class AppOpDefinitionTest {
             APP_OPS[AppOpsManager.OPSTR_ARCHIVE_ICON_OVERLAY] = 145
             APP_OPS[AppOpsManager.OPSTR_UNARCHIVAL_CONFIRMATION] = 146
             APP_OPS[AppOpsManager.OPSTR_EMERGENCY_LOCATION] = 147
+            APP_OPS[AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS] = 148
         }
     }
 }

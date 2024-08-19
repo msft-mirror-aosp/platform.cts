@@ -1,6 +1,5 @@
 # Bug component: 46788
-michaelwr@google.com
-lzye@google.com
+file:platform/frameworks/base:/services/core/java/com/android/server/power/OWNERS
 xwxw@google.com
 lpy@google.com
 wvw@google.com

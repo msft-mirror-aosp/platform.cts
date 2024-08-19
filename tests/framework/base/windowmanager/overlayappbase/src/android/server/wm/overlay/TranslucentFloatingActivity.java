@@ -21,26 +21,19 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.os.Bundle;
-import android.view.Gravity;
 import android.view.WindowManager;
-import android.widget.LinearLayout;
 
 public class TranslucentFloatingActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        LinearLayout tv = new LinearLayout(this);
-        tv.setBackgroundColor(Color.GREEN);
-        tv.setPadding(50, 50, 50, 50);
-        tv.setGravity(Gravity.CENTER);
-        setContentView(tv);
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+        WindowManager.LayoutParams attributes = getWindow().getAttributes();
+        attributes.alpha = 0;
+        attributes.flags |= WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL;
+        attributes.flags &= ~WindowManager.LayoutParams.FLAG_DIM_BEHIND;
+        getWindow().setAttributes(attributes);
 
         registerReceiver(mReceiver,
                 new IntentFilter(Components.TranslucentFloatingActivity.ACTION_FINISH),

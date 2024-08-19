@@ -16,6 +16,8 @@
 
 package android.mediapc.cts.common;
 
+import android.hardware.camera2.cts.helpers.StaticMetadata;
+
 import java.util.function.BiPredicate;
 
 /**
@@ -213,22 +215,34 @@ public class RequirementConstants {
     }
 
     public static final BiPredicate<Long, Long> LONG_INFO = RequirementConstants.info();
+    public static final BiPredicate<Long, Long> LONG_GT = RequirementConstants.gt();
+    public static final BiPredicate<Long, Long> LONG_LT = RequirementConstants.lt();
     public static final BiPredicate<Long, Long> LONG_GTE = RequirementConstants.gte();
     public static final BiPredicate<Long, Long> LONG_LTE = RequirementConstants.lte();
+    public static final BiPredicate<Long, Long> LONG_EQ = RequirementConstants.eq();
 
     public static final BiPredicate<Integer, Integer> INTEGER_INFO = RequirementConstants.info();
+    public static final BiPredicate<Integer, Integer> INTEGER_GT = RequirementConstants.gt();
+    public static final BiPredicate<Integer, Integer> INTEGER_LT = RequirementConstants.lt();
     public static final BiPredicate<Integer, Integer> INTEGER_GTE = RequirementConstants.gte();
     public static final BiPredicate<Integer, Integer> INTEGER_LTE = RequirementConstants.lte();
     public static final BiPredicate<Integer, Integer> INTEGER_EQ = RequirementConstants.eq();
+    public static final BiPredicate<Integer, Integer> INTEGER_CAM_HW_LEVEL_GTE =
+            RequirementConstants.camHwLevelGte();
 
     public static final BiPredicate<Double, Double> DOUBLE_INFO = RequirementConstants.info();
+    public static final BiPredicate<Double, Double> DOUBLE_GT = RequirementConstants.gt();
+    public static final BiPredicate<Double, Double> DOUBLE_LT = RequirementConstants.lt();
     public static final BiPredicate<Double, Double> DOUBLE_GTE = RequirementConstants.gte();
     public static final BiPredicate<Double, Double> DOUBLE_LTE = RequirementConstants.lte();
     public static final BiPredicate<Double, Double> DOUBLE_EQ = RequirementConstants.eq();
 
     public static final BiPredicate<Float, Float> FLOAT_INFO = RequirementConstants.info();
+    public static final BiPredicate<Float, Float> FLOAT_GT = RequirementConstants.gt();
+    public static final BiPredicate<Float, Float> FLOAT_LT = RequirementConstants.lt();
     public static final BiPredicate<Float, Float> FLOAT_GTE = RequirementConstants.gte();
     public static final BiPredicate<Float, Float> FLOAT_LTE = RequirementConstants.lte();
+    public static final BiPredicate<Float, Float> FLOAT_EQ = RequirementConstants.eq();
 
     public static final BiPredicate<Boolean, Boolean> BOOLEAN_EQ = RequirementConstants.eq();
     public static final BiPredicate<Boolean, Boolean> BOOLEAN_INFO = RequirementConstants.info();
@@ -250,27 +264,6 @@ public class RequirementConstants {
             @Override
             public String toString() {
                 return "Greater than or equal to";
-            }
-        };
-    }
-
-
-    /**
-     * Creates a bi predicate that always returns true because the measurements is for info only.
-     *
-     * <p>
-     * This is convenience method to get the types right.
-     */
-    private static <T> BiPredicate<T, T> info() {
-        return new BiPredicate<T, T>() {
-            @Override
-            public boolean test(T actual, T expected) {
-                return true;
-            }
-
-            @Override
-            public String toString() {
-                return "True. For info only";
             }
         };
     }
@@ -305,6 +298,54 @@ public class RequirementConstants {
             @Override
             public String toString() {
                 return "Equal to";
+            }
+        };
+    }
+
+    /**
+     * Creates a > predicate.
+     */
+    private static <T, S extends Comparable<T>> BiPredicate<S, T> gt() {
+        return RequirementConstants.<T, S>lte().negate();
+    }
+
+    /**
+     * Creates a < predicate.
+     */
+    private static <T, S extends Comparable<T>> BiPredicate<S, T> lt() {
+        return RequirementConstants.<T, S>gte().negate();
+    }
+
+    /**
+     * Creates a bi predicate that always returns true because the measurements is for info only.
+     */
+    private static <T> BiPredicate<T, T> info() {
+        return new BiPredicate<T, T>() {
+            @Override
+            public boolean test(T actual, T expected) {
+                return true;
+            }
+
+            @Override
+            public String toString() {
+                return "True. For info only";
+            }
+        };
+    }
+
+    /**
+    * Creates a >= predicate for camera hardware level
+    */
+    private static BiPredicate<Integer, Integer> camHwLevelGte() {
+        return new BiPredicate<Integer, Integer>() {
+            @Override
+            public boolean test(Integer actual, Integer expected) {
+                return StaticMetadata.hardwareLevelPredicate(actual, expected);
+            }
+
+            @Override
+            public String toString() {
+                return "Camera Hardware Level Greater than or equal to";
             }
         };
     }

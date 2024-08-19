@@ -23,15 +23,20 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.createSplitP
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.startActivityAndVerifySplitAttributes;
 
 import android.app.Activity;
+import android.content.res.Resources;
+import android.graphics.Color;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 
 import androidx.window.extensions.core.util.function.Function;
+import androidx.window.extensions.embedding.AnimationBackground;
+import androidx.window.extensions.embedding.AnimationParams;
 import androidx.window.extensions.embedding.SplitAttributes;
 import androidx.window.extensions.embedding.SplitAttributesCalculatorParams;
 import androidx.window.extensions.embedding.SplitInfo;
 import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.window.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,14 +55,31 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
 
-    private static final SplitAttributes RATIO_SPLIT_ATTRS = new SplitAttributes.Builder()
-            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.8f))
-            .build();
+    private static final AnimationParams ANIMATION_PARAMS =
+            new AnimationParams.Builder()
+                    .setAnimationBackground(AnimationBackground.createColorBackground(Color.BLUE))
+                    .setOpenAnimationResId(android.R.anim.fade_in)
+                    .setCloseAnimationResId(android.R.anim.fade_out)
+                    .setChangeAnimationResId(Resources.ID_NULL)
+                    .build();
 
-    private static final SplitAttributes TOP_TO_BOTTOM_SPLIT_ATTRS = new SplitAttributes.Builder()
-            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
-            .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
-            .build();
+    private static final SplitAttributes RATIO_SPLIT_ATTRS =
+            new SplitAttributes.Builder()
+                    .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.8f))
+                    .build();
+
+    // TODO(b/293658614): Clean up after Activity Embedding animation customization is released.
+    private static final SplitAttributes TOP_TO_BOTTOM_SPLIT_ATTRS =
+            Flags.activityEmbeddingAnimationCustomizationFlag()
+                    ? new SplitAttributes.Builder()
+                            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
+                            .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
+                            .setAnimationParams(ANIMATION_PARAMS)
+                            .build()
+                    : new SplitAttributes.Builder()
+                            .setSplitType(new SplitAttributes.SplitType.RatioSplitType(0.7f))
+                            .setLayoutDirection(SplitAttributes.LayoutDirection.TOP_TO_BOTTOM)
+                            .build();
 
     @Parameterized.Parameters(name = "{1}")
     public static Object[][] data() {
@@ -169,7 +191,7 @@ public class SplitAttributesRuntimeApisTests extends ActivityEmbeddingTestBase {
         }
 
         // Update split attributes that different from the default one.
-        mActivityEmbeddingComponent.updateSplitAttributes(splitInfo.getToken(),
+        mActivityEmbeddingComponent.updateSplitAttributes(splitInfo.getSplitInfoToken(),
                 mCustomizedSplitAttributes);
 
         // Checks the split pair

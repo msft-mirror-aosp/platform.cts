@@ -26,6 +26,7 @@ import android.content.ComponentName;
 import android.os.Build;
 import android.os.UserManager;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
@@ -43,6 +44,7 @@ import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.users.UserType;
+import com.android.bedstead.remotedpc.RemoteDeviceAdmin;
 import com.android.bedstead.testapp.TestApp;
 
 import org.junit.ClassRule;
@@ -50,6 +52,8 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.util.Set;
 
 @RunWith(BedsteadJUnit4.class)
 public class DevicePolicyTest {
@@ -66,10 +70,11 @@ public class DevicePolicyTest {
             new ComponentName(
                     DEVICE_ADMIN_TESTAPP_PACKAGE_NAME,
                     "com.android.bedstead.testapp.DeviceAdminTestApp.DeviceAdminReceiver");
+    private static final String REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX =
+            "com.android.cts.RemoteDeviceAdmin";
     private static final ComponentName NOT_DPC_COMPONENT_NAME =
             new ComponentName(DEVICE_ADMIN_TESTAPP_PACKAGE_NAME,
                     "incorrect.class.name");
-
     private static final UserReference sUser = TestApis.users().instrumented();
     private static final UserReference NON_EXISTENT_USER = TestApis.users().find(99999);
 
@@ -341,9 +346,9 @@ public class DevicePolicyTest {
     @EnsureHasNoProfileOwner
     public void deviceOwner_autoclose_removesDeviceOwner() {
         assertThat(
-                        TestApis.packages()
-                                .find("com.android.bedstead.testapp.DeviceAdminTestApp")
-                                .isInstalled())
+                TestApis.packages()
+                        .find("com.android.bedstead.testapp.DeviceAdminTestApp")
+                        .isInstalled())
                 .isTrue();
         try (DeviceOwner deviceOwner = TestApis.devicePolicy().setDeviceOwner(DPC_COMPONENT_NAME)) {
             // We intentionally don't do anything here, just rely on the auto-close behaviour
@@ -440,7 +445,7 @@ public class DevicePolicyTest {
     @EnsureHasProfileOwner(isPrimary = true)
     public void isSet_userRestrictionIsSet_returnsTrue() {
         boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                sDeviceState.dpc().componentName())
+                        sDeviceState.dpc().componentName())
                 .getBoolean(USER_RESTRICTION, /*default= */ false);
         try {
             sDeviceState.dpc().devicePolicyManager().addUserRestriction(
@@ -459,7 +464,7 @@ public class DevicePolicyTest {
     @EnsureHasProfileOwner(isPrimary = true)
     public void isSet_userRestrictionIsNotSet_returnsFalse() {
         boolean originalIsSet = sDeviceState.dpc().devicePolicyManager().getUserRestrictions(
-                sDeviceState.dpc().componentName())
+                        sDeviceState.dpc().componentName())
                 .getBoolean(USER_RESTRICTION, /*default= */ false);
         try {
             sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
@@ -520,5 +525,33 @@ public class DevicePolicyTest {
     @Test
     public void dump_dumpsState() {
         assertThat(TestApis.devicePolicy().dump()).isNotEmpty();
+    }
+
+    @EnsureHasDeviceAdmin
+    @Test
+    public void getDeviceAdmins_returnsDeviceAdmin() {
+        Set<DeviceAdmin> deviceAdmins = TestApis.devicePolicy().getActiveAdmins();
+
+        assertThat(deviceAdmins.stream().anyMatch(
+                admin -> isRemoteDeviceAdmin(admin.componentName()))).isTrue();
+    }
+
+    @EnsureHasDeviceAdmin
+    @Test
+    public void remove_deviceAdmin_isRemoved() {
+        RemoteDeviceAdmin remoteDeviceAdmin = RemoteDeviceAdmin.fetchRemoteDeviceAdmin(sUser);
+
+        remoteDeviceAdmin.devicePolicyController().remove();
+
+        Set<DeviceAdmin> activeAdmins = TestApis.devicePolicy().getActiveAdmins();
+        assertThat(activeAdmins.stream().noneMatch(
+                admin -> admin.componentName().equals(remoteDeviceAdmin.componentName()))).isTrue();
+    }
+
+    private static boolean isRemoteDeviceAdmin(ComponentName componentName) {
+        return componentName != null
+                && componentName.getPackageName().startsWith(REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX)
+                && componentName.getClassName().equals(
+                componentName.getPackageName() + ".DeviceAdminReceiver");
     }
 }

@@ -775,10 +775,9 @@ public class ActivityLifecycleTopResumedStateTests extends ActivityLifecycleClie
                     "launchAboveKeyguard");
 
             getTransitionLog().clear();
+            showWhenLockedActivity.finish();
         }
 
-        // When the lock screen is removed, the ShowWhenLocked activity will be dismissed using the
-        // back button, which should finish the activity.
         waitAndAssertActivityStates(state(showWhenLockedActivity, ON_DESTROY));
         assertResumeToDestroySequence(
                 ShowWhenLockedCallbackTrackingActivity.class, getTransitionLog());

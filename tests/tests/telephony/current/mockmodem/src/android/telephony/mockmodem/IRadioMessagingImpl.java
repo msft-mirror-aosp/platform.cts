@@ -235,9 +235,13 @@ public class IRadioMessagingImpl extends IRadioMessaging.Stub {
     public void sendImsSms(int serial, android.hardware.radio.messaging.ImsSmsMessage message) {
         Log.d(mTag, "sendImsSms");
 
+        android.hardware.radio.messaging.SendSmsResult sms = new SendSmsResult();
+        sms.messageRef = 0;
+        sms.ackPDU = "ack";
+        sms.errorCode = 0;
         RadioResponseInfo rsp = mService.makeSolRsp(serial, RadioError.REQUEST_NOT_SUPPORTED);
         try {
-            mRadioMessagingResponse.sendImsSmsResponse(rsp, null);
+            mRadioMessagingResponse.sendImsSmsResponse(rsp, sms);
         } catch (RemoteException ex) {
             Log.e(mTag, "Failed to sendImsSms from AIDL. Exception" + ex);
         }

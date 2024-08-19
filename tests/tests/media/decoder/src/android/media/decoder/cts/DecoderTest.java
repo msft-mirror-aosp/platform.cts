@@ -2009,14 +2009,14 @@ public class DecoderTest extends MediaTestBase {
             return; // skip
         }
 
-        // Decode to Surface.
-        Surface s = getActivity().getSurfaceHolder().getSurface();
-        int frames1 = countFrames(testVideo, RESET_MODE_NONE, -1 /* eosframe */, s);
+        // Decode to buffer.
+        int frames1 = countFrames(testVideo, RESET_MODE_NONE, -1 /* eosframe */, null);
         assertEquals("wrong number of frames decoded", frameNum, frames1);
 
-        // Decode to buffer.
-        int frames2 = countFrames(testVideo, RESET_MODE_NONE, -1 /* eosframe */, null);
-        assertEquals("different number of frames when using Surface", frames1, frames2);
+        // Decode to Surface.
+        Surface s = getActivity().getSurfaceHolder().getSurface();
+        int frames2 = countFrames(testVideo, RESET_MODE_NONE, -1 /* eosframe */, s);
+        assertEquals("different number of frames when using buffer", frames1, frames2);
     }
 
     @Test

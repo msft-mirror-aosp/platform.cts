@@ -61,6 +61,30 @@
                 android:resource="@xml/test_dream_metadata_invalid" />
         </service>
         <service
+            android:name=".TestDreamServiceWithNonexistentSettings"
+            android:exported="false"
+            android:label="Test Dream" >
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/test_dream_metadata_nonexistent_settings" />
+        </service>
+        <service
+            android:name=".TestDreamServiceNoPackageNonexistentSettings"
+            android:exported="false"
+            android:label="Test Dream" >
+            <intent-filter>
+                <action android:name="android.service.dreams.DreamService" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.dream"
+                android:resource="@xml/test_dream_metadata_nopackage_nonexistent_settings" />
+        </service>
+        <service
             android:name=".SeparateProcessDreamService"
             android:exported="true"
             android:process=":separate"
@@ -83,5 +107,6 @@
             android:name=".DreamProxyService"
             android:exported="true">
         </service>
+        <activity android:name=".TestDreamSettingsActivity" />
     </application>
 </manifest>

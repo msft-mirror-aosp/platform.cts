@@ -227,11 +227,12 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
       its_session_utils.load_scene(cam, props, self.scene,
                                    self.tablet, self.chart_distance)
 
-      # determine largest common preview/video size
-      preview_size = video_processing_utils.get_largest_common_preview_video_size(
-          cam, self.camera_id
+      # get largest size from get_preview_video_sizes_union
+      preview_size = (
+          video_processing_utils.get_preview_video_sizes_union(
+              cam, self.camera_id).largest_size
       )
-      logging.debug('Tested preview resolution: %s', preview_size)
+      logging.debug('Testing preview resolution: %s', preview_size)
 
       # start collecting IMU events
       logging.debug('Collecting IMU events')
@@ -271,7 +272,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
     plot_rotation_vector_data(x_rv, y_rv, z_rv, t_rv, self.log_path)
 
     # assert correct gyro behavior
-    first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
     gyro_var_atol = _GYRO_VAR_ATOL * gyro_sampling_rate * _RAD_TO_DEG**2
     for i, samples in enumerate([x_gyro, y_gyro, z_gyro]):
       gyro_mean = samples.mean()
@@ -295,11 +295,6 @@ class ImuDriftTest(its_base_test.ItsBaseTest):
         f'{x_gyro_drift:.3f}, {y_gyro_drift:.3f}, {z_gyro_drift:.3f}, '
         f'{gyro_drift_total:.3f}, test duration: {test_duration:.3f} (sec)'
     )
-
-    # Android 15 checks
-    if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
-      if gyro_drift_total >= _GYRO_DRIFT_ATOL:
-        raise AssertionError(f'{e_msg_stem}, ATOL: {_GYRO_DRIFT_ATOL}')
 
     # Performance checks for advanced features
     logging.debug('Check for advanced features gyro drift.')

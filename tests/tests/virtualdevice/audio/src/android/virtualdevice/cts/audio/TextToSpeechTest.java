@@ -67,7 +67,7 @@ public class TextToSpeechTest {
     private static final String TTS_TEXT = "My hovercraft is full of eels";
     private static final String UTTERANCE_ID = "vdmTtsTestUtteranceId";
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(

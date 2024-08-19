@@ -189,9 +189,11 @@ public class ViewUnbufferedTest {
     private void sendPointerEvents(int x, int y, int[] actions, int source) {
         // Send a start event to make sure view handled unbuffered request.
         final long downTime = SystemClock.uptimeMillis();
+        final int displayId = mActivity.getDisplayId();
         MotionEvent downEvent =
                 MotionEvent.obtain(downTime, downTime, actions[0], x, y, 0);
         downEvent.setSource(source);
+        downEvent.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(downEvent);
 
         // Inject move events.
@@ -207,6 +209,7 @@ public class ViewUnbufferedTest {
             final MotionEvent moveEvent = MotionEvent.obtain(downTime, eventTime,
                     actions[1], x, y, 0);
             moveEvent.setSource(source);
+            moveEvent.setDisplayId(displayId);
             mInstrumentation.sendPointerSync(moveEvent);
             mSentEvents.add(moveEvent);
         }
@@ -215,6 +218,7 @@ public class ViewUnbufferedTest {
         final MotionEvent upEvent = MotionEvent.obtain(downTime, SystemClock.uptimeMillis(),
                 actions[2], x, y, 0);
         upEvent.setSource(source);
+        upEvent.setDisplayId(displayId);
         mInstrumentation.sendPointerSync(upEvent);
     }
 
@@ -233,6 +237,7 @@ public class ViewUnbufferedTest {
             final MotionEvent moveEvent = MotionEvent.obtain(eventTime, eventTime,
                     MotionEvent.ACTION_MOVE, x, y, 0);
             moveEvent.setSource(InputDevice.SOURCE_JOYSTICK);
+            moveEvent.setDisplayId(mActivity.getDisplayId());
             mAutomation.injectInputEvent(moveEvent, true /* sync */);
             mSentEvents.add(moveEvent);
         }

@@ -23,6 +23,7 @@ java_test_host {
     srcs: ["src/**/*.java"],
     static_libs: [
         "cts-host-utils",
+        "cts-statsd-atom-host-test-utils",
     ],
     libs: [
         "cts-tradefed",

@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (C) 2024 The Android Open Source Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+<configuration description="Run CTS platinum tests in prod.">
+    <include name="cts-automated" />
+
+    <!-- CtsDevicePolicyManagerTestCases -->
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi23#testAdminWithNoProtection" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi23#testRunDeviceAdminTest" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi24#testAdminWithNoProtection" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi24#testRunDeviceAdminTest" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi29#testAdminWithNoProtection" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminHostSideTestApi29#testRunDeviceAdminTest" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceAdminServiceDeviceOwnerTest#testAll" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerPlusProfileOwnerTest#testCannotAddManagedProfileWithDeviceOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerPlusProfileOwnerTest#testProvisioningNotAllowedWithDeviceOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testAllowProvisioningProperty" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testCannotSetDeviceOwnerAgain" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testDevicePolicySafetyCheckerIntegration_allOperations" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testHardwarePropertiesManagerAsDeviceOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testIsManagedDeviceProvisioningAllowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testListForegroundAffiliatedUsers_extraUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testListForegroundAffiliatedUsers_notDeviceOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testListForegroundAffiliatedUsers_onlyForegroundUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testNetworkLoggingWithSingleUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testNetworkLoggingWithTwoUsers" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testOverrideApn" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testPackageInstallCache" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testProxyStaticProxyTest" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testSetAffiliationId_IllegalArgumentException" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testSetKeyguardDisabledLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testSetLocationEnabled" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testSetStatusBarDisabledLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testUserSession" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.DeviceOwnerTest#testWifiSetHttpProxyTest" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsMultiUserTest#testGetActivitiesForNonProfileFails" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsMultiUserTest#testNoLauncherCallbackPackageAddedSecondaryUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsProfileTest#testGetActivitiesWithProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsProfileTest#testProfileOwnerAppHiddenInPrimaryProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsProfileTest#testReverseAccessNoThrow" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsSingleUserTest#testInstallAppMainUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsSingleUserTest#testLaunchMainActivity" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsSingleUserTest#testLaunchNonExportActivityFails" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LauncherAppsSingleUserTest#testLauncherNonExportedAppFails" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LimitAppIconHidingTest#testNoLauncherActivityAppNotInjected" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LimitAppIconHidingTest#testNoPermissionAppNotInjected" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.LimitAppIconHidingTest#testNoSystemAppHasSyntheticAppDetailsActivityInjected" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileCrossProfileTest#testCrossProfileNotificationListeners_NullAllowlist" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileCrossProfileTest#testGetCrossProfilePackages_whenSetTwice_returnsLatestNotConcatenated" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileCrossProfileTest#testGetCrossProfilePackages_whenSet_returnsEqual" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfilePasswordTest#testUnlockWorkProfile_deviceWidePassword" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testCannotSetDeviceOwnerWhenProfilePresent" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTest#testManagedProfileSetup" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTimeoutTest#testWorkProfileTimeoutBackground" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileTimeoutTest#testWorkProfileTimeoutIdleActivity" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfileWipeTest#testWipeDataWithoutReason" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testAdminControlOverSensorPermissionGrantsDefault" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testAlwaysOnVpnLockDown" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testApplicationRestrictionIsRestricted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCommonCriteriaMode" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDelegatedCertInstallerDirectly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDelegationCertSelection" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDisallowAdjustVolumeMutedLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDisallowAutofill_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDisallowContentCapture_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testDisallowSetWallpaper_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testEnableSystemAppWithIntentLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testGenerateKeyPairLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testGetPasswordExpiration" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testInstallUpdate" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testInstallUpdateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testIsDeviceOrganizationOwnedWithManagedProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testLockScreenInfo" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPasswordExpiration" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPasswordQualityWithoutSecureLockScreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPasswordSufficientInitially" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPermissionPolicy" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testPermittedInputMethods" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testRequiredStrongAuthTimeout" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testScreenCaptureDisabled_assist" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecondaryLockscreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecurityLoggingWithTwoUsers" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetKeyGrant" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetKeyPairCertificateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetKeyguardDisabledFeaturesLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetKeyguardDisabledSecureCameraLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetPermissionGrantStateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetPermissionPolicyLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetSecureSettingLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetSystemSetting" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetUserRestrictionLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSuspendPackageWithPackageManager" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testAlwaysOnVpnPackageUninstalled" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testAlwaysOnVpnUnsupportedPackage" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testAlwaysOnVpnUnsupportedPackageReplaced" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testApplicationRestrictionIsRestricted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testAudioRestriction" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testCannotClearProfileOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDelegatedCertInstaller" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDelegatedCertInstallerDeviceIdAttestation" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDelegatedCertInstallerDirectly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDeviceIdAttestationForProfileOwner" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDisallowAdjustVolumeMutedLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testDisallowSetWallpaper_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testGenerateKeyPairLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testIsDeviceOrganizationOwnedWithManagedProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testLockTaskAfterReboot" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testLockTaskAfterReboot_tryOpeningSettings" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testNetworkLogging" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testNetworkLoggingDelegate" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPasswordExpiration" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPasswordQualityWithoutSecureLockScreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPasswordSufficientInitially" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPermissionAppUpdate" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPermissionGrantPreMApp" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPermissionPrompts" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testPermittedInputMethods" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testRequiredStrongAuthTimeout" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testScreenCaptureDisabled_assist" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testScreenCaptureDisabled_assist_allowedPrimaryUser" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSecondaryLockscreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetGetPreferentialNetworkServiceStatus" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyGrant" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyPairCertificateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyguardDisabledSecureCameraLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetPermissionGrantStateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetPermissionPolicyLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetPreferentialNetworkServiceStatusLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetSystemSetting" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTestApi30#testPasswordComplexityAndQuality" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTestApi30#testPasswordMinimumRestrictions" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerHostSideTransferTest#testIsBundleNullNoTransfer" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerHostSideTransferTest#testTransferOwnership" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerHostSideTransferTest#testTransferOwnershipChangedBroadcast" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerHostSideTransferTest#testTransferOwnershipNoMetadata" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerHostSideTransferTest#testTransferSameAdmin" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAdminControlOverSensorPermissionGrantsDefault" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnLockDown" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnPackageLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnUnsupportedPackage" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnUnsupportedPackageReplaced" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testApplicationRestrictionIsRestricted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAudioRestriction" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDelegatedCertInstaller" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDelegatedCertInstallerDirectly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDelegationCertSelection" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDisallowAdjustVolumeMutedLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDisallowAutofill_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDisallowContentCapture_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testDisallowSetWallpaper_allowed" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testEnableSystemAppWithIntentLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testGenerateKeyPairLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testGetPasswordExpiration" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testIsDeviceOrganizationOwnedWithManagedProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPasswordExpiration" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPasswordQualityWithoutSecureLockScreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPasswordSufficientInitially" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionGrantOfDisallowedPermissionWhileOtherPermIsGranted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionGrantPreMApp" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionPolicy" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionPrompts" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testRequiredStrongAuthTimeout" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testScreenCaptureDisabled_assist" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSecondaryLockscreen" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetKeyGrant" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetKeyPairCertificateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetKeyguardDisabledFeaturesLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetKeyguardDisabledSecureCameraLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetPermissionGrantStateLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetPermissionPolicyLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetSecureSettingLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetSystemSetting" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetUserRestrictionLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSuspendPackage" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSuspendPackageWithPackageManager" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCameraDisabledOnParentIsEnforced" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCameraDisabledOnParentLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCanRelinquishControlOverDevice" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCommonCriteriaMode" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testDevicePolicyManagerParentSupport" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testInstallUpdate" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testIsDeviceOrganizationOwnedWithManagedProfile" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testLockScreenInfo" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testNetworkLogging" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testNetworkLoggingLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testPerDeviceUserRestrictionOnParent" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testPermittedInputMethods" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testPermittedInputMethodsLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testSetManagedProfileMaximumTimeOffLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testUserRestrictionSetOnParentLogged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testUserRestrictionsSetOnParentAreNotPersisted" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testWorkProfileMaximumTimeOff_complianceRequiredBroadcastDefault" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testWorkProfileMaximumTimeOff_complianceRequiredBroadcastOverride" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ProfileOwnerTest#testDevicePolicySafetyCheckerIntegration_allOperations" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ProfileOwnerTest#testDevicePolicySafetyCheckerIntegration_onOperationSafetyStateChanged" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ProfileOwnerTest#testDevicePolicySafetyCheckerIntegration_unsafeStateException" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ProfileOwnerTest#testManagement" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ProfileOwnerTestApi23#testDelegatedCertInstaller" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_deviceOwnerOnly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_layering_profileOwnerNoLeaking" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_managedProfileOwnerOnly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_primaryProfileOwnerOnly" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_profileGlobalRestrictionsAsDo" />
+    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.UserRestrictionsTest#testUserRestrictions_secondaryProfileOwnerOnly" />
+
+</configuration>
