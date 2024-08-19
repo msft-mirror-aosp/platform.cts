@@ -39,6 +39,7 @@ from mobly import base_test
 from mobly import test_runner
 from mobly import utils
 from mobly.controllers import android_device
+from mobly.snippet import errors
 
 _LOG = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -168,8 +169,11 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         else:
             self.emulator, self.reader = devices
 
-        self.emulator.load_snippet('nfc_emulator',
+        try:
+            self.emulator.load_snippet('nfc_emulator',
                                    'com.android.nfc.emulator')
+        except errors.Error:
+            _LOG.warning("Cannot load emulator snippet.")
         self.emulator.adb.shell(['svc', 'nfc', 'enable'])
         self.emulator.debug_tag = 'emulator'
 
@@ -190,7 +194,10 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 = None
             if len(devices) < 2:
                 raise Exception("Two devices are not present.")
-            self.reader.load_snippet('nfc_reader', 'com.android.nfc.reader')
+            try:
+                self.reader.load_snippet('nfc_reader', 'com.android.nfc.reader')
+            except errors.Error:
+                _LOG.warning("Cannot load reader snippet.")
             self.reader.adb.shell(['svc', 'nfc', 'enable'])
             self.reader.debug_tag = 'reader'
 
@@ -199,6 +206,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         Turns emulator/reader screen on and unlocks between tests as some tests will
         turn the screen off.
         """
+        asserts.assert_true(hasattr(self.emulator, 'nfc_emulator'),
+                                   "NFC emulator snippet is not installed.")
         self.emulator.nfc_emulator.logInfo("*** TEST START: " + self.current_test_info.name +
                                            " ***")
         asserts.skip_if(
@@ -209,6 +218,8 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
         if not self.pn532:
+            asserts.assert_true(hasattr(self.reader, 'nfc_reader'),
+                                       "NFC reader snippet is not installed.")
             asserts.skip_if(
                 not self.reader.nfc_reader.isNfcSupported(),
                 f"NFC is not supported on {self.reader}"
@@ -914,13 +925,15 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.pn532 else None)
 
     def teardown_test(self):
-        self.emulator.nfc_emulator.closeActivity()
+        if hasattr(self.emulator, 'nfc_emulator'):
+            self.emulator.nfc_emulator.closeActivity()
+            self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name +
+                                               " ***")
         if self.pn532:
             self.pn532.reset_buffers()
             self.pn532.mute()
             param_list = [[self.emulator]]
-
-        else:
+        elif hasattr(self.reader, 'nfc_reader'):
             self.reader.nfc_reader.closeActivity()
             self.reader.nfc_reader.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
             param_list = [[self.emulator], [self.reader]]
@@ -928,7 +941,6 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
             self.current_test_info),
                               param_list=param_list,
                               raise_on_exception=True)
-        self.emulator.nfc_emulator.logInfo("*** TEST END: " + self.current_test_info.name + " ***")
 
 if __name__ == '__main__':
     # Take test args
