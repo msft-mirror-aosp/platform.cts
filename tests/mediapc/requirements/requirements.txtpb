@@ -4067,12 +4067,47 @@ requirements {
 }
 requirements {
   id: "7.5/H-1-5"
-  description: "- Startup and capture latencies"
+  name: "Camera Capture Latency"
+  description: "Capture latencies"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_latency"
+    value: {
+      description: "Capture latency in ms for the rear primary camera"
+      measurement_type: MEASUREMENT_TYPE_FLOAT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_latency"
+    value: {
+      description: "Capture latency in ms for the front primary camera"
+      measurement_type: MEASUREMENT_TYPE_FLOAT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have camera2 JPEG capture latency < 1000 ms for 1080p resolution as measured by the CTS camera PerformanceTest under ITS lighting conditions (3000K) for both primary cameras."
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
     }
   }
   specs {
@@ -4080,6 +4115,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
     }
   }
   specs {
@@ -4087,6 +4134,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
     }
   }
   specs {
@@ -4094,6 +4153,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
     }
   }
   specs {
@@ -4101,17 +4172,64 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 1000
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-6"
-  description: "- Startup and capture latencies"
+  name: "Camera Startup Latency"
+  description: "Startup latencies"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_latency"
+    value: {
+      description: "Startup latency in ms for the rear primary camera"
+      measurement_type: MEASUREMENT_TYPE_FLOAT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_latency"
+    value: {
+      description: "Startup latency in ms for the front primary camera"
+      measurement_type: MEASUREMENT_TYPE_FLOAT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have camera2 startup latency (open camera to first preview frame) < 600 ms as measured by the CTS camera PerformanceTest under ITS lighting conditions (3000K) for both primary cameras."
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 600
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 600
+        }
+      }
     }
   }
   specs {
@@ -4119,6 +4237,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 600
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 600
+        }
+      }
     }
   }
   specs {
@@ -4126,6 +4256,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have camera2 startup latency (open camera to first preview frame) < 500 ms as measured by the CTS camera PerformanceTest under ITS lighting conditions (3000K) for both primary cameras."
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
     }
   }
   specs {
@@ -4133,6 +4275,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
     }
   }
   specs {
@@ -4140,6 +4294,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
+      required_values {
+        key: "front_camera_latency"
+        value {
+          float_value: 500
+        }
+      }
     }
   }
 }
