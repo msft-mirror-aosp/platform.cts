@@ -1601,17 +1601,15 @@ requirements {
   name: "Secure Video Decoder Sessions"
   description: "Secure hardware decoders"
   test_configs: {
-    key: "1080p"
+    key: ""
     value: {
-      id: "1080p"
-      description: "Test config for 1080p"
+      description: "Default test config"
     }
   }
   test_configs: {
-    key: "4k"
+    key: "HDR"
     value: {
-      id: "4k"
-      description: "Test config for 4k"
+      description: "Test config for hdr tests"
     }
   }
   measurements: {
@@ -1630,16 +1628,32 @@ requirements {
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
     }
   }
+  measurements: {
+    key: "is_hdr"
+    value: {
+      description: "Whether the test is HDR or not"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 1080p resolution@30 fps."
-      test_config_id: "1080p"
+      specification:
+        "MUST support 2 instances of secure hardware video decoder sessions "
+        "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
+        "concurrently at 1080p resolution@30 fps."
       required_values: {
         key: "concurrent_fps"
         value {
           double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: false
         }
       }
     }
@@ -1648,12 +1662,22 @@ requirements {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
-      specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1 or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
-      test_config_id: "4k"
+      specification:
+        "MUST support 2 instances of secure hardware video decoder sessions "
+        "(AVC, HEVC, VP9, AV1 or later) in any codec combination running "
+        "concurrently at 1080p resolution@30 fps for both 8-bit "
+        "(SDR) and 10-bit HDR content."
+      test_config_id: "HDR"
       required_values: {
         key: "concurrent_fps"
         value {
           double_value: 57  # 2 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: true
         }
       }
     }
@@ -1662,8 +1686,13 @@ requirements {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
-      specification: "MUST support 2 instances of secure hardware video decoder sessions (AVC, HEVC, VP9, AV1, or later) in any codec combination running concurrently at 4k resolution@30 fps (unless AV1) for both 8-bit (SDR) and 10-bit HDR content. For all sessions, there MUST NOT be more than 1 frame dropped per second. AV1 codec sessions are only required to support 1080p resolution even when this requirement calls for 4K."
-      test_config_id: "4k"
+      specification:
+        "MUST support 2 instances of secure hardware video decoder sessions "
+        "(AVC, HEVC, VP9, AV1, or later) in any codec combination running "
+        "concurrently at 1080p resolution@30 fps for both 8-bit "
+        "(SDR) and 10-bit HDR content. For all sessions, there MUST NOT be "
+        "more than 1 frame dropped per second."
+      test_config_id: "HDR"
       required_values: {
         key: "concurrent_fps"
         value {
@@ -1674,6 +1703,12 @@ requirements {
         key: "frame_drops_per_sec"
         value {
           double_value: 1
+        }
+      }
+      required_values: {
+        key: "is_hdr"
+        value {
+          bool_value: true
         }
       }
     }
@@ -1713,6 +1748,14 @@ requirements {
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
     }
   }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "The resolution the test was run at"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 33
     value {
@@ -1723,6 +1766,12 @@ requirements {
         key: "concurrent_fps"
         value {
           double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 1080
         }
       }
     }
@@ -1737,6 +1786,12 @@ requirements {
         key: "concurrent_fps"
         value {
           double_value: 114  # 4 decoders * 30 fps * 0.95 tolerance factor
+        }
+      }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
         }
       }
     }
@@ -1759,17 +1814,44 @@ requirements {
           double_value: 1
         }
       }
+      required_values: {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-11"
-  description: "- AV1 hardware decoder\n- Secure hardware decoders"
+  name: "Secure Hardware Decoders"
+  description: "Supports various secure hardware decoders"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "secure_requirement_satisfied_boolean"
+    value: {
+      description: "Are secure hardware decoders supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support a secure decoder for every hardware AVC, HEVC, VP9 or AV1 decoder on the device."
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -1777,6 +1859,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -1784,6 +1872,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "secure_requirement_satisfied_boolean"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
@@ -3030,12 +3124,48 @@ requirements {
 }
 requirements {
   id: "5.6/H-1-1"
-  description: "- Round-trip audio latency"
+  name: "Tap to Tone Latency"
+  description: "Tap to tone latency"
+  is_non_cts_test: true
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "native_latency_ms"
+    value: {
+      description: "Native latency in milliseconds"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "java_latency_ms"
+    value: {
+      description: "Java latency in milliseconds"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have a tap-to-tone latency of less than 100 milliseconds using the OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+      required_values {
+        key: "native_latency_ms"
+        value {
+          double_value: 100.0
+        }
+      }
+      required_values {
+        key: "java_latency_ms"
+        value {
+          double_value: 100.0
+        }
+      }
     }
   }
   specs {
@@ -3043,6 +3173,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      required_values {
+        key: "native_latency_ms"
+        value {
+          double_value: 100.0
+        }
+      }
+      required_values {
+        key: "java_latency_ms"
+        value {
+          double_value: 100.0
+        }
+      }
     }
   }
   specs {
@@ -3050,6 +3192,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the OboeTester tap-to-tone test or CTS Verifier tap-to-tone test."
+      required_values {
+        key: "native_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
+      required_values {
+        key: "java_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
   specs {
@@ -3057,6 +3211,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST have a tap-to-tone latency of 80 milliseconds or less using the CTS Verifier tap-to-tone test."
+      required_values {
+        key: "native_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
+      required_values {
+        key: "java_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
   specs {
@@ -3064,6 +3230,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "native_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
+      required_values {
+        key: "java_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
 }
@@ -3204,12 +3382,47 @@ requirements {
 }
 requirements {
   id: "5.7/H-1-2"
-  description: "- Hardware-backed trusted execution environment"
+  name: "Media Drm Security Level Hardware Secure All"
+  description: "Hardware-backed trusted execution environment"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "number_crypto_hw_secure_all_support"
+    value: {
+      description: "Number of crypto hw secure all supported."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support MediaDrm.SECURITY_LEVEL_HW_12ECURE_ALL with the below content decryption capabilities.\nMinimum Sample size        4 MiB\nMinimum Number of Subsamples - H264 or HEVC        32\nMinimum Number of Subsamples - VP9        9\nMinimum Number of Subsamples - AV1        288\nMinimum subsample buffer size        1 MiB\nMinimum Generic crypto buffer size        500 KiB\nMinimum Number of concurrent sessions        30\nMinimum Number of keys per session        20\nMinimum Total Number of Keys (all sessions)        80\nMinimum Total Number of DRM Keys (all sessions)        6\nMessage Size        16 KiB\nDecrypted Frames per Second        60 fps"
+      specification:
+        "MUST support MediaDrm.SECURITY_LEVEL_HW_SECURE_ALL with the below "
+        "content decryption capabilities.\n"
+        "Minimum Sample size        4 MiB\n"
+        "Minimum Number of Subsamples - H264 or HEVC        32\n"
+        "Minimum Number of Subsamples - VP9        9\n"
+        "Minimum Number of Subsamples - AV1        288\n"
+        "Minimum subsample buffer size        1 MiB\n"
+        "Minimum Generic crypto buffer size        500 KiB\n"
+        "Minimum Number of concurrent sessions        30\n"
+        "Minimum Number of keys per session        20\n"
+        "Minimum Total Number of Keys (all sessions)        80\n"
+        "Minimum Total Number of DRM Keys (all sessions)        6\n"
+        "Message Size        16 KiB\n"
+        "Decrypted Frames per Second        60 fps"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3217,6 +3430,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3224,17 +3443,118 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "number_crypto_hw_secure_all_support"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-1"
-  description: "- Resolution and frame rate"
+  name: "Primary Rear Camera Resolution and Frame Rate"
+  description: "Primary rear camera resolution and frame rate"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "primary_camera_available"
+    value: {
+      description: "Is the primary camera available"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_resolution"
+    value: {
+      description: "Resolution of the primary camera"
+      measurement_type: MEASUREMENT_TYPE_LONG
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_video_size_req_satisfied"
+    value: {
+      description: "Video size requirement satisfied at 4k"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_1080p_video_size_req_satisfied"
+    value: {
+      description: "Video size requirement satisfied at 1080p"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_720p_video_size_req_satisfied"
+    value: {
+      description: "Video size requirement satisfied at 720p"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_video_fps"
+    value: {
+      description: "Video fps at 4k"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_1080p_video_fps"
+    value: {
+      description: "Video fps at 1080p"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_720p_video_fps"
+    value: {
+      description: "Video fps at 720p"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have a primary rear facing camera with a resolution of at least 12 megapixels supporting video capture at 4k@30fps. The primary rear-facing camera is the rear-facing camera with the lowest camera ID."
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 12000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3242,6 +3562,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 12000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3249,6 +3593,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 12000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3256,6 +3624,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 12000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3263,17 +3655,128 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST have a primary rear facing camera with a resolution of at least 12 megapixels supporting video capture at 4k@30fps, 1080p@60fps, and 720p@60fps. The primary rear-facing camera is the rear-facing camera with the lowest camera ID."
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 12000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_1080p_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_720p_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
+      required_values {
+        key: "primary_camera_1080p_video_fps"
+        value {
+          double_value: 59.9
+        }
+      }
+      required_values {
+        key: "primary_camera_720p_video_fps"
+        value {
+          double_value: 59.9
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-2"
-  description: "- Resolution and frame rate"
+  name: "Primary Front Camera Resolution and Frame Rate"
+  description: "Primary front camera resolution and frame rate"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "primary_camera_available"
+    value: {
+      description: "Is the primary camera available"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_resolution"
+    value: {
+      description: "Resolution of the primary camera"
+      measurement_type: MEASUREMENT_TYPE_LONG
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_video_size_req_satisfied"
+    value: {
+      description: "Video size requirement satisfied"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_camera_video_fps"
+    value: {
+      description: "Video fps"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST have a primary front facing camera with a resolution of at least 4 megapixels supporting video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 4000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3281,6 +3784,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST have a primary front facing camera with a resolution of at least 5 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 5000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3288,6 +3815,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 5000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3295,6 +3846,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST have a primary front-facing camera with a resolution of at least 6 megapixels and support video capture at 1080p@30fps. The primary front-facing camera is the front-facing camera with the lowest camera ID."
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 5000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
   specs {
@@ -3302,6 +3877,30 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "primary_camera_available"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_resolution"
+        value {
+          long_value: 5000000
+        }
+      }
+      required_values {
+        key: "primary_camera_video_size_req_satisfied"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_camera_video_fps"
+        value {
+          double_value: 29.9
+        }
+      }
     }
   }
 }
@@ -3346,12 +3945,47 @@ requirements {
 }
 requirements {
   id: "7.5/H-1-4"
-  description: "- Timestamp source is realtime"
+  name: "Timestamp Source Realtime"
+  description: "Timestamp source is realtime"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_primary_camera_timestamp_source"
+    value: {
+      description: "Is the rear primary camera timestamp source realtime"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_primary_camera_timestamp_source"
+    value: {
+      description: "Is the front primary camera timestamp source realtime"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
-      specification: "MUST support CameraMetadata.SENSOR_INFO_13IMESTAMP_12OURCE_11EALTIME for both primary cameras."
+      specification: "MUST support CameraMetadata.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME for both primary cameras."
+      required_values {
+        key: "rear_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
+      required_values {
+        key: "front_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3359,6 +3993,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "same"
+      required_values {
+        key: "rear_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
+      required_values {
+        key: "front_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3366,6 +4012,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values {
+        key: "rear_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
+      required_values {
+        key: "front_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3373,6 +4031,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
+      required_values {
+        key: "front_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
   specs {
@@ -3380,6 +4050,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
+      required_values {
+        key: "front_primary_camera_timestamp_source"
+        value {
+          int_value: 1
+        }
+      }
     }
   }
 }

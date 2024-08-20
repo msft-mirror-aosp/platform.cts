@@ -30,9 +30,11 @@ import static com.android.cts.netpolicy.hostside.Property.DATA_SAVER_MODE;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import android.os.SystemClock;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+
+import com.android.server.net.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -246,9 +248,8 @@ public class NetworkPolicyManagerTest extends AbstractRestrictBackgroundNetworkT
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NETWORK_BLOCKED_FOR_TOP_SLEEPING_AND_ABOVE)
     public void testIsUidNetworkingBlocked_whenInBackground() throws Exception {
-        assumeTrue("Feature not enabled", isNetworkBlockedForTopSleepingAndAbove());
-
         try {
             assertProcessStateBelow(PROCESS_STATE_LAST_ACTIVITY);
             SystemClock.sleep(mProcessStateTransitionShortDelayMs);

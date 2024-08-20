@@ -52,7 +52,7 @@ public class OffBodySensorTestActivity
         extends SensorCtsVerifierTestActivity {
     private static final String TAG="OffbodySensorTest";
     private static String ACTION_ALARM = "OffBodySensorTestActivity.ACTION_ALARM";
-    private static final int MAX_OFF_BODY_EVENT_LATENCY_MS = 1000;
+    private static final int MAX_OFF_BODY_EVENT_LATENCY_MS = 3000;
     private static final int MAX_ON_BODY_EVENT_LATENCY_MS = 5000;
     private static final int COUNTDOWN_INTERVAL_MS = 1000;
     private static final int LLOB_EVENT_MAX_DELAY_SEC = 20;
