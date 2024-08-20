@@ -4607,12 +4607,33 @@ requirements {
 }
 requirements {
   id: "7.5/H-1-11"
-  description: "- Concurrent camera"
+  name: "Camera Concurrent Rear Front Streaming"
+  description: "Concurrent camera front-back streaming"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_front_concurrent_camera"
+    value: {
+      description: "Is the rear primary camera concurrent front-back streaming supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST implement concurrent front-back streaming on primary cameras."
+      required_values {
+        key: "rear_front_concurrent_camera"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4620,6 +4641,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_front_concurrent_camera"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4627,17 +4654,44 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_front_concurrent_camera"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-12"
-  description: "- Preview stabilization"
+  name: "Camera Preview Stabilization"
+  description: "Preview stabilization for primary rear camera"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_preview_stabilization_supported"
+    value: {
+      description: "Is the rear primary camera preview stabilization supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support CONTROL_VIDEO_12TABILIZATION_MODE_PREVIEW_12TABILIZATION for both primary front and primary back camera."
+      specification: "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for the primary back camera."
+      required_values {
+        key: "rear_camera_preview_stabilization_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4645,6 +4699,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_preview_stabilization_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4652,17 +4712,44 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_preview_stabilization_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-13"
-  description: "- Logical multi-camera"
+  name: "Camera Logical Multi Camera"
+  description: "Logical multi-camera"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_logical_multi_camera_req_met"
+    value: {
+      description: "Is the rear primary camera logical multi-camera supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support LOGICAL_MULTI_CAMERA capability for the primary cameras if there are greater than 1 RGB cameras facing the same direction."
+      specification: "MUST support LOGICAL_MULTI_CAMERA capability for the primary rear-facing camera if there are greater than 1 RGB rear-facing cameras."
+      required_values {
+        key: "rear_camera_logical_multi_camera_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4670,6 +4757,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_logical_multi_camera_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4677,17 +4770,58 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_logical_multi_camera_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-14"
-  description: "- Stream use case"
+  name: "Camera Stream Use Case"
+  description: "Stream use case for primary cameras"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_stream_usecase_supported"
+    value: {
+      description: "Is the rear primary camera stream use case supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_stream_usecase_supported"
+    value: {
+      description: "Is the front primary camera stream use case supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST support STREAM_14SE_CASE capability for both primary front and primary back camera."
+      specification: "MUST support STREAM_USE_CASE capability for both primary front and primary back camera."
+      required_values {
+        key: "rear_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4695,6 +4829,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4702,6 +4848,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_stream_usecase_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
