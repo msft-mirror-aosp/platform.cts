@@ -60,6 +60,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -207,6 +208,7 @@ public class TelephonyManagerTest {
     private boolean mServiceStateChangedCalled = false;
     private boolean mRadioRebootTriggered = false;
     private boolean mHasRadioPowerOff = false;
+    private Boolean mWasLocationEnabled;
     private ServiceState mServiceState;
     private PhoneCapability mPhoneCapability;
     private boolean mOnPhoneCapabilityChanged = false;
@@ -609,6 +611,10 @@ public class TelephonyManagerTest {
         if (mIsAllowedNetworkTypeChanged) {
             recoverAllowedNetworkType();
         }
+        if (mWasLocationEnabled != null) {
+            setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
 
         StringBuilder cmdBuilder = new StringBuilder();
         cmdBuilder.append(THERMAL_MITIGATION_COMMAND_BASE).append(DISALLOW_PACKAGE_SUBCOMMAND)
@@ -765,6 +771,23 @@ public class TelephonyManagerTest {
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_COARSE_LOCATION);
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_FINE_LOCATION);
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_BACKGROUND_LOCATION);
+        uiAutomation.grantRuntimePermission(packageName, permission.WRITE_SECURE_SETTINGS);
+    }
+
+    /**
+     * Enable/disable location for current user.
+     *
+     * @return true if location was previously enabled, false if disabled. The return value should
+     *         be used in @After function of the test to restore this setting
+     */
+    public static boolean setLocationEnabled(boolean setEnabled) {
+        Context ctx = getContext();
+        LocationManager locationManager = ctx.getSystemService(LocationManager.class);
+        boolean wasEnabled = locationManager.isLocationEnabled();
+        if (wasEnabled != setEnabled) {
+            locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+        }
+        return wasEnabled;
     }
 
     @Test
@@ -818,6 +841,7 @@ public class TelephonyManagerTest {
         }
 
         grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
@@ -1977,6 +2001,10 @@ public class TelephonyManagerTest {
     @Test
     public void testNetworkTypeMatchesCellIdentity() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
         ServiceState ss = mTelephonyManager.getServiceState();
         assertNotNull(ss);
         for (NetworkRegistrationInfo nri : ss.getNetworkRegistrationInfoList()) {
@@ -5348,6 +5376,10 @@ public class TelephonyManagerTest {
     @Test
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
         // For INetworkRadio <1.5, just verify that calling the method doesn't throw an error.
         if (mNetworkHalVersion < RADIO_HAL_VERSION_1_5) {
             mTelephonyManager.getAllCellInfo();
@@ -5753,6 +5785,7 @@ public class TelephonyManagerTest {
         }
 
         grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
@@ -6959,6 +6992,10 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(
             com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
+
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
         // is still thrown if com.android.phone.permission.ACCESS_LAST_KNOWN_CELL_ID is
