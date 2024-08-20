@@ -90,7 +90,6 @@ android_test {
         "libbinder",
         "libbpf_bcc",
         "libc++",
-        "libcgrouprc",
         "libcrypto",
         "libcutils",
         "libdl_android",
