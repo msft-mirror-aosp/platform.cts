@@ -62,6 +62,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.wifi.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -887,9 +888,11 @@ public class TestHelper {
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
             if (shouldUserReject) {
-                assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
-                assertThat(localOnlyListener.failureReason)
-                        .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                if (Flags.localOnlyConnectionOptimization()) {
+                    assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
+                    assertThat(localOnlyListener.failureReason)
+                            .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                }
                 assertThat(testNetworkCallback.onUnavailableCalled).isTrue();
             } else {
                 assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
