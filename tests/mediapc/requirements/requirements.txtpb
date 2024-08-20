@@ -4394,12 +4394,33 @@ requirements {
 }
 requirements {
   id: "7.5/H-1-8"
-  description: "- RAW capability"
+  name: "Camera RAW capability"
+  description: "RAW capabilities"
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "rear_camera_raw_supported"
+    value: {
+      description: "Is the rear primary camera RAW capability supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
-      specification: "MUST support CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_11AW and android.graphics.ImageFormat.RAW_12ENSOR for the primary back camera."
+      specification: "MUST support CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_RAW and android.graphics.ImageFormat.RAW_SENSOR for the primary back camera."
+      required_values {
+        key: "rear_camera_raw_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4407,6 +4428,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values {
+        key: "rear_camera_raw_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4414,6 +4441,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_raw_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4421,17 +4454,44 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_raw_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-9"
-  description: "- Slow-mo recording"
+  name: "Camera Slow Motion"
+  description: "Slow-mo recording"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_240fps_supported"
+    value: {
+      description: "Is the rear primary camera slow motion supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "same"
+      specification: "MUST have a rear-facing primary camera supporting 720p or 1080p @ 240fps."
+      required_values {
+        key: "rear_camera_240fps_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4439,6 +4499,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_240fps_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4446,17 +4512,58 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_240fps_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-10"
-  description: "- Minimum zoom ratio for ultrawide cameras"
+  name: "Camera Ultrawide Zoom Ratio"
+  description: "Minimum zoom ratio for ultrawide cameras"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_ultrawide_zoom_req_met"
+    value: {
+      description: "Zoom ratio for rear primary camera is met"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_ultrawide_zoom_req_met"
+    value: {
+      description: "Zoom ratio for front primary camera is met"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
-      specification: "MUST have min ZOOM_11ATIO < 1.0 for the primary cameras if there is an ultrawide RGB camera facing the same direction."
+      specification: "MUST have min ZOOM_RATIO < 1.0 for the primary cameras if there is an ultrawide RGB camera facing the same direction."
+      required_values {
+        key: "rear_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4464,6 +4571,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "rear_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4471,6 +4590,18 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_ultrawide_zoom_req_met"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
