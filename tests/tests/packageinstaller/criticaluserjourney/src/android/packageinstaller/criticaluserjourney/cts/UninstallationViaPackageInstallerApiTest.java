@@ -31,8 +31,26 @@ import org.junit.runner.RunWith;
 public class UninstallationViaPackageInstallerApiTest extends UninstallationTestBase {
 
     @Test
-    public void launch_hasDeletePackages_success() throws Exception {
-        startUninstallationViaPackageInstallerApiWithDeletePackages();
+    public void launch_hasDeletePackages_differentInstaller_okButton_success() throws Exception {
+        startUninstallationViaPackageInstallerApiWithDeletePackages(/* isSameInstaller= */ false);
+
+        waitForUiIdle();
+
+        clickUninstallOkButton();
+
+        assertUninstallSuccess();
+        assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void launch_hasDeletePackages_sameInstaller_noConfirmedDialog_success()
+            throws Exception {
+        // if the installer is not the test case, even if the test is granted the DELETE_PACKAGES
+        // permission, it also needs the user confirmation to approve the uninstallation.
+        // Set the test case to be the installer of the test app
+        installTestPackageWithInstallerPackageName();
+
+        startUninstallationViaPackageInstallerApiWithDeletePackages(/* isSameInstaller= */ true);
 
         assertUninstallSuccess();
         assertTestPackageNotInstalled();

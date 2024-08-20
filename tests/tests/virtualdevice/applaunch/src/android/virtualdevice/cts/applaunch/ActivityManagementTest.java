@@ -143,7 +143,7 @@ public class ActivityManagementTest {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         mRule.sendIntentToDisplay(intent, mVirtualDisplayId);
         verify(mActivityListener, timeout(TIMEOUT_MILLIS).times(1)).onActivityLaunchBlocked(
-                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUserId()),
+                eq(mVirtualDisplayId), eq(mEmptyActivityComponent), eq(mContext.getUser()),
                 any());
     }
 

@@ -108,10 +108,10 @@ public class PackageInstallerCujTestBase {
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
-    private static Instrumentation sInstrumentation;
     private static String sPackageInstallerPackageName = null;
 
     public static Context sContext;
+    public static Instrumentation sInstrumentation;
     public static PackageManager sPackageManager;
     public static UiDevice sUiDevice;
 
@@ -389,6 +389,15 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * Install the test apk {@link #TEST_APK_NAME} and set the installer to be
+     * the package name of the test case.
+     */
+    public static void installTestPackageWithInstallerPackageName() throws IOException {
+        installPackage(TEST_APK_NAME, sContext.getPackageName());
+        assertTestPackageInstalled();
+    }
+
+    /**
      * Install the test apk {@link #TEST_APK_NAME}.
      */
     public static void installTestPackage() throws IOException {
@@ -416,6 +425,17 @@ public class PackageInstallerCujTestBase {
         SystemUtil.callWithShellPermissionIdentity(() -> DeviceConfig.setProperty(
                 DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name, value,
                 /* makeDefault= */ false));
+    }
+
+    /**
+     * Install the test apk {@code apkName} and set the installer is {@code installerPackageName}.
+     */
+    public static void installPackage(@NonNull String apkName, @NonNull String installerPackageName)
+            throws IOException {
+        Log.d(TAG, "installPackage(): apkName= " + apkName + " installerPackageName= "
+                + installerPackageName);
+        SystemUtil.runShellCommand(String.format("pm install -i %s -t %s", installerPackageName,
+                new File(TEST_APK_LOCATION, apkName).getCanonicalPath()));
     }
 
     /**

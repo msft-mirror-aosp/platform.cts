@@ -31,6 +31,13 @@ import org.junit.runner.RunWith;
 public class InstallationViaSessionTest extends InstallationTestBase {
 
     @Test
+    public void newInstall_grantedInstallPackages_noConfirmedDialog_success() throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission();
+
+        assertTestPackageInstalled();
+    }
+
+    @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {
         startInstallationViaPackageInstallerSession();
 
@@ -174,6 +181,14 @@ public class InstallationViaSessionTest extends InstallationTestBase {
 
         assertInstallFailureAborted();
         assertTestPackageNotInstalled();
+    }
+
+    @Test
+    public void update_grantedInstallPackages_noConfirmedDialog_success() throws Exception {
+        installTestPackage();
+        startInstallationUpdateViaPackageInstallerSessionWithPermission();
+
+        assertTestPackageVersion2Installed();
     }
 
     @Test

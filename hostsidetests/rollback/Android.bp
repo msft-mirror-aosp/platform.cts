@@ -27,7 +27,11 @@ java_test_host {
         "tradefed",
         "truth",
     ],
-    static_libs: ["cts-install-lib-host"],
+    static_libs: [
+        "android.crashrecovery.flags-aconfig-java-host",
+        "cts-install-lib-host",
+        "flag-junit-host",
+    ],
     data: [
         ":CtsRollbackManagerHostTestHelperApp",
         ":CtsRollbackManagerHostTestHelperApp2",

@@ -16,12 +16,16 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static android.Manifest.permission.INSTALL_PACKAGES;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_REQUEST_INSTALL_PACKAGES;
+import static android.app.PendingIntent.FLAG_MUTABLE;
+import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED;
+import static android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID;
 import static android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
 
@@ -30,10 +34,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
+import android.content.pm.PackageInstaller;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.util.Log;
@@ -56,6 +63,7 @@ import org.junit.BeforeClass;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -218,6 +226,62 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     private static void requestInstallerCleanUp() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_CLEAN_UP);
+    }
+
+    private static void startInstallationViaPackageInstallerSessionWithPermission(
+            String apkName) throws Exception {
+        final PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(TEST_APP_PACKAGE_NAME);
+        final PackageInstaller packageInstaller = sPackageManager.getPackageInstaller();
+
+        try {
+            sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(INSTALL_PACKAGES);
+            final int sessionId = packageInstaller.createSession(params);
+            final PackageInstaller.Session session = packageInstaller.openSession(sessionId);
+            final File apkFile = new File(TEST_APK_LOCATION, apkName);
+            try (OutputStream os = session.openWrite("base.apk", 0, apkFile.length());
+                    InputStream is = new FileInputStream(apkFile)) {
+                writeFullStream(is, os);
+            }
+
+            final InstallResultReceiver installResultReceiver = new InstallResultReceiver();
+            try {
+                session.commit(installResultReceiver.getIntentSender(sContext));
+                assertThat(installResultReceiver.getInstallResult()).isEqualTo(STATUS_SUCCESS);
+            } finally {
+                installResultReceiver.unregisterReceiver(sContext);
+            }
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private static void writeFullStream(InputStream inputStream, OutputStream outputStream)
+            throws IOException {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, length);
+        }
+    }
+
+    /**
+     * Start the installation via PackageInstaller.Session APIs with granting INSTALL_PACKAGES
+     * permission
+     */
+    public static void startInstallationViaPackageInstallerSessionWithPermission()
+            throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission(TEST_APK_NAME);
+    }
+
+    /**
+     * Start the installation to update the test apk from version 1 to version 2 via
+     * PackageInstaller.Session APIs with granting INSTALL_PACKAGES permission
+     */
+    public static void startInstallationUpdateViaPackageInstallerSessionWithPermission()
+            throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission(TEST_APK_V2_NAME);
     }
 
     /**
@@ -807,6 +871,46 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
+        }
+    }
+
+    private static class InstallResultReceiver extends BroadcastReceiver {
+        private CompletableFuture<Integer> mInstallResult = new CompletableFuture<>();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "InstallResultReceiver Received intent " + prettyPrint(intent));
+            mInstallResult.complete(intent.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID));
+        }
+
+        public void unregisterReceiver(Context context) {
+            context.unregisterReceiver(this);
+        }
+        public int getInstallResult() throws Exception {
+            return mInstallResult.get(10, TimeUnit.SECONDS);
+        }
+
+        public IntentSender getIntentSender(Context context) {
+            String action = InstallResultReceiver.class.getName();
+            context.registerReceiver(this, new IntentFilter(action),
+                    Context.RECEIVER_EXPORTED);
+            Intent intent = new Intent(action).setPackage(context.getPackageName())
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
+                    FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
+            return pending.getIntentSender();
+        }
+
+        private static String prettyPrint(Intent intent) {
+            int sessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1);
+            int status = intent.getIntExtra(EXTRA_STATUS,
+                    PackageInstaller.STATUS_FAILURE);
+            String message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+            return String.format("%s: {\n"
+                    + "sessionId = %d\n"
+                    + "status = %d\n"
+                    + "message = %s\n"
+                    + "}", intent, sessionId, status, message);
         }
     }
 }
