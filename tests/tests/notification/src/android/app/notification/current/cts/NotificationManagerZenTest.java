@@ -216,7 +216,28 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
             // Also get and cache the default policy for comparison later.
             if (Flags.modesApi()) {
-                mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                if (Flags.modesUi()) {
+                    mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                } else {
+                    // Pre-modes_ui, the "default policy" (for the purposes of merging with missing
+                    // or underspecified policies) is actually the manual policy. Thus we construct
+                    // a ZenPolicy matching the previous setNotificationPolicy() call.
+                    mDefaultPolicy = new ZenPolicy.Builder()
+                            .allowPriorityChannels(true)
+                            .disallowAllSounds()
+                            .allowAlarms(true)
+                            .allowMedia(true)
+                            .allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowConversations(ZenPolicy.CONVERSATION_SENDERS_IMPORTANT)
+                            .allowRepeatCallers(true)
+                            .showAllVisualEffects()
+                            .showInAmbientDisplay(false)
+                            .showPeeking(false)
+                            .showLights(false)
+                            .showFullScreenIntent(false)
+                            .build();
+                }
             }
         });
     }

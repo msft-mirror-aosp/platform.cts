@@ -22,6 +22,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
+
 import com.android.ddmlib.Log;
 import com.android.tradefed.config.Option;
 import com.android.tradefed.device.DeviceNotAvailableException;
@@ -36,6 +39,7 @@ import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 import com.android.tradefed.testtype.junit4.DeviceTestRunOptions;
 import com.android.tradefed.util.RunUtil;
 
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
@@ -52,6 +56,10 @@ abstract class HostsideNetworkPolicyTestCase extends BaseHostJUnit4Test {
     @Option(name = "custom-url", importance = Option.Importance.IF_UNSET,
             description = "A custom url to use for testing network connections")
     protected String mCustomUrl;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @BeforeClassWithInfo
     public static void setUpOnceBase(TestInformation testInfo) throws Exception {

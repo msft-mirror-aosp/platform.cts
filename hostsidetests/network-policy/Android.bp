@@ -31,6 +31,8 @@ java_test_host {
     ],
     static_libs: [
         "modules-utils-build-testing",
+        "flag-junit-host",
+        "net_flags_host_lib",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
