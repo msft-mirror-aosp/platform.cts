@@ -52,7 +52,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
 @RunWith(AndroidJUnit4::class)
 class VirtualDeviceMirrorDisplayTest : InputTestCase() {
     @get:Rule
@@ -519,11 +518,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         )
     }
 
-    @RequiresFlagsEnabled(
-        Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-        Flags.FLAG_CONSISTENT_DISPLAY_FLAGS,
-        Flags.FLAG_VIRTUAL_STYLUS
-    )
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylus_touchEvent() {
         val stylus: VirtualStylus = VirtualInputDeviceCreator.createAndPrepareStylus(
@@ -611,11 +606,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         verifyEvents(expectedEvents)
     }
 
-    @RequiresFlagsEnabled(
-        Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-        Flags.FLAG_CONSISTENT_DISPLAY_FLAGS,
-        android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY
-    )
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotary_scrollEvent() {
         val rotary: VirtualRotaryEncoder = VirtualInputDeviceCreator.createAndPrepareRotary(
