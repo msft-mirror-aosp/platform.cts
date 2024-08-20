@@ -606,9 +606,6 @@ public class ItsUtils {
             if (profiles == null) continue;
 
             List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
-            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
-                if (profile == null) continue;
-            }
 
             // Find a profile which can achieve the requested max frame rate
             for (EncoderProfiles.VideoProfile profile : videoProfiles) {
