@@ -95,12 +95,14 @@ public final class HdmiCecGeneralProtocolTest extends BaseHdmiCecCtsTest {
         // HotplugDetectionAction will send GIVE_PHYSICAL_ADDRESS
         // PowerStatusMonitorAction will send GIVE_POWER_STATUS
         // AbsoluteVolumeAudioStatusAction will send GIVE_AUDIO_STATUS
+        // RequestActiveSourceAction will send REQUEST_ACTIVE_SOURCE
         List<CecOperand> excludeOperands = new ArrayList<>();
         excludeOperands.add(CecOperand.GIVE_PHYSICAL_ADDRESS);
         excludeOperands.add(CecOperand.GIVE_DEVICE_VENDOR_ID);
         excludeOperands.add(CecOperand.GIVE_OSD_NAME);
         excludeOperands.add(CecOperand.GIVE_POWER_STATUS);
         excludeOperands.add(CecOperand.GIVE_AUDIO_STATUS);
+        excludeOperands.add(CecOperand.REQUEST_ACTIVE_SOURCE);
 
         hdmiCecClient.sendCecMessage(message, params);
         // Default timeout for the incoming command to arrive in response to a request is 2 secs
