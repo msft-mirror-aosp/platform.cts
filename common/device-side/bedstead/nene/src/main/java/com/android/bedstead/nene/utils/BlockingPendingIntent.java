@@ -46,7 +46,7 @@ public class BlockingPendingIntent implements AutoCloseable {
     private void register() {
         String intentAction = UUID.randomUUID().toString();
         mPendingIntent = PendingIntent.getBroadcast(TestApis.context().instrumentedContext(), 0,
-                new Intent(intentAction), PendingIntent.FLAG_UPDATE_CURRENT);
+                new Intent(intentAction), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         mBlockingBroadcastReceiver = new BlockingBroadcastReceiver(
                 TestApis.context().instrumentedContext());
         TestApis.context().instrumentedContext().registerReceiver(mBlockingBroadcastReceiver,
