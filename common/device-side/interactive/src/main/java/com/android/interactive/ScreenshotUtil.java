@@ -22,6 +22,7 @@ import android.content.Context;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
@@ -39,6 +40,8 @@ import java.time.Duration;
  * storage.
  */
 public final class ScreenshotUtil {
+
+    private static final String LOG_TAG = "Interactive.Screenshot";
 
     /**
      * A {@link Runnable} that takes a screenshot and marks the finish status after the completion.
@@ -109,6 +112,8 @@ public final class ScreenshotUtil {
         File screenshotFile = new File(screenshotDir, screenshotFileName + ".png");
         UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
                 .takeScreenshot(screenshotFile);
+
+        Log.i(LOG_TAG, "Screenshot " + screenshotFileName + " is taken.");
     }
 
     /**
@@ -145,7 +150,7 @@ public final class ScreenshotUtil {
     /**
      * Gets the test name stored within a test execution. Returns an empty string if it's not set.
      */
-    static String getTestName() {
+    private static String getTestName() {
         return TestApis.context()
                 .instrumentedContext()
                 .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
