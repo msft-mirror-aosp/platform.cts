@@ -25,7 +25,6 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.webkit.WebView;
 import android.widget.RadioButton;
 import android.widget.TextView;
 
@@ -38,6 +37,8 @@ import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
+import com.android.cts.verifier.libs.ui.PlainTextFormatter;
+import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.StreamBase;
@@ -83,9 +84,9 @@ public class AudioMultichannelMixdownActivity
 
     private TextView mPhasesView;
 
-    private WebView mResultsView;
+    private View mResultsView;
 
-    private  HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private TextFormatter mTextFormatter;
 
     protected boolean mIsHandheld;
 
@@ -377,103 +378,103 @@ public class AudioMultichannelMixdownActivity
         }
 
         public void displayTestResults() {
-            mHtmlFormatter.clear();
-            mHtmlFormatter.openDocument();
+            mTextFormatter.clear();
+            mTextFormatter.openDocument();
 
             Locale locale = Locale.getDefault();
 
             // "Bad Start"
             if (mTestManager.mState == TESTSTATUS_BADSTART) {
-                mHtmlFormatter.openBold()
+                mTextFormatter.openBold()
                     .appendText(getString(R.string.audio_mixdown_cantstart))
                         .closeBold();
             } else {
                 // "Normal" Run
                 if (mSelectedInput == null) {
-                    mHtmlFormatter.openBold();
+                    mTextFormatter.openBold();
                     if (mSelectedInput == null) {
-                        mHtmlFormatter.appendText(getString(R.string.audio_mixdown_invalidinput));
-                        mHtmlFormatter.appendBreak();
+                        mTextFormatter.appendText(getString(R.string.audio_mixdown_invalidinput));
+                        mTextFormatter.appendBreak();
                     }
-                    mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
-                    mHtmlFormatter.closeBold();
+                    mTextFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
+                    mTextFormatter.closeBold();
                 } else {
-                    mHtmlFormatter.appendText(getString(R.string.audio_general_inputcolon)
+                    mTextFormatter.appendText(getString(R.string.audio_general_inputcolon)
                             + " " + mSelectedInput.getProductName());
-                    mHtmlFormatter.appendBreak();
+                    mTextFormatter.appendBreak();
                 }
 
                 if (mSelectedOutput == null) {
-                    mHtmlFormatter.openBold();
+                    mTextFormatter.openBold();
                     if (mSelectedOutput == null) {
-                        mHtmlFormatter.appendText(getString(R.string.audio_mixdown_invalidoutput));
-                        mHtmlFormatter.appendBreak();
+                        mTextFormatter.appendText(getString(R.string.audio_mixdown_invalidoutput));
+                        mTextFormatter.appendBreak();
                     }
-                    mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
-                    mHtmlFormatter.closeBold();
+                    mTextFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
+                    mTextFormatter.closeBold();
                 }
                 else {
-                    mHtmlFormatter.appendText(getString(R.string.audio_general_outputcolon)
+                    mTextFormatter.appendText(getString(R.string.audio_general_outputcolon)
                             + " " + mSelectedOutput.getProductName());
-                    mHtmlFormatter.appendBreak();
+                    mTextFormatter.appendBreak();
                 }
 
                 for (TestPhase testPhase : mTestModules) {
                     if (testPhase.mState != TestPhase.STATUS_COMPLETE) {
-                        mHtmlFormatter.openBold();
-                        mHtmlFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
-                        mHtmlFormatter.closeBold();
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText(getString(R.string.audio_mixdown_testcanceled));
+                        mTextFormatter.closeBold();
                         break;
                     }
 
                     if (testPhase.mHeading != null) {
-                        mHtmlFormatter.openBold();
-                        mHtmlFormatter.appendText(testPhase.mHeading);
-                        mHtmlFormatter.closeBold();
-                        mHtmlFormatter.appendBreak();
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText(testPhase.mHeading);
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendBreak();
                     }
 
                     // Description
                     String separatorStr = " - ";
-                    mHtmlFormatter.appendText(testPhase.mDescription + separatorStr);
-                    mHtmlFormatter.openBold();
-                    mHtmlFormatter.appendText((testPhase.mPass
+                    mTextFormatter.appendText(testPhase.mDescription + separatorStr);
+                    mTextFormatter.openBold();
+                    mTextFormatter.appendText((testPhase.mPass
                             ? getString(R.string.audio_general_pass)
                             : getString(R.string.audio_general_fail)));
-                    mHtmlFormatter.closeBold();
-                    mHtmlFormatter.appendBreak();
+                    mTextFormatter.closeBold();
+                    mTextFormatter.appendBreak();
 
-                    mHtmlFormatter.openTextColor(testPhase.mPass ? "green" : "red");
+                    mTextFormatter.openTextColor(testPhase.mPass ? "green" : "red");
 
                     // poor person's indent
-                    mHtmlFormatter.appendText("  ");
+                    mTextFormatter.appendText("  ");
 
                     // Left
                     String leftMagString =
                             String.format(locale, " mag:%.5f",
                                     testPhase.mMagnitude[IN_CHANNEL_LEFT]);
-                    mHtmlFormatter.appendText(
+                    mTextFormatter.appendText(
                             getString(R.string.audio_general_left) + leftMagString + " ");
 
                     String leftJitterString = String.format(
                             locale, "jit:%.5f" , testPhase.mPhaseJitter[IN_CHANNEL_LEFT]);
-                    mHtmlFormatter.appendText(leftJitterString);
+                    mTextFormatter.appendText(leftJitterString);
 
-                    mHtmlFormatter.appendBreak();
+                    mTextFormatter.appendBreak();
                     // poor person's indent
-                    mHtmlFormatter.appendText("  ");
+                    mTextFormatter.appendText("  ");
 
                     // Right
                     String rightMagString = String.format(
                             locale, " mag:%.5f", testPhase.mMagnitude[IN_CHANNEL_RIGHT]);
-                    mHtmlFormatter.appendText(
+                    mTextFormatter.appendText(
                             getString(R.string.audio_general_right) + rightMagString);
                     String rightJitterString = String.format(
                             locale, " jit:%.5f" , testPhase.mPhaseJitter[IN_CHANNEL_RIGHT]);
-                    mHtmlFormatter.appendText(rightJitterString);
+                    mTextFormatter.appendText(rightJitterString);
 
-                    mHtmlFormatter.closeTextColor();
-                    mHtmlFormatter.appendBreak();
+                    mTextFormatter.closeTextColor();
+                    mTextFormatter.appendBreak();
                 }
             }
 
@@ -482,37 +483,36 @@ public class AudioMultichannelMixdownActivity
             String completedString = " - " + getString(R.string.audio_mixdown_completed);
             String notCompletedString = " - " + getString(R.string.audio_mixdown_not_completed);
 
-            mHtmlFormatter.openParagraph();
-            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_micspeaker));
+            mTextFormatter.openParagraph();
+            mTextFormatter.appendText(getString(R.string.audio_mixdown_micspeaker));
             if (mSpeakerMicRequired) {
-                mHtmlFormatter.appendText(requiredString);
+                mTextFormatter.appendText(requiredString);
             }
-            mHtmlFormatter.appendText(mSpeakerMicRun  ? completedString : notCompletedString);
+            mTextFormatter.appendText(mSpeakerMicRun  ? completedString : notCompletedString);
 
-            mHtmlFormatter.openParagraph();
-            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_analogheadset));
+            mTextFormatter.openParagraph();
+            mTextFormatter.appendText(getString(R.string.audio_mixdown_analogheadset));
             if (mAnalogJackRequired) {
-                mHtmlFormatter.appendText(requiredString);
+                mTextFormatter.appendText(requiredString);
             }
-            mHtmlFormatter.appendText(mAnalogJackRun  ? completedString : notCompletedString);
+            mTextFormatter.appendText(mAnalogJackRun  ? completedString : notCompletedString);
 
-            mHtmlFormatter.openParagraph();
-            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_usbdevice));
+            mTextFormatter.openParagraph();
+            mTextFormatter.appendText(getString(R.string.audio_mixdown_usbdevice));
             if (mUsbInterfaceRequired) {
-                mHtmlFormatter.appendText(requiredString);
+                mTextFormatter.appendText(requiredString);
             }
-            mHtmlFormatter.appendText(mUsbInterfaceRun ? completedString : notCompletedString);
+            mTextFormatter.appendText(mUsbInterfaceRun ? completedString : notCompletedString);
 
-            mHtmlFormatter.openParagraph();
-            mHtmlFormatter.appendText(getString(R.string.audio_mixdown_usbheadset));
+            mTextFormatter.openParagraph();
+            mTextFormatter.appendText(getString(R.string.audio_mixdown_usbheadset));
             if (mUsbHeadsetRequired) {
-                mHtmlFormatter.appendText(requiredString);
+                mTextFormatter.appendText(requiredString);
             }
-            mHtmlFormatter.appendText(mUsbHeadsetRun ? completedString : notCompletedString);
+            mTextFormatter.appendText(mUsbHeadsetRun ? completedString : notCompletedString);
 
-            mHtmlFormatter.closeDocument();
-            mResultsView.loadData(mHtmlFormatter.toString(),
-                    "text/html; charset=utf-8", "utf-8");
+            mTextFormatter.closeDocument();
+            mTextFormatter.put(mResultsView);
 
             showResultsView();
         }
@@ -614,7 +614,9 @@ public class AudioMultichannelMixdownActivity
 
         mPhasesView = (TextView) findViewById(R.id.audio_mixdown_channels);
 
-        mResultsView = (WebView) findViewById(R.id.audio_mixdown_results);
+        mTextFormatter = AudioSystemFlags.supportsWebView(this)
+                ? new HtmlFormatter() : new PlainTextFormatter();
+        mResultsView = findViewById(R.id.audio_mixdown_results);
 
         mTestManager.displayTestPhases();
 
@@ -660,15 +662,14 @@ public class AudioMultichannelMixdownActivity
     // UI Helpers
     //
     void displayNonHandheldMessage() {
-        mHtmlFormatter.clear();
-        mHtmlFormatter.openDocument();
-        mHtmlFormatter.openParagraph();
-        mHtmlFormatter.appendText(getString(R.string.audio_exempt_nonhandheld));
-        mHtmlFormatter.closeParagraph();
+        mTextFormatter.clear();
+        mTextFormatter.openDocument();
+        mTextFormatter.openParagraph();
+        mTextFormatter.appendText(getString(R.string.audio_exempt_nonhandheld));
+        mTextFormatter.closeParagraph();
 
-        mHtmlFormatter.closeDocument();
-        mResultsView.loadData(mHtmlFormatter.toString(),
-                "text/html; charset=utf-8", "utf-8");
+        mTextFormatter.closeDocument();
+        mTextFormatter.put(mResultsView);
         showResultsView();
     }
 
