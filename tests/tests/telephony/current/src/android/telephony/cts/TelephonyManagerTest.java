@@ -824,6 +824,7 @@ public class TelephonyManagerTest {
             mListener = new PhoneStateListener() {
                 @Override
                 public void onCellLocationChanged(CellLocation location) {
+                    Log.i(TAG, "onCellLocationChanged: " + location);
                     if (!mOnCellLocationChangedCalled) {
                         synchronized (mLock) {
                             mOnCellLocationChangedCalled = true;
@@ -848,6 +849,7 @@ public class TelephonyManagerTest {
         // Test register
         synchronized (mLock) {
             // .listen generates an onCellLocationChanged event
+            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
             mLock.wait(TOLERANCE);
 
