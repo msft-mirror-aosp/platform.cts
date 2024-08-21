@@ -62,6 +62,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.wifi.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -887,9 +888,11 @@ public class TestHelper {
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
             if (shouldUserReject) {
-                assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
-                assertThat(localOnlyListener.failureReason)
-                        .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                if (Flags.localOnlyConnectionOptimization()) {
+                    assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
+                    assertThat(localOnlyListener.failureReason)
+                            .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                }
                 assertThat(testNetworkCallback.onUnavailableCalled).isTrue();
             } else {
                 assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
@@ -1065,10 +1068,16 @@ public class TestHelper {
         // File the network request & wait for the callback.
         TestNetworkCallback testNetworkCallback2G = createTestNetworkCallback();
         TestNetworkCallback testNetworkCallback5G = createTestNetworkCallback();
+        TestNetworkCallback testNetworkCallback5GLow = createTestNetworkCallback();
+        TestNetworkCallback testNetworkCallback5GHigh = createTestNetworkCallback();
         final NetworkRequest networkRequest2G = createNetworkRequestForInternet(
                 ScanResult.WIFI_BAND_24_GHZ);
         final NetworkRequest networkRequest5G = createNetworkRequestForInternet(
                 ScanResult.WIFI_BAND_5_GHZ);
+        final NetworkRequest networkRequest5GLow = createNetworkRequestForInternet(
+                1 << 29 /*WIFI_BAND_INDEX_5_GHZ_LOW*/);
+        final NetworkRequest networkRequest5GHigh = createNetworkRequestForInternet(
+                1 << 30 /*WIFI_BAND_INDEX_5_GHZ_HIGH*/);
          // Make sure wifi is connected to primary after wifi enabled with saved network.
         PollingCheck.check("Wifi not connected", DURATION_NETWORK_CONNECTION_MILLIS,
                 () -> getNumWifiConnections() > 0);
@@ -1076,10 +1085,14 @@ public class TestHelper {
             // Request both 2G and 5G wifi networks.
             mConnectivityManager.requestNetwork(networkRequest2G, testNetworkCallback2G);
             mConnectivityManager.requestNetwork(networkRequest5G, testNetworkCallback5G);
+            mConnectivityManager.requestNetwork(networkRequest5GLow, testNetworkCallback5GLow);
+            mConnectivityManager.requestNetwork(networkRequest5GHigh, testNetworkCallback5GHigh);
             // Wait for the request to reach the wifi stack before kick-start periodic scans.
             Thread.sleep(200);
             boolean band2gFound = false;
             boolean band5gFound = false;
+            boolean band5gLowFound = false;
+            boolean band5gHighFound = false;
             // now wait for connection to complete and wait for callback
             WifiInfo primaryInfo = null;
             WifiInfo secondaryInfo = null;
@@ -1107,12 +1120,50 @@ public class TestHelper {
                     band5gFound = true;
                 }
             }
+            if (testNetworkCallback5GLow.await(DURATION_NETWORK_CONNECTION_MILLIS)) {
+                WifiInfo info5g = checkWifiNetworkInfo(testNetworkCallback5GLow,
+                        ScanResult.WIFI_BAND_5_GHZ);
+                if (info5g != null) {
+                    if (info5g.isPrimary()) {
+                        primaryInfo = info5g;
+                    } else {
+                        secondaryInfo = info5g;
+                    }
+                    band5gLowFound = true;
+                }
+            }
+            if (testNetworkCallback5GHigh.await(DURATION_NETWORK_CONNECTION_MILLIS)) {
+                WifiInfo info5g = checkWifiNetworkInfo(testNetworkCallback5GHigh,
+                        ScanResult.WIFI_BAND_5_GHZ);
+                if (info5g != null) {
+                    if (info5g.isPrimary()) {
+                        primaryInfo = info5g;
+                    } else {
+                        secondaryInfo = info5g;
+                    }
+                    band5gHighFound = true;
+                }
+            }
             if (expectConnectionSuccess) {
                 // Ensure both primary and non-primary networks are created.
-                assertTrue("Network not found on 2g", band2gFound);
-                assertTrue("Network not found on 5g", band5gFound);
-                assertFalse("Network unavailable on 2g", testNetworkCallback2G.onUnavailableCalled);
-                assertFalse("Network unavailable on 5g", testNetworkCallback5G.onUnavailableCalled);
+                if (band2gFound) {
+                    // Expect a 2.4Ghz connection and a 5Ghz connection
+                    assertTrue("Network not found on 2g", band2gFound);
+                    assertTrue("Network not found on 5g", band5gFound);
+                    assertFalse("Network unavailable on 2g",
+                            testNetworkCallback2G.onUnavailableCalled);
+                    assertFalse("Network unavailable on 5g",
+                            testNetworkCallback5G.onUnavailableCalled);
+                } else {
+                    // If there's no 2.4Ghz connection, then expect a 5Ghz low and a 5Ghz high
+                    // connection
+                    assertTrue("Network not found on 5g low", band5gLowFound);
+                    assertTrue("Network not found on 5g high", band5gHighFound);
+                    assertFalse("Network unavailable on 5g low",
+                            testNetworkCallback5GLow.onUnavailableCalled);
+                    assertFalse("Network unavailable on 5g high",
+                            testNetworkCallback5GHigh.onUnavailableCalled);
+                }
                 assertNotNull("No primary network info", primaryInfo);
                 assertNotNull("No secondary network info", secondaryInfo);
                 assertFalse("Primary and secondary networks are same",
@@ -1153,6 +1204,8 @@ public class TestHelper {
         } finally {
             mConnectivityManager.unregisterNetworkCallback(testNetworkCallback2G);
             mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5G);
+            mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5GLow);
+            mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5GHigh);
             executorService.shutdown();
         }
     }
