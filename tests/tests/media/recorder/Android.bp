@@ -18,11 +18,11 @@ package {
         "Android-Apache-2.0",
         "cts_tests_tests_media_license", // CC-BY
     ],
+    default_team: "trendy_team_android_media_solutions_editing",
 }
 
 android_test {
     name: "CtsMediaRecorderTestCases",
-    team: "trendy_team_android_media_solutions_editing",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -46,7 +46,6 @@ android_test {
 
 android_test {
     name: "MctsMediaRecorderTestCases",
-    team: "trendy_team_android_media_solutions_editing",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",

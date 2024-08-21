@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -143,7 +144,7 @@ public class BluetoothLeScanTest {
                 .adoptShellPermissionIdentity(
                         android.Manifest.permission.BLUETOOTH_CONNECT,
                         android.Manifest.permission.BLUETOOTH_SCAN);
-        List<ScanFilter> filters = new ArrayList<ScanFilter>();
+        List<ScanFilter> filters = new ArrayList<>();
         ScanFilter filter = createScanFilter();
         if (filter == null) {
             Log.d(TAG, "no appropriate filter can be set");
@@ -213,7 +214,7 @@ public class BluetoothLeScanTest {
     // Create a scan filter based on the nearby beacon with highest signal strength.
     private ScanFilter createScanFilter() {
         // Get a list of nearby beacons.
-        List<ScanResult> scanResults = new ArrayList<ScanResult>(scan());
+        List<ScanResult> scanResults = new ArrayList<>(scan());
         assertTrue("Scan results shouldn't be empty", !scanResults.isEmpty());
         // Find the beacon with strongest signal strength, which is the target device for filter
         // scan.
@@ -315,7 +316,7 @@ public class BluetoothLeScanTest {
         TestUtils.sleep(SCAN_DURATION_MILLIS);
         mScanner.flushPendingScanResults(batchScanCallback);
         mFlushBatchScanLatch = new CountDownLatch(1);
-        List<ScanResult> results = batchScanCallback.getBatchScanResults();
+        Collection<ScanResult> results = batchScanCallback.getBatchScanResults();
         try {
             mFlushBatchScanLatch.await(5, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -416,8 +417,8 @@ public class BluetoothLeScanTest {
 
     // Helper class for BLE scan callback.
     private class BleScanCallback extends ScanCallback {
-        private final Set<ScanResult> mResults = new HashSet<ScanResult>();
-        private final List<ScanResult> mBatchScanResults = new ArrayList<ScanResult>();
+        private final Set<ScanResult> mResults = new HashSet<>();
+        private final Collection<ScanResult> mBatchScanResults = new ConcurrentLinkedQueue<>();
 
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
@@ -448,8 +449,8 @@ public class BluetoothLeScanTest {
         }
 
         // Return batch scan results.
-        synchronized List<ScanResult> getBatchScanResults() {
-            return Collections.unmodifiableList(mBatchScanResults);
+        synchronized Collection<ScanResult> getBatchScanResults() {
+            return Collections.unmodifiableCollection(mBatchScanResults);
         }
     }
 

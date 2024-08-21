@@ -94,7 +94,14 @@ class ExecuteAppFunctionResponseTest {
         val restoredResponse = parcelAndUnparcel(response)
 
         assertThat(restoredResponse.isSuccess).isFalse()
-        assertThat(restoredResponse.resultDocument).isEqualTo(emptyGd)
+        assertThat(restoredResponse.resultDocument.namespace).isEqualTo(emptyGd.namespace)
+        assertThat(restoredResponse.resultDocument.id).isEqualTo(emptyGd.id)
+        assertThat(restoredResponse.resultDocument.schemaType).isEqualTo(emptyGd.schemaType)
+        assertThat(
+            restoredResponse.resultDocument.getProperty(
+                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+            )
+        ).isNull()
         assertThat(restoredResponse.extras.getString("testKey")).isEqualTo("testValue")
         assertThat(restoredResponse.resultCode)
             .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)

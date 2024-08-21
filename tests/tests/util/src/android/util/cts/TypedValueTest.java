@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -36,7 +35,6 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = TypedValue.class)
 public class TypedValueTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule();

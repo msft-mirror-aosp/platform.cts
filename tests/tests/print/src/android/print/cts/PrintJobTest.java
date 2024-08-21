@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.Presubmit;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
 import android.print.PrintAttributes.MediaSize;
@@ -55,6 +56,7 @@ import java.util.ArrayList;
 /**
  * Tests all possible states of print jobs.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintJobTest extends BasePrintTest {
     private static final String PRINTER_NAME = "TestPrinter";

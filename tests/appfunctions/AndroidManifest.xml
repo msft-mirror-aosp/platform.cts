@@ -19,8 +19,22 @@
     package="android.app.appfunctions.cts"
     android:targetSandboxVersion="2">
 
+    <queries>
+        <package android:name="android.app.appfunctions.helper" />
+    </queries>
     <application>
         <uses-library android:name="android.test.runner"/>
+        <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"
+            android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+            android:exported="true"
+            android:process=":appfunctions">
+            <intent-filter>
+                <action android:name="android.app.appfunctions.AppFunctionService"/>
+            </intent-filter>
+        </service>
+        <receiver
+            android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
+            android:exported="false"/>
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

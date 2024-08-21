@@ -946,6 +946,8 @@ public class WebViewSslTest extends SharedWebViewTest {
 
     // Note that this class is not thread-safe.
     static class SslErrorWebViewClient extends WaitForLoadedClient {
+        private static final String FAVICON_SUFFIX = "/favicon.ico";
+
         private boolean mWasOnReceivedSslErrorCalled;
         private String mErrorUrl;
         private int mErrorCode;
@@ -955,14 +957,30 @@ public class WebViewSslTest extends SharedWebViewTest {
         }
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            // Favicons are fetched at a mostly-arbitrary time after a page has loaded successfully,
+            // and this extra request can cause test race conditions if this callback calls
+            // `handler.proceed()` at a time that was not intended to be part of the test.
+            String url = error.getUrl();
+            if (url.endsWith(FAVICON_SUFFIX)) {
+                // Calls to cancel() are not cached by WebView and the callback will still be
+                // invoked for future errors involving the same host. So, it's safe to just cancel
+                // these requests: none of the tests need the favicon to load.
+                handler.cancel();
+                // Don't record this as an expected call to the callback.
+                return;
+            }
+
             mWasOnReceivedSslErrorCalled = true;
-            mErrorUrl = error.getUrl();
+            mErrorUrl = url;
             handler.proceed();
         }
         @Override
         public void onReceivedError(WebView view, int errorCode, String description,
                 String failingUrl) {
-            mErrorCode = errorCode;
+            // As with onReceivedSslError above, ignore favicon loads.
+            if (!failingUrl.endsWith(FAVICON_SUFFIX)) {
+                mErrorCode = errorCode;
+            }
         }
         @CallSuper
         public void resetCallCounts() {
