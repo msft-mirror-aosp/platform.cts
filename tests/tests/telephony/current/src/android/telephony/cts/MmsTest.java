@@ -38,6 +38,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.CarrierConfigManager;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionManager;
@@ -79,6 +80,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test sending MMS using {@link android.telephony.SmsManager}.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
 public class MmsTest {
     private static final String TAG = "MmsTest";
 
