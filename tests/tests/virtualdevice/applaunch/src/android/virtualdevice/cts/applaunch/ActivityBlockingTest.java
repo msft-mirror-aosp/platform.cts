@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
+import android.companion.virtual.ActivityPolicyExemption;
 import android.companion.virtual.VirtualDeviceManager.ActivityListener;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
@@ -205,7 +206,9 @@ public class ActivityBlockingTest {
                 .build());
         assertActivityLaunchAllowed(mMonitoredIntent);
 
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
@@ -229,7 +232,9 @@ public class ActivityBlockingTest {
                 .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
 
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
@@ -252,11 +257,14 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT)
                 .build());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchAllowed(mMonitoredIntent);
     }
 
@@ -279,11 +287,14 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_CUSTOM)
                 .build());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchAllowed(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
     }
 
@@ -349,7 +360,9 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT)
                 .build());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
 
         // Changing the policy to block by default still blocks it as it is not exempt anymore.
@@ -357,7 +370,9 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent);
 
         // Making it exempt allows for launching it.
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchAllowed(mMonitoredIntent);
 
         // Changing the policy to allow by default allows it as the exemptions were cleared.
@@ -365,7 +380,9 @@ public class ActivityBlockingTest {
         assertActivityLaunchAllowed(mMonitoredIntent);
 
         // Adding an exemption blocks it from launching.
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent);
 
         // Changing the policy to its current value does not affect the exemptions.
@@ -391,8 +408,10 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
 
         // Removing an exemption applies only to that display.
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent(), customPolicyDisplayId);
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .setDisplayId(customPolicyDisplayId)
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
 
@@ -403,8 +422,10 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
 
         // Adding an exemption allows for launching it.
-        mVirtualDevice.addActivityPolicyExemption(
-                mMonitoredIntent.getComponent(), customPolicyDisplayId);
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .setDisplayId(customPolicyDisplayId)
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
 
@@ -424,7 +445,9 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT)
                 .build());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
 
         // Create a new display that will have custom policy.
         VirtualDisplay customPolicyDisplay = mRule.createManagedVirtualDisplay(
@@ -435,8 +458,10 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
 
         // Removing an exemption applies only to that display.
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName(), customPolicyDisplayId);
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .setDisplayId(customPolicyDisplayId)
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
 
@@ -447,17 +472,22 @@ public class ActivityBlockingTest {
         assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
 
         // Adding an exemption allows for launching it.
-        mVirtualDevice.addActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName(), customPolicyDisplayId);
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .setDisplayId(customPolicyDisplayId)
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
 
         // Changing the device level exemption applies to all displays.
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchAllowed(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchBlocked(mMonitoredIntent, customPolicyDisplay);
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         assertActivityLaunchBlocked(mMonitoredIntent, mVirtualDisplay);
         assertActivityLaunchAllowed(mMonitoredIntent, customPolicyDisplay);
     }
@@ -469,36 +499,52 @@ public class ActivityBlockingTest {
         createVirtualDeviceAndTrustedDisplay(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_DEFAULT)
                 .build());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .build());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         // Allowed by default but exempt by both component and package policy.
         assertActivityLaunchBlocked(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(mMonitoredIntent.getComponent());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .build());
         // Allowed by default but still exempt by the package policy.
         assertActivityLaunchBlocked(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         // Allowed by default with no exemptions.
         assertActivityLaunchAllowed(mMonitoredIntent);
 
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .build());
         // Allowed by default but exempt by component level policy.
         assertActivityLaunchBlocked(mMonitoredIntent);
 
         mVirtualDevice.setDevicePolicy(POLICY_TYPE_ACTIVITY, DEVICE_POLICY_CUSTOM);
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent());
-        mVirtualDevice.addActivityPolicyExemption(mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .build());
+        mVirtualDevice.addActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         // Blocked by default but exempt by both component and package policy.
         assertActivityLaunchAllowed(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(mMonitoredIntent.getComponent());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setComponentName(mMonitoredIntent.getComponent())
+                .build());
         // Blocked by default but still exempt by the package policy.
         assertActivityLaunchAllowed(mMonitoredIntent);
 
-        mVirtualDevice.removeActivityPolicyExemption(
-                mMonitoredIntent.getComponent().getPackageName());
+        mVirtualDevice.removeActivityPolicyExemption(new ActivityPolicyExemption.Builder()
+                .setPackageName(mMonitoredIntent.getComponent().getPackageName())
+                .build());
         // Blocked by default with no exemptions.
         assertActivityLaunchBlocked(mMonitoredIntent);
 
