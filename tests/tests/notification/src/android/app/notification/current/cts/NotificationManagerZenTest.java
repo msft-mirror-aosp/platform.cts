@@ -3008,7 +3008,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     public void setAutomaticZenRuleState_manualActivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
         String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
@@ -3038,7 +3038,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_manualDeactivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3072,7 +3072,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyActivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3105,7 +3105,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyDeactivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3135,6 +3135,64 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
 
         // ... but when the app wants to activate next time, it works.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @Test
+    public void setAutomaticZenRuleState_manualActivationFromApp() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
+
+        // App activates rule.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates from SysUI -> it's inactive.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // User manually activates from App -> it's active.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // And app can automatically deactivate it later.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @Test
+    public void setAutomaticZenRuleState_manualDeactivationFromApp() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+
+        // User manually activates from SysUI -> it's active.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates from App -> it's inactive.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // And app can automatically activate it later.
         mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
     }

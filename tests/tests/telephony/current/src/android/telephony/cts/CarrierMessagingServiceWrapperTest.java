@@ -26,6 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.service.carrier.CarrierMessagingService;
@@ -62,6 +63,7 @@ import java.util.concurrent.TimeoutException;
  *  cts-tradefed run cts -m CtsTelephonyTestCases --test android.telephony.cts.
  *  CarrierMessagingServiceWrapperTest
  */
+@AppModeNonSdkSandbox(reason = "SDK sandbxoes do not have access to CarrierMessagingService")
 public class CarrierMessagingServiceWrapperTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
