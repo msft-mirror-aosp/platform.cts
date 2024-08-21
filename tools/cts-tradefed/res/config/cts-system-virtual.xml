@@ -463,9 +463,6 @@
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission"/>
   <option name="compatibility:include-filter" value="CtsContactsProviderTestCases"/>
   <option name="compatibility:include-filter" value="CtsHibernationTestCases"/>
-  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases1"/>
-  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases3"/>
-  <option name="compatibility:include-filter" value="signed-CtsSecureElementAccessControlTestCases2"/>
   <option name="compatibility:include-filter" value="CtsTextClassifierTestCases"/>
   <option name="compatibility:include-filter" value="CtsSharesheetTestCases"/>
   <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests"/>
