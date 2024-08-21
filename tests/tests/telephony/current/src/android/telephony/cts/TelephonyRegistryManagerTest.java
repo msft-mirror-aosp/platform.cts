@@ -54,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
     private static final long TIMEOUT_MILLIS = 1000;
+    private static final String TAG = "TelephonyRegistryManagerTest";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -166,7 +167,8 @@ public class TelephonyRegistryManagerTest {
         TelephonyManager tm = context.getSystemService(TelephonyManager.class);
         tm.listen(psl, PhoneStateListener.LISTEN_SERVICE_STATE);
         // clear the initial result from registering the listener.
-        queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        ServiceState initialResult = queue.poll(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
+        Log.d(TAG, "initialResult: " + initialResult);
 
         ServiceState dummyState = new ServiceState();
         dummyState.setCdmaSystemAndNetworkId(1234, 5678);
@@ -718,7 +720,7 @@ public class TelephonyRegistryManagerTest {
         @Override
         public void onOutgoingEmergencyCall(EmergencyNumber placedEmergencyNumber,
                 int subscriptionId) {
-            Log.i("telecomTag", "onOutgoingEmergencyCall: telephony callback");
+            Log.i(TAG, "onOutgoingEmergencyCall: telephony callback");
             mLastOutgoingEmergencyNumber = placedEmergencyNumber;
             mCallbackSemaphore.release();
         }

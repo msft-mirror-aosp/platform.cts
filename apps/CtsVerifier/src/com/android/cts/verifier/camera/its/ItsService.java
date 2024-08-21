@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import android.annotation.NonNull;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -101,6 +100,8 @@ import android.view.SurfaceHolder;
 import android.view.WindowManager;
 import android.view.WindowMetrics;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.test.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ReportLog.Metric;
@@ -198,9 +199,6 @@ public class ItsService extends Service implements SensorEventListener {
 
     // Performance class R version number
     private static final int PERFORMANCE_CLASS_R = Build.VERSION_CODES.R;
-
-    // Performance class VIC version number
-    private static final int PERFORMANCE_CLASS_VIC = Build.VERSION_CODES.VANILLA_ICE_CREAM;
 
     public static final int SERVERPORT = 6000;
 
@@ -1524,7 +1522,7 @@ public class ItsService extends Service implements SensorEventListener {
      **/
     private boolean isLowLightBoostAvailable(String cameraId, int extension)
             throws CameraAccessException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+        if (!ItsUtils.isAtLeastV()) {
             return false;
         }
         boolean isLowLightBoostSupported = false;
@@ -1625,7 +1623,22 @@ public class ItsService extends Service implements SensorEventListener {
         }
 
         SessionConfiguration sessionConfig = new SessionConfiguration(
-                SessionConfiguration.SESSION_REGULAR, outputConfigs);
+                SessionConfiguration.SESSION_REGULAR, outputConfigs,
+                new HandlerExecutor(mCameraHandler),
+                new CameraCaptureSession.StateCallback() {
+                    @Override
+                    public void onConfigured(CameraCaptureSession session) {
+                    }
+                    @Override
+                    public void onReady(CameraCaptureSession session) {
+                    }
+                    @Override
+                    public void onConfigureFailed(CameraCaptureSession session) {
+                    }
+                    @Override
+                    public void onClosed(CameraCaptureSession session) {
+                    }
+                });
 
         CaptureRequest.Builder templateReq = null;
         if (params.has(SETTINGS_KEY)) {
@@ -1655,19 +1668,14 @@ public class ItsService extends Service implements SensorEventListener {
             if (sessionConfig.getSessionParameters() == null) {
                 returnString = mCamera.isSessionConfigurationSupported(sessionConfig)
                         ? "supportedCombination" : "unsupportedCombination";
-            } else if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
-                Log.i(TAG,
-                        "Attempting to query session support with parameters, but "
-                                + "CameraDeviceSetup is not supported.");
-                returnString = "unsupportedOperation";
+            } else if (ItsUtils.isAtLeastV()) {
+                returnString = doCheckStreamCombinationV(sessionConfig);
             } else {
-                CameraDevice.CameraDeviceSetup cameraDeviceSetup =
-                        mCameraManager.getCameraDeviceSetup(mCamera.getId());
-                boolean supported = cameraDeviceSetup.isSessionConfigurationSupported(
-                        sessionConfig);
-                returnString = supported ? "supportedCombination" : "unsupportedCombination";
+                Log.i(TAG,
+                        "Querying session support with parameters on pre-V device "
+                                + "is not supported.");
+                returnString = "unsupportedOperation";
             }
-
             mSocketRunnableObj.sendResponse("streamCombinationSupport", returnString);
 
         } catch (UnsupportedOperationException e) {
@@ -1677,7 +1685,36 @@ public class ItsService extends Service implements SensorEventListener {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private String doCheckStreamCombinationV(SessionConfiguration sessionConfig)
+            throws CameraAccessException {
+        String returnString;
+        if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
+            Log.i(TAG,
+                    "Attempting to query session support with parameters, but "
+                            + "CameraDeviceSetup is not supported.");
+            returnString = "unsupportedOperation";
+        } else {
+            CameraDevice.CameraDeviceSetup cameraDeviceSetup =
+                    mCameraManager.getCameraDeviceSetup(mCamera.getId());
+            boolean supported = cameraDeviceSetup.isSessionConfigurationSupported(
+                    sessionConfig);
+            returnString = supported ? "supportedCombination" : "unsupportedCombination";
+        }
+        return returnString;
+    }
+
     private void doGetSessionProps(JSONObject params) throws ItsException {
+        if (ItsUtils.isAtLeastV()) {
+            doGetSessionPropsV(params);
+        } else {
+            throw new ItsException("Attempting to query session characteristics on "
+                    + "OSes older than Android V.");
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    private void doGetSessionPropsV(JSONObject params) throws ItsException {
         try {
             if (!mCameraManager.isCameraDeviceSetupSupported(mCamera.getId())) {
                 throw new ItsException("Attempting to query session characteristics, but "
@@ -1881,7 +1918,8 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doCheckVicPerformanceClass() throws ItsException {
-        boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS >= PERFORMANCE_CLASS_VIC);
+        boolean  isPerfClass = (Build.VERSION.MEDIA_PERFORMANCE_CLASS
+                >= Build.VERSION_CODES.VANILLA_ICE_CREAM);
 
         mSocketRunnableObj.sendResponse("vicPerformanceClass",
                 isPerfClass ? "true" : "false");
@@ -4885,6 +4923,9 @@ public class ItsService extends Service implements SensorEventListener {
                         + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
+                if (ItsUtils.isAtLeastV()) {
+                    partialResult.addVKeys(result);
+                }
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);
             } catch (ItsException e) {
                 throw new ItsRuntimeException("Error handling capture result", e);
