@@ -25,6 +25,7 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
@@ -51,7 +52,6 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
-import com.android.internal.util.ArrayUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -888,7 +888,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         @Override
         public final void onDeviceStateChanged(DeviceState state) {
             int stateIdentifier = state.getIdentifier();
-            boolean folded = ArrayUtils.contains(mFoldedDeviceStates, stateIdentifier);
+            boolean folded = CameraTestUtils.contains(mFoldedDeviceStates, stateIdentifier);
             Log.i(TAG, "Is device folded? " + mIsDeviceFolded);
             if (!mFirstFoldCheck || mIsDeviceFolded != folded) {
                 mIsDeviceFolded = folded;
