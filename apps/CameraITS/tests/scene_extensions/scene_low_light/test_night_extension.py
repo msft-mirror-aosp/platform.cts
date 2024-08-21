@@ -30,7 +30,6 @@ import low_light_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
-_TABLET_BRIGHTNESS = '6'  # Highest minimum brightness on a supported tablet
 _TEST_REQUIRED_MPC = 34
 
 _AVG_DELTA_LUMINANCE_THRESH = 17
@@ -182,7 +181,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         raise AssertionError('No supported sizes/formats found!')
 
       # Set tablet brightness to darken scene
-      self.set_screen_brightness(_TABLET_BRIGHTNESS)
+      self.set_screen_brightness(
+          low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()][0])
 
       file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
