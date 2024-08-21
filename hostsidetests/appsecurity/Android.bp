@@ -33,6 +33,11 @@ MCTS_TEST_SUITES_DEFAULT = [
     "mcts-mediaprovider",
 ]
 
+CTS_TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
+]
+
 java_library_host {
     name: "CtsAppSecurityUtils",
     defaults: ["cts_defaults"],
@@ -244,7 +249,7 @@ java_test_host {
         "sts-host-util",
     ],
 
-    test_suites: MCTS_TEST_SUITES_DEFAULT,
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     test_config: "AndroidTestMcts.xml",
 
