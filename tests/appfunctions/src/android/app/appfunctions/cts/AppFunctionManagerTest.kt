@@ -39,7 +39,6 @@ import com.android.compatibility.common.util.ApiTest
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import java.util.function.Consumer
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
@@ -73,13 +72,9 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_failed_noSuchMethod() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noSuchMethod")
-                .build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noSuchMethod").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -87,86 +82,60 @@ class AppFunctionManagerTest {
         assertThat(
             response.resultCode
         ).isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
-        assertThat(
-            response.errorMessage
-        ).isEqualTo("Function does not exist")
+        assertThat(response.errorMessage).isEqualTo("Function does not exist")
         assertServiceDestroyed()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_onlyInvokeCallbackOnce() {
-        val parameters: GenericDocument = GenericDocument.Builder<GenericDocument.Builder<*>>(
-            "",
-            "",
-            ""
-        )
-            .setPropertyLong("a", 1)
-            .setPropertyLong("b", 2)
-            .build()
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
         val request =
-            ExecuteAppFunctionRequest.Builder(
-                TARGET_PACKAGE,
-                "add_invokeCallbackTwice"
-            )
+            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add_invokeCallbackTwice")
                 .setParameters(parameters)
                 .build()
-        val blockingQueue =
-            LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
         mManager.executeAppFunction(
             request,
             context.mainExecutor
         ) { e: ExecuteAppFunctionResponse ->
-            blockingQueue.add(
-                e
-            )
+            blockingQueue.add(e)
         }
 
-        val response =
-            requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
+        val response = requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
         assertThat(response.isSuccess).isTrue()
         assertThat(
-            response.resultDocument.getPropertyLong(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-            )
+            response.resultDocument
+                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
         )
             .isEqualTo(3)
 
         // Each callback can only be invoked once.
-        assertThat(
-            blockingQueue.poll(
-                SHORT_TIMEOUT_SECOND,
-                TimeUnit.SECONDS
-            )
-        ).isNull()
+        assertThat(blockingQueue.poll(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isNull()
         assertServiceDestroyed()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_success() {
-        val parameters: GenericDocument = GenericDocument.Builder<GenericDocument.Builder<*>>(
-            "",
-            "",
-            ""
-        )
-            .setPropertyLong("a", 1)
-            .setPropertyLong("b", 2)
-            .build()
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
 
         val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
-                .setParameters(parameters)
-                .build()
+            ExecuteAppFunctionRequest
+                .Builder(TARGET_PACKAGE, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -183,33 +152,29 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
-    fun executeAppFunction_otherNonExistingOtherPackage() {
-        val request =
-            ExecuteAppFunctionRequest.Builder("other.package", "someMethod").build()
+    @Throws(Exception::class)
+    fun executeAppFunction_otherNonExistingTargetPackage() {
+        val request = ExecuteAppFunctionRequest.Builder(
+            "other.package",
+            "someMethod"
+        ).build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-        assertThat(response.errorMessage).endsWith(
-            "does not have permission to execute the appfunction"
-        )
+        assertThat(response.errorMessage)
+            .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_otherExistingTargetPackage() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(PKG, "someMethod").build()
+        val request = ExecuteAppFunctionRequest.Builder(PKG, "someMethod").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -218,44 +183,37 @@ class AppFunctionManagerTest {
         // The error message from this and executeAppFunction_otherNonExistingOtherPackage must be
         // kept in sync. This verifies that a caller cannot tell whether a package is installed or
         // not by comparing the error messages.
-        assertThat(response.errorMessage).endsWith(
-            "does not have permission to execute the appfunction"
-        )
+        assertThat(response.errorMessage)
+            .endsWith("does not have permission to execute the appfunction")
         assertServiceWasNotCreated()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_throwsException() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(
-                TARGET_PACKAGE,
-                "throwException"
-            ).build()
+        val request = ExecuteAppFunctionRequest.Builder(
+            TARGET_PACKAGE,
+            "throwException"
+        ).build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(
-            response.resultCode
-        ).isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response.resultCode).isEqualTo(
+            ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR
+        )
         assertServiceDestroyed()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_onRemoteProcessKilled() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "kill")
-                .build()
+        val request = ExecuteAppFunctionRequest
+            .Builder(TARGET_PACKAGE, "kill").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -271,15 +229,12 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_timedOut() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(
-                TARGET_PACKAGE,
-                "notInvokeCallback"
-            ).build()
+        val request = ExecuteAppFunctionRequest.Builder(
+            TARGET_PACKAGE,
+            "notInvokeCallback"
+        ).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -291,14 +246,13 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_success_async() {
-        val parameters = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-            .setPropertyLong("a", 1)
-            .setPropertyLong("b", 2)
-            .build()
+        val parameters =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
         val request =
             ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "addAsync")
                 .setParameters(parameters)
@@ -319,13 +273,9 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_emptyPackage() {
-        val request =
-            ExecuteAppFunctionRequest.Builder("", "noOp")
-                .build()
+        val request = ExecuteAppFunctionRequest.Builder("", "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -341,13 +291,12 @@ class AppFunctionManagerTest {
     @RequireRunOnWorkProfile
     @EnsureHasNoDeviceOwner
     @Postsubmit(reason = "new test")
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_runInManagedProfile_fail() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
-                .build()
+        val request = ExecuteAppFunctionRequest.Builder(
+            TARGET_PACKAGE,
+            "noOp"
+        ).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -359,13 +308,9 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
-                .build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -376,16 +321,11 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasDeviceOwner
-    @Throws(
-        Exception::class
-    )
+    @Throws(Exception::class)
     fun executeAppFunction_deviceOwner_fail() {
-        val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp")
-                .build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
 
-        val response =
-            executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
@@ -396,31 +336,21 @@ class AppFunctionManagerTest {
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
-        val blockingQueue =
-            LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
         mManager.executeAppFunction(
             request,
             context.mainExecutor,
-            Consumer<ExecuteAppFunctionResponse> { e: ExecuteAppFunctionResponse ->
-                blockingQueue.add(
-                    e
-                )
-            }
-        )
+        ) { e: ExecuteAppFunctionResponse -> blockingQueue.add(e) }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
-    /**
-     * Verifies that the service is unbound by asserting the service was destroyed.
-     */
+    /** Verifies that the service is unbound by asserting the service was destroyed. */
     @Throws(InterruptedException::class)
     private fun assertServiceDestroyed() {
         assertThat(waitForServiceOnDestroy(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
-    /**
-     * Verifies that the service has never been created.
-     */
+    /** Verifies that the service has never been created. */
     @Throws(InterruptedException::class)
     private fun assertServiceWasNotCreated() {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
@@ -435,6 +365,8 @@ class AppFunctionManagerTest {
         const val PKG: String = "android.app.appfunctions.cts.helper"
         const val TARGET_PACKAGE: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
+
+        // TODO(b/354956319): Make configurable to shorter timeout.
         const val LONG_TIMEOUT_SECOND: Long = 35
     }
 }

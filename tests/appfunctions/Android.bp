@@ -48,8 +48,6 @@ android_test {
     data: [
         ":CtsAppFunctionsTestHelper",
     ],
-    // For testing @SystemApi(client = MODULE_LIBRARIES) APIs
-    platform_apis: true,
 }
 
 android_test_helper_app {
@@ -66,6 +64,4 @@ android_test_helper_app {
         "general-tests",
     ],
     manifest: "helper-app/AndroidManifest.xml",
-    // For testing @SystemApi(client = MODULE_LIBRARIES) APIs
-    platform_apis: true,
 }
