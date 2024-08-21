@@ -341,6 +341,35 @@ class AppFunctionManagerTest {
         assertServiceWasNotCreated()
     }
 
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_largeTransactionSuccess() {
+        val largeByteArray = ByteArray(1024 * 1024 + 100)
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .setPropertyBytes("unused", largeByteArray)
+                .build()
+
+        val request =
+            ExecuteAppFunctionRequest
+                .Builder(TARGET_PACKAGE, "add").setParameters(parameters).build()
+
+        val response = executeAppFunctionAndWait(request)
+
+        assertThat(response.isSuccess).isTrue()
+        assertThat(
+            response.resultDocument.getPropertyLong(
+                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+            )
+        )
+            .isEqualTo(3)
+        assertServiceDestroyed()
+    }
+
     @Throws(InterruptedException::class)
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
