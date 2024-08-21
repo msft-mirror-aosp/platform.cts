@@ -36,6 +36,7 @@ import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -54,6 +55,14 @@ class AppFunctionManagerTest {
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
+
+    @get:Rule
+    val setTimeoutRule: DeviceConfigStateChangerRule = DeviceConfigStateChangerRule(
+        context,
+        "appfunctions",
+        "execution_timeout",
+        "1000"
+    )
 
     private lateinit var mManager: AppFunctionManager
 
@@ -365,8 +374,6 @@ class AppFunctionManagerTest {
         const val PKG: String = "android.app.appfunctions.cts.helper"
         const val TARGET_PACKAGE: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
-
-        // TODO(b/354956319): Make configurable to shorter timeout.
-        const val LONG_TIMEOUT_SECOND: Long = 35
+        const val LONG_TIMEOUT_SECOND: Long = 5
     }
 }
