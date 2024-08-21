@@ -87,6 +87,7 @@ android_library {
         "ctsmediautil",
         "DpmWrapper",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
     ],
 
     libs: [
