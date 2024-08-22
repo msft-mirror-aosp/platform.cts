@@ -60,7 +60,7 @@ class AppFunctionManagerTest {
     val setTimeoutRule: DeviceConfigStateChangerRule = DeviceConfigStateChangerRule(
         context,
         "appfunctions",
-        "execution_timeout",
+        "execute_app_function_timeout_millis",
         "1000"
     )
 
