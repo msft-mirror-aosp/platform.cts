@@ -491,8 +491,12 @@ public abstract class Step<E> {
                                     sWindowManager.removeViewImmediate(mInstructionView);
                                     mInstructionView = null;
                                 } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
+                                    // This can happen if the view is no longer attached.
                                     Log.i(LOG_TAG, "Error removing instruction view", e);
+                                } catch (NullPointerException e) {
+                                    // This can happen if another {@link #close()} has removed the
+                                    // view.
+                                    Log.i(LOG_TAG, "Instruction view has been removed", e);
                                 }
                             });
         }
