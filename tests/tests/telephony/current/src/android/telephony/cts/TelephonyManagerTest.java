@@ -824,6 +824,7 @@ public class TelephonyManagerTest {
             mListener = new PhoneStateListener() {
                 @Override
                 public void onCellLocationChanged(CellLocation location) {
+                    Log.i(TAG, "onCellLocationChanged: " + location);
                     if (!mOnCellLocationChangedCalled) {
                         synchronized (mLock) {
                             mOnCellLocationChangedCalled = true;
@@ -848,6 +849,7 @@ public class TelephonyManagerTest {
         // Test register
         synchronized (mLock) {
             // .listen generates an onCellLocationChanged event
+            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
             mLock.wait(TOLERANCE);
 
@@ -4066,13 +4068,15 @@ public class TelephonyManagerTest {
                     verifyExpectedGetAllowedNetworkType(reason);
                 }
             } catch (SecurityException se) {
-                fail("testSetAllowedNetworkTypes: SecurityException not expected");
+                Log.e(TAG, "SecurityException not expected", se);
+                mUnexpectedException = true;
             }
         }
 
         private CountDownLatch mLatch;
         private int mExpectedReason;
         private long mExpectedAllowedNetworkType;
+        public boolean mUnexpectedException = false;
         public void setExpectedAllowedNetworkType(
                 int expectedReason, long expectedAllowedNetworkType, int expectedLatchcount) {
             mExpectedReason = expectedReason;
@@ -4154,6 +4158,8 @@ public class TelephonyManagerTest {
         // Unregister telephony callback
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                 (tm) -> tm.unregisterTelephonyCallback(listener));
+
+        assertFalse(listener.mUnexpectedException);
     }
 
     @Test
