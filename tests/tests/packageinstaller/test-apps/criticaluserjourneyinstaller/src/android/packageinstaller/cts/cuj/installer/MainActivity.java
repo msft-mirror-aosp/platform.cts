@@ -37,6 +37,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.content.FileProvider;
 
 import java.io.File;
@@ -55,6 +56,10 @@ public class MainActivity extends Activity {
             "android.packageinstaller.cts.cuj.app";
     private static final String TEST_APK_NAME = "CtsInstallerCujTestApp.apk";
     private static final String TEST_APK_V2_NAME = "CtsInstallerCujTestAppV2.apk";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =
+            "CtsInstallerCujTestNoLauncherActivityApp.apk";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME =
+            "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
 
     private static final String CONTENT_AUTHORITY =
             "android.packageinstaller.cts.cuj.installer.fileprovider";
@@ -73,9 +78,15 @@ public class MainActivity extends Activity {
     private static final String EXTRA_INSTALLER_APK_V2_URI = "extra_installer_apk_v2_uri";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
+    private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_URI =
+            "extra_test_no_launcher_activity_apk_uri";
+    private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI =
+            "extra_test_no_launcher_activity_apk_v2_uri";
     private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
+    private static final String EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP =
+            "extra_no_launcher_activity_test_app";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
 
     private static final String APK_MIME_TYPE = "application/vnd.android.package-archive";
@@ -173,14 +184,21 @@ public class MainActivity extends Activity {
         context.sendBroadcast(intent);
     }
 
+    private void copyTestFile(@NonNull String extraKey, @NonNull String testApkName)
+            throws Exception {
+        Uri testApkUri = Uri.parse(getIntent().getStringExtra(extraKey));
+        copyApkFromUri(testApkUri, testApkName);
+    }
+
     private void copyTestFiles() {
-        Uri testApkUri = Uri.parse(getIntent().getStringExtra(EXTRA_TEST_APK_URI));
-        Uri testApkV2Uri = Uri.parse(getIntent().getStringExtra(EXTRA_TEST_APK_V2_URI));
-        Uri installerApkV2Uri = Uri.parse(getIntent().getStringExtra(EXTRA_INSTALLER_APK_V2_URI));
         try {
-            copyApkFromUri(testApkUri, TEST_APK_NAME);
-            copyApkFromUri(testApkV2Uri, TEST_APK_V2_NAME);
-            copyApkFromUri(installerApkV2Uri, INSTALLER_APK_V2_NAME);
+            copyTestFile(EXTRA_INSTALLER_APK_V2_URI, INSTALLER_APK_V2_NAME);
+            copyTestFile(EXTRA_TEST_APK_URI, TEST_APK_NAME);
+            copyTestFile(EXTRA_TEST_APK_V2_URI, TEST_APK_V2_NAME);
+            copyTestFile(EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_URI,
+                    TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
+            copyTestFile(EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI,
+                    TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME);
         } catch (Exception ex) {
             Log.e(TAG, "Copy test apks from uri failed." , ex);
             mNotifyReady = false;
@@ -297,19 +315,19 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             final int event = intent.getIntExtra(EXTRA_EVENT, /* defaultValue= */ -1);
+            final boolean isNoLauncherActivityTestApp = intent.getBooleanExtra(
+                    EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, /* defaultValue= */ false);
             final boolean isUpdate = intent.getBooleanExtra(EXTRA_IS_UPDATE,
                     /* defaultValue= */ false);
             final boolean useTestApp = intent.getBooleanExtra(EXTRA_USE_TEST_APP,
                     /* defaultValue= */ false);
             Log.i(TAG, "RequestInstallerReceiver Received intent " + intent
                     + ", event: " + event + ", isUpdate:" + isUpdate
-                    + ", useTestApp:" + useTestApp);
+                    + ", useTestApp:" + useTestApp
+                    + ", isNoLauncherActivityTestApp: " + isNoLauncherActivityTestApp);
 
-            // If useTestApp is false, update the INSTALLER_APK_V2_NAME.
-            // Otherwise, if isUpdate is true, update the TEST_APK_V2_NAME
-            //            otherwise, install the TEST_APK_NAME
-            final String testApkName = !useTestApp ? INSTALLER_APK_V2_NAME
-                    : isUpdate ? TEST_APK_V2_NAME : TEST_APK_NAME;
+            final String testApkName = getTestApkName(isNoLauncherActivityTestApp,
+                    isUpdate, useTestApp);
 
             if (event == EVENT_REQUEST_INSTALLER_CLEAN_UP) {
                 cleanUp();
@@ -351,6 +369,22 @@ public class MainActivity extends Activity {
                     Log.e(TAG, "Exception event:" + event, ex);
                 }
             }
+        }
+
+        private static @NonNull String getTestApkName(boolean isNoLauncherActivityTestApp,
+                boolean isUpdate, boolean useTestApp) {
+            final String testApkName;
+            if (isNoLauncherActivityTestApp) {
+                testApkName = isUpdate ? TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME
+                        : TEST_NO_LAUNCHER_ACTIVITY_APK_NAME;
+            } else {
+                // If useTestApp is false, update the INSTALLER_APK_V2_NAME.
+                // Otherwise, if isUpdate is true, update the TEST_APK_V2_NAME
+                //            otherwise, install the TEST_APK_NAME
+                testApkName = !useTestApp ? INSTALLER_APK_V2_NAME
+                        : isUpdate ? TEST_APK_V2_NAME : TEST_APK_NAME;
+            }
+            return testApkName;
         }
     }
 }

@@ -343,7 +343,8 @@ public final class DeviceState extends HarrierRule {
         for (final Annotation annotation : annotations) {
             Log.v(LOG_TAG, "Applying annotation " + annotation);
 
-            if (annotation instanceof RequireSdkVersion requireSdkVersionAnnotation) {
+            if (annotation instanceof RequireSdkVersion) {
+                RequireSdkVersion requireSdkVersionAnnotation = (RequireSdkVersion) annotation;
                 requireSdkVersion(requireSdkVersionAnnotation);
             } else {
                 Class<? extends Annotation> annotationType = annotation.annotationType();
@@ -1193,7 +1194,7 @@ public final class DeviceState extends HarrierRule {
     private void createMissingFailureDumpers() {
         for (String className : FailureDumper.Companion.getFailureDumpers()) {
             try {
-                mLocator.get(Class.forName(className));
+                var unused = mLocator.get(Class.forName(className));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }

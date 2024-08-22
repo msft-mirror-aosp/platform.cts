@@ -3175,7 +3175,7 @@ public class ItsService extends Service implements SensorEventListener {
                 try {
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare", e);
+                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare.", e);
                 }
             }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
@@ -3187,7 +3187,7 @@ public class ItsService extends Service implements SensorEventListener {
                 try {
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                    Logt.e(TAG, "Interrupted while waiting for green frames.", e);
                 }
 
                 Logt.v(TAG, "Record Camera frames after green frames");
@@ -3199,9 +3199,10 @@ public class ItsService extends Service implements SensorEventListener {
             if (paddedFrames) {
                 pr.overrideCameraFrames(true);
                 try {
+                    Logt.v(TAG, "Record Green frames at the end of the video.");
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                    Logt.e(TAG, "Interrupted while waiting for green frames.", e);
                 }
             }
 
@@ -3209,6 +3210,12 @@ public class ItsService extends Service implements SensorEventListener {
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
                     BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+            try {
+                Logt.v(TAG, "Wait for recording to finish.");
+                Thread.sleep(PADDED_FRAMES_MS * 2);
+            } catch (InterruptedException e) {
+                Logt.e(TAG, "Interrupted while waiting for recording to complete.", e);
+            }
             pr.stopRecording();
             mSession.close();
 

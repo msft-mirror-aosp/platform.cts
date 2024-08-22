@@ -4865,12 +4865,75 @@ requirements {
 }
 requirements {
   id: "7.5/H-1-15"
-  description: "- Night mode extension"
+  name: "Camera Night Mode Extension"
+  description: "Night mode extension"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera2_extension_night_supported"
+    value: {
+      description: "Is the rear Camera2 night mode extension supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera2_extension_night_supported"
+    value: {
+      description: "Is the front Camera2 night mode extension supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "rear_camerax_extension_night_supported"
+    value: {
+      description: "Is the rear CameraX night mode extension supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camerax_extension_night_supported"
+    value: {
+      description: "Is the front CameraX night mode extension supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
-      specification: "MUST support ~Bokeh &~ Night mode extensions via both CameraX and Camera2 extensions for primary cameras."
+      specification: "MUST support Night mode extensions via both CameraX and Camera2 extensions for primary cameras."
+      required_values {
+        key: "rear_camera2_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera2_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "rear_camerax_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camerax_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4878,17 +4941,76 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera2_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera2_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "rear_camerax_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camerax_extension_night_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-16"
-  description: "- HDR-capable primary camera"
+  name: "Camera Dynamic Range 10 Bit"
+  description: "Support for 10 bit dynamic range for primary cameras"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_dynamic_tenbits_supported"
+    value: {
+      description: "Is the rear primary camera 10 bit dynamic range supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_dynamic_tenbits_supported"
+    value: {
+      description: "Is the front primary camera 10 bit dynamic range supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST support DYNAMIC_RANGE_TEN_BIT capability for the primary cameras."
+      required_values {
+        key: "rear_camera_dynamic_tenbits_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_dynamic_tenbits_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4896,17 +5018,64 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_dynamic_tenbits_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_dynamic_tenbits_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-17"
-  description: "- Face detection scene mode"
+  name: "Camera Face Detection"
+  description: "Face detection scene mode"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_face_detection_supported"
+    value: {
+      description: "Is the rear primary camera face detection supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_face_detection_supported"
+    value: {
+      description: "Is the front primary camera face detection supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 34
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
-      specification: "MUST support CONTROL_SCENE_MODE_FACE_PRIORITY and face detection (STATISTICS_FACE_DETECT_MODE_SIMPLE or STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
+      specification: "MUST support face detection capability (STATISTICS_FACE_DETECT_MODE_SIMPLE or STATISTICS_FACE_DETECT_MODE_FULL) for the primary cameras."
+      required_values {
+        key: "rear_camera_face_detection_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_face_detection_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -4914,36 +5083,142 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "rear_camera_face_detection_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_face_detection_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-18"
+  name: "Camera JPEG R"
+  description: "JPEG R support for primary cameras"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "primary_rear_camera_jpeg_r_supported"
+    value: {
+      description: "Is the rear primary camera JPEG R supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "primary_front_camera_jpeg_r_supported"
+    value: {
+      description: "Is the front primary camera JPEG R supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support JPEG_R for the primary rear and primary front cameras."
+      required_values {
+        key: "primary_rear_camera_jpeg_r_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "primary_front_camera_jpeg_r_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-19"
+  name: "Camera Video Preview Stabilization"
+  description: "Support for video preview stabilization for primary cameras"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "primary_camera_hlg_combination_supported"
+    value: {
+      description: "Is the rear primary camera stabilization supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support CONTROL_VIDEO_STABILIZATION_MODE_PREVIEW_STABILIZATION for 1080p HLG10 preview with maximum-size 16:9 aspect ratio JPEG, and for 720p HLG10 preview with maximum-size 16:9 aspect ratio JPEG stream combinations for the primary rear camera."
+      required_values {
+        key: "primary_camera_hlg_combination_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "7.5/H-1-20"
+  name: "Camera Ultra HDR"
+  description: "Ultra HDR support for primary camera"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "rear_camera_ultra_hdr_supported"
+    value: {
+      description: "Is the rear primary camera Ultra HDR supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "front_camera_ultra_hdr_supported"
+    value: {
+      description: "Is the front primary camera Ultra HDR supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST by default output JPEG_R for the primary rear and primary front cameras in the native camera app."
+      required_values {
+        key: "rear_camera_ultra_hdr_supported"
+        value {
+          bool_value: true
+        }
+      }
+      required_values {
+        key: "front_camera_ultra_hdr_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }

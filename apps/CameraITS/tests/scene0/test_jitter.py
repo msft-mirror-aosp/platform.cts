@@ -16,8 +16,7 @@
 import logging
 import os.path
 
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -77,13 +76,13 @@ class JitterTest(its_base_test.ItsBaseTest):
       logging.debug('Jitter range: %s to %s', range0, range1)
 
       # Draw a plot.
-      pylab.figure()
-      pylab.plot(range(len(deltas_ms)), deltas_ms, '-bo')
-      pylab.title(_NAME)
-      pylab.xlabel('frame number')
-      pylab.ylabel('jitter (ms)')
+      plt.figure()
+      plt.plot(range(len(deltas_ms)), deltas_ms, '-bo')
+      plt.title(_NAME)
+      plt.xlabel('frame number')
+      plt.ylabel('jitter (ms)')
       name_with_log_path = os.path.join(self.log_path, _NAME)
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_deltas.png')
+      plt.savefig(f'{name_with_log_path}_deltas.png')
 
       # Test for pass/fail.
       if avg <= _MIN_AVG_FRAME_DELTA:

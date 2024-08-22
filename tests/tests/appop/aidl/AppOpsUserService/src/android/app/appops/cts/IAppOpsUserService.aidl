@@ -31,16 +31,10 @@ interface IAppOpsUserService {
     void callApiThatNotesNonPermissionSyncOpAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesTwiceSyncOpAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesTwoSyncOpAndCheckLog(in IAppOpsUserClient client);
-    void callApiThatNotesSyncOpNativelyAndCheckLog(in IAppOpsUserClient client);
-    void callApiThatNotesNonPermissionSyncOpNativelyAndCheckLog(in IAppOpsUserClient client);
     void callOnewayApiThatNotesSyncOpAndCheckLog(in IAppOpsUserClient client);
-    void callOnewayApiThatNotesSyncOpNativelyAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesSyncOpOtherUidAndCheckLog(in IAppOpsUserClient client);
-    void callApiThatNotesSyncOpOtherUidNativelyAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpWithAttributionAndCheckLog(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpAndCheckDefaultMessage(in IAppOpsUserClient client);
     void callApiThatNotesAsyncOpAndCheckCustomMessage(in IAppOpsUserClient client);
-    void callApiThatNotesAsyncOpNativelyAndCheckCustomMessage(in IAppOpsUserClient client);
-    void callApiThatNotesAsyncOpNativelyAndCheckLog(in IAppOpsUserClient client);
 }

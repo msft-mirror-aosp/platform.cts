@@ -139,12 +139,17 @@ abstract class BiometricTestBase implements TestSessionList.Idler {
     protected boolean mHasStrongBox;
 
     void launchActivity(@NonNull ComponentName componentName) {
+        launchActivityNoWait(componentName);
+        mWmState.waitForValidState(componentName);
+    }
+
+    private static void launchActivityNoWait(@NonNull final ComponentName componentName) {
         executeShellCommand(getAmStartCmd(componentName));
     }
 
     @NonNull
     private static String getAmStartCmd(@NonNull final ComponentName componentName) {
-        return "am start -W --user " + Process.myUserHandle().getIdentifier()
+        return "am start --user " + Process.myUserHandle().getIdentifier()
                 + " -n " + getActivityName(componentName);
     }
 

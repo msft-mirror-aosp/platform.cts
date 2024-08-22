@@ -92,6 +92,19 @@ public class SELinuxNeverallowRulesParserTest extends BaseHostJUnit4Test {
     }
 
     @Test
+    public void testParsingWithConditionsAndComments() throws Exception {
+        String policy =
+                "# BEGIN_LAUNCHING_WITH_S_ONLY -- this marker is used by CTS -- do not modify\n"
+                + "neverallow d1 d2:c1 p;\n"
+                + "# END_LAUNCHING_WITH_S_ONLY -- another marker \n"
+                + "neverallow d2 d3:c2 p2;\n";
+        List<SELinuxNeverallowRule> rules = SELinuxNeverallowRule.parsePolicy(policy);
+        assertEquals(2, rules.size());
+        assertEquals(true, rules.get(0).launchingWithSOnly);
+        assertEquals(false, rules.get(1).launchingWithSOnly);
+    }
+
+    @Test
     public void testParsingMissingConditions() throws Exception {
         String policy = "# BEGIN_LAUNCHING_WITH_S_ONLY\n"
                 + "neverallow d1 d2:c1 p;\n";

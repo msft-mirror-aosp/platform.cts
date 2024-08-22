@@ -261,32 +261,6 @@ class AppOpsUserService : Service() {
                 }
             }
 
-            override fun callApiThatNotesSyncOpNativelyAndCheckLog(client: IAppOpsUserClient) {
-                forwardThrowableFrom {
-                    client.noteSyncOpNative()
-
-                    // All native notes will be reported as async notes
-                    eventually {
-                        assertThat(asyncNoted.map { it.op }).containsExactly(OPSTR_COARSE_LOCATION)
-                    }
-                    assertThat(noted).isEmpty()
-                    assertThat(selfNoted).isEmpty()
-                }
-            }
-
-            override fun callApiThatNotesNonPermissionSyncOpNativelyAndCheckLog(
-                client: IAppOpsUserClient
-            ) {
-                forwardThrowableFrom {
-                    client.noteNonPermissionSyncOpNative()
-
-                    // All native notes will be reported as async notes
-                    assertThat(noted).isEmpty()
-                    assertThat(selfNoted).isEmpty()
-                    assertThat(asyncNoted).isEmpty()
-                }
-            }
-
             override fun callOnewayApiThatNotesSyncOpAndCheckLog(client: IAppOpsUserClient) {
                 forwardThrowableFrom {
                     client.noteSyncOpOneway()
@@ -301,37 +275,9 @@ class AppOpsUserService : Service() {
                 }
             }
 
-            override fun callOnewayApiThatNotesSyncOpNativelyAndCheckLog(
-                client: IAppOpsUserClient
-            ) {
-                forwardThrowableFrom {
-                    client.noteSyncOpOnewayNative()
-
-                    // There is not return value from a one-way call, hence async note is the only
-                    // option
-                    eventually {
-                        assertThat(asyncNoted.map { it.op }).containsExactly(OPSTR_COARSE_LOCATION)
-                    }
-                    assertThat(noted).isEmpty()
-                    assertThat(selfNoted).isEmpty()
-                }
-            }
-
             override fun callApiThatNotesSyncOpOtherUidAndCheckLog(client: IAppOpsUserClient) {
                 forwardThrowableFrom {
                     client.noteSyncOpOtherUid()
-
-                    assertThat(noted).isEmpty()
-                    assertThat(selfNoted).isEmpty()
-                    assertThat(asyncNoted).isEmpty()
-                }
-            }
-
-            override fun callApiThatNotesSyncOpOtherUidNativelyAndCheckLog(
-                client: IAppOpsUserClient
-            ) {
-                forwardThrowableFrom {
-                    client.noteSyncOpOtherUidNative()
 
                     assertThat(noted).isEmpty()
                     assertThat(selfNoted).isEmpty()
@@ -385,31 +331,6 @@ class AppOpsUserService : Service() {
                         assertThat(asyncNoted[0].notingUid).isEqualTo(testUid)
                         assertThat(asyncNoted[0].message).isEqualTo("custom msg")
                     }
-                }
-            }
-
-            override fun callApiThatNotesAsyncOpNativelyAndCheckCustomMessage(
-                client: IAppOpsUserClient
-            ) {
-                forwardThrowableFrom {
-                    client.noteAsyncOpNativeWithCustomMessage()
-
-                    eventually {
-                        assertThat(asyncNoted[0].notingUid).isEqualTo(testUid)
-                        assertThat(asyncNoted[0].message).isEqualTo("native custom msg")
-                    }
-                }
-            }
-
-            override fun callApiThatNotesAsyncOpNativelyAndCheckLog(client: IAppOpsUserClient) {
-                forwardThrowableFrom {
-                    client.noteAsyncOpNative()
-
-                    eventually {
-                        assertThat(asyncNoted.map { it.op }).containsExactly(OPSTR_COARSE_LOCATION)
-                    }
-                    assertThat(noted).isEmpty()
-                    assertThat(selfNoted).isEmpty()
                 }
             }
         }

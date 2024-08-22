@@ -44,3 +44,31 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
+android_test_helper_app {
+    name: "CtsInstallerCujTestNoLauncherActivityApp",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_noLauncherActivity.xml",
+    srcs: ["src/**/*.java"],
+
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsInstallerCujTestNoLauncherActivityAppV2",
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_noLauncherActivity_V2.xml",
+    srcs: ["src/**/*.java"],
+
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}

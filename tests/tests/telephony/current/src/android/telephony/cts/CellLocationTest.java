@@ -49,6 +49,7 @@ public class CellLocationTest {
             DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private boolean mOnCellLocationChangedCalled;
+    private Boolean mWasLocationEnabled;
     private final Object mLock = new Object();
     private TelephonyManager mTelephonyManager;
     private PackageManager mPackageManager;
@@ -70,6 +71,10 @@ public class CellLocationTest {
             // unregister listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
         }
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     @Test
@@ -87,6 +92,7 @@ public class CellLocationTest {
         }
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
 
         // getCellLocation should never return null,
         // but that is allowed if the cell network type

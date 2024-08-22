@@ -172,6 +172,7 @@ public class AbsListViewTest {
             ViewGroup content = activity.findViewById(R.id.content);
             WindowInsets rootWindowInsets = content.getRootWindowInsets();
             Insets systemGestureInsets = rootWindowInsets.getSystemGestureInsets();
+            // TODO(b/258070472): Account for rounded corner insets for freeform.
             content.setPadding(0, 0, 0, systemGestureInsets.bottom);
         });
     }
@@ -258,7 +259,7 @@ public class AbsListViewTest {
 
         reset(mockScrollListener);
 
-        mCtsTouchUtils.emulateScrollToBottom(mInstrumentation, mActivityRule, mListView);
+        mCtsTouchUtils.emulateScrollToEnd(mInstrumentation, mActivityRule, mListView, false);
 
         ArgumentCaptor<Integer> firstVisibleItemCaptor = ArgumentCaptor.forClass(Integer.class);
         ArgumentCaptor<Integer> visibleItemCountCaptor = ArgumentCaptor.forClass(Integer.class);
@@ -1189,7 +1190,7 @@ public class AbsListViewTest {
         }
 
         // Scroll down
-        mCtsTouchUtils.emulateScrollToBottom(mInstrumentation, mActivityRule, mListView);
+        mCtsTouchUtils.emulateScrollToEnd(mInstrumentation, mActivityRule, mListView, false);
         final int lastListPosition = COUNTRY_LIST.length - 1;
         if (lastListPosition != positionForInitialSelection) {
             // Tap the last element in our list
@@ -1245,27 +1246,15 @@ public class AbsListViewTest {
         final int[] listViewOnScreenXY = new int[2];
         mListView.getLocationOnScreen(listViewOnScreenXY);
 
-        final int topEdgeY = listViewOnScreenXY[1];
-        final int bottomEdgeY = listViewOnScreenXY[1] + mListView.getHeight();
-        final int rightEdgeX = listViewOnScreenXY[0] + mListView.getWidth();
-
         // Emulate a downwards gesture that should bring us all the way to the last element
         // of the list (when fast scroll is enabled)
-        mCtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule,
-                rightEdgeX - 1,              // X start of the drag
-                topEdgeY + 1,                // Y start of the drag
-                0,                           // X amount of the drag (vertical)
-                mListView.getHeight() - 2);  // Y amount of the drag (downwards)
+        mCtsTouchUtils.emulateScrollToEnd(mInstrumentation, mActivityRule, mListView, false);
 
         assertEquals(COUNTRY_LIST.length - 1, mListView.getLastVisiblePosition());
 
         // Emulate an upwards gesture that should bring us all the way to the first element
         // of the list (when fast scroll is enabled)
-        mCtsTouchUtils.emulateDragGesture(mInstrumentation, mActivityRule,
-                rightEdgeX - 1,               // X start of the drag
-                bottomEdgeY - 1,              // Y start of the drag
-                0,                            // X amount of the drag (vertical)
-                -mListView.getHeight() + 2);  // Y amount of the drag (upwards)
+        mCtsTouchUtils.emulateScrollToEnd(mInstrumentation, mActivityRule, mListView, true);
 
         assertEquals(0, mListView.getFirstVisiblePosition());
     }

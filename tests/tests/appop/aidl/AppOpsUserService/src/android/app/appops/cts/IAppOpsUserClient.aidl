@@ -23,15 +23,9 @@ interface IAppOpsUserClient {
     void noteNonPermissionSyncOp();
     void noteSyncOpTwice();
     void noteTwoSyncOp();
-    void noteSyncOpNative();
-    void noteNonPermissionSyncOpNative();
     oneway void noteSyncOpOneway();
-    oneway void noteSyncOpOnewayNative();
     void noteSyncOpOtherUid();
-    void noteSyncOpOtherUidNative();
     void noteAsyncOp();
     void noteAsyncOpWithAttribution(String attributionTag);
     void noteAsyncOpWithCustomMessage();
-    void noteAsyncOpNative();
-    void noteAsyncOpNativeWithCustomMessage();
 }

@@ -25,6 +25,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasTestContentSuggestionsService
+import com.android.bedstead.harrier.annotations.EnsureInstrumented
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
 import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
@@ -70,6 +71,7 @@ import com.android.bedstead.harrier.components.BluetoothComponent
 import com.android.bedstead.harrier.components.ContentSuggestionsComponent
 import com.android.bedstead.harrier.components.DisplayThemeComponent
 import com.android.bedstead.harrier.components.GlobalSettingsComponent
+import com.android.bedstead.harrier.components.InstrumentationComponent
 import com.android.bedstead.harrier.components.PolicyOperationUnsafeComponent
 import com.android.bedstead.harrier.components.PropertiesComponent
 import com.android.bedstead.harrier.components.ScreenOrientationComponent
@@ -95,6 +97,7 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
     private val screenOrientationComponent: ScreenOrientationComponent by locator
     private val policyOperationUnsafeComponent: PolicyOperationUnsafeComponent by locator
     private val accountsComponent: AccountsComponent by locator
+    private val instrumentationComponent: InstrumentationComponent by locator
 
     override fun applyAnnotation(annotation: Annotation): Unit = annotation.run {
         when (this) {
@@ -199,6 +202,8 @@ class MainAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecut
             is EnsureHasAccountAuthenticator ->
                 accountsComponent.ensureHasAccountAuthenticator(onUser)
             //endregion
+
+            is EnsureInstrumented -> instrumentationComponent.ensureInstrumented(this)
         }
     }
 }

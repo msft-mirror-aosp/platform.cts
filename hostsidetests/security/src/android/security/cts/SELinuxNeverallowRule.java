@@ -116,7 +116,7 @@ class SELinuxNeverallowRule {
                 .collect(Collectors.joining("|"));
 
         /* Uncomment conditions delimiter lines. */
-        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*(" + patternConditions + ")\\s*$",
+        Pattern uncommentConditions = Pattern.compile("^\\s*#\\s*(" + patternConditions + ").*$",
                 Pattern.MULTILINE);
         Matcher matcher = uncommentConditions.matcher(policy);
         policy = matcher.replaceAll("$1");
