@@ -5531,7 +5531,7 @@ requirements {
   }
 }
 requirements {
-  id: "7.1.4/H1-1"
+  id: "7.1.4/H-1-1"
   description: "- Hardware overlays"
 }
 requirements {
@@ -6063,11 +6063,49 @@ requirements {
 }
 requirements {
   id: "7.1.4.1/H-1-2"
+  name: "EGL"
+  description: "Supports EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "egl_img_context_priority"
+    value: {
+      id: "egl_img_context_priority"
+      description: "Is EGL_IMG_context_priority supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "egl_ext_protected_content"
+    value: {
+      id: "egl_ext_protected_content"
+      description: "Is EGL_EXT_protected_content supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support the EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
+      required_values: {
+        key: "egl_img_context_priority"
+        value: {
+          bool_value: true
+        }
+      }
+      required_values: {
+        key: "egl_ext_protected_content"
+        value: {
+          bool_value: true
+        }
+      }
     }
   }
 }
