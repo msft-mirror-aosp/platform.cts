@@ -112,6 +112,7 @@ public class PhoneStateListenerTest {
     private PreciseDataConnectionState mPreciseDataConnectionState;
     private PreciseCallState mPreciseCallState;
     private SignalStrength mSignalStrength;
+    private Boolean mWasLocationEnabled;
     private TelephonyManager mTelephonyManager;
     private PhoneStateListener mListener;
     private final Object mLock = new Object();
@@ -166,6 +167,10 @@ public class PhoneStateListenerTest {
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+        }
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
         }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -777,6 +782,7 @@ public class PhoneStateListenerTest {
         assertFalse(mOnCellLocationChangedCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override
@@ -915,6 +921,7 @@ public class PhoneStateListenerTest {
         assertFalse(mOnDataActivityCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override

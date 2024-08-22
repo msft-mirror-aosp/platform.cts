@@ -66,6 +66,7 @@ import androidx.test.InstrumentationRegistry;
 
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -199,6 +200,7 @@ public class CellInfoTest {
     private TelephonyManager mTm;
 
     private int mNetworkHalVersion;
+    private Boolean mWasLocationEnabled;
 
     private static final int makeRadioVersion(int major, int minor) {
         if (major < 0 || minor < 0) return 0;
@@ -277,6 +279,15 @@ public class CellInfoTest {
                 mTm.getHalVersion(TelephonyManager.HAL_SERVICE_NETWORK);
         mNetworkHalVersion = makeRadioVersion(verPair.first, verPair.second);
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+    }
+
+    @After
+    public void tearDown() {
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     /**
