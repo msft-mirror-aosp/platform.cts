@@ -23,4 +23,7 @@
         <activity android:name="android.testapp.ifwhitelistedactivity" android:lockTaskMode="if_whitelisted" android:exported="true" />
     </application>
     <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="29"/>
+    <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
+        android:targetPackage="com.android.bedstead.testapp.LockTaskApp"
+        android:label="Lock Test App" />
 </manifest>
