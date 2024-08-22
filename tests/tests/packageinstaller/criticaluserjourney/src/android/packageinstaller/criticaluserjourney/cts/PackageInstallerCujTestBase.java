@@ -382,10 +382,15 @@ public class PackageInstallerCujTestBase {
     /**
      * Install the test apk with update-ownership.
      */
-    public static void installTestPackageWithUpdateOwnership() throws IOException {
+    public static void installTestPackageWithUpdateOwnership() throws Exception {
         SystemUtil.runShellCommand("pm install -t  --update-ownership "
                 + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
         assertTestPackageInstalled();
+
+        // assert the updateOwner package name is com.android.shell
+        final String updateOwnerPackageName = sPackageManager.getInstallSourceInfo(
+                TEST_APP_PACKAGE_NAME).getUpdateOwnerPackageName();
+        assertThat(updateOwnerPackageName).isEqualTo("com.android.shell");
     }
 
     /**
