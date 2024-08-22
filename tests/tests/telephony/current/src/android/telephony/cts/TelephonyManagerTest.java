@@ -689,6 +689,16 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    public void testDeviceDataCapable() {
+        boolean isDataCapable = mTelephonyManager.isDataCapable();
+        // Note: there's no mTelephonyManager.isDeviceDataCapable()
+        boolean hasDataFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_DATA);
+
+        assertEquals("isDataCapable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+                hasDataFeature, isDataCapable);
+    }
+
+    @Test
     public void testDeviceSmsCapable() {
         boolean isSmsCapable = mTelephonyManager.isSmsCapable();
         boolean isDeviceSmsCapable = mTelephonyManager.isDeviceSmsCapable();
@@ -696,7 +706,7 @@ public class TelephonyManagerTest {
 
         assertEquals("isSmsCapable should return the same as isDeviceSmsCapable",
                 isDeviceSmsCapable, isSmsCapable);
-        assertEquals("config_sms_capable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+        assertEquals("isDeviceSmsCapable is not aligned with FEATURE_TELEPHONY_MESSAGING",
                 hasMessagingFeature, isDeviceSmsCapable);
     }
 
@@ -708,7 +718,7 @@ public class TelephonyManagerTest {
 
         assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
                 isDeviceVoiceCapable, isVoiceCapable);
-        assertEquals("config_voice_capable is not aligned with FEATURE_TELEPHONY_CALLING",
+        assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
     }
 
