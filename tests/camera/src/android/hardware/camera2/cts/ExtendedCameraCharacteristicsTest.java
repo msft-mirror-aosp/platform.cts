@@ -80,6 +80,7 @@ import android.mediapc.cts.common.Requirements.CameraConcurrentRearFrontStreamin
 import android.mediapc.cts.common.Requirements.CameraDynamicRange10BitRequirement;
 import android.mediapc.cts.common.Requirements.CameraFaceDetectionRequirement;
 import android.mediapc.cts.common.Requirements.CameraHardwareLevelRequirement;
+import android.mediapc.cts.common.Requirements.CameraJPEGRRequirement;
 import android.mediapc.cts.common.Requirements.CameraLogicalMultiCameraRequirement;
 import android.mediapc.cts.common.Requirements.CameraPreviewStabilizationRequirement;
 import android.mediapc.cts.common.Requirements.CameraRAWCapabilityRequirement;
@@ -3875,7 +3876,7 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraRequirement.JpegRRequirement jpegRReq = pce.addR7_5__H_1_18();
+        CameraJPEGRRequirement jpegRReq = Requirements.addR7_5__H_1_18().to(pce);
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
@@ -3883,12 +3884,8 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 getCameraIdsUnderTest());
 
         // H-1-18
-        verifyJpegRRequirement(primaryRearId,
-                CameraRequirement.JpegRRequirement.PRIMARY_REAR_CAMERA,
-                jpegRReq);
-        verifyJpegRRequirement(primaryFrontId,
-                CameraRequirement.JpegRRequirement.PRIMARY_FRONT_CAMERA,
-                jpegRReq);
+        verifyJpegRRequirement(primaryRearId, true /* isRear */, jpegRReq);
+        verifyJpegRRequirement(primaryFrontId, false /* isRear */, jpegRReq);
 
         pce.submitAndCheck();
     }
@@ -3962,15 +3959,24 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     /**
      * Verify JPEG_R requirement for a camera id
      */
-    private void verifyJpegRRequirement(String cameraId, int facing,
-                                        CameraRequirement.JpegRRequirement req)
+    private void verifyJpegRRequirement(String cameraId, boolean isRear, CameraJPEGRRequirement req)
             throws Exception {
         if (cameraId == null) {
-            req.setJpegRSupported(facing, false);
+            if (isRear) {
+                req.setPrimaryRearCameraJpegRSupported(false);
+            } else {
+                req.setPrimaryFrontCameraJpegRSupported(false);
+            }
             return;
         }
+
         StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
-        req.setJpegRSupported(facing, staticInfo.isJpegRSupported());
+
+        if (isRear) {
+            req.setPrimaryRearCameraJpegRSupported(staticInfo.isJpegRSupported());
+        } else {
+            req.setPrimaryFrontCameraJpegRSupported(staticInfo.isJpegRSupported());
+        }
     }
 
     /**
