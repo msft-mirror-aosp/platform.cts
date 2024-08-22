@@ -18,8 +18,7 @@ import logging
 import math
 import os.path
 
-from matplotlib import pylab
-import matplotlib.pyplot
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -185,21 +184,21 @@ def plot_data(qualities, lumas, chromas, img_name):
   logging.debug('qualities: %s', str(qualities))
   logging.debug('luma DQT avgs: %s', str(lumas))
   logging.debug('chroma DQT avgs: %s', str(chromas))
-  pylab.title(_NAME)
+  plt.title(_NAME)
   for i in range(lumas.shape[1]):
-    pylab.plot(
+    plt.plot(
         qualities, lumas[:, i], '-g' + _SYMBOLS[i], label='luma_dqt' + str(i))
-    pylab.plot(
+    plt.plot(
         qualities,
         chromas[:, i],
         '-r' + _SYMBOLS[i],
         label='chroma_dqt' + str(i))
-  pylab.xlim([0, 100])
-  pylab.ylim([0, None])
-  pylab.xlabel('jpeg.quality')
-  pylab.ylabel('DQT luma/chroma matrix averages')
-  pylab.legend(loc='upper right', numpoints=1, fancybox=True)
-  matplotlib.pyplot.savefig(f'{img_name}_plot.png')
+  plt.xlim([0, 100])
+  plt.ylim([0, None])
+  plt.xlabel('jpeg.quality')
+  plt.ylabel('DQT luma/chroma matrix averages')
+  plt.legend(loc='upper right', numpoints=1, fancybox=True)
+  plt.savefig(f'{img_name}_plot.png')
 
 
 class JpegQualityTest(its_base_test.ItsBaseTest):
