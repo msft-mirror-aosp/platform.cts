@@ -16,8 +16,8 @@
 
 import logging
 import os.path
-from matplotlib import pylab
-import matplotlib.pyplot
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -103,15 +103,15 @@ class BurstSamenessManualTest(its_base_test.ItsBaseTest):
 
       # Plot RGB means vs frames
       frames = range(_NUM_FRAMES)
-      pylab.figure(_NAME)
-      pylab.title(_NAME)
-      pylab.plot(frames, r_means, '-ro')
-      pylab.plot(frames, g_means, '-go')
-      pylab.plot(frames, b_means, '-bo')
-      pylab.ylim([0, 1])
-      pylab.xlabel('frame number')
-      pylab.ylabel('RGB avg [0, 1]')
-      matplotlib.pyplot.savefig(f'{name_with_path}_plot_means.png')
+      plt.figure(_NAME)
+      plt.title(_NAME)
+      plt.plot(frames, r_means, '-ro')
+      plt.plot(frames, g_means, '-go')
+      plt.plot(frames, b_means, '-bo')
+      plt.ylim([0, 1])
+      plt.xlabel('frame number')
+      plt.ylabel('RGB avg [0, 1]')
+      plt.savefig(f'{name_with_path}_plot_means.png')
 
       # determine spread_thresh
       spread_thresh = _SPREAD_THRESH

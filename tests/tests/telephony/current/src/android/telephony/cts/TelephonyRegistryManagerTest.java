@@ -36,6 +36,7 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,6 +54,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
+    private Boolean mWasLocationEnabled;
     private static final long TIMEOUT_MILLIS = 1000;
     private static final String TAG = "TelephonyRegistryManagerTest";
 
@@ -67,6 +69,14 @@ public class TelephonyRegistryManagerTest {
 
         mTelephonyRegistryMgr = (TelephonyRegistryManager) InstrumentationRegistry.getContext()
                 .getSystemService(Context.TELEPHONY_REGISTRY_SERVICE);
+    }
+
+    @After
+    public void tearDown() {
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     /**
@@ -155,6 +165,9 @@ public class TelephonyRegistryManagerTest {
 
     @Test
     public void testNotifyServiceStateChanged() throws Exception {
+        TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
+
         Context context = InstrumentationRegistry.getContext();
 
         LinkedBlockingQueue<ServiceState> queue = new LinkedBlockingQueue<>(1);
