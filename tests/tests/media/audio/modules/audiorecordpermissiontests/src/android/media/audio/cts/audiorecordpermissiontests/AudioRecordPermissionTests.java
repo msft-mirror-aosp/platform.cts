@@ -43,6 +43,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.sts.common.util.StsExtraBusinessLogicTestCase;
+
 
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +58,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @RunWith(AndroidJUnit4.class)
-public class AudioRecordPermissionTests {
+public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     // Keep in sync with test apps
     static final String API_34_PACKAGE = "android.media.audio.cts.CtsRecordServiceApi34";
     // Behavior changes with targetSdk >= 34, so test both cases
