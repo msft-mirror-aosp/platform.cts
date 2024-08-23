@@ -19,12 +19,14 @@ package com.android.cts.verifier.voicemail;
 import android.telecom.PhoneAccountHandle;
 import android.telephony.VisualVoicemailService;
 import android.telephony.VisualVoicemailSms;
+import android.util.Log;
 
 /**
  * Forwards {@link VisualVoicemailService} events to tests. The CTS Verifier app needs to be set to
  * the default dialer for it to receive the events.
  */
 public class CtsVisualVoicemailService extends VisualVoicemailService {
+    private static final String LOG_TAG = "CtsVisualVoicemailService";
 
     public abstract static class Callback {
 
@@ -44,27 +46,37 @@ public class CtsVisualVoicemailService extends VisualVoicemailService {
     @Override
     public void onCellServiceConnected(VisualVoicemailTask task,
             PhoneAccountHandle phoneAccountHandle) {
+        Log.i(LOG_TAG, "onCellServiceConnected: taskId=" + task.hashCode() + ", phac="
+                + phoneAccountHandle);
         if (sCallback != null) {
             sCallback.onCellServiceConnected(task, phoneAccountHandle);
+        } else {
+            Log.w(LOG_TAG, "onCellServiceConnected: no callback (expected)");
         }
         task.finish();
     }
 
     @Override
     public void onSmsReceived(VisualVoicemailTask task, VisualVoicemailSms sms) {
+        Log.i(LOG_TAG, "onSmsReceived: taskId=" + task.hashCode() + ", sms="
+                + (sms == null ? "<null>" : sms.getMessageBody()));
         task.finish();
     }
 
     @Override
     public void onSimRemoved(VisualVoicemailTask task, PhoneAccountHandle phoneAccountHandle) {
+        Log.i(LOG_TAG, "onSimRemoved: taskId=" + task.hashCode() + ", phac=" + phoneAccountHandle);
         if (sCallback != null) {
             sCallback.onSimRemoved(task, phoneAccountHandle);
+        } else {
+            Log.w(LOG_TAG, "onSimRemoved: error: no callback (expected");
         }
         task.finish();
     }
 
     @Override
     public void onStopped(VisualVoicemailTask task) {
+        Log.i(LOG_TAG, "onStopped: taskId=" + task.hashCode());
         task.finish();
     }
 }
