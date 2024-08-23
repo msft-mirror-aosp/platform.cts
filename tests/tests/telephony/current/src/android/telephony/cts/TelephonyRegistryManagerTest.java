@@ -9,6 +9,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -51,6 +52,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test TelephonyRegistryManagerTest APIs.
  */
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to TelephonyRegistryManager"
+        + "(telephony_registry)")
 public class TelephonyRegistryManagerTest {
     private TelephonyRegistryManager mTelephonyRegistryMgr;
     private static final long TIMEOUT_MILLIS = 1000;
