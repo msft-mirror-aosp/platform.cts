@@ -109,7 +109,6 @@ def main():
   logging.basicConfig(level=logging.INFO)
   topdir = tempfile.mkdtemp(prefix='MultiDevice_')
   subprocess.call(['chmod', 'g+rx', topdir])  # Add permissions
-  logging.info('Saving multi-device tests output files to: %s', topdir)
 
   config_file_contents = get_config_file_contents()
   device_ids = get_device_serial_number(config_file_contents)
@@ -139,9 +138,11 @@ def main():
           fp.seek(0)
           for line in fp:
             if line.startswith('Test summary saved in'):
-              match = re.search(r'"(.*?)"', line)  # Get file path
+              match = re.search(r'"(.*?)"', line)  # Get test artifacts file path
               if match:
                 test_summary = Path(match.group(1))
+                test_artifact = test_summary.parent
+                logging.info('Please check the test artifacts of %s under: %s', test_name, test_artifact)
                 if test_summary.exists():
                   test_summary_file_list.append(test_summary)
                   test_completed = True
