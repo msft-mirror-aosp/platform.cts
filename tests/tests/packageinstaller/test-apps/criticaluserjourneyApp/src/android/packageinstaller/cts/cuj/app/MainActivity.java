@@ -17,15 +17,6 @@
 package android.packageinstaller.cts.cuj.app;
 
 import android.app.Activity;
-import android.util.Log;
 
 public class MainActivity extends Activity {
-
-    private static final String TAG = "CtsCujInstallerTestApp";
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d(TAG, "The activity of " + getString(R.string.app_name) + " is onResume");
-    }
 }
