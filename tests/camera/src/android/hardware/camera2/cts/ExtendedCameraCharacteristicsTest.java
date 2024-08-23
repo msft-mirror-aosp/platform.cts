@@ -77,6 +77,8 @@ import android.mediapc.cts.common.Requirement;
 import android.mediapc.cts.common.RequirementConstants;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.CameraConcurrentRearFrontStreamingRequirement;
+import android.mediapc.cts.common.Requirements.CameraDynamicRange10BitRequirement;
+import android.mediapc.cts.common.Requirements.CameraFaceDetectionRequirement;
 import android.mediapc.cts.common.Requirements.CameraHardwareLevelRequirement;
 import android.mediapc.cts.common.Requirements.CameraLogicalMultiCameraRequirement;
 import android.mediapc.cts.common.Requirements.CameraPreviewStabilizationRequirement;
@@ -3842,8 +3844,10 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraRequirement.DynamicRangeTenBitsRequirement dynamicRangeTenBitsReq = pce.addR7_5__H_1_16();
-        CameraRequirement.FaceDetectionRequirement faceDetectionReq = pce.addR7_5__H_1_17();
+        CameraDynamicRange10BitRequirement dynamicRangeTenBitsReq =
+                Requirements.addR7_5__H_1_16().to(pce);
+        CameraFaceDetectionRequirement faceDetectionReq =
+                Requirements.addR7_5__H_1_17().to(pce);
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
@@ -3851,18 +3855,12 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 getCameraIdsUnderTest());
 
         // H-1-16
-        verifyDynamicRangeTenBits(primaryRearId,
-                CameraRequirement.DynamicRangeTenBitsRequirement.PRIMARY_REAR_CAMERA,
-                dynamicRangeTenBitsReq);
-        verifyDynamicRangeTenBits(primaryFrontId,
-                CameraRequirement.DynamicRangeTenBitsRequirement.PRIMARY_FRONT_CAMERA,
-                dynamicRangeTenBitsReq);
+        verifyDynamicRangeTenBits(primaryRearId, true /* isRear */, dynamicRangeTenBitsReq);
+        verifyDynamicRangeTenBits(primaryFrontId, false /* isRear */, dynamicRangeTenBitsReq);
 
         // H-1-17
-        verifyFaceDetection(primaryRearId,
-                CameraRequirement.FaceDetectionRequirement.PRIMARY_REAR_CAMERA, faceDetectionReq);
-        verifyFaceDetection(primaryFrontId,
-                CameraRequirement.FaceDetectionRequirement.PRIMARY_FRONT_CAMERA, faceDetectionReq);
+        verifyFaceDetection(primaryRearId, true /* isRear */, faceDetectionReq);
+        verifyFaceDetection(primaryFrontId, false /* isRear */, faceDetectionReq);
 
         pce.submitAndCheck();
     }
@@ -3978,10 +3976,14 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     /**
      * Verify dynamic range ten bits requirement for a camera id
      */
-    private void verifyDynamicRangeTenBits(String cameraId, int facing,
-            CameraRequirement.DynamicRangeTenBitsRequirement req) throws Exception {
+    private void verifyDynamicRangeTenBits(String cameraId, boolean isRear,
+            CameraDynamicRange10BitRequirement req) throws Exception {
         if (cameraId == null) {
-            req.setDynamicRangeTenBitsSupported(facing, false);
+            if (isRear) {
+                req.setRearCameraDynamicTenbitsSupported(false);
+            } else {
+                req.setFrontCameraDynamicTenbitsSupported(false);
+            }
             return;
         }
 
@@ -3989,16 +3991,24 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         boolean dynamicRangeTenBitsSupported =
                 staticInfo.isCapabilitySupported(DYNAMIC_RANGE_TEN_BIT);
 
-        req.setDynamicRangeTenBitsSupported(facing, dynamicRangeTenBitsSupported);
+        if (isRear) {
+            req.setRearCameraDynamicTenbitsSupported(dynamicRangeTenBitsSupported);
+        } else {
+            req.setFrontCameraDynamicTenbitsSupported(dynamicRangeTenBitsSupported);
+        }
     }
 
     /**
      * Verify face detection requirements for a camera id
      */
-    private void verifyFaceDetection(String cameraId, int facing,
-                                     CameraRequirement.FaceDetectionRequirement req) {
+    private void verifyFaceDetection(String cameraId, boolean isRear,
+                                     CameraFaceDetectionRequirement req) {
         if (cameraId == null) {
-            req.setFaceDetectionSupported(facing, false);
+            if (isRear) {
+                req.setRearCameraFaceDetectionSupported(false);
+            } else {
+                req.setFrontCameraFaceDetectionSupported(false);
+            }
             return;
         }
 
@@ -4009,7 +4019,11 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         boolean faceDetectionSupported = arrayContainsAnyOf(availableFaceDetectionModes,
                 supportedFaceDetectionModes);
 
-        req.setFaceDetectionSupported(facing, faceDetectionSupported);
+        if (isRear) {
+            req.setRearCameraFaceDetectionSupported(faceDetectionSupported);
+        } else {
+            req.setFrontCameraFaceDetectionSupported(faceDetectionSupported);
+        }
     }
 
     /**
