@@ -521,8 +521,9 @@ public final class ScreenCaptureDisabledTest {
                 // skipping edge panel
                 continue;
             }
-            if (!(pixels[i] == Color.BLACK || (pixels[i] == Color.TRANSPARENT
-                    || pixels[i] == Color.WHITE && isAutomotive()))) {
+            if (!(pixels[i] == Color.BLACK || (
+                    (pixels[i] == Color.TRANSPARENT || pixels[i] == Color.WHITE)
+                            && isAutomotive()))) {
                 return false;
             }
         }
