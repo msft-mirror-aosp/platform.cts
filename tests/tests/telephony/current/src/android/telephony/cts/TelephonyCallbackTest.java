@@ -70,6 +70,7 @@ import androidx.test.InstrumentationRegistry;
 import com.android.compatibility.common.util.ShellIdentityUtils;
 import com.android.internal.telephony.flags.Flags;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -130,6 +131,7 @@ public class TelephonyCallbackTest {
     private PreciseCallState mPreciseCallState;
     private List<CallState> mCallStateList;
     private SignalStrength mSignalStrength;
+    private Boolean mWasLocationEnabled;
     private TelephonyManager mTelephonyManager;
     private final Object mLock = new Object();
     private static final String TAG = "TelephonyCallbackTest";
@@ -191,6 +193,14 @@ public class TelephonyCallbackTest {
             assumeNoException("Skipping tests because Telephony service is null", e);
         }
         mCm = (ConnectivityManager) getContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
     }
 
     @Test
@@ -967,6 +977,7 @@ public class TelephonyCallbackTest {
         assertFalse(mOnCellLocationChangedCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
 
         mCellLocationCallback = new CellLocationListener();
         registerTelephonyCallback(mCellLocationCallback);
@@ -1122,6 +1133,7 @@ public class TelephonyCallbackTest {
         assertFalse(mOnDataActivityCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
 
         mCellInfoCallback = new CellInfoListener();
         registerTelephonyCallback(mCellInfoCallback);
