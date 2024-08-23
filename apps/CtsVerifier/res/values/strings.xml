@@ -7541,6 +7541,7 @@ You should be prompted to select credentials; choose the ones you just installed
         \n6. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
         \n7. Remember to disable the "Disable screen share protections" developer options.
     </string>
+    <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
     <string name="notif_hiding_start_screen_recording">Start screen recording</string>
     <string name="notif_hiding_send_notification">Send notification</string>
     <string name="notif_hiding_success">No failures found, please press the green check mark</string>
