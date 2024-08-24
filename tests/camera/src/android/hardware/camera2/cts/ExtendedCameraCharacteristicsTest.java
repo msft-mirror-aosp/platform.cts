@@ -70,7 +70,6 @@ import android.hardware.cts.helpers.CameraUtils;
 import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
-import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.RequiredMeasurement;
 import android.mediapc.cts.common.Requirement;
@@ -82,6 +81,7 @@ import android.mediapc.cts.common.Requirements.CameraFaceDetectionRequirement;
 import android.mediapc.cts.common.Requirements.CameraHardwareLevelRequirement;
 import android.mediapc.cts.common.Requirements.CameraJPEGRRequirement;
 import android.mediapc.cts.common.Requirements.CameraLogicalMultiCameraRequirement;
+import android.mediapc.cts.common.Requirements.CameraNightModeExtensionRequirement;
 import android.mediapc.cts.common.Requirements.CameraPreviewStabilizationRequirement;
 import android.mediapc.cts.common.Requirements.CameraRAWCapabilityRequirement;
 import android.mediapc.cts.common.Requirements.CameraSlowMotionRequirement;
@@ -3905,19 +3905,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
                 + "to single camera by specifying camera id override.", mOverrideCameraId == null);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraRequirement.CameraExtensionRequirement cameraExtensionReq = pce.addR7_5__H_1_15();
+        CameraNightModeExtensionRequirement cameraExtensionReq =
+                Requirements.addR7_5__H_1_15().to(pce);
 
         String primaryRearId = CameraTestUtils.getPrimaryRearCamera(mCameraManager,
                 getCameraIdsUnderTest());
         String primaryFrontId = CameraTestUtils.getPrimaryFrontCamera(mCameraManager,
                 getCameraIdsUnderTest());
 
-        verifyExtensionForCamera(primaryRearId,
-                CameraRequirement.CameraExtensionRequirement.PRIMARY_REAR_CAMERA,
-                cameraExtensionReq);
-        verifyExtensionForCamera(primaryFrontId,
-                CameraRequirement.CameraExtensionRequirement.PRIMARY_FRONT_CAMERA,
-                cameraExtensionReq);
+        verifyExtensionForCamera(primaryRearId, true /* isRear */, cameraExtensionReq);
+        verifyExtensionForCamera(primaryFrontId, false /* isRear */, cameraExtensionReq);
 
         pce.submitAndCheck();
     }
@@ -3925,11 +3922,16 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
     /**
      * Verify camera2 and CameraX extension requirements for a camera id
      */
-    private void verifyExtensionForCamera(String cameraId, int facing,
-            CameraRequirement.CameraExtensionRequirement req) throws Exception {
+    private void verifyExtensionForCamera(String cameraId, boolean isRear,
+            CameraNightModeExtensionRequirement req) throws Exception {
         if (cameraId == null) {
-            req.setCamera2NightExtensionSupported(facing, false);
-            req.setCameraXNightExtensionSupported(facing, false);
+            if (isRear) {
+                req.setRearCamera2ExtensionNightSupported(false);
+                req.setRearCameraxExtensionNightSupported(false);
+            } else {
+                req.setFrontCamera2ExtensionNightSupported(false);
+                req.setFrontCameraxExtensionNightSupported(false);
+            }
             return;
         }
 
@@ -3939,21 +3941,24 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
         StaticMetadata staticInfo = mAllStaticInfo.get(cameraId);
 
         List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
-        boolean nightExtensionSupported = supportedExtensions.contains(
-                CameraExtensionCharacteristics.EXTENSION_NIGHT);
-        req.setCamera2NightExtensionSupported(facing, nightExtensionSupported);
-
-        CameraSelector selector;
-        if (facing == CameraRequirement.CameraExtensionRequirement.PRIMARY_REAR_CAMERA) {
-            selector = CameraSelector.DEFAULT_BACK_CAMERA;
-        } else if (facing == CameraRequirement.CameraExtensionRequirement.PRIMARY_FRONT_CAMERA) {
-            selector = CameraSelector.DEFAULT_FRONT_CAMERA;
+        boolean nightExtensionSupported =
+                supportedExtensions.contains(CameraExtensionCharacteristics.EXTENSION_NIGHT);
+        if (isRear) {
+            req.setRearCamera2ExtensionNightSupported(nightExtensionSupported);
         } else {
-            return;
+            req.setFrontCamera2ExtensionNightSupported(nightExtensionSupported);
         }
-        req.setCameraXNightExtensionSupported(facing,
-                extensionsManager.isExtensionAvailable(
-                        selector, ExtensionMode.NIGHT));
+
+        CameraSelector selector = isRear
+                ? CameraSelector.DEFAULT_BACK_CAMERA
+                : CameraSelector.DEFAULT_FRONT_CAMERA;
+        nightExtensionSupported =
+                extensionsManager.isExtensionAvailable(selector, ExtensionMode.NIGHT);
+        if (isRear) {
+            req.setRearCameraxExtensionNightSupported(nightExtensionSupported);
+        } else {
+            req.setFrontCameraxExtensionNightSupported(nightExtensionSupported);
+        }
     }
 
     /**

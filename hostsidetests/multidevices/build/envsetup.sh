@@ -29,12 +29,6 @@ command -v python >/dev/null 2>&1 || \
 python3 -V 2>&1 | grep -q "Python 3.*" || \
     echo ">> Require python version 3" >&2
 
-for M in mobly
-do
-    python3 -c "import $M" >/dev/null 2>&1 || \
-        echo ">> Require Python $M module" >&2
-done
-
 export PYTHONPATH="$PWD/utils:$PYTHONPATH"
 export PYTHONPATH="$PWD/tests:$PYTHONPATH"
 
