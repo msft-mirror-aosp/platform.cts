@@ -51,8 +51,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -68,15 +69,15 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
 
     static final String SERVICE_NAME = ".RecordService";
 
-    static final int FUTURE_WAIT_SECS = 15;
-    static final int FALSE_NEG_SECS = 10;
+    static final int FUTURE_WAIT_SECS = 8;
+    static final int FALSE_NEG_SECS = 5;
 
     private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private final Context mContext = mInstrumentation.getContext();
 
     // Used in teardown
-    private List<String> mServiceStartedPackages = new ArrayList<>();
-    private List<String> mActivityStartedPackages = new ArrayList<>();
+    private Set<String> mServiceStartedPackages = new HashSet<>();
+    private Set<String> mActivityStartedPackages = new HashSet<>();
 
     @Before
     public void setup() throws Exception {
@@ -87,11 +88,72 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     @After
     public void teardown() throws Exception {
         // Clean up any left-over activities, services
-        for (var pack : mActivityStartedPackages) {
+        for (var pack : Set.copyOf(mActivityStartedPackages)) {
             stopActivity(pack);
         }
-        for (var pack : mServiceStartedPackages) {
+        for (var pack : Set.copyOf(mServiceStartedPackages)) {
             stopService(pack);
+        }
+    }
+
+    @Test
+    public void testRecordAudioNoRuntimePermission_fails() throws Exception {
+        // The native audio record doesn't transmit security exceptions, it just fails to build
+        assertThrows(UnsupportedOperationException.class, this::buildRecord);
+    }
+
+    @Test
+    public void testStartRecordTop_isNotSilenced() throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        // TODO(b/297259825) we never started recording unsilenced, due to avd sometime
+        // providing only silenced mic data.
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+
+    @Test
+    public void testStartRecordForegroundServiceWithMicCapabilities_isNotSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testStartRecordForegroundServiceWithoutMicCapabilities_isSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_34_NO_CAP_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // Verify our custom pre-34 behavior doesn't incorrectly permit too many bypasses
+    @Test
+    public void testStartRecordForegroundServiceWithoutMicCapabilities_whenApi33_isSilenced()
+            throws Exception {
+        final var TEST_PACKAGE = API_33_PACKAGE;
+        startForeground(TEST_PACKAGE);
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    @Test
+    public void testStartRecordWhenTopSleeping_isSilenced() throws Exception {
+        final var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        try {
+            // Move out of TOP to TOP_SLEEPING
+            SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_SLEEP");
+            // TODO(b/355497694), these should be false, seems currently broken
+            assumeTrue(startServiceRecording(TEST_PACKAGE));
+            assertTrue(getOpState(TEST_PACKAGE));
+        } finally {
+            SystemUtil.runShellCommand(mInstrumentation, "input keyevent KEYCODE_WAKEUP");
+            SystemUtil.runShellCommand(mInstrumentation, "wm dismiss-keyguard");
         }
     }
 
@@ -203,11 +265,6 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         assertTrue(getOpState(TEST_PACKAGE));
     }
 
-    @Test
-    public void testRecordAudioNoRuntimePermission_fails() throws Exception {
-        assertThrows(UnsupportedOperationException.class, this::buildRecord);
-    }
-
     private void buildRecord() throws Exception {
         new AudioRecord.Builder()
                 .setAudioFormat(
@@ -219,8 +276,16 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
                 .build();
     }
 
-    private void startForeground(String packageName) {
+    private void startForeground(String packageName) throws Exception {
+        // To get around background foreground-service-launch restrictions, the app has to be
+        // visible to launch an fgs: so temporarily make it TOP
+        final boolean shouldLaunch =  !mActivityStartedPackages.contains(packageName);
+        if (shouldLaunch) startActivity(packageName);
         mContext.startService(getIntentForAction(packageName, ACTION_START_FOREGROUND));
+        mServiceStartedPackages.add(packageName);
+        // We have to wait until the app is actually running to mark it freezer ineligible
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
+        if (shouldLaunch) stopActivity(packageName);
     }
 
     private void startActivity(String packageName) throws Exception {
@@ -261,6 +326,7 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
                         .getAction()
                         .equals(packageName + ACTION_BEGAN_RECEIVE_AUDIO);
         mServiceStartedPackages.add(packageName);
+        // We have to wait until the app is actually running to mark it freezer ineligible
         SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
         return result;
     }
