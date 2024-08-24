@@ -55,4 +55,4 @@ TestBeds:
       lighting_cntl: <controller-type>  # can be arduino or "None"
       lighting_ch: <controller-channel>
       scene: "checkerboard"  # "checkerboard" for both SF and scene_flash
-
+      feature_combo_verify: "False" # "True" if forcing feature combination test

@@ -35,8 +35,8 @@ _FLASH_STATES = {0: 'FLASH_STATE_UNAVAILABLE', 1: 'FLASH_STATE_CHARGING',
                  4: 'FLASH_STATE_PARTIAL'}
 _FORMAT_NAME = 'yuv'
 _IMG_SIZE = (640, 480)
-_PATCH_H = 0.25  # center 25%
-_PATCH_W = 0.25
+_PATCH_H = 0.5  # center 50%
+_PATCH_W = 0.5
 _PATCH_X = 0.5-_PATCH_W/2
 _PATCH_Y = 0.5-_PATCH_H/2
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]

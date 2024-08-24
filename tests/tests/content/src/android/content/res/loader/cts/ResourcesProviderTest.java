@@ -39,6 +39,8 @@ import android.content.res.loader.ResourcesProvider;
 import android.graphics.Color;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.TypedValue;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -53,7 +55,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not have access to OverlayManager.")
+@DisabledOnRavenwood(blockedBy = OverlayManager.class)
 public class ResourcesProviderTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private Context mContext;
     private OverlayManager mOverlayManager;
     private FabricatedOverlayFacilitator mFacilitator;
