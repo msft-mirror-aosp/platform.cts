@@ -23,15 +23,7 @@ package {
 filegroup {
     name: "multidevice_apps_to_include",
     srcs: [
-        ":NfcReaderTestApp",
         ":NfcEmulatorTestApp",
-    ],
-}
-
-filegroup {
-    name: "multidevice_tests_to_include",
-    srcs: [
-        "nfc/*.py",
     ],
 }
 
@@ -48,15 +40,13 @@ genrule {
 
 genrule {
     name: "multidevice-test-list",
-    srcs: [
-        ":multidevice_tests_to_include",
-        // Placeholder file outside the glob used to find the top of the directory.
-        "build/envsetup.sh",
+    tools: [
+        "soong_zip",
+        ":CtsNfcHceMultiDeviceTestCases-py-ctsv",
     ],
-    tools: ["soong_zip"],
     out: ["multidevice-test-list.zip"],
-    cmd: "echo $(locations :multidevice_tests_to_include) >$(genDir)/test_list && " +
-        "$(location soong_zip) -o $(out) -P android-cts-verifier/MultiDevice/tests -C $$(dirname $$(dirname $(location build/envsetup.sh))) -l $(genDir)/test_list",
+    cmd: "echo $(location :CtsNfcHceMultiDeviceTestCases-py-ctsv) >$(genDir)/test_list && " +
+        "$(location soong_zip) -o $(out) -P android-cts-verifier/MultiDevice/tests -l $(genDir)/test_list",
 }
 
 genrule {
