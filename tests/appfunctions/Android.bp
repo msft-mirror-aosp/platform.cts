@@ -28,10 +28,13 @@ android_test {
         "appsearch_flags_java_exported_lib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "CtsAppFunctionsTestUtils",
         "flag-junit",
         "platform-test-annotations",
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
+        "Harrier",
+        "testng",
     ],
     manifest: "AndroidManifest.xml",
     srcs: [
@@ -42,5 +45,23 @@ android_test {
         "cts",
         "general-tests",
     ],
-    sdk_version: "test_current",
+    data: [
+        ":CtsAppFunctionsTestHelper",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsTestHelper",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    manifest: "helper-app/AndroidManifest.xml",
 }
