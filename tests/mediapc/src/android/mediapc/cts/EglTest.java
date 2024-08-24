@@ -16,8 +16,9 @@
 
 package android.mediapc.cts;
 
-import android.mediapc.cts.common.EglRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.EGLRequirement;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -53,11 +54,11 @@ public class EglTest {
     @Test
     public void requireGraphicsProtectedContent() {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        EglRequirement req = pce.addR7_1_4_1__H_1_2();
+        EGLRequirement req = Requirements.addR7_1_4_1__H_1_2().to(pce);
 
         var extensions = getExtensions();
-        req.setImageContextPrioritySupported(extensions.contains("EGL_IMG_context_priority"));
-        req.setProtectedContentSupported(extensions.contains("EGL_EXT_protected_content"));
+        req.setEglImgContextPriority(extensions.contains("EGL_IMG_context_priority"));
+        req.setEglExtProtectedContent(extensions.contains("EGL_EXT_protected_content"));
 
         pce.submitAndCheck();
     }

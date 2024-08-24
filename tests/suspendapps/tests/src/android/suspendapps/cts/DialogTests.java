@@ -80,8 +80,8 @@ public class DialogTests {
         if (!mUiDevice.isScreenOn()) {
             mUiDevice.wakeUp();
         }
-        mUiDevice.pressHome();
         SystemUtil.runShellCommandForNoOutput("wm dismiss-keyguard");
+        mUiDevice.pressHome();
     }
 
     @Test

@@ -1174,6 +1174,11 @@ public abstract class CodecTestBase {
     }
 
     // reusable portions of configureCodec(...) are handled here
+    // As configureCodec is indicative of start of a fresh encoding / decoding operation,
+    // initializations that were made for a different session MUST not be used. To ensure the
+    // same, resetContext() is called here. This default initializes all the fields of the test
+    // before configuring the component. If the test intends to use a value different from
+    // default value then explicit initialization is required.
     protected void configureCodecCommon(MediaFormat format, boolean isAsync,
             boolean signalEOSWithLastFrame, boolean isEncoder, int flags) {
         resetContext(isAsync, signalEOSWithLastFrame);

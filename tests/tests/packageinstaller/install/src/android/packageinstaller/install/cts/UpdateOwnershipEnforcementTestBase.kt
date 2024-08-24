@@ -16,20 +16,12 @@
 
 package android.packageinstaller.install.cts
 
-import com.android.bedstead.harrier.DeviceState
 import org.junit.After
 import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Rule
 
 open class UpdateOwnershipEnforcementTestBase : PackageInstallerTestBase() {
 
     companion object {
-        @JvmField
-        @ClassRule
-        @Rule
-        val deviceState = DeviceState()
-
         const val TEST_INSTALLER_APK_NAME = "CtsEmptyInstallerApp.apk"
         const val TEST_INSTALLER_APK_PACKAGE_NAME = "android.packageinstaller.emptyinstaller.cts"
     }
