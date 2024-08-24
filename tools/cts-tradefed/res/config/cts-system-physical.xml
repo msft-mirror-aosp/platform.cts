@@ -722,7 +722,17 @@
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1507]"/>
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1532]"/>
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1556]"/>
-
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setBitmap_allowed_canSet"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setBitmap_viaDpc_disallowed_canSet[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setStream_allowed_canSet"/>
+  <option name="compatibility:include-filter" value="CtsDirectBootHostTestCases android.appsecurity.cts.DirectBootHostTest#testDirectBoot"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.CategoriesFragmentTest#categoriesFragment_openAllCategories"/>
+  <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testExpeditedJobDeferredAfterTimeoutInDoze"/>
+  <option name="compatibility:include-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.StorageOtherFilesTest#other_accessLocationMetadata"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testValidServiceContexts"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testValidFileContexts"/>
+  <option name="compatibility:include-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndIntentFilterTarget        "/>
+  <option name="compatibility:include-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndActivityTarget"/>
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />

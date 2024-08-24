@@ -226,6 +226,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
     fun updateOwnershipEnforcement_updateViaIntentByNonOwner_hasUserAction() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
+        assertInstalled()
 
         try {
             InstrumentationRegistry.getInstrumentation().uiAutomation
@@ -456,7 +457,11 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             pm.getApplicationInfo(context.packageName, ApplicationInfoFlags.of(0))
         val installerAppLabel = pm.getApplicationLabel(installerAppInfo)
 
-        waitForUIIdle()
+        // Wait for a min 3000ms and max 10000ms for UI to become idle
+        instrumentation.uiAutomation.waitForIdle(
+            (3 * FIND_OBJECT_TIMEOUT),
+            (10 * FIND_OBJECT_TIMEOUT)
+        )
         assertNotNull(
             "Installer label \"$installerAppLabel\" not shown",
             uiDevice.wait(

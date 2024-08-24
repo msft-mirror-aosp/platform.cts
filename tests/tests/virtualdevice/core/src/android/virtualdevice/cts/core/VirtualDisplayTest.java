@@ -242,7 +242,7 @@ public class VirtualDisplayTest {
     public void isVirtualDeviceOwnedMirrorDisplay_unownedPublicDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC),
                 CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
@@ -253,7 +253,8 @@ public class VirtualDisplayTest {
     public void isVirtualDeviceOwnedMirrorDisplay_unownedPublicAutoMirrorDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
+                       DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
                 CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();

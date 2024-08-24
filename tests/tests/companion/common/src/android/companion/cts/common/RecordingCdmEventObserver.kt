@@ -61,8 +61,8 @@ private constructor(container: InvocationContainer<CdmEvent>) :
     override fun onFailure(error: CharSequence?) =
         recordInvocation(CdmCallback(OnFailure(error)))
 
-    override fun onFailure(resultCode: Int) {
-        recordInvocation(CdmCallback(OnFailureCode(resultCode)))
+    override fun onFailure(resultCode: Int, error: CharSequence?) {
+        recordInvocation(CdmCallback(OnFailureCode(resultCode, error)))
     }
 
     sealed interface CdmEvent

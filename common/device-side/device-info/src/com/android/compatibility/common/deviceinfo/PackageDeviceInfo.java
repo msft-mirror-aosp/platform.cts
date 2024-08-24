@@ -29,6 +29,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PermissionInfo;
 import android.os.Build;
 import android.os.Process;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -50,6 +51,8 @@ import java.util.Set;
  */
 @TargetApi(Build.VERSION_CODES.N)
 public class PackageDeviceInfo extends DeviceInfo {
+
+    private static final String LOG_TAG = "PackageDeviceInfo";
 
     private static final String PLATFORM = "android";
     private static final String PLATFORM_ANDROID_PERMISSION_PREFIX = "android.permission.";
@@ -118,6 +121,7 @@ public class PackageDeviceInfo extends DeviceInfo {
     private static final String PACKAGES = "packages";
     private static final String SHARED_USER_NAME = "shared_user_name";
 
+    private static final String SHARED_UID_ALLOWLIST_ENABLED = "shared_uid_allowlist_enabled";
 
     @Override
     protected void collectDeviceInfo(DeviceInfoStore store) throws Exception {
@@ -179,6 +183,7 @@ public class PackageDeviceInfo extends DeviceInfo {
 
         if (SdkLevel.isAtLeastV()) {
             collectSharedUidAllowlist(store);
+            collectSharedUidAllowlistEnabled(store);
         }
     }
 
@@ -437,5 +442,17 @@ public class PackageDeviceInfo extends DeviceInfo {
         }
         store.endArray(); // "packages"
         store.endGroup(); // "shared_uid_allowlist"
+    }
+
+    private static void collectSharedUidAllowlistEnabled(@NonNull DeviceInfoStore store)
+            throws IOException {
+        Boolean enabled = FeatureFlagUtils.isFeatureFlagEnabled(
+                "package_manager_service/android.content.pm.restrict_nonpreloads_system_shareduids",
+                "system");
+        if (enabled == null) {
+            Log.e(LOG_TAG, "Failed to check whether shared UID allowlist is enabled");
+            return;
+        }
+        store.addResult(SHARED_UID_ALLOWLIST_ENABLED, enabled);
     }
 }

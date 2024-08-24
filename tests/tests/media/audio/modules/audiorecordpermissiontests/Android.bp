@@ -22,28 +22,28 @@ package {
 }
 
 android_test {
-    name: "CtsAudioRecordPermissionTests",
+    name: "CtsMediaAudioPermissionTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
         "compatibility-device-util-axt",
         "mediatestutils",
+        "sts-device-util",
         "audiorecordpermissiontests_shared",
     ],
     srcs: [
         "src/**/*.java",
         "src/**/*.kt",
     ],
-    platform_apis: true,
-    test_suites: [
-        "cts",
-        "general-tests",
-        "sts",
-    ],
     data: [
         ":CtsRecordServiceApi34",
         ":CtsRecordServiceApi34NoCap",
         ":CtsRecordServiceApi33",
     ],
-    sdk_version: "test_current",
+    test_suites: [
+        "cts",
+        "general-tests",
+        "sts",
+    ],
+    sdk_version: "test_33",
 }

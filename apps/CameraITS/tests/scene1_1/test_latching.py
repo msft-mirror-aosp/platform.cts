@@ -16,8 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -109,15 +109,15 @@ class LatchingTest(its_base_test.ItsBaseTest):
 
       # Plot results
       idxs = range(len(r_means))
-      pylab.figure(_NAME)
-      pylab.plot(idxs, r_means, '-ro')
-      pylab.plot(idxs, g_means, '-go')
-      pylab.plot(idxs, b_means, '-bo')
-      pylab.ylim([0, 1])
-      pylab.title(_NAME)
-      pylab.xlabel('capture')
-      pylab.ylabel('RGB means')
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+      plt.figure(_NAME)
+      plt.plot(idxs, r_means, '-ro')
+      plt.plot(idxs, g_means, '-go')
+      plt.plot(idxs, b_means, '-bo')
+      plt.ylim([0, 1])
+      plt.title(_NAME)
+      plt.xlabel('capture')
+      plt.ylabel('RGB means')
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
 
       # check G mean pattern for correctness
       g_avg_for_caps = sum(g_means) / len(g_means)

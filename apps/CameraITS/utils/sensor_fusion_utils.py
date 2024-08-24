@@ -24,8 +24,7 @@ import time
 
 import cv2
 import matplotlib
-from matplotlib import pylab
-import matplotlib.pyplot
+from matplotlib import pyplot as plt
 import numpy as np
 import scipy.spatial
 import serial
@@ -703,14 +702,14 @@ def plot_camera_rotations(cam_rots, start_frame, video_quality,
    plot_name_stem: str (with path) of what to call plot
   """
 
-  pylab.figure(video_quality)
+  plt.figure(video_quality)
   frames = range(start_frame, len(cam_rots)+start_frame)
-  pylab.title(f'Camera rotation vs frame {video_quality}')
-  pylab.plot(frames, cam_rots*_RADS_TO_DEGS, '-ro', label='x')
-  pylab.xlabel('frame #')
-  pylab.ylabel('camera rotation (degrees)')
-  matplotlib.pyplot.savefig(f'{plot_name_stem}_cam_rots.png')
-  pylab.close(video_quality)
+  plt.title(f'Camera rotation vs frame {video_quality}')
+  plt.plot(frames, cam_rots*_RADS_TO_DEGS, '-ro', label='x')
+  plt.xlabel('frame #')
+  plt.ylabel('camera rotation (degrees)')
+  plt.savefig(f'{plot_name_stem}_cam_rots.png')
+  plt.close(video_quality)
 
 
 def plot_gyro_events(gyro_events, plot_name, log_path):
@@ -740,26 +739,26 @@ def plot_gyro_events(gyro_events, plot_name, log_path):
   y = y.reshape(nevents//_NUM_GYRO_PTS_TO_AVG, _NUM_GYRO_PTS_TO_AVG).mean(1)
   z = z.reshape(nevents//_NUM_GYRO_PTS_TO_AVG, _NUM_GYRO_PTS_TO_AVG).mean(1)
 
-  pylab.figure(plot_name)
+  plt.figure(plot_name)
   # x & y on same axes
-  pylab.subplot(2, 1, 1)
-  pylab.title(f'{plot_name}(mean of {_NUM_GYRO_PTS_TO_AVG} pts)')
-  pylab.plot(times, x, 'r', label='x')
-  pylab.plot(times, y, 'g', label='y')
-  pylab.ylim([np.amin(z)/4, np.amax(z)/4])  # zoom in 4x from z axis
-  pylab.ylabel('gyro x,y movement (rads/s)')
-  pylab.legend()
+  plt.subplot(2, 1, 1)
+  plt.title(f'{plot_name}(mean of {_NUM_GYRO_PTS_TO_AVG} pts)')
+  plt.plot(times, x, 'r', label='x')
+  plt.plot(times, y, 'g', label='y')
+  plt.ylim([np.amin(z)/4, np.amax(z)/4])  # zoom in 4x from z axis
+  plt.ylabel('gyro x,y movement (rads/s)')
+  plt.legend()
 
   # z on separate axes
-  pylab.subplot(2, 1, 2)
-  pylab.plot(times, z, 'b', label='z')
-  pylab.ylim([np.amin(z), np.amax(z)])
-  pylab.xlabel('time (seconds)')
-  pylab.ylabel('gyro z movement (rads/s)')
-  pylab.legend()
+  plt.subplot(2, 1, 2)
+  plt.plot(times, z, 'b', label='z')
+  plt.ylim([np.amin(z), np.amax(z)])
+  plt.xlabel('time (seconds)')
+  plt.ylabel('gyro z movement (rads/s)')
+  plt.legend()
   file_name = os.path.join(log_path, plot_name)
-  matplotlib.pyplot.savefig(f'{file_name}_gyro_events.png')
-  pylab.close(plot_name)
+  plt.savefig(f'{file_name}_gyro_events.png')
+  plt.close(plot_name)
 
   z_max = max(abs(z))
   logging.debug('z_max: %.3f', z_max)

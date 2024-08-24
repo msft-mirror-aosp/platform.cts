@@ -100,17 +100,31 @@ open class UinputTouchDevice(
         injectEvent(intArrayOf(EV_KEY, btnCode, if (isDown) 1 else 0))
     }
 
-    fun sendDown(id: Int, location: Point, toolType: Int? = null) {
+    /**
+     * Send events signifying a new pointer is being tracked.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling. Use
+     * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
+     * coordinate space.
+     */
+    fun sendDown(id: Int, physicalLocation: Point, toolType: Int? = null) {
         injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, id))
         if (toolType != null) injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, location.x))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, location.y))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y))
     }
 
-    fun sendMove(id: Int, location: Point) {
+    /**
+     * Send events signifying a tracked pointer is being moved.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling.
+    */
+    fun sendMove(id: Int, physicalLocation: Point) {
         // Use same events of down.
-        sendDown(id, location)
+        sendDown(id, physicalLocation)
     }
 
     fun sendUp(id: Int) {
@@ -214,6 +228,8 @@ open class UinputTouchDevice(
     /**
      * Send a new pointer to the screen, generating an ACTION_DOWN if there aren't any other
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
+     * @param x The x coordinate in screen (logical display) space.
+     * @param y The y coordinate in screen (logical display) space.
      */
     fun touchDown(x: Int, y: Int): Pointer {
         val pointerId = firstUnusedPointerId()
@@ -238,7 +254,7 @@ open class UinputTouchDevice(
     /**
      * A single pointer interacting with the screen. This class simplifies the interactions by
      * removing the need to separately manage the pointer id.
-     * Works in the screen coordinate space.
+     * Works in the screen (logical display) coordinate space.
      */
     inner class Pointer(
         private val id: Int,

@@ -24,13 +24,16 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
+import android.app.AlertDialog;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
+import android.view.inputmethod.cts.util.TestUtils;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -49,47 +52,29 @@ import java.util.concurrent.atomic.AtomicReference;
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public final class ImeSwitchingTest extends EndToEndImeTestBase {
-    static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
 
     @Test
     public void testSwitchingIme() throws Exception {
-        final var instrumentation = InstrumentationRegistry.getInstrumentation();
-        try (var session1 = MockImeSession.create(
-                instrumentation.getContext(),
-                instrumentation.getUiAutomation(), new ImeSettings.Builder());
-                var session2 = MockImeSession.create(
-                        instrumentation.getContext(),
-                        instrumentation.getUiAutomation(),
-                        new ImeSettings.Builder()
-                                .setMockImePackageName(MockImePackageNames.MockIme2)
-                                .setSuppressResetIme(true))) {
-            var stream1 = session1.openEventStream();
-            var stream2 = session2.openEventStream();
-            final String marker = getTestMarker();
-            TestActivity.startSync(activity-> {
-                final LinearLayout layout = new LinearLayout(activity);
-                layout.setOrientation(LinearLayout.VERTICAL);
+        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+            final var stream1 = session1.openEventStream();
+            final var stream2 = session2.openEventStream();
 
-                final EditText editText = new EditText(activity);
-                editText.setPrivateImeOptions(marker);
-                editText.setHint("editText");
-                editText.requestFocus();
-                layout.addView(editText);
-                return layout;
-            });
-
+            // Make sure that MockIme2 eventually starts the input connection.
             expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
-            stream1.skipAll();
 
+            // Then switch to MockIme1
+            stream1.skipAll();
             expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
             expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
 
             expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
             expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
-        }
+        });
     }
 
     /**
@@ -99,27 +84,108 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
      */
     @Test
     public void testImeRemainsVisibleAfterSwitchingIme() throws Exception {
+        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+            final var stream1 = session1.openEventStream();
+            final var stream2 = session2.openEventStream();
+
+            // Make sure that MockIme2 eventually becomes visible
+            expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+            runOnMainSync(() -> editText
+                    .getContext()
+                    .getSystemService(InputMethodManager.class)
+                    .showSoftInput(editText, 0));
+            expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Then switch to MockIme1
+            stream1.skipAll();
+            expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
+            expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
+
+            // Make sure that MockIme1 eventually becomes visible
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        });
+    }
+
+    /**
+     * Verifies that the current IME is unbound and destroyed immediately after switching to
+     * different IME, even if the current client doesn't have input focus.
+     */
+    @Test
+    public void testImeUnboundAfterSwitchingWithoutInputFocus() throws Exception {
+        testWithActivityAndTwoImes((session1, session2, editText, marker) -> {
+            final var stream1 = session1.openEventStream();
+            final var stream2 = session2.openEventStream();
+
+            // Make sure that MockIme2 eventually becomes visible
+            expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+            runOnMainSync(() -> editText
+                    .getContext()
+                    .getSystemService(InputMethodManager.class)
+                    .showSoftInput(editText, 0));
+            expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            final AtomicReference<AlertDialog> alertDialogRef = new AtomicReference<>();
+            runOnMainSync(() -> {
+                final var dialog = new AlertDialog.Builder(editText.getContext()).create();
+                dialog.show();
+                alertDialogRef.set(dialog);
+            });
+
+            TestUtils.waitOnMainUntil(() -> !editText.hasWindowFocus(), TIMEOUT,
+                    "Test activity shouldn't be focused");
+
+            // Then switch to MockIme1
+            stream1.skipAll();
+            expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
+            // MockIme2 should be destroyed immediately after switching, even when the
+            // current client doesn't have input focus.
+            expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
+
+            // Dismiss dialog to give input focus back to the client, so we can bind
+            // and start the new IME.
+            alertDialogRef.get().dismiss();
+
+            // Make sure that MockIme1 eventually becomes visible
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+        });
+    }
+
+    /**
+     * Starts the test activity with MockIme1 and MockIme2 enabled, and MockIme2 selected as the
+     * current IME, and then runs the given test code.
+     *
+     * @param testRunnable the test code to run.
+     */
+    private void testWithActivityAndTwoImes(@NonNull TestRunnable testRunnable) throws Exception {
         final var instrumentation = InstrumentationRegistry.getInstrumentation();
         try (var session1 = MockImeSession.create(
                 instrumentation.getContext(),
-                instrumentation.getUiAutomation(), new ImeSettings.Builder());
+                instrumentation.getUiAutomation(),
+                new ImeSettings.Builder()
+                        .setSuppressSetIme(true));
                 var session2 = MockImeSession.create(
-                         instrumentation.getContext(),
-                         instrumentation.getUiAutomation(),
-                         new ImeSettings.Builder()
-                                 .setMockImePackageName(MockImePackageNames.MockIme2)
-                                 .setSuppressResetIme(true))) {
-            var stream1 = session1.openEventStream();
-            var stream2 = session2.openEventStream();
+                        instrumentation.getContext(),
+                        instrumentation.getUiAutomation(),
+                     new ImeSettings.Builder()
+                             .setMockImePackageName(MockImePackageNames.MockIme2)
+                             .setSuppressResetIme(true))) {
             final String marker = getTestMarker();
 
             // Launch an Activity that shows up an IME.
-            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
-            TestActivity.startSync(activity-> {
-                final LinearLayout layout = new LinearLayout(activity);
+            final var editTextRef = new AtomicReference<EditText>();
+            TestActivity.startSync(activity -> {
+                final var layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
-                final EditText editText = new EditText(activity);
+                final var editText = new EditText(activity);
                 editText.setPrivateImeOptions(marker);
                 editText.setHint("editText");
                 editText.requestFocus();
@@ -129,24 +195,26 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
                 return layout;
             });
 
-            // Make sure that MockIme2 eventually becomes visible
-            expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
-            runOnMainSync(() -> editTextRef.get()
-                    .getContext()
-                    .getSystemService(InputMethodManager.class)
-                    .showSoftInput(editTextRef.get(), 0));
-            expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeVisible(TIMEOUT);
-
-            // Then switch to MockIme1
-            stream1.skipAll();
-            expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
-
-            // Make sure that MockIme2 eventually becomes visible
-            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
-            expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
-            expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
-            expectImeVisible(TIMEOUT);
+            testRunnable.run(session1, session2, editTextRef.get(), marker);
         }
+    }
+
+    /**
+     * A functional interface representing the code to test with two IMEs and an EditText
+     * from the launched activity.
+     */
+    @FunctionalInterface
+    private interface TestRunnable {
+
+        /**
+         * Runs the test code with the given IMEs and EditText reference.
+         *
+         * @param session1 the first mock IME session.
+         * @param session2 the second mock IME session.
+         * @param editText the EditText from the launched test activity.
+         * @param marker   the EditText test marker.
+         */
+        void run(@NonNull MockImeSession session1, @NonNull MockImeSession session2,
+                @NonNull EditText editText, @NonNull String marker) throws Exception;
     }
 }

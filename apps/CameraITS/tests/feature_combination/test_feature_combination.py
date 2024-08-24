@@ -265,7 +265,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Verify FPS by inspecting the result metadata
               capture_results = recording_obj['captureMetadata']
-              assert len(capture_results) > 1
+              if len(capture_results) <= 1:
+                raise AssertionError(
+                    f'{combination_name}: captureMetadata has only '
+                    f'{len(capture_results)} frames')
               last_t = capture_results[-1]['android.sensor.timestamp']
               first_t = capture_results[0]['android.sensor.timestamp']
               avg_frame_duration = (
