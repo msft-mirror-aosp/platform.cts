@@ -78,6 +78,10 @@ public class PackageInstallerCujTestBase {
     public static final String TEST_APP_LABEL = "Installer CUJ Test App";
     public static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =
+            "CtsInstallerCujTestNoLauncherActivityApp.apk";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME =
+            "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
@@ -382,10 +386,15 @@ public class PackageInstallerCujTestBase {
     /**
      * Install the test apk with update-ownership.
      */
-    public static void installTestPackageWithUpdateOwnership() throws IOException {
+    public static void installTestPackageWithUpdateOwnership() throws Exception {
         SystemUtil.runShellCommand("pm install -t  --update-ownership "
                 + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
         assertTestPackageInstalled();
+
+        // assert the updateOwner package name is com.android.shell
+        final String updateOwnerPackageName = sPackageManager.getInstallSourceInfo(
+                TEST_APP_PACKAGE_NAME).getUpdateOwnerPackageName();
+        assertThat(updateOwnerPackageName).isEqualTo("com.android.shell");
     }
 
     /**
@@ -402,6 +411,15 @@ public class PackageInstallerCujTestBase {
      */
     public static void installTestPackage() throws IOException {
         installPackage(TEST_APK_NAME);
+        assertTestPackageInstalled();
+    }
+
+    /**
+     * Install the test apk that has no launcher activity
+     * {@link #TEST_NO_LAUNCHER_ACTIVITY_APK_NAME}.
+     */
+    public static void installNoLauncherActivityTestPackage() throws IOException {
+        installPackage(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
         assertTestPackageInstalled();
     }
 

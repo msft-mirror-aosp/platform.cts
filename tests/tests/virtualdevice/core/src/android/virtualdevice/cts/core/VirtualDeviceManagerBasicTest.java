@@ -20,7 +20,7 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
-import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
@@ -742,7 +742,7 @@ public class VirtualDeviceManagerBasicTest {
             dynamicPolicies.add(POLICY_TYPE_CLIPBOARD);
         }
         if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
-            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR);
+            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY);
         }
         return dynamicPolicies;
     }

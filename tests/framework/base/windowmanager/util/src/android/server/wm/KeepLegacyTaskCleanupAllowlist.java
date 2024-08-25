@@ -43,7 +43,6 @@ public class KeepLegacyTaskCleanupAllowlist {
     // ***********************************************************************************
     @Deprecated
     private static final List<String> ALLOWLIST = Arrays.asList(
-            "android.app.usage.cts.UsageReportingTest",
             "android.car.cts.builtin.app.ActivityManagerHelperTest",
             "android.car.cts.builtin.app.KeyguardManagerHelperTest",
             "android.car.cts.builtin.app.TaskInfoHelperTest",
