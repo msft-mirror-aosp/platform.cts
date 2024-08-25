@@ -42,6 +42,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
+import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
 
@@ -62,6 +63,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 @RunWith(JUnit4.class)
 public class NfcAdapterTest {
@@ -87,7 +89,7 @@ public class NfcAdapterTest {
         // when creating a mocked adapter.
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
         Assume.assumeNotNull(adapter);
-        Assume.assumeTrue(adapter.enable());
+        Assume.assumeTrue(NfcUtils.enableNfc(adapter, mContext));
         mSavedService = (INfcAdapter) (
             new FieldReader(adapter, adapter.getClass().getDeclaredField("sService")).read());
     }
@@ -396,7 +398,7 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForegroundDynamic() {
-        NfcAdapter adapter = createMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
         assumeTrue(adapter.isObserveModeSupported());
         CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         try {
@@ -415,7 +417,6 @@ public class NfcAdapterTest {
             cardEmulation.setShouldDefaultToObserveModeForService(new ComponentName(mContext,
                     CustomHostApduService.class), false);
         }
-        resetMockedInstance();
     }
 
     @Test
@@ -504,11 +505,10 @@ public class NfcAdapterTest {
             android.permission.flags.Flags.FLAG_WALLET_ROLE_ENABLED})
     public void testDisallowTransaction_walletRoleEnabled() {
         WalletRoleTestUtils.runWithRole(mContext, WalletRoleTestUtils.CTS_PACKAGE_NAME, () -> {
-            NfcAdapter adapter = createMockedInstance();
+            NfcAdapter adapter = getDefaultAdapter();
             assumeTrue(adapter.isObserveModeSupported());
             adapter.setObserveModeEnabled(true);
             Assert.assertTrue(adapter.isObserveModeEnabled());
-            resetMockedInstance();
         });
     }
 
@@ -669,6 +669,8 @@ public class NfcAdapterTest {
             adapter.notifyHceDeactivated();
         }
     }
+
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
     private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
         private final CountDownLatch mTagDetectedCountDownLatch;
 
@@ -679,6 +681,62 @@ public class NfcAdapterTest {
         @Override
         public void onTagConnected(boolean connected, Tag tag) {
             mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onStateUpdated(int state) {
+        }
+
+        @Override
+        public void onApplyRouting(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onNdefRead(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onEnable(@NonNull Consumer<Boolean> isAllowed) {
+        }
+
+        @Override
+        public void onDisable(@NonNull Consumer<Boolean> isAllowed) {
+        }
+
+        @Override
+        public void onBootStarted() {
+        }
+
+        @Override
+        public void onEnableStarted() {
+        }
+
+        @Override
+        public void onDisableStarted() {
+        }
+
+        @Override
+        public void onBootFinished(int status) {
+        }
+
+        @Override
+        public void onEnableFinished(int status) {
+        }
+
+        @Override
+        public void onDisableFinished(int status) {
+        }
+
+        @Override
+        public void onTagDispatch(@NonNull Consumer<Boolean> isSkipped) {
+        }
+
+        @Override
+        public void onRoutingChanged() {
+        }
+
+        @Override
+        public void onHceEventReceived(int action) {
         }
     }
 
