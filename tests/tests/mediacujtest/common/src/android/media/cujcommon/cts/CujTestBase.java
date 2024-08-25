@@ -197,6 +197,7 @@ public class CujTestBase {
     }
     long actualTotalTime = System.currentTimeMillis() - startTime;
     long expectedTotalTime = mListener.getExpectedTotalTime();
+    mListener.onTestCompletion();
     assertEquals((float) expectedTotalTime, (float) actualTotalTime, 30000);
   }
 }

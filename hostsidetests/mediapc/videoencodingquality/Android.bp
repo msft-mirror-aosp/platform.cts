@@ -23,6 +23,7 @@ java_test_host {
     static_libs: [
         "compatibility-host-util",
         "cts-host-utils",
+        "cts-media-videoquality-bdrate-lib",
     ],
     libs: [
         "cts-tradefed",

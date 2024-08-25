@@ -37,7 +37,7 @@ import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
-import static org.testng.Assert.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 import android.app.ActivityManager;
 import android.app.admin.DeviceAdminInfo;
@@ -77,6 +77,7 @@ import com.android.bedstead.harrier.annotations.EnsureHasPrivateProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.harrier.annotations.EnsureHasTvProfile;
 import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.harrier.annotations.EnsureInstrumented;
 import com.android.bedstead.harrier.annotations.EnsureNotDemoMode;
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
@@ -93,6 +94,7 @@ import com.android.bedstead.harrier.annotations.EnsureWifiDisabled;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.EnsureWillNotTakeQuickBugReports;
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports;
+import com.android.bedstead.harrier.annotations.InstrumentationComponent;
 import com.android.bedstead.harrier.annotations.OtherUser;
 import com.android.bedstead.harrier.annotations.RequireAospBuild;
 import com.android.bedstead.harrier.annotations.RequireCnGmsBuild;
@@ -409,6 +411,7 @@ public class DeviceStateTest {
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
     }
 
+    @Test
     @RequirePackageInstalled(value = GMS_CORE_PACKAGE, onUser = ANY)
     public void requirePackageInstalledAnnotation_anyUser_packageIsInstalled() {
         assertThat(TestApis.packages().find(GMS_CORE_PACKAGE).installedOnUsers()).isNotEmpty();
@@ -895,6 +898,7 @@ public class DeviceStateTest {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
     }
 
+    @SuppressWarnings("JUnit4TestNotRun")
     @MostImportantCoexistenceTest(policy = DisallowBluetooth.class)
     public void mostImportantCoexistenceTestAnnotation_hasDpcsWithPermission() {
         assertThat(sDeviceState.testApp(MostImportantCoexistenceTest.MORE_IMPORTANT)
@@ -904,6 +908,7 @@ public class DeviceStateTest {
 
     }
 
+    @SuppressWarnings("JUnit4TestNotRun")
     @MostRestrictiveCoexistenceTest(policy = DisallowBluetooth.class)
     public void mostRestrictiveCoexistenceTestAnnotation_hasDpcsWithPermission() {
         assertThat(sDeviceState.testApp(MostRestrictiveCoexistenceTest.DPC_1)
@@ -1027,8 +1032,8 @@ public class DeviceStateTest {
     @Test
     @IncludePortraitOrientation
     public void includeRunOnPortraitOrientationDevice_orientationIsSet() {
-    assertThat(Display.INSTANCE.getScreenOrientation())
-        .isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
+        assertThat(Display.INSTANCE.getScreenOrientation())
+                .isEqualTo(DisplayProperties.ScreenOrientation.PORTRAIT);
     }
 
     @Test
@@ -1083,6 +1088,20 @@ public class DeviceStateTest {
                 sDeviceState.deviceAdmin("remoteDeviceAdmin1").componentName())).isTrue();
         assertThat(isRemoteDeviceAdmin(
                 sDeviceState.deviceAdmin("remoteDeviceAdmin2").componentName())).isTrue();
+    }
+
+
+    @Test
+    @EnsureTestAppInstalled(
+            query = @Query(packageName = @StringQuery(isEqualTo = TEST_APP_PACKAGE_NAME)))
+    @EnsureInstrumented({
+            @InstrumentationComponent(
+                    packageName = TEST_APP_PACKAGE_NAME,
+                    runnerClass = "androidx.test.runner.AndroidJUnitRunner")
+    })
+    public void ensureTestAppInstrumented_testAppIsInstrumented() {
+        // This test does not assert anything. But will run successfully only when the test app
+        // given by [TEST_APP_PACKAGE_NAME] is successfully instrumented.
     }
 
     private static boolean isRemoteDeviceAdmin(ComponentName componentName) {

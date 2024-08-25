@@ -33,7 +33,6 @@ import com.android.bedstead.nene.annotations.Experimental
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
@@ -893,7 +892,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.W)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

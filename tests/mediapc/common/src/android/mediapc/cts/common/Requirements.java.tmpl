@@ -9,6 +9,7 @@
     {{- else if eq $mt.String "MEASUREMENT_TYPE_INT" -}}INTEGER
     {{- else if eq $mt.String "MEASUREMENT_TYPE_STRING" -}}STRING
     {{- else if eq $mt.String "MEASUREMENT_TYPE_LONG" -}}LONG
+    {{- else if eq $mt.String "MEASUREMENT_TYPE_FLOAT" -}}FLOAT
     {{- else }}{{$mt}}
     {{- end }}_
     {{- if eq $c.String "COMPARISON_EQUAL" -}}EQ
@@ -33,6 +34,7 @@
     {{- else if eq .String "MEASUREMENT_TYPE_INT" -}}Integer
     {{- else if eq .String "MEASUREMENT_TYPE_STRING" -}}String
     {{- else if eq .String "MEASUREMENT_TYPE_LONG" -}}Long
+    {{- else if eq .String "MEASUREMENT_TYPE_FLOAT" -}}Float
     {{- else }}{{.}}
     {{- end }}
 {{- end -}}
@@ -46,6 +48,7 @@
     {{- else if eq .String "MEASUREMENT_TYPE_INT" -}}int
     {{- else if eq .String "MEASUREMENT_TYPE_STRING" -}}String
     {{- else if eq .String "MEASUREMENT_TYPE_LONG" -}}long
+    {{- else if eq .String "MEASUREMENT_TYPE_FLOAT" -}}float
     {{- else }}{{.}}
     {{- end }}
 {{- end -}}
@@ -76,6 +79,7 @@
     {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_INT" -}}{{.RequiredValue.GetIntValue}}
     {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_STRING" -}}"{{.RequiredValue.GetStringValue}}"
     {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_LONG" -}}{{.RequiredValue.GetLongValue}}L
+    {{- else if eq .MeasurementType.String "MEASUREMENT_TYPE_FLOAT" -}}{{printf "%f" .RequiredValue.GetFloatValue}}f
     {{- else }}{{.MeasurementType}}
     {{- end }}
 {{- end -}}
