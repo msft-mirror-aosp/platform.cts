@@ -30,6 +30,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.RemoteException;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Contacts;
@@ -160,6 +161,7 @@ public class PhoneNumberUtilsTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to contacts provider")
     public void testGetMethods() throws RemoteException {
         // Test getStrippedReversed
         assertNull(PhoneNumberUtils.getStrippedReversed(null));

@@ -525,15 +525,15 @@ public abstract class AudioDataPathsBaseActivity
         //
         // Predicates
         //
-        // Ran to completion and results supplied
+        // Ran to completion, maybe with failures
         boolean hasRun(int api) {
-            return mTestResults[api] != null;
+            return mTestStateCode[api] != TESTSTATUS_NOT_RUN;
         }
 
         // Ran and passed the criteria
         boolean hasPassed(int api) {
             boolean passed = false;
-            if (hasRun(api)) {
+            if (hasRun(api) && mTestResults[api] != null) {
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     passed = mTestResults[api].mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
                             && mTestResults[api].mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
@@ -548,10 +548,6 @@ public abstract class AudioDataPathsBaseActivity
         boolean hasError(int api) {
             // TESTSTATUS_NOT_RUN && TESTSTATUS_RUN are not errors
             return mTestStateCode[api] < 0;
-        }
-
-        boolean wasTestValid(int api) {
-            return false;
         }
 
         //
@@ -882,8 +878,15 @@ public abstract class AudioDataPathsBaseActivity
                 }
             }
 
-            TestResults results = mTestResults[api];
-            if (results != null) {
+            TestResults results = mTestResults[api];    // need this (potentially) below.
+            if (!hasRun(api)) {
+                // We didn't run the test for this module
+                textFormatter.appendBreak()
+                        .openBold()
+                        .appendText(getTestStateString(mTestStateCode[api]))
+                        .closeBold();
+            } else if (results != null) {
+                // We (attempted to) run this module. Let's see how it turned out.
                 // we can get null here if the test was cancelled
                 Locale locale = Locale.getDefault();
                 String maxMagString = String.format(
@@ -915,8 +918,6 @@ public abstract class AudioDataPathsBaseActivity
                 }
                 textFormatter.closeTextColor();
 
-                textFormatter.appendText(", ");
-
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     // Do we want a threshold value for jitter in crosstalk tests?
                     boolean passJitter =
@@ -943,8 +944,8 @@ public abstract class AudioDataPathsBaseActivity
                         textFormatter.appendText("Low Gain or Volume.");
                         textFormatter.appendBreak();
                     } else if (results.mPhaseJitter > MAX_SIGNAL_PASS_JITTER) {
-                        // if the signal is absent or really low, the jitter will be high,
-                        // so only call out a high jitter if there seems to be a reasonable signal.
+                        // if the signal is absent or really low, the jitter will be high, so
+                        // only call out a high jitter if there seems to be a reasonable signal.
                         textFormatter.appendText("Noisy or Corrupt Signal.");
                         textFormatter.appendBreak();
                     }
@@ -959,9 +960,12 @@ public abstract class AudioDataPathsBaseActivity
                 textFormatter.closeItalic();
             } else {
                 // results == null
-                textFormatter.appendBreak();
-                textFormatter.appendText("Skipped.");
+                textFormatter.appendBreak()
+                        .openBold()
+                        .appendText("Skipped.")
+                        .closeBold();
             }
+
             textFormatter.closeParagraph();
 
             return textFormatter;
@@ -1347,7 +1351,8 @@ public abstract class AudioDataPathsBaseActivity
         private int countFailures(int api) {
             int numFailed = 0;
             for (TestModule module : mTestModules) {
-                if (module.hasError(api) || !module.hasPassed(api)) {
+                if (module.hasRun(api) // can only fail if it has run
+                        && (module.hasError(api) || !module.hasPassed(api))) {
                     // Ignore MMAP "Inconsistencies"
                     // (we didn't get an MMAP stream so we skipped the test)
                     if (module.mTestStateCode[api]
@@ -1530,7 +1535,9 @@ public abstract class AudioDataPathsBaseActivity
 
                 // Scan until we find a TestModule that starts playing/recording
                 TestModule testModule = mTestModules.get(mTestStep);
-                if (!testModule.hasPassed(mApi)) {
+                // Don't run if it has already been run. This to preserve (possible) error
+                // codes from previous runs
+                if (!testModule.hasRun(mApi)) {
                     int status = startTest(testModule);
                     if (status == TestModule.TESTSTATUS_RUN) {
                         // Allow this test to run to completion.

@@ -322,7 +322,6 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
             int maxOutputSize = (outSizeInMs[0] * frameSize * mActiveEncCfg.mSampleRate) / 1000;
             int thresholdOutputSize =
                     (outSizeInMs[1] * frameSize * mActiveEncCfg.mSampleRate) / 1000;
-            mMaxInputSizeInMs = (outSizeInMs[0] / getCompressionRatio(mMediaType));
             format.setInteger(MediaFormat.KEY_BUFFER_BATCH_MAX_OUTPUT_SIZE, maxOutputSize);
             format.setInteger(MediaFormat.KEY_BUFFER_BATCH_THRESHOLD_OUTPUT_SIZE,
                     thresholdOutputSize);
@@ -331,6 +330,7 @@ public class CodecEncoderBlockModelMultiAccessUnitTest extends CodecEncoderBlock
                 mOutputBuff = eosType ? testA : testB;
                 mOutputBuff.reset();
                 configureCodec(format, true, eosType, true);
+                mMaxInputSizeInMs = (outSizeInMs[0] / getCompressionRatio(mMediaType));
                 mInfoList.clear();
                 mCodec.start();
                 doWork(Integer.MAX_VALUE);

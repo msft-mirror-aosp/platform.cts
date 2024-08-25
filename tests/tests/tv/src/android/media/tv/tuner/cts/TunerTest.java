@@ -520,7 +520,7 @@ public class TunerTest {
         assertNotNull(mTuner);
         int version = TunerVersionChecker.getTunerVersion();
         assertTrue(version >= TunerVersionChecker.TUNER_VERSION_1_0);
-        assertTrue(version <= TunerVersionChecker.TUNER_VERSION_3_0);
+        assertTrue(version <= TunerVersionChecker.TUNER_VERSION_4_0);
     }
 
     @Test
@@ -1690,7 +1690,6 @@ public class TunerTest {
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        FrontendSettings feSettings = createFrontendSettings(info);
 
         // first apply frontend with mTuner to acquire resource
         int res = mTuner.applyFrontend(info);
@@ -1708,11 +1707,11 @@ public class TunerTest {
 
         Message msgTune = new Message();
         msgTune.what = MSG_TUNER_HANDLER_TUNE;
-        msgTune.obj = (Object) feSettings;
+        msgTune.obj = (Object) info;
         tunerHandler.sendMessage(msgTune);
 
         // call mTuner.close in parallel
-        int sleepMS = 1;
+        int sleepMS = 4;
         //int sleepMS = (int) (Math.random() * 3.);
         try {
             Thread.sleep(sleepMS);
@@ -3704,7 +3703,9 @@ public class TunerTest {
                 }
                 case MSG_TUNER_HANDLER_TUNE: {
                     synchronized (mLock) {
-                        FrontendSettings feSettings = (FrontendSettings) msg.obj;
+                        FrontendInfo info = (FrontendInfo) msg.obj;
+                        mHandlersTuner.applyFrontend(info);
+                        FrontendSettings feSettings = createFrontendSettings(info);
                         mResult = mHandlersTuner.tune(feSettings);
                     }
                     break;
