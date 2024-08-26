@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,18 +16,14 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-java_test_host {
-    name: "CtsJvmtiRunTest988HostTestCases",
-    static_libs: ["CtsJvmtiHostTestBase"],
-    jarjar_rules: "jarjar-rules.txt",
-    test_suites: [
-        "cts",
-        "general-tests",
-        "mcts-art",
-        "mts-art",
+android_library {
+    name: "apimapper-helper-device-lib",
+    sdk_version: "current",
+    min_sdk_version: "1",
+    srcs: ["src/**/*.java"],
+    static_libs: [
+        "junit",
+        "error_prone_annotations",
     ],
-    data: [":CtsJvmtiRunTest988DeviceApp"],
-    test_options: {
-        unit_test: false,
-    },
+    manifest: "AndroidManifest.xml",
 }

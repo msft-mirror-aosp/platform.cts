@@ -106,7 +106,9 @@ public class CodecDecoderBlockModelDrmTestBase extends CodecDecoderBlockModelTes
             enqueueEOS(bufferIndex);
             return;
         }
-        mLinearInputBlock.allocateBlock(mCodecName, sampleSize);
+        if (mLinearInputBlock.getOffset() + sampleSize > mLinearInputBlock.getBufferCapacity()) {
+            mLinearInputBlock.allocateBlock(mCodecName, Math.max(sampleSize, 8192));
+        }
         long pts = mExtractor.getSampleTime();
         mExtractor.readSampleData(mLinearInputBlock.getBuffer(), mLinearInputBlock.getOffset());
         int extractorFlags = mExtractor.getSampleFlags();
@@ -141,10 +143,11 @@ public class CodecDecoderBlockModelDrmTestBase extends CodecDecoderBlockModelTes
         request.setPresentationTimeUs(pts);
         request.setFlags(codecFlags);
         request.queue();
-        if (sampleSize > 0 && (codecFlags & (MediaCodec.BUFFER_FLAG_CODEC_CONFIG
-                | MediaCodec.BUFFER_FLAG_PARTIAL_FRAME)) == 0) {
-            mOutputBuff.saveInPTS(pts);
-            mInputCount++;
+        if (sampleSize > 0) {
+            if ((codecFlags & MediaCodec.BUFFER_FLAG_PARTIAL_FRAME) == 0) {
+                mOutputBuff.saveInPTS(pts);
+                mInputCount++;
+            }
             mLinearInputBlock.setOffset(mLinearInputBlock.getOffset() + sampleSize);
         }
     }

@@ -20,7 +20,6 @@ import static android.content.pm.ApplicationInfo.CATEGORY_ACCESSIBILITY;
 import static android.content.pm.ApplicationInfo.CATEGORY_MAPS;
 import static android.content.pm.ApplicationInfo.CATEGORY_PRODUCTIVITY;
 import static android.content.pm.ApplicationInfo.CATEGORY_UNDEFINED;
-import static android.content.pm.ApplicationInfo.FLAG_MULTIARCH;
 import static android.content.pm.ApplicationInfo.FLAG_SUPPORTS_RTL;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -180,7 +179,7 @@ public class ApplicationInfoTest {
                 .getIdentifier("size_48x48", "drawable", getContext().getPackageName());
         assertEquals(resSize4848, applicationInfo.icon);
         assertEquals("android.content.cts.MockApplication", applicationInfo.name);
-        int flags = FLAG_MULTIARCH | FLAG_SUPPORTS_RTL;
+        int flags = FLAG_SUPPORTS_RTL;
         assertEquals(flags, applicationInfo.flags & flags);
         assertEquals(CATEGORY_PRODUCTIVITY, applicationInfo.category);
     }

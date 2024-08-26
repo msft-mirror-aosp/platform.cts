@@ -22,10 +22,12 @@ import android.test.AndroidTestCase;
 
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.util.UUID;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 // methods introduced as hidden in R; first exposed in S
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)

@@ -93,10 +93,6 @@ public class MoveAnimationTests extends WindowManagerTestBase {
         }
 
         public void setContentSquare(int size) {
-            getWindow()
-                    .setLayout(
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT);
             getWindow().setContentView(mContentView, new ViewGroup.LayoutParams(size, size));
 
             WindowManager.LayoutParams attrs = getWindow().getAttributes();
