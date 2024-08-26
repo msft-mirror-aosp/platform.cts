@@ -246,6 +246,45 @@ android_test {
 
 //-----------------------------------------------------------
 android_test {
+    name: "HelloWorldSdk1MajorVersion1WithHigherMinSdk",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk1/**/*.java"],
+    manifest: "AndroidManifestSdk1MajorVersion1WithHigherMinSdk.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSdk1MajorVersion1WithHigherTargetSdk",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk1/**/*.java"],
+    manifest: "AndroidManifestSdk1MajorVersion1WithHigherTargetSdk.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
+    name: "HelloWorldSdk1MajorVersion2WithHigherTargetSdk",
+    defaults: ["hello_world_defaults"],
+    srcs: ["sdk1/**/*.java"],
+    manifest: "AndroidManifestSdk1MajorVersion2WithHigherTargetSdk.xml",
+    test_suites: [
+        "vts10",
+        "general-tests",
+    ],
+    v4_signature: true,
+}
+
+//-----------------------------------------------------------
+android_test {
     name: "HelloWorldSdk2",
     defaults: ["hello_world_defaults"],
     srcs: ["sdk2/**/*.java"],
