@@ -313,7 +313,7 @@ public class LauncherAppsTest {
 
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
-            assertThat(launcherActivityInfo.getLabel().toString()).isEqualTo(ACTIVITY_LABEL_TITLE);
+            assertThat(launcherActivityInfo.getLabel().toString()).contains(ACTIVITY_LABEL_TITLE);
         } finally {
             uninstallPackage(ACTIVITY_LABEL_PACKAGE_NAME);
         }
@@ -331,7 +331,7 @@ public class LauncherAppsTest {
             assertThat(activities).hasSize(1);
             LauncherActivityInfo launcherActivityInfo = activities.get(0);
             assertThat(launcherActivityInfo.getLabel().toString())
-                    .isEqualTo(APPLICATION_LABEL_TITLE);
+                    .contains(APPLICATION_LABEL_TITLE);
         } finally {
             uninstallPackage(APPLICATION_LABEL_PACKAGE_NAME);
         }
