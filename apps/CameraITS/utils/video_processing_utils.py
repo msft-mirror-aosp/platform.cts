@@ -19,6 +19,7 @@
 
 
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -65,6 +66,29 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
+def clamp_preview_sizes(preview_sizes, min_area=0, max_area=math.inf):
+  """Returns a list of preview_sizes with areas between min/max_area.
+
+  Args:
+    preview_sizes: list; sizes to be filtered (ex. "1280x720")
+    min_area: int; optional filter to eliminate sizes <= to the specified
+        area (ex. 640*480).
+    max_area: int; optional filter to eliminate sizes >= to the specified
+        area (ex. 3840*2160).
+  Returns:
+    preview_sizes: list; filtered preview sizes clamped by min/max_area.
+  """
+  size_to_area = lambda size: int(size.split('x')[0])*int(size.split('x')[1])
+  filtered_preview_sizes = [
+      size for size in preview_sizes
+      if max_area >= size_to_area(size) >= min_area]
+  if not filtered_preview_sizes:
+    raise AssertionError('No preview size within the specified area range!')
+  logging.debug(
+      'No preview sizes between %s and %s', min_area, max_area)
+  return filtered_preview_sizes
+
+
 def get_largest_common_preview_video_size(cam, camera_id):
   """Returns the largest, common size between preview and video.
 
@@ -105,14 +129,14 @@ def get_largest_common_preview_video_size(cam, camera_id):
 
 
 def get_lowest_common_preview_video_size(
-    supported_preview_sizes, supported_video_qualities, min_area):
+    supported_preview_sizes, supported_video_qualities, min_area=0):
   """Returns the common, smallest size above minimum in preview and video.
 
   Args:
     supported_preview_sizes: str; preview size (ex. '1920x1080')
     supported_video_qualities: str; video recording quality and id pair
     (ex. '480P:4', '720P:5'')
-    min_area: int; filter to eliminate smaller sizes (ex. 640*480)
+    min_area: int; optional filter to eliminate smaller sizes (ex. 640*480)
   Returns:
     smallest_common_size: str; smallest, common size between preview and video
     smallest_common_video_quality: str; video recording quality such as 480P
