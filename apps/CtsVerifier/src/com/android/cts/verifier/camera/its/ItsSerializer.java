@@ -59,6 +59,7 @@ import java.util.Set;
  */
 public class ItsSerializer {
     public static final String TAG = ItsSerializer.class.getSimpleName();
+    private static final int CAPTURE_INTENT_TEMPLATE_PREVIEW = 1;
 
     private static class MetadataEntry {
         public MetadataEntry(String k, Object v) {
@@ -830,8 +831,16 @@ public class ItsSerializer {
             JSONArray jsonReqs = jsonObjTop.getJSONArray(requestKey);
             requests = new LinkedList<CaptureRequest.Builder>();
             for (int i = 0; i < jsonReqs.length(); i++) {
-                CaptureRequest.Builder templateReq = device.createCaptureRequest(
-                        CameraDevice.TEMPLATE_STILL_CAPTURE);
+                CaptureRequest.Builder templateReq = null;
+                int templateType = CameraDevice.TEMPLATE_STILL_CAPTURE; // Default template
+                JSONObject obj = jsonReqs.getJSONObject(i);
+                if (obj.has("android.control.captureIntent")) {
+                    int captureIntentValue = obj.getInt("android.control.captureIntent");
+                    if (captureIntentValue == CAPTURE_INTENT_TEMPLATE_PREVIEW) {
+                        templateType = CameraDevice.TEMPLATE_PREVIEW;
+                    }
+                }
+                templateReq = device.createCaptureRequest(templateType);
                 requests.add(
                     deserialize(templateReq, jsonReqs.getJSONObject(i)));
             }
