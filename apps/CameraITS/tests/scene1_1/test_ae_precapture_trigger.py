@@ -30,6 +30,7 @@ _AE_CONVERGED = 2
 _AE_LOCKED = 3  # not used in this test
 _AE_FLASHREQUIRED = 4  # not used in this test
 _AE_PRECAPTURE = 5
+_CAPTURE_INTENT_PREVIEW = 1
 _FRAMES_AE_DISABLED = 5
 _FRAMES_PER_ITERATION = 8
 _ITERATIONS_TO_CONVERGE = 5
@@ -80,6 +81,8 @@ class AePrecaptureTest(its_base_test.ItsBaseTest):
       precap_req = capture_request_utils.manual_capture_request(s, e)
       precap_req['android.control.aeMode'] = _AE_INACTIVE
       precap_req['android.control.aePrecaptureTrigger'] = _START_AE_PRECAP_TRIG
+      precap_req[
+          'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
       manual_reqs.append(precap_req)
       caps = cam.do_capture(manual_reqs, fmt)
       for i, cap in enumerate(caps):
@@ -104,6 +107,8 @@ class AePrecaptureTest(its_base_test.ItsBaseTest):
       # Capture auto request with a precapture trigger.
       logging.debug('Auto capture with precapture trigger')
       auto_req['android.control.aePrecaptureTrigger'] = _START_AE_PRECAP_TRIG
+      auto_req[
+          'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
       cap = cam.do_capture(auto_req, fmt)
       state = cap['metadata']['android.control.aeState']
       msg = f'AE state after auto request with precapture trigger: {state}'
@@ -116,6 +121,7 @@ class AePrecaptureTest(its_base_test.ItsBaseTest):
       # Capture some more auto requests, and AE should converge.
       logging.debug('Additional auto captures')
       auto_req['android.control.aePrecaptureTrigger'] = _STOP_AE_PRECAP_TRIG
+      auto_req['android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
       for _ in range(_ITERATIONS_TO_CONVERGE):
         caps = cam.do_capture([auto_req] * _FRAMES_PER_ITERATION, fmt)
         state = caps[-1]['metadata']['android.control.aeState']

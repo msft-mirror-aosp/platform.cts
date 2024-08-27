@@ -33,8 +33,7 @@ private val JUNIT4_ANNOTATION_PREFIXED = arrayOf("org.junit")
 
 private const val API_MAPPER_CLASS_PREFIX = "com/android/xts/apimapper/"
 
-// Assume only the test classes (android.* or com.android.*) or jetpack libs will call
-// android APIs.
+// Assume only classes (android.* or com.android.*) or jetpack libs will call android APIs.
 // TODO(slotus): Use more general rule.
 private val API_CALLER_CLASS_PREFIXES = arrayOf(
     "android/",
@@ -43,6 +42,13 @@ private val API_CALLER_CLASS_PREFIXES = arrayOf(
     "com/google/android/",
     "androidx/",
     "com/androidx/",
+)
+
+// Ignore classes that could introduce a lot of meaningless logs.
+private val MEANINGLESS_API_CALLER_CLASS_PREFIXES = arrayOf(
+    "androidx/test/",
+    "androidx/tracing/Trace",
+    "com/android/tradefed",
 )
 
 // Potential Android API classes.
@@ -151,7 +157,7 @@ private fun String.isApiMapperClass(): Boolean {
 
 private fun String.mayAndroidApiCallerClass(): Boolean {
     // Hooking in this package could cause unexpected errors.
-    if (this.startsWith("androidx/test/")) {
+    if (this.startsWithAny(MEANINGLESS_API_CALLER_CLASS_PREFIXES)) {
         return false
     }
     // Always ignore ApiMapper classes.
@@ -197,6 +203,7 @@ private fun ClassNode.hasJunit4Annotation(classNodes: ClassNodes): Boolean {
                 return true
             }
         }
+        val superName = currentClassNode.superName
         currentClassNode = classNodes.findClass(superName)
     }
     return false
