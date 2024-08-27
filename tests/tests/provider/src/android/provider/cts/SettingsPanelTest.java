@@ -17,12 +17,14 @@
 package android.provider.cts;
 
 import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.provider.Settings;
 import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
@@ -34,6 +36,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -102,7 +105,7 @@ public class SettingsPanelTest {
 
         String currentPackage = mDevice.getCurrentPackageName();
 
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
     }
 
     @Test
@@ -111,7 +114,7 @@ public class SettingsPanelTest {
 
         String currentPackage = mDevice.getCurrentPackageName();
 
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
     }
 
     @Test
@@ -120,67 +123,73 @@ public class SettingsPanelTest {
 
         String currentPackage = mDevice.getCurrentPackageName();
 
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
     }
 
     @Test
     public void volumePanel_doneClosesPanel() {
         assumeTrue(mHasTouchScreen);
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_VOLUME).equals(mSettingsPackage));
         // Launch panel
         launchVolumePanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
 
         // Click the done button
         pressDone();
 
         // Assert that we have left the panel
         currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isNotEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
     }
 
     @Test
     public void nfcPanel_doneClosesPanel() {
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_NFC).equals(mSettingsPackage));
+
         // Launch panel
         launchNfcPanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
 
         // Click the done button
         pressDone();
 
         // Assert that we have left the panel
         currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isNotEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
     }
 
     @Test
     public void wifiPanel_doneClosesPanel() {
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_WIFI).equals(mSettingsPackage));
+
         // Launch panel
         launchWifiPanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
 
         // Click the done button
         pressDone();
 
         // Assert that we have left the panel
         currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isNotEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isNotEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
     }
 
     @Test
     public void volumePanel_seeMoreButton_launchesIntoSettings() {
         assumeTrue(mHasTouchScreen);
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_VOLUME).equals(mSettingsPackage));
         // Launch panel
         launchVolumePanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_VOLUME));
 
         // Click the see more button
         pressSeeMore();
 
-        // Assert that we're still in Settings, on a different page.
+        // Assert that we're in Settings, on a different page.
         currentPackage = mDevice.getCurrentPackageName();
         assertThat(currentPackage).isEqualTo(mSettingsPackage);
         UiObject2 titleView = mDevice.findObject(By.res(mSettingsPackage, RESOURCE_TITLE));
@@ -189,16 +198,18 @@ public class SettingsPanelTest {
 
     @Test
     public void nfcPanel_seeMoreButton_launchesIntoSettings() {
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_NFC).equals(mSettingsPackage));
+
         // Launch panel
         launchNfcPanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_NFC));
 
         // Click the see more button
         assumeTrue(mHasTouchScreen);
         pressSeeMore();
 
-        // Assert that we're still in Settings, on a different page.
+        // Assert that in Settings, on a different page.
         currentPackage = mDevice.getCurrentPackageName();
         assertThat(currentPackage).isEqualTo(mSettingsPackage);
         UiObject2 titleView = mDevice.findObject(By.res(mSettingsPackage, RESOURCE_TITLE));
@@ -207,10 +218,12 @@ public class SettingsPanelTest {
 
     @Test
     public void wifiPanel_seeMoreButton_launchesIntoSettings() {
+        assumeTrue(packageNameForAction(Settings.Panel.ACTION_WIFI).equals(mSettingsPackage));
+
         // Launch panel
         launchWifiPanel();
         String currentPackage = mDevice.getCurrentPackageName();
-        assertThat(currentPackage).isEqualTo(mSettingsPackage);
+        assertThat(currentPackage).isEqualTo(packageNameForAction(Settings.Panel.ACTION_WIFI));
 
         // Click the see more button
         assumeTrue(mHasTouchScreen);
@@ -260,6 +273,16 @@ public class SettingsPanelTest {
     private void pressSeeMore() {
         mDevice.findObject(By.res(mSettingsPackage, RESOURCE_SEE_MORE)).click();
         mDevice.wait(Until.hasObject(By.pkg(mSettingsPackage).depth(0)), TIMEOUT);
+    }
+
+    private String packageNameForAction(String action) {
+        ResolveInfo resolvedInfoForAction = mContext.getPackageManager().resolveActivity(
+                new Intent(action),
+                PackageManager.MATCH_DEFAULT_ONLY);
+        if (resolvedInfoForAction == null) {
+            Assert.fail("No activity to handle action " + action);
+        }
+        return resolvedInfoForAction.activityInfo.packageName;
     }
 
     private boolean isCar() {
