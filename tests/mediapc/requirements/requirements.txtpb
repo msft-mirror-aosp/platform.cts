@@ -3247,12 +3247,34 @@ requirements {
 }
 requirements {
   id: "5.6/H-1-2"
-  description: "- Round-trip audio latency"
+  name: "Round Trip Audio Latency"
+  description: "Round-trip audio latency"
+  is_non_cts_test: true
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "round_trip_audio_latency_ms"
+    value: {
+      description: "Round-trip audio latency in milliseconds"
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST have a round-trip audio latency of 80 milliseconds or less over at least one supported data path."
+      required_values {
+        key: "round_trip_audio_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
   specs {
@@ -3260,6 +3282,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "round_trip_audio_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
   specs {
@@ -3267,17 +3295,45 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "round_trip_audio_latency_ms"
+        value {
+          double_value: 80.0
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.6/H-1-3"
-  description: "- Wired headsets and USB audio devices"
+  name: "Twenty Four Bit Audio"
+  description: "Wired headsets and USB audio devices support 24-bit audio"
+  is_non_cts_test: true
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "twenty_four_bit_audio_supported"
+    value: {
+      description: "Is 24-bit audio supported"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 33
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST support >=24-bit audio for stereo output over 3.5 mm audio jacks if present and over USB audio if supported through the entire data path for low latency and streaming configurations. For the low latency configuration, AAudio should be used by the app in low-latency callback mode. For the streaming configuration, a Java AudioTrack should be used by the app. In both the low latency and streaming configurations, the HAL output sink should accept either AUDIO_FORMAT_PCM_24_BIT, AUDIO_FORMAT_PCM_24_BIT_PACKED, AUDIO_FORMAT_PCM_32_BIT or AUDIO_FORMAT_PCM_FLOAT for its target output format."
+      required_values {
+        key: "twenty_four_bit_audio_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -3285,6 +3341,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values {
+        key: "twenty_four_bit_audio_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
   specs {
@@ -3292,6 +3354,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values {
+        key: "twenty_four_bit_audio_supported"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
@@ -5531,7 +5599,7 @@ requirements {
   }
 }
 requirements {
-  id: "7.1.4/H1-1"
+  id: "7.1.4/H-1-1"
   description: "- Hardware overlays"
 }
 requirements {
@@ -6063,11 +6131,49 @@ requirements {
 }
 requirements {
   id: "7.1.4.1/H-1-2"
+  name: "EGL"
+  description: "Supports EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
+  test_configs: {
+    key: ""
+    value: {
+      description: "Default test config"
+    }
+  }
+  measurements: {
+    key: "egl_img_context_priority"
+    value: {
+      id: "egl_img_context_priority"
+      description: "Is EGL_IMG_context_priority supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
+  measurements: {
+    key: "egl_ext_protected_content"
+    value: {
+      id: "egl_ext_protected_content"
+      description: "Is EGL_EXT_protected_content supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support the EGL_IMG_context_priority and EGL_EXT_protected_content extensions."
+      required_values: {
+        key: "egl_img_context_priority"
+        value: {
+          bool_value: true
+        }
+      }
+      required_values: {
+        key: "egl_ext_protected_content"
+        value: {
+          bool_value: true
+        }
+      }
     }
   }
 }
