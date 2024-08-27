@@ -30,7 +30,6 @@ import android.content.res.Resources.Theme;
 import android.graphics.Color;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.core.graphics.ColorUtils;
@@ -43,7 +42,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-@DisabledOnRavenwood(blockedBy = ColorStateList.class)
 @RunWith(AndroidJUnit4.class)
 public class ColorStateListTest {
     @Rule

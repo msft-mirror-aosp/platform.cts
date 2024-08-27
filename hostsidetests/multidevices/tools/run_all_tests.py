@@ -118,17 +118,16 @@ def main():
 
   # Run tests
   for root, _, files in os.walk(TESTS_DIR):
-    for file in files:
-      if file.endswith('-py-ctsv'):
-        test_name = os.path.splitext(file)[0]
-        test_file_path = os.path.join(root, file)
-        logging.info('Start running test: %s', test_name)
+    for test_file in files:
+      if test_file.endswith('-py-ctsv'):
+        test_file_path = os.path.join(root, test_file)
+        logging.info('Start running test: %s', test_file)
         cmd = [
             test_file_path,  # Use the full path to the test file
             '-c',
             CONFIG_FILE,
             '--testbed',
-            test_name,
+            test_file,
         ]
         summary_file_path = os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE)
 
@@ -142,7 +141,9 @@ def main():
               if match:
                 test_summary = Path(match.group(1))
                 test_artifact = test_summary.parent
-                logging.info('Please check the test artifacts of %s under: %s', test_name, test_artifact)
+                logging.info(
+                    'Please check the test artifacts of %s under: %s', test_file, test_artifact
+                )
                 if test_summary.exists():
                   test_summary_file_list.append(test_summary)
                   test_completed = True

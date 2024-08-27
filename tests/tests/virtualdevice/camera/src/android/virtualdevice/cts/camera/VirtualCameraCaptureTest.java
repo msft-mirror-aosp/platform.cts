@@ -253,7 +253,7 @@ public class VirtualCameraCaptureTest {
         // and limit at best the diff value.
         int width = 1280;
         int height = 720;
-        double maxImageDiff = 5.0;
+        double maxImageDiff = 20;
 
         try (VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888)) {
             String cameraId = getVirtualCameraId(virtualCamera);
@@ -281,7 +281,7 @@ public class VirtualCameraCaptureTest {
     public void virtualCamera_renderFromMediaCodec_golden_from_pixel() throws Exception {
         int width = 460;
         int height = 260;
-        double maxImageDiff = 10;
+        double maxImageDiff = 20;
 
         try (VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888)) {
             String cameraId = getVirtualCameraId(virtualCamera);

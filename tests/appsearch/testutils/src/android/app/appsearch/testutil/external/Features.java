@@ -230,6 +230,15 @@ public interface Features {
             "SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS";
 
     /**
+     * Feature for {@link #isFeatureSupported(String)}. This feature covers {@link
+     * AppSearchBlobHandle}.
+     */
+    // TODO(b/273591938) improve the java doc when we support set blob property in GenericDocument
+    // TODO(b/273591938) unhide the API once it read for API review.
+
+    String BLOB_STORAGE = "BLOB_STORAGE";
+
+    /**
      * Returns whether a feature is supported at run-time. Feature support depends on the feature in
      * question, the AppSearch backend being used and the Android version of the device.
      *

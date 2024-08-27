@@ -1,5 +1,5 @@
 TestBeds:
-  - Name: cts_nfc_hce_multi_device_test
+  - Name: CtsNfcHceMultiDeviceTestCases-py-ctsv
     Controllers:
         AndroidDevice:
           - serial: "<device-id>"

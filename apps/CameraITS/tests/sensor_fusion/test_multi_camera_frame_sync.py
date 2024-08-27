@@ -19,8 +19,7 @@ import threading
 import time
 
 import cv2
-import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy
 
@@ -111,26 +110,26 @@ def _mask_angles_near_extremes(frame_pair_angles):
 
 def _plot_frame_pair_angles(frame_pair_angles, ids, name_with_log_path):
   """Plot the extracted angles."""
-  matplotlib.pyplot.figure('Camera Rotation Angle')
+  plt.figure('Camera Rotation Angle')
   cam0_angles = [i for i, _ in frame_pair_angles]
   cam1_angles = [j for _, j in frame_pair_angles]
-  pylab.plot(range(len(cam0_angles)), cam0_angles, '-r.', alpha=0.5,
-             label=f'{ids[0]}')
-  pylab.plot(range(len(cam1_angles)), cam1_angles, '-g.', alpha=0.5,
-             label=f'{ids[1]}')
-  pylab.legend()
-  pylab.xlabel('Frame number')
-  pylab.ylabel('Rotation angle (degrees)')
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_angles_plot.png')
+  plt.plot(range(len(cam0_angles)), cam0_angles, '-r.', alpha=0.5,
+           label=f'{ids[0]}')
+  plt.plot(range(len(cam1_angles)), cam1_angles, '-g.', alpha=0.5,
+           label=f'{ids[1]}')
+  plt.legend()
+  plt.xlabel('Frame number')
+  plt.ylabel('Rotation angle (degrees)')
+  plt.savefig(f'{name_with_log_path}_angles_plot.png')
 
-  matplotlib.pyplot.figure('Angle Diffs')
+  plt.figure('Angle Diffs')
   angle_diffs = [j-i for i, j in frame_pair_angles]
-  pylab.plot(range(len(angle_diffs)), angle_diffs, '-b.',
-             label=f'cam{ids[1]}-{ids[0]}')
-  pylab.legend()
-  pylab.xlabel('Frame number')
-  pylab.ylabel('Rotation angle difference (degrees)')
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_angle_diffs_plot.png')
+  plt.plot(range(len(angle_diffs)), angle_diffs, '-b.',
+           label=f'cam{ids[1]}-{ids[0]}')
+  plt.legend()
+  plt.xlabel('Frame number')
+  plt.ylabel('Rotation angle difference (degrees)')
+  plt.savefig(f'{name_with_log_path}_angle_diffs_plot.png')
 
 
 class MultiCameraFrameSyncTest(its_base_test.ItsBaseTest):

@@ -25,3 +25,8 @@ class InvalidJarFileException(message: String) : Exception(message)
  * An exception used in generating bytecode.
  */
 class AsmGenException(message: String) : Exception(message)
+
+/**
+ * An exception used in invalid arguments.
+ */
+class ArgumentException(message: String) : Exception(message)

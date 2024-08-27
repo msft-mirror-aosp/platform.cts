@@ -30,22 +30,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class SurfaceViewCtsActivity extends Activity {
-    private MockSurfaceView mSurfaceView;
+    private TestSurfaceView mSurfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // New a MockSurfaceView
-        mSurfaceView = new MockSurfaceView(this);
+        // New a TestSurfaceView
+        mSurfaceView = new TestSurfaceView(this);
         setContentView(mSurfaceView);
     }
 
-    public MockSurfaceView getSurfaceView() {
+    public TestSurfaceView getSurfaceView() {
         return mSurfaceView;
     }
 
-    public class MockSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+    public class TestSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         private static final int FIX_WIDTH = 240;
         private static final int FIX_HEIGHT = 240;
         private static final int BITMAP_WIDTH = 100;
@@ -80,7 +80,7 @@ public class SurfaceViewCtsActivity extends Activity {
 
         Surface mSurface;
 
-        public MockSurfaceView(Context context) {
+        public TestSurfaceView(Context context) {
             super(context);
             mHolder = getHolder();
             mHolder.addCallback(this);
