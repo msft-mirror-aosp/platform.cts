@@ -588,6 +588,18 @@ public class WebViewSslTest extends SharedWebViewTest {
         assertTrue("onReceivedSslError should be called",
                 webViewClient.wasOnReceivedSslErrorCalled());
 
+        // Wait for the page's favicon to be set to avoid disrupting the test:
+        // if the favicon fetch happens after clearSslPreferences then the host
+        // will be allowed again and we may not see the onReceivedSslError call
+        // that we expect. This polls `getFavicon()` so that we will see it even
+        // if the favicon was cached and no network request needed to be made.
+        new PollingCheck(WebkitUtils.TEST_TIMEOUT_MS) {
+            @Override
+            protected boolean check() {
+                return mOnUiThread.getFavicon() != null;
+            }
+        }.run();
+
         // Load the page again. We expect another call to
         // WebViewClient.onReceivedSslError() since we cleared sslpreferences.
         mOnUiThread.clearSslPreferences();
