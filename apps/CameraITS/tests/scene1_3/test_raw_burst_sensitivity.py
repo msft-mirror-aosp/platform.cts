@@ -16,8 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -122,15 +122,14 @@ class RawBurstSensitivityTest(its_base_test.ItsBaseTest):
 
       # Create a plot
       x = range(len(variances))
-      pylab.figure(_NAME)
-      pylab.plot(x, variances, '-ro')
-      pylab.xticks(x)
-      pylab.ticklabel_format(style='sci', axis='y', scilimits=(-6, -6))
-      pylab.xlabel('Setting Combination')
-      pylab.ylabel('Image Center Patch Variance')
-      pylab.title(_NAME)
-      matplotlib.pyplot.savefig(
-          f'{name_with_log_path}_variances.png')
+      plt.figure(_NAME)
+      plt.plot(x, variances, '-ro')
+      plt.xticks(x)
+      plt.ticklabel_format(style='sci', axis='y', scilimits=(-6, -6))
+      plt.xlabel('Setting Combination')
+      plt.ylabel('Image Center Patch Variance')
+      plt.title(_NAME)
+      plt.savefig(f'{name_with_log_path}_variances.png')
 
       # Find average variance at each step
       vars_step_means = []

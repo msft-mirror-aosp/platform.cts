@@ -110,8 +110,8 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
             assertEquals(TestUtils.TEST_PHONE_ACCOUNT_HANDLE, defaultOutgoing);
         } finally {
             // Restore the default outgoing phone account.
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    previousOutgoingPhoneAccount);
+            runWithShellPermissionIdentity(() -> mTelecomManager
+                    .setUserSelectedOutgoingPhoneAccount(previousOutgoingPhoneAccount));
         }
     }
 
@@ -142,8 +142,8 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
 
         // Clear the default outgoing phone account; this is the same as saying "ask every time" in
         // the user settings.
-        TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                null /* clear default */);
+        runWithShellPermissionIdentity(() ->
+                mTelecomManager.setUserSelectedOutgoingPhoneAccount(null));
         try {
             // Register another TEL URI phone account; since we expect devices to have at minimum
             // 1 sim, this ensures that we have a scenario where there are multiple potential
@@ -160,8 +160,8 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
             assertEquals(null, defaultOutgoing);
         } finally {
             // Restore the default outgoing phone account.
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    previousOutgoingPhoneAccount);
+            runWithShellPermissionIdentity(() -> mTelecomManager
+                    .setUserSelectedOutgoingPhoneAccount(previousOutgoingPhoneAccount));
         }
     }
 
@@ -188,8 +188,9 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
 
         // Clear the default outgoing phone account; this is the same as saying "ask every time" in
         // the user settings.
-        TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                null /* clear default */);
+        runWithShellPermissionIdentity(() -> mTelecomManager
+                .setUserSelectedOutgoingPhoneAccount(null));
+
 
         try {
             // Lets register a new phone account using a test URI scheme 'foobuzz' (this avoids
@@ -224,8 +225,8 @@ public class DefaultPhoneAccountTest extends BaseTelecomTestWithMockServices {
             mTelecomManager.unregisterPhoneAccount(TestUtils.TEST_DEFAULT_PHONE_ACCOUNT_HANDLE_2);
 
             // Restore the default outgoing phone account.
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    previousOutgoingPhoneAccount);
+            runWithShellPermissionIdentity(() -> mTelecomManager
+                    .setUserSelectedOutgoingPhoneAccount(previousOutgoingPhoneAccount));
         }
     }
 
