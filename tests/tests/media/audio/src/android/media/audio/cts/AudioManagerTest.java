@@ -925,6 +925,13 @@ public class AudioManagerTest {
         // set mode to SILENT
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
         assertStreamMuteStateChange(() -> mAudioManager.setRingerMode(RINGER_MODE_SILENT),
                 expectedTransitionsSilentMode,
                 "RING/NOTIF should mute in SILENT");
@@ -1693,6 +1700,14 @@ public class AudioManagerTest {
 
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
+
         Map<Integer, MuteStateTransition> expectedSilentTransition = Map.of(
                 STREAM_MUSIC, new MuteStateTransition(false, false),
                 STREAM_SYSTEM, new MuteStateTransition(false, true),
