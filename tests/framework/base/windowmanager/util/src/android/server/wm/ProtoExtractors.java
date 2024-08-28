@@ -20,6 +20,10 @@ import android.app.WindowConfiguration;
 import android.content.res.Configuration;
 import android.graphics.Rect;
 
+import perfetto.protos.Configuration.ConfigurationProto;
+import perfetto.protos.Rect.RectProto;
+import perfetto.protos.WindowConfiguration.WindowConfigurationProto;
+
 /**
  * Utility class for extracting some common framework object from nano proto objects.
  * Normally the extractors will be in the framework object class, but we don't want the framework to
@@ -28,6 +32,51 @@ import android.graphics.Rect;
  * outside of CTS.
  */
 public class ProtoExtractors {
+    /**
+     * Extracts a {link Configuration} from a corresponding proto.
+     */
+    public static Configuration extract(ConfigurationProto proto) {
+        final Configuration config = new Configuration();
+        if (proto == null) {
+            return config;
+        }
+        config.windowConfiguration.setTo(extract(proto.getWindowConfiguration()));
+        config.densityDpi = proto.getDensityDpi();
+        config.orientation = proto.getOrientation();
+        config.screenHeightDp = proto.getScreenHeightDp();
+        config.screenWidthDp = proto.getScreenWidthDp();
+        config.smallestScreenWidthDp = proto.getSmallestScreenWidthDp();
+        config.screenLayout = proto.getScreenLayout();
+        config.uiMode = proto.getUiMode();
+        return config;
+    }
+
+    /**
+     * Extracts a {link WindowConfiguration} from a corresponding proto.
+     */
+    public static WindowConfiguration extract(WindowConfigurationProto proto) {
+        final WindowConfiguration config = new WindowConfiguration();
+        if (proto == null) {
+            return config;
+        }
+        config.setAppBounds(extract(proto.getAppBounds()));
+        config.setBounds(extract(proto.getBounds()));
+        config.setMaxBounds(extract(proto.getMaxBounds()));
+        config.setWindowingMode(proto.getWindowingMode());
+        config.setActivityType(proto.getActivityType());
+        return config;
+    }
+
+    /**
+     * Extracts a {link Rect} from a corresponding proto.
+     */
+    public static Rect extract(RectProto proto) {
+        if (proto == null) {
+            return null;
+        }
+        return new Rect(proto.getLeft(), proto.getTop(), proto.getRight(), proto.getBottom());
+    }
+
     /**
      * Extracts a {link Configuration} from a corresponding proto.
      */

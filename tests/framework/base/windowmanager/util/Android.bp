@@ -51,6 +51,7 @@ java_test_helper_library {
         "hamcrest-library",
         "CtsMockInputMethodLib",
         "com.android.window.flags.window-aconfig-java",
+        "perfetto_winscope-lite",
     ],
 
     sdk_version: "test_current",
