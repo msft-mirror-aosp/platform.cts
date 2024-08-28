@@ -159,6 +159,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
 
     private static final String CONFIG_CHANGEABLE_VOLUME = "config_changeable_volume";
 
+    private static final String CONFIG_SUPPORTS_BUBBLE = "config_supports_bubble";
+
     /**
      * The config to represent that a test is only needed to run in the main display mode (i.e.
      * unfolded).
@@ -547,6 +549,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
                                 context, SensorPrivacyManager.Sensors.CAMERA);
                     case CONFIG_CHANGEABLE_VOLUME:
                         return !getSystemResourceFlag(context, "config_useFixedVolume");
+                    case CONFIG_SUPPORTS_BUBBLE:
+                        return getSystemResourceFlag(context, "config_supportsBubble");
                     default:
                         break;
                 }
