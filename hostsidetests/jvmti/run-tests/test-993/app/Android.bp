@@ -18,6 +18,6 @@ package {
 
 android_test_helper_app {
     name: "CtsJvmtiRunTest993DeviceApp",
-    defaults: ["cts-run-jvmti-defaults"],
+    defaults: ["cts-run-jvmti-app-defaults"],
     manifest: "AndroidManifest.xml",
 }

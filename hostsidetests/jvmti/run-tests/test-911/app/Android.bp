@@ -18,9 +18,9 @@ package {
 
 android_test_helper_app {
     name: "CtsJvmtiRunTest911DeviceApp",
-    defaults: ["cts-run-jvmti-defaults"],
+    defaults: ["cts-run-jvmti-app-defaults"],
     manifest: "AndroidManifest.xml",
     optimize: {
         enabled: false,
-    }
+    },
 }
