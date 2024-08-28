@@ -21,6 +21,8 @@ java_defaults {
     test_suites: [
         "cts",
         "general-tests",
+        "mcts-art",
+        "mts-art",
     ],
     test_options: {
         unit_test: false,
