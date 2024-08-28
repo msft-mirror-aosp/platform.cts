@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2024 The Android Open Source Project
  *
@@ -13,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:JvmName("ApiMapperMain")
 
-package com.android.xts.apimapper.asm
+package com.android.xts.apimapper
 
-/**
- * An exception related to invalid jar files.
- */
-class InvalidJarFileException(message: String) : Exception(message)
+import kotlin.system.exitProcess
 
-/**
- * An exception used in generating bytecode.
- */
-class AsmGenException(message: String) : Exception(message)
-
-/**
- * An exception used in invalid arguments.
- */
-class ArgumentException(message: String) : Exception(message)
+/** The entry point of the ApiMapper tool. */
+fun main(args: Array<String>) {
+    var success = false
+    try {
+        ApiMapper(args).run()
+        success = true
+    } catch (e: Throwable) {
+        e.printStackTrace()
+    }
+    exitProcess(if (success) 0 else 1 )
+}

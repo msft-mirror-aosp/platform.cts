@@ -429,10 +429,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
         // Assert that we have entered PIP and that the aspect ratio is correct
-        final Rect bounds = getPinnedStackBounds();
-        final Rational aspectRatio = new Rational(1, 4);
-        assertTrue(bounds + " matches " + aspectRatio,
-                PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+        assertValidAspectRatio(1, 4);
     }
 
     @Test
@@ -502,6 +499,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         mBroadcastActionTrigger.changeAspectRatio(newNumerator, newDenominator);
 
         waitForValidAspectRatio(newNumerator, newDenominator);
+        assertValidAspectRatio(newNumerator, newDenominator);
     }
 
     private void testEnterPipAspectRatio(int num, int denom) {
@@ -517,10 +515,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackExists();
 
         // Assert that we have entered PIP and that the aspect ratio is correct
-        Rect pinnedStackBounds = getPinnedStackBounds();
-        final Rational aspectRatio = new Rational(num, denom);
-        assertTrue(pinnedStackBounds + " matches " + aspectRatio,
-                PictureInPictureParams.isSameAspectRatio(pinnedStackBounds, aspectRatio));
+        assertValidAspectRatio(num, denom);
     }
 
     @Test
@@ -545,10 +540,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
         waitForValidAspectRatio(num, denom);
-        Rect bounds = getPinnedStackBounds();
-        final Rational aspectRatio = new Rational(num, denom);
-        assertTrue(bounds + " matches " + aspectRatio,
-                PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+        assertValidAspectRatio(num, denom);
     }
 
     @Test
@@ -604,11 +596,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         // Wait for animation complete since we are comparing aspect ratio
         waitForEnterPipAnimationComplete(PIP_ACTIVITY);
         assertPinnedStackExists();
-        Rect pinnedStackBounds = getPinnedStackBounds();
-        final Rational aspectRatio = new Rational(
-                MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
-        assertTrue(pinnedStackBounds + " matches " + aspectRatio,
-                PictureInPictureParams.isSameAspectRatio(pinnedStackBounds, aspectRatio));
+        assertValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
     }
 
     @Test
@@ -835,11 +823,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         assertPinnedStackExists();
 
         waitForValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
-        Rect bounds = getPinnedStackBounds();
-        final Rational aspectRatio = new Rational(
-                MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
-        assertTrue(bounds + " matches " + aspectRatio,
-                PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
+        assertValidAspectRatio(MAX_ASPECT_RATIO_NUMERATOR, MAX_ASPECT_RATIO_DENOMINATOR);
     }
 
     @Test
@@ -1889,6 +1873,17 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
     private int getDisplayAreaWindowingMode(ComponentName activityName) {
         return mWmState.getTaskDisplayArea(activityName).getWindowingMode();
+    }
+
+    /**
+     * Assers that the pinned stack bounds are of the aspect ratio given
+     * by the numberator and the denominator, within some allowed margin of error.
+     */
+    private void assertValidAspectRatio(int num, int denom) {
+        final Rect bounds = getPinnedStackBounds();
+        final Rational aspectRatio = new Rational(num, denom);
+        assertTrue(bounds + " matches " + aspectRatio,
+                PictureInPictureParams.isSameAspectRatio(bounds, aspectRatio));
     }
 
     /**

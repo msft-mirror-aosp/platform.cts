@@ -201,7 +201,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = ColorStateList.class)
     public void testGetColorStateList() {
         try {
             mResources.getColorStateList(-1);
@@ -217,7 +216,6 @@ public class ResourcesTest {
     }
 
     @Test
-    @DisabledOnRavenwood(blockedBy = ColorStateList.class)
     public void testGetColorStateListThrows() {
         try {
             // XML that's not a selector or gradient throws
