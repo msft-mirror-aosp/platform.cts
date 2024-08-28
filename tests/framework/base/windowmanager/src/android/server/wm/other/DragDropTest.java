@@ -269,6 +269,7 @@ public class DragDropTest extends WindowManagerTestBase {
             MotionEvent event = MotionEvent.obtain(downTime, downTime, action,
                     destLoc[0] * mInvCompatScale + offset, destLoc[1] * mInvCompatScale + offset,
                     1);
+            event.setDisplayId(mActivity.getDisplay().getDisplayId());
             event.setSource(InputDevice.SOURCE_MOUSE);
             mAutomation.injectInputEvent(event, false);
         });
