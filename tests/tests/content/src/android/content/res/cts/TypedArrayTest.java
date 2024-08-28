@@ -28,7 +28,6 @@ import android.content.Context;
 import android.content.cts.R;
 import android.content.cts.util.XmlUtils;
 import android.content.pm.ActivityInfo;
-import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
@@ -189,6 +188,9 @@ public class TypedArrayTest {
         assertEquals(EXPECTED_COLOR,
                 t.getColor(R.styleable.style1_type3, DEFINT));
 
+        assertEquals(EXPECTED_COLOR_STATE,
+                t.getColorStateList(R.styleable.style1_type4).getDefaultColor());
+
         // This get values equals attribute dimension value set in styles.xml
         // multiplied by the appropriate metric, the metric is unknown.
         assertEquals(EXPECTED_DIMENSION,
@@ -273,16 +275,6 @@ public class TypedArrayTest {
 
         final Typeface font = t.getFont(R.styleable.style1_type18);
         assertEquals(getContext().getResources().getFont(R.font.sample_regular_font), font);
-    }
-
-    @Test
-    @DisabledOnRavenwood(blockedBy = ColorStateList.class)
-    public void testGetColorStateAttributes() {
-        final TypedArray t = getContext().getTheme().obtainStyledAttributes(
-                R.style.Whatever, R.styleable.style1);
-
-        assertEquals(EXPECTED_COLOR_STATE,
-                t.getColorStateList(R.styleable.style1_type4).getDefaultColor());
     }
 
     @Test

@@ -71,9 +71,6 @@ import android.media.CamcorderProfile;
 import android.media.Image;
 import android.media.ImageReader;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
-import android.mediapc.cts.common.RequiredMeasurement;
-import android.mediapc.cts.common.Requirement;
-import android.mediapc.cts.common.RequirementConstants;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.CameraConcurrentRearFrontStreamingRequirement;
 import android.mediapc.cts.common.Requirements.CameraDynamicRange10BitRequirement;
@@ -136,7 +133,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -3388,85 +3384,6 @@ public class ExtendedCameraCharacteristicsTest extends Camera2AndroidTestCase {
             // device and camera orientation should either be both portrait, or both landscape
             assertEquals("Camera " + allCameraIds[i] + "'s long dimension must "
                     + "align with screen's long dimension", isDevicePortrait, isCameraPortrait);
-        }
-    }
-
-    /**
-     * Camera hardware level requirement for Media Performance Class
-     */
-    public static class PrimaryCameraHwLevelReq extends Requirement {
-        private static final String TAG = PrimaryCameraHwLevelReq.class.getSimpleName();
-
-        /**
-         * Creates a >= predicate for camera hardware level
-         */
-        private static BiPredicate<Integer, Integer> camHwLevelGte() {
-            return new BiPredicate<Integer, Integer>() {
-                @Override
-                public boolean test(Integer actual, Integer expected) {
-                    return StaticMetadata.hardwareLevelPredicate(actual, expected);
-                }
-
-                @Override
-                public String toString() {
-                    return "Camera Hardware Level Greater than or equal to";
-                }
-            };
-        }
-        private static final BiPredicate<Integer, Integer> CAM_HW_LEVEL_GTE = camHwLevelGte();
-        private PrimaryCameraHwLevelReq(String id, RequiredMeasurement<?> ... reqs) {
-            super(id, reqs);
-        }
-
-        public void setPrimaryRearCameraHwlLevel(Integer hwLevel) {
-            this.setMeasuredValue(RequirementConstants.REAR_CAMERA_HWL_LEVEL, hwLevel);
-        }
-
-        public void setPrimaryFrontCameraHwlLevel(Integer hwLevel) {
-            this.setMeasuredValue(RequirementConstants.FRONT_CAMERA_HWL_LEVEL, hwLevel);
-        }
-
-        /**
-         * [2.2.7.2/7.5/H-1-3] MUST support android.info.supportedHardwareLevel property as FULL or
-         * better for back primary and LIMITED or better for front primary camera.
-         */
-        public static PrimaryCameraHwLevelReq createPrimaryCameraHwLevelReq() {
-            RequiredMeasurement<Integer> rearCameraHwlLevel = RequiredMeasurement
-                    .<Integer>builder()
-                    .setId(RequirementConstants.REAR_CAMERA_HWL_LEVEL)
-                    .setPredicate(CAM_HW_LEVEL_GTE)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.R,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.S,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.TIRAMISU,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_FULL)
-                    .build();
-            RequiredMeasurement<Integer> frontCameraHwlLevel = RequiredMeasurement
-                    .<Integer>builder()
-                    .setId(RequirementConstants.FRONT_CAMERA_HWL_LEVEL)
-                    .setPredicate(CAM_HW_LEVEL_GTE)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.R,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.S,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.TIRAMISU,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                    .addRequiredValue(
-                            Build.VERSION_CODES.UPSIDE_DOWN_CAKE,
-                            CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL_LIMITED)
-                    .build();
-            return new PrimaryCameraHwLevelReq(RequirementConstants.R7_5__H_1_3,
-                    rearCameraHwlLevel, frontCameraHwlLevel);
         }
     }
 
