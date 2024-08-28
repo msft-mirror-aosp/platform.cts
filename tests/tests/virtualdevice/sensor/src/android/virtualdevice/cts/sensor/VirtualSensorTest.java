@@ -38,7 +38,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
-import android.annotation.Nullable;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.sensor.VirtualSensor;
@@ -62,6 +61,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.system.ErrnoException;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
