@@ -44,42 +44,14 @@ import android.content.ComponentName;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.nano.RectProto;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import android.util.SparseArray;
 import android.view.WindowInsets;
-import android.view.nano.DisplayInfoProto;
-import android.view.nano.InsetsSourceProto;
 import android.view.nano.ViewProtoEnums;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import com.android.server.wm.nano.ActivityRecordProto;
-import com.android.server.wm.nano.AppTransitionProto;
-import com.android.server.wm.nano.BackNavigationProto;
-import com.android.server.wm.nano.ConfigurationContainerProto;
-import com.android.server.wm.nano.DisplayAreaProto;
-import com.android.server.wm.nano.DisplayContentProto;
-import com.android.server.wm.nano.DisplayFramesProto;
-import com.android.server.wm.nano.DisplayRotationProto;
-import com.android.server.wm.nano.IdentifierProto;
-import com.android.server.wm.nano.InsetsSourceProviderProto;
-import com.android.server.wm.nano.KeyguardControllerProto;
-import com.android.server.wm.nano.KeyguardServiceDelegateProto;
-import com.android.server.wm.nano.PinnedTaskControllerProto;
-import com.android.server.wm.nano.RootWindowContainerProto;
-import com.android.server.wm.nano.TaskFragmentProto;
-import com.android.server.wm.nano.TaskProto;
-import com.android.server.wm.nano.WindowContainerChildProto;
-import com.android.server.wm.nano.WindowContainerProto;
-import com.android.server.wm.nano.WindowFramesProto;
-import com.android.server.wm.nano.WindowManagerServiceDumpProto;
-import com.android.server.wm.nano.WindowStateAnimatorProto;
-import com.android.server.wm.nano.WindowStateProto;
-import com.android.server.wm.nano.WindowSurfaceControllerProto;
-import com.android.server.wm.nano.WindowTokenProto;
 
 import com.google.protobuf.nano.InvalidProtocolBufferNanoException;
 
@@ -170,13 +142,13 @@ public class WindowManagerState {
 
     static String appStateToString(int appState) {
         switch (appState) {
-            case AppTransitionProto.APP_STATE_IDLE:
+            case com.android.server.wm.nano.AppTransitionProto.APP_STATE_IDLE:
                 return "APP_STATE_IDLE";
-            case AppTransitionProto.APP_STATE_READY:
+            case com.android.server.wm.nano.AppTransitionProto.APP_STATE_READY:
                 return "APP_STATE_READY";
-            case AppTransitionProto.APP_STATE_RUNNING:
+            case com.android.server.wm.nano.AppTransitionProto.APP_STATE_RUNNING:
                 return "APP_STATE_RUNNING";
-            case AppTransitionProto.APP_STATE_TIMEOUT:
+            case com.android.server.wm.nano.AppTransitionProto.APP_STATE_TIMEOUT:
                 return "APP_STATE_TIMEOUT";
             default:
                 fail("Invalid AppTransitionState");
@@ -323,10 +295,20 @@ public class WindowManagerState {
                 SystemClock.sleep(500);
             }
 
-            dump = executeShellCommand(DUMPSYS_WINDOW);
+            if (android.tracing.Flags.perfettoWmDumpCts()) {
+                dump = captureDump();
+            } else {
+                dump = captureDumpLegacy();
+            }
+
             try {
-                parseSysDumpProto(dump);
-            } catch (InvalidProtocolBufferNanoException ex) {
+                reset();
+                if (android.tracing.Flags.perfettoWmDumpCts()) {
+                    parseDump(dump);
+                } else {
+                    parseDumpLegacy(dump);
+                }
+            } catch (IOException ex) {
                 final String dumpString = new String(dump, StandardCharsets.UTF_8);
                 if (dumpString.contains("SERVICE \'window\' DUMP TIMEOUT")) {
                     // retry and log when dump timeout
@@ -375,12 +357,16 @@ public class WindowManagerState {
         mSuppressAccessibilityServices = suppressAccessibilityServices;
     }
 
-    private byte[] executeShellCommand(String cmd) {
+    private byte[] captureDump() {
+        throw new RuntimeException("Not implemented yet");
+    }
+
+    private byte[] captureDumpLegacy() {
         try {
             ParcelFileDescriptor pfd = getInstrumentation().getUiAutomation(
-                    mSuppressAccessibilityServices ? 0
-                            : UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
-                    .executeShellCommand(cmd);
+                            mSuppressAccessibilityServices ? 0
+                                    : UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES)
+                    .executeShellCommand(DUMPSYS_WINDOW);
             byte[] buf = new byte[512];
             int bytesRead;
             FileInputStream fis = new ParcelFileDescriptor.AutoCloseInputStream(pfd);
@@ -424,11 +410,14 @@ public class WindowManagerState {
         }
     }
 
-    private void parseSysDumpProto(byte[] sysDump) throws InvalidProtocolBufferNanoException {
-        reset();
+    private void parseDump(byte[] dump) {
+        throw new RuntimeException("Not implemented yet");
+    }
 
-        WindowManagerServiceDumpProto state = WindowManagerServiceDumpProto.parseFrom(sysDump);
-        final RootWindowContainerProto root = state.rootWindowContainer;
+    private void parseDumpLegacy(byte[] sysDump) throws InvalidProtocolBufferNanoException {
+        com.android.server.wm.nano.WindowManagerServiceDumpProto state =
+                com.android.server.wm.nano.WindowManagerServiceDumpProto.parseFrom(sysDump);
+        final com.android.server.wm.nano.RootWindowContainerProto root = state.rootWindowContainer;
         if (state.focusedWindow != null) {
             mFocusedWindow = state.focusedWindow.title;
         }
@@ -1234,7 +1223,7 @@ public class WindowManagerState {
         private List<Rect> mKeepClearRects;
         private List<InsetsSourceProvider> mProviders;
 
-        DisplayContent(DisplayContentProto proto) {
+        DisplayContent(com.android.server.wm.nano.DisplayContentProto proto) {
             super(proto.rootDisplayArea);
             mId = proto.id;
             mFocusedRootTaskId = proto.focusedRootTaskId;
@@ -1245,19 +1234,21 @@ public class WindowManagerState {
             addRootTasks();
 
             mDpi = proto.dpi;
-            DisplayInfoProto infoProto = proto.displayInfo;
+            android.view.nano.DisplayInfoProto infoProto = proto.displayInfo;
             if (infoProto != null) {
                 mDisplayRect.set(0, 0, infoProto.logicalWidth, infoProto.logicalHeight);
                 mAppRect.set(0, 0, infoProto.appWidth, infoProto.appHeight);
                 mName = infoProto.name;
                 mFlags = infoProto.flags;
             }
-            final DisplayFramesProto displayFramesProto = proto.displayFrames;
+            final com.android.server.wm.nano.DisplayFramesProto displayFramesProto =
+                    proto.displayFrames;
             mSurfaceSize = proto.surfaceSize;
             mFocusedApp = proto.focusedApp;
             mMinSizeOfResizeableTaskDp = proto.minSizeOfResizeableTaskDp;
 
-            final AppTransitionProto appTransitionProto = proto.appTransition;
+            final com.android.server.wm.nano.AppTransitionProto appTransitionProto =
+                    proto.appTransition;
             int appState = 0;
             int lastTransition = 0;
             if (appTransitionProto != null) {
@@ -1267,13 +1258,15 @@ public class WindowManagerState {
             mAppTransitionState = appStateToString(appState);
             mLastTransition = appTransitionToString(lastTransition);
 
-            PinnedTaskControllerProto pinnedTaskProto = proto.pinnedTaskController;
+            com.android.server.wm.nano.PinnedTaskControllerProto pinnedTaskProto =
+                    proto.pinnedTaskController;
             if (pinnedTaskProto != null) {
                 mDefaultPinnedStackBounds = extract(pinnedTaskProto.defaultBounds);
                 mPinnedStackMovementBounds = extract(pinnedTaskProto.movementBounds);
             }
 
-            final DisplayRotationProto rotationProto = proto.displayRotation;
+            final com.android.server.wm.nano.DisplayRotationProto rotationProto =
+                    proto.displayRotation;
             if (rotationProto != null) {
                 mRotation = rotationProto.rotation;
                 mFrozenToUserRotation = rotationProto.frozenToUserRotation;
@@ -1283,11 +1276,12 @@ public class WindowManagerState {
                 mIsFixedToUserRotation = rotationProto.isFixedToUserRotation;
             }
             mKeepClearRects = new ArrayList();
-            for (RectProto r : proto.keepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mProviders = new ArrayList<>();
-            for (InsetsSourceProviderProto provider: proto.insetsSourceProviders) {
+            for (com.android.server.wm.nano.InsetsSourceProviderProto provider :
+                    proto.insetsSourceProviders) {
                 mProviders.add(new InsetsSourceProvider(provider));
             }
         }
@@ -1515,7 +1509,7 @@ public class WindowManagerState {
         boolean mHasChildPipActivity;
         WindowContainer mParent;
 
-        Task(TaskProto proto, WindowContainer parent) {
+        Task(com.android.server.wm.nano.TaskProto proto, WindowContainer parent) {
             super(proto.taskFragment.windowContainer);
             mTaskId = proto.id;
             mRootTaskId = proto.rootTaskId;
@@ -1713,7 +1707,7 @@ public class WindowManagerState {
         ArrayList<Activity> mActivities = new ArrayList<>();
         int mTaskFragmentType;
 
-        TaskFragment(TaskFragmentProto proto, WindowContainer parent) {
+        TaskFragment(com.android.server.wm.nano.TaskFragmentProto proto, WindowContainer parent) {
             super(proto.windowContainer);
             mParentTask = (Task) parent;
             mDisplayId = proto.displayId;
@@ -1773,7 +1767,7 @@ public class WindowManagerState {
         private boolean mShouldEnableUserAspectRatioSettings;
         private boolean mIsUserFullscreenOverrideEnabled;
 
-        Activity(ActivityRecordProto proto, WindowContainer parent) {
+        Activity(com.android.server.wm.nano.ActivityRecordProto proto, WindowContainer parent) {
             super(proto.windowToken.windowContainer);
             name = proto.name;
             state = proto.state;
@@ -1924,7 +1918,7 @@ public class WindowManagerState {
         protected int mMinWidth = -1;
         protected int mMinHeight = -1;
 
-        ActivityContainer(WindowContainerProto proto) {
+        ActivityContainer(com.android.server.wm.nano.WindowContainerProto proto) {
             super(proto);
         }
 
@@ -1968,7 +1962,7 @@ public class WindowManagerState {
             return mKeyguardOccludedStates;
         }
 
-        KeyguardControllerState(KeyguardControllerProto proto) {
+        KeyguardControllerState(com.android.server.wm.nano.KeyguardControllerProto proto) {
             if (proto != null) {
                 aodShowing = proto.aodShowing;
                 keyguardShowing = proto.keyguardShowing;
@@ -1998,7 +1992,8 @@ public class WindowManagerState {
 
         private int mInteractiveState = -1;
 
-        KeyguardServiceDelegateState(KeyguardServiceDelegateProto proto) {
+        KeyguardServiceDelegateState(
+                com.android.server.wm.nano.KeyguardServiceDelegateProto proto) {
             if (proto != null) {
                 mInteractiveState = proto.interactiveState;
             }
@@ -2014,7 +2009,7 @@ public class WindowManagerState {
         final Configuration mFullConfiguration = new Configuration();
         final Configuration mMergedOverrideConfiguration = new Configuration();
 
-        ConfigurationContainer(ConfigurationContainerProto proto) {
+        ConfigurationContainer(com.android.server.wm.nano.ConfigurationContainerProto proto) {
             if (proto == null) {
                 return;
             }
@@ -2058,7 +2053,7 @@ public class WindowManagerState {
     }
 
     public static class RootWindowContainer extends WindowContainer {
-        RootWindowContainer(RootWindowContainerProto proto) {
+        RootWindowContainer(com.android.server.wm.nano.RootWindowContainerProto proto) {
             super(proto.windowContainer);
         }
     }
@@ -2071,7 +2066,7 @@ public class WindowManagerState {
         private ArrayList<Activity> mActivities;
         private final ArrayList<WindowState> mWindows = new ArrayList<>();
 
-        DisplayArea(DisplayAreaProto proto) {
+        DisplayArea(com.android.server.wm.nano.DisplayAreaProto proto) {
             super(proto.windowContainer);
             mIsTaskDisplayArea = proto.isTaskDisplayArea;
             mIsRootDisplayArea = proto.isRootDisplayArea;
@@ -2141,7 +2136,7 @@ public class WindowManagerState {
         }
     }
     public static class WindowToken extends WindowContainer {
-        WindowToken(WindowTokenProto proto) {
+        WindowToken(com.android.server.wm.nano.WindowTokenProto proto) {
             super(proto.windowContainer);
         }
     }
@@ -2152,12 +2147,13 @@ public class WindowManagerState {
      * if we need track and assert some state in the future.
      */
     public static class GenericWindowContainer extends WindowContainer {
-        GenericWindowContainer(WindowContainerProto proto) {
+        GenericWindowContainer(com.android.server.wm.nano.WindowContainerProto proto) {
             super(proto);
         }
     }
 
-    static WindowContainer getWindowContainer(WindowContainerChildProto proto,
+    static WindowContainer getWindowContainer(
+            com.android.server.wm.nano.WindowContainerChildProto proto,
             WindowContainer parent) {
         if (proto.displayContent != null) {
             return new DisplayContent(proto.displayContent);
@@ -2204,9 +2200,9 @@ public class WindowManagerState {
         protected List<WindowState> mSubWindows = new ArrayList<>();
         protected List<WindowContainer> mChildren = new ArrayList<>();
 
-        WindowContainer(WindowContainerProto proto) {
+        WindowContainer(com.android.server.wm.nano.WindowContainerProto proto) {
             super(proto.configurationContainer);
-            IdentifierProto identifierProto = proto.identifier;
+            com.android.server.wm.nano.IdentifierProto identifierProto = proto.identifier;
             mName = identifierProto.title;
             mAppToken = Integer.toHexString(identifierProto.hashCode);
             mOrientation = proto.orientation;
@@ -2283,7 +2279,7 @@ public class WindowManagerState {
         private List<InsetsSource> mMergedLocalInsetsSources;
         private int mFlags;
 
-        WindowState(WindowStateProto proto) {
+        WindowState(com.android.server.wm.nano.WindowStateProto proto) {
             super(proto.windowContainer);
             mDisplayId = proto.displayId;
             mStackId = proto.stackId;
@@ -2291,17 +2287,18 @@ public class WindowManagerState {
                 mType = proto.attributes.type;
                 mFlags = proto.attributes.flags;
             }
-            WindowStateAnimatorProto animatorProto = proto.animator;
+            com.android.server.wm.nano.WindowStateAnimatorProto animatorProto = proto.animator;
             if (animatorProto != null) {
                 if (animatorProto.surface != null) {
-                    WindowSurfaceControllerProto surfaceProto = animatorProto.surface;
+                    com.android.server.wm.nano.WindowSurfaceControllerProto surfaceProto =
+                            animatorProto.surface;
                     mShown = surfaceProto.shown;
                     mLayer = surfaceProto.layer;
                 }
                 mCrop = extract(animatorProto.lastClipRect);
             }
             mGivenContentInsets = extract(proto.givenContentInsets);
-            WindowFramesProto windowFramesProto = proto.windowFrames;
+            com.android.server.wm.nano.WindowFramesProto windowFramesProto = proto.windowFrames;
             if (windowFramesProto != null) {
                 mFrame = extract(windowFramesProto.frame);
                 mParentFrame = extract(windowFramesProto.parentFrame);
@@ -2326,15 +2323,15 @@ public class WindowManagerState {
             mRequestedWidth = proto.requestedWidth;
             mRequestedHeight = proto.requestedHeight;
             mKeepClearRects = new ArrayList();
-            for (RectProto r : proto.keepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.keepClearAreas) {
                 mKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mUnrestrictedKeepClearRects = new ArrayList();
-            for (RectProto r : proto.unrestrictedKeepClearAreas) {
+            for (android.graphics.nano.RectProto r : proto.unrestrictedKeepClearAreas) {
                 mUnrestrictedKeepClearRects.add(new Rect(r.left, r.top, r.right, r.bottom));
             }
             mMergedLocalInsetsSources = new ArrayList();
-            for (InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
+            for (android.view.nano.InsetsSourceProto insets : proto.mergedLocalInsetsSources) {
                 mMergedLocalInsetsSources.add(new InsetsSource(insets));
             }
         }
@@ -2455,7 +2452,7 @@ public class WindowManagerState {
         private int mLastBackType;
         private boolean mShowWallpaper;
 
-        BackNavigationState(BackNavigationProto proto) {
+        BackNavigationState(com.android.server.wm.nano.BackNavigationProto proto) {
             if (proto != null) {
                 mAnimationInProgress = proto.animationInProgress;
                 mLastBackType = proto.lastBackType;
@@ -2496,7 +2493,7 @@ public class WindowManagerState {
         private Rect mVisibleFrame;
         private boolean mVisible;
 
-        InsetsSource(InsetsSourceProto proto) {
+        InsetsSource(android.view.nano.InsetsSourceProto proto) {
             mType = proto.typeNumber;
             if (proto.frame != null) {
                 mFrame = new Rect(
@@ -2571,7 +2568,7 @@ public class WindowManagerState {
         private InsetsSource mSource;
         private WindowState mWindowState;
 
-        InsetsSourceProvider(InsetsSourceProviderProto proto) {
+        InsetsSourceProvider(com.android.server.wm.nano.InsetsSourceProviderProto proto) {
             if (proto.source != null) {
                 mSource = new InsetsSource(proto.source);
             }
