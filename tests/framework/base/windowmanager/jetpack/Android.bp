@@ -98,7 +98,7 @@ android_test {
         "truth",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     test_suites: [
         "cts",
