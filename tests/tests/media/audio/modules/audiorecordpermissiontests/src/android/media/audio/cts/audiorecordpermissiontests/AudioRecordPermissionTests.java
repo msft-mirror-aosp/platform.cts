@@ -37,6 +37,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 
 import androidx.test.InstrumentationRegistry;
@@ -58,6 +59,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeFull(reason = "Test requires intents between multiple apps")
 @RunWith(AndroidJUnit4.class)
 public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     // Keep in sync with test apps

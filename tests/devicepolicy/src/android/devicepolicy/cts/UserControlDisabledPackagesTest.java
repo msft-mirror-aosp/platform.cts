@@ -47,15 +47,15 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.UserControlDisabledPackages;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
@@ -209,7 +209,6 @@ public final class UserControlDisabledPackagesTest {
     @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
-    @RequireFlagsEnabled(Flags.FLAG_DISALLOW_USER_CONTROL_BG_USAGE_FIX)
     public void setUserControlDisabledPackages_bgUsageAllowed() {
         try (TestAppInstance testApp = sTestApp.install()) {
             // Take away background usage app op.
@@ -232,7 +231,6 @@ public final class UserControlDisabledPackagesTest {
     @PolicyAppliesTest(policy = UserControlDisabledPackages.class)
     @Postsubmit(reason = "new test")
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setApplicationExemption"})
-    @RequireFlagsEnabled(Flags.FLAG_DISALLOW_USER_CONTROL_BG_USAGE_FIX)
     public void setUserControlDisabledPackages_exemptFromStandbyBuckets() {
         try (TestAppInstance testApp = sTestApp.install()) {
             // Put the app into a very restrictive bucket.

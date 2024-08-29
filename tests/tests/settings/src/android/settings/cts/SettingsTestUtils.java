@@ -42,4 +42,12 @@ public final class SettingsTestUtils {
         return InstrumentationRegistry.getTargetContext().getPackageManager()
                 .hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
+
+    /**
+     * Checks whether the device is television
+     */
+    public static boolean isTelevision() {
+        return InstrumentationRegistry.getTargetContext().getPackageManager()
+                .hasSystemFeature(PackageManager.FEATURE_LEANBACK);
+    }
 }

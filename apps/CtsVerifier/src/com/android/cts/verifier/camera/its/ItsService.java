@@ -1050,9 +1050,10 @@ public class ItsService extends Service implements SensorEventListener {
                     double zoomRatio = cmdObj.optDouble("zoomRatio");
                     int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
                     int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
+                    int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
                     doBasicRecording(cameraId, profileId, quality, recordingDuration,
                             videoStabilizationMode, hlg10Enabled, zoomRatio,
-                            aeTargetFpsMin, aeTargetFpsMax);
+                            aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
                 } else if ("doStaticPreviewRecording".equals(cmdObj.getString("cmdName"))) {
                     doStaticPreviewRecording(cmdObj);
                 } else if ("doDynamicZoomPreviewRecording".equals(
@@ -2814,13 +2815,14 @@ public class ItsService extends Service implements SensorEventListener {
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
             int recordingDuration, int videoStabilizationMode,
-            boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax)
-            throws ItsException {
+            boolean hlg10Enabled, double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
+            int aeAntibandingMode) throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
 
         if (!hlg10Enabled) {
-            doBasicRecording(cameraId, profileId, quality, recordingDuration,
-                    videoStabilizationMode, zoomRatio, aeTargetFpsMin, aeTargetFpsMax);
+            doBasicRecording(
+                    cameraId, profileId, quality, recordingDuration, videoStabilizationMode,
+                    zoomRatio, aeTargetFpsMin, aeTargetFpsMax, aeAntibandingMode);
             return;
         }
 
@@ -2890,7 +2892,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.HLG10,
                     mockCallback, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
         } catch (CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -2934,8 +2936,8 @@ public class ItsService extends Service implements SensorEventListener {
     }
 
     private void doBasicRecording(String cameraId, int profileId, String quality,
-            int recordingDuration, int videoStabilizationMode,
-            double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax) throws ItsException {
+            int recordingDuration, int videoStabilizationMode, double zoomRatio,
+            int aeTargetFpsMin, int aeTargetFpsMax, int aeAntibandingMode) throws ItsException {
         RecordingResultListener recordingResultListener = new RecordingResultListener();
         int cameraDeviceId = Integer.parseInt(cameraId);
         mMediaRecorder = new MediaRecorder();
@@ -2963,14 +2965,13 @@ public class ItsService extends Service implements SensorEventListener {
         } catch (IOException e) {
             throw new ItsException("Error preparing the MediaRecorder.");
         }
-
         mRecordSurface = mMediaRecorder.getSurface();
         // Configure and create capture session.
         try {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_RECORD, mRecordSurface,
                     videoStabilizationMode, /*ois=*/ false, DynamicRangeProfiles.STANDARD,
                     /*stateCallback=*/ null, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, /*extraConfigs*/null);
+                    recordingResultListener, /*extraConfigs*/null, aeAntibandingMode);
         } catch (android.hardware.camera2.CameraAccessException e) {
             throw new ItsException("Access error: ", e);
         }
@@ -3121,6 +3122,7 @@ public class ItsService extends Service implements SensorEventListener {
         boolean paddedFrames = cmdObj.optBoolean("paddedFrames", false);
         int aeTargetFpsMin = cmdObj.optInt("aeTargetFpsMin");
         int aeTargetFpsMax = cmdObj.optInt("aeTargetFpsMax");
+        int aeAntibandingMode = cmdObj.optInt("aeAntibandingMode");
         // Record surface size and HDRness.
         JSONArray outputSpecs = ItsUtils.getOutputSpecs(cmdObj);
         if (outputSpecs == null || outputSpecs.length() == 0) {
@@ -3181,7 +3183,7 @@ public class ItsService extends Service implements SensorEventListener {
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
                     pr.getCameraSurface(), stabilizationMode, ois, dynamicRangeProfile,
                     sessionListener, zoomRatio, aeTargetFpsMin, aeTargetFpsMax,
-                    recordingResultListener, extraConfigs);
+                    recordingResultListener, extraConfigs, aeAntibandingMode);
             if (paddedFrames) {
                 Logt.v(TAG, "Wait " + PADDED_FRAMES_MS + " msec for Green frames for padding");
                 try {
@@ -3621,7 +3623,8 @@ public class ItsService extends Service implements SensorEventListener {
             CameraCaptureSession.StateCallback stateCallback,
             double zoomRatio, int aeTargetFpsMin, int aeTargetFpsMax,
             CameraCaptureSession.CaptureCallback captureCallback,
-            List<OutputConfiguration> extraConfigs) throws CameraAccessException {
+            List<OutputConfiguration> extraConfigs,
+            int aeAntibandingMode) throws CameraAccessException {
         assert (recordSurface != null);
         // Create capture request builder
         mCaptureRequestBuilder = mCamera.createCaptureRequest(requestTemplate);
@@ -3635,6 +3638,11 @@ public class ItsService extends Service implements SensorEventListener {
             Logt.i(TAG, "AE target FPS range: (" + aeTargetFpsMin + ", " + aeTargetFpsMax + ")");
             mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE,
                     new Range<Integer>(aeTargetFpsMin, aeTargetFpsMax));
+        }
+        if (aeAntibandingMode > 0) {
+            Logt.i(TAG, "AE Antibanding Mode: " + aeAntibandingMode);
+            mCaptureRequestBuilder.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE,
+                    aeAntibandingMode);
         }
 
         switch (videoStabilizationMode) {

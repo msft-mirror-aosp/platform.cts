@@ -30,15 +30,15 @@ import org.junit.runner.RunWith
 class FlagsTest {
 
     @Test
-    @RequireFlagsEnabled(Flags.FLAG_DUMPSYS_POLICY_ENGINE_MIGRATION_ENABLED)
+    @RequireFlagsEnabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
     fun requireFlagEnabledAnnotation_flagIsEnabled() {
-        assertThat(Flags.dumpsysPolicyEngineMigrationEnabled()).isTrue()
+        assertThat(Flags.esimManagementEnabled()).isTrue()
     }
 
     @Test
-    @RequireFlagsDisabled(Flags.FLAG_DUMPSYS_POLICY_ENGINE_MIGRATION_ENABLED)
+    @RequireFlagsDisabled(Flags.FLAG_ESIM_MANAGEMENT_ENABLED)
     fun requireFlagDisabledAnnotation_flagIsDisabled() {
-        assertThat(Flags.dumpsysPolicyEngineMigrationEnabled()).isFalse()
+        assertThat(Flags.esimManagementEnabled()).isFalse()
     }
 
     companion object {

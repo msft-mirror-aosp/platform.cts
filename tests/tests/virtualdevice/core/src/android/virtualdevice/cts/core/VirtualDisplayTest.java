@@ -17,7 +17,6 @@
 package android.virtualdevice.cts.core;
 
 import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
-import static android.Manifest.permission.CAPTURE_VIDEO_OUTPUT;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -50,6 +49,9 @@ import java.util.function.BooleanSupplier;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = " cannot be accessed by instant apps")
 public class VirtualDisplayTest {
+
+    private static final String PERMISSION_CAPTURE_VIDEO_OUTPUT =
+            "android.permission.CAPTURE_VIDEO_OUTPUT";
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -232,7 +234,7 @@ public class VirtualDisplayTest {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
-                CAPTURE_VIDEO_OUTPUT);
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();
@@ -243,7 +245,7 @@ public class VirtualDisplayTest {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC),
-                CAPTURE_VIDEO_OUTPUT);
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();
@@ -253,9 +255,9 @@ public class VirtualDisplayTest {
     public void isVirtualDeviceOwnedMirrorDisplay_unownedPublicAutoMirrorDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
-                       DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
-                CAPTURE_VIDEO_OUTPUT);
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();

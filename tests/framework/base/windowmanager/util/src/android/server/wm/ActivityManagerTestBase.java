@@ -278,6 +278,9 @@ public abstract class ActivityManagerTestBase {
     private UserHelper mUserHelper;
     protected int mUserId;
 
+    @NonNull
+    private SplitScreenActivityUtils mSplitScreenActivityUtils;
+
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
      * {@param extras} a list of {@link CliIntentExtra} representing a generic intent extra
@@ -702,6 +705,7 @@ public abstract class ActivityManagerTestBase {
             // state.
             mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
         });
+        mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
 
         // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
         // the systemUI might have a few tasks that need to be displayed all the time.
@@ -1072,87 +1076,45 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityInPrimarySplit(ComponentName activityName) {
         runWithShellPermission(() -> {
             launchActivity(activityName);
-            final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-            mTaskOrganizer.putTaskInSplitPrimary(taskId);
-            mWmState.waitForValidState(activityName);
+            mSplitScreenActivityUtils.putActivityInPrimarySplit(activityName);
         });
     }
 
     protected void launchActivityInSecondarySplit(ComponentName activityName) {
         runWithShellPermission(() -> {
             launchActivity(activityName);
-            final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-            mTaskOrganizer.putTaskInSplitSecondary(taskId);
-            mWmState.waitForValidState(activityName);
+            mSplitScreenActivityUtils.putActivityInSecondarySplit(activityName);
         });
     }
 
+    /** @see SplitScreenActivityUtils#putActivityInPrimarySplit(ComponentName) */
     protected void putActivityInPrimarySplit(ComponentName activityName) {
-        final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(taskId);
-        mWmState.waitForValidState(activityName);
+        mSplitScreenActivityUtils.putActivityInPrimarySplit(activityName);
     }
 
+    /** @see SplitScreenActivityUtils#putActivityInSecondarySplit(ComponentName) */
     protected void putActivityInSecondarySplit(ComponentName activityName) {
-        final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(taskId);
-        mWmState.waitForValidState(activityName);
+        mSplitScreenActivityUtils.putActivityInSecondarySplit(activityName);
     }
 
     /**
-     * Launches {@param primaryActivity} into split-screen primary windowing mode
-     * and {@param secondaryActivity} to the side in split-screen secondary windowing mode.
+     * @see SplitScreenActivityUtils#launchActivitiesInSplitScreen(LaunchActivityBuilder,
+     * LaunchActivityBuilder)
      */
     protected void launchActivitiesInSplitScreen(LaunchActivityBuilder primaryActivity,
             LaunchActivityBuilder secondaryActivity) {
-        // Launch split-screen primary.
-        primaryActivity
-                .setUseInstrumentation()
-                .setWaitForLaunched(true)
-                .execute();
-
-        final int primaryTaskId = mWmState.getTaskByActivity(
-                primaryActivity.getTargetActivity()).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(primaryTaskId);
-
-        // Launch split-screen secondary
-        secondaryActivity
-                .setUseInstrumentation()
-                .setWaitForLaunched(true)
-                .setNewTask(true)
-                .setMultipleTask(true)
-                .execute();
-
-        final int secondaryTaskId = mWmState.getTaskByActivity(
-                secondaryActivity.getTargetActivity()).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(secondaryTaskId);
-        mWmState.computeState(primaryActivity.getTargetActivity(),
-                secondaryActivity.getTargetActivity());
-        log("launchActivitiesInSplitScreen(), primaryTaskId=" + primaryTaskId +
-                ", secondaryTaskId=" + secondaryTaskId);
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(primaryActivity, secondaryActivity);
     }
 
-    /**
-     * Move the task of {@param primaryActivity} into split-screen primary and the task of
-     * {@param secondaryActivity} to the side in split-screen secondary.
-     */
+    /** @see SplitScreenActivityUtils#moveActivitiesToSplitScreen(ComponentName, ComponentName) */
     protected void moveActivitiesToSplitScreen(ComponentName primaryActivity,
             ComponentName secondaryActivity) {
-        final int primaryTaskId = mWmState.getTaskByActivity(primaryActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(primaryTaskId);
-
-        final int secondaryTaskId = mWmState.getTaskByActivity(secondaryActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(secondaryTaskId);
-
-        mWmState.computeState(primaryActivity, secondaryActivity);
-        log("moveActivitiesToSplitScreen(), primaryTaskId=" + primaryTaskId +
-                ", secondaryTaskId=" + secondaryTaskId);
+        mSplitScreenActivityUtils.moveActivitiesToSplitScreen(primaryActivity, secondaryActivity);
     }
 
+    /** @see SplitScreenActivityUtils#dismissSplitScreen(boolean) */
     protected void dismissSplitScreen(boolean primaryOnTop) {
-        if (mTaskOrganizer != null) {
-            mTaskOrganizer.dismissSplitScreen(primaryOnTop);
-        }
+        mSplitScreenActivityUtils.dismissSplitScreen(primaryOnTop);
     }
 
     /**
@@ -1400,18 +1362,9 @@ public abstract class ActivityManagerTestBase {
         return ActivityTaskManager.supportsSplitScreenMultiWindow(context);
     }
 
-    /** Returns true if the default display supports split screen multi-window. */
+    /** @see SplitScreenActivityUtils#supportsSplitScreenMultiWindow(Context) */
     protected boolean supportsSplitScreenMultiWindow() {
-        Display defaultDisplay = mDm.getDisplay(DEFAULT_DISPLAY);
-        return supportsSplitScreenMultiWindow(mContext.createDisplayContext(defaultDisplay));
-    }
-
-    /**
-     * Returns true if the display associated with the supplied {@code context} supports split
-     * screen multi-window.
-     */
-    protected boolean supportsSplitScreenMultiWindow(Context context) {
-        return ActivityTaskManager.supportsSplitScreenMultiWindow(context);
+        return SplitScreenActivityUtils.supportsSplitScreenMultiWindow(mContext);
     }
 
     protected boolean hasHomeScreen() {

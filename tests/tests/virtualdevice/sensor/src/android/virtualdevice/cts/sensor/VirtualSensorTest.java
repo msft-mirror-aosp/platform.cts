@@ -38,7 +38,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
-import android.annotation.Nullable;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.sensor.VirtualSensor;
@@ -47,6 +46,7 @@ import android.companion.virtual.sensor.VirtualSensorConfig;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelCallback;
 import android.companion.virtual.sensor.VirtualSensorDirectChannelWriter;
 import android.companion.virtual.sensor.VirtualSensorEvent;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
 import android.hardware.HardwareBuffer;
 import android.hardware.Sensor;
@@ -57,9 +57,11 @@ import android.hardware.SensorManager;
 import android.os.MemoryFile;
 import android.os.SharedMemory;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.system.ErrnoException;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -234,6 +236,22 @@ public class VirtualSensorTest {
         assertThat(sensor.getMaxDelay()).isEqualTo(8);
         assertThat(sensor.getStringType()).isEqualTo(Sensor.STRING_TYPE_ACCELEROMETER);
         assertThat(sensor.getReportingMode()).isEqualTo(Sensor.REPORTING_MODE_CONTINUOUS);
+        assertThat(sensor.isWakeUpSensor()).isFalse();
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void getDefaultSensor_wakeUpSensor() {
+        mVirtualSensor = setUpVirtualSensor(
+                new VirtualSensorConfig.Builder(Sensor.TYPE_PROXIMITY, VIRTUAL_SENSOR_NAME)
+                        .setWakeUpSensor(true)
+                        .setReportingMode(Sensor.REPORTING_MODE_ON_CHANGE)
+                        .build());
+
+        Sensor sensor = mVirtualDeviceSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+        assertThat(sensor.getName()).isEqualTo(VIRTUAL_SENSOR_NAME);
+        assertThat(sensor.getReportingMode()).isEqualTo(Sensor.REPORTING_MODE_ON_CHANGE);
+        assertThat(sensor.isWakeUpSensor()).isTrue();
     }
 
     @Test
