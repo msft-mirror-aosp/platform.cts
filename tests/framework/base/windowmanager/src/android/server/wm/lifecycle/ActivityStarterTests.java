@@ -690,7 +690,7 @@ public class ActivityStarterTests extends ActivityLifecycleClientTestBase {
                 .setIntentFlags(FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
                 .execute();
         mWmState.waitForActivityState(STANDARD_ACTIVITY, STATE_RESUMED);
-
+        mWmState.waitForActivityRemoved(FINISH_ON_TASK_LAUNCH_ACTIVITY);
         // Make sure the activity is finished.
         assertEquals("Instance of the activity in its task must be cleared", 0,
                 mWmState.getActivityCountInTask(taskId, FINISH_ON_TASK_LAUNCH_ACTIVITY));
