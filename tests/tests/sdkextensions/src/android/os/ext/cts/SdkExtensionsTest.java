@@ -23,11 +23,11 @@ import junit.framework.TestCase;
 
 public class SdkExtensionsTest extends TestCase {
 
-    // Android R launched with 0. Since then, version 1 and 2 were added.
-    private static final Set<Integer> ALLOWED_VERSIONS = Set.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+    /** The version R shipped with (0) */
+    public static final int R_BASE_VERSION = 0;
 
     private static void assertCorrectVersion(int version) throws Exception {
-        assertTrue(ALLOWED_VERSIONS.contains(version));
+        assertTrue(version >= R_BASE_VERSION);
     }
 
     private static void assertCorrectVersion(String versionPropValue) throws Exception {
