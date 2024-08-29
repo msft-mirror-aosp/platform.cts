@@ -71,6 +71,8 @@ import android.net.Uri;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
@@ -375,6 +377,15 @@ public final class VirtualCameraUtils {
         eglDestroyContext(eglDisplay, eglContext);
 
         return maxSize[0];
+    }
+
+    /**
+     * Creates a new Handler with a thread named with the provided suffix.
+     */
+    public static Handler createHandler(String threadSuffix) {
+        HandlerThread handlerThread = new HandlerThread("VirtualCameraTestHandler_" + threadSuffix);
+        handlerThread.start();
+        return new Handler(handlerThread.getLooper());
     }
 
     private VirtualCameraUtils() {}
