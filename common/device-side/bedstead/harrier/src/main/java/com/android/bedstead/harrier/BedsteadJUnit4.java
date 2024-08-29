@@ -1175,41 +1175,37 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     @Override
-    protected List<TestRule> getTestRules(Object target) {
-        var testRules = super.getTestRules(target);
-        var harrier = findHarrier(testRules);
-        if (harrier == null) {
-            testRules.add(getHarrierRule());
-        }
-        return testRules;
-    }
-
-    @Override
     protected List<TestRule> classRules() {
         List<TestRule> rules = super.classRules();
 
-        mHarrierRule = findHarrier(rules);
-
-        if (mHarrierRule == null) {
-            mHarrierRule = new DeviceState();
-        }
-        if (!rules.contains(mHarrierRule)) {
-            rules.add(mHarrierRule);
-        }
-
-        mHarrierRule.setSkipTestTeardown(true);
-        mHarrierRule.setUsingBedsteadJUnit4(true);
-
-        return rules;
-    }
-
-    private HarrierRule findHarrier(List<TestRule> rules) {
         for (TestRule rule : rules) {
             if (rule instanceof HarrierRule) {
-                return (HarrierRule) rule;
+                mHarrierRule = (HarrierRule) rule;
+                break;
             }
         }
-        return null;
+
+        if (mHarrierRule == null) {
+            try {
+                mHarrierRule =
+                        (HarrierRule)
+                                Class.forName("com.android.bedstead.harrier.DeviceState")
+                                        .newInstance();
+                rules = new ArrayList<>(rules);
+                rules.add(mHarrierRule);
+            } catch (ClassNotFoundException e) {
+                // Must be running on the host - for now we don't add anything
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException("Error initialising Harrier Rule", e);
+            }
+        }
+
+        if (mHarrierRule != null) {
+            mHarrierRule.setSkipTestTeardown(true);
+            mHarrierRule.setUsingBedsteadJUnit4(true);
+        }
+
+        return rules;
     }
 
     /**
