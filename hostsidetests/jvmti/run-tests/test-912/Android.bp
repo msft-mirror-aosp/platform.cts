@@ -18,7 +18,6 @@ package {
 
 java_test_host {
     name: "CtsJvmtiRunTest912HostTestCases",
-    team: "trendy_team_art_performance",
     static_libs: ["CtsJvmtiHostTestBase"],
     jarjar_rules: "jarjar-rules.txt",
     test_suites: [
