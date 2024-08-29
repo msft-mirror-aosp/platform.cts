@@ -25,6 +25,7 @@ import android.content.pm.PackageInstaller.InstallConstraints
 import android.content.pm.PackageManager
 import android.content.pm.PackageManager.GET_SIGNING_CERTIFICATES
 import android.platform.test.annotations.AppModeFull
+import android.support.test.uiautomator.UiDevice
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.runner.AndroidJUnit4
 import com.android.compatibility.common.util.PollingCheck
@@ -156,7 +157,7 @@ class InstallConstraintsTest {
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         // Test app A is no longer top-visible
-        startActivity(TestApp.B)
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         PollingCheck.waitFor {
             val importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -188,7 +189,7 @@ class InstallConstraintsTest {
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         // Test app A is no longer foreground
-        startActivity(TestApp.B)
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         PollingCheck.waitFor {
             val importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -288,7 +289,7 @@ class InstallConstraintsTest {
         assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
         // Test app A is no longer foreground. So is test app S.
-        startActivity(TestApp.B)
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         PollingCheck.waitFor {
             val importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -328,7 +329,7 @@ class InstallConstraintsTest {
             assertThat(f1.join().areAllConstraintsSatisfied()).isFalse()
 
             // HelloWorldUsingSdk1 is no longer foreground. So is HelloWorldSdk1.
-            startActivity(TestApp.B)
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
             PollingCheck.waitFor {
                 val importance = getPackageImportance(HelloWorldUsingSdk1.packageName)
                 importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
@@ -384,7 +385,7 @@ class InstallConstraintsTest {
             assertThat(pollResult(3, TimeUnit.SECONDS)).isNull()
 
             // Test app A is no longer foreground. The callback will be invoked soon.
-            startActivity(TestApp.B)
+            UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
             val intent = this.result
             val packageNames = intent.getStringArrayExtra(Intent.EXTRA_PACKAGES)
             val receivedConstraints = intent.getParcelableExtra(
@@ -436,7 +437,7 @@ class InstallConstraintsTest {
         assertThat(getInstalledVersion(TestApp.A)).isEqualTo(1)
 
         // Test app A is no longer foreground
-        startActivity(TestApp.B)
+        UiDevice.getInstance(InstrumentationRegistry.getInstrumentation()).pressBack()
         PollingCheck.waitFor {
             val importance = getPackageImportance(TestApp.A)
             importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
