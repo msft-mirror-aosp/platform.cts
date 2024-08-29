@@ -41,7 +41,7 @@ android_test {
     ],
     jni_libs: ["libctsuirendering_jni"],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
 
     test_suites: [
         "cts",
