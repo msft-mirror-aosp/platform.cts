@@ -42,9 +42,9 @@ android_test {
         "NeneInternal",
     ],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     java_resources: [
         ":PackageInstallerTestApp",

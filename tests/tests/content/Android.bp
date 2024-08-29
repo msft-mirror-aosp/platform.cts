@@ -22,9 +22,9 @@ java_library {
     defaults: ["cts_defaults"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     srcs: [
         "src/android/content/cts/**/DummyProvider.java",
@@ -275,7 +275,7 @@ android_ravenwood_test {
     name: "CtsContentTestCasesRavenwood",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.mock",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
