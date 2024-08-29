@@ -422,6 +422,35 @@ public class KeyPairGeneratorTest {
         }
     }
 
+    @Test
+    public void testLimitedUseKey() throws Exception {
+        testLimitedUseKey(false /* useStrongbox */);
+        if (TestUtils.hasStrongBox(getContext())) {
+            testLimitedUseKey(true /* useStrongbox */);
+        }
+    }
+
+    private void testLimitedUseKey(boolean useStrongbox) throws Exception {
+        int maxUsageCount = 1;
+        for (String algorithm : EXPECTED_ALGORITHMS) {
+            try {
+                int expectedSizeBits = DEFAULT_KEY_SIZES.get(algorithm);
+                KeyPairGenerator generator = getGenerator(algorithm);
+                generator.initialize(getWorkingSpec()
+                        .setMaxUsageCount(maxUsageCount)
+                        .setIsStrongBoxBacked(useStrongbox)
+                        .build());
+                KeyPair keyPair = generator.generateKeyPair();
+                assertEquals(expectedSizeBits,
+                        TestUtils.getKeyInfo(keyPair.getPrivate()).getKeySize());
+                assertEquals(maxUsageCount,
+                        TestUtils.getKeyInfo(keyPair.getPrivate()).getRemainingUsageCount());
+            } catch (Throwable e) {
+                throw new RuntimeException("Failed for " + algorithm, e);
+            }
+        }
+    }
+
     @SuppressWarnings("deprecation")
     @Test
     public void testGenerate_EC_LegacySpec() throws Exception {
