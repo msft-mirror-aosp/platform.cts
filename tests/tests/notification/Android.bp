@@ -33,8 +33,8 @@ android_test {
         "notification_flags_lib",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     data: [
         ":CtsAppTestStubs",

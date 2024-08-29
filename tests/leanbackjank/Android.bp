@@ -35,7 +35,7 @@ android_test {
         "androidx.test.uiautomator_uiautomator",
         "androidx.test.janktesthelper",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     data: [
         ":CtsLeanbackJankApp",
     ],

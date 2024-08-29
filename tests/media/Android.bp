@@ -29,7 +29,7 @@ android_test {
         "aconfig_mediacodec_flags_java_lib",
     ],
     libs: [
-        "org.apache.http.legacy",
+        "org.apache.http.legacy.stubs.system",
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,
@@ -65,7 +65,7 @@ android_test {
         "aconfig_mediacodec_flags_java_lib",
     ],
     libs: [
-        "org.apache.http.legacy",
+        "org.apache.http.legacy.stubs.system",
     ],
     platform_apis: true,
     jni_uses_sdk_apis: true,

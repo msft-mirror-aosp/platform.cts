@@ -56,8 +56,8 @@ android_test {
     ],
     sdk_version: "test_current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],

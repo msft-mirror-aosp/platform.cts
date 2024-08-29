@@ -48,9 +48,9 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     test_suites: [
         "cts",
@@ -89,9 +89,9 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
