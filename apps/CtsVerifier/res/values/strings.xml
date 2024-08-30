@@ -6087,6 +6087,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
     <string name="analog_headset_port_detected">"Headset port detected"</string>
+    <string name="analog_headset_port_notsupported">"Headset not support on this device."</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Analog headset connected</string>
