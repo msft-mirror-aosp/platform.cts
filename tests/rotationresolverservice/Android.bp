@@ -40,8 +40,8 @@ android_test {
         "android-support-v4",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
