@@ -18,14 +18,8 @@ package {
 
 java_test_host {
     name: "CtsJvmtiRunTest1901HostTestCases",
+    defaults: ["cts-run-jvmti-test-defaults"],
     static_libs: ["CtsJvmtiHostTestBase"],
     jarjar_rules: "jarjar-rules.txt",
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     data: [":CtsJvmtiRunTest1901DeviceApp"],
-    test_options: {
-        unit_test: false,
-    },
 }
