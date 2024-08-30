@@ -60,10 +60,13 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,6 +76,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
+@RequireNotVisibleBackgroundUsers(reason = "collapsePanels(), expandNotificationsPanel() and "
+        + " sendNotificationFeedback() don't support visible background user")
 public class NotificationAssistantServiceTest {
 
     private static final String PKG = "android.app.notification.legacy29.cts";
@@ -89,6 +94,10 @@ public class NotificationAssistantServiceTest {
     private UiAutomation mUi;
     private NotificationHelper mHelper;
     private String mPreviousAssistant;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setUp() throws Exception {
