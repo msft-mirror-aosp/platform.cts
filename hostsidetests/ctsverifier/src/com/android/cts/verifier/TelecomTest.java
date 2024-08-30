@@ -33,9 +33,10 @@ public final class TelecomTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void EnablePhoneAccountTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
         excludeFeatures("android.hardware.type.watch");
 
-        runTest(".telecom.EnablePhoneAccountTestActivity", "config_voice_capable");
+        runTest(".telecom.EnablePhoneAccountTestActivity");
     }
 
     @Interactive
@@ -44,9 +45,10 @@ public final class TelecomTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void OutgoingCallTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
         excludeFeatures("android.hardware.type.watch");
 
-        runTest(".telecom.OutgoingCallTestActivity", "config_voice_capable");
+        runTest(".telecom.OutgoingCallTestActivity");
     }
 
     @Interactive
@@ -55,8 +57,9 @@ public final class TelecomTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void SelfManagedIncomingCallTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".telecom.SelfManagedIncomingCallTestActivity", "config_voice_capable");
+        runTest(".telecom.SelfManagedIncomingCallTestActivity");
     }
 
     @Interactive
@@ -65,9 +68,10 @@ public final class TelecomTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void IncomingCallTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
         excludeFeatures("android.hardware.type.watch");
 
-        runTest(".telecom.IncomingCallTestActivity", "config_voice_capable");
+        runTest(".telecom.IncomingCallTestActivity");
     }
 
     @Interactive
@@ -76,8 +80,9 @@ public final class TelecomTest extends CtsVerifierTest {
     // MultiDisplayMode
     public void TelecomDefaultDialerTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".telecom.TelecomDefaultDialerTestActivity", "config_voice_capable");
+        runTest(".telecom.TelecomDefaultDialerTestActivity");
     }
 
     @Interactive
@@ -88,7 +93,8 @@ public final class TelecomTest extends CtsVerifierTest {
     // - needs investigation
     public void CtsVerifierInCallUiTest() throws Exception {
         requireFeatures("android.hardware.telephony");
+        requireFeatures("android.hardware.telephony.calling");
 
-        runTest(".telecom.CtsVerifierInCallUi", "config_voice_capable");
+        runTest(".telecom.CtsVerifierInCallUi");
     }
 }
