@@ -308,6 +308,22 @@
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
 
+    <!-- b/325695985 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[instant] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:1:TENT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:2:HALF_FOLDED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:3:OPEN] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:5:REAR_DUAL] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[instant] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:1:TENT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:2:HALF_FOLDED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:3:OPEN] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:5:REAR_DUAL] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+
     <!-- b/330018295 -->
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
     <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
