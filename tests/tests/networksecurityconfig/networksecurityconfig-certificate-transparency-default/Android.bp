@@ -27,9 +27,9 @@ android_test {
         "tests-tests-networksecurityconfig-lib",
     ],
     libs: [
-        "org.apache.http.legacy",
+        "org.apache.http.legacy.stubs.test",
         "android.security.flags-aconfig-java",
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

@@ -34,8 +34,8 @@ android_test {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     jni_libs: [
         "libctsmediastress_jni",
@@ -66,8 +66,8 @@ android_test {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     jni_libs: [
         "libctsmediastress_jni",
