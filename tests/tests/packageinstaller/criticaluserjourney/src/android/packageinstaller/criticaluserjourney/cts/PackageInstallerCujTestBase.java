@@ -68,6 +68,13 @@ public class PackageInstallerCujTestBase {
     public static final String TAG = "PackageInstallerCujTestBase";
 
     public static final String AUTHORITY_NAME = ".fileprovider";
+    public static final String DEVICE_ADMIN_APK_NAME = "CtsPackageInstallerDeviceAdminApp.apk";
+    public static final String DEVICE_ADMIN_APP_PACKAGE_LABEL =
+            "Cts Package Installer Device Admin App";
+    public static final String DEVICE_ADMIN_APP_PACKAGE_NAME =
+            "android.packageinstaller.cts.deviceadminapp";
+    public static final String DEVICE_ADMIN_APP_RECEIVER_NAME =
+            "android.packageinstaller.cts.deviceadminapp.TestDeviceAdminReceiver";
     public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
     public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
     public static final String INSTALLER_LABEL = "CTS CUJ Installer";
@@ -96,11 +103,12 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UPDATE_LABEL = "Update";
     public static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
+    public static final String INSTALLING_LABEL = "Installing";
+    public static final String PACKAGE_INSTALLER_LABEL = "Package Installer";
     public static final String TOGGLE_ALLOW_LABEL = "allow";
     public static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
     public static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
     public static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
-    public static final String INSTALLING_LABEL = "Installing";
     public static final String UNINSTALL_LABEL = "uninstall";
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
@@ -519,7 +527,7 @@ public class PackageInstallerCujTestBase {
     }
 
     @Nullable
-    private static String getPackageInstallerPackageName() {
+    public static String getPackageInstallerPackageName() {
         if (sPackageInstallerPackageName != null) {
             return sPackageInstallerPackageName;
         }
