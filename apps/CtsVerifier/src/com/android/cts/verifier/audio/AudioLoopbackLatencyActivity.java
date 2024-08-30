@@ -688,6 +688,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             mTestSpecs[TESTROUTE_DEVICE].mDeviceName =
                     getString(R.string.audio_loopback_test_internal_devices);
         }
+
+        enableStartButtons(mustRunTest());
     }
 
     private class ConnectListener extends AudioDeviceCallback {
