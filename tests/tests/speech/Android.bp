@@ -25,7 +25,7 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [

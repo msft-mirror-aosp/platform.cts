@@ -26,7 +26,7 @@ android_test {
         "general-tests",
     ],
     compile_multilib: "both",
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",
