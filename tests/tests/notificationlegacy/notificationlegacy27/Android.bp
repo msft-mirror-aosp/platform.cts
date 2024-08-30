@@ -29,6 +29,7 @@ android_test {
         "permission-test-util-lib",
         "compatibility-device-util-axt",
         "CtsAppTestStubsShared",
+        "Harrier",
     ],
     libs: [
         "android.test.runner",
