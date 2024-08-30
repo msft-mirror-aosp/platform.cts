@@ -52,6 +52,7 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.NonMainlineTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -144,6 +145,8 @@ public class AudioPlaybackCaptureTest {
     };
     private APCTestConfig mAPCTestConfig;
 
+    private boolean mSetupRequiresVolumeChange;
+
     @Before
     public void setup() throws Exception {
         mPlaybackBeforeCapture = false;
@@ -152,6 +155,23 @@ public class AudioPlaybackCaptureTest {
         mAudioManager = mActivity.getSystemService(AudioManager.class);
         mUid = mActivity.getApplicationInfo().uid;
         mMediaProjection = mActivity.waitForMediaProjection();
+        mSetupRequiresVolumeChange =
+                mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0;
+        if (mSetupRequiresVolumeChange) {
+            // PlaybackCaptureTests will fail with 0 volume, so adjust up.
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                                          1 /* index */, 0 /* flags */);
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (mSetupRequiresVolumeChange
+                && mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 1) {
+            // Restore volume
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                    0 /* index */, 0 /* flags */);
+        }
     }
 
     private AudioRecord createDefaultPlaybackCaptureRecord() throws Exception {
