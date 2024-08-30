@@ -26,7 +26,7 @@ android_test {
         "sts",
         "general-tests",
     ],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
     static_libs: [
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -43,6 +43,9 @@ android_test {
         "libdexmakerjvmtiagent",
         "libmultiplejvmtiagentsinterferenceagent",
     ],
-    srcs: ["src/**/*.java", "src/**/*.kt"],
+    srcs: [
+        "src/**/*.java",
+        "src/**/*.kt",
+    ],
     platform_apis: true,
 }

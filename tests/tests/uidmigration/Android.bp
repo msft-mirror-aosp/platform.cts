@@ -29,8 +29,8 @@ android_test {
         "CtsSharedUserMigrationTestLibs",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: ["src/**/*.kt"],
     // Tag this module as a cts test artifact

@@ -34,8 +34,8 @@ android_library {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     target_sdk_version: "current",
@@ -59,8 +59,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],
@@ -93,8 +93,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],
@@ -123,8 +123,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
 
     defaults: ["cts_defaults"],
@@ -156,8 +156,8 @@ android_library {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     target_sdk_version: "current",
@@ -183,8 +183,8 @@ android_test {
         "kotlin-test",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 
     defaults: ["cts_defaults"],

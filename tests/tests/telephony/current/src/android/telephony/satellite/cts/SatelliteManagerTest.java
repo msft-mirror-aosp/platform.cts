@@ -16,6 +16,7 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 import static android.telephony.satellite.SatelliteSubscriberInfo.IMSI_MSISDN;
 
@@ -28,6 +29,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.CancellationSignal;
 import android.os.OutcomeReceiver;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -967,5 +970,16 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(),
                         receiver));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testSendIntent_ActionSatelliteSubscribersChanged() {
+        if (!shouldTestSatellite()) return;
+
+        Context context = getContext();
+        Intent intent = new Intent(ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED);
+        // Throws SecurityException as it is not a system app.
+        assertThrows(SecurityException.class, () -> context.sendBroadcast(intent));
     }
 }

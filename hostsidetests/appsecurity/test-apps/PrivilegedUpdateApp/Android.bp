@@ -15,7 +15,7 @@ android_test_helper_app {
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

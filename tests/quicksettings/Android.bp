@@ -36,9 +36,9 @@ android_test {
     ],
 
     libs: [
-        "android.test.mock",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
 
     srcs: ["src/**/*.java"],

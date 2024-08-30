@@ -16,8 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -124,15 +124,15 @@ class ParamColorCorrectionTest(its_base_test.ItsBaseTest):
         logging.debug('Means: %s,  Ratios: %s', str(rgb_means), str(ratios))
 
       # Draw a plot
-      pylab.figure(_NAME)
+      plt.figure(_NAME)
       for ch, means in enumerate([r_means, g_means, b_means]):
-        pylab.plot(capture_idxs, means, '-'+'rgb'[ch]+'o')
-      pylab.xticks(capture_idxs)
-      pylab.ylim([0, 1])
-      pylab.title(_NAME)
-      pylab.xlabel('Cap Index [Unity, R boost, B boost]')
-      pylab.ylabel('RGB patch means')
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+        plt.plot(capture_idxs, means, '-'+'rgb'[ch]+'o')
+      plt.xticks(capture_idxs)
+      plt.ylim([0, 1])
+      plt.title(_NAME)
+      plt.xlabel('Cap Index [Unity, R boost, B boost]')
+      plt.ylabel('RGB patch means')
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
       # Ensure that image is not clamped to white/black.
       if not all(_RGB_RANGE_THRESH < g_means[i] < 1.0-_RGB_RANGE_THRESH
                  for i in capture_idxs):

@@ -28,8 +28,8 @@ android_test {
         "tests-tests-networksecurityconfig-lib",
     ],
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     resource_dirs: ["res/"],

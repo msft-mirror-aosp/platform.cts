@@ -28,7 +28,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     sdk_version: "test_current",
     min_sdk_version: "3",

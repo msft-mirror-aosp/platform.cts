@@ -18,11 +18,11 @@ package {
 
 android_test {
     name: "CtsUsesLibraryApp",
-    defaults: [ "cts_support_defaults" ],
+    defaults: ["cts_support_defaults"],
     sdk_version: "current",
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs",
     ],
     static_libs: [
         "androidx.test.rules",

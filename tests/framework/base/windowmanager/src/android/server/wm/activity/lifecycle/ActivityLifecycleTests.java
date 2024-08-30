@@ -511,6 +511,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             return;
         }
 
+        final RotationSession rotationSession = createManagedRotationSession();
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
@@ -525,7 +526,6 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 state(becomingVisibleActivity, ON_STOP),
                 state(translucentActivity, ON_STOP));
 
-        final RotationSession rotationSession = createManagedRotationSession();
         if (!supportsLockedUserRotation(
                 rotationSession, translucentActivity.getDisplay().getDisplayId())) {
             return;

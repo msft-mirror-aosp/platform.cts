@@ -1122,8 +1122,8 @@ public class AudioManagerTest {
                     "No change expected at max volume");
 
             if (stream == STREAM_VOICE_CALL) {
-                // TODO: add API to check the adjust volume delta for voice call based on ratio
-                // between index UI steps and voice call range
+                // TODO(b/362836517): add API to check the adjust volume delta for voice call based
+                // on ratio between index UI steps and voice call range
                 continue;
             }
 

@@ -43,7 +43,7 @@ android_test {
         "androidx.test.core",
         "Harrier",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",

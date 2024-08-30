@@ -7173,6 +7173,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         public void onCreate(TwtSession twtSession) {
             synchronized (mLock) {
                 mTwtSession.set(twtSession);
+                mLock.notify();
             }
         }
     }

@@ -104,8 +104,8 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     // Tag this module as a cts test artifact
     test_suites: [

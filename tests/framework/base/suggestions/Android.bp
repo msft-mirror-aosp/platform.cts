@@ -20,7 +20,7 @@ package {
 android_test {
     name: "CtsSettingsSuggestionsTest",
     defaults: ["cts_defaults"],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "androidx.test.rules",
         "compatibility-device-util-axt",

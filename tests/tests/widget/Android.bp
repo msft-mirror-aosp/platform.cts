@@ -43,7 +43,7 @@ android_test {
         "Harrier",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
 
     srcs: [
         "src/**/*.java",

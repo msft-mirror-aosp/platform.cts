@@ -32,8 +32,8 @@ android_test {
     srcs: ["src/**/*.java"],
     // was: sdk_version: "current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     // Tag this module as a cts test artifact
     test_suites: [

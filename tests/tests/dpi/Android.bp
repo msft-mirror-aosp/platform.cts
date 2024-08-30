@@ -29,8 +29,8 @@ android_test {
         "compatibility-device-util-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: [
         "src/**/*.java",
@@ -49,7 +49,7 @@ android_test {
 // CTS tests, so drop it into a library that other tests can use.
 java_library {
     name: "android.cts.dpi",
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/android/dpi/cts/DefaultManifestAttributesTest.java"],
     sdk_version: "test_current",
 }
