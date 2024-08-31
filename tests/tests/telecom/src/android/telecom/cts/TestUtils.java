@@ -539,19 +539,6 @@ public class TestUtils {
                 + handle.getId() + " " + currentUserSerial + " " + label + " " + address);
     }
 
-    public static void setDefaultOutgoingPhoneAccount(Instrumentation instrumentation,
-            PhoneAccountHandle handle) throws Exception {
-        if (handle != null) {
-            final ComponentName component = handle.getComponentName();
-            final long currentUserSerial = getCurrentUserSerialNumber(instrumentation);
-            executeShellCommand(instrumentation, COMMAND_SET_DEFAULT_PHONE_ACCOUNT
-                    + component.getPackageName() + "/" + component.getClassName() + " "
-                    + handle.getId() + " " + currentUserSerial);
-        } else {
-            executeShellCommand(instrumentation, COMMAND_SET_DEFAULT_PHONE_ACCOUNT);
-        }
-    }
-
     public static void waitOnAllHandlers(Instrumentation instrumentation) {
         try {
             executeShellCommand(instrumentation, COMMAND_WAIT_ON_HANDLERS);

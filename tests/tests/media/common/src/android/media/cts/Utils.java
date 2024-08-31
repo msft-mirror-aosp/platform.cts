@@ -105,7 +105,9 @@ public class Utils {
     public static void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        int userId = instrumentation.getTargetContext().getUserId();
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + userId;
 
         // Get permission to enable accessibility
         UiAutomation uiAutomation = instrumentation.getUiAutomation();

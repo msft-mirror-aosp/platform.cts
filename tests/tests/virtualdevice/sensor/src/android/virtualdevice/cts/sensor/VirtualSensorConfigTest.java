@@ -16,6 +16,7 @@
 
 package android.virtualdevice.cts.sensor;
 
+import static android.hardware.Sensor.REPORTING_MODE_ON_CHANGE;
 import static android.hardware.Sensor.TYPE_ACCELEROMETER;
 import static android.hardware.SensorDirectChannel.RATE_STOP;
 import static android.hardware.SensorDirectChannel.RATE_VERY_FAST;
@@ -27,12 +28,17 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.companion.virtual.sensor.VirtualSensorConfig;
+import android.companion.virtualdevice.flags.Flags;
 import android.hardware.Sensor;
 import android.os.Parcel;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -42,6 +48,9 @@ public class VirtualSensorConfigTest {
 
     private static final String SENSOR_NAME = "VirtualSensorName";
     private static final String SENSOR_VENDOR = "VirtualSensorVendor";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void parcelAndUnparcel_matches() {
@@ -56,6 +65,7 @@ public class VirtualSensorConfigTest {
                         .setMinDelay(7)
                         .setMaxDelay(8)
                         .build();
+
         final Parcel parcel = Parcel.obtain();
         originalConfig.writeToParcel(parcel, /* flags= */ 0);
         parcel.setDataPosition(0);
@@ -77,6 +87,31 @@ public class VirtualSensorConfigTest {
         //   0x800 is SENSOR_FLAG_DIRECT_CHANNEL_GRALLOC (i.e. TYPE_HARDWARE_BUFFER)
         //   7 is SENSOR_FLAG_SHIFT_DIRECT_REPORT
         assertThat(recreatedConfig.getFlags()).isEqualTo(0x400 | RATE_VERY_FAST << 7);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void parcelAndUnparcel_wakeUpSensor() {
+        final VirtualSensorConfig originalConfig =
+                new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                        .setWakeUpSensor(true)
+                        .setReportingMode(Sensor.REPORTING_MODE_ON_CHANGE)
+                        .build();
+
+        final Parcel parcel = Parcel.obtain();
+        originalConfig.writeToParcel(parcel, /* flags= */ 0);
+        parcel.setDataPosition(0);
+        final VirtualSensorConfig recreatedConfig =
+                VirtualSensorConfig.CREATOR.createFromParcel(parcel);
+
+        assertThat(recreatedConfig.isWakeUpSensor()).isTrue();
+        assertThat(recreatedConfig.getReportingMode())
+                .isEqualTo(Sensor.REPORTING_MODE_ON_CHANGE);
+
+        // From sensors-base.h:
+        //   SENSOR_FLAG_WAKE_UP is 1
+        //   SENSOR_FLAG_SHIFT_REPORTING_MODE is 1
+        assertThat(recreatedConfig.getFlags()).isEqualTo(1 | REPORTING_MODE_ON_CHANGE << 1);
     }
 
     @Test
@@ -123,6 +158,21 @@ public class VirtualSensorConfigTest {
                         .build());
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER)
+    @Test
+    public void setReportingMode_invalidValue_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                        .setReportingMode(-1)
+                        .build());
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new VirtualSensorConfig.Builder(TYPE_ACCELEROMETER, SENSOR_NAME)
+                        .setReportingMode(4)
+                        .build());
+    }
+
     @Test
     public void sensorConfig_onlyRequiredFields() {
         final VirtualSensorConfig config =
@@ -136,5 +186,10 @@ public class VirtualSensorConfigTest {
         assertThat(config.getMinDelay()).isEqualTo(0);
         assertThat(config.getMaxDelay()).isEqualTo(0);
         assertThat(config.getFlags()).isEqualTo(0);
+
+        if (Flags.deviceAwareDisplayPower()) {
+            assertThat(config.isWakeUpSensor()).isFalse();
+            assertThat(config.getReportingMode()).isEqualTo(Sensor.REPORTING_MODE_CONTINUOUS);
+        }
     }
 }

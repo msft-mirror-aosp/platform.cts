@@ -557,6 +557,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     public void testSatelliteModemStateChangedForNbIot() {
         if (!shouldTestSatelliteWithMockService() || !Flags.oemEnabledSatelliteFlag()) return;
 
+        beforeSatelliteForOemTest();
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
 
         grantSatellitePermission();
@@ -728,6 +729,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.restoreSatelliteGatewayServicePackageName());
         updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
 
+        afterSatelliteForOemTest();
         revokeSatellitePermission();
     }
 
@@ -5171,6 +5173,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     static int sTestSubIDForCarrierSatellite;
     static SubscriptionManager sSubscriptionManager;
     static boolean sPreviousSatelliteAttachEnabled;
+    static boolean sPreviousSatelliteIsOnlyNtn;
 
     private void beforeSatelliteForCarrierTest() {
         sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
@@ -5193,6 +5196,27 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
+    private void beforeSatelliteForOemTest() {
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        sSubscriptionManager = InstrumentationRegistry.getInstrumentation()
+                .getContext().getSystemService(SubscriptionManager.class);
+        // Get the default subscription values for COLUMN_IS_ONLY_NTN.
+        sPreviousSatelliteIsOnlyNtn =
+                sSubscriptionManager.getBooleanSubscriptionProperty(sTestSubIDForCarrierSatellite,
+                        SubscriptionManager.IS_ONLY_NTN,
+                        false,
+                        getContext());
+        UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            ui.adoptShellPermissionIdentity();
+            // Set user Setting as true
+            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+                    SubscriptionManager.IS_ONLY_NTN, String.valueOf(1));
+        } finally {
+            ui.dropShellPermissionIdentity();
+        }
+    }
+
     private void afterSatelliteForCarrierTest() {
         // Set user Setting value to previous one.
         UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
@@ -5201,6 +5225,20 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
                     SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER,
                     sPreviousSatelliteAttachEnabled ? "1" : "0");
+        } finally {
+            ui.dropShellPermissionIdentity();
+            sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;
+        }
+    }
+
+    private void afterSatelliteForOemTest() {
+        // Set user Setting value to previous one.
+        UiAutomation ui = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            ui.adoptShellPermissionIdentity();
+            sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
+                    SubscriptionManager.IS_ONLY_NTN,
+                    sPreviousSatelliteIsOnlyNtn ? "1" : "0");
         } finally {
             ui.dropShellPermissionIdentity();
             sTestSubIDForCarrierSatellite = SubscriptionManager.INVALID_SUBSCRIPTION_ID;

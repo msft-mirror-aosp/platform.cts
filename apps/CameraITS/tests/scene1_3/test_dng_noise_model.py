@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -152,16 +152,16 @@ class DngNoiseModelTest(its_base_test.ItsBaseTest):
         sens_valid.append(sens)
 
     # plot data and models
-    pylab.figure(_NAME)
+    plt.figure(_NAME)
     for i, ch in enumerate(_BAYER_COLORS):
-      pylab.plot(sens_valid, var_exp[i], 'rgkb'[i], label=ch+' expected')
-      pylab.plot(sens_valid, var_meas[i], 'rgkb'[i]+'.--', label=ch+' measured')
-    pylab.title(_NAME)
-    pylab.xlabel('Sensitivity')
-    pylab.ylabel('Center patch variance')
-    pylab.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
-    pylab.legend(loc=2)
-    matplotlib.pyplot.savefig(f'{name_with_log_path}_plot.png')
+      plt.plot(sens_valid, var_exp[i], 'rgkb'[i], label=ch+' expected')
+      plt.plot(sens_valid, var_meas[i], 'rgkb'[i]+'.--', label=ch+' measured')
+    plt.title(_NAME)
+    plt.xlabel('Sensitivity')
+    plt.ylabel('Center patch variance')
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
+    plt.legend(loc=2)
+    plt.savefig(f'{name_with_log_path}_plot.png')
 
     # PASS/FAIL check
     for i, ch in enumerate(_BAYER_COLORS):

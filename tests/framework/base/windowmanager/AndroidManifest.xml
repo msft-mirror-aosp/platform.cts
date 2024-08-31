@@ -551,7 +551,7 @@
         <activity android:name="android.server.wm.animations.BlurTests$BlurActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
-             android:theme="@style/TranslucentDialog"/>
+             android:theme="@style/BlurTestTheme"/>
         <activity android:name="android.server.wm.animations.BlurTests$BlurAttributesActivity"
              android:exported="true"
              android:colorMode="wideColorGamut"
@@ -642,11 +642,11 @@
         <activity android:name="android.server.wm.animations.MoveAnimationTests$FloatingActivity"
                   android:exported="true"
                   android:noHistory="true"
-                  android:theme="@style/Floating"/>
+                  android:theme="@style/MoveAnimationTestTheme"/>
         <activity android:name="android.server.wm.animations.MoveAnimationTests$FloatingActivity$NoMove"
                   android:exported="true"
                   android:noHistory="true"
-                  android:theme="@style/Floating.NoMove"/>
+                  android:theme="@style/MoveAnimationTestTheme.NoMove"/>
 
         <activity android:name="android.server.wm.MediaProjectionHelper$MediaProjectionActivity" />
         <service
