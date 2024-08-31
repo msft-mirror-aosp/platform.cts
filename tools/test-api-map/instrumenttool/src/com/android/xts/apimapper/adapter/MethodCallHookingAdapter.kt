@@ -126,7 +126,7 @@ class MethodCallHookingAdapter(
         calleeMethodDesc: String,
         receiverIndex: Int?
     ) {
-        visitor.visitLdcInsn(className)
+        visitor.visitLdcInsn(className.toHumanReadableClassName())
         visitor.visitLdcInsn(callerMethodName)
         visitor.visitLdcInsn(calleeMethodOpcode)
         visitor.visitLdcInsn(calleeMethodOwner.toHumanReadableClassName())

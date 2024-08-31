@@ -31,8 +31,8 @@ android_test_helper_app {
         "androidx.test.uiautomator_uiautomator",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // tag this module as a cts test artifact

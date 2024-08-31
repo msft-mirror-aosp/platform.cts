@@ -30,8 +30,8 @@ android_test {
     compile_multilib: "both",
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_30_android.test.runner",
+        "sdk_public_30_android.test.base",
     ],
 
     static_libs: [

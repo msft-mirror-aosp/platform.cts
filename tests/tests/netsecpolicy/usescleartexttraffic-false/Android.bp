@@ -25,8 +25,8 @@ android_test {
         "ctstestserver",
     ],
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
+        "org.apache.http.legacy.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",
