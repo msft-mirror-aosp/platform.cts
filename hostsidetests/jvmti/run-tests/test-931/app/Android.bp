@@ -18,6 +18,9 @@ package {
 
 android_test_helper_app {
     name: "CtsJvmtiRunTest931DeviceApp",
-    defaults: ["cts-run-jvmti-defaults"],
+    defaults: ["cts-run-jvmti-app-defaults"],
     manifest: "AndroidManifest.xml",
+    // This test is also run via Mainline Testing against the ART Mainline
+    // Module, which is updatable since Android 12 (API level 31).
+    sdk_version: "31",
 }

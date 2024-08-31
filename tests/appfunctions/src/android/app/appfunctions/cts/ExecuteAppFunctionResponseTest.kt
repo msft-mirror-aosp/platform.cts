@@ -30,6 +30,7 @@ import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.testng.Assert.assertThrows
 
 @RunWith(AndroidJUnit4::class)
 @RequiresFlagsEnabled(
@@ -46,8 +47,7 @@ class ExecuteAppFunctionResponseTest {
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyBoolean(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, true)
                 .build()
-        val response = ExecuteAppFunctionResponse.Builder(resultGd)
-            .build()
+        val response = ExecuteAppFunctionResponse.newSuccess(resultGd, null)
 
         val restoredResponse = parcelAndUnparcel(response)
 
@@ -61,12 +61,29 @@ class ExecuteAppFunctionResponseTest {
     }
 
     @Test
+    fun build_incorrectErrorResponse() {
+        assertThrows(
+            IllegalArgumentException::class.java
+        ) {
+            ExecuteAppFunctionResponse
+                .newFailure(
+                    ExecuteAppFunctionResponse.RESULT_OK,
+                    "test error message",
+                    null
+                )
+        }
+    }
+
+    @Test
     fun build_errorResponse() {
         val emptyGd = GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
         val response =
             ExecuteAppFunctionResponse
-                .Builder(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR, "test error message")
-                .build()
+                .newFailure(
+                    ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
+                    null,
+                    null
+                )
 
         val restoredResponse = parcelAndUnparcel(response)
 
@@ -76,8 +93,7 @@ class ExecuteAppFunctionResponseTest {
         assertThat(restoredResponse.resultDocument.schemaType).isEqualTo(emptyGd.schemaType)
         assertThat(restoredResponse.resultCode)
             .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
-        assertThat(restoredResponse.errorMessage).isNotNull()
-        assertThat(restoredResponse.errorMessage).isEqualTo("test error message")
+        assertThat(restoredResponse.errorMessage).isNull()
     }
 
     @Test
@@ -87,9 +103,11 @@ class ExecuteAppFunctionResponseTest {
         extras.putString("testKey", "testValue")
         val response =
             ExecuteAppFunctionResponse
-                .Builder(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR, "test error message")
-                .setExtras(extras)
-                .build()
+                .newFailure(
+                    ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
+                    "test error message",
+                    extras
+                )
 
         val restoredResponse = parcelAndUnparcel(response)
 

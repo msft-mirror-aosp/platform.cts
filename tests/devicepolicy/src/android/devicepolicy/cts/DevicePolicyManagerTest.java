@@ -18,7 +18,6 @@ package android.devicepolicy.cts;
 
 import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
 import static android.app.admin.TargetUser.GLOBAL_USER_ID;
-import static android.app.admin.flags.Flags.FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED;
 
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_AIRPLANE_MODE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
@@ -39,14 +38,13 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.os.UserHandle;
 
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
@@ -149,7 +147,6 @@ public final class DevicePolicyManagerTest {
                 TestApis.context().instrumentationContext().getUser()));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -166,7 +163,6 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission({
@@ -213,7 +209,6 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -246,7 +241,6 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -280,7 +274,6 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -314,7 +307,6 @@ public final class DevicePolicyManagerTest {
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -324,7 +316,6 @@ public final class DevicePolicyManagerTest {
                 SecurityException.class, () -> sDevicePolicyManager.setMaxPolicyStorageLimit(-1));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
@@ -334,7 +325,6 @@ public final class DevicePolicyManagerTest {
                 SecurityException.class, () -> sDevicePolicyManager.getMaxPolicyStorageLimit());
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
