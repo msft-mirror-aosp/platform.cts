@@ -5872,9 +5872,13 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nThis test requires a 2-channel loopback device such as a 2-channel USB audio interface
         correctly configured for audio loopback (see the Audio Loopback Latency test for more
         information).
-        \n\nSince this is a new test, at this time the test process need only be executed for
-        each required route and the test will be allowed to pass even if incorrect
-        multi-channel playback is noted.
+        \n\nThe test should be run for each supported peripheral: Speaker/Mic, Analog Headset Jack,
+        USB Interface and USB Headset.
+        \nOnce each peripheral is tested, a PASS will be granted
+        even if not all channel configurations pass.
+        \nPlease use this information to fix those
+        broken configurations. In future versions, ALL channel configurations
+        will be required to PASS.
     </string>
     <string name="audio_mixdown_clearresults">Clear Results</string>
     <string name="audio_mixdown_calibrate">Calibrate Audio</string>
@@ -5899,11 +5903,17 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_mixdown_cantstart">Couldn\'t Start Duplex Audio.</string>
 
     <string name="audio_mixdown_required">Required</string>
+    <string name="audio_mixdown_notrequired">Not Required</string>
     <string name="audio_mixdown_completed">Completed</string>
     <string name="audio_mixdown_not_completed">Not Completed</string>
 
     <string name="audio_mixdown_req">required</string>
     <string name="audio_mixdown_done">done</string>
+
+    <string name="audio_mixdown_runspeakermic">Please run the test for the Mic/Speaker Route.</string>
+    <string name="audio_mixdown_runanalogheadset">Please run the test for the Analog Headset Route.</string>
+    <string name="audio_mixdown_runusbinterface">Please run the test for the USB Interface Route.</string>
+    <string name="audio_mixdown_runusbheadset">Please run the test for the USB Headset Route.</string>
 
     <!-- Channel Position Names -->
     <string name="audio_channel_mask_left">Left</string>
