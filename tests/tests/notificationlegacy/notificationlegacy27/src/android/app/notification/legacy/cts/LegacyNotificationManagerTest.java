@@ -51,10 +51,15 @@ import android.service.notification.StatusBarNotification;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+
 import junit.framework.Assert;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,6 +74,10 @@ import java.io.InputStream;
 public class LegacyNotificationManagerTest {
     final String TAG = "LegacyNoManTest";
     final static  String PKG = "android.app.notification.legacy.cts";
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     final String NOTIFICATION_CHANNEL_ID = "LegacyNotificationManagerTest";
     private NotificationManager mNotificationManager;
@@ -218,6 +227,10 @@ public class LegacyNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendedPackageSendNotification() throws Exception {
         mListener = mHelper.enableListener(PKG);
         Assert.assertNotNull(mListener);

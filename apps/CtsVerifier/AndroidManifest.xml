@@ -6740,6 +6740,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+           <meta-data android:name="test_excluded_features"
+               android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6760,6 +6762,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6780,6 +6784,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6809,6 +6815,8 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity
@@ -6835,6 +6843,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6855,6 +6865,8 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_CONTENT_TYPE_HINT
                     |android.content.Intent#CHOOSER_CONTENT_TYPE_ALBUM" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <provider

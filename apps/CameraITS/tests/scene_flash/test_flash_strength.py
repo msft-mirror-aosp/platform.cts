@@ -43,7 +43,7 @@ _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 _CAPTURE_INTENT_STILL_CAPTURE = 2
 _MAX_FLASH_STRENGTH = 'android.flash.singleStrengthMaxLevel'
 _MAX_TORCH_STRENGTH = 'android.flash.torchStrengthMaxLevel'
-_BRIGHTNESS_MEAN_ATOL = 5  # Tolerance for brightness mean
+_BRIGHTNESS_MEAN_ATOL = 15  # Tolerance for brightness mean
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 
 

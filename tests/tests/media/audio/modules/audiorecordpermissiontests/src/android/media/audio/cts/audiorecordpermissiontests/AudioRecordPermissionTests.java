@@ -252,7 +252,7 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
-        // Future is completes when silenced. If not, timeout and throw
+        // Future is completed when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         assertFalse(getOpState(TEST_PACKAGE));
     }
