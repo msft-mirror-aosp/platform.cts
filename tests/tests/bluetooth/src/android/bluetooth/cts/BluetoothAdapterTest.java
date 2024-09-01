@@ -500,7 +500,7 @@ public class BluetoothAdapterTest {
     public void registerBluetoothConnectionCallback() {
         assumeTrue(mHasBluetooth);
 
-        Executor executor = mContext.getMainExecutor();
+        Executor executor = mock(Executor.class);
         BluetoothAdapter.BluetoothConnectionCallback callback =
                 mock(BluetoothAdapter.BluetoothConnectionCallback.class);
 
