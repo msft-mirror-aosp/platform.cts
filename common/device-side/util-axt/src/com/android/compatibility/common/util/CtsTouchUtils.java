@@ -756,19 +756,23 @@ public final class CtsTouchUtils {
     }
 
     /**
-     * Emulates a scroll to the bottom of the specified {@link ViewGroup}.
+     * Emulates a scroll to the end (either top or bottom) of the specified {@link ViewGroup}.
      *
      * @param instrumentation the instrumentation used to run the test
      * @param viewGroup View group
+     * @param shouldScrollUpwards whether or not to scroll upwards to the top, otherwise scroll
+     *                            downwards to the bottom
      */
-    public void emulateScrollToBottom(Instrumentation instrumentation,
-            ActivityTestRule<?> activityTestRule, ViewGroup viewGroup) throws Throwable {
+    public void emulateScrollToEnd(Instrumentation instrumentation,
+            ActivityTestRule<?> activityTestRule, ViewGroup viewGroup,
+            boolean shouldScrollUpwards) throws Throwable {
         final int[] viewGroupOnScreenXY = new int[2];
         viewGroup.getLocationOnScreen(viewGroupOnScreenXY);
 
         final int emulatedX = viewGroupOnScreenXY[0] + viewGroup.getWidth() / 2;
         final int emulatedStartY = viewGroupOnScreenXY[1] + 3 * viewGroup.getHeight() / 4;
-        final int swipeAmount = viewGroup.getHeight() / 2;
+        final int swipeAmount =
+                shouldScrollUpwards ? -viewGroup.getHeight() / 2 : viewGroup.getHeight() / 2;
 
         ViewStateSnapshot prev;
         ViewStateSnapshot next = new ViewStateSnapshot(viewGroup);
