@@ -18,7 +18,6 @@ package android.devicepolicy.cts
 import android.Manifest
 import android.accounts.Account
 import android.app.admin.*
-import android.app.admin.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
@@ -418,7 +417,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDeviceOwner() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
@@ -451,7 +449,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDoInMainUser() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false

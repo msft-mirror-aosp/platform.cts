@@ -35,7 +35,7 @@ android_test_helper_app {
         "ctstestrunner-axt",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs",
         "android.car-test-stubs",
     ],
     min_sdk_version: "33", //CTS tests needs to run up to N-2 version to support mainline
