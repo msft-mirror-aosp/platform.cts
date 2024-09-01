@@ -28,6 +28,7 @@ android_library {
         "src/**/*.kt",
         "src/**/*.aidl",
     ],
+    static_libs: ["kotlinx-coroutines-android"],
     resource_dirs: ["res"],
     sdk_version: "test_33",
 }
