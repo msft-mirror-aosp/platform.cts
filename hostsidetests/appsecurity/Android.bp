@@ -569,3 +569,59 @@ filegroup {
     name: "CtsHostsideTestsAppSecurityUtil",
     srcs: ["src/android/appsecurity/cts/Utils.java"],
 }
+
+test_module_config_host {
+    name: "CtsPackageManagerHostTestCases_cts_splittests",
+    base: "CtsPackageManagerHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.SplitTests"],
+}
+
+test_module_config_host {
+    name: "CtsInstantAppsHostTestCases_cts_ephemeraltest",
+    base: "CtsInstantAppsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.EphemeralTest"],
+    exclude_annotations: ["android.platform.test.annotations.FlakyTest"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerHostTestCases_cts_isolatedsplitstests",
+    base: "CtsPackageManagerHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.IsolatedSplitsTests"],
+}
+
+test_module_config_host {
+    name: "CtsAppSecurityHostTestCases_cts_externalstoragehosttest",
+    base: "CtsAppSecurityHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.ExternalStorageHostTest"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerHostTestCases_cts_readablesettingsfieldstest",
+    base: "CtsPackageManagerHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.ReadableSettingsFieldsTest"],
+}
+
+test_module_config_host {
+    name: "CtsStorageHostTestCases_android_server_uri",
+    base: "CtsStorageHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.appsecurity.cts.ExternalStorageHostTest#testGrantUriPermission29",
+        "android.appsecurity.cts.ExternalStorageHostTest#testMediaNone",
+        "android.appsecurity.cts.ExternalStorageHostTest#testGrantUriPermission",
+        "android.appsecurity.cts.ExternalStorageHostTest#testMediaNone28",
+        "android.appsecurity.cts.ExternalStorageHostTest#testMediaNone29",
+    ],
+}
+
+test_module_config_host {
+    name: "CtsStorageHostTestCases_cts_externalstoragehosttest",
+    base: "CtsStorageHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.appsecurity.cts.ExternalStorageHostTest"],
+}

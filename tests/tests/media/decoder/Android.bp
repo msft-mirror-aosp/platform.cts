@@ -128,3 +128,10 @@ android_test {
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
+
+test_module_config {
+    name: "CtsMediaDecoderTestCases_cts_decoderrendertest",
+    base: "CtsMediaDecoderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.decoder.cts.DecoderRenderTest"],
+}

@@ -71,3 +71,15 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsVoiceInteractionTestCases_android_server_attention",
+    base: "CtsVoiceInteractionTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.voiceinteraction.cts.HotwordDetectionServiceProximityTest",
+        "android.voiceinteraction.cts.unittests.HotwordDetectedResultTest",
+        "android.voiceinteraction.cts.HotwordDetectionServiceBasicTest",
+        "android.voiceinteraction.cts.AlwaysOnHotwordDetectorTest",
+    ],
+}

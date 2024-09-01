@@ -66,3 +66,38 @@ filegroup {
         "src/android/provider/cts/media/MediaStoreUtils.java",
     ],
 }
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_media",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.media."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_settings",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.settings."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_calendar",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.calendar."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_cts_contacts",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.contacts."],
+}
+
+test_module_config {
+    name: "CtsProviderTestCases_media_mediastore_downloadstest",
+    base: "CtsProviderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.provider.cts.media.MediaStore_DownloadsTest"],
+}

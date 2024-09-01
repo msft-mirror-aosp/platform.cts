@@ -43,3 +43,10 @@ android_test {
 
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsVirtualDevicesTestCases_cts_virtualaudiotest",
+    base: "CtsVirtualDevicesTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.virtualdevice.cts.VirtualAudioTest"],
+}
