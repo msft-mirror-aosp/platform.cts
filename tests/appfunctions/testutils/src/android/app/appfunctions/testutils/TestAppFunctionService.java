@@ -74,21 +74,24 @@ public class TestAppFunctionService extends AppFunctionService {
                 break;
             }
             case "noOp": {
-                callback.accept(new ExecuteAppFunctionResponse.Builder(
-                        buildEmptyGenericDocument()).build());
+                callback.accept(ExecuteAppFunctionResponse.newSuccess(
+                        buildEmptyGenericDocument(), /*extras=*/ null));
                 break;
             }
             case "noSuchMethod": {
-                callback.accept(new ExecuteAppFunctionResponse.Builder(
+                callback.accept(ExecuteAppFunctionResponse.newFailure(
                         ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
-                        "Function does not exist"
-                ).build());
+                        "Function does not exist",
+                        /*extras=*/ null
+                ));
                 break;
             }
             default:
                 callback.accept(
-                        new ExecuteAppFunctionResponse.Builder(
-                                ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR, "").build()
+                        ExecuteAppFunctionResponse.newFailure(
+                                ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
+                                /*errorMessage=*/ null,
+                                /*extras=*/ null)
                 );
         }
     }
@@ -103,7 +106,7 @@ public class TestAppFunctionService extends AppFunctionService {
         GenericDocument result = new GenericDocument.Builder<>("", "", "")
                 .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
                 .build();
-        return new ExecuteAppFunctionResponse.Builder(result).build();
+        return ExecuteAppFunctionResponse.newSuccess(result, /*extras=*/ null);
     }
 
     @Override

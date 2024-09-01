@@ -22,8 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -61,6 +61,14 @@ android_test {
     sdk_version: "test_current",
 }
 
+android_app {
+    name: "CtsGraphicsTestCases-res",
+    defaults: ["cts_defaults"],
+    sdk_version: "test_current",
+    use_resource_processor: false,
+    enforce_uses_libs: false,
+}
+
 android_ravenwood_test {
     name: "CtsGraphicsTestCasesRavenwood",
     defaults: ["cts_defaults"],
@@ -69,18 +77,33 @@ android_ravenwood_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "junit-params",
+        "testng",
+        "hwui_flags_java_lib",
+        "framework_graphics_flags_java_lib",
     ],
     srcs: [
         "src/android/graphics/cts/ColorTest.java",
+        "src/android/graphics/cts/Color_ColorLongTest.java",
         "src/android/graphics/cts/ColorSpaceTest.java",
         "src/android/graphics/cts/InsetsTest.java",
         "src/android/graphics/cts/InterpolatorTest.java",
+        "src/android/graphics/cts/Matrix44Test.java",
+        "src/android/graphics/cts/Matrix_ScaleToFitTest.java",
         "src/android/graphics/cts/MatrixTest.java",
+        "src/android/graphics/cts/OutlineTest.java",
+        "src/android/graphics/cts/ParcelableColorSpaceTest.java",
+        "src/android/graphics/cts/Path_DirectionTest.java",
+        "src/android/graphics/cts/Path_FillTypeTest.java",
         "src/android/graphics/cts/PathTest.java",
+        "src/android/graphics/cts/PixelFormatTest.java",
         "src/android/graphics/cts/PointFTest.java",
         "src/android/graphics/cts/PointTest.java",
         "src/android/graphics/cts/RectFTest.java",
         "src/android/graphics/cts/RectTest.java",
+
+        ":CtsGraphicsTestCases-res{.aapt.srcjar}",
     ],
+    resource_apk: "CtsGraphicsTestCases-res",
     auto_gen_config: true,
+    sdk_version: "test_current",
 }

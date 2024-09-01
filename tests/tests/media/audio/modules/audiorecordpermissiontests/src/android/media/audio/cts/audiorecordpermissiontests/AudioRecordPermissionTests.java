@@ -24,6 +24,7 @@ import static android.app.AppOpsManager.MODE_IGNORED;
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 import static com.android.media.mediatestutils.TestUtils.getFutureForIntent;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -32,12 +33,18 @@ import static org.junit.Assume.assumeTrue;
 import android.Manifest;
 import android.app.Instrumentation;
 import android.app.AppOpsManager;
+import android.os.Bundle;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.audio.cts.audiorecordpermissiontests.common.IAttrProvider;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
@@ -58,8 +65,10 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeFull(reason = "Test requires intents between multiple apps")
 @RunWith(AndroidJUnit4.class)
 public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
+    static final String TAG = "AudioRecordPermissionTests";
     // Keep in sync with test apps
     static final String API_34_PACKAGE = "android.media.audio.cts.CtsRecordServiceApi34";
     // Behavior changes with targetSdk >= 34, so test both cases
@@ -89,9 +98,11 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     public void teardown() throws Exception {
         // Clean up any left-over activities, services
         for (var pack : Set.copyOf(mActivityStartedPackages)) {
+            Log.i(TAG, "Stopping  leftover activity: " + pack);
             stopActivity(pack);
         }
         for (var pack : Set.copyOf(mServiceStartedPackages)) {
+            Log.i(TAG, "Stopping  leftover service : " + pack);
             stopService(pack);
         }
     }
@@ -241,7 +252,7 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // Move out of TOP to a service state
         stopActivity(TEST_PACKAGE);
 
-        // Future is completes when silenced. If not, timeout and throw
+        // Future is completed when silenced. If not, timeout and throw
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         assertFalse(getOpState(TEST_PACKAGE));
     }
@@ -263,6 +274,106 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // Assert that we timeout (future should not complete, since we should not be silenced)
         assertThrows(TimeoutException.class, () -> future.get(FALSE_NEG_SECS, TimeUnit.SECONDS));
         assertTrue(getOpState(TEST_PACKAGE));
+    }
+
+
+    @Test
+    public void testStartRecording_whenBottomMissingCapabilities_isSilenced() throws Exception {
+        final var ATTRIBUTED_PACKAGE = API_34_NO_CAP_PACKAGE;
+        final var RECORDING_PACKAGE = API_34_PACKAGE;
+
+        // Missing caps still
+        startForeground(ATTRIBUTED_PACKAGE);
+        final var attr = getAttributionProvider(ATTRIBUTED_PACKAGE);
+
+        // recording package should always have caps since TOP
+        startActivity(RECORDING_PACKAGE);
+
+        // expect silence, since the attributed package lacks caps
+        assertFalse(startServiceRecording(RECORDING_PACKAGE, attr));
+        assertFalse(getOpState(RECORDING_PACKAGE));
+        assertFalse(getOpState(ATTRIBUTED_PACKAGE));
+    }
+
+    @Test
+    public void testStartRecording_whenTopMissingCapabilities_isSilenced() throws Exception {
+        final var ATTRIBUTED_PACKAGE = API_34_PACKAGE;
+        final var RECORDING_PACKAGE = API_34_NO_CAP_PACKAGE;
+
+        startForeground(ATTRIBUTED_PACKAGE);
+        final var attr = getAttributionProvider(ATTRIBUTED_PACKAGE);
+
+        // No caps for recording package
+        startForeground(RECORDING_PACKAGE);
+        assertFalse(startServiceRecording(RECORDING_PACKAGE, attr));
+        assertFalse(getOpState(RECORDING_PACKAGE));
+        assertFalse(getOpState(ATTRIBUTED_PACKAGE));
+    }
+
+    @Test
+    public void testBottomOfChainLosesCapabilities_isSilenced() throws Exception {
+        final var ATTRIBUTED_PACKAGE = API_34_PACKAGE;
+        final var RECORDING_PACKAGE = API_34_NO_CAP_PACKAGE;
+        // Bottom of chain starts with caps
+        startForeground(ATTRIBUTED_PACKAGE);
+        final var attr = getAttributionProvider(ATTRIBUTED_PACKAGE);
+
+        // recording package should always have caps since TOP
+        startActivity(RECORDING_PACKAGE);
+        assumeTrue(startServiceRecording(RECORDING_PACKAGE, attr));
+        assertTrue(getOpState(RECORDING_PACKAGE));
+        // TODO(b/355499272) op state not correctly reported for bottom of chain
+        // assertTrue(getOpState(ATTRIBUTED_PACKAGE));
+
+        final var silenceFuture =
+                getFutureForIntent(mContext, RECORDING_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+
+        // remove capabilities from bottom of chain
+        mContext.startService(getIntentForAction(ATTRIBUTED_PACKAGE, ACTION_STOP_FOREGROUND));
+
+        // Chain loses rights, so we should go silent
+        silenceFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(RECORDING_PACKAGE));
+        assertFalse(getOpState(ATTRIBUTED_PACKAGE));
+    }
+
+    @Test
+    public void testTopOfChainLosesCapabilities_isSilenced() throws Exception {
+        final var ATTRIBUTED_PACKAGE = API_34_PACKAGE;
+        final var RECORDING_PACKAGE = API_34_NO_CAP_PACKAGE;
+
+        startForeground(ATTRIBUTED_PACKAGE);
+
+        final var attr = getAttributionProvider(ATTRIBUTED_PACKAGE);
+
+        startActivity(RECORDING_PACKAGE);
+        assumeTrue(startServiceRecording(RECORDING_PACKAGE, attr));
+        assertTrue(getOpState(RECORDING_PACKAGE));
+        // assertTrue(getOpState(ATTRIBUTED_PACKAGE));
+
+        final var silenceFuture =
+                getFutureForIntent(mContext, RECORDING_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+
+        // remove capabilities from top of chain
+        stopActivity(RECORDING_PACKAGE);
+
+        // Chain loses rights, so we should go silent
+        silenceFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(RECORDING_PACKAGE));
+        assertFalse(getOpState(ATTRIBUTED_PACKAGE));
+
+    }
+
+    private IBinder getAttributionProvider(String packageName) throws Exception {
+        final var attrFuture = getFutureForIntent(mContext, packageName + ACTION_SEND_ATTRIBUTION);
+        mContext.startService(getIntentForAction(packageName, ACTION_REQUEST_ATTRIBUTION));
+        mServiceStartedPackages.add(packageName);
+        var provider = attrFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS)
+                .getExtras()
+                .getBinder(EXTRA_ATTRIBUTION);
+        assertEquals(provider.getInterfaceDescriptor(), IAttrProvider.DESCRIPTOR);
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
+        return provider;
     }
 
     private void buildRecord() throws Exception {
@@ -303,13 +414,18 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     private void stopActivity(String packageName) throws Exception {
         final var future = makeFuture(packageName + ACTION_ACTIVITY_FINISHED);
         mContext.sendBroadcast(
-                new Intent(packageName + ACTION_ACTIVITY_DO_FINISH).setPackage(packageName));
+                new Intent(packageName + ACTION_FINISH_ACTIVITY).setPackage(packageName));
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         mActivityStartedPackages.remove(packageName);
     }
 
-    // return true iff track starts unsilenced
     private boolean startServiceRecording(String packageName) throws Exception {
+        return startServiceRecording(packageName, null);
+    }
+
+    // return true iff track starts unsilenced
+    private boolean startServiceRecording(String packageName, IBinder attrProvider)
+            throws Exception {
         final var future =
                 getFutureForIntent(
                         mContext,
@@ -319,6 +435,9 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
                         x -> true);
 
         final Intent intent = getIntentForAction(packageName, ACTION_START_RECORD);
+        final var extras = new Bundle();
+        extras.putBinder(EXTRA_ATTRIBUTION, attrProvider);
+        if (attrProvider != null) intent.putExtras(extras);
 
         mContext.startService(intent);
         final var result =
@@ -348,8 +467,9 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     }
 
     private void stopService(String packageName) throws Exception {
-        final var future = makeFuture(packageName + ACTION_FINISH_TEARDOWN);
+        final var future = makeFuture(packageName + ACTION_TEARDOWN_FINISHED);
         mContext.startService(getIntentForAction(packageName, ACTION_TEARDOWN));
+        SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
         future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
         mServiceStartedPackages.remove(packageName);
         // Just in case

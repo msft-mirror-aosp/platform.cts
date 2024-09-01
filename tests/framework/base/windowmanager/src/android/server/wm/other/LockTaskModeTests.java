@@ -21,7 +21,6 @@ import static android.app.ActivityManager.LOCK_TASK_MODE_NONE;
 import static android.app.ActivityManager.LOCK_TASK_MODE_PINNED;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.server.wm.app.Components.TEST_ACTIVITY;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -58,7 +57,7 @@ public class LockTaskModeTests extends ActivityManagerTestBase {
         try (TestActivitySession<TestActivity> session = createManagedTestActivitySession()) {
             // pin app
             session.setFinishAfterClose(true);
-            session.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+            session.launchTestActivityOnDisplaySync(TestActivity.class, getMainDisplayId());
             Task task = mWmState.getRootTaskByActivity(session.getActivity().getComponentName());
             runWithShellPermission(() -> mAtm.startSystemLockTaskMode(task.getTaskId()));
             waitForOrFail("Task in app pinning mode", () -> {
