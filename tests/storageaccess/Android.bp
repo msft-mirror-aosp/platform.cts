@@ -28,19 +28,23 @@ android_test {
         "compatibility-device-util-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: [
         "src/**/*.java",
-        "src/**/*.kt"
+        "src/**/*.kt",
     ],
 
     // Need to run this on Android R and above.
     min_sdk_version: "30",
     sdk_version: "test_current",
-    dex_preopt: { enabled: false },
-    optimize: { enabled: false },
+    dex_preopt: {
+        enabled: false,
+    },
+    optimize: {
+        enabled: false,
+    },
 
     // Tag this module as a CTS and MTS test artifact.
     test_suites: [

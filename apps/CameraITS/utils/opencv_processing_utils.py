@@ -89,6 +89,8 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
+OPT_VALUE_THRESH = 0.5  # Max opt value is ~0.8
+
 SCALE_CHART_33_PERCENT = 0.33
 SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
@@ -389,17 +391,12 @@ class Chart(object):
 
     # determine if optimization results are valid
     opt_values = [x[0] for x in max_match]
-    if not opt_values or (2.0 * min(opt_values) > max(opt_values)):
-      estring = ('Warning: unable to find chart in scene!\n'
-                 'Check camera distance and self-reported '
-                 'pixel pitch, focal length and hyperfocal distance.')
-      logging.warning(estring)
-      self._set_scale_factors_to_one()
+    if not opt_values or max(opt_values) < OPT_VALUE_THRESH:
+      raise AssertionError(
+            'Unable to find chart in scene!\n'
+            'Check camera distance and self-reported '
+            'pixel pitch, focal length and hyperfocal distance.')
     else:
-      if (max(opt_values) == opt_values[0] or
-          max(opt_values) == opt_values[len(opt_values) - 1]):
-        estring = ('Warning: Chart is at extreme range of locator.')
-        logging.warning(estring)
       # find max and draw bbox
       matched_scale_and_loc = max(max_match, key=lambda x: x[0])
       self.opt_val = matched_scale_and_loc[0]
@@ -996,7 +993,8 @@ def find_aruco_markers(input_img, output_img_path):
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  parameters = cv2.aruco.DetectorParameters_create()
+  # aruco.DetectorParameters() is used in OpenCV 4.7 and above
+  parameters = cv2.aruco.DetectorParameters()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(

@@ -32,10 +32,11 @@ android_test {
         "android.app.flags-aconfig-java",
         "flag-junit",
         "notification_flags_lib",
+        "Harrier",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     data: [
         ":CtsAppTestStubs",
