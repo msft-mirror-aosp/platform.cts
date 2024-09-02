@@ -5237,7 +5237,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         try {
             ui.adoptShellPermissionIdentity();
             sSubscriptionManager.setSubscriptionProperty(sTestSubIDForCarrierSatellite,
-                    SubscriptionManager.SATELLITE_ATTACH_ENABLED_FOR_CARRIER,
+                    SubscriptionManager.IS_ONLY_NTN,
                     sPreviousSatelliteIsOnlyNtn ? "1" : "0");
         } finally {
             ui.dropShellPermissionIdentity();
