@@ -16,6 +16,7 @@
 
 package android.os.cts;
 
+import static android.os.vibrator.Flags.FLAG_NORMALIZED_PWLE_EFFECTS;
 import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -123,11 +124,13 @@ public class VibratorTest {
         return data;
     }
 
-    private static final float TEST_TOLERANCE = 1e-5f;
-
-    private static final float MINIMUM_ACCEPTED_MEASUREMENT_INTERVAL_FREQUENCY = 1f;
-    private static final float MINIMUM_ACCEPTED_FREQUENCY = 1f;
     private static final float MAXIMUM_ACCEPTED_FREQUENCY = 1_000f;
+
+    private static final int ENVELOPE_EFFECT_MIN_REQUIRED_SIZE = 16;
+    // The minimum duration between two control points is at most this limit
+    private static final int ENVELOPE_EFFECT_MAX_ALLOWED_CONTROL_POINT_MIN_DURATION_MS = 20;
+    // The maximum duration between two control points is at least this limit
+    private static final int ENVELOPE_EFFECT_MIN_REQUIRED_CONTROL_POINT_MAX_DURATION_MS = 1000;
 
     private static final AudioAttributes AUDIO_ATTRIBUTES =
             new AudioAttributes.Builder()
@@ -548,6 +551,111 @@ public class VibratorTest {
         verify(listener1, after(CALLBACK_TIMEOUT_MILLIS).never()).onVibratorStateChanged(true);
         // Previous call was blocking, so no need to wait for a timeout here as well.
         verify(listener2, never()).onVibratorStateChanged(true);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testHasNoVibrator() {
+        assumeFalse(mVibrator.hasVibrator());
+
+        assertThat(mVibrator.areEnvelopeEffectsSupported()).isFalse();
+        assertThat(mVibrator.hasFrequencyControl()).isFalse();
+        assertThat(mVibrator.hasAmplitudeControl()).isFalse();
+
+        boolean[] supportedPrimitives = mVibrator.arePrimitivesSupported(PRIMITIVE_EFFECTS);
+        for (boolean primitive : supportedPrimitives) {
+            assertThat(primitive).isFalse();
+        }
+
+        int[] supportedPredefinedEffects = mVibrator.areEffectsSupported(PREDEFINED_EFFECTS);
+        for (int i = 0; i < PREDEFINED_EFFECTS.length; i++) {
+            assertThat(supportedPredefinedEffects[i]).isNotEqualTo(
+                    Vibrator.VIBRATION_EFFECT_SUPPORT_YES);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorAreEnvelopeEffectsSupported() {
+        // Just make sure it doesn't crash when this is called; we don't really have a way to test
+        // if the envelope effects work or not.
+        mVibrator.areEnvelopeEffectsSupported();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorMaxEnvelopeEffectDurationMillis() {
+        assumeTrue(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
+        int expectedMaxDurationMS = mVibrator.getMaxEnvelopeEffectSize()
+                * mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        assertThat(durationMs).isEqualTo(expectedMaxDurationMS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorMaxEnvelopeEffectDurationMillisUnsupported() {
+        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMaxEnvelopeEffectDurationMillis();
+        assertThat(durationMs).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMaxEnvelopeEffectSize() {
+        assumeTrue(mVibrator.areEnvelopeEffectsSupported());
+
+        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
+        assertThat(controlPointsMax).isAtLeast(ENVELOPE_EFFECT_MIN_REQUIRED_SIZE);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMaxEnvelopeEffectSizeUnsupported() {
+        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
+
+        int controlPointsMax = mVibrator.getMaxEnvelopeEffectSize();
+        assertThat(controlPointsMax).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMinEnvelopeEffectControlPointDurationMillis() {
+        assumeTrue(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
+        assertThat(durationMs).isGreaterThan(0);
+        assertThat(durationMs).isAtMost(ENVELOPE_EFFECT_MAX_ALLOWED_CONTROL_POINT_MIN_DURATION_MS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMinEnvelopeEffectControlPointDurationMillisUnsupported() {
+        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMinEnvelopeEffectControlPointDurationMillis();
+        assertThat(durationMs).isEqualTo(0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillis() {
+        assumeTrue(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        assertThat(durationMs).isAtLeast(
+                ENVELOPE_EFFECT_MIN_REQUIRED_CONTROL_POINT_MAX_DURATION_MS);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NORMALIZED_PWLE_EFFECTS)
+    public void testVibratorGetMaxEnvelopeEffectControlPointDurationMillisUnsupported() {
+        assumeFalse(mVibrator.areEnvelopeEffectsSupported());
+
+        int durationMs = mVibrator.getMaxEnvelopeEffectControlPointDurationMillis();
+        assertThat(durationMs).isEqualTo(0);
     }
 
     private boolean isSystemVibrator() {
