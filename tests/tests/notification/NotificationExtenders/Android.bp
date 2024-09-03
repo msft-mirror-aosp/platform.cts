@@ -26,8 +26,8 @@ android_test_helper_app {
         "truth",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_34_android.test.runner",
+        "sdk_public_34_android.test.base",
     ],
     srcs: [
         "src/android/app/notification/extenders/cts/api34/WearableExtenderApi34Test.kt",
@@ -53,8 +53,8 @@ android_test_helper_app {
         "truth",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_34_android.test.runner",
+        "sdk_public_34_android.test.base",
     ],
     srcs: [
         "src/android/app/notification/extenders/cts/current/WearableExtenderApiCurrentTest.kt",

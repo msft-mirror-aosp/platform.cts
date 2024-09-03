@@ -34,7 +34,7 @@ android_test {
         "kotlin-test",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
 
     test_suites: [
         "cts",

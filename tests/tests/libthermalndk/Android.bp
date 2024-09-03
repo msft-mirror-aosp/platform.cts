@@ -26,8 +26,8 @@ android_test {
         "ctstestrunner-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     jni_uses_platform_apis: true,
     jni_libs: [

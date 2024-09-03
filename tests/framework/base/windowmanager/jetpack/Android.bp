@@ -93,7 +93,7 @@ android_test {
         "cts_window-extensions-core",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     test_suites: [
         "cts",
