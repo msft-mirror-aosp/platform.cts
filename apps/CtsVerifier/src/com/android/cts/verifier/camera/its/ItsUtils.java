@@ -36,11 +36,14 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
+
+import androidx.annotation.ChecksSdkIntAtLeast;
 
 import com.android.ex.camera2.blocking.BlockingCameraManager;
 import com.android.ex.camera2.blocking.BlockingStateCallback;
@@ -606,9 +609,6 @@ public class ItsUtils {
             if (profiles == null) continue;
 
             List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
-            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
-                if (profile == null) continue;
-            }
 
             // Find a profile which can achieve the requested max frame rate
             for (EncoderProfiles.VideoProfile profile : videoProfiles) {
@@ -647,5 +647,13 @@ public class ItsUtils {
         Logt.w(TAG, "Could not find bitrate for any resolution >= " + previewSize
                 + " for cameraId " + cameraId + ". Using default bitrate");
         return DEFAULT_RECORDING_BITRATE;
+    }
+
+    /**
+     * Check if the device is running on at least Android V.
+     */
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public static boolean isAtLeastV() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
     }
 }

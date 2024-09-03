@@ -3230,6 +3230,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.cts.intent.category.MANUAL_TEST" />
             </intent-filter>
+            <meta-data android:name="test_required_configs" android:value="config_supports_bubble" />
             <meta-data android:name="test_category" android:value="@string/test_category_notifications" />
             <meta-data android:name="test_excluded_features"
                        android:value="android.hardware.type.watch:android.software.leanback:android.hardware.type.automotive" />
@@ -4670,17 +4671,18 @@
                        android:value="single_display_mode" />
         </activity>
 
-        <activity android:name=".managedprovisioning.ManagedUserPositiveTestActivity"
-                 android:exported="true"
-                  android:label="@string/managed_user_test">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <action android:name="com.android.cts.verifier.managedprovisioning.action.CHECK_AFFILIATED_PROFILE_OWNER" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-            <meta-data android:name="display_mode"
-                       android:value="single_display_mode" />
-        </activity>
+        <!-- b/340154320 Disabled while the teardown of the user is resulting in a crash -->
+<!--        <activity android:name=".managedprovisioning.ManagedUserPositiveTestActivity"-->
+<!--                 android:exported="true"-->
+<!--                  android:label="@string/managed_user_test">-->
+<!--            <intent-filter>-->
+<!--                <action android:name="android.intent.action.MAIN" />-->
+<!--                <action android:name="com.android.cts.verifier.managedprovisioning.action.CHECK_AFFILIATED_PROFILE_OWNER" />-->
+<!--                <category android:name="android.intent.category.DEFAULT" />-->
+<!--            </intent-filter>-->
+<!--            <meta-data android:name="display_mode"-->
+<!--                       android:value="single_display_mode" />-->
+<!--        </activity>-->
 
         <activity android:name=".managedprovisioning.DeviceOwnerRequestingBugreportTestActivity"
                 android:exported="true"
@@ -5461,7 +5463,10 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.microphone:android.hardware.audio.output" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch:android.hardware.type.television:android.hardware.type.automotive" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
+            <meta-data android:name="ApiTest" android:value="aaudio#AAudioStreamBuilder_setErrorCallback" />
         </activity>
 
         <activity android:name=".audio.AudioDescriptorActivity"
@@ -6738,6 +6743,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+           <meta-data android:name="test_excluded_features"
+               android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6758,6 +6765,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6778,6 +6787,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_RESULT
                     |android.service.chooser.ChooserResult#getResult" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6807,6 +6818,8 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <activity
@@ -6833,6 +6846,8 @@
                 android:name="ApiTest"
                 android:value="android.content.Intent#EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI
                     |android.content.Intent#EXTRA_CHOOSER_FOCUSED_ITEM_POSITION" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
         </activity>
 
@@ -6853,6 +6868,8 @@
                 android:value="android.content.Intent#EXTRA_CHOOSER_CONTENT_TYPE_HINT
                     |android.content.Intent#CHOOSER_CONTENT_TYPE_ALBUM" />
             <meta-data android:name="display_mode" android:value="single_display_mode" />
+            <meta-data android:name="test_excluded_features"
+                android:value="android.hardware.type.watch" />
         </activity>
 
         <provider

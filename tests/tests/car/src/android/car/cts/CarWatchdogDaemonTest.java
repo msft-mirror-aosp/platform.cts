@@ -24,6 +24,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.car.Car;
+import android.car.test.util.DiskUtils;
 import android.content.Context;
 import android.os.Build;
 import android.os.Process;
@@ -42,10 +43,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -93,7 +91,14 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
     @Test
     public void testRecordsIoPerformanceData() throws Exception {
         startCustomPerformanceDataCollection();
-        long writtenBytes = writeToDisk(testDir);
+
+        StructStatVfs stat;
+        stat = Os.statvfs(testDir.getAbsolutePath());
+        long limit = (long) (stat.f_bfree * stat.f_frsize * ((double) 2 / 3));
+        long size = Math.min(MAX_WRITE_BYTES, limit);
+        File file = new File(testDir, Long.toString(System.nanoTime()));
+        file.createNewFile();
+        long writtenBytes = DiskUtils.writeToDisk(file, size);
         assertWithMessage("Failed to write data to dir '" + testDir.getAbsolutePath() + "'").that(
                 writtenBytes).isGreaterThan(0L);
         // Sleep twice the collection interval to capture the entire write.
@@ -125,45 +130,6 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
                     String result = runShellCommand(START_CUSTOM_PERF_COLLECTION_CMD);
                     return result.contains(START_CUSTOM_COLLECTION_SUCCESS_MSG) || result.isEmpty();
                 });
-    }
-
-    private static void writeToFos(FileOutputStream fos, long maxSize) throws IOException {
-        Runtime runtime = Runtime.getRuntime();
-        while (maxSize != 0) {
-            // The total available free memory can be calculated by adding the currently allocated
-            // memory that is free plus the total memory available to the process which hasn't been
-            // allocated yet.
-            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
-                    + runtime.freeMemory();
-            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
-            Log.i(TAG, "writeSize:" + writeSize);
-            try {
-                fos.write(new byte[writeSize]);
-            } catch (InterruptedIOException e) {
-                Thread.currentThread().interrupt();
-                continue;
-            }
-            maxSize -= writeSize;
-        }
-    }
-
-    private static long writeToDisk(File dir) throws Exception {
-        if (!dir.exists()) {
-            throw new FileNotFoundException(
-                    "directory '" + dir.getAbsolutePath() + "' doesn't exist");
-        }
-        StructStatVfs stat;
-        stat = Os.statvfs(dir.getAbsolutePath());
-        // Write enough data so the I/O performance data collector can capture the write in
-        // the top N writes.
-        long limit = (long) (stat.f_bfree * stat.f_frsize * ((double) 2 / 3));
-        long size = Math.min(MAX_WRITE_BYTES, limit);
-        File uniqueFile = new File(dir, Long.toString(System.nanoTime()));
-        FileOutputStream fos = new FileOutputStream(uniqueFile);
-        Log.d(TAG, "Attempting to write " + size + " bytes");
-        writeToFos(fos, size);
-        fos.getFD().sync();
-        return size;
     }
 
     /**

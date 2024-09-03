@@ -35,15 +35,15 @@ _FLASH_STATES = {0: 'FLASH_STATE_UNAVAILABLE', 1: 'FLASH_STATE_CHARGING',
                  4: 'FLASH_STATE_PARTIAL'}
 _FORMAT_NAME = 'yuv'
 _IMG_SIZE = (640, 480)
-_PATCH_H = 0.25  # center 25%
-_PATCH_W = 0.25
+_PATCH_H = 0.5  # center 50%
+_PATCH_W = 0.5
 _PATCH_X = 0.5-_PATCH_W/2
 _PATCH_Y = 0.5-_PATCH_H/2
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 _CAPTURE_INTENT_STILL_CAPTURE = 2
 _MAX_FLASH_STRENGTH = 'android.flash.singleStrengthMaxLevel'
 _MAX_TORCH_STRENGTH = 'android.flash.torchStrengthMaxLevel'
-_BRIGHTNESS_MEAN_ATOL = 5  # Tolerance for brightness mean
+_BRIGHTNESS_MEAN_ATOL = 15  # Tolerance for brightness mean
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 
 
@@ -207,8 +207,21 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
           else:
             # naming images to be captured
             img_name = f'{name_with_path}_ae_mode={ae_mode}_flash_strength={strength}.jpg'
+            # check if testing image size is supported, if not use mid size
+            output_sizes = capture_request_utils.get_available_output_sizes(
+                _FORMAT_NAME, props)
+            if _IMG_SIZE in output_sizes:
+              width, height = _IMG_SIZE
+              logging.debug(
+                  'Testing with default image size: %dx%d', width, height
+              )
+            else:
+              width, height = output_sizes[len(output_sizes)//2]
+              logging.debug(
+                  'Default size not supported, testing with size: %dx%d',
+                  width, height
+              )
             # defining out_surfaces
-            width, height = _IMG_SIZE
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate

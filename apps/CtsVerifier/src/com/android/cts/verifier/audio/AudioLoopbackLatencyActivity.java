@@ -32,6 +32,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -541,14 +542,18 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mAudioManager = getSystemService(AudioManager.class);
         scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
 
+        // Utilties Buttons
+        if (mIsWatch) {
+            ((LinearLayout) findViewById(R.id.audio_loopback_utilities_layout))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
         connectLoopbackUI();
 
         if (mustRunTest()) {
             getPassButton().setEnabled(false);
-            enableStartButtons(true);
         } else {
             getPassButton().setEnabled(isReportLogOkToPass());
-            enableStartButtons(false);
         }
 
         mConnectListener = new ConnectListener();
@@ -1017,7 +1022,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mTestStatusText.setText(generateStatusString(requirements, showResult));
 
         showWait(false);
-        enableStartButtons(mustRunTest());
+        enableStartButtons(true);
     }
 
     /**

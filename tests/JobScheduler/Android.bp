@@ -30,7 +30,7 @@ android_test {
         "flag-junit",
         "Harrier",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     srcs: [
         "src/**/*.java",
         "JobTestApp/src/**/*.java",

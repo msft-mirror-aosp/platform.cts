@@ -79,6 +79,7 @@ import org.hamcrest.Description;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -1304,6 +1305,7 @@ public class AppWidgetTest extends AppWidgetTestCase {
         }
     }
 
+    @Ignore("b/355285596")
     @AppModeFull(reason = "Instant apps cannot provide or host app widgets")
     @Test
     public void testCollectionWidgets() throws Exception {

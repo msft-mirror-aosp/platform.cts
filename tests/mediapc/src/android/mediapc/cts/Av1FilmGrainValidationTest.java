@@ -27,6 +27,7 @@ import android.media.Image;
 import android.media.MediaCodec;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
 import android.mediav2.common.cts.CodecDecoderTestBase;
 import android.mediav2.common.cts.CodecTestBase;
 import android.mediav2.common.cts.ImageSurface;
@@ -171,9 +172,11 @@ public class Av1FilmGrainValidationTest extends CodecDecoderTestBase {
                 break;
             }
         }
+
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAV1DecoderReq = pce.addRAV1DecoderReq();
-        rAV1DecoderReq.setAv1DecoderReq(isReqSupported);
+        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
+                Requirements.addR5_1__H_1_14().to(pce);
+        rAV1DecoderReq.setAv1DecoderRequirementBoolean(isReqSupported);
         pce.submitAndCheck();
     }
 }

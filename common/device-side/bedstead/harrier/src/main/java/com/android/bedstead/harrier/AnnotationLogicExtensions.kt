@@ -18,26 +18,55 @@
 
 package com.android.bedstead.harrier
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
+import android.content.Intent
+import android.content.pm.PackageManager
 import com.android.bedstead.harrier.AnnotationExecutorUtil.checkFailOrSkip
+import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE
+import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
+import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
+import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFactoryResetProtectionPolicySupported
 import com.android.bedstead.harrier.annotations.RequireFeature
+import com.android.bedstead.harrier.annotations.RequireHasDefaultBrowser
 import com.android.bedstead.harrier.annotations.RequireInstantApp
 import com.android.bedstead.harrier.annotations.RequireLowRamDevice
+import com.android.bedstead.harrier.annotations.RequireNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp
 import com.android.bedstead.harrier.annotations.RequireNotLowRamDevice
+import com.android.bedstead.harrier.annotations.RequirePackageInstalled
+import com.android.bedstead.harrier.annotations.RequirePackageNotInstalled
+import com.android.bedstead.harrier.annotations.RequirePackageRespondsToIntent
+import com.android.bedstead.harrier.annotations.RequireQuickSettingsSupport
 import com.android.bedstead.harrier.annotations.RequireResourcesBooleanValue
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionSupported
 import com.android.bedstead.harrier.annotations.RequireStorageEncryptionUnsupported
+import com.android.bedstead.harrier.annotations.RequireSystemServiceAvailable
+import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
+import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
+import com.android.bedstead.harrier.annotations.TestTag
+import com.android.bedstead.harrier.components.TestAppsComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis
+import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.packages
+import com.android.bedstead.nene.TestApis.quickSettings
+import com.android.bedstead.nene.TestApis.roles
+import com.android.bedstead.nene.TestApis.services
+import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.nene.utils.Tags
+import com.android.bedstead.testapp.NotFoundException
+import com.android.queryable.queries.ActivityQuery
+import com.android.queryable.queries.IntentFilterQuery
 import org.hamcrest.CoreMatchers
 import org.junit.Assume
 import org.junit.Assume.assumeTrue
@@ -95,9 +124,9 @@ fun RequireDoesNotHaveFeature.logic() {
 fun RequireLowRamDevice.logic() {
     checkFailOrSkip(
         reason,
-        TestApis.context().instrumentedContext()
-                .getSystemService(ActivityManager::class.java)!!
-                .isLowRamDevice,
+        context().instrumentedContext()
+            .getSystemService(ActivityManager::class.java)!!
+            .isLowRamDevice,
         failureMode
     )
 }
@@ -105,9 +134,9 @@ fun RequireLowRamDevice.logic() {
 fun RequireNotLowRamDevice.logic() {
     checkFailOrSkip(
         reason,
-        !TestApis.context().instrumentedContext()
-                .getSystemService(ActivityManager::class.java)!!
-                .isLowRamDevice,
+        !context().instrumentedContext()
+            .getSystemService(ActivityManager::class.java)!!
+            .isLowRamDevice,
         failureMode
     )
 }
@@ -141,4 +170,183 @@ fun RequireNotInstantApp.logic() {
         !packages().instrumented().isInstantApp,
         failureMode
     )
+}
+
+fun TestTag.logic() = Tags.addTag(value)
+
+fun RequireSystemServiceAvailable.logic() {
+    checkFailOrSkip(
+        "Requires ${value.java} to be available",
+        services().serviceIsAvailable(value.java),
+        failureMode
+    )
+}
+
+fun RequireTargetSdkVersion.logic() {
+    val targetSdkVersion = packages().instrumented().targetSdkVersion()
+    checkFailOrSkip(
+        "TargetSdkVersion must be between $min and $max (inclusive) " +
+                "(version is $targetSdkVersion)",
+        targetSdkVersion in min..max,
+        failureMode
+    )
+}
+
+fun RequirePackageInstalled.logic(userTypeResolver: UserTypeResolver) {
+    val pkg = packages().find(value)
+    if (onUser == UserType.ANY) {
+        checkFailOrSkip(
+            "$value is required to be installed",
+            pkg.installedOnUsers().isNotEmpty(),
+            failureMode
+        )
+    } else {
+        checkFailOrSkip(
+            "$value is required to be installed for $onUser",
+            pkg.installedOnUser(userTypeResolver.toUser(onUser)),
+            failureMode
+        )
+    }
+}
+
+fun RequirePackageNotInstalled.logic(userTypeResolver: UserTypeResolver) {
+    val pkg = packages().find(value)
+    if (onUser == UserType.ANY) {
+        checkFailOrSkip(
+            "$value is required to be not installed",
+            pkg.installedOnUsers().isEmpty(),
+            failureMode
+        )
+    } else {
+        checkFailOrSkip(
+            "$value is required to be not installed for $onUser",
+            !pkg.installedOnUser(userTypeResolver.toUser(onUser)),
+            failureMode
+        )
+    }
+}
+
+@SuppressLint("CheckResult")
+fun EnsurePackageNotInstalled.logic(userTypeResolver: UserTypeResolver) {
+    val pkg = packages().find(value)
+    if (onUser == UserType.ANY) {
+        pkg.uninstallFromAllUsers()
+    } else {
+        pkg.uninstall(userTypeResolver.toUser(onUser))
+    }
+}
+
+fun RequireQuickSettingsSupport.logic() {
+    checkFailOrSkip(
+        "Device does not have quick settings",
+        quickSettings().isSupported(),
+        failureMode
+    )
+}
+
+fun RequireHasDefaultBrowser.logic(userTypeResolver: UserTypeResolver) {
+    val user: UserReference = userTypeResolver.toUser(forUser)
+    checkFailOrSkip(
+        "User: $user does not have a default browser",
+        roles().hasBrowserRoleHolderAsUser(user),
+        failureMode
+    )
+}
+
+fun RequireTelephonySupport.logic() {
+    val packageManager = context().instrumentedContext().packageManager
+    checkFailOrSkip(
+        "Device does not have telephony support",
+        packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
+        failureMode
+    )
+}
+
+fun EnsurePackageRespondsToIntent.logic(
+    testAppsComponent: TestAppsComponent,
+    userTypeResolver: UserTypeResolver
+) {
+    val userReference = userTypeResolver.toUser(user)
+    val packageResponded = packages().queryIntentActivities(
+        userReference,
+        Intent(intent.action),
+        /* flags= */ 0
+    ).size > 0
+
+    if (!packageResponded) {
+        try {
+            testAppsComponent.ensureTestAppInstalled(
+                testApp = testAppsComponent.testAppProvider.query().whereActivities().contains(
+                    ActivityQuery.activity().where().intentFilters().contains(
+                        IntentFilterQuery
+                            .intentFilter()
+                            .where()
+                            .actions()
+                            .contains(intent.action)
+                    )
+                ).get(),
+                user = userReference
+            )
+        } catch (ignored: NotFoundException) {
+            failOrSkip(
+                "Could not found the testApp which contains an activity matching the " +
+                        "intent action '${intent.action}'.",
+                failureMode
+            )
+        }
+    }
+}
+
+fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
+    packages().queryIntentActivities(
+        userTypeResolver.toUser(user),
+        Intent(intent.action),
+        /* flags= */ 0
+    ).forEach { resolveInfoWrapper ->
+        val packageName = resolveInfoWrapper.activityInfo().packageName
+        EnsurePackageNotInstalled(
+            value = packageName,
+            onUser = user,
+            priority = MIDDLE
+        ).logic(userTypeResolver)
+    }
+}
+
+fun RequirePackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
+    val packageResponded = packages().queryIntentActivities(
+        userTypeResolver.toUser(user),
+        Intent(intent.action),
+        /* flags= */ 0
+    ).size > 0
+
+    if (packageResponded) {
+        checkFailOrSkip(
+            "Requires at least one package to respond to this intent.",
+            value = true,
+            failureMode
+        )
+    } else {
+        failOrSkip(
+            "Requires at least one package to respond to this intent.",
+            failureMode
+        )
+    }
+}
+
+fun RequireNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
+    val noPackageResponded = packages().queryIntentActivities(
+        userTypeResolver.toUser(user),
+        Intent(intent.action),
+        /* flags= */ 0
+    ).isEmpty()
+
+    if (noPackageResponded) {
+        checkFailOrSkip(
+            "Requires no package to respond to this intent.",
+            value = true,
+            failureMode
+        )
+    } else {
+        failOrSkip("Requires no package to respond to this intent.", failureMode)
+    }
 }

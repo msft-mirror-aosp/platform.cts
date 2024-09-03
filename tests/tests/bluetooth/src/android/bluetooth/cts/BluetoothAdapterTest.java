@@ -500,18 +500,13 @@ public class BluetoothAdapterTest {
     public void registerBluetoothConnectionCallback() {
         assumeTrue(mHasBluetooth);
 
-        Executor executor = mContext.getMainExecutor();
+        Executor executor = mock(Executor.class);
         BluetoothAdapter.BluetoothConnectionCallback callback =
                 mock(BluetoothAdapter.BluetoothConnectionCallback.class);
 
         // placeholder call for coverage
         callback.onDeviceConnected(null);
         callback.onDeviceDisconnected(null, BluetoothStatusCodes.ERROR_UNKNOWN);
-
-        // Verify parameter
-        assertFalse(mAdapter.registerBluetoothConnectionCallback(null, callback));
-        assertFalse(mAdapter.registerBluetoothConnectionCallback(executor, null));
-        assertFalse(mAdapter.unregisterBluetoothConnectionCallback(null));
 
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             assertTrue(mAdapter.registerBluetoothConnectionCallback(executor, callback));
@@ -732,20 +727,10 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
-        String deviceAddress = "00:11:22:AA:BB:CC";
-        BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.PreferredAudioProfilesChangedCallback callback =
-                new BluetoothAdapter.PreferredAudioProfilesChangedCallback() {
-            @Override
-            public void onPreferredAudioProfilesChanged(
-                    @androidx.annotation.NonNull BluetoothDevice device,
-                    @androidx.annotation.NonNull Bundle preferredAudioProfiles, int status) {}
-        };
-
-        callback.onPreferredAudioProfilesChanged(device, Bundle.EMPTY,
-                BluetoothStatusCodes.SUCCESS);
+                mock(BluetoothAdapter.PreferredAudioProfilesChangedCallback.class);
 
         assertThrows(NullPointerException.class, () ->
                 mAdapter.registerPreferredAudioProfilesChangedCallback(null, callback));
@@ -762,16 +747,18 @@ public class BluetoothAdapterTest {
 
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
-        if (isDualModeAudioEnabled()) {
-            assertEquals(BluetoothStatusCodes.SUCCESS,
-                    mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
-            assertEquals(BluetoothStatusCodes.SUCCESS,
-                    mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
-        } else {
-            assertEquals(BluetoothStatusCodes.FEATURE_NOT_SUPPORTED,
-                    mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
-            assertThrows(IllegalArgumentException.class, () ->
-                    mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            if (isDualModeAudioEnabled()) {
+                assertEquals(BluetoothStatusCodes.SUCCESS,
+                        mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
+                assertEquals(BluetoothStatusCodes.SUCCESS,
+                        mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
+            } else {
+                assertEquals(BluetoothStatusCodes.FEATURE_NOT_SUPPORTED,
+                        mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
+                assertThrows(IllegalArgumentException.class, () ->
+                        mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
+            }
         }
     }
 

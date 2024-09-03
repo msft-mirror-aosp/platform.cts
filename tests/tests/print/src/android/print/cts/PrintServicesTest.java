@@ -39,6 +39,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
+import android.platform.test.annotations.Presubmit;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
 import android.print.PrintAttributes.MediaSize;
@@ -72,6 +73,7 @@ import java.util.List;
 /**
  * Test the interface from a print service to the print manager
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintServicesTest extends BasePrintTest {
     private static final String PRINTER_NAME = "Test printer";
@@ -518,6 +520,8 @@ public class PrintServicesTest extends BasePrintTest {
             eventually(() -> runOnMainThread(
                     () -> assertEquals(2, firstService.callGetActivePrintJobs().size())));
 
+            waitForPrinterDiscoverySessionDestroyCallbackCalled(2);
+
             // Create print job in second service
             resetCounters();
             runOnMainThread(() -> pm.print("job3", adapter, null));
@@ -557,7 +561,7 @@ public class PrintServicesTest extends BasePrintTest {
             eventually(() -> runOnMainThread(() -> assertTrue(job2.isCancelled())));
             runOnMainThread(() -> assertEquals(1, firstService.callGetActivePrintJobs().size()));
 
-            waitForPrinterDiscoverySessionDestroyCallbackCalled(1);
+            waitForPrinterDiscoverySessionDestroyCallbackCalled(2);
         } finally {
             clearPrintSpoolerData();
         }

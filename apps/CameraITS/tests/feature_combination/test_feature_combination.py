@@ -92,7 +92,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             its_session_utils.ANDROID14_API_LEVEL
         )
       should_run = (feature_combination_query_version >=
-                    its_session_utils.ANDROID15_API_LEVEL)
+                    its_session_utils.ANDROID15_API_LEVEL or
+                    self.feature_combo_verify)
       camera_properties_utils.skip_unless(should_run)
 
       # Log ffmpeg version being used
@@ -209,12 +210,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                   f'[{fps_range[0]}, {fps_range[1]}])')
               logging.debug('combination name: %s', combination_name)
 
-              # Is the feature combination supported?
-              supported = cam.is_stream_combination_supported(
-                  output_surfaces, settings)
-              if not supported:
-                logging.debug('%s not supported', combination_name)
-                break
+              if not self.feature_combo_verify:
+                # Is the feature combination supported?
+                supported = cam.is_stream_combination_supported(
+                    output_surfaces, settings)
+                if not supported:
+                  logging.debug('%s not supported', combination_name)
+                  break
 
               is_stabilized = False
               if (stabilize ==
@@ -247,35 +249,40 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   recording_obj['recordedOutputPath'].split('/')[-1])
               preview_file_name_with_path = os.path.join(
                   self.log_path, preview_file_name)
-              average_frame_rate_codec = (
-                  video_processing_utils.get_average_frame_rate(
+              avg_frame_rate_codec = (
+                  video_processing_utils.get_avg_frame_rate(
                       preview_file_name_with_path))
-              logging.debug('Average codec frame rate for %s is %f', combination_name,
-                            average_frame_rate_codec)
-              if (average_frame_rate_codec > fps_range[1] + _FPS_ATOL_CODEC or
-                  average_frame_rate_codec < fps_range[0] - _FPS_ATOL_CODEC):
+              logging.debug('Average codec frame rate for %s is %f',
+                            combination_name, avg_frame_rate_codec)
+              if (avg_frame_rate_codec > fps_range[1] + _FPS_ATOL_CODEC or
+                  avg_frame_rate_codec < fps_range[0] - _FPS_ATOL_CODEC):
                 failure_msg = (
                     f'{combination_name}: Average video clip frame rate '
-                    f'{average_frame_rate_codec} exceeding the allowed range of '
+                    f'{avg_frame_rate_codec} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
                 test_failures.append(failure_msg)
 
               # Verify FPS by inspecting the result metadata
               capture_results = recording_obj['captureMetadata']
-              assert len(capture_results) > 1
+              if len(capture_results) <= 1:
+                raise AssertionError(
+                    f'{combination_name}: captureMetadata has only '
+                    f'{len(capture_results)} frames')
               last_t = capture_results[-1]['android.sensor.timestamp']
               first_t = capture_results[0]['android.sensor.timestamp']
-              average_frame_duration = (last_t - first_t) / (len(capture_results) - 1)
-              average_frame_rate_metadata = _SEC_TO_NSEC / average_frame_duration
-              logging.debug('Average metadata frame rate for %s is %f', combination_name,
-                            average_frame_rate_metadata)
-              if (average_frame_rate_metadata > fps_range[1] + _FPS_ATOL_METADATA or
-                  average_frame_rate_metadata < fps_range[0] - _FPS_ATOL_METADATA):
+              avg_frame_duration = (
+                  (last_t - first_t) / (len(capture_results) - 1))
+              avg_frame_rate_metadata = _SEC_TO_NSEC / avg_frame_duration
+              logging.debug('Average metadata frame rate for %s is %f',
+                            combination_name, avg_frame_rate_metadata)
+              if (avg_frame_rate_metadata > fps_range[1] + _FPS_ATOL_METADATA or
+                  avg_frame_rate_metadata < fps_range[0] - _FPS_ATOL_METADATA):
                 failure_msg = (
                     f'{combination_name}: Average frame rate '
-                    f'{average_frame_rate_metadata} exceeding the allowed range of '
-                    f'({fps_range[0]}-{_FPS_ATOL_METADATA}, {fps_range[1]}+{_FPS_ATOL_METADATA})')
+                    f'{avg_frame_rate_metadata} exceeding the allowed range of '
+                    f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
+                    f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
                 test_failures.append(failure_msg)
 
               # Schedule stabilization verification to run asynchronously

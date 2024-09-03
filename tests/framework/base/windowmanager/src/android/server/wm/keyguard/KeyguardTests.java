@@ -92,6 +92,8 @@ public class KeyguardTests extends KeyguardTestBase {
         super.setUp();
         assumeTrue(supportsInsecureLock());
         assertFalse(isUiModeLockedToVrHeadset());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test
@@ -694,8 +696,7 @@ public class KeyguardTests extends KeyguardTestBase {
         launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
 
         mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
-        mWmState.computeState();
-        mWmState.assertKeyguardGone();
+        mWmState.waitAndAssertKeyguardGone();
 
         waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY, DEFAULT_DISPLAY,
                   "Activity with showWhenLocked attribute should be resumed.");

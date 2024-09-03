@@ -35,6 +35,7 @@ import android.media.AudioPlaybackConfiguration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
@@ -94,6 +95,7 @@ public class RingerTest extends BaseAppVerifier {
     public void testIncomingCall_RingAndVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
+        assumeTrue(hasVibrator());
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -147,6 +149,7 @@ public class RingerTest extends BaseAppVerifier {
     public void testIncomingCallVibrationDisabled_RingAndNoVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
+        assumeTrue(hasVibrator());
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -201,6 +204,7 @@ public class RingerTest extends BaseAppVerifier {
     public void testIncomingCallSilentMode_NoRingAndNoVibrate() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
+        assumeTrue(hasVibrator());
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -254,6 +258,7 @@ public class RingerTest extends BaseAppVerifier {
     public void testIncomingCallVibrateMode_VibrateAndNoRing() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
+        assumeTrue(hasVibrator());
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -313,6 +318,7 @@ public class RingerTest extends BaseAppVerifier {
     public void testIncomingCallVibrateModeEnableRinger_VibrateAndRing() throws Exception {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
+        assumeTrue(hasVibrator());
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -419,6 +425,10 @@ public class RingerTest extends BaseAppVerifier {
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(settings,
                 s -> Settings.System.putInt(mContext.getContentResolver(),
                         Settings.System.VIBRATE_ON, vibrationSetting));
+    }
+
+    private boolean hasVibrator() {
+        return mContext.getSystemService(Vibrator.class).hasVibrator();
     }
 
     void waitToEnsureNoRingtoneVibrationLog() throws Exception {

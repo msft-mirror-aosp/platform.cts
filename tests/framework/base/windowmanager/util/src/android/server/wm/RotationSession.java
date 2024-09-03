@@ -72,6 +72,9 @@ public class RotationSession extends SettingsSession<Integer> {
         mPreviousDegree = get();
         // Disable accelerometer_rotation.
         mAccelerometerRotation.set(0);
+        // Wait for display to adjust to default rotation, accounting for tablets that
+        // might have been in landscape mode.
+        mWmState.waitForRotation(mPreviousDegree);
     }
 
     @Override

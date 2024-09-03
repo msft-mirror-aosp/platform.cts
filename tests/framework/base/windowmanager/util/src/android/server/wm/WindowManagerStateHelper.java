@@ -471,6 +471,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
+        waitForAppTransitionIdleOnDisplay(activity.getDisplayId());
         CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
@@ -664,8 +665,17 @@ public class WindowManagerStateHelper extends WindowManagerState {
         final String activityComponentName = getActivityName(activityName);
         final String message = activityComponentName + " to be focused";
         return Condition.waitFor(new Condition<>(message, () -> {
+            computeState();
             boolean focusedActivityMatching = activityComponentName.equals(getFocusedActivity());
+            if (!focusedActivityMatching) {
+                logAlways("Expecting top resumed activity " + activityComponentName + ", but is "
+                        + getFocusedActivity());
+            }
             boolean focusedAppMatching = activityComponentName.equals(getFocusedApp());
+            if (!focusedAppMatching) {
+                logAlways("Expecting focused app " + activityComponentName + ", but is "
+                        + getFocusedApp());
+            }
             return focusedActivityMatching && focusedAppMatching;
         }).setRetryIntervalMs(200).setRetryLimit(20));
     }
@@ -746,10 +756,39 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 visible, isWindowSurfaceShown(windowName));
     }
 
+    /**
+     * Assert visibility on a {@code displayId} since an activity can be present on more than one
+     * displays.
+     */
+    public void assertVisibility(final ComponentName activityName, final boolean visible,
+            int displayId) {
+        final String windowName = getWindowName(activityName);
+        // Check existence of activity and window.
+        assertTrue("Activity=" + getActivityName(activityName) + " must exist.",
+                containsActivity(activityName));
+        assertTrue("Window=" + windowName + " must exist.", containsWindow(windowName));
+
+        // Check visibility of activity and window.
+        assertEquals("Activity=" + getActivityName(activityName) + " must" + (visible ? "" : " NOT")
+                + " be visible.", visible, isActivityVisible(activityName));
+        assertEquals("Window=" + windowName + " must" + (visible ? "" : " NOT")
+                        + " have shown surface on display=" + displayId,
+                visible, isWindowSurfaceShownOnDisplay(windowName, displayId));
+    }
+
     public void assertHomeActivityVisible(boolean visible) {
         final ComponentName homeActivity = getHomeActivityName();
         assertNotNull(homeActivity);
         assertVisibility(homeActivity, visible);
+    }
+
+    /**
+     * Note: This is required since home can be present on more than one displays.
+     */
+    public void assertHomeActivityVisible(boolean visible, int displayId) {
+        final ComponentName homeActivity = getHomeActivityName();
+        assertNotNull(homeActivity);
+        assertVisibility(homeActivity, visible, displayId);
     }
 
     /**

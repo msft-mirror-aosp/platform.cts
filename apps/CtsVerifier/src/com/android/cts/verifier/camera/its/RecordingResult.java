@@ -18,6 +18,9 @@ package com.android.cts.verifier.camera.its;
 
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 
 import java.util.HashMap;
 import java.util.List;
@@ -32,9 +35,10 @@ public class RecordingResult {
             CaptureResult.SCALER_CROP_REGION,
             CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID,
             CaptureResult.LENS_INTRINSIC_CALIBRATION,
-            // TODO: b/332581106 - Evaluate if data added by samples surpasses socket limit
-            CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES,
-            CaptureResult.SENSOR_TIMESTAMP
+            CaptureResult.SENSOR_TIMESTAMP,
+            CaptureResult.CONTROL_AE_STATE,
+            CaptureResult.CONTROL_AF_STATE,
+            CaptureResult.CONTROL_AWB_STATE
     );
 
     HashMap<CaptureResult.Key<?>, Object> mMap;
@@ -50,6 +54,11 @@ public class RecordingResult {
         for (CaptureResult.Key<?> k : keys) {
             this.addKey(result, k);
         }
+    }
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    public void addVKeys(TotalCaptureResult result) {
+        // TODO: b/332581106 - Evaluate if data added by samples surpasses socket limit
+        this.addKey(result, CaptureResult.STATISTICS_LENS_INTRINSICS_SAMPLES);
     }
     public Set<CaptureResult.Key<?>> getKeys() {
         return mMap.keySet();
