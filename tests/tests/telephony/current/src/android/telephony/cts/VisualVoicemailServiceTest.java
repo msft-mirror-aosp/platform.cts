@@ -25,6 +25,7 @@ import static junit.framework.Assert.assertNotNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -101,6 +102,10 @@ public class VisualVoicemailServiceTest {
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
         assumeTrue(hasFeatureSupported(mContext));
+
+        // Wear does not support Visual Voicemail
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_WATCH));
 
         mPreviousDefaultDialer = getDefaultDialer(getInstrumentation());
         setDefaultDialer(getInstrumentation(), PACKAGE);
