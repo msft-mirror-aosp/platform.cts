@@ -584,29 +584,6 @@ public class NfcAdapterTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
-    public void testOemExtension() throws InterruptedException {
-        CountDownLatch tagDetectedCountDownLatch = new CountDownLatch(1);
-        NfcAdapter nfcAdapter = getDefaultAdapter();
-        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
-        Assert.assertNotNull(nfcAdapter);
-        NfcOemExtensionCallback cb =
-                new NfcOemExtensionCallback(tagDetectedCountDownLatch);
-        try {
-            nfcOemExtension.registerCallback(
-                    Executors.newSingleThreadExecutor(), cb);
-
-            // TODO: Fix these tests as we add more functionality to this API surface.
-            nfcOemExtension.clearPreference();
-            nfcOemExtension.synchronizeScreenState();
-            nfcOemExtension.maybeTriggerFirmwareUpdate();
-            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
-        } finally {
-            nfcOemExtension.unregisterCallback(cb);
-        }
-    }
-
-    @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_STATE_CHANGE)
     public void testEnableByDeviceOwner() throws NoSuchFieldException, RemoteException {
         denyPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS);
@@ -695,7 +672,30 @@ public class NfcAdapterTest {
         }
     }
 
+    @Test
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtension() throws InterruptedException {
+        CountDownLatch tagDetectedCountDownLatch = new CountDownLatch(3);
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        NfcOemExtensionCallback cb =
+                new NfcOemExtensionCallback(tagDetectedCountDownLatch);
+        try {
+            nfcOemExtension.registerCallback(
+                    Executors.newSingleThreadExecutor(), cb);
+            tagDetectedCountDownLatch.await();
+
+            // TODO: Fix these tests as we add more functionality to this API surface.
+            nfcOemExtension.clearPreference();
+            nfcOemExtension.synchronizeScreenState();
+            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
+        } finally {
+            nfcOemExtension.unregisterCallback(cb);
+        }
+    }
+
     private class NfcOemExtensionCallback implements NfcOemExtension.Callback {
         private final CountDownLatch mTagDetectedCountDownLatch;
 
@@ -762,6 +762,20 @@ public class NfcAdapterTest {
 
         @Override
         public void onHceEventReceived(int action) {
+        }
+
+        public void onCardEmulationActivated(boolean isActivated) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onRfFieldActivated(boolean isActivated) {
+            mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onRfDiscoveryStarted(boolean isDiscoveryStarted) {
+            mTagDetectedCountDownLatch.countDown();
         }
     }
 

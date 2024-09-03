@@ -24,7 +24,7 @@ android_test {
         "cts",
         "general-tests",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     static_libs: [
         "androidx.test.core",
         "androidx.test.rules",

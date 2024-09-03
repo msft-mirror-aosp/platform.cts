@@ -23,7 +23,7 @@ android_test {
         "compatibility-device-util-axt",
         "androidx.test.rules",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: [
         "src/**/*.java",
         "JobSharedUidTestApp/src/**/*.java",

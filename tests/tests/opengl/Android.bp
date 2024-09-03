@@ -43,8 +43,8 @@ android_test {
         "compatibility-device-util-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Using EGL_RECORDABLE_ANDROID requires latest
