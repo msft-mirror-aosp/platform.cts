@@ -662,11 +662,16 @@ public class AccessibilityManagerTest extends StsExtraBusinessLogicTestCase {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_FLASH_NOTIFICATION_SYSTEM_API)
-    public void testStartAndStopFlashNotificationSequence() throws Exception {
+    public void testStartAndStopFlashNotificationSequence() {
         sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(MANAGE_ACCESSIBILITY);
         assertTrue("Start flash notification sequence failed.",
                 mAccessibilityManager.startFlashNotificationSequence(mTargetContext, 1));
         assertTrue("Stop flash notification sequence failed.",
+                mAccessibilityManager.stopFlashNotificationSequence(mTargetContext));
+        sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        assertFalse("Shouldn't start flash notification without permission.",
+                mAccessibilityManager.startFlashNotificationSequence(mTargetContext, 1));
+        assertFalse("Shouldn't stop flash notification without permission.",
                 mAccessibilityManager.stopFlashNotificationSequence(mTargetContext));
     }
 

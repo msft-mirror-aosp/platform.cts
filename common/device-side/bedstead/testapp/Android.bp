@@ -64,7 +64,7 @@ android_library {
     min_sdk_version: "29",
     assets: [
         ":TestApp_Apps",
-        ":TestApp_Metadata_Resources"
+        ":TestApp_Metadata_Resources",
     ],
     plugins: [
         "ConnectedAppsSDK_Processor",
@@ -91,7 +91,7 @@ android_test {
         "androidx.test.ext.junit",
         "truth",
         "testng", // for assertThrows
-        "bedstead-performance-analyzer"
+        "bedstead-performance-analyzer",
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
@@ -127,8 +127,6 @@ java_genrule {
         ":ContentTestApp",
         ":DevicePolicyManagementRoleHolderTestApp",
         ":RemoteDPCTestApp",
-        ":RemoteDPCTestAppTargetingV23",
-        ":RemoteDPCTestAppTargetingV24",
         ":RemoteDPCTestAppTargetingV28",
         ":RemoteDPCTestAppTargetingV30",
         ":DialerApp",
@@ -151,8 +149,6 @@ java_genrule {
         "testapps/ContentTestApp.apk",
         "testapps/DevicePolicyManagementRoleHolderTestApp.apk",
         "testapps/RemoteDPCTestApp.apk",
-        "testapps/RemoteDPCTestAppTargetingV23.apk",
-        "testapps/RemoteDPCTestAppTargetingV24.apk",
         "testapps/RemoteDPCTestAppTargetingV28.apk",
         "testapps/RemoteDPCTestAppTargetingV30.apk",
         "testapps/DialerApp.apk",
@@ -178,8 +174,6 @@ java_genrule {
         " && cp $(location :ContentTestApp) $(genDir)/testapps" +
         " && cp $(location :DevicePolicyManagementRoleHolderTestApp) $(genDir)/testapps" +
         " && cp $(location :RemoteDPCTestApp) $(genDir)/testapps" +
-        " && cp $(location :RemoteDPCTestAppTargetingV23) $(genDir)/testapps" +
-        " && cp $(location :RemoteDPCTestAppTargetingV24) $(genDir)/testapps" +
         " && cp $(location :RemoteDPCTestAppTargetingV28) $(genDir)/testapps" +
         " && cp $(location :RemoteDPCTestAppTargetingV30) $(genDir)/testapps" +
         " && cp $(location :DialerApp) $(genDir)/testapps" +
@@ -190,7 +184,7 @@ java_genrule {
         " && cp $(location :MultipleActivitiesTestApp) $(genDir)/testapps" +
         " && cp $(location :HeadlessDOSingleUserTestApp) $(genDir)/testapps" +
         " && cp $(location :RemoteDeviceAdminTestApp) $(genDir)/testapps" +
-        " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)"
+        " && $(location index_testapps) --directory $(genDir)/testapps --aapt2 $(location aapt2)",
 }
 
 java_genrule {
@@ -204,9 +198,8 @@ java_genrule {
         "resources/no_headless_device_owner_device_admin.xml",
         "resources/test_xml.xml",
     ],
-    cmd:
-        "mkdir -p $(genDir)/resources" +
-        " && cp $(in) $(genDir)/resources"
+    cmd: "mkdir -p $(genDir)/resources" +
+        " && cp $(in) $(genDir)/resources",
 }
 
 android_test_helper_app {
@@ -336,34 +329,6 @@ android_test_helper_app {
 }
 
 android_test_helper_app {
-    name: "RemoteDPCTestAppTargetingV23",
-    static_libs: [
-        "TestApp_TestApps",
-    ],
-    resource_dirs: ["src/testapps/main/res/device_admin"],
-    manifest: "manifests/RemoteDPCManifest.xml",
-    additional_manifests: ["CommonManifest.xml"],
-    aaptflags: [
-        "--rename-manifest-package com.android.cts.RemoteDPCV23",
-    ],
-    target_sdk_version: "23",
-}
-
-android_test_helper_app {
-    name: "RemoteDPCTestAppTargetingV24",
-    static_libs: [
-        "TestApp_TestApps",
-    ],
-    resource_dirs: ["src/testapps/main/res/device_admin"],
-    manifest: "manifests/RemoteDPCManifest.xml",
-    additional_manifests: ["CommonManifest.xml"],
-    aaptflags: [
-        "--rename-manifest-package com.android.cts.RemoteDPCV24",
-    ],
-    target_sdk_version: "24",
-}
-
-android_test_helper_app {
     name: "RemoteDPCTestAppTargetingV28",
     static_libs: [
         "TestApp_TestApps",
@@ -374,6 +339,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package com.android.cts.RemoteDPCV28",
     ],
+    min_sdk_version: "29",
     target_sdk_version: "28",
 }
 
@@ -388,6 +354,7 @@ android_test_helper_app {
     aaptflags: [
         "--rename-manifest-package com.android.cts.RemoteDPCV30",
     ],
+    min_sdk_version: "30",
     target_sdk_version: "30",
 }
 

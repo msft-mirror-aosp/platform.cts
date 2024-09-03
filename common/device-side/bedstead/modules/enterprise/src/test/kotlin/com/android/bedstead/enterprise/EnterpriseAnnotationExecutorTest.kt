@@ -146,12 +146,12 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasDeviceOwner(key = EnsureHasDeviceOwner.DEFAULT_KEY, isPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = EnsureHasDeviceOwner.DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasDeviceOwner_isRespected() {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion())
-                .isEqualTo(28)
+                .isEqualTo(30)
     }
 
     @Test
@@ -161,17 +161,17 @@ class EnterpriseAnnotationExecutorTest {
     }
 
     @Test
-    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28)))
-    fun ensureHasDeviceOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30)))
+    fun ensureHasDeviceOwnerAnnotation_targetingV30_remoteDpcTargetsV30() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getDeviceOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
-    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isGreaterThanOrEqualTo = 30)))
-    fun ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
+    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isGreaterThanOrEqualTo = 35)))
+    fun ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV35_remoteDpcTargetsV35() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getDeviceOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(35)
     }
 
     @Test
@@ -256,10 +256,10 @@ class EnterpriseAnnotationExecutorTest {
     }
 
     @Test
-    @EnsureHasProfileOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28)))
-    fun ensureHasProfileOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+    @EnsureHasProfileOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30)))
+    fun ensureHasProfileOwnerAnnotation_targetingV30_remoteDpcTargetsV30() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getProfileOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -343,11 +343,11 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasProfileOwner(key = DEFAULT_KEY, isPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasProfileOwner_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -654,11 +654,11 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasWorkProfile(dpcKey = DEFAULT_DPC_KEY, dpcIsPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = DEFAULT_DPC_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -711,11 +711,11 @@ class EnterpriseAnnotationExecutorTest {
     @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = RequireRunOnWorkProfile.DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_requireRunOnWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
     }
 
     @Ignore("b/358355868: Until we readd RemoteDeviceAdmin test apps that use specific policies")
