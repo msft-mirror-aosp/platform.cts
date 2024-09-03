@@ -72,8 +72,8 @@ java_defaults {
         "junit",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     srcs: [
         "TestApp1/src/**/*.java",
