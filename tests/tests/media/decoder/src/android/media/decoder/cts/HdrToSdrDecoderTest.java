@@ -226,18 +226,18 @@ public class HdrToSdrDecoderTest extends HDRDecoderTestBase{
         assumeTrue("Media format of input file is not supported.",
                 MediaUtils.supports(mCodecName, format));
 
+        long requiredHdrProfile = PROFILE_HDR_MAP.get(mMediaType).get(mProfile);
+        Set<Long> availableProfiles = getAvailableHDRCaptureProfiles();
+        boolean isProfileSupported =
+                availableProfiles != null && availableProfiles.contains(requiredHdrProfile);
+        assumeTrue("HDR capture is not supported for input file profile.", isProfileSupported);
+
         // If extractor returns profile, ensure it is as expected.
         int profile = format.getInteger(MediaFormat.KEY_PROFILE, -1);
         if (profile != -1) {
             assertEquals("profile returned by the extractor is invalid.",
                          mProfile, profile);
         }
-
-        long requiredHdrProfile = PROFILE_HDR_MAP.get(mMediaType).get(mProfile);
-        Set<Long> availableProfiles = getAvailableHDRCaptureProfiles();
-        boolean isProfileSupported =
-                availableProfiles != null && availableProfiles.contains(requiredHdrProfile);
-        assumeTrue("HDR capture is not supported for input file profile.", isProfileSupported);
 
         mExtractor.selectTrack(trackIndex);
         Log.v(TAG, "format " + format);
