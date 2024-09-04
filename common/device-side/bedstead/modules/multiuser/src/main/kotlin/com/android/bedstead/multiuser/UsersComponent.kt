@@ -43,6 +43,7 @@ import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
 import com.android.bedstead.nene.utils.Poll
 import com.google.common.base.Objects
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 import java.time.Duration
 import org.junit.Assume
 import org.junit.AssumptionViolatedException
@@ -80,9 +81,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
             mRemovedUsers.add(
                 RemovedUser(
                     users().createUser()
-                            .name(userReference.name())
-                            .type(userReference.type())
-                            .parent(userReference.parent()),
+                        .name(userReference.name())
+                        .type(userReference.type())
+                        .parent(userReference.parent()),
                     userReference.isRunning(),
                     Objects.equal(mOriginalSwitchedUser, userReference)
                 )
@@ -166,7 +167,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
     ) {
         val resolvedUserType: UserType = RequireUserSupported(userType).logic()
         val user = users()
-                .findUsersOfType(resolvedUserType).firstOrNull() ?: createUser(resolvedUserType)
+            .findUsersOfType(resolvedUserType).firstOrNull() ?: createUser(resolvedUserType)
         user.start()
         if (installInstrumentedApp == OptionalBoolean.TRUE) {
             packages().find(context.getPackageName()).installExisting(user)
@@ -229,8 +230,8 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
     private fun additionalUserOrNull(): UserReference? {
         val users = users()
-                .findUsersOfType(users().supportedType(UserType.SECONDARY_USER_TYPE_NAME))
-                .sortedBy { it.id() }
+            .findUsersOfType(users().supportedType(UserType.SECONDARY_USER_TYPE_NAME))
+            .sortedBy { it.id() }
         return if (users().isHeadlessSystemUserMode) {
             users.drop(1).firstOrNull()
         } else {
@@ -269,6 +270,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
     /**
      * Create a user with a specified userType and parent
      */
+    @CanIgnoreReturnValue
     fun createUser(userType: UserType, parent: UserReference? = null): UserReference {
         userRestrictionsComponent.ensureDoesNotHaveUserRestriction(
             UserManager.DISALLOW_ADD_USER,
@@ -277,9 +279,9 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         EnsureCanAddUser().logic()
         return try {
             val user = users().createUser()
-                    .type(userType)
-                    .parent(parent)
-                    .createAndStart()
+                .type(userType)
+                .parent(parent)
+                .createAndStart()
             createdUsers.add(user)
             user
         } catch (e: NeneException) {
@@ -372,10 +374,10 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
             // wait for ephemeral user to be removed after being switched away
             if (ephemeralUser != null) {
                 Poll.forValue("Ephemeral user exists") { ephemeralUser.exists() }
-                        .toBeEqualTo(false)
-                        .timeout(Duration.ofMinutes(1))
-                        .errorOnFail()
-                        .await()
+                    .toBeEqualTo(false)
+                    .timeout(Duration.ofMinutes(1))
+                    .errorOnFail()
+                    .await()
             }
         }
     }
@@ -609,6 +611,7 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
     /**
      * See [EnsureHasProfileAnnotation]
      */
+    @CanIgnoreReturnValue
     fun ensureHasProfile(
         profileType: String,
         forUserReference: UserReference,

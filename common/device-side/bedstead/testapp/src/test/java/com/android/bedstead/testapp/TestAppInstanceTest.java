@@ -315,8 +315,7 @@ public final class TestAppInstanceTest {
     public void testApi_canCall() {
         try (TestAppInstance testAppInstance = sTestApp.install()) {
             // Arbitrary call which does not require specific permissions to confirm no crash
-            testAppInstance.devicePolicyManager()
-                    .isFactoryResetProtectionPolicySupported();
+            testAppInstance.devicePolicyManager().getFactoryResetProtectionPolicySupported();
         }
     }
 

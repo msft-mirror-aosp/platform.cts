@@ -282,6 +282,14 @@ public class ResourceManagerMultiTest {
     @RequiresFlagsEnabled(Flags.FLAG_CODEC_IMPORTANCE)
     public void testCodecImportanceReclaimResource() throws Exception {
         assumeTrue("Codec Importance Feature is OFF", codecImportance());
-        doTestCodecImportanceReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        // Image codecs configured with resolution more than 4K are skipped on gsi builds.
+        // (b/354075153).
+        long resolution = (long) mWidth * mHeight;
+        long resolution4K = 4096 * 2048;
+        if (isGsiImage() && mMimeType.startsWith("image/") && resolution > resolution4K) {
+            assumeTrue("This test is not applicable for device running GSI image", false);
+        } else {
+            doTestCodecImportanceReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        }
     }
 }

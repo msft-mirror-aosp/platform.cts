@@ -40,8 +40,8 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
-import android.provider.EmbeddedPhotoPickerFeatureInfo;
 import android.view.SurfaceView;
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -292,7 +292,7 @@ public class EmbeddedPhotoPickerTest {
     }
 
     @Test
-    public void testRevokeUriAccess_onNotifyItemsDeselected() throws Exception {
+    public void testRevokeUriAccess_onRequestRevokeUriPermission() throws Exception {
         addMediaAndLaunchActivity(1);
         final List<Uri> selectedUris = mActivity.getSelectedUris();
 
@@ -317,7 +317,7 @@ public class EmbeddedPhotoPickerTest {
         mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
 
         // 4. Notify items deselected for the previously selected media item
-        mActivity.getSession().notifyItemsDeselected(selectedUris);
+        mActivity.getSession().requestRevokeUriPermission(selectedUris);
 
         // 5. Assert that the item is deselected.
         assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();

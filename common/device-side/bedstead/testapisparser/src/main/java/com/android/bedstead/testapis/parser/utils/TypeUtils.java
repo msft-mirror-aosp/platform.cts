@@ -195,7 +195,7 @@ public final class TypeUtils {
         StringBuilder name = new StringBuilder();
         for (String p : parts) {
             if (Character.isLowerCase(p.charAt(0))) {
-                if (!name.isEmpty()) {
+                if (name.length() > 0) {
                     name.append(".");
                 }
                 name.append(p);
@@ -209,7 +209,7 @@ public final class TypeUtils {
         StringBuilder name = new StringBuilder();
         for (String p : parts) {
             if (Character.isUpperCase(p.charAt(0))) {
-                if (!name.isEmpty()) {
+                if (name.length() > 0) {
                     name.append(".");
                 }
                 name.append(p);
