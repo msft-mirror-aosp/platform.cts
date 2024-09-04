@@ -57,6 +57,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.harrier.annotations.RequireRunOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
@@ -362,6 +363,26 @@ public final class UiAutomationTest {
                 () -> mUiAutomation.getRootInActiveWindow(), failMsg);
         assertThrows(IllegalStateException.class,
                 () -> mUiAutomation.setOnAccessibilityEventListener(null), failMsg);
+    }
+
+    @Test
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    public void testCallingPerformGlobalAction_shouldThrowException() {
+        mUiAutomation = getInstrumentation().getUiAutomation();
+
+        assertThrows(SecurityException.class,
+                () -> mUiAutomation.performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK),
+                "Expected exception when calling performGlobalAction on visible background user");
+    }
+
+    @Test
+    @RequireRunOnVisibleBackgroundNonProfileUser
+    public void testCallingSetAnimationScale_shouldThrowException() {
+        mUiAutomation = getInstrumentation().getUiAutomation();
+
+        assertThrows(SecurityException.class,
+                () -> mUiAutomation.setAnimationScale(1f),
+                "Expected exception when calling setAnimationScale on visible background user");
     }
 
     @AppModeFull

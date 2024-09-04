@@ -15,9 +15,7 @@
 
 
 import logging
-import select
 import struct
-import sys
 import time
 import sensor_fusion_utils
 
@@ -25,8 +23,6 @@ import sensor_fusion_utils
 ARDUINO_BRIGHTNESS_MAX = 255
 ARDUINO_BRIGHTNESS_MIN = 0
 ARDUINO_LIGHT_START_BYTE = 254
-
-KEYBOARD_ENTRY_WAIT_TIME = 20  # seconds to wait for keyboard entry
 
 
 def _toggle_screen_state(device, desired_state):
@@ -122,5 +118,5 @@ def set_lighting_state(arduino_serial_port, lighting_ch, state):
     set_light_brightness(lighting_ch, level, arduino_serial_port, delay=1)
   else:
     print(f'Turn {state} lights in rig and hit <ENTER> to continue.')
-    _, _, _ = select.select([sys.stdin], [], [], KEYBOARD_ENTRY_WAIT_TIME)
+    input('')
 

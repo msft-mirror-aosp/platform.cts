@@ -91,6 +91,7 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 /**
  * This class covers all test cases for starting/blocking background activities.
@@ -178,7 +179,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
 
         // If the activity launches, it means the START_ACTIVITIES_FROM_BACKGROUND permission works.
         assertWithMessage("Launched activity should be at the top")
-                .that(mWmState.getTopActivityName(0))
+                .that(mWmState.getTopActivityName(getMainDisplayId()))
                 .isEqualTo(ComponentNameUtils.getActivityName(APP_A.BACKGROUND_ACTIVITY));
     }
 
@@ -1009,7 +1010,9 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         removeGuestUser();
 
         // This test might be running as current user (on devices that use headless system user
-        // mode), so it needs to get the context for the system user.
+        // mode), so it needs to get the context for the system user. To do that, we need to ensure
+        // this test package is installed for the system user.
+        installExistingPackageAsUser(mContext.getPackageName(), UserHandle.USER_SYSTEM);
         Context context = runWithShellPermissionIdentity(
                 () -> mContext.createContextAsUser(UserHandle.SYSTEM, /* flags= */ 0),
                 INTERACT_ACROSS_USERS);
@@ -1115,8 +1118,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     public void testManageSpacePendingIntentNoBalAllowed() throws Exception {
         TestServiceClient appATestService = getTestService(APP_A);
         runWithShellPermissionIdentity(() -> {
-            runShellCommandOrThrow("cmd appops set " + APP_A.APP_PACKAGE_NAME
-                    + " android:manage_external_storage allow");
+            runShellCommandOrThrow("cmd appops set --user " + mContext.getUserId() + " "
+                    + APP_A.APP_PACKAGE_NAME + " android:manage_external_storage allow");
         });
         // Make sure AppA paused at least 10s so it can't start activity because of grace period.
         Thread.sleep(1000 * 10);
@@ -1200,6 +1203,11 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         assertActivityNotFocused(APP_A.BACKGROUND_ACTIVITY);
     }
 
+    private static String installExistingPackageAsUser(String packageName, int userId) {
+        return runShellCommandOrThrow("pm install-existing --wait --user " + userId + " "
+                + packageName);
+    }
+
     private void clickAllowBindWidget(Components app, ResultReceiver resultReceiver)
             throws Exception {
         // Create appWidgetId so we can send it to app, to request bind widget and start config
@@ -1235,6 +1243,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
         boolean buttonClicked = false;
         BySelector selector = By.clickable(true);
         List<UiObject2> objects = device.findObjects(selector);
+        assume().withMessage("No clickable UI elements").that(objects).isNotEmpty();
+        List<String> objectTexts = objects.stream()
+                .map(UiObject2::getText)
+                .collect(Collectors.toList());
         for (UiObject2 object : objects) {
             String objectText = object.getText();
             if (objectText == null) {
@@ -1246,7 +1258,10 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
                 break;
             }
         }
-        assertWithMessage("Create' button not found/clicked")
+        assertWithMessage("Create' button not found/clicked in %s", objectTexts)
+                .that(buttonClicked)
+                .isTrue();
+        assertWithMessage("%s is not gone", settingsPkgName)
                 .that(device.wait(Until.gone(By.pkg(settingsPkgName)), 1000 * 10) && buttonClicked)
                 .isTrue();
 

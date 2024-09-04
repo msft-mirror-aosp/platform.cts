@@ -53,7 +53,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     public static void beforeAllTests() throws Exception {
         logd(TAG, "beforeAllTests");
 
-        assumeTrue(shouldTestSatelliteWithMockService());
+        if (!shouldTestSatelliteWithMockService()) return;
         beforeAllTestsBase();
     }
 
@@ -70,6 +70,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
+        assumeTrue(shouldTestSatelliteWithMockService());
     }
 
     @After

@@ -24,8 +24,11 @@ package {
 android_library {
     name: "audiorecordpermissiontests_shared",
     defaults: ["cts_support_defaults"],
-    srcs: ["src/**/*.kt"],
+    srcs: [
+        "src/**/*.kt",
+        "src/**/*.aidl",
+    ],
+    static_libs: ["kotlinx-coroutines-android"],
     resource_dirs: ["res"],
-    // necessary for transmitting attr chains with tokens between test apps
-    platform_apis: true,
+    sdk_version: "test_33",
 }

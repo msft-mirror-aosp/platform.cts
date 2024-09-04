@@ -32,6 +32,7 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -179,6 +180,7 @@ public class PassFailButtons {
     }   /* class PassFailButtons.PassFailActivity */
 
     public static class Activity extends android.app.Activity implements PassFailActivity {
+        private static final String TAG = "CtsVerifier";
         private WakeLock mWakeLock;
         private CtsVerifierReportLog mReportLog;
         private final TestResultHistoryCollection mHistoryCollection;
@@ -193,9 +195,20 @@ public class PassFailButtons {
             }
         }
 
+        private String getTestName() {
+            String className = this.getClass().getSimpleName();
+            // Remove "Activity" from end of class name.
+            String suffix = "Activity";
+            if (className.endsWith(suffix)) {
+                className = className.substring(0, className.length() - suffix.length());
+            }
+            return className;
+        }
+
         @Override
         protected void onResume() {
             super.onResume();
+            Log.d(TAG, "BEGIN_TEST: " + getTestName());
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
                 mWakeLock = ((PowerManager) getSystemService(Context.POWER_SERVICE))
                         .newWakeLock(PowerManager.SCREEN_DIM_WAKE_LOCK, "PassFailButtons");
@@ -213,6 +226,7 @@ public class PassFailButtons {
             if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH)) {
                 mWakeLock.release();
             }
+            Log.d(TAG, "END_TEST: " + getTestName());
         }
 
         @Override

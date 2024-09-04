@@ -124,7 +124,7 @@ public class VirtualAudioTest {
 
         mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
         mVirtualDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(
-                mVirtualDevice, VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         mVirtualAudioDevice = mVirtualDevice.createVirtualAudioDevice(
                 mVirtualDisplay, Runnable::run, mAudioConfigurationChangeCallback);
         grantRecordAudioPermission(mVirtualDevice.getDeviceId());
@@ -182,7 +182,7 @@ public class VirtualAudioTest {
 
         VirtualDevice secondDevice = mVirtualDeviceRule.createManagedVirtualDevice(params);
         VirtualDisplay secondDisplay = mVirtualDeviceRule.createManagedVirtualDisplay(secondDevice,
-                VirtualDeviceRule.TRUSTED_VIRTUAL_DISPLAY_CONFIG);
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
         VirtualAudioDevice virtualAudioDevice = secondDevice.createVirtualAudioDevice(secondDisplay,
                 Runnable::run, mAudioConfigurationChangeCallback);
         virtualAudioDevice.startAudioInjection(INJECTION_FORMAT);

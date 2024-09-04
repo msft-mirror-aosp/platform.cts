@@ -37,6 +37,7 @@ import android.content.res.Resources;
 import android.content.res.Resources.NotFoundException;
 import android.content.res.TypedArray;
 import android.content.res.XmlResourceParser;
+import android.graphics.Movie;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.AdaptiveIconDrawable;
@@ -46,19 +47,20 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.LocaleList;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.DisabledOnRavenwood;
+import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.util.Xml;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.WindowManager;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.xmlpull.v1.XmlPullParser;
@@ -72,8 +74,15 @@ import java.util.stream.IntStream;
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ResourcesTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+        if (RavenwoodRule.isOnRavenwood()) {
+            return mRavenwoodRule.getContext();
+        } else {
+            return InstrumentationRegistry.getInstrumentation().getTargetContext();
+        }
     }
 
     private static final String STRING = "string";
@@ -152,49 +161,8 @@ public class ResourcesTest {
         assertEquals(mResources, ta.getResources());
     }
 
-    private Resources getResources(final Configuration config, final int mcc, final int mnc,
-            final int touchscreen, final int keyboard, final int keysHidden, final int navigation,
-            final int width, final int height) {
-        final AssetManager assmgr = new AssetManager();
-        assmgr.addAssetPath(getContext().getPackageResourcePath());
-        final DisplayMetrics metrics = new DisplayMetrics();
-        final WindowManager wm = (WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE);
-        final Display d = wm.getDefaultDisplay();
-        d.getMetrics(metrics);
-        config.mcc = mcc;
-        config.mnc = mnc;
-        config.touchscreen = touchscreen;
-        config.keyboard = keyboard;
-        config.keyboardHidden = keysHidden;
-        config.navigation = navigation;
-        metrics.widthPixels = width;
-        metrics.heightPixels = height;
-        return new Resources(assmgr, metrics, config);
-    }
-
-    private static void checkGetText1(final Resources res, final int resId,
-            final String expectedValue) {
-        final String actual = res.getText(resId).toString();
-        assertNotNull("Returned wrong configuration-based simple value: expected <nothing>, "
-                + "got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue);
-        assertEquals("Returned wrong configuration-based simple value: expected " + expectedValue
-                + ", got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue, actual);
-    }
-
-    private static void checkGetText2(final Resources res, final int resId,
-            final String expectedValue) {
-        final String actual = res.getText(resId, null).toString();
-        assertNotNull("Returned wrong configuration-based simple value: expected <nothing>, "
-                + "got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue);
-        assertEquals("Returned wrong configuration-based simple value: expected " + expectedValue
-                + ", got '" + actual + "' from resource 0x" + Integer.toHexString(resId),
-                expectedValue, actual);
-    }
-
     @Test
+    @DisabledOnRavenwood(blockedBy = Movie.class)
     public void testGetMovie() {
         try {
             mResources.getMovie(-1);
@@ -480,6 +448,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable() {
         try {
             mResources.getDrawable(-1);
@@ -501,6 +470,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor1, null);
         assertTrue(drawable instanceof ColorDrawable);
@@ -511,6 +481,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorStateListResource() {
         final Drawable drawable = mResources.getDrawable(R.color.testcolor, null);
         assertTrue(drawable instanceof ColorStateListDrawable);
@@ -523,6 +494,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_ColorStateListConfigurations() {
         final Configuration dayConfiguration = new Configuration(mResources.getConfiguration());
         final Configuration nightConfiguration = new Configuration(mResources.getConfiguration());
@@ -558,6 +530,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable() {
         try {
             mResources.getDrawable(R.drawable.drawable_recursive);
@@ -568,6 +541,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawable_StackOverflowErrorDrawable_mipmap() {
         try {
             mResources.getDrawable(R.mipmap.icon_recursive);
@@ -578,6 +552,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensity() {
         final Drawable ldpi = mResources.getDrawableForDensity(
                 R.drawable.density_test, DisplayMetrics.DENSITY_LOW);
@@ -593,6 +568,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithZeroDensityIsSameAsGetDrawable() {
         final Drawable defaultDrawable = mResources.getDrawable(R.drawable.density_test, null);
         assertNotNull(defaultDrawable);
@@ -611,6 +587,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testGetDrawableForDensityWithAdaptiveIconDrawable() {
         final Drawable ldpi = extractForegroundFromAdaptiveIconDrawable(R.drawable.adaptive_icon,
                 DisplayMetrics.DENSITY_LOW);
@@ -876,6 +853,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = ColorDrawable.class)
     public void testChangingConfiguration() {
         ColorDrawable dr1 = (ColorDrawable) mResources.getDrawable(R.color.varies_uimode);
         assertEquals(ActivityInfo.CONFIG_UI_MODE, dr1.getChangingConfigurations());
@@ -1050,6 +1028,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidResourceId() {
         try {
             mResources.getFont(-1);
@@ -1060,6 +1039,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFile() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
 
@@ -1068,6 +1048,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFile() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
 
@@ -1094,6 +1075,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithTtc() {
         // Here we test that building typefaces by indexing in font collections works correctly.
         // We want to ensure that the built typefaces correspond to the fonts with the right index.
@@ -1111,6 +1093,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileWithVariationSettings() {
         // Here we test that specifying variation settings for fonts in XMLs works.
         // We build typefaces from two families containing one font each, using the same font
@@ -1127,6 +1110,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidXmlFile() {
         try {
             assertNull(mResources.getFont(R.font.invalid_xmlfamily));
@@ -1142,6 +1126,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_invalidFontFiles() {
         try {
             mResources.getFont(R.font.invalid_xmlfont);
@@ -1174,6 +1159,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_brokenFontFiles() {
         try {
             mResources.getFont(R.font.brokenfont);
@@ -1191,6 +1177,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_fontFileIsCached() {
         Typeface font = mResources.getFont(R.font.sample_regular_font);
         Typeface font2 = mResources.getFont(R.font.sample_regular_font);
@@ -1199,6 +1186,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_xmlFileIsCached() {
         Typeface font = mResources.getFont(R.font.samplexmlfont);
         Typeface font2 = mResources.getFont(R.font.samplexmlfont);
@@ -1207,6 +1195,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testGetFont_resolveByFontTable() {
         assertEquals(Typeface.NORMAL, mResources.getFont(R.font.sample_regular_font).getStyle());
         assertEquals(Typeface.BOLD, mResources.getFont(R.font.sample_bold_font).getStyle());
@@ -1222,6 +1211,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Drawable.class)
     public void testComplexColorDrawableAttributeInflation() {
         final LayoutInflater layoutInflater = (LayoutInflater) getContext().getSystemService(
                 Context.LAYOUT_INFLATER_SERVICE);
@@ -1254,6 +1244,7 @@ public class ResourcesTest {
     }
 
     @Test
+    @DisabledOnRavenwood(blockedBy = Typeface.class)
     public void testSystemFontFamilyReturnsSystemFont() {
         Typeface typeface = mResources.getFont(R.font.sample_downloadable_font);
         assertEquals(typeface, Typeface.create("sans-serif", Typeface.NORMAL));
