@@ -44,6 +44,7 @@ android_test {
         "cts",
         "general-tests",
         "sts",
+        "dts",
     ],
     sdk_version: "test_current",
     data: [":CtsAppTestStubs"],
