@@ -249,7 +249,7 @@ java_test_host {
         "sts-host-util",
     ],
 
-    test_suites: CTS_TEST_SUITES_DEFAULT,
+    test_suites: MCTS_TEST_SUITES_DEFAULT,
 
     test_config: "AndroidTestMcts.xml",
 
@@ -398,7 +398,7 @@ java_test_host {
         ":CtsAppDataIsolationAppSharedA",
         ":CtsAppDataIsolationAppSharedB",
     ],
-    test_suites: CTS_TEST_SUITES_DEFAULT,
+    test_suites: MCTS_TEST_SUITES_DEFAULT,
     test_config: "AppDataIsolationTests.xml",
 }
 
