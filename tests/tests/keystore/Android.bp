@@ -80,6 +80,7 @@ android_test {
         "guava",
         "hamcrest-library",
         "junit",
+        "junit-params",
         "platformprotosnano",
         "testng",
     ],

@@ -115,6 +115,21 @@ public class TestUtils {
                 packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE));
     }
 
+    static public enum KmType {
+        TEE,
+        SB
+    }
+
+    static public void assumeKmSupport(KmType kmType) {
+        if (isStrongboxKeyMint(kmType)) {
+            TestUtils.assumeStrongBox();
+        }
+    }
+
+    static public boolean isStrongboxKeyMint(KmType kmType) {
+        return kmType == KmType.SB;
+    }
+
     /**
      * Returns 0 if not implemented. Otherwise returns the feature version.
      */
