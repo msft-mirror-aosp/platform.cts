@@ -49,7 +49,10 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
+import com.android.compatibility.common.util.EnableAnimationRule;
+
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.mockito.InOrder;
 
 import java.util.ArrayList;
@@ -62,6 +65,9 @@ import java.util.function.Predicate;
  * Base class for tests in {@link WindowInsetsAnimation} and {@link WindowInsetsAnimation.Callback}.
  */
 public class WindowInsetsAnimationTestBase extends WindowManagerTestBase {
+
+    @ClassRule
+    public static final EnableAnimationRule sEnableAnimationRule = new EnableAnimationRule();
 
     protected TestActivity mActivity;
     protected View mRootView;
