@@ -16,7 +16,6 @@
 
 package com.android.cts.verifier.camera.its;
 
-import android.annotation.NonNull;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -24,6 +23,8 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.os.Handler;
+
+import androidx.annotation.NonNull;
 
 import org.json.JSONArray;
 

@@ -24,8 +24,8 @@ android_test {
     static_libs: ["ctstestrunner-axt"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
 
     srcs: ["src/**/*.java"],

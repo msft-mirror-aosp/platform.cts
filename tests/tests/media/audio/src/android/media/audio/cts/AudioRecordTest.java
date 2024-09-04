@@ -624,6 +624,10 @@ public class AudioRecordTest {
                                .getUiAutomation()
                                .adoptShellPermissionIdentity(
                                 Manifest.permission.CAPTURE_AUDIO_HOTWORD);
+        InstrumentationRegistry.getInstrumentation()
+                               .getContext()
+                               .getSystemService(AudioManager.class)
+                               .permissionUpdateBarrier();
 
 
         for (final boolean lookbackOn : new boolean[] { false, true} ) {

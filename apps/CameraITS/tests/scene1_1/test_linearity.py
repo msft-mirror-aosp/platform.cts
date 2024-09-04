@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -108,16 +108,16 @@ class LinearityTest(its_base_test.ItsBaseTest):
         b_means.append(rgb_means[2])
 
       # Plot means
-      pylab.figure(_NAME)
-      pylab.plot(sensitivities, r_means, '-ro')
-      pylab.plot(sensitivities, g_means, '-go')
-      pylab.plot(sensitivities, b_means, '-bo')
-      pylab.title(_NAME)
-      pylab.xlim([sens_range[0], sens_range[1]/2])
-      pylab.ylim([0, 1])
-      pylab.xlabel('sensitivity(ISO)')
-      pylab.ylabel('RGB avg [0, 1]')
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+      plt.figure(_NAME)
+      plt.plot(sensitivities, r_means, '-ro')
+      plt.plot(sensitivities, g_means, '-go')
+      plt.plot(sensitivities, b_means, '-bo')
+      plt.title(_NAME)
+      plt.xlim([sens_range[0], sens_range[1]/2])
+      plt.ylim([0, 1])
+      plt.xlabel('sensitivity(ISO)')
+      plt.ylabel('RGB avg [0, 1]')
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
       channel_color = ''
       # Assert plot curves are linear w/ + slope by examining polyfit residual
       for means in [r_means, g_means, b_means]:

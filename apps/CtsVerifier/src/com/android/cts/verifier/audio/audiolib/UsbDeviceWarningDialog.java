@@ -69,7 +69,7 @@ class UsbDeviceWarningDialog extends Dialog
                 .appendText(" " + mContext.getString(R.string.usbwarning_paragraph_1_2));
 
         htmlFormatter.closeDocument();
-        mMessageView.loadData(htmlFormatter.toString(), "text/html; charset=utf-8", "utf-8");
+        htmlFormatter.put(mMessageView);
 
         getWindow().setLayout(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);

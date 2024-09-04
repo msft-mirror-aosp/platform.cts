@@ -47,6 +47,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeEventStreamTestUtils.DescribedPredicate;
@@ -135,24 +136,26 @@ public class SearchViewTest extends EndToEndImeTestBase {
 
             final SearchView searchView = launchTestActivity(false /* requestFocus */);
 
-            // Emulate tap event on SearchView
-            mCtsTouchUtils.emulateTapOnViewCenter(
-                    InstrumentationRegistry.getInstrumentation(), null, searchView);
+            final var display = searchView.getContext().getDisplay();
+            try (var touch = new UinputTouchScreen(InstrumentationRegistry.getInstrumentation(),
+                    display)) {
+                touch.tapOnViewCenter(searchView);
 
-            // Expect input to bind since EditText is focused.
-            expectBindInput(stream, Process.myPid(), TIMEOUT);
+                // Expect input to bind since EditText is focused.
+                expectBindInput(stream, Process.myPid(), TIMEOUT);
 
-            // Wait until "showSoftInput" gets called with a real InputConnection
-            expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
-                    CHECK_EXIT_EVENT_ONLY, TIMEOUT);
+                // Wait until "showSoftInput" gets called with a real InputConnection
+                expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
+                        CHECK_EXIT_EVENT_ONLY, TIMEOUT);
 
-            expectImeVisible(TIMEOUT);
+                expectImeVisible(TIMEOUT);
 
-            // Make sure that "setQuery" triggers "hideSoftInput" in the IME side.
-            runOnMainSync(() -> searchView.setQuery("test", true /* submit */));
-            expectEvent(stream, eventMatcher("hideSoftInput"), TIMEOUT);
+                // Make sure that "setQuery" triggers "hideSoftInput" in the IME side.
+                runOnMainSync(() -> searchView.setQuery("test", true /* submit */));
+                expectEvent(stream, eventMatcher("hideSoftInput"), TIMEOUT);
 
-            expectImeInvisible(TIMEOUT);
+                expectImeInvisible(TIMEOUT);
+            }
         }
     }
 
@@ -200,21 +203,23 @@ public class SearchViewTest extends EndToEndImeTestBase {
 
             final SearchView searchView = launchTestActivityWithListView(true /* requestFocus */);
 
-            // Emulate tap event on SearchView
-            mCtsTouchUtils.emulateTapOnViewCenter(
-                    InstrumentationRegistry.getInstrumentation(), null, searchView);
+            final var display = searchView.getContext().getDisplay();
+            try (var touch = new UinputTouchScreen(InstrumentationRegistry.getInstrumentation(),
+                    display)) {
+                touch.tapOnViewCenter(searchView);
 
-            // Expect input to bind since EditText is focused.
-            expectBindInput(stream, Process.myPid(), TIMEOUT);
+                // Expect input to bind since EditText is focused.
+                expectBindInput(stream, Process.myPid(), TIMEOUT);
 
-            // Wait until "showSoftInput" gets called with a real InputConnection
-            expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
-                    CHECK_EXIT_EVENT_ONLY, TIMEOUT);
+                // Wait until "showSoftInput" gets called with a real InputConnection
+                expectEvent(stream, showSoftInputWithRealInputConnectionMatcher(),
+                        CHECK_EXIT_EVENT_ONLY, TIMEOUT);
 
-            expectImeVisible(TIMEOUT);
+                expectImeVisible(TIMEOUT);
 
-            notExpectEvent(stream, eventMatcher("hideSoftInput"),
-                    NOT_EXPECT_TIMEOUT);
+                notExpectEvent(stream, eventMatcher("hideSoftInput"),
+                        NOT_EXPECT_TIMEOUT);
+            }
         }
     }
 

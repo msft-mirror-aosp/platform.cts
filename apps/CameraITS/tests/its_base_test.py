@@ -74,6 +74,10 @@ class ItsBaseTest(base_test.BaseTestClass):
       self.debug_mode = self.user_params['debug_mode'] == 'True'
     if self.user_params.get('scene'):
       self.scene = self.user_params['scene']
+    if self.user_params.get('feature_combo_verify'):
+      self.feature_combo_verify = (
+          self.user_params['feature_combo_verify'] == 'True'
+      )
     camera_id_combo = self.parse_hidden_camera_id()
     self.camera_id = camera_id_combo[0]
     if len(camera_id_combo) == 2:

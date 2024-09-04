@@ -18,15 +18,8 @@ package {
 
 java_test_host {
     name: "CtsJvmtiRunTest911HostTestCases",
-    team: "trendy_team_art_performance",
+    defaults: ["cts-run-jvmti-test-defaults"],
     static_libs: ["CtsJvmtiHostTestBase"],
     jarjar_rules: "jarjar-rules.txt",
-    test_suites: [
-        "cts",
-        "general-tests",
-    ],
     data: [":CtsJvmtiRunTest911DeviceApp"],
-    test_options: {
-        unit_test: false,
-    },
 }

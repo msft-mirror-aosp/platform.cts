@@ -243,7 +243,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = Parcel.class)
     public void testWriteToParcel() throws Exception {
         ParcelFileDescriptor pf = makeParcelFileDescriptor();
 
@@ -261,6 +260,19 @@ public class ParcelFileDescriptorTest {
         } finally {
             in.close();
         }
+    }
+
+    @Test
+    public void testReadFromParcel_invalid() throws Exception {
+        ParcelFileDescriptor pf = makeParcelFileDescriptor();
+
+        Parcel pl = Parcel.obtain();
+        pl.writeInt(1);
+        pf.writeToParcel(pl, ParcelFileDescriptor.PARCELABLE_WRITE_RETURN_VALUE);
+
+        pl.setDataPosition(0);
+        assertThrows(RuntimeException.class, () ->
+                ParcelFileDescriptor.CREATOR.createFromParcel(pl));
     }
 
     @Test
@@ -287,7 +299,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testGetStatSize() throws Exception {
         ParcelFileDescriptor pf = makeParcelFileDescriptor();
         assertTrue(pf.getStatSize() >= 0);
@@ -521,7 +532,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = Os.class)
     public void testCheckFinalizerBehavior() throws Exception {
         final Runtime runtime = Runtime.getRuntime();
         ParcelFileDescriptor pfd = makeParcelFileDescriptor();

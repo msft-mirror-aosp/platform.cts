@@ -75,7 +75,7 @@ genrule {
     // (except for soong_zip which is actually the tool)
     srcs: [
         ":CtsUsesNativeLibraryTestApp",
-        ":sdk_public_30_android",
+        ":sdk_public_30_android.jar",
         "testkey.pk8",
         "testkey.x509.pem",
     ],
@@ -100,7 +100,7 @@ genrule {
          "mkdir -p $(genDir)/content && " +
          "cp $(location aapt2) $(genDir)/content && " +
          "cp $(location merge_zips) $(genDir)/content && " +
-         "cp $(location :sdk_public_30_android) $(genDir)/content && " +
+         "cp $(location :sdk_public_30_android.jar) $(genDir)/content && " +
          "cp $(location :CtsUsesNativeLibraryTestApp) $(genDir)/content && " +
          "cp $(location testkey.pk8) $(genDir)/content && " +
          "cp $(location testkey.x509.pem) $(genDir)/content && " +

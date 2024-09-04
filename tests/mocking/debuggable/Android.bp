@@ -20,7 +20,7 @@ android_test {
     name: "CtsMockingDebuggableTestCases",
     team: "trendy_team_adte",
     defaults: ["cts_defaults"],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs"],
     static_libs: [
         "mockito-target",
         "androidx.test.rules",

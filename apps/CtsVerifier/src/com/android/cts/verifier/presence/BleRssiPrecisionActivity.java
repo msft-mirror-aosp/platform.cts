@@ -58,6 +58,7 @@ import java.util.Random;
 public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
     private static final String TAG = BleRssiPrecisionActivity.class.getName();
     private static final String DEVICE_NAME = Build.MODEL;
+    private static final int UNSIGNED_MASK = 0x7F;
 
     // Report log schema
     private static final String KEY_REFERENCE_DEVICE = "reference_device";
@@ -156,7 +157,6 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
                 deviceId,
                 rssiMedian,
                 rawRssi) -> {
-
             if (deviceId != Byte.parseByte(mReferenceDeviceIdInput.getText().toString())) {
                 //reference device does not match discovered device and scan should be discarded
                 Log.i(TAG, "Reference device does not match discovered device. Skipping");
@@ -264,7 +264,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
         Random random = new Random();
         byte[] randomDeviceIdArray = new byte[1];
         random.nextBytes(randomDeviceIdArray);
-        return randomDeviceIdArray[0];
+        return (byte) (randomDeviceIdArray[0] & UNSIGNED_MASK);
     }
 
     private void makeToast(String message) {

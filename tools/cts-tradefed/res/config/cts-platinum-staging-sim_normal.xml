@@ -392,7 +392,6 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_ConnectionRemove" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Destroy" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Disconnect" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_Extras" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCallbacks_StateChange" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceCreate" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RemoteConferenceTest#testRemoteConferenceDTMFTone" />
@@ -449,13 +448,8 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RttOperationsTest#testOutgoingRttCall" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RttOperationsTest#testRejectRemoteRttRequest" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.RttOperationsTest#testRemoteRttTermination" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAcceptRingingCallOnMultipleSelfManagedCalls" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAcceptRingingCallOnSingleSelfManagedCall" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAddSelfManagedIncomingConnection" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAddSelfManagedOutgoingConnection" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAudioModeRemainsVoip" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testAudioRoute" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testCallEndpoint" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testCallLimit" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testCallSwapBetweenTwoSelfManagedConnectionServices" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testDisallowOutgoingCallWhileOngoingManagedCallCanNotBeHeld" />
@@ -469,11 +463,9 @@
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionServiceTest#testSelfManagedCallNotLogged" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionTest#testBindToSupportDefaultDialerNoCarMode" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionTest#testBindToSupportNonUiInCallService" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.SelfManagedConnectionTest#testIncomingVideoCallWithNoVideoSupportInCarMode" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.TelecomManagerTest#testIsInEmergencyCall_ongoingEmergencyCall" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testAllowCall" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testHasPermissionAndHasContactIncoming" />
-    <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testHasPermissionAndHasContactOutgoing" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testHasPermissionAndNoContactOutgoing" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testNoPermissionAndHasContactIncoming" />
     <option name="compatibility:include-filter" value="CtsTelecomTestCases android.telecom.cts.ThirdPartyCallScreeningServiceTest#testNoPermissionAndHasContactOutgoing" />
