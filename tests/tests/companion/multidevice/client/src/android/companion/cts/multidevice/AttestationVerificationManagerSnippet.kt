@@ -58,34 +58,31 @@ class AttestationVerificationManagerSnippet : Snippet {
     }
 
     @Rpc(description = "Verify provided attestation")
-    fun verifyAttestation(
-            profile: Int = PROFILE_PEER_DEVICE,
-            challenge: String = DEFAULT_CHALLENGE,
-            attestation: String
-    ): Boolean {
+    fun verifyAttestation(attestation: String): Boolean {
         val callback = CallbackUtils.AttestationVerificationCallback()
         val requirements = Bundle()
-        requirements.putByteArray(PARAM_CHALLENGE, challenge.toByteArray(Charsets.UTF_8))
+        requirements.putByteArray(PARAM_CHALLENGE, DEFAULT_CHALLENGE.toByteArray(Charsets.UTF_8))
         avm.verifyAttestation(
-            AttestationProfile(profile),
+            AttestationProfile(PROFILE_PEER_DEVICE),
             TYPE_CHALLENGE,
             requirements,
             attestation.toByteArray(Charsets.UTF_8),
             executor,
             callback
         )
-        return callback.waitForResult()
+        val result = callback.waitForResult()
+        return result
     }
 
     @Rpc(description = "Fetch attestation")
     @Throws(GeneralSecurityException::class)
-    fun generateAttestation(challenge: String = DEFAULT_CHALLENGE): String {
+    fun generateAttestation(): String {
         val androidKeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         val parameterSpec = KeyGenParameterSpec.Builder(
             ATTESTATION_ALIAS,
             KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
         )
-            .setAttestationChallenge(challenge.toByteArray(Charsets.UTF_8))
+            .setAttestationChallenge(DEFAULT_CHALLENGE.toByteArray(Charsets.UTF_8))
             .setDigests(KeyProperties.DIGEST_SHA256)
             .build()
         val keyPairGenerator = KeyPairGenerator.getInstance(
