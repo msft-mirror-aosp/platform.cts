@@ -21,10 +21,13 @@ import android.content.pm.PackageManager
 import android.platform.test.annotations.AppModeFull
 import androidx.test.InstrumentationRegistry
 import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.nene.users.UserReference
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.ClassRule
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -32,6 +35,13 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 class UpdateOwnershipEnforcementMultiUserTest : UpdateOwnershipEnforcementTestBase() {
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
 
     private lateinit var currentUser: UserReference
     private lateinit var otherUser: UserReference

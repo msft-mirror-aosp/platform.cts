@@ -16,6 +16,8 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -23,6 +25,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -54,8 +57,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
 /**
@@ -64,8 +69,7 @@ import java.util.regex.Pattern;
 public class PackageInstallerCujTestBase {
     public static final String TAG = "PackageInstallerCujTestBase";
 
-    public static final String CONTENT_AUTHORITY =
-            "android.packageinstaller.criticaluserjourney.cts.fileprovider";
+    public static final String AUTHORITY_NAME = ".fileprovider";
     public static final String INSTALLER_APK_NAME = "CtsInstallerCujTestInstaller.apk";
     public static final String INSTALLER_APK_V2_NAME = "CtsInstallerCujTestInstallerV2.apk";
     public static final String INSTALLER_LABEL = "CTS CUJ Installer";
@@ -77,6 +81,10 @@ public class PackageInstallerCujTestBase {
     public static final String TEST_APP_LABEL = "Installer CUJ Test App";
     public static final String TEST_APP_PACKAGE_NAME =
             "android.packageinstaller.cts.cuj.app";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_NAME =
+            "CtsInstallerCujTestNoLauncherActivityApp.apk";
+    public static final String TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME =
+            "CtsInstallerCujTestNoLauncherActivityAppV2.apk";
 
     public static final String APP_INSTALLED_LABEL = "App installed";
     public static final String BUTTON_CANCEL_LABEL = "Cancel";
@@ -104,13 +112,16 @@ public class PackageInstallerCujTestBase {
     private static final long TEST_APK_VERSION = 1;
     private static final long TEST_APK_V2_VERSION = 2;
 
+    private static final ComponentName TEST_APP_ACTIVITY_COMPONENT = new ComponentName(
+            TEST_APP_PACKAGE_NAME, "android.packageinstaller.cts.cuj.app.MainActivity");
+
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
 
-    private static Instrumentation sInstrumentation;
     private static String sPackageInstallerPackageName = null;
 
     public static Context sContext;
+    public static Instrumentation sInstrumentation;
     public static PackageManager sPackageManager;
     public static UiDevice sUiDevice;
 
@@ -182,6 +193,8 @@ public class PackageInstallerCujTestBase {
      * Wait for the device idle.
      */
     public static void waitForUiIdle() {
+        // Make sure the application is idle and input windows is up-to-date.
+        sInstrumentation.getUiAutomation().syncInputTransactions();
         sUiDevice.waitForIdle();
     }
 
@@ -258,7 +271,7 @@ public class PackageInstallerCujTestBase {
      * Find the UiObject2 with the {@code name} and the object's package name is
      * {@link #sPackageInstallerPackageName}.
      */
-    public static UiObject2 findPackageInstallerObject(String name) {
+    public static UiObject2 findPackageInstallerObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findPackageInstallerObject(By.text(namePattern), /* checkNull= */ true);
     }
@@ -268,14 +281,15 @@ public class PackageInstallerCujTestBase {
      * {@link #sPackageInstallerPackageName}. If {@code checkNull} is true, also check the object
      * is not null.
      */
-    public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull) {
+    public static UiObject2 findPackageInstallerObject(BySelector bySelector, boolean checkNull)
+            throws Exception {
         return findObject(getPackageInstallerBySelector(bySelector), checkNull);
     }
 
     /**
      * Find the UiObject2 with the {@code name}.
      */
-    public static UiObject2 findObject(String name) {
+    public static UiObject2 findObject(String name) throws Exception {
         final Pattern namePattern = Pattern.compile(name, Pattern.CASE_INSENSITIVE);
         return findObject(By.text(namePattern), /* checkNull= */ true);
     }
@@ -285,7 +299,7 @@ public class PackageInstallerCujTestBase {
      * check the object is not null.
      */
     @Nullable
-    public static UiObject2 findObject(BySelector bySelector, boolean checkNull) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull) throws Exception {
         return findObject(bySelector, checkNull, FIND_OBJECT_TIMEOUT_MS);
     }
 
@@ -294,7 +308,8 @@ public class PackageInstallerCujTestBase {
      * check the object is not null. The {@code timeoutMs} is the value for waiting time.
      */
     @Nullable
-    public static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs) {
+    public static UiObject2 findObject(BySelector bySelector, boolean checkNull, long timeoutMs)
+            throws Exception {
         waitForUiIdle();
 
         UiObject2 object = null;
@@ -305,7 +320,12 @@ public class PackageInstallerCujTestBase {
                 if (object != null) {
                     Log.d(TAG, "Found bounds: " + object.getVisibleBounds()
                             + " of object: " + bySelector + ", text: " + object.getText()
-                            + " package: " + object.getApplicationPackage());
+                            + " package: " + object.getApplicationPackage() + ", enabled: "
+                            + object.isEnabled() + ", clickable: " + object.isClickable()
+                            + ", contentDescription: " + object.getContentDescription()
+                            + ", resourceName: " + object.getResourceName() + ", visibleCenter: "
+                            + object.getVisibleCenter());
+                    waitForUiIdle();
                     return object;
                 } else {
                     // Maybe the screen is small. Scroll forward and attempt to click
@@ -315,6 +335,12 @@ public class PackageInstallerCujTestBase {
                 // do nothing
             }
         }
+
+        // dump window hierarchy for debug
+        if (object == null) {
+            dumpWindowHierarchy();
+        }
+
         if (checkNull) {
             assertWithMessage("Can't find object " + bySelector).that(object).isNotNull();
         }
@@ -324,12 +350,29 @@ public class PackageInstallerCujTestBase {
     /**
      * Wait for the UiObject2 with the {@code bySelector} is gone.
      */
-    public static void waitUntilObjectGone(BySelector bySelector) {
+    public static void waitUntilObjectGone(BySelector bySelector) throws Exception {
         if (!sUiDevice.wait(Until.gone(bySelector), WAIT_OBJECT_GONE_TIMEOUT_MS)) {
+            // dump window hierarchy for debug
+            dumpWindowHierarchy();
             fail("The Object: " + bySelector + "did not disappear within "
                     + WAIT_OBJECT_GONE_TIMEOUT_MS + " milliseconds");
         }
         waitForUiIdle();
+    }
+
+    /**
+     * Dump current window hierarchy to help debug UI
+     */
+    public static void dumpWindowHierarchy() throws InterruptedException, IOException {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        sUiDevice.dumpWindowHierarchy(outputStream);
+        String windowHierarchy = outputStream.toString(StandardCharsets.UTF_8.name());
+
+        Log.w(TAG, "Window hierarchy:");
+        for (String line : windowHierarchy.split("\n")) {
+            Thread.sleep(10);
+            Log.w(TAG, line);
+        }
     }
 
     /**
@@ -349,9 +392,24 @@ public class PackageInstallerCujTestBase {
     /**
      * Install the test apk with update-ownership.
      */
-    public static void installTestPackageWithUpdateOwnership() throws IOException {
-        SystemUtil.runShellCommand("pm install -t  --update-ownership "
-                + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
+    public static void installTestPackageWithUpdateOwnership() throws Exception {
+        SystemUtil.runShellCommand(String.format("pm install -t  --update-ownership -i %s %s",
+                sContext.getPackageName(),
+                new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath()));
+        assertTestPackageInstalled();
+
+        // assert the updateOwner package name is sContext.getPackageName()
+        final String updateOwnerPackageName = sPackageManager.getInstallSourceInfo(
+                TEST_APP_PACKAGE_NAME).getUpdateOwnerPackageName();
+        assertThat(updateOwnerPackageName).isEqualTo(sContext.getPackageName());
+    }
+
+    /**
+     * Install the test apk {@link #TEST_APK_NAME} and set the installer to be
+     * the package name of the test case.
+     */
+    public static void installTestPackageWithInstallerPackageName() throws IOException {
+        installPackage(TEST_APK_NAME, sContext.getPackageName());
         assertTestPackageInstalled();
     }
 
@@ -360,6 +418,15 @@ public class PackageInstallerCujTestBase {
      */
     public static void installTestPackage() throws IOException {
         installPackage(TEST_APK_NAME);
+        assertTestPackageInstalled();
+    }
+
+    /**
+     * Install the test apk that has no launcher activity
+     * {@link #TEST_NO_LAUNCHER_ACTIVITY_APK_NAME}.
+     */
+    public static void installNoLauncherActivityTestPackage() throws IOException {
+        installPackage(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
         assertTestPackageInstalled();
     }
 
@@ -383,6 +450,17 @@ public class PackageInstallerCujTestBase {
         SystemUtil.callWithShellPermissionIdentity(() -> DeviceConfig.setProperty(
                 DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name, value,
                 /* makeDefault= */ false));
+    }
+
+    /**
+     * Install the test apk {@code apkName} and set the installer is {@code installerPackageName}.
+     */
+    public static void installPackage(@NonNull String apkName, @NonNull String installerPackageName)
+            throws IOException {
+        Log.d(TAG, "installPackage(): apkName= " + apkName + " installerPackageName= "
+                + installerPackageName);
+        SystemUtil.runShellCommand(String.format("pm install -i %s -t %s", installerPackageName,
+                new File(TEST_APK_LOCATION, apkName).getCanonicalPath()));
     }
 
     /**
@@ -443,6 +521,16 @@ public class PackageInstallerCujTestBase {
                     + sContext.getUser() + ": " + e);
             return false;
         }
+    }
+
+    /**
+     * Disable the launcher activity of the test app.
+     */
+    public static void disableTestPackageLauncherActivity() {
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> sPackageManager.setComponentEnabledSetting(TEST_APP_ACTIVITY_COMPONENT,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP), CHANGE_COMPONENT_ENABLED_STATE);
     }
 
     @Nullable

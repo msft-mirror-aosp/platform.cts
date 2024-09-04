@@ -420,7 +420,12 @@ public class MediaStore_Video_MediaTest {
             assertEquals(1539711603000L, c.getLong(c.getColumnIndex(VideoColumns.DATE_TAKEN)));
 
             // We just added and modified the file, so should be recent
-            Range<Long> validRange = Range.closed(startTime, System.currentTimeMillis() / 1000);
+            // FAT file system has date resolution of 2 seconds for date modified attribute on files
+            // Meaning that modified date time will be always an even number and could be less than
+            // the start time of the test. Hence subtracting 1 from the startTime to cover cases
+            // where startTime is an odd number
+            Range<Long> validRange = Range.closed(startTime - 1,
+                    System.currentTimeMillis() / 1000);
             final long added = c.getLong(c.getColumnIndex(VideoColumns.DATE_ADDED));
             final long modified = c.getLong(c.getColumnIndex(VideoColumns.DATE_MODIFIED));
             assertWithMessage("Invalid added time " + added)

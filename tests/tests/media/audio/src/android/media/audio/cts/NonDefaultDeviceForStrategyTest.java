@@ -41,8 +41,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -62,9 +62,9 @@ public class NonDefaultDeviceForStrategyTest {
     /**
      * Device types that are communication devices but may not be picked by default engine.
      */
-    private static final HashSet<Integer> EXCLUDED_COMMUNICATION_DEVICE_TYPES = new HashSet<>() {{
-            add(AudioDeviceInfo.TYPE_HDMI);
-        }};
+    private static final Set<Integer> EXCLUDED_COMMUNICATION_DEVICE_TYPES = Set.of(
+                AudioDeviceInfo.TYPE_HDMI
+    );
 
     private AudioManager mAudioManager;
     private List<AudioProductStrategy> mStrategies;

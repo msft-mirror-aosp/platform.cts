@@ -18,8 +18,8 @@ package com.android.bedstead.harrier;
 
 import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
-import static com.android.bedstead.harrier.test.TestPolicy.POLICY_ARGUMENT_ONE;
-import static com.android.bedstead.harrier.test.TestPolicy.POLICY_ARGUMENT_TWO;
+import static com.android.bedstead.harrier.test.TestPolicyForPolicyArguments.POLICY_ARGUMENT_ONE;
+import static com.android.bedstead.harrier.test.TestPolicyForPolicyArguments.POLICY_ARGUMENT_TWO;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -53,7 +53,7 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPar
 import com.android.bedstead.harrier.annotations.parameterized.IncludePortraitOrientation;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.harrier.policies.LockTask;
-import com.android.bedstead.harrier.test.TestPolicy;
+import com.android.bedstead.harrier.test.TestPolicyForPolicyArguments;
 import com.android.bedstead.nene.TestApis;
 import com.android.queryable.annotations.IntegerQuery;
 import com.android.queryable.annotations.Query;
@@ -284,41 +284,41 @@ public class BedsteadJUnit4Test {
     @PolicyAppliesTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyAppliesTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyDoesNotApplyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyDoesNotApplyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CanSetPolicyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_canSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CannotSetPolicyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_cannotSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyAppliesTest(policy = {
-            TestPolicy.class
+            TestPolicyForPolicyArguments.class
     })
     @Postsubmit(reason = "new test")
     public void policyAppliesTestAnnotation_withArguments_shouldApply(@PolicyArgument int flag) {
@@ -326,7 +326,7 @@ public class BedsteadJUnit4Test {
     }
 
     @PolicyDoesNotApplyTest(policy = {
-            TestPolicy.class
+            TestPolicyForPolicyArguments.class
     })
     @Postsubmit(reason = "new test")
     public void policyDoesNotApplyTestAnnotation_withArguments_shouldApply(
@@ -335,7 +335,7 @@ public class BedsteadJUnit4Test {
     }
 
     @CanSetPolicyTest(policy = {
-            TestPolicy.class
+            TestPolicyForPolicyArguments.class
     })
     @Postsubmit(reason = "new test")
     public void canSetPolicyTestAnnotation_withArguments_shouldApply(
@@ -344,7 +344,7 @@ public class BedsteadJUnit4Test {
     }
 
     @CannotSetPolicyTest(policy = {
-            TestPolicy.class
+            TestPolicyForPolicyArguments.class
     })
     @Postsubmit(reason = "new test")
     public void cannotSetPolicyTestAnnotation_withArguments_shouldApply(

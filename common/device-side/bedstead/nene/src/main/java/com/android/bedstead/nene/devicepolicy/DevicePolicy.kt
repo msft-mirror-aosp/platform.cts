@@ -23,6 +23,7 @@ import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -32,7 +33,6 @@ import com.android.bedstead.nene.annotations.Experimental
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
@@ -873,6 +873,10 @@ object DevicePolicy {
         return devicePolicyManager.canUsbDataSignalingBeDisabled()
     }
 
+    /** See [DevicePolicyManager#getLastBugReportRequestTime] */
+    @Experimental
+    fun getLastBugReportRequestTime() = devicePolicyManager.lastBugReportRequestTime
+
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),
         Disabled(1),
@@ -888,7 +892,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.W)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

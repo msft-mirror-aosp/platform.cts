@@ -2,6 +2,7 @@
 # Lint as: python3
 """
 Test core CDM APIs involving multiple devices on mobly.
+Run: atest CtsCompanionDeviceManagerMultiDeviceTestCases
 """
 
 import api_flags_utils
@@ -33,9 +34,23 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
     def test_permissions_sync(self):
         """Test that CDM can perform permissions sync from one device to another via BT"""
 
-        # Skip if device is a watch
+        # Skip if either device is a watch
         asserts.skip_if(self.primary.cdm.isWatch(), 'Cannot create association as a watch.')
         asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
+
+        # Assume both devices are on same build type (debug vs user)
+        primary_debuggable = self.primary.build_info['debuggable'] == '1'
+        secondary_debuggable = self.secondary.build_info['debuggable'] == '1'
+        asserts.skip_if(primary_debuggable != secondary_debuggable, 'Both devices must be on the same type of build')
+
+        # If on user build, assume AVF compliance for peer profiles
+        if not primary_debuggable:
+            primary_attestation = self.primary.cdm.generateAttestation()
+            secondary_attestation = self.secondary.cdm.generateAttestation()
+            primary_verified = self.secondary.cdm.verifyAttestation(primary_attestation)
+            secondary_verified = self.primary.cdm.verifyAttestation(secondary_attestation)
+            asserts.skip_if(not primary_verified, 'Secondary device failed to verify primary device')
+            asserts.skip_if(not secondary_verified, 'Primary device failed to verify secondary device')
 
         primary_address = self.primary.cdm.btGetAddress()
         secondary_address = self.secondary.cdm.btGetAddress()
