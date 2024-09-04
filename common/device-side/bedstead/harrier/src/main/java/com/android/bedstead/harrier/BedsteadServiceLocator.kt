@@ -28,12 +28,11 @@ import kotlin.reflect.KProperty
  */
 class BedsteadServiceLocator : DeviceStateComponent {
 
-    private val loadedModules = mutableListOf<Module>()
     private val dependenciesMap = mutableMapOf<KClass<*>, Any>()
 
     /**
      * Obtains the instance of the given [clazz]
-     * if you have circular dependencies use [getValue], or lazy delegate
+     * if you have circular dependencies use [getValue]
      */
     @Suppress("UNCHECKED_CAST")
     fun <T : Any> get(clazz: KClass<T>): T {
@@ -41,7 +40,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
         return if (existingInstance != null) {
             existingInstance as T
         } else {
-            createDependency(clazz).also {
+            createDependencyByReflection(clazz.java).also {
                 dependenciesMap[clazz] = it
             }
         }
@@ -65,44 +64,21 @@ class BedsteadServiceLocator : DeviceStateComponent {
      */
     fun <T : Any> get(clazz: Class<T>): T = get(clazz.kotlin)
 
-    private fun <T : Any> createDependency(clazz: KClass<T>): T {
-        loadedModules.forEach {
-            val dependency = it.getDependency(clazz)
-            if (dependency != null) {
-                return dependency
-            }
-        }
-        return createDependencyByReflection(clazz.java)
-    }
-
     private fun <T : Any> createDependencyByReflection(clazz: Class<T>): T {
-        try {
-            return clazz.getDeclaredConstructor().newInstance()
+        return try {
+            clazz.getDeclaredConstructor().newInstance()
         } catch (ignored: NoSuchMethodException) {
             try {
-                return clazz
-                        .getDeclaredConstructor(BedsteadServiceLocator::class.java)
-                        .newInstance(this)
+                clazz
+                    .getDeclaredConstructor(BedsteadServiceLocator::class.java)
+                    .newInstance(this)
             } catch (ignored: NoSuchMethodException) {
                 throw IllegalStateException(
-                    "Could not find the dependency in the loaded modules, and this class doesn't " +
-                            "have a constructor taking BedsteadServiceLocator as the only " +
-                            "parameter or an empty constructor. Make sure to load a module " +
-                            "supporting this dependency (for example in AnnotationExecutor) " +
-                            "or provide the right constructor."
+                    "$clazz doesn't have a constructor taking BedsteadServiceLocator as the only " +
+                            "parameter or an empty constructor. " +
+                            "Kotlin classes with init blocks can't be created by reflection. " +
+                            "Provide the right constructor."
                 )
-            }
-        }
-    }
-
-    /**
-     * Load one or more Bedstead Service Locator modules
-     * to make its objects available via [createDependency]
-     */
-    fun loadModules(vararg modules: Module) {
-        modules.forEach { module ->
-            if (!loadedModules.any { it.javaClass == module.javaClass }) {
-                loadedModules.add(module)
             }
         }
     }
@@ -128,17 +104,42 @@ class BedsteadServiceLocator : DeviceStateComponent {
         return getAllDependenciesOfType<FailureDumper>()
     }
 
+    /**
+     * Get all loaded TestRuleExecutors
+     */
+    fun getAllTestRuleExecutors(): List<TestRuleExecutor> {
+        return getAllDependenciesOfType<TestRuleExecutor>()
+    }
+
     override fun teardownShareableState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            Log.d(LOG_TAG, "teardownShareableState: " + it.javaClass)
-            it.teardownShareableState()
+            Log.v(LOG_TAG, "teardownShareableState: " + it.javaClass)
+            try {
+                it.teardownShareableState()
+            } catch (exception: Exception) {
+                Log.e(
+                    LOG_TAG,
+                    "an exception occurred while executing " +
+                            "teardownShareableState for ${it.javaClass}",
+                    exception
+                )
+            }
         }
     }
 
     override fun teardownNonShareableState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            Log.d(LOG_TAG, "teardownNonShareableState: " + it.javaClass)
-            it.teardownNonShareableState()
+            Log.v(LOG_TAG, "teardownNonShareableState: " + it.javaClass)
+            try {
+                it.teardownNonShareableState()
+            } catch (exception: Exception) {
+                Log.e(
+                    LOG_TAG,
+                    "an exception occurred while executing " +
+                            "teardownNonShareableState for ${it.javaClass}",
+                    exception
+                )
+            }
         }
     }
 
@@ -148,21 +149,11 @@ class BedsteadServiceLocator : DeviceStateComponent {
         }
     }
 
-    override fun releaseResources() {
-        getAllDependenciesOfType<DeviceStateComponent>().forEach {
-            it.releaseResources()
-        }
-    }
-
     /**
-     * Module is a source of dependencies for Service Locator
+     * remove all dependencies in order to free some memory
      */
-    interface Module {
-        /**
-         * Returns instance of the class specified in clazz parameter or null
-         * if this class is not provided by this module
-         */
-        fun <T : Any> getDependency(clazz: KClass<T>): T?
+    fun clearDependencies() {
+        dependenciesMap.clear()
     }
 
     companion object {

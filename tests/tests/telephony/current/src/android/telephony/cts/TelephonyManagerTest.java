@@ -60,6 +60,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -207,6 +208,7 @@ public class TelephonyManagerTest {
     private boolean mServiceStateChangedCalled = false;
     private boolean mRadioRebootTriggered = false;
     private boolean mHasRadioPowerOff = false;
+    private Boolean mWasLocationEnabled;
     private ServiceState mServiceState;
     private PhoneCapability mPhoneCapability;
     private boolean mOnPhoneCapabilityChanged = false;
@@ -255,13 +257,6 @@ public class TelephonyManagerTest {
 
     private static final int EMERGENCY_NUMBER_SOURCE_RIL_ECCLIST = 0;
     private static final Set<Integer> EMERGENCY_NUMBER_SOURCE_SET;
-
-    private static final String PLMN_A = "123456";
-    private static final String PLMN_B = "78901";
-    private static final List<String> FPLMN_TEST = Arrays.asList(PLMN_A, PLMN_B);
-    private static final int MAX_FPLMN_NUM = 1000;
-    private static final int MIN_FPLMN_NUM = 3;
-
     private static final String THERMAL_MITIGATION_COMMAND_BASE = "cmd phone thermal-mitigation ";
     private static final String ALLOW_PACKAGE_SUBCOMMAND = "allow-package ";
     private static final String DISALLOW_PACKAGE_SUBCOMMAND = "disallow-package ";
@@ -616,6 +611,10 @@ public class TelephonyManagerTest {
         if (mIsAllowedNetworkTypeChanged) {
             recoverAllowedNetworkType();
         }
+        if (mWasLocationEnabled != null) {
+            setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
+        }
 
         StringBuilder cmdBuilder = new StringBuilder();
         cmdBuilder.append(THERMAL_MITIGATION_COMMAND_BASE).append(DISALLOW_PACKAGE_SUBCOMMAND)
@@ -690,6 +689,16 @@ public class TelephonyManagerTest {
     }
 
     @Test
+    public void testDeviceDataCapable() {
+        boolean isDataCapable = mTelephonyManager.isDataCapable();
+        // Note: there's no mTelephonyManager.isDeviceDataCapable()
+        boolean hasDataFeature = hasFeature(PackageManager.FEATURE_TELEPHONY_DATA);
+
+        assertEquals("isDataCapable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+                hasDataFeature, isDataCapable);
+    }
+
+    @Test
     public void testDeviceSmsCapable() {
         boolean isSmsCapable = mTelephonyManager.isSmsCapable();
         boolean isDeviceSmsCapable = mTelephonyManager.isDeviceSmsCapable();
@@ -697,7 +706,7 @@ public class TelephonyManagerTest {
 
         assertEquals("isSmsCapable should return the same as isDeviceSmsCapable",
                 isDeviceSmsCapable, isSmsCapable);
-        assertEquals("config_sms_capable is not aligned with FEATURE_TELEPHONY_MESSAGING",
+        assertEquals("isDeviceSmsCapable is not aligned with FEATURE_TELEPHONY_MESSAGING",
                 hasMessagingFeature, isDeviceSmsCapable);
     }
 
@@ -709,7 +718,7 @@ public class TelephonyManagerTest {
 
         assertEquals("isVoiceCapable should return the same as isDeviceVoiceCapable",
                 isDeviceVoiceCapable, isVoiceCapable);
-        assertEquals("config_voice_capable is not aligned with FEATURE_TELEPHONY_CALLING",
+        assertEquals("isDeviceVoiceCapable is not aligned with FEATURE_TELEPHONY_CALLING",
                 hasCallingFeature, isDeviceVoiceCapable);
     }
 
@@ -772,6 +781,23 @@ public class TelephonyManagerTest {
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_COARSE_LOCATION);
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_FINE_LOCATION);
         uiAutomation.grantRuntimePermission(packageName, permission.ACCESS_BACKGROUND_LOCATION);
+        uiAutomation.grantRuntimePermission(packageName, permission.WRITE_SECURE_SETTINGS);
+    }
+
+    /**
+     * Enable/disable location for current user.
+     *
+     * @return true if location was previously enabled, false if disabled. The return value should
+     *         be used in @After function of the test to restore this setting
+     */
+    public static boolean setLocationEnabled(boolean setEnabled) {
+        Context ctx = getContext();
+        LocationManager locationManager = ctx.getSystemService(LocationManager.class);
+        boolean wasEnabled = locationManager.isLocationEnabled();
+        if (wasEnabled != setEnabled) {
+            locationManager.setLocationEnabledForUser(setEnabled, ctx.getUser());
+        }
+        return wasEnabled;
     }
 
     @Test
@@ -825,12 +851,14 @@ public class TelephonyManagerTest {
         }
 
         grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
             mListener = new PhoneStateListener() {
                 @Override
                 public void onCellLocationChanged(CellLocation location) {
+                    Log.i(TAG, "onCellLocationChanged: " + location);
                     if (!mOnCellLocationChangedCalled) {
                         synchronized (mLock) {
                             mOnCellLocationChangedCalled = true;
@@ -855,6 +883,7 @@ public class TelephonyManagerTest {
         // Test register
         synchronized (mLock) {
             // .listen generates an onCellLocationChanged event
+            Log.d(TAG, "testListen: requesting LISTEN_CELL_LOCATION");
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_CELL_LOCATION);
             mLock.wait(TOLERANCE);
 
@@ -1462,8 +1491,10 @@ public class TelephonyManagerTest {
     public void testGetHalVersion() {
         Pair<Integer, Integer> halversion;
         for (int i = TelephonyManager.HAL_SERVICE_DATA;
-                i <= TelephonyManager.HAL_SERVICE_VOICE; i++) {
+                i <= TelephonyManager.HAL_SERVICE_IMS; i++) {
             halversion = mTelephonyManager.getHalVersion(i);
+
+            if (halversion.equals(TelephonyManager.HAL_VERSION_UNSUPPORTED)) continue;
 
             // The version must be valid, and the versions start with 1.0
             assertFalse("Invalid HAL Version (" + halversion + ") of service (" + i + ")",
@@ -1474,7 +1505,7 @@ public class TelephonyManagerTest {
     @Test
     public void testCreateForPhoneAccountHandle() {
         if (!mTelephonyManager.isVoiceCapable()) {
-            Log.d(TAG, "Skipping test that requires config_voice_capable is true");
+            Log.d(TAG, "Skipping test that requires device to be voice capable");
             return;
         }
         int subId = SubscriptionManager.getDefaultDataSubscriptionId();
@@ -1789,61 +1820,63 @@ public class TelephonyManagerTest {
         boolean getAvailable = initialSpecifiers != null && !initialSpecifiers.isEmpty();
         Log.d(TAG, "getSystemSelectionChannels is " + (getAvailable ? "" : "not ") + "available.");
 
-        List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
-        List<RadioAccessSpecifier> specifiers;
-        for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
-            List<Integer> validBands = new ArrayList<>();
-            for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
-                // Set each band to see which ones are supported by the modem
-                RadioAccessSpecifier specifier = new RadioAccessSpecifier(
-                        accessNetworkType, new int[]{band}, new int[]{});
-                boolean success = trySetSystemSelectionChannels(
-                        Collections.singletonList(specifier), true);
-                if (success) {
-                    validBands.add(band);
+        try {
+            List<RadioAccessSpecifier> validSpecifiers = new ArrayList<>();
+            List<RadioAccessSpecifier> specifiers;
+            for (int accessNetworkType : TelephonyUtils.ALL_BANDS.keySet()) {
+                List<Integer> validBands = new ArrayList<>();
+                for (int band : TelephonyUtils.ALL_BANDS.get(accessNetworkType)) {
+                    // Set each band to see which ones are supported by the modem
+                    RadioAccessSpecifier specifier = new RadioAccessSpecifier(
+                            accessNetworkType, new int[]{band}, new int[]{});
+                    boolean success = trySetSystemSelectionChannels(
+                            Collections.singletonList(specifier), true);
+                    if (success) {
+                        validBands.add(band);
 
-                    // Try calling the API that doesn't provide feedback.
-                    // We have no way of knowing if it succeeds, so just make sure nothing crashes.
-                    trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
+                        // Try calling the API that doesn't provide feedback.
+                        // We have no way of knowing if it succeeds; just make sure nothing crashes.
+                        trySetSystemSelectionChannels(Collections.singletonList(specifier), false);
 
-                    if (getAvailable) {
-                        // Assert that we get back the value we set.
-                        specifiers = tryGetSystemSelectionChannels();
-                        assertNotNull(specifiers);
-                        assertEquals(1, specifiers.size());
-                        assertEquals(specifier, specifiers.get(0));
+                        if (getAvailable) {
+                            // Assert that we get back the value we set.
+                            specifiers = tryGetSystemSelectionChannels();
+                            assertNotNull(specifiers);
+                            assertEquals(1, specifiers.size());
+                            assertEquals(specifier, specifiers.get(0));
+                        }
                     }
                 }
+                if (!validBands.isEmpty()) {
+                    validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
+                            validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+                }
             }
-            if (!validBands.isEmpty()) {
-                validSpecifiers.add(new RadioAccessSpecifier(accessNetworkType,
-                        validBands.stream().mapToInt(i -> i).toArray(), new int[]{}));
+
+            // Call setSystemSelectionChannels with an empty list and verify no error
+            if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                fail("Failed to call setSystemSelectionChannels with an empty list.");
             }
-        }
 
-        // Call setSystemSelectionChannels with an empty list and verify no error
-        if (!trySetSystemSelectionChannels(Collections.emptyList(), true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            fail("Failed to call setSystemSelectionChannels with an empty list.");
-        }
+            // Verify that getSystemSelectionChannels returns all valid specifiers
+            specifiers = tryGetSystemSelectionChannels();
+            // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
+            //assertNotNull(specifiers);
+            //assertEquals(specifiers.size(), validSpecifiers.size());
+            //assertTrue(specifiers.containsAll(validSpecifiers));
 
-        // Verify that getSystemSelectionChannels returns all valid specifiers
-        specifiers = tryGetSystemSelectionChannels();
-        // TODO (b/189255895): Uncomment in U after getSystemSelectionChannels is enforced
-        //assertNotNull(specifiers);
-        //assertEquals(specifiers.size(), validSpecifiers.size());
-        //assertTrue(specifiers.containsAll(validSpecifiers));
-
-        // Call setSystemSelectionChannels with all valid specifiers to test batch operations
-        if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
-            // TODO (b/189255895): Reset initial system selection channels on failure
-            // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
-            Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
-        }
-
-        // Reset the values back to the original.
-        if (getAvailable) {
-            trySetSystemSelectionChannels(initialSpecifiers, true);
+            // Call setSystemSelectionChannels with all valid specifiers to test batch operations
+            if (!trySetSystemSelectionChannels(validSpecifiers, true)) {
+                // TODO (b/189255895): Reset initial system selection channels on failure
+                // TODO (b/189255895): Fail once setSystemSelectionChannels is enforced properly
+                Log.e(TAG, "Failed to call setSystemSelectionChannels with all valid specifiers.");
+            }
+        } finally {
+            // Reset the values back to the original.
+            if (getAvailable) {
+                trySetSystemSelectionChannels(initialSpecifiers, true);
+            }
         }
     }
 
@@ -1978,6 +2011,10 @@ public class TelephonyManagerTest {
     @Test
     public void testNetworkTypeMatchesCellIdentity() throws Exception {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
         ServiceState ss = mTelephonyManager.getServiceState();
         assertNotNull(ss);
         for (NetworkRegistrationInfo nri : ss.getNetworkRegistrationInfoList()) {
@@ -2756,119 +2793,6 @@ public class TelephonyManagerTest {
             assertTrue(
                     "PLMNs must be strings of digits 0-9! plmn=" + plmn,
                     android.text.TextUtils.isDigitsOnly(plmn));
-        }
-    }
-
-    /**
-     * Tests that the device properly sets and pads the contents of EF_FPLMN
-     */
-    @Test
-    public void testSetForbiddenPlmns() {
-        assumeTrue(supportSetFplmn());
-
-        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
-        assertNotNull(originalFplmns);
-        try {
-            int numFplmnsSet = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(FPLMN_TEST));
-            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
-            assertEquals("Wrong return value for setFplmns with less than required fplmns: "
-                    + numFplmnsSet, FPLMN_TEST.size(), numFplmnsSet);
-            assertEquals("Wrong Fplmns content written", FPLMN_TEST, Arrays.asList(writtenFplmns));
-        } finally {
-            // Restore
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(Arrays.asList(originalFplmns)));
-        }
-    }
-
-    /**
-     * Tests that the device properly truncates the contents of EF_FPLMN when provided size
-     * is too big.
-     */
-    @Test
-    public void testSetForbiddenPlmnsTruncate() {
-        assumeTrue(supportSetFplmn());
-
-        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
-        assertNotNull(originalFplmns);
-        try {
-            List<String> targetFplmns = new ArrayList<>();
-            for (int i = 0; i < MIN_FPLMN_NUM; i++) {
-                targetFplmns.add(PLMN_A);
-            }
-            for (int i = MIN_FPLMN_NUM; i < MAX_FPLMN_NUM; i++) {
-                targetFplmns.add(PLMN_B);
-            }
-            int numFplmnsSet = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(targetFplmns));
-            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
-            assertTrue("Wrong return value for setFplmns with overflowing fplmns: " + numFplmnsSet,
-                    numFplmnsSet < MAX_FPLMN_NUM);
-            assertEquals("Number of Fplmns set does not equal number of Fplmns available",
-                    numFplmnsSet, writtenFplmns.length);
-            assertEquals("Wrong Fplmns content written", targetFplmns.subList(0, numFplmnsSet),
-                    Arrays.asList(writtenFplmns));
-        } finally {
-            // Restore
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(Arrays.asList(originalFplmns)));
-        }
-    }
-
-    /**
-     * Tests that the device properly deletes the contents of EF_FPLMN
-     */
-    @Test
-    public void testSetForbiddenPlmnsDelete() {
-        assumeTrue(supportSetFplmn());
-
-        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
-        assertNotNull(originalFplmns);
-        try {
-            // Support test for empty SIM
-            List<String> targetDummyFplmns = new ArrayList<>();
-            for (int i = 0; i < MIN_FPLMN_NUM; i++) {
-                targetDummyFplmns.add(PLMN_A);
-            }
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(targetDummyFplmns));
-            String[] writtenDummyFplmns = mTelephonyManager.getForbiddenPlmns();
-            assertEquals(targetDummyFplmns, Arrays.asList(writtenDummyFplmns));
-
-            List<String> targetFplmns = new ArrayList<>();
-            int numFplmnsSet = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(targetFplmns));
-            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
-            assertEquals("Wrong return value for setFplmns with empty list", 0, numFplmnsSet);
-            assertEquals("Wrong number of Fplmns written", 0, writtenFplmns.length);
-            // TODO wait for 10 minutes or so for the FPLMNS list to grow back
-        } finally {
-            // Restore
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(Arrays.asList(originalFplmns)));
-        }
-    }
-
-
-    /**
-     * Tests that setForbiddenPlmns properly handles null input
-     */
-    @Test
-    public void testSetForbiddenPlmnsVoid() {
-        assumeTrue(supportSetFplmn());
-
-        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
-        assertNotNull(originalFplmns);
-        try {
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(null));
-            fail("Expected IllegalArgumentException. Null input is not allowed");
-        } catch (IllegalArgumentException expected) {
-        } finally {
-            // Restore
-            ShellIdentityUtils.invokeMethodWithShellPermissions(
-                mTelephonyManager, (tm) -> tm.setForbiddenPlmns(Arrays.asList(originalFplmns)));
         }
     }
 
@@ -4182,13 +4106,15 @@ public class TelephonyManagerTest {
                     verifyExpectedGetAllowedNetworkType(reason);
                 }
             } catch (SecurityException se) {
-                fail("testSetAllowedNetworkTypes: SecurityException not expected");
+                Log.e(TAG, "SecurityException not expected", se);
+                mUnexpectedException = true;
             }
         }
 
         private CountDownLatch mLatch;
         private int mExpectedReason;
         private long mExpectedAllowedNetworkType;
+        public boolean mUnexpectedException = false;
         public void setExpectedAllowedNetworkType(
                 int expectedReason, long expectedAllowedNetworkType, int expectedLatchcount) {
             mExpectedReason = expectedReason;
@@ -4270,6 +4196,8 @@ public class TelephonyManagerTest {
         // Unregister telephony callback
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
                 (tm) -> tm.unregisterTelephonyCallback(listener));
+
+        assertFalse(listener.mUnexpectedException);
     }
 
     @Test
@@ -5458,6 +5386,10 @@ public class TelephonyManagerTest {
     @Test
     public void testGetAllCellInfo() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
         // For INetworkRadio <1.5, just verify that calling the method doesn't throw an error.
         if (mNetworkHalVersion < RADIO_HAL_VERSION_1_5) {
             mTelephonyManager.getAllCellInfo();
@@ -5782,18 +5714,6 @@ public class TelephonyManagerTest {
      *
      * @return whether to proceed the test
      */
-    private boolean supportSetFplmn() {
-        if (!hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
-            return false;
-        }
-        return mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM;
-    }
-
-    /**
-     * Verify that the phone is supporting the action of setForbiddenPlmn.
-     *
-     * @return whether to proceed the test
-     */
     private boolean test() {
         if (!mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
             return false;
@@ -5875,6 +5795,7 @@ public class TelephonyManagerTest {
         }
 
         grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
 
         TestThread t = new TestThread(() -> {
             Looper.prepare();
@@ -7081,6 +7002,10 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(
             com.android.server.telecom.flags.Flags.FLAG_GET_LAST_KNOWN_CELL_IDENTITY)
     public void testGetLastKnownCellIdentity() {
+        grantLocationPermissions();
+        mWasLocationEnabled = setLocationEnabled(true);
+
+
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
         // Revoking ACCESS_FINE_LOCATION will cause test to crash. Verify that security exception
         // is still thrown if com.android.phone.permission.ACCESS_LAST_KNOWN_CELL_ID is

@@ -41,6 +41,10 @@ public final class DeviceAdmin extends DevicePolicyController {
         super(user, pkg, componentName);
     }
 
+    public static DeviceAdmin of(ComponentName componentName) {
+        return DeviceAdmin.of(componentName.getPackageName(), componentName);
+    }
+
     public static DeviceAdmin of(String pkg, ComponentName componentName) {
         return new DeviceAdmin(TestApis.users().instrumented(),
                 TestApis.packages().find(pkg), componentName);

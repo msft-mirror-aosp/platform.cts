@@ -23,10 +23,11 @@ java_library {
     ],
     libs: [
         "compatibility-device-util-axt",
-        "android.test.base",
+        "android.test.base.stubs.system",
         "auto_value_annotations",
         "guava",
         "cts-verifier-framework",
+        "CtsCameraUtils",
     ],
     plugins: ["auto_value_plugin"],
 }

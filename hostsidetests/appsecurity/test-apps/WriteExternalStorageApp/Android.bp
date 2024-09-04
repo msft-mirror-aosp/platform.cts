@@ -30,8 +30,8 @@ android_test_helper_app {
         "compatibility-device-util-axt",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     exclude_srcs: ["src/com/android/cts/writeexternalstorageapp/WriteGiftTest.java"],

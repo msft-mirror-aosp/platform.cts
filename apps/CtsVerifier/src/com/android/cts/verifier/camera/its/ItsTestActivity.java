@@ -25,11 +25,15 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.cts.CameraTestUtils;
 import android.hardware.cts.helpers.CameraUtils;
 import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
-import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.CameraCaptureLatencyRequirement;
+import android.mediapc.cts.common.Requirements.CameraStartupLatencyRequirement;
+import android.mediapc.cts.common.Requirements.CameraUltraHDRRequirement;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -51,7 +55,6 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.DialogTestListActivity;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.TestResult;
-import com.android.internal.util.ArrayUtils;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -274,12 +277,12 @@ public class ItsTestActivity extends DialogTestListActivity {
     private static final String MPC_ULTRA_HDR_REQ_NUM = "2.2.7.2/7.5/H-1-20";
     // Performance class evaluator used for writing test result
     PerformanceClassEvaluator mPce = new PerformanceClassEvaluator(mTestName);
-    CameraRequirement.CameraLatencyRequirement mJpegLatencyReq =
-            mPce.addR7_5__H_1_5();
-    CameraRequirement.CameraLatencyRequirement mLaunchLatencyReq =
-            mPce.addR7_5__H_1_6();
-    CameraRequirement.CameraUltraHdrRequirement mUltraHdrReq =
-            mPce.addR7_5__H_1_20();
+    CameraCaptureLatencyRequirement mJpegLatencyReq =
+            Requirements.addR7_5__H_1_5().to(mPce);
+    CameraStartupLatencyRequirement mLaunchLatencyReq =
+            Requirements.addR7_5__H_1_6().to(mPce);
+    CameraUltraHDRRequirement mUltraHdrReq =
+            Requirements.addR7_5__H_1_20().to(mPce);
     private CtsVerifierReportLog mReportLog;
     // Json Array to store all jsob objects with ITS metrics information
     // stored in the report log
@@ -888,7 +891,7 @@ public class ItsTestActivity extends DialogTestListActivity {
         @Override
         public final void onDeviceStateChanged(DeviceState state) {
             int stateIdentifier = state.getIdentifier();
-            boolean folded = ArrayUtils.contains(mFoldedDeviceStates, stateIdentifier);
+            boolean folded = CameraTestUtils.contains(mFoldedDeviceStates, stateIdentifier);
             Log.i(TAG, "Is device folded? " + mIsDeviceFolded);
             if (!mFirstFoldCheck || mIsDeviceFolded != folded) {
                 mIsDeviceFolded = folded;

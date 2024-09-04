@@ -18,28 +18,6 @@ package {
 }
 
 cc_test_library {
-    name: "libCtsAppOpsTestCases_jni",
-
-    stl: "libc++_static",
-    gtest: false,
-    cflags: [
-        "-Wall",
-        "-Werror",
-        "-Wno-unused-parameter",
-    ],
-
-    srcs: ["jni/**/*.cpp"],
-
-    header_libs: ["jni_headers"],
-    shared_libs: [
-        "libbinder",
-        "libpermission",
-        "libutils",
-        "liblog",
-    ],
-}
-
-cc_test_library {
     name: "libNDKCtsAppOpsTestCases_jni",
 
     stl: "libc++_static",
@@ -86,37 +64,6 @@ android_test {
     ],
 
     jni_libs: [
-        "ld-android",
-        "libbase",
-        "libbinder",
-        "libbpf_bcc",
-        "libc++",
-        "libcgrouprc",
-        "libcrypto",
-        "libcutils",
-        "libdl_android",
-        "libhidl-gen-utils",
-        "libhidlbase",
-        "libjsoncpp",
-        "liblog",
-        "liblzma",
-        "libnativehelper",
-        "libnetdutils",
-        "libnetworkstats",
-        "libpackagelistparser",
-        "libpermission",
-        "libpcre2",
-        "libprocessgroup",
-        "libselinux",
-        "libtinyxml2",
-        "libui",
-        "libunwindstack",
-        "libutils",
-        "libutilscallstack",
-        "libvndksupport",
-        "libziparchive",
-        "libz",
-        "libCtsAppOpsTestCases_jni",
         "libNDKCtsAppOpsTestCases_jni",
     ],
 
@@ -140,6 +87,8 @@ android_test {
         ":AppWithAttributionInheritingFromSelf",
         ":AppWithAttributionInheritingFromExisting",
         ":AppInstalledOnMultipleUsers",
+        ":SharedUidTestApp1",
+        ":SharedUidTestApp2",
     ],
     per_testcase_directory: true,
 }

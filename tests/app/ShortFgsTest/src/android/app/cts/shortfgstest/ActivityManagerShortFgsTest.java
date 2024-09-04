@@ -194,27 +194,43 @@ public class ActivityManagerShortFgsTest {
 
     private static void updateDeviceConfig(String key, long value, boolean verify)
             throws Exception {
-        Log.d(TAG, "updateDeviceConfig: setting " + key + " to " + value);
+        Log.d(TAG, "updateDeviceConfig: setting " + key + " to " + value
+                + ", verify=" + verify);
         sDeviceConfig.set(key, "" + value);
 
         if (verify) {
-            waitUntil("`dumpsys activity settings` didn't update", () -> {
+            final var timeout = System.currentTimeMillis() + 30 * 1000;
+            String lastDetectedLine = "(no config line detected)";
+            String lastWholeDumsys = null;
+            while (System.currentTimeMillis() < timeout) {
                 final String dumpsys = ShellUtils.runShellCommand(
                         "dumpsys activity settings");
+                lastWholeDumsys = dumpsys;
 
-                // Look each line, rather than just doing a contains() check, so we can print
-                // the current value.
+                // Look at each line and see if it's the key we're looking for.
                 for (String line : dumpsys.split("\\n", -1)) {
                     if (!line.contains(" " + key + "=")) {
-                        continue;
+                        continue; // Unrelated key, ignore
                     }
-                    Log.d(TAG, "Current config: " + line);
+
+                    // Found the key. Does it end with "=xxx"?
+                    Log.d(TAG, "Detected config: " + line);
+                    lastDetectedLine = line;
                     if (line.endsWith("=" + value)) {
-                        return true;
+                        return; // Value detected. Okay to go ahead.
                     }
                 }
-                return false;
-            });
+
+                Thread.sleep(1_000);
+            }
+            // if we reach here, then the value hasn't been updated.
+            var message = String.format(
+                    "`dumpsys activity settings` didn't update. Key=%s, expected=%s.\n"
+                            + "Last detected line=%s",
+                    key, value, lastDetectedLine);
+            Log.e(TAG, message);
+            Log.e(TAG, "Last dumpsys output: " + lastWholeDumsys);
+            Assert.fail(message);
         }
     }
 

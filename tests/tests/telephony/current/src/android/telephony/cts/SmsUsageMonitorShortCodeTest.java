@@ -29,6 +29,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.telephony.PhoneNumberUtils;
 import android.telephony.SmsManager;
 
@@ -702,6 +703,7 @@ public class SmsUsageMonitorShortCodeTest {
 
     @UiThreadTest
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSmsShortCodeDestination() {
         for (ShortCodeTest test : sShortCodeTests) {
             // It is intended that a short code number in country A may be an emergency number

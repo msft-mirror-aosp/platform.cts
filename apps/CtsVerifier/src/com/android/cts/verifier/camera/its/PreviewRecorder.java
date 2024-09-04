@@ -619,7 +619,7 @@ class PreviewRecorder implements AutoCloseable {
      * MediaRecorder issue of missing frames at the end of recording.
      */
     void overrideCameraFrames(boolean recordGreenFrames) throws ItsException {
-        Logt.i(TAG, "Recording Camera frames.");
+        Logt.i(TAG, "Recording Camera frames. recordGreenFrames = " + recordGreenFrames);
         synchronized (mRecordLock) {
             mIsPaintGreen = recordGreenFrames;
         }

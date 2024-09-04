@@ -15,7 +15,6 @@
  */
 package com.android.bedstead.harrier.annotations
 
-import com.android.bedstead.harrier.UserType
 import java.lang.annotation.Repeatable
 
 @Target(
@@ -26,9 +25,8 @@ import java.lang.annotation.Repeatable
     AnnotationTarget.CLASS
 )
 @Retention(AnnotationRetention.RUNTIME)
-@Repeatable(
-    EnsurePropertySetGroup::class
-)
+@Repeatable(EnsurePropertySetGroup::class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 annotation class EnsurePropertySet(
     val key: String,
     val value: String,
@@ -44,7 +42,7 @@ annotation class EnsurePropertySet(
      * annotation which must be resolved first is lower than the one which must be resolved later.
      *
      *
-     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [int].
+     * Priority can be set to a [AnnotationPriorityRunPrecedence] constant, or to any [Int].
      */
     val priority: Int = AnnotationPriorityRunPrecedence.MIDDLE
 )

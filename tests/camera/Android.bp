@@ -21,6 +21,7 @@ package {
 android_library {
     name: "cts-camera-performance-tests",
 
+    min_sdk_version: "34",
     static_libs: [
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
@@ -68,6 +69,7 @@ android_test {
         "androidx.heifwriter_heifwriter",
         "androidx.test.rules",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
         "cts-wm-util",
         "cts-install-lib",
         "androidx.camera_camera-camera2",
