@@ -43,12 +43,15 @@ import android.media.tv.TvInputService;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvView;
 import android.media.tv.cts.TvViewTest.MockCallback;
+import android.media.tv.flags.Flags;
 import android.media.tv.tunerresourcemanager.TunerResourceManager;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.test.ActivityInstrumentationTestCase2;
 import android.tv.cts.R;
 import android.util.Log;
@@ -841,6 +844,27 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
 
         int pid = mManager.getClientPid(sessionId);
         assertTrue(pid == android.os.Process.myPid());
+
+        session.release();
+        PollingCheck.waitFor(TIME_OUT_MS, () -> StubTvInputService2.getSessionId() == null);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_KIDS_MODE_TVDB_SHARING)
+    public void testGetClientUserId() {
+        if (!Utils.hasTvInputFramework(getActivity())) {
+            return;
+        }
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        final SessionCallback sessionCallback = new SessionCallback();
+        mManager.createSession(mStubId, mContext.getAttributionSource(), sessionCallback, handler);
+        PollingCheck.waitFor(TIME_OUT_MS, () -> sessionCallback.getSession() != null);
+        Session session = sessionCallback.getSession();
+        String sessionId = StubTvInputService2.getSessionId();
+        assertNotNull(sessionId);
+
+        int uid = mManager.getClientUserId(sessionId);
+        assertTrue(uid == UserHandle.getUserId(android.os.Process.myUid()));
 
         session.release();
         PollingCheck.waitFor(TIME_OUT_MS, () -> StubTvInputService2.getSessionId() == null);

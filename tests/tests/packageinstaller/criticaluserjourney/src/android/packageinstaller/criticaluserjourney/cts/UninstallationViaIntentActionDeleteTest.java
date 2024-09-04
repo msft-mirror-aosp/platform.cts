@@ -17,6 +17,7 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -27,6 +28,7 @@ import org.junit.runner.RunWith;
  * Tests for PackageInstaller CUJs via startActivity with ACTION_DELETE.
  */
 @RunWith(AndroidJUnit4.class)
+@PlatinumTest(focusArea = "pm")
 @AppModeFull
 public class UninstallationViaIntentActionDeleteTest extends UninstallationTestBase {
 

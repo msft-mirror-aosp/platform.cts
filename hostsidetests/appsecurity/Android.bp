@@ -33,6 +33,11 @@ MCTS_TEST_SUITES_DEFAULT = [
     "mcts-mediaprovider",
 ]
 
+CTS_TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
+]
+
 java_library_host {
     name: "CtsAppSecurityUtils",
     defaults: ["cts_defaults"],
@@ -581,6 +586,17 @@ java_test_host {
 }
 
 java_test_host {
+    name: "MctsAdoptableHostTestCases",
+    defaults: ["appsecurity_cts_defaults"],
+
+    srcs: [
+        "src/**/*Adoptable*.java",
+    ],
+    test_config: "AdoptableTestsMcts.xml",
+    test_suites: MCTS_TEST_SUITES_DEFAULT,
+}
+
+java_test_host {
     name: "CtsDirectBootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
@@ -623,6 +639,38 @@ java_test_host {
         ":CtsStorageAppC_dm",
     ],
     test_config: "StorageTests.xml",
+}
+
+java_test_host {
+    name: "MctsStorageHostTestCases",
+    defaults: ["appsecurity_cts_defaults"],
+
+    static_libs: [
+        "flag-junit-host",
+        "android.app.usage.flags-aconfig-java-host",
+    ],
+    srcs: [
+        "src/**/*Storage*.java",
+    ],
+    data: [
+        ":CtsExternalStorageApp",
+        ":CtsReadExternalStorageApp",
+        ":CtsWriteExternalStorageApp",
+        ":CtsWriteExternalStorageApp2",
+        ":CtsMultiUserStorageApp",
+        ":CtsMediaStorageApp",
+        ":CtsMediaStorageApp28",
+        ":CtsMediaStorageApp29",
+        ":CtsMediaStorageApp31",
+        ":CtsNoAppDataStorageApp",
+        ":CtsStorageStatsApp",
+        ":CtsStorageAppA",
+        ":CtsStorageAppB",
+        ":CtsStorageAppC",
+        ":CtsStorageAppC_dm",
+    ],
+    test_config: "StorageTestsMcts.xml",
+    test_suites: MCTS_TEST_SUITES_DEFAULT,
 }
 
 genrule {

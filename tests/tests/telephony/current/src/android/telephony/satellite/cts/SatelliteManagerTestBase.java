@@ -55,6 +55,7 @@ import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
+import android.telephony.satellite.SatelliteSubscriberInfo;
 import android.telephony.satellite.SatelliteSubscriberProvisionStatus;
 import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
@@ -413,6 +414,60 @@ public class SatelliteManagerTestBase {
             }
             loge("getProvisionedState: invalid index=" + index);
             return false;
+        }
+    }
+
+    protected static class SatelliteSubscriptionProvisionStateChangedTest implements
+            SatelliteProvisionStateCallback {
+        private List<SatelliteSubscriberProvisionStatus> mResultList = new ArrayList<>();
+        private final Object mProvisionedStatesLock = new Object();
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteProvisionStateChanged(boolean provisioned) {
+            logd("onSatelliteProvisionStateChanged: provisioned=" + provisioned);
+        }
+
+        @Override
+        public void onSatelliteSubscriptionProvisionStateChanged(
+                List<SatelliteSubscriberProvisionStatus> list) {
+            logd("onSatelliteSubscriptionProvisionStateChanged:" + list);
+            synchronized (mProvisionedStatesLock) {
+                mResultList = list;
+            }
+            try {
+                mSemaphore.release();
+            } catch (Exception ex) {
+                loge("onSatelliteSubscriptionProvisionStateChanged: Got exception, ex=" + ex);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteSubscriptionProvisionStateChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSatelliteSubscriptionProvisionStateChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void clearProvisionedStates() {
+            synchronized (mProvisionedStatesLock) {
+                mResultList.clear();
+                mSemaphore.drainPermits();
+            }
+        }
+
+        public List<SatelliteSubscriberProvisionStatus> getResultList() {
+            synchronized (mProvisionedStatesLock) {
+                return mResultList;
+            }
         }
     }
 
@@ -1441,5 +1496,35 @@ public class SatelliteManagerTestBase {
             assertFalse(list.get().size() > 0);
             return null;
         }
+    }
+
+    protected static Pair<Boolean, Integer> provisionSatellite(List<SatelliteSubscriberInfo> list) {
+        final AtomicReference<Boolean> requestResult = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        logd("onResult: result=" + result);
+                        requestResult.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(requestResult.get(), errorCode.get());
     }
 }

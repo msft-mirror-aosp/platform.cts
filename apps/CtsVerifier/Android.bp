@@ -59,6 +59,9 @@ android_library {
         "src/**/*.kt",
         "src/**/I*.aidl",
     ],
+    exclude_srcs: [
+        "src/com/android/cts/verifier/camera/its/*",
+    ],
 
     aidl: {
         include_dirs: ["frameworks/native/aidl/gui"],
@@ -77,7 +80,6 @@ android_library {
         "core-tests-support",
         "androidx.appcompat_appcompat",
         "androidx.fragment_fragment",
-        "androidx.legacy_legacy-support-v4",
         "androidx.preference_preference",
         "mockito-target-minus-junit4",
         "mockwebserver",
@@ -92,7 +94,9 @@ android_library {
         "ctsmediautil",
         "DpmWrapper",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
         "com_android_wm_shell_flags_lib",
+        "its-service",
     ],
 
     libs: [
@@ -157,7 +161,30 @@ android_library {
         "compatibility-common-util-devicesidelib",
         "compatibility-device-util-axt",
     ],
+}
 
+// Build ItsService as a library
+android_library {
+    name: "its-service",
+
+    sdk_version: "test_current",
+    min_sdk_version: "34",
+    resource_dirs: ["res"],
+    srcs: [
+        "src/com/android/cts/verifier/camera/its/*.java",
+        "src/com/android/cts/verifier/camera/performance/*.java",
+    ],
+
+    static_libs: [
+        "android-ex-camera2",
+        "cts-camera-performance-tests",
+        "cts-verifier-framework",
+        "ctstestrunner-axt",
+        "androidx.appcompat_appcompat",
+        "CtsCameraUtils",
+        "MediaPerformanceClassCommon",
+        "mediapc-requirements",
+    ],
 }
 
 filegroup {

@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -119,14 +119,14 @@ class RawSensitivityTest(its_base_test.ItsBaseTest):
 
       # Create plot
       sensitivities = np.repeat(sensitivities, _NUM_FRAMES)
-      pylab.figure(_NAME)
-      pylab.plot(sensitivities, variances, '-ro')
-      pylab.xticks(sensitivities)
-      pylab.xlabel('Sensitivities')
-      pylab.ylabel('Image Center Patch Variance')
-      pylab.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
-      pylab.title(_NAME)
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_variances.png')
+      plt.figure(_NAME)
+      plt.plot(sensitivities, variances, '-ro')
+      plt.xticks(sensitivities)
+      plt.xlabel('Sensitivities')
+      plt.ylabel('Image Center Patch Variance')
+      plt.ticklabel_format(axis='y', style='sci', scilimits=(-6, -6))
+      plt.title(_NAME)
+      plt.savefig(f'{name_with_log_path}_variances.png')
 
       # Find average variance at each step
       vars_step_means = []

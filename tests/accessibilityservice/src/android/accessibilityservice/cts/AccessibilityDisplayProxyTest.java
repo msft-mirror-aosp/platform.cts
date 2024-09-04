@@ -53,6 +53,7 @@ import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ACCES
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ACTIVE;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_ADDED;
 import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_FOCUSED;
+import static android.view.accessibility.AccessibilityEvent.WINDOWS_CHANGE_REMOVED;
 import static android.view.accessibility.AccessibilityManager.FLAG_CONTENT_CONTROLS;
 import static android.view.accessibility.AccessibilityManager.FLAG_CONTENT_TEXT;
 
@@ -1056,7 +1057,7 @@ public class AccessibilityDisplayProxyTest {
             throws TimeoutException, InterruptedException {
         try {
             registerBroadcastReceiverForAction(ACCESSIBILITY_STATE);
-            startActivityInSeparateProcess();
+            startActivityInSeparateProcessOnDefaultDisplay();
             final CountDownLatch a11yDisabled = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedEnabledResult(a11yDisabled,
                     ACCESSIBILITY_STATE,
@@ -1240,7 +1241,7 @@ public class AccessibilityDisplayProxyTest {
         String enabledServices = null;
         try {
             registerBroadcastReceiverForAction(ACCESSIBILITY_SERVICE_STATE);
-            startActivityInSeparateProcess();
+            startActivityInSeparateProcessOnDefaultDisplay();
             final CountDownLatch serviceEnabled = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedServiceResult(serviceEnabled, ACCESSIBILITY_SERVICE_STATE,
                     StubProxyConcurrentAccessibilityService.class.getSimpleName());
@@ -1277,7 +1278,7 @@ public class AccessibilityDisplayProxyTest {
         // an intent of action TOUCH_EXPLORATION_STATE.
         try {
             registerBroadcastReceiverForAction(TOUCH_EXPLORATION_STATE);
-            startActivityInSeparateProcess();
+            startActivityInSeparateProcessOnDefaultDisplay();
 
             final CountDownLatch touchExplorationEnabled = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedEnabledResult(touchExplorationEnabled,
@@ -1318,7 +1319,7 @@ public class AccessibilityDisplayProxyTest {
             throws TimeoutException, InterruptedException {
         try {
             registerBroadcastReceiverForAction(ACCESSIBILITY_SERVICE_STATE);
-            startActivityInSeparateProcess();
+            startActivityInSeparateProcessOnDefaultDisplay();
 
             final CountDownLatch servicesChanged = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedAction(servicesChanged, ACCESSIBILITY_SERVICE_STATE);
@@ -1345,7 +1346,7 @@ public class AccessibilityDisplayProxyTest {
             registerBroadcastReceiverForAction(TOUCH_EXPLORATION_STATE);
             assertThat((service.getServiceInfo().flags
                     & AccessibilityServiceInfo.FLAG_REQUEST_TOUCH_EXPLORATION_MODE) != 0).isTrue();
-            startActivityInSeparateProcess();
+            startActivityInSeparateProcessOnDefaultDisplay();
 
             final CountDownLatch touchExplorationEnabled = new CountDownLatch(1);
             mReceiver.setLatchAndExpectedEnabledResult(touchExplorationEnabled,
@@ -1369,27 +1370,34 @@ public class AccessibilityDisplayProxyTest {
             throws TimeoutException, InterruptedException {
         // TODO: b/336552993 - Investigate and re-enable this test on Android Auto.
         assumeFalse(isAutomotive(sInstrumentation.getTargetContext()));
+
+        mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(),
+                getTestAccessibilityServiceInfoAsList());
+        runWithShellPermissionIdentity(mUiAutomation,
+                () -> mA11yManager.registerDisplayProxy(mA11yProxy));
+        waitOn(mA11yProxy.mWaitObject, () -> mA11yProxy.mConnected.get(), TIMEOUT_MS,
+                "Proxy connected");
+        final String proxyName =
+                mA11yProxy.getInstalledAndEnabledServices().get(0).getResolveInfo()
+                        .serviceInfo.name;
+
+        // Create a latch waiting for the separate-process activity to be notified
+        // that an accessibility service with the proxy's name is running.
+        registerBroadcastReceiverForAction(ACCESSIBILITY_SERVICE_STATE);
+        final CountDownLatch serviceEnabled = new CountDownLatch(1);
+        mReceiver.setLatchAndExpectedServiceResult(
+                serviceEnabled, ACCESSIBILITY_SERVICE_STATE, proxyName);
+
         try {
-            mA11yProxy = new MyA11yProxy(mVirtualDisplayId, Executors.newSingleThreadExecutor(),
-                    getTestAccessibilityServiceInfoAsList());
-            runWithShellPermissionIdentity(mUiAutomation,
-                    () -> mA11yManager.registerDisplayProxy(mA11yProxy));
-            waitOn(mA11yProxy.mWaitObject, ()-> mA11yProxy.mConnected.get(), TIMEOUT_MS,
-                    "Proxy connected");
+            // Start the activity from a separate process on the default display
+            // where the proxy is not running.
+            startActivityInSeparateProcessOnDefaultDisplay();
 
-            final String proxyName =
-                    mA11yProxy.getInstalledAndEnabledServices().get(0).getResolveInfo()
-                            .serviceInfo.name;
+            // Move the separate-process activity to the virtual display containing the proxy.
+            moveSeparateProcessActivityToVirtualDisplay();
 
-            registerBroadcastReceiverForAction(ACCESSIBILITY_SERVICE_STATE);
-            startActivityInSeparateProcess();
-            final CountDownLatch serviceEnabled = new CountDownLatch(1);
-            mReceiver.setLatchAndExpectedServiceResult(serviceEnabled, ACCESSIBILITY_SERVICE_STATE,
-                    proxyName);
-
-            // Move activity to the virtual device virtual display.
-            mUiAutomation.adoptShellPermissionIdentity();
-            startActivityInSeparateProcess(mVirtualDisplayId);
+            // The separate-process activity's latch should be triggered, indicating it is
+            // now aware of the running proxy accessibility service.
             assertThat(serviceEnabled.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
         } finally {
             stopSeparateProcess();
@@ -1685,34 +1693,28 @@ public class AccessibilityDisplayProxyTest {
         return display;
     }
 
-    private AccessibilityKeyEventTestActivity launchActivityOnVirtualDisplay(int virtualDisplayId)
-            throws Exception {
-        final AccessibilityKeyEventTestActivity activityOnVirtualDisplay =
-                launchActivityOnSpecifiedDisplayAndWaitForItToBeOnscreen(sInstrumentation,
-                        mUiAutomation,
-                        ProxyDisplayActivity.class,
-                        virtualDisplayId);
-        return activityOnVirtualDisplay;
-    }
-
-    private void startActivityInSeparateProcess() throws TimeoutException {
-        startActivityInSeparateProcess(Display.DEFAULT_DISPLAY);
-    }
-
-    private void startActivityInSeparateProcess(int displayId) throws TimeoutException {
-        final AccessibilityServiceInfo info = mUiAutomation.getServiceInfo();
-        info.flags |= AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
-        mUiAutomation.setServiceInfo(info);
-
+    private void startActivityInSeparateProcessOnDefaultDisplay() throws TimeoutException {
         // Specify the default display, else this may get launched on the virtual display.
         ActivityOptions options = ActivityOptions.makeBasic();
-        options.setLaunchDisplayId(displayId);
-
+        options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
         mUiAutomation.executeAndWaitForEvent(() ->
                         sInstrumentation.getContext().startActivity(
                                 mSeparateProcessActivityIntent, options.toBundle()),
-                AccessibilityEventFilterUtils.filterWindowsChangeTypesAndWindowTitle(mUiAutomation,
-                        WINDOWS_CHANGE_ADDED, SEPARATE_PROCESS_ACTIVITY_TITLE, displayId),
+                AccessibilityEventFilterUtils.filterWindowsChangeTypesAndWindowTitle(
+                        mUiAutomation, WINDOWS_CHANGE_ADDED,
+                        SEPARATE_PROCESS_ACTIVITY_TITLE, Display.DEFAULT_DISPLAY),
+                TIMEOUT_MS);
+    }
+
+    private void moveSeparateProcessActivityToVirtualDisplay() throws TimeoutException {
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(mVirtualDisplayId);
+        mUiAutomation.executeAndWaitForEvent(() ->
+                        sInstrumentation.getContext().startActivity(
+                                mSeparateProcessActivityIntent, options.toBundle()),
+                // Wait for the window to be removed from the default display
+                AccessibilityEventFilterUtils.filterWindowsChangedWithChangeTypes(
+                        WINDOWS_CHANGE_REMOVED),
                 TIMEOUT_MS);
     }
 

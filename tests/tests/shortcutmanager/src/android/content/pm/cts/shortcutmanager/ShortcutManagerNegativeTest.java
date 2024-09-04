@@ -156,7 +156,7 @@ public class ShortcutManagerNegativeTest extends ShortcutManagerCtsTestsBase {
      * Make sure AIDL methods can't be called for other users.
      */
     public void testUserIdSpoofing() throws IllegalAccessException {
-        checkAidlCall("getDynamicShortcuts", "Invalid user-ID",
-                mPackageContext1.getPackageName(), /* user-id*/ 10);
+        checkAidlCall("getDynamicShortcuts", "Invalid userId",
+                mPackageContext1.getPackageName(), /* userId*/ 10);
     }
 }

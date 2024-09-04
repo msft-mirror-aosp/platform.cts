@@ -16,8 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -39,34 +39,33 @@ def create_plots(shading_maps, reference_maps, num_map_gains, log_path):
   """Create 2 panel plot from data."""
   for mode in range(_NUM_SHADING_MODES):
     for i in range(_NUM_SWITCH_LOOPS):
-      pylab.clf()
-      pylab.figure(figsize=(5, 5))
-      pylab.subplot(2, 1, 1)
-      pylab.plot(range(num_map_gains), shading_maps[mode][i], '-r.',
-                 label='shading', alpha=0.7)
-      pylab.plot(range(num_map_gains), reference_maps[mode], '-g.',
-                 label='ref', alpha=0.7)
-      pylab.xlim([0, num_map_gains])
-      pylab.ylim([0.9, 4.0])
+      plt.clf()
+      plt.figure(figsize=(5, 5))
+      plt.subplot(2, 1, 1)
+      plt.plot(range(num_map_gains), shading_maps[mode][i], '-r.',
+               label='shading', alpha=0.7)
+      plt.plot(range(num_map_gains), reference_maps[mode], '-g.',
+               label='ref', alpha=0.7)
+      plt.xlim([0, num_map_gains])
+      plt.ylim([0.9, 4.0])
       name_suffix = f'ls_maps_mode_{mode}_loop_{i}'
-      pylab.title(f'{_NAME}_{name_suffix}')
-      pylab.xlabel('Map gains')
-      pylab.ylabel('Lens shading maps')
-      pylab.legend(loc='upper center', numpoints=1, fancybox=True)
+      plt.title(f'{_NAME}_{name_suffix}')
+      plt.xlabel('Map gains')
+      plt.ylabel('Lens shading maps')
+      plt.legend(loc='upper center', numpoints=1, fancybox=True)
 
-      pylab.subplot(2, 1, 2)
+      plt.subplot(2, 1, 2)
       shading_ref_ratio = np.divide(
           shading_maps[mode][i], reference_maps[mode])
-      pylab.plot(range(num_map_gains), shading_ref_ratio, '-b.', clip_on=False)
-      pylab.xlim([0, num_map_gains])
-      pylab.ylim([1.0-_THRESHOLD_DIFF_RATIO, 1.0+_THRESHOLD_DIFF_RATIO])
-      pylab.title('Shading/reference Maps Ratio vs Gain')
-      pylab.xlabel('Map gains')
-      pylab.ylabel('Shading/reference maps ratio')
+      plt.plot(range(num_map_gains), shading_ref_ratio, '-b.', clip_on=False)
+      plt.xlim([0, num_map_gains])
+      plt.ylim([1.0-_THRESHOLD_DIFF_RATIO, 1.0+_THRESHOLD_DIFF_RATIO])
+      plt.title('Shading/reference Maps Ratio vs Gain')
+      plt.xlabel('Map gains')
+      plt.ylabel('Shading/reference maps ratio')
 
-      pylab.tight_layout()
-      matplotlib.pyplot.savefig(
-          f'{os.path.join(log_path, _NAME)}_{name_suffix}.png')
+      plt.tight_layout()
+      plt.savefig(f'{os.path.join(log_path, _NAME)}_{name_suffix}.png')
 
 
 class ParamShadingModeTest(its_base_test.ItsBaseTest):

@@ -22,9 +22,9 @@ android_test {
     team: "trendy_team_arc_app_compat",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -106,9 +106,9 @@ android_test {
     name: "CtsDownloadManagerApi28",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -142,9 +142,9 @@ android_test {
     name: "CtsDownloadManagerInstaller",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -218,9 +218,9 @@ android_test {
     team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
@@ -260,9 +260,9 @@ android_test {
     team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",

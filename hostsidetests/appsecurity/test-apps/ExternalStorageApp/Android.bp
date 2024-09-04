@@ -27,7 +27,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "CtsExternalStorageTestLib",
     ],
-    libs: ["android.test.base"],
+    libs: ["sdk_public_30_android.test.base"],
     srcs: ["src/**/*.java"],
     exclude_srcs: ["src/com/android/cts/externalstorageapp/CommonExternalStorageTest.java"],
     // tag this module as a cts test artifact

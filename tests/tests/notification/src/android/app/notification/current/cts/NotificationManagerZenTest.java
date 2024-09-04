@@ -115,9 +115,10 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
-import com.android.compatibility.common.util.UserHelper;
 import com.android.modules.utils.build.SdkLevel;
 
 import com.google.common.collect.ImmutableSet;
@@ -125,6 +126,8 @@ import com.google.common.collect.Iterables;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -138,9 +141,16 @@ import java.util.Objects;
  * Tests zen/dnd related logic in NotificationManager.
  */
 @RunWith(AndroidJUnit4.class)
+// TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "zen/dnd does not support visible"
+        + " background users at the moment")
 public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     private static final String TAG = NotificationManagerZenTest.class.getSimpleName();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
     private static final String NOTIFICATION_CHANNEL_ID_NOISY = TAG + "/noisy";
@@ -964,7 +974,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_MODES_API})
     public void testConsolidatedNotificationPolicy_broadcasts() throws Exception {
-        assumeNotVisibleBackgroundUser();
         // Setup also changes Policy and creates a DND-bypassing channel, so we might get 1-2
         // extra broadcasts. Make sure they are out of the way.
         Thread.sleep(500);
@@ -1017,7 +1026,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testNotificationPolicy_broadcasts() throws Exception {
-        assumeNotVisibleBackgroundUser();
         // Setup also changes Policy and creates a DND-bypassing channel, so we might get 1-2
         // extra broadcasts. Make sure they are out of the way.
         Thread.sleep(500);
@@ -2166,7 +2174,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void testAddAutomaticZenRule_includesModesApiFields() throws Exception {
-        assumeNotVisibleBackgroundUser();
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
 
@@ -2188,7 +2195,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testSnoozeRule() throws Exception {
-        assumeNotVisibleBackgroundUser();
         if (!Flags.modesApi() || !CompatChanges.isChangeEnabled(308673617)) {
             Log.d(TAG, "Skipping testSnoozeRule() "
                     + Flags.modesApi() + " " + Build.VERSION.SDK_INT);
@@ -2220,7 +2226,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testUnsnoozeRule_disableEnable() throws Exception {
-        assumeNotVisibleBackgroundUser();
         if (!Flags.modesApi()) {
             Log.d(TAG, "Skipping testUnsnoozeRule_disableEnable() " + Flags.modesApi()
                     + " " + Build.VERSION.SDK_INT);
@@ -2278,7 +2283,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testGetAutomaticZenRules() {
-        assumeNotVisibleBackgroundUser();
         assertThat(mNotificationManager.getAutomaticZenRules()).isEmpty();
 
         AutomaticZenRule rule1 = createRule("One");
@@ -2407,7 +2411,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromUser_updatesRuleFully() {
-        assumeNotVisibleBackgroundUser();
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
                 .setType(AutomaticZenRule.TYPE_IMMERSIVE)
@@ -2487,7 +2490,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromApp_forNonUserModifiedRule_allFieldsUpdated() {
-        assumeNotVisibleBackgroundUser();
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
                 .setType(AutomaticZenRule.TYPE_IMMERSIVE)
@@ -2529,7 +2531,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void updateAutomaticZenRule_fromApp_forUserModifiedRule_onlySomeFieldsUpdated() {
-        assumeNotVisibleBackgroundUser();
         AutomaticZenRule original = new AutomaticZenRule.Builder("Original", CONDITION_ID)
                 .setConfigurationActivity(CONFIG_ACTIVITY)
                 .setType(AutomaticZenRule.TYPE_IMMERSIVE)
@@ -2813,7 +2814,6 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithNightMode_appliedOnScreenOff() throws Exception {
-        assumeNotVisibleBackgroundUser();
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
 
         AutomaticZenRule rule = createRule("Grayscale");
@@ -3008,7 +3008,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     public void setAutomaticZenRuleState_manualActivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
         String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
@@ -3038,7 +3038,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_manualDeactivation() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3072,7 +3072,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyActivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3105,7 +3105,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI})
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
     @Test
     public void setAutomaticZenRuleState_respectsManuallyDeactivated() {
         AutomaticZenRule ruleToCreate = createRule("rule");
@@ -3139,10 +3139,62 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
     }
 
-    // TODO(b/340238181): enable the tests for visible background user.
-    private void assumeNotVisibleBackgroundUser() {
-        UserHelper userHelper = new UserHelper(mContext);
-        assumeFalse("Not supported on visible background user",
-                userHelper.isVisibleBackgroundUser());
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @Test
+    public void setAutomaticZenRuleState_manualActivationFromApp() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+        Condition autoDeactivate = new Condition(ruleToCreate.getConditionId(), "auto-off",
+                STATE_FALSE);
+
+        // App activates rule.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates from SysUI -> it's inactive.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // User manually activates from App -> it's active.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // And app can automatically deactivate it later.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
     }
+
+    @RequiresFlagsEnabled({Flags.FLAG_MODES_API, Flags.FLAG_MODES_UI, Flags.FLAG_MODES_UI_TEST})
+    @Test
+    public void setAutomaticZenRuleState_manualDeactivationFromApp() {
+        AutomaticZenRule ruleToCreate = createRule("rule");
+        String ruleId = mNotificationManager.addAutomaticZenRule(ruleToCreate);
+        Condition manualActivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_TRUE, Condition.SOURCE_USER_ACTION);
+        Condition manualDeactivate = new Condition(ruleToCreate.getConditionId(), "manual-off",
+                STATE_FALSE, Condition.SOURCE_USER_ACTION);
+        Condition autoActivate = new Condition(ruleToCreate.getConditionId(), "auto-on",
+                STATE_TRUE);
+
+        // User manually activates from SysUI -> it's active.
+        runAsSystemUi(
+                () -> mNotificationManager.setAutomaticZenRuleState(ruleId, manualActivate));
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+
+        // User manually deactivates from App -> it's inactive.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, manualDeactivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_FALSE);
+
+        // And app can automatically activate it later.
+        mNotificationManager.setAutomaticZenRuleState(ruleId, autoActivate);
+        assertThat(mNotificationManager.getAutomaticZenRuleState(ruleId)).isEqualTo(STATE_TRUE);
+    }
+
 }

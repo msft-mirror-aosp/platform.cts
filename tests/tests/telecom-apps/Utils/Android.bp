@@ -32,7 +32,7 @@ java_library {
         local_include_dirs: ["aidl/"],
     },
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
         "androidx.test.core",
         "androidx.test.rules",
     ],

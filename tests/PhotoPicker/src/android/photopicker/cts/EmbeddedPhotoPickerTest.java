@@ -36,10 +36,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
 import android.view.SurfaceView;
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -57,6 +59,8 @@ import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -69,6 +73,7 @@ public class EmbeddedPhotoPickerTest {
     private static final String PHOTOS_TAB_LABEL = "Photos";
     private static final String ACTION_EMBEDDED_PHOTOPICKER_SERVICE =
             "com.android.photopicker.core.embedded.EmbeddedService.BIND";
+    private static final String DONE_BUTTON_LABEL = "Done";
 
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
@@ -115,41 +120,58 @@ public class EmbeddedPhotoPickerTest {
     @Test
     public void testOnItemSelected_selectedUrisNotEmptyAndHasAccess() throws Exception {
         addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
 
         // 1. Launch the embedded session
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+        assertThat(selectedUris.isEmpty()).isTrue();
 
-        // 2. Get media item and perform click
+        // 2. Get media item, perform click and wait for 'onItemsSelected' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
         clickAndWait(sDevice, getMediaItem(sDevice));
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
-        Uri selectedUri = mActivity.getSelectedUris().get(0);
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
         assertThat(hasUriPermission(selectedUri)).isTrue();
     }
 
     @Test
     public void testOnItemDeselected_selectedUrisEmptyAndAccessRevoked() throws Exception {
         addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
 
         // 1. Launch the embedded session
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+        assertThat(selectedUris.isEmpty()).isTrue();
 
-        // 2. Get media item and perform click
+        // 2. Get media item, perform click and wait for 'onItemsSelected' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
         UiObject mediaItem = getMediaItem(sDevice);
         clickAndWait(sDevice, mediaItem);
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
-        Uri selectedUri = mActivity.getSelectedUris().get(0);
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
 
-        // 3. Deselect the previously selected media item
+        // 3. Set a new count down latch for 'onItemsDeselected' client invocation
+        countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
+
+        // 4. Deselect the previously selected media item
         clickAndWait(sDevice, mediaItem);
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+
+        // 5. Assert that the item is deselected.
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.isEmpty()).isTrue();
         assertThat(hasUriPermission(selectedUri)).isFalse();
     }
 
@@ -242,6 +264,81 @@ public class EmbeddedPhotoPickerTest {
         assertThat(newWidth).isEqualTo(surfaceView.getWidth() / 2);
         assertThat(newHeight).isNotEqualTo(oldHeight);
         assertThat(newHeight).isEqualTo(surfaceView.getHeight() / 2);
+    }
+
+    @Test
+    public void testClose_onSelectionComplete_onClickDoneButton() throws Exception {
+        addMediaAndLaunchActivity(1);
+
+        // 1. Launch the embedded session
+        launchEmbeddedSession();
+        assertThat(mActivity.getSession()).isNotNull();
+
+        // 2. For the 'Done' button to show up, notify picker expanded and click a media item
+        mActivity.getSession().notifyPhotoPickerExpanded(true);
+        clickAndWait(sDevice, getMediaItem(sDevice));
+
+        // 3. Set a new count down latch for 'onSelectionComplete' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSelectionCompleteClientInvocation(countDownLatch);
+
+        // 4. Click the 'Done' button to trigger 'onSelectionComplete'
+        final UiObject doneButton = getUiObjectMatchingText(DONE_BUTTON_LABEL, sDevice);
+        clickAndWait(sDevice, doneButton);
+
+        // 5. Assert that 'onSelectionComplete' is invoked and the surface package is released
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(getMediaItem(sDevice).exists()).isFalse();
+    }
+
+    @Test
+    public void testRevokeUriAccess_onRequestRevokeUriPermission() throws Exception {
+        addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
+
+        // 1. Launch the embedded session
+        launchEmbeddedSession();
+        assertThat(mActivity.getSession()).isNotNull();
+        assertThat(selectedUris.size()).isEqualTo(0);
+
+        // 2. Get media item, perform click and wait for 'onItemsSelected' invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
+        UiObject mediaItem = getMediaItem(sDevice);
+        clickAndWait(sDevice, mediaItem);
+
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
+
+        // 3. Set a new count down latch for 'onItemsDeselected' client invocation
+        countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
+
+        // 4. Notify items deselected for the previously selected media item
+        mActivity.getSession().requestRevokeUriPermission(selectedUris);
+
+        // 5. Assert that the item is deselected.
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.isEmpty()).isTrue();
+        assertThat(hasUriPermission(selectedUri)).isFalse();
+    }
+
+    @Test
+    public void testCustomThemeNightModeInEmbeddedPhotoPickerFeatureInfo() throws Exception {
+        EmbeddedPhotoPickerFeatureInfo embeddedPhotoPickerFeatureInfo =
+                new EmbeddedPhotoPickerFeatureInfo.Builder().build();
+
+        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
+                .isEqualTo(Configuration.UI_MODE_NIGHT_UNDEFINED);
+
+        embeddedPhotoPickerFeatureInfo =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setThemeNightMode(Configuration.UI_MODE_NIGHT_YES).build();
+
+        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
+                .isEqualTo(Configuration.UI_MODE_NIGHT_YES);
     }
 
     private void addMediaAndLaunchActivity(int itemCount) throws Exception {

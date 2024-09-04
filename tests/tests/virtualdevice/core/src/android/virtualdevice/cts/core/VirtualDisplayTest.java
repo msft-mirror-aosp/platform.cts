@@ -17,7 +17,6 @@
 package android.virtualdevice.cts.core;
 
 import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
-import static android.Manifest.permission.CAPTURE_VIDEO_OUTPUT;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -29,13 +28,10 @@ import static org.junit.Assert.assertThrows;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
-import android.companion.virtual.flags.Flags;
 import android.content.Context;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
@@ -53,6 +49,9 @@ import java.util.function.BooleanSupplier;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = " cannot be accessed by instant apps")
 public class VirtualDisplayTest {
+
+    private static final String PERMISSION_CAPTURE_VIDEO_OUTPUT =
+            "android.permission.CAPTURE_VIDEO_OUTPUT";
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -94,7 +93,6 @@ public class VirtualDisplayTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
     @Test
     public void createVirtualDisplay_defaultVirtualDisplayFlags() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice);
@@ -107,65 +105,6 @@ public class VirtualDisplayTest {
         assertThat(display.getRemoveMode()).isEqualTo(Display.REMOVE_MODE_DESTROY_CONTENT);
     }
 
-    @RequiresFlagsDisabled(Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
-    @Test
-    public void createVirtualDisplay_defaultVirtualDisplayFlags_compat() {
-        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice);
-
-        Display display = virtualDisplay.getDisplay();
-        assertThat(display.isValid()).isTrue();
-        assertThat(display.getFlags()).isEqualTo(Display.FLAG_ROTATES_WITH_CONTENT
-                | Display.FLAG_TOUCH_FEEDBACK_DISABLED);
-        assertThat(display.getRemoveMode()).isEqualTo(Display.REMOVE_MODE_DESTROY_CONTENT);
-    }
-
-    /**
-     * Tests that a virtual device is not allowed create a virtual display with just
-     * VIRTUAL_DISPLAY_FLAG_PUBLIC flag if screen mirroring is disabled, as DisplayManagerService
-     * tries to create an auto-mirror display by default for public virtual displays.
-     */
-    @RequiresFlagsDisabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
-    @RequiresFlagsEnabled(Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
-    @Test
-    public void createVirtualDisplay_public_throwsException() {
-        // Try creating public display without CAPTURE_VIDEO_OUTPUT permission.
-        assertThrows(SecurityException.class,
-                () -> mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC));
-    }
-
-    /**
-     * Tests that a virtual device is not allowed create a virtual display with
-     * VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag if screen mirroring is disabled.
-     */
-    @RequiresFlagsDisabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
-    @RequiresFlagsEnabled(Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
-    @Test
-    public void createVirtualDisplay_autoMirror_throwsException() {
-        // Try creating auto-mirror display without CAPTURE_VIDEO_OUTPUT permission.
-        assertThrows(SecurityException.class,
-                () -> mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR));
-    }
-
-    /**
-     * Tests that a virtual device is not allowed create a virtual display with
-     * VIRTUAL_DISPLAY_FLAG_PUBLIC or VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flags if screen mirroring is
-     * disabled.
-     */
-    @RequiresFlagsDisabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
-    @RequiresFlagsEnabled(Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
-    @Test
-    public void createVirtualDisplay_publicAutoMirror_throwsException() {
-        // Try creating public auto-mirror display without CAPTURE_VIDEO_OUTPUT permission.
-        assertThrows(SecurityException.class,
-                () -> mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR));
-    }
-
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_public_createsMirrorDisplay() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -178,8 +117,6 @@ public class VirtualDisplayTest {
                 .isTrue();
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_autoMirror_createsMirrorDisplay() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -192,8 +129,6 @@ public class VirtualDisplayTest {
                 .isTrue();
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_publicAutoMirror_createsMirrorDisplay() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -207,9 +142,6 @@ public class VirtualDisplayTest {
                 .isTrue();
     }
 
-
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_ownContentOnly_doesNotCreateMirrorDisplay() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -222,8 +154,6 @@ public class VirtualDisplayTest {
                 .isFalse();
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_autoMirrorAndOwnContentOnly_doesNotCreateMirrorDisplay() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -237,8 +167,6 @@ public class VirtualDisplayTest {
                 .isFalse();
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_autoMirror_flagAlwaysUnlockedNotSet() {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
@@ -253,8 +181,6 @@ public class VirtualDisplayTest {
         assertThat(display.getFlags() & Display.FLAG_ALWAYS_UNLOCKED).isEqualTo(0);
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_public_flagAlwaysUnlockedNotSet() {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
@@ -269,8 +195,6 @@ public class VirtualDisplayTest {
         assertThat(display.getFlags() & Display.FLAG_ALWAYS_UNLOCKED).isEqualTo(0);
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_autoMirror_flagPresentationNotSet() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -282,8 +206,6 @@ public class VirtualDisplayTest {
         assertThat(display.getFlags() & Display.FLAG_PRESENTATION).isEqualTo(0);
     }
 
-    @RequiresFlagsEnabled({
-            Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
     @Test
     public void createVirtualDisplay_public_flagPresentationNotSet() {
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(mVirtualDevice,
@@ -295,57 +217,52 @@ public class VirtualDisplayTest {
         assertThat(display.getFlags() & Display.FLAG_PRESENTATION).isEqualTo(0);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_invalidDisplay_returnsFalse() {
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(Display.INVALID_DISPLAY))
                 .isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_defaultDisplay_returnsFalse() {
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(Display.DEFAULT_DISPLAY))
                 .isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_unownedAutoMirrorDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
-                CAPTURE_VIDEO_OUTPUT);
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_unownedPublicDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
-                CAPTURE_VIDEO_OUTPUT);
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC),
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_unownedPublicAutoMirrorDisplay_returnsFalse() {
         final VirtualDisplay virtualDisplay = mRule.runWithTemporaryPermission(
                 () -> mRule.createManagedUnownedVirtualDisplayWithFlags(
-                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
-                CAPTURE_VIDEO_OUTPUT);
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                                | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR),
+                PERMISSION_CAPTURE_VIDEO_OUTPUT);
 
         final int displayId = virtualDisplay.getDisplay().getDisplayId();
         assertThat(mVirtualDeviceManager.isVirtualDeviceOwnedMirrorDisplay(displayId)).isFalse();
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR)
     @Test
     public void isVirtualDeviceOwnedMirrorDisplay_unownedDisplay_returnsFalse() {
         VirtualDisplay virtualDisplay = mRule.createManagedUnownedVirtualDisplay();
