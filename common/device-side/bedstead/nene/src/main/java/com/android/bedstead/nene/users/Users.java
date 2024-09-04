@@ -17,6 +17,8 @@
 package com.android.bedstead.nene.users;
 
 import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersOnDefaultDisplaySupported;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
@@ -567,7 +569,7 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersSupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return TestApisReflectionKt.isVisibleBackgroundUsersSupported(sUserManager);
+            return getVisibleBackgroundUsersSupported(sUserManager);
         }
 
         return false;
@@ -577,8 +579,7 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersOnDefaultDisplaySupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return TestApisReflectionKt.isVisibleBackgroundUsersOnDefaultDisplaySupported(
-                    sUserManager);
+            return getVisibleBackgroundUsersOnDefaultDisplaySupported(sUserManager);
         }
 
         return false;
