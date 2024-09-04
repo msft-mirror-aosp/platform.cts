@@ -21,6 +21,7 @@ python_defaults {
     name: "CtsNfcMultiDevicePythonDefaults",
     libs: [
         "mobly",
+        "pn532-python",
     ],
     test_suites: [
         // Added this test suite to CTS-V
@@ -42,6 +43,19 @@ python_test_host {
         ":NfcReaderTestApp",
         ":NfcEmulatorTestApp",
     ],
+    test_options: {
+        unit_test: false,
+        runner: "mobly",
+    },
+    defaults: ["CtsNfcMultiDevicePythonDefaults"],
+}
+
+// CTS-V specific binary build target that excludes the snippet APKs.
+python_test_host {
+    name: "CtsNfcHceMultiDeviceTestCases-py-ctsv",
+    main: "cts_nfc_hce_multi_device_test.py",
+    srcs: ["cts_nfc_hce_multi_device_test.py"],
+    test_config: "AndroidTest.xml",
     test_options: {
         unit_test: false,
         runner: "mobly",

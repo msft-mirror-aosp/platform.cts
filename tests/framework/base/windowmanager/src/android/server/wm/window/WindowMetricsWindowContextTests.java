@@ -18,7 +18,6 @@ package android.server.wm.window;
 
 import static android.server.wm.WindowMetricsTestHelper.assertMetricsMatchesLayout;
 import static android.server.wm.WindowMetricsTestHelper.assertMetricsValidity;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
@@ -85,7 +84,7 @@ public class WindowMetricsWindowContextTests extends WindowManagerTestBase {
         private WindowContextTestSession() {
             final Context appContext = ApplicationProvider.getApplicationContext();
             final Display display = appContext.getSystemService(DisplayManager.class)
-                    .getDisplay(DEFAULT_DISPLAY);
+                    .getDisplay(getMainDisplayId());
             mWindowContext = appContext.createDisplayContext(display)
                     .createWindowContext(TYPE_APPLICATION_OVERLAY, null /* options */);
 

@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 import static android.content.pm.PackageManager.FEATURE_LIVE_WALLPAPER;
 
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_SET_WALLPAPER;
+import static com.android.bedstead.permissions.CommonPermissions.READ_WALLPAPER_INTERNAL;
 import static com.android.bedstead.permissions.CommonPermissions.SET_WALLPAPER;
 
 import android.graphics.Bitmap;
@@ -67,7 +68,7 @@ public final class WallpaperTest {
             BitmapUtils.bitmapToInputStream(sReferenceWallpaper);
 
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureHasUserRestriction(DISALLOW_SET_WALLPAPER)
     @PolicyAppliesTest(policy = Wallpaper.class)
     public void setBitmap_viaDpc_disallowed_canSet() throws Exception {
@@ -103,7 +104,7 @@ public final class WallpaperTest {
     }
 
     @ApiTest(apis = "android.app.WallpaperManager#setBitmap")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
     public void setBitmap_allowed_canSet() throws Exception {
@@ -137,7 +138,7 @@ public final class WallpaperTest {
     }
 
     @ApiTest(apis = "android.app.WallpaperManager#setStream")
-    @EnsureHasPermission(SET_WALLPAPER)
+    @EnsureHasPermission({SET_WALLPAPER, /* Android.U+ */ READ_WALLPAPER_INTERNAL})
     @EnsureDoesNotHaveUserRestriction(DISALLOW_SET_WALLPAPER)
     @Test
     public void setStream_allowed_canSet() {

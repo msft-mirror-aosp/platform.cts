@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -85,20 +85,19 @@ def create_plot(exps, means, sens, log_path):
   gr = [m[1] for m in means[1:]]
   gb = [m[2] for m in means[1:]]
   b = [m[3] for m in means[1:]]
-  pylab.figure(f'{_NAME}_{sens}')
-  pylab.plot(exps, r, 'r.-', label='R')
-  pylab.plot(exps, gr, 'g.-', label='Gr')
-  pylab.plot(exps, gb, 'k.-', label='Gb')
-  pylab.plot(exps, b, 'b.-', label='B')
-  pylab.xscale('log')
-  pylab.yscale('log')
-  pylab.title(f'{_NAME} ISO={sens}')
-  pylab.xlabel('Exposure time (ms)')
-  pylab.ylabel('Center patch pixel mean')
-  pylab.legend(loc='lower right', numpoints=1, fancybox=True)
-  matplotlib.pyplot.savefig(
-      f'{os.path.join(log_path, _NAME)}_s={sens}.png')
-  pylab.clf()
+  plt.figure(f'{_NAME}_{sens}')
+  plt.plot(exps, r, 'r.-', label='R')
+  plt.plot(exps, gr, 'g.-', label='Gr')
+  plt.plot(exps, gb, 'k.-', label='Gb')
+  plt.plot(exps, b, 'b.-', label='B')
+  plt.xscale('log')
+  plt.yscale('log')
+  plt.title(f'{_NAME} ISO={sens}')
+  plt.xlabel('Exposure time (ms)')
+  plt.ylabel('Center patch pixel mean')
+  plt.legend(loc='lower right', numpoints=1, fancybox=True)
+  plt.savefig(f'{os.path.join(log_path, _NAME)}_s={sens}.png')
+  plt.clf()
 
 
 def assert_increasing_means(means, exps, sens, black_levels, white_level):

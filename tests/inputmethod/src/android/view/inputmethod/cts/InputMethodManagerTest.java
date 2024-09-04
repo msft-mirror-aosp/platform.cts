@@ -24,8 +24,10 @@ import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerSho
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
+import static com.android.sts.common.SystemUtil.withSetting;
 
 import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,6 +51,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -67,6 +70,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.Direction;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
@@ -270,9 +274,13 @@ public class InputMethodManagerTest {
         }).collect(Collectors.joining(", ")) + "]";
     }
 
+    /**
+     * Shows the Input Method Picker menu and verifies Mock IME is shown,
+     * but Hidden from picker IME is not.
+     */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
-    public void testShowInputMethodPicker() throws Exception {
+    public void testInputMethodPickerShownItems() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
@@ -282,8 +290,34 @@ public class InputMethodManagerTest {
         startActivityAndShowInputMethodPicker();
 
         final UiDevice uiDevice = getUiDevice();
-        assertThat(uiDevice.wait(Until.hasObject(By.text(MOCK_IME_LABEL)), TIMEOUT)).isTrue();
-        assertThat(uiDevice.findObject(By.text(HIDDEN_FROM_PICKER_IME_LABEL))).isNull();
+        if (Flags.imeSwitcherRevamp()) {
+            final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
+            assertNotNull("List view should be found.", list);
+
+            // Make sure the list starts at the top.
+            list.scroll(Direction.UP, 100f);
+            final var hasMockIme = list.scrollUntil(Direction.DOWN,
+                    Until.hasObject(By.text(MOCK_IME_LABEL)));
+            assertWithMessage("Mock IME should be found")
+                    .that(hasMockIme).isTrue();
+
+            // Reset the list to the top.
+            list.scroll(Direction.UP, 100f);
+            final var hasHiddenFromPickerIme = list.scrollUntil(Direction.DOWN,
+                    Until.hasObject(By.text(HIDDEN_FROM_PICKER_IME_LABEL)));
+            assertWithMessage("Hidden from picker IME should not be found")
+                    .that(hasHiddenFromPickerIme).isFalse();
+        } else {
+            final var hasMockIme = uiDevice.wait(
+                    Until.hasObject(By.text(MOCK_IME_LABEL)), TIMEOUT);
+            assertWithMessage("Mock IME should be found")
+                    .that(hasMockIme).isTrue();
+
+            final var hasHiddenFromPickerIme = uiDevice.wait(
+                    Until.hasObject(By.text(HIDDEN_FROM_PICKER_IME_ID)), TIMEOUT);
+            assertWithMessage("Hidden from picker IME should not be found")
+                    .that(hasHiddenFromPickerIme).isFalse();
+        }
 
         // Make sure that InputMethodPicker can be closed with ACTION_CLOSE_SYSTEM_DIALOGS
         mContext.sendBroadcast(
@@ -292,39 +326,54 @@ public class InputMethodManagerTest {
                 "InputMethod picker should be closed");
     }
 
+    /**
+     * Shows the Input Method Picker menu and verifies switching to Mock IME by tapping on the item.
+     */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
     @Test
     public void testInputMethodPickerSwitchIme() throws Exception {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
-        enableImes(MOCK_IME_ID);
+        // Initialize MockIME (without setting it as current IME) before selecting it from the menu.
+        try (var ignored = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder()
+                        .setSuppressSetIme(true))) {
+            startActivityAndShowInputMethodPicker();
 
-        startActivityAndShowInputMethodPicker();
+            final var info = mImManager.getCurrentInputMethodInfo();
+            assertNotEquals(MOCK_IME_ID, info != null ? info.getId() : null);
 
-        final UiDevice uiDevice = getUiDevice();
-        final var mockImeUiObjects =
-                uiDevice.wait(Until.findObjects(By.text(MOCK_IME_LABEL)), TIMEOUT);
-        assertThat(mockImeUiObjects.isEmpty()).isFalse();
+            final UiDevice uiDevice = getUiDevice();
+            final var list = uiDevice.wait(Until.findObject(By.res("android:id/list")), TIMEOUT);
+            assertNotNull("List view should be found.", list);
 
-        final var initialInfo = mImManager.getCurrentInputMethodInfo();
+            // Make sure the list starts at the top.
+            list.scroll(Direction.UP, 100f);
+            final var mockImeUiObject = list.scrollUntil(Direction.DOWN,
+                    Until.findObject(By.res("android:id/list_item")
+                            .hasDescendant(By.text(MOCK_IME_LABEL))));
+            assertNotNull("Mock IME should be found", mockImeUiObject);
 
-        // In the new IME Switcher Menu the text would be displayed twice (first as the IME name in
-        // the header, and second as "subtype" name), but we can only click on the second one.
-        final var mockImeUiObject = mockImeUiObjects.getLast();
-        mockImeUiObject.click();
+            // Tapping on a menu item should dismiss the menu.
+            mockImeUiObject.click();
+            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                    "InputMethod picker should be closed");
 
-        // Tapping on a menu item should dismiss the menu.
-        waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
-                "InputMethod picker should be closed");
-
-        final var newInfo = mImManager.getCurrentInputMethodInfo();
-        assertNotEquals(initialInfo, newInfo);
-        assertNotNull(newInfo);
-        assertEquals(MOCK_IME_ID, newInfo.getId());
+            final var newInfo = mImManager.getCurrentInputMethodInfo();
+            assertNotEquals(info, newInfo);
+            assertEquals(MOCK_IME_ID, newInfo != null ? newInfo.getId() : null);
+        }
     }
 
+    /**
+     * Shows the Input Method Picker menu and verifies opening the IME Language Settings activity
+     * by tapping on the button, when the device is provisioned.
+     */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
     @Test
@@ -333,22 +382,30 @@ public class InputMethodManagerTest {
                 PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
-        try (MockImeSession imeSession = MockImeSession.create(
-                mInstrumentation.getContext(),
-                mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder())) {
+        try (var ignored1 = withSetting(mInstrumentation, "global",
+                Settings.Global.DEVICE_PROVISIONED, "1");
+                var ignored2 = MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                    new ImeSettings.Builder())) {
             final var activity = startActivityAndShowInputMethodPicker();
 
-            final UiDevice uiDevice = getUiDevice();
-            final var mockImeUiObjects =
-                    uiDevice.wait(Until.findObjects(By.text(MOCK_IME_LABEL)), TIMEOUT);
-            // In the new IME Switcher Menu the text would be displayed twice (once as the IME name
-            // in the header, second as "subtype" name), but we can only click on the second one.
-            assertThat(mockImeUiObjects.isEmpty()).isFalse();
+            final var info = mImManager.getCurrentInputMethodInfo();
+            assertEquals(MOCK_IME_ID, info != null ? info.getId() : null);
 
-            final var languageSettingsButtonUiObject =
-                    uiDevice.wait(Until.findObject(By.res("android:id/button1")), TIMEOUT);
-            assertNotNull(languageSettingsButtonUiObject);
+            final UiDevice uiDevice = getUiDevice();
+
+            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
+                    TIMEOUT);
+            assertNotNull("Container view should be found.", container);
+
+            // Make sure the container starts at the top.
+            container.scroll(Direction.UP, 100f);
+            final var languageSettingsButtonUiObject = container.scrollUntil(Direction.DOWN,
+                    Until.findObject(By.res("android:id/button1")));
+            assertNotNull("Language settings button should be found",
+                    languageSettingsButtonUiObject);
+
             languageSettingsButtonUiObject.click();
 
             // Tapping on the language settings button should dismiss the menu.
@@ -357,6 +414,45 @@ public class InputMethodManagerTest {
 
             waitOnMainUntil(() -> !activity.hasWindowFocus(), TIMEOUT,
                     "Test activity shouldn't be focused");
+        }
+    }
+
+    /**
+     * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
+     * visible when the device is not provisioned.
+     */
+    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @Test
+    public void testInputMethodPickerNoLanguageSettingsWhenDeviceNotProvisioned() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
+        try (var ignored1 = withSetting(mInstrumentation, "global",
+                Settings.Global.DEVICE_PROVISIONED, "0");
+                var ignored2 = MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                     new ImeSettings.Builder())) {
+            startActivityAndShowInputMethodPicker();
+
+            final UiDevice uiDevice = getUiDevice();
+
+            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
+                    TIMEOUT);
+            assertNotNull("Container view should be found.", container);
+
+            // Make sure the container starts at the top.
+            container.scroll(Direction.UP, 100f);
+            final boolean hasButton = container.scrollUntil(Direction.DOWN,
+                    Until.hasObject(By.res("android:id/button1")));
+            assertFalse("Language settings button should not be found", hasButton);
+
+            mContext.sendBroadcast(
+                    new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                    "InputMethod picker should be closed");
         }
     }
 

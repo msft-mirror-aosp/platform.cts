@@ -48,10 +48,10 @@ import android.companion.virtual.camera.VirtualCameraConfig;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.hardware.display.VirtualDisplayConfig;
+import android.media.ImageReader;
 import android.os.Bundle;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.Condition;
@@ -96,14 +96,6 @@ public class VirtualDeviceRule implements TestRule {
 
     public static final VirtualDeviceParams DEFAULT_VIRTUAL_DEVICE_PARAMS =
             new VirtualDeviceParams.Builder().build();
-    public static final VirtualDisplayConfig DEFAULT_VIRTUAL_DISPLAY_CONFIG =
-            createDefaultVirtualDisplayConfigBuilder().build();
-    public static final VirtualDisplayConfig TRUSTED_VIRTUAL_DISPLAY_CONFIG =
-            createDefaultVirtualDisplayConfigBuilder()
-                    .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                            | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
-                            | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY)
-                    .build();
 
     public static final String DEFAULT_VIRTUAL_DISPLAY_NAME = "testVirtualDisplay";
     public static final int DEFAULT_VIRTUAL_DISPLAY_WIDTH = 640;
@@ -194,7 +186,8 @@ public class VirtualDeviceRule implements TestRule {
      */
     @Nullable
     public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice) {
-        return createManagedVirtualDisplay(virtualDevice, DEFAULT_VIRTUAL_DISPLAY_CONFIG);
+        return createManagedVirtualDisplay(virtualDevice,
+                createDefaultVirtualDisplayConfigBuilder());
     }
 
     /**
@@ -205,7 +198,7 @@ public class VirtualDeviceRule implements TestRule {
     public VirtualDisplay createManagedVirtualDisplayWithFlags(
             @NonNull VirtualDevice virtualDevice, int flags) {
         return createManagedVirtualDisplay(virtualDevice,
-                createDefaultVirtualDisplayConfigBuilder().setFlags(flags).build());
+                createDefaultVirtualDisplayConfigBuilder().setFlags(flags));
     }
 
     /**
@@ -214,9 +207,11 @@ public class VirtualDeviceRule implements TestRule {
      */
     @Nullable
     public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice,
-            @NonNull VirtualDisplayConfig config) {
+            @NonNull VirtualDisplayConfig.Builder builder) {
+        VirtualDisplayConfig config = builder.build();
+        final Surface surface = prepareSurface(config.getWidth(), config.getHeight());
         final VirtualDisplay virtualDisplay = virtualDevice.createVirtualDisplay(
-                config, /* executor= */ null, /* callback= */ null);
+                builder.setSurface(surface).build(), /* executor= */ null, /* callback= */ null);
         if (virtualDisplay != null) {
             assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
             // There's no need to track managed virtual displays to have them released on tear-down
@@ -231,7 +226,7 @@ public class VirtualDeviceRule implements TestRule {
      */
     @Nullable
     public VirtualDisplay createManagedUnownedVirtualDisplay() {
-        return createManagedUnownedVirtualDisplay(DEFAULT_VIRTUAL_DISPLAY_CONFIG);
+        return createManagedUnownedVirtualDisplay(createTrustedVirtualDisplayConfigBuilder());
     }
 
     /**
@@ -241,7 +236,7 @@ public class VirtualDeviceRule implements TestRule {
     @Nullable
     public VirtualDisplay createManagedUnownedVirtualDisplayWithFlags(int flags) {
         return createManagedUnownedVirtualDisplay(
-                createDefaultVirtualDisplayConfigBuilder().setFlags(flags).build());
+                createDefaultVirtualDisplayConfigBuilder().setFlags(flags));
     }
 
     /**
@@ -249,9 +244,13 @@ public class VirtualDeviceRule implements TestRule {
      * that will be automatically released when the test is torn down.
      */
     @Nullable
-    public VirtualDisplay createManagedUnownedVirtualDisplay(@NonNull VirtualDisplayConfig config) {
+    public VirtualDisplay createManagedUnownedVirtualDisplay(
+            @NonNull VirtualDisplayConfig.Builder builder) {
+        VirtualDisplayConfig config = builder.build();
+        final Surface surface = prepareSurface(config.getWidth(), config.getHeight());
         final VirtualDisplay virtualDisplay =
-                mContext.getSystemService(DisplayManager.class).createVirtualDisplay(config);
+                mContext.getSystemService(DisplayManager.class).createVirtualDisplay(
+                        builder.setSurface(surface).build());
         if (virtualDisplay != null) {
             assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
             mTrackerRule.mVirtualDisplays.add(virtualDisplay);
@@ -270,18 +269,28 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Config for trusted virtual display creation, which applies the flags
+     * {@link DisplayManager#VIRTUAL_DISPLAY_FLAG_TRUSTED},
+     * {@link DisplayManager#VIRTUAL_DISPLAY_FLAG_PUBLIC} and
+     * {@link DisplayManager#VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY}. A predefined name and
+     * dimensions and an empty surface are used.
+     */
+    @NonNull
+    public static VirtualDisplayConfig.Builder createTrustedVirtualDisplayConfigBuilder() {
+        return createDefaultVirtualDisplayConfigBuilder().setFlags(
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+    }
+
+    /**
      * Default config for virtual display creation with custom dimensions.
      */
     @NonNull
     public static VirtualDisplayConfig.Builder createDefaultVirtualDisplayConfigBuilder(
             int width, int height) {
-        // VirtualDevice#close will cause this to be recycled.
-        //noinspection Recycle
-        SurfaceTexture texture = new SurfaceTexture(1);
-        texture.setDefaultBufferSize(width, height);
         return new VirtualDisplayConfig.Builder(
-                DEFAULT_VIRTUAL_DISPLAY_NAME, width, height,  DEFAULT_VIRTUAL_DISPLAY_DPI)
-                .setSurface(new Surface(texture));
+                DEFAULT_VIRTUAL_DISPLAY_NAME, width, height, DEFAULT_VIRTUAL_DISPLAY_DPI);
     }
 
     /**
@@ -438,6 +447,15 @@ public class VirtualDeviceRule implements TestRule {
     }
 
     /**
+     * Blocks until the given activity is in resumed state on the given display.
+     */
+    public void waitAndAssertActivityResumed(ComponentName componentName, int displayId) {
+        waitAndAssertActivityResumed(componentName);
+        mWmState.assertResumedActivities("Activity must be on display " + displayId,
+                mapping -> mapping.put(displayId, componentName));
+    }
+
+    /**
      * Blocks until the given activity is gone.
      */
     public void waitAndAssertActivityRemoved(ComponentName componentName) {
@@ -461,6 +479,12 @@ public class VirtualDeviceRule implements TestRule {
         assertThat(Condition.waitFor(condition)).isTrue();
     }
 
+    private Surface prepareSurface(int width, int height) {
+        ImageReader imageReader = new ImageReader.Builder(width, height).build();
+        mTrackerRule.mImageReaders.add(imageReader);
+        return imageReader.getSurface();
+    }
+
     /**
      * Internal rule that tracks all created virtual devices and displays and ensures they are
      * properly closed and released after the test.
@@ -470,6 +494,7 @@ public class VirtualDeviceRule implements TestRule {
         final ArrayList<VirtualDevice> mVirtualDevices = new ArrayList<>();
         final ArrayList<VirtualDisplay> mVirtualDisplays = new ArrayList<>();
         final ArrayList<Activity> mActivities = new ArrayList<>();
+        final ArrayList<ImageReader> mImageReaders = new ArrayList<>();
 
         @Override
         protected void after() {
@@ -486,6 +511,10 @@ public class VirtualDeviceRule implements TestRule {
                 virtualDisplay.release();
             }
             mVirtualDisplays.clear();
+            for (ImageReader imageReader : mImageReaders) {
+                imageReader.close();
+            }
+            mImageReaders.clear();
             super.after();
         }
     }

@@ -32,6 +32,7 @@ import android.net.ConnectivityManager;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.Annotation.RadioPowerState;
@@ -111,6 +112,7 @@ public class PhoneStateListenerTest {
     private PreciseDataConnectionState mPreciseDataConnectionState;
     private PreciseCallState mPreciseCallState;
     private SignalStrength mSignalStrength;
+    private Boolean mWasLocationEnabled;
     private TelephonyManager mTelephonyManager;
     private PhoneStateListener mListener;
     private final Object mLock = new Object();
@@ -165,6 +167,10 @@ public class PhoneStateListenerTest {
         if (mListener != null) {
             // unregister the listener
             mTelephonyManager.listen(mListener, PhoneStateListener.LISTEN_NONE);
+        }
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
         }
         if (mHandlerThread != null) {
             mHandlerThread.quitSafely();
@@ -420,6 +426,7 @@ public class PhoneStateListenerTest {
      */
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnMessageWaitingIndicatorChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(
@@ -584,6 +591,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnRadioPowerStateChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -733,6 +741,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have READ_PHONE_STATE permission")
     public void testOnCallForwardingIndicatorChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -763,6 +772,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have location permission")
     public void testOnCellLocationChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -772,6 +782,7 @@ public class PhoneStateListenerTest {
         assertFalse(mOnCellLocationChangedCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override
@@ -794,6 +805,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCallStateChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY_CALLING));
@@ -899,6 +911,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK Sandboxes do not have location permission")
     public void testOnCellInfoChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(
@@ -908,6 +921,7 @@ public class PhoneStateListenerTest {
         assertFalse(mOnDataActivityCalled);
 
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         mHandler.post(() -> {
             mListener = new PhoneStateListener() {
                 @Override
@@ -1013,6 +1027,7 @@ public class PhoneStateListenerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnActiveDataSubscriptionIdChanged() throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
             assumeTrue(mPackageManager.hasSystemFeature(

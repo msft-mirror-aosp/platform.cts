@@ -282,6 +282,8 @@ public class AudioDeviceUtils {
     // This is the difference in round-trip latency over USB compared to the Google adapter.
     // Measured using OboeTester.
     private static final double USB_LATENCY_OFFSET_ANKER_MILLIS = 3.23; // higher than Google
+    private static final int USB_VENDORID_REALTEK_ALC5686 = 0x0BDA;
+    private static final int USB_PRODUCTID_REALTEK_ALC5686_ADAPTER = 0x4BD1;
 
     /**
      * Returns the UsbDevice corresponding to any connected USB peripheral.
@@ -321,6 +323,8 @@ public class AudioDeviceUtils {
             if (vId == USB_VENDORID_XUMEE && pId == USB_PRODUCTID_XUMEE_ADAPTER) return true;
             if (vId == USB_VENDORID_MOSHI && pId == USB_PRODUCTID_MOSHI_ADAPTER) return true;
             if (vId == USB_VENDORID_ANKER && pId == USB_PRODUCTID_ANKER_ADAPTER) return true;
+            if (vId == USB_VENDORID_REALTEK_ALC5686
+                    && pId == USB_PRODUCTID_REALTEK_ALC5686_ADAPTER) return true;
         }
         return false;
     }

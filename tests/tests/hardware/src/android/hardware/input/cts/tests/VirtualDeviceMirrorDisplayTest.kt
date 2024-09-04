@@ -39,11 +39,11 @@ import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.server.wm.WindowManagerStateHelper
+import android.util.DisplayMetrics
 import android.view.InputDevice
 import android.view.InputEvent
 import android.view.KeyEvent
 import android.view.MotionEvent
-import android.view.Surface
 import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.cts.input.DefaultPointerSpeedRule
@@ -52,7 +52,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RequiresFlagsEnabled(Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS)
 @RunWith(AndroidJUnit4::class)
 class VirtualDeviceMirrorDisplayTest : InputTestCase() {
     @get:Rule
@@ -74,14 +73,12 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
     override fun onSetUp() {
         // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
         // display. Use the same size for the virtual display to avoid scaling the mirrored content.
-        mDisplayWidth = mTestActivity.display.mode.physicalWidth
-        mDisplayHeight = mTestActivity.display.mode.physicalHeight
-        val rotation = mTestActivity.display.rotation
-        if (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) {
-            val tmp = mDisplayWidth
-            mDisplayWidth = mDisplayHeight
-            mDisplayHeight = tmp
-        }
+        val displayMetrics = DisplayMetrics()
+        // Using Display#getRealMetrics to fetch the logical display size
+        @Suppress("DEPRECATION")
+        mTestActivity.display.getRealMetrics(displayMetrics)
+        mDisplayWidth = displayMetrics.widthPixels
+        mDisplayHeight = displayMetrics.heightPixels
         mVirtualDevice = mRule.createManagedVirtualDevice()
         mVirtualDisplay = mRule.createManagedVirtualDisplay(
             mVirtualDevice,
@@ -92,7 +89,6 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
                     DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                             or DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR
                 )
-                .build()
         )!!
         mRule.assumeActivityLaunchSupported(mVirtualDisplay.display.displayId)
         // Wait for any pending transitions
@@ -522,11 +518,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         )
     }
 
-    @RequiresFlagsEnabled(
-        Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-        Flags.FLAG_CONSISTENT_DISPLAY_FLAGS,
-        Flags.FLAG_VIRTUAL_STYLUS
-    )
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     fun virtualStylus_touchEvent() {
         val stylus: VirtualStylus = VirtualInputDeviceCreator.createAndPrepareStylus(
@@ -614,11 +606,7 @@ class VirtualDeviceMirrorDisplayTest : InputTestCase() {
         verifyEvents(expectedEvents)
     }
 
-    @RequiresFlagsEnabled(
-        Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-        Flags.FLAG_CONSISTENT_DISPLAY_FLAGS,
-        android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY
-    )
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_VIRTUAL_ROTARY)
     @Test
     fun virtualRotary_scrollEvent() {
         val rotary: VirtualRotaryEncoder = VirtualInputDeviceCreator.createAndPrepareRotary(

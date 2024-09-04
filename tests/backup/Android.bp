@@ -26,9 +26,9 @@ android_test {
     min_sdk_version: "30",
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",

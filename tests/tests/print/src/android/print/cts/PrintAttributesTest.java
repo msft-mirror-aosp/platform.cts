@@ -19,6 +19,7 @@ package android.print.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.Presubmit;
 import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
@@ -53,6 +54,7 @@ import java.util.List;
 /**
  * Test that the print attributes are correctly propagated through the print framework
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintAttributesTest extends BasePrintTest {
     private static final String LOG_TAG = "PrintAttributesTest";

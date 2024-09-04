@@ -15,16 +15,22 @@
  */
 package com.android.bedstead.enterprise
 
+import android.app.admin.DeviceAdminInfo
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.os.Build
 import android.os.Bundle
 import com.android.bedstead.enterprise.annotations.DEFAULT_DPC_KEY
 import com.android.bedstead.enterprise.annotations.DEFAULT_KEY
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc
 import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner
+import com.android.bedstead.enterprise.annotations.EnsureHasNoTestDeviceAdmin
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
@@ -54,8 +60,10 @@ import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParame
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
+import com.android.bedstead.nene.devicepolicy.CommonDeviceAdminInfo
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType
 import com.android.bedstead.nene.devicepolicy.ProfileOwner
+import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.types.OptionalBoolean
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME
@@ -63,9 +71,12 @@ import com.android.bedstead.remotedpc.RemoteDelegate
 import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.queryable.annotations.BooleanQuery
 import com.android.queryable.annotations.IntegerQuery
+import com.android.queryable.annotations.IntegerSetQuery
 import com.android.queryable.annotations.Query
 import com.google.common.truth.Truth.assertThat
+import org.junit.Assert
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -135,12 +146,12 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasDeviceOwner(key = EnsureHasDeviceOwner.DEFAULT_KEY, isPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = EnsureHasDeviceOwner.DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasDeviceOwner_isRespected() {
         assertThat(sDeviceState.dpc().testApp().targetSdkVersion())
-                .isEqualTo(28)
+                .isEqualTo(30)
     }
 
     @Test
@@ -150,17 +161,17 @@ class EnterpriseAnnotationExecutorTest {
     }
 
     @Test
-    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28)))
-    fun ensureHasDeviceOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30)))
+    fun ensureHasDeviceOwnerAnnotation_targetingV30_remoteDpcTargetsV30() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getDeviceOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
-    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isGreaterThanOrEqualTo = 30)))
-    fun ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV30_remoteDpcTargetsV30() {
+    @EnsureHasDeviceOwner(dpc = Query(targetSdkVersion = IntegerQuery(isGreaterThanOrEqualTo = 35)))
+    fun ensureHasDeviceOwnerAnnoion_targetingGreaterThanOrEqualToV35_remoteDpcTargetsV35() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getDeviceOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(30)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isAtLeast(35)
     }
 
     @Test
@@ -185,8 +196,12 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_isHeadlessDOSingleUser_isRespected() {
         assertThat(
-            sDeviceState.dpc().testApp().metadata().getString("headless_do_single_user")
-        ).isEqualTo("true")
+                sDeviceState.dpc().testApp().metadata().stream().anyMatch {
+                    it.key() != null && it.value() != null && it.value().asString() != null &&
+                            it.key().equals("headless_do_single_user") &&
+                            it.value().asBoolean() == true
+                }
+        ).isTrue()
     }
 
     @EnsureHasDeviceOwner(
@@ -197,8 +212,12 @@ class EnterpriseAnnotationExecutorTest {
     @Test
     fun additionalQueryParameters_isNotHeadlessDOSingleUser_isRespected() {
         assertThat(
-            sDeviceState.dpc().testApp().metadata().getString("headless_do_single_user")
-        ).isNull()
+                sDeviceState.dpc().testApp().metadata().stream().anyMatch {
+                    it.key() != null && it.value() != null && it.value().asString() != null &&
+                            it.key().equals("headless_do_single_user") &&
+                            it.value().asBoolean() == false
+                }
+        ).isFalse()
     }
 
     @EnsureHasDeviceOwner
@@ -237,10 +256,10 @@ class EnterpriseAnnotationExecutorTest {
     }
 
     @Test
-    @EnsureHasProfileOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28)))
-    fun ensureHasProfileOwnerAnnotation_targetingV28_remoteDpcTargetsV28() {
+    @EnsureHasProfileOwner(dpc = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30)))
+    fun ensureHasProfileOwnerAnnotation_targetingV30_remoteDpcTargetsV30() {
         val remoteDpc = RemoteDpc.forDevicePolicyController(devicePolicy().getProfileOwner())
-        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(28)
+        assertThat(remoteDpc.testApp().pkg().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -324,11 +343,11 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasProfileOwner(key = DEFAULT_KEY, isPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasProfileOwner_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -635,11 +654,11 @@ class EnterpriseAnnotationExecutorTest {
     @EnsureHasWorkProfile(dpcKey = DEFAULT_DPC_KEY, dpcIsPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = DEFAULT_DPC_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_ensureHasWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
     }
 
     @Test
@@ -692,11 +711,74 @@ class EnterpriseAnnotationExecutorTest {
     @RequireRunOnWorkProfile(dpcKey = RequireRunOnWorkProfile.DEFAULT_KEY, dpcIsPrimary = true)
     @AdditionalQueryParameters(
         forTestApp = RequireRunOnWorkProfile.DEFAULT_KEY,
-        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 28))
+        query = Query(targetSdkVersion = IntegerQuery(isEqualTo = 30))
     )
     @Test
     fun additionalQueryParameters_requireRunOnWorkProfile_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28)
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30)
+    }
+
+    @Ignore("b/358355868: Until we readd RemoteDeviceAdmin test apps that use specific policies")
+    @Test
+    @EnsureHasDeviceAdmin(
+        dpc = Query(
+            usesPolicies = IntegerSetQuery(
+                contains = [CommonDeviceAdminInfo.USES_POLICY_EXPIRE_PASSWORD]
+            )
+        )
+    )
+    fun ensureHasDeviceAdminAnnotation_queryByPolicy_hasCorrectDeviceAdmin() {
+        assertThat(
+            createDeviceAdminInfo(
+                ComponentReference(sDeviceState.deviceAdmin().componentName())
+            ).usesPolicy(CommonDeviceAdminInfo.USES_POLICY_EXPIRE_PASSWORD)
+        ).isTrue()
+    }
+
+    @Test
+    @EnsureHasDeviceAdmin
+    fun ensureHasDeviceAdminAnnotation_hasDeviceAdmin() {
+        assertThat(isRemoteDeviceAdmin(sDeviceState.deviceAdmin().componentName())).isTrue()
+    }
+
+    @Test
+    @EnsureHasNoTestDeviceAdmin
+    fun deviceAdmin_noTestDeviceAdmin_throws() {
+        Assert.assertThrows(IllegalStateException::class.java) {
+            sDeviceState.deviceAdmin()
+        }
+    }
+
+    @Test
+    @EnsureHasNoTestDeviceAdmin
+    fun ensureHasNoTestDeviceAdminAnnotation_hasNoTestDeviceAdmins() {
+        val deviceAdmins = devicePolicy().getActiveAdmins()
+        assertThat(deviceAdmins.none { isRemoteDeviceAdmin(it.componentName()) }).isTrue()
+    }
+
+    @Test
+    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin1")
+    @EnsureHasDeviceAdmin(key = "remoteDeviceAdmin2")
+    fun ensureHasDeviceAdminAnnotation_multipleWithKey_deviceAdmin_returns() {
+        assertThat(
+            isRemoteDeviceAdmin(sDeviceState.deviceAdmin("remoteDeviceAdmin1").componentName())
+        ).isTrue()
+        assertThat(
+            isRemoteDeviceAdmin(sDeviceState.deviceAdmin("remoteDeviceAdmin2").componentName())
+        ).isTrue()
+    }
+
+    private fun isRemoteDeviceAdmin(componentName: ComponentName?): Boolean {
+        return componentName != null &&
+                componentName.packageName.startsWith(REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX) &&
+                componentName.className == componentName.packageName + ".DeviceAdminReceiver"
+    }
+
+    private fun createDeviceAdminInfo(componentReference: ComponentReference): DeviceAdminInfo {
+        val resolveInfo = ResolveInfo()
+        resolveInfo.activityInfo = context().instrumentedContext().packageManager
+            .getReceiverInfo(componentReference.componentName(), PackageManager.GET_META_DATA)
+        return DeviceAdminInfo(context().instrumentedContext(), resolveInfo)
     }
 
     companion object {
@@ -707,6 +789,8 @@ class EnterpriseAnnotationExecutorTest {
 
         private const val CLONE_PROFILE_TYPE_NAME = "android.os.usertype.profile.CLONE"
         private const val PRIVATE_PROFILE_TYPE_NAME = "android.os.usertype.profile.PRIVATE"
+        private const val REMOTE_DEVICE_ADMIN_APP_PACKAGE_PREFIX =
+            "com.android.cts.RemoteDeviceAdmin"
         private const val TIMEOUT: Long = 4000000
         private val sLocalDevicePolicyManager = context()
                 .instrumentedContext()

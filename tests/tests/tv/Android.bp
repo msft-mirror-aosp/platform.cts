@@ -26,10 +26,11 @@ android_library {
     ],
     libs: [
         "platform-test-annotations",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
+        "android.media.tv.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.rules",
         "androidx.test.ext.truth",
