@@ -1505,7 +1505,7 @@ public class TelephonyManagerTest {
     @Test
     public void testCreateForPhoneAccountHandle() {
         if (!mTelephonyManager.isVoiceCapable()) {
-            Log.d(TAG, "Skipping test that requires config_voice_capable is true");
+            Log.d(TAG, "Skipping test that requires device to be voice capable");
             return;
         }
         int subId = SubscriptionManager.getDefaultDataSubscriptionId();
