@@ -31,6 +31,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Process
 import android.server.wm.WindowManagerStateHelper
+import android.util.Size
 import android.view.Surface
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
@@ -46,16 +47,18 @@ import org.junit.rules.TestName
  * A test rule that sets up a virtual display, and launches the specified activity on that display.
  */
 class VirtualDisplayActivityScenarioRule<A : Activity>(
+    private val type: Class<A>,
     val testName: TestName,
     val useSecureDisplay: Boolean,
-    val type: Class<A>
+    val size: Size,
 ) : ExternalResource() {
     companion object {
+
         const val TAG = "VirtualDisplayActivityScenarioRule"
         const val VIRTUAL_DISPLAY_NAME = "CtsTouchScreenTestVirtualDisplay"
         const val CAPTURE_SECURE_VIDEO_OUTPUT = "android.permission.CAPTURE_SECURE_VIDEO_OUTPUT"
-        const val WIDTH = 480
-        const val HEIGHT = 800
+        const val DEFAULT_WIDTH = 480
+        const val DEFAULT_HEIGHT = 800
         const val DENSITY = 160
         const val ORIENTATION_0 = Surface.ROTATION_0
         const val ORIENTATION_90 = Surface.ROTATION_90
@@ -67,21 +70,16 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
 
         /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT].  */
         const val VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 shl 7
-        inline operator fun <reified A : Activity> invoke(
-            testName: TestName
-        ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
-            testName,
-            /*useSecureDisplay=*/
-            false,
-            A::class.java
-        )
+
         inline operator fun <reified A : Activity> invoke(
             testName: TestName,
-            useSecureDisplay: Boolean
+            useSecureDisplay: Boolean = false,
+            size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
         ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
+            A::class.java,
             testName,
             useSecureDisplay,
-            A::class.java
+            size,
         )
     }
 
@@ -164,19 +162,19 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
                 displayManager.unregisterDisplayListener(this)
             }
         }, Handler(Looper.getMainLooper()))
-        reader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888, 2)
+        reader = ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2)
         if (useSecureDisplay){
             virtualDisplay =
                 runWithCaptureSecurePermissionIdentityOverride {
                     displayManager.createVirtualDisplay(
-                        VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
+                        VIRTUAL_DISPLAY_NAME, size.width, size.height, DENSITY, reader.surface,
                         VIRTUAL_DISPLAY_FLAG_SECURE or VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
                                 VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
                     )
                 }
         } else {
             virtualDisplay = displayManager.createVirtualDisplay(
-                VIRTUAL_DISPLAY_NAME, WIDTH, HEIGHT, DENSITY, reader.surface,
+                VIRTUAL_DISPLAY_NAME, size.width, size.height, DENSITY, reader.surface,
                 VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
             )
         }
