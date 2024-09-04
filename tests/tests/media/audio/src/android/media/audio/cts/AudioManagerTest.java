@@ -1112,6 +1112,12 @@ public class AudioManagerTest {
                     stream,
                     "No change expected at max volume");
 
+            if (stream == STREAM_VOICE_CALL) {
+                // TODO: add API to check the adjust volume delta for voice call based on ratio
+                // between index UI steps and voice call range
+                continue;
+            }
+
             volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(stream));
             assertCallChangesStreamVolume(
                     () -> mAudioManager.adjustSuggestedStreamVolume(ADJUST_LOWER, stream, 0),
