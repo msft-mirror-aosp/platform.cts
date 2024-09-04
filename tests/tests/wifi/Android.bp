@@ -68,6 +68,7 @@ android_test {
         "mcts-tethering",
         "mcts-wifi",
         "sts",
+        "dts",
     ],
 
     data: [
