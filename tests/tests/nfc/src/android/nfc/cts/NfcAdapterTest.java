@@ -1,9 +1,12 @@
 package android.nfc.cts;
 
+import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
+
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -693,6 +696,54 @@ public class NfcAdapterTest {
             assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_OEM_EXTENSION)
+    public void testOemExtensionSetControllerAlwaysOn() throws InterruptedException {
+        NfcAdapter nfcAdapter = getDefaultAdapter();
+        Assert.assertNotNull(nfcAdapter);
+        NfcOemExtension nfcOemExtension = nfcAdapter.getNfcOemExtension();
+        Assert.assertNotNull(nfcOemExtension);
+        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation().adoptShellPermissionIdentity(NFC_SET_CONTROLLER_ALWAYS_ON);
+        assumeTrue(nfcAdapter.isControllerAlwaysOnSupported());
+        NfcControllerAlwaysOnListener cb = null;
+        CountDownLatch countDownLatch;
+        try {
+            countDownLatch = new CountDownLatch(1);
+            cb = new NfcControllerAlwaysOnListener(countDownLatch);
+            nfcAdapter.registerControllerAlwaysOnListener(
+                    Executors.newSingleThreadExecutor(), cb);
+            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.ENABLE_TRANSPARENT);
+            assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
+            nfcAdapter.unregisterControllerAlwaysOnListener(cb);
+
+            countDownLatch = new CountDownLatch(1);
+            cb = new NfcControllerAlwaysOnListener(countDownLatch);
+            nfcAdapter.registerControllerAlwaysOnListener(
+                    Executors.newSingleThreadExecutor(), cb);
+            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.DISABLE);
+            assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
+            nfcAdapter.unregisterControllerAlwaysOnListener(cb);
+        } finally {
+            if (cb != null) nfcAdapter.unregisterControllerAlwaysOnListener(cb);
+            androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+                    .getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private class NfcControllerAlwaysOnListener implements NfcAdapter.ControllerAlwaysOnListener {
+        private final CountDownLatch mCountDownLatch;
+
+        NfcControllerAlwaysOnListener(CountDownLatch countDownLatch) {
+            mCountDownLatch = countDownLatch;
+        }
+
+        @Override
+        public void onControllerAlwaysOnChanged(boolean isEnabled) {
+            mCountDownLatch.countDown();
         }
     }
 
