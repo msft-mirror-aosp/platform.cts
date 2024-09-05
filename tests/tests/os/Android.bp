@@ -122,3 +122,40 @@ android_ravenwood_test {
     ],
     auto_gen_config: true,
 }
+
+test_module_config {
+    name: "CtsOsTestCases_cts_strictmodetest_Presubmit",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StrictModeTest"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_sharedmemorytest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.SharedMemoryTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_performancehintmanagertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.PerformanceHintManagerTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_storagemanagertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.storage.cts.StorageManagerTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_hwbindertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.HwBinderTest"],
+}

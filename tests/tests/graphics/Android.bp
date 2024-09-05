@@ -84,3 +84,17 @@ android_ravenwood_test {
     ],
     auto_gen_config: true,
 }
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_icontest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.drawable.cts.IconTest"],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_vulkanpretransformtest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.cts.VulkanPreTransformTest"],
+}
