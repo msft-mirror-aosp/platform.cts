@@ -336,3 +336,59 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsAppTestCases_android_server_am_Presubmit",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.app.cts.ActivityManagerProcessStateTest",
+        "android.app.cts.ServiceTest",
+        "android.app.cts.ActivityManagerTest",
+        "android.app.cts.ActivityManagerFgsBgStartTest",
+        "android.app.cts.TaskDescriptionTest",
+    ],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_android_server_am",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.app.cts.ActivityManagerProcessStateTest",
+        "android.app.cts.ServiceTest",
+        "android.app.cts.ActivityManagerTest",
+        "android.app.cts.ActivityManagerFgsBgStartTest",
+        "android.app.cts.TaskDescriptionTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_activitymanagerapi29test",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ActivityManagerApi29Test"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_requesttileserviceaddtest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.RequestTileServiceAddTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_toolbaractionbartest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ToolbarActionBarTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_downloadmanagertest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.DownloadManagerTest"],
+}
