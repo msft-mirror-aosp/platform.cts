@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.nene.tile
+package com.android.bedstead.onboarding.annotations
 
-import android.cts.testapisreflection.*
-import android.service.quicksettings.TileService
-
-/** Helper methods related to quick settings. */
-object QuickSettings {
-
-    /**
-     * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
-     */
-    fun isSupported(): Boolean {
-        return TileService().quickSettingsSupported
-    }
-
-}
+/**
+ * Marks that this is an onboarding test.
+ *
+ * The annotation initializes the test rule required to run an onboarding test.
+ */
+@Retention(AnnotationRetention.RUNTIME)
+@Target(AnnotationTarget.CLASS)
+@UsesTestRuleExecutor(UsesTestRuleExecutor.ONBOARDING)
+annotation class OnboardingTest()

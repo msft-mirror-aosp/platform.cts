@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package com.android.bestead.onboarding.annotations
+package com.android.bedstead.harrier
 
-/**
- * Marks that this is an onboarding test.
- *
- * The annotation initializes the test rule required to run an onboarding test.
- */
-@Retention(AnnotationRetention.RUNTIME)
-@Target(AnnotationTarget.CLASS)
-@UsesTestRuleExecutor(UsesTestRuleExecutor.ONBOARDING)
-annotation class OnboardingTest()
+import org.junit.ClassRule
+import org.junit.Rule
+import org.junit.runner.RunWith
+
+/** A test base wrapping bedstead setup for convenience. */
+@RunWith(BedsteadJUnit4::class)
+abstract class BedsteadTest {
+    companion object {
+        /** Access bedstead managed [DeviceState]. */
+        @JvmField @ClassRule @Rule val deviceState: DeviceState = DeviceState()
+    }
+}
