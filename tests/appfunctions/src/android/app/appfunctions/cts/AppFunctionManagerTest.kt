@@ -50,19 +50,19 @@ import org.junit.runner.RunWith
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionManagerTest {
-    @get:Rule
-    val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+    @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
     @get:Rule
-    val setTimeoutRule: DeviceConfigStateChangerRule = DeviceConfigStateChangerRule(
-        context,
-        "appfunctions",
-        "execute_app_function_timeout_millis",
-        "1000"
-    )
+    val setTimeoutRule: DeviceConfigStateChangerRule =
+        DeviceConfigStateChangerRule(
+            context,
+            "appfunctions",
+            "execute_app_function_timeout_millis",
+            "1000"
+        )
 
     private lateinit var mManager: AppFunctionManager
 
@@ -88,9 +88,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(
-            response.resultCode
-        ).isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+        assertThat(response.resultCode)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
         assertThat(response.errorMessage).isEqualTo("Function does not exist")
         assertServiceDestroyed()
     }
@@ -111,19 +110,18 @@ class AppFunctionManagerTest {
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
 
-        mManager.executeAppFunction(
-            request,
-            context.mainExecutor
-        ) { e: ExecuteAppFunctionResponse ->
+        mManager.executeAppFunction(request, context.mainExecutor) { e: ExecuteAppFunctionResponse
+            ->
             blockingQueue.add(e)
         }
 
         val response = requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
         assertThat(response.isSuccess).isTrue()
         assertThat(
-            response.resultDocument
-                .getPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE)
-        )
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
+            )
             .isEqualTo(3)
 
         // Each callback can only be invoked once.
@@ -143,17 +141,18 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest
-                .Builder(TARGET_PACKAGE, "add").setParameters(parameters).build()
+            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
+                .setParameters(parameters)
+                .build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-            response.resultDocument.getPropertyLong(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
             )
-        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -163,10 +162,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_otherNonExistingTargetPackage() {
-        val request = ExecuteAppFunctionRequest.Builder(
-            "other.package",
-            "someMethod"
-        ).build()
+        val request = ExecuteAppFunctionRequest.Builder("other.package", "someMethod").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -202,17 +198,13 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_throwsException() {
-        val request = ExecuteAppFunctionRequest.Builder(
-            TARGET_PACKAGE,
-            "throwException"
-        ).build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "throwException").build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(
-            ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR
-        )
+        assertThat(response.resultCode)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
         assertServiceDestroyed()
     }
 
@@ -221,15 +213,13 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_onRemoteProcessKilled() {
-        val request = ExecuteAppFunctionRequest
-            .Builder(TARGET_PACKAGE, "kill").build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "kill").build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(
-            ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR
-        )
+        assertThat(response.resultCode)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
         // The process that the service was just crashed. Validate the service is not created again.
         TestAppFunctionServiceLifecycleReceiver.reset()
         assertServiceWasNotCreated()
@@ -240,10 +230,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_timedOut() {
-        val request = ExecuteAppFunctionRequest.Builder(
-            TARGET_PACKAGE,
-            "notInvokeCallback"
-        ).build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "notInvokeCallback").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -271,10 +258,10 @@ class AppFunctionManagerTest {
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-            response.resultDocument.getPropertyLong(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
             )
-        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -289,9 +276,8 @@ class AppFunctionManagerTest {
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isFalse()
-        assertThat(
-            response.resultCode
-        ).isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+        assertThat(response.resultCode)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
         assertServiceWasNotCreated()
     }
 
@@ -302,10 +288,7 @@ class AppFunctionManagerTest {
     @Postsubmit(reason = "new test")
     @Throws(Exception::class)
     fun executeAppFunction_runInManagedProfile_fail() {
-        val request = ExecuteAppFunctionRequest.Builder(
-            TARGET_PACKAGE,
-            "noOp"
-        ).build()
+        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -355,17 +338,18 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest
-                .Builder(TARGET_PACKAGE, "add").setParameters(parameters).build()
+            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
+                .setParameters(parameters)
+                .build()
 
         val response = executeAppFunctionAndWait(request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
-            response.resultDocument.getPropertyLong(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
             )
-        )
             .isEqualTo(3)
         assertServiceDestroyed()
     }
@@ -378,7 +362,9 @@ class AppFunctionManagerTest {
         mManager.executeAppFunction(
             request,
             context.mainExecutor,
-        ) { e: ExecuteAppFunctionResponse -> blockingQueue.add(e) }
+        ) { e: ExecuteAppFunctionResponse ->
+            blockingQueue.add(e)
+        }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
@@ -395,10 +381,7 @@ class AppFunctionManagerTest {
     }
 
     companion object {
-        @JvmField
-        @ClassRule
-        @Rule
-        val sDeviceState: DeviceState = DeviceState()
+        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
         const val PKG: String = "android.app.appfunctions.cts.helper"
         const val TARGET_PACKAGE: String = "android.app.appfunctions.cts"
