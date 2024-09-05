@@ -19,10 +19,12 @@ package android.content.pm.cts;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.fail;
 
 import android.app.ActivityManager;
 import android.content.ComponentName;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -33,6 +35,7 @@ import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -48,6 +51,11 @@ public class PackageManagerDeviceOwnerTest {
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/content/";
     private static final String DEVICE_ADMIN_TEST_APP_APK_PATH =
             SAMPLE_APK_BASE + "CtsDeviceAdminTestApp.apk";
+
+    @Before
+    public void setup() throws Exception {
+        assumeTrue("Device is not supported", isDeviceSupported());
+    }
 
     @After
     public void uninstall() {
@@ -99,5 +107,9 @@ public class PackageManagerDeviceOwnerTest {
                                 String.format("pm list packages --user %s %s", userId, packageName))
                         .split("\\r?\\n"))
                 .anyMatch(pkg -> pkg.equals(String.format("package:%s", packageName)));
+    }
+
+    private static boolean isDeviceSupported() {
+        return !UserManager.isHeadlessSystemUserMode();
     }
 }
