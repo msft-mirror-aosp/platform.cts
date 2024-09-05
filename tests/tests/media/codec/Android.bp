@@ -106,3 +106,17 @@ android_test {
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_cts_encodedecodetest",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.EncodeDecodeTest"],
+}
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_cts_decodeeditencodetest",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.DecodeEditEncodeTest"],
+}
