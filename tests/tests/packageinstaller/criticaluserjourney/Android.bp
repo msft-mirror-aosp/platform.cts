@@ -41,6 +41,8 @@ java_defaults {
         ":CtsInstallerCujTestAppV2",
         ":CtsInstallerCujTestInstaller",
         ":CtsInstallerCujTestInstallerV2",
+        ":CtsInstallerCujTestNoLauncherActivityApp",
+        ":CtsInstallerCujTestNoLauncherActivityAppV2",
     ],
     per_testcase_directory: true,
 }

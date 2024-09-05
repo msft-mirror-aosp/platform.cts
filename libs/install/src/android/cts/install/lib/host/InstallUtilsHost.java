@@ -143,7 +143,7 @@ public class InstallUtilsHost {
      * Installs packages using staged install flow and waits for pre-reboot verification to complete
      */
     public String installStagedPackage(File pkg) throws Exception {
-        return getTestInfo().getDevice().installPackage(pkg, false, "--staged");
+        return getTestInfo().getDevice().installPackage(pkg, false, "--staged", "-t");
     }
 
     /**
@@ -151,7 +151,7 @@ public class InstallUtilsHost {
      *     for verification to complete
      */
     public String installRebootlessPackage(File pkg) throws Exception {
-        return getTestInfo().getDevice().installPackage(pkg, false, "--non-staged");
+        return getTestInfo().getDevice().installPackage(pkg, false, "--non-staged", "-t");
     }
 
     /**

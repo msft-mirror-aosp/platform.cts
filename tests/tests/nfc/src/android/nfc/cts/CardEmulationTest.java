@@ -2001,10 +2001,14 @@ public class CardEmulationTest {
         final Activity activity = createAndResumeActivity();
         CardEmulation instance = CardEmulation.getInstance(adapter);
         Assert.assertThrows(SecurityException.class,
-                () -> instance.overrideRoutingTable(activity, CardEmulation.DH, null));
+                () -> instance.overrideRoutingTable(activity,
+                        CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_DH,
+                        CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET));
         instance.setPreferredService(activity,
                 new ComponentName(mContext, CtsMyHostApduService.class));
-        instance.overrideRoutingTable(activity, CardEmulation.DH, null);
+        instance.overrideRoutingTable(activity,
+                CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_DH,
+                CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_NFC_OVERRIDE_RECOVER_ROUTING_TABLE)
@@ -2015,6 +2019,15 @@ public class CardEmulationTest {
         final Activity activity = createAndResumeActivity();
         CardEmulation instance = CardEmulation.getInstance(adapter);
         instance.recoverRoutingTable(activity);
+    }
+
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CARD_EMULATION_EUICC)
+    @Test
+    public void testIsEuiccSupported() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        instance.isEuiccSupported();
     }
 
     private Activity createAndResumeActivity() {

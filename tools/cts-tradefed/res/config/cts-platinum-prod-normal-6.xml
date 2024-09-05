@@ -181,44 +181,6 @@
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.RestoreSessionHostSideTest#testRestorePackagesWithMonitorParam[0]" />
     <option name="compatibility:include-filter" value="CtsBackupHostTestCases android.cts.backup.RestoreSessionHostSideTest#testRestorePackagesWithMonitorParam[1]" />
 
-    <!-- CtsAppSecurityHostTestCases -->
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testAdbInstallFile_full" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_differentPermissionGroup_fail" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_differentProtectionLevel_fail" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.AppSecurityTests#testInstallDuplicatePermission_sameProtectionLevel_success" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeBadPubKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeMissingPubKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testBadUpgradeNoPubKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testMultipleUpgradeKSWithSigningKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testNoKSToUpgradeKS" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSToNoKS" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithSigningUpgradeKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithWrongKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeKSWithWrongSigningKey" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.KeySetHostTest#testUpgradeSharedUser" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.ListeningPortsTest#testNoRemotelyAccessibleListeningTcpPorts" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallEmpty" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallEphemeralRequiresV2Signature" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallTargetSdk30WithV1Signers" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallTargetSdk30WithV1V2Signers" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV1SignatureOnlyDoesNotVerify" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2ContentDigestMismatch" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsMismatchBetweenPublicKeyAndCertificate" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsMismatchBetweenSignaturesAndDigestsBlocks" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2RejectsSignerBlockWithNoCertificates" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2SignatureDoesNotVerify" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2StrippedFails" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneBroken" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneWithoutSignatures" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV2TwoSignersRejectsWhenOneWithoutSupportedSignatures" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3HasMultipleSigners" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3KeyRotationHasDuplicateSigningCertificateHistory" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV3PorSignerMismatch" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongBlockSize[1]" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testInstallV4WithWrongSignatureBytes[1]" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31BlockStrippedWithV3StrippingProtectionAttrSet" />
-    <option name="compatibility:include-filter" value="CtsAppSecurityHostTestCases android.appsecurity.cts.PkgInstallSignatureVerificationTest#testV31RotationTargetModifiedReportedByV3" />
-
     <!-- CtsLibcoreTestCases -->
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.HpkeSuiteTest#testConstructor_invalidAead_throwsArgumentException" />
     <option name="compatibility:include-filter" value="CtsLibcoreTestCases com.android.org.conscrypt.HpkeSuiteTest#testConstructor_invalidKdf_throwsArgumentException" />

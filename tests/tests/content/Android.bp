@@ -22,9 +22,9 @@ java_library {
     defaults: ["cts_defaults"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     srcs: [
         "src/android/content/cts/**/DummyProvider.java",
@@ -36,8 +36,31 @@ java_library {
 }
 
 java_defaults {
+    name: "cts_content_resources_defaults",
+
+    // Resource unit tests use a private locale and some densities
+    aapt_include_all_resources: true,
+    aaptflags: [
+        "-c cs",
+        "-c fil,fil-rPH,fil-rSA",
+        "-c fr,fr-rFR",
+        "-c iw,iw-rIL",
+        "-c kok,b+kok+419,b+kok+419+variant,b+kok+IN,b+kok+Knda,b+kok+Knda+419,b+kok+Knda+419+variant",
+        "-c b+kok+variant",
+        "-c mk,mk-rMK",
+        "-c tl,tl-rPH",
+        "-c tgl,tgl-rPH",
+        "-c tlh",
+        "-c xx,xx-rYY",
+    ],
+}
+
+java_defaults {
     name: "cts_content_defaults",
-    defaults: ["cts_defaults"],
+    defaults: [
+        "cts_defaults",
+        "cts_content_resources_defaults",
+    ],
 
     // Don't run manifestmerger on dependencies, it is unhappy with the duplicate
     // REQUIRED_MULTI_DENY permissions in AndroidManifest.xml
@@ -80,21 +103,6 @@ java_defaults {
     // Use multi-dex as the compatibility-common-util-devicesidelib dependency
     // on compatibility-device-util-axt pushes us beyond 64k methods.
     dxflags: ["--multi-dex"],
-    // Resource unit tests use a private locale and some densities
-    aapt_include_all_resources: true,
-    aaptflags: [
-        "-c cs",
-        "-c fil,fil-rPH,fil-rSA",
-        "-c fr,fr-rFR",
-        "-c iw,iw-rIL",
-        "-c kok,b+kok+419,b+kok+419+variant,b+kok+IN,b+kok+Knda,b+kok+Knda+419,b+kok+Knda+419+variant",
-        "-c b+kok+variant",
-        "-c mk,mk-rMK",
-        "-c tl,tl-rPH",
-        "-c tgl,tgl-rPH",
-        "-c tlh",
-        "-c xx,xx-rYY",
-    ],
     per_testcase_directory: true,
     platform_apis: true,
     min_sdk_version: "29",
@@ -109,6 +117,8 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mts-documentsui",
+        "mcts-documentsui",
     ],
     static_libs: [
         "android.security.flags-aconfig-java",
@@ -166,6 +176,9 @@ android_test {
     srcs: [
         "src/android/content/om/**/*.java",
         "src/android/content/res/**/*.java",
+    ],
+    exclude_srcs: [
+        "src/android/content/res/cts/RavenwoodResourceTest.java",
     ],
     test_config: "CtsResourcesTest.xml",
 }
@@ -261,9 +274,6 @@ android_test {
         ":HelloWorldSdk1DifferentSigner",
         ":HelloWorldSdk1MajorVersion2",
         ":HelloWorldSdk1Updated",
-        ":HelloWorldSdk1MajorVersion1WithHigherMinSdk",
-        ":HelloWorldSdk1MajorVersion1WithHigherTargetSdk",
-        ":HelloWorldSdk1MajorVersion2WithHigherTargetSdk",
         ":HelloWorldSdk2",
         ":HelloWorldSdk2Updated",
         ":HelloWorldSdk3UsingSdk1",
@@ -320,7 +330,7 @@ android_ravenwood_test {
     name: "CtsContentTestCasesRavenwood",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.mock",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",
@@ -353,5 +363,65 @@ android_ravenwood_test {
         "src/android/content/pm/cts/ServiceInfoTest.java",
         "src/android/content/pm/cts/SignatureTest.java",
     ],
+    auto_gen_config: true,
+}
+
+android_app {
+    name: "CtsResourcesTestCasesRavenwood-res",
+    defaults: [
+        "cts_content_resources_defaults",
+    ],
+    use_resource_processor: false,
+    platform_apis: true,
+    enforce_uses_libs: false,
+}
+
+android_ravenwood_test {
+    name: "CtsResourcesTestCasesRavenwood",
+    defaults: ["cts_defaults"],
+    srcs: [
+        "src/android/content/res/cts/**/*.java",
+
+        // Steal the R file.
+        ":CtsResourcesTestCasesRavenwood-res{.aapt.srcjar}",
+    ],
+    resource_apk: "CtsResourcesTestCasesRavenwood-res",
+    libs: [
+        "android.test.runner",
+        "android.test.base",
+        "android.test.mock",
+    ],
+    static_libs: [
+        "androidx.annotation_annotation",
+        "androidx.test.rules",
+        "androidx.test.uiautomator_uiautomator",
+        "compatibility-device-util-axt",
+        "android.content.res.flags-aconfig-java",
+
+        // TODO Make and use a better default
+
+        "apache-commons-compress",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "services.core",
+        "junit",
+        "truth",
+        "accountaccesslib",
+        // TODO: remove once Android migrates to JUnit 4.12, which provides assertThrows:
+        "testng",
+        "androidx.legacy_legacy-support-v4",
+        "androidx.test.core",
+        "androidx.test.uiautomator_uiautomator",
+        "cts-install-lib",
+        "ShortcutManagerTestUtils",
+        "libincfs-prebuilt",
+        "HelloWorldResHardeningLib",
+        "Nene",
+        "Harrier",
+        "platformprotosnano",
+        "ravenwood-junit",
+        "CtsContentUtils",
+    ],
+    platform_apis: true,
     auto_gen_config: true,
 }

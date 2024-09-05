@@ -159,6 +159,14 @@ public final class FrameRateOverrideTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
+            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
+            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
+            // in the test setup, this is not communicated and thus not handled.
+            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
 
@@ -168,6 +176,7 @@ public final class FrameRateOverrideTest {
                     continue;
                 }
                 modesWithSameResolution.add(mode);
+                Log.i(TAG, "Mode added: " + mode.toString());
             }
         }
 

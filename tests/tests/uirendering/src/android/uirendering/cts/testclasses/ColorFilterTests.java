@@ -16,7 +16,10 @@
 
 package android.uirendering.cts.testclasses;
 
+import static org.junit.Assert.assertEquals;
+
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Paint;
@@ -32,6 +35,8 @@ import org.junit.runner.RunWith;
 @MediumTest
 @RunWith(AndroidJUnit4.class)
 public class ColorFilterTests extends ActivityTestBase {
+
+    private static final int BITMAP_DIMENSIONS = 50;
 
     @Test
     public void testColorMatrix() {
@@ -54,6 +59,34 @@ public class ColorFilterTests extends ActivityTestBase {
 
                 }, true)
                 .runWithVerifier(new ColorVerifier(Color.BLACK));
+    }
+
+    @Test
+    public void testColorMatrixDoesNotClamp() {
+        Bitmap destination = Bitmap.createBitmap(
+                BITMAP_DIMENSIONS, BITMAP_DIMENSIONS, Bitmap.Config.RGBA_F16);
+        destination.eraseColor(Color.BLACK);
+
+        Paint paint = new Paint();
+        float gain = 2f;
+        paint.setColorFilter(new ColorMatrixColorFilter(new float[] {
+                gain, 0, 0, 0, 0,
+                0, gain, 0, 0, 0,
+                0, 0, gain, 0, 0,
+                0, 0, 0, 1, 0
+        }));
+        paint.setColor(Color.WHITE);
+        Canvas canvas = new Canvas(destination);
+
+        canvas.drawPaint(paint);
+
+        Color color = destination.getColor(BITMAP_DIMENSIONS / 2, BITMAP_DIMENSIONS / 2);
+        float expectedChannel = 2f;
+        float tolerance = 0.002f;
+
+        assertEquals("red channel mismatch", expectedChannel, color.red(), tolerance);
+        assertEquals("green channel mismatch", expectedChannel, color.green(), tolerance);
+        assertEquals("blue channel mismatch", expectedChannel, color.blue(), tolerance);
     }
 
 }

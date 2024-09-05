@@ -1018,8 +1018,9 @@ public class PerformanceTest {
             // Add zoom-out ratios
             for (double logRatio = 0.0f; logRatio >= Math.log(startRatio);
                     logRatio -= stepLog) {
-                zoomRatios.addFirst(roundAwayFrom1(Math.exp(logRatio)));
+                zoomRatios.add(roundAwayFrom1(Math.exp(logRatio)));
             }
+            Collections.reverse(zoomRatios);
             // Add zoom-in ratios
             for (double logRatio = stepLog; logRatio <= Math.log(endRatio);
                     logRatio += stepLog) {

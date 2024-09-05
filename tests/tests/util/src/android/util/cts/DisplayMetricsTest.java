@@ -20,7 +20,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.DisplayMetrics;
 import android.view.Display;
@@ -36,7 +36,6 @@ import org.junit.runner.RunWith;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
-@IgnoreUnderRavenwood(blockedBy = DisplayMetrics.class)
 public class DisplayMetricsTest {
     @Rule
     public final RavenwoodRule mRavenwood = new RavenwoodRule();
@@ -51,7 +50,7 @@ public class DisplayMetricsTest {
     }
 
     @Test
-    public void testDisplayMetricsOp() {
+    public void testDisplayMetricsOp_defaultValues() {
         DisplayMetrics outMetrics = new DisplayMetrics();
         outMetrics.setToDefaults();
         assertEquals(0, outMetrics.widthPixels);
@@ -61,6 +60,12 @@ public class DisplayMetricsTest {
         assertTrue((0.1 <= outMetrics.scaledDensity) && (outMetrics.scaledDensity <= 4));
         assertTrue(0 < outMetrics.xdpi);
         assertTrue(0 < outMetrics.ydpi);
+    }
+
+    @Test
+    @DisabledOnRavenwood(blockedBy = {Display.class})
+    public void testDisplayMetricsOp_defaultDisplay() {
+        DisplayMetrics outMetrics = new DisplayMetrics();
 
         Display display = initDisplay();
         display.getMetrics(outMetrics);

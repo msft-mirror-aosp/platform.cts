@@ -17,6 +17,7 @@
 package android.packageinstaller.criticaluserjourney.cts;
 
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.PlatinumTest;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -27,8 +28,26 @@ import org.junit.runner.RunWith;
  * Tests for PackageInstaller CUJs via startActivity with ACTION_INSTALL_PACKAGE.
  */
 @RunWith(AndroidJUnit4.class)
+@PlatinumTest(focusArea = "pm")
 @AppModeFull
 public class InstallationViaIntentTest extends InstallationTestBase {
+
+    @Test
+    public void newInstall_noLauncherEntry_launchGrantPermission_installButton_success()
+            throws Exception {
+        startNoLauncherActivityInstallationViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickInstallButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageInstalled();
+    }
 
     @Test
     public void newInstall_launchGrantPermission_installButton_success() throws Exception {
@@ -110,6 +129,22 @@ public class InstallationViaIntentTest extends InstallationTestBase {
         assertTestPackageNotInstalled();
     }
 
+
+    @Test
+    public void newInstall_noLauncherEntry_noLaunchGrantPermission_installButton_success()
+            throws Exception {
+        grantRequestInstallPackagesPermission();
+
+        startNoLauncherActivityInstallationViaIntent();
+
+        waitForUiIdle();
+
+        clickInstallButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageInstalled();
+    }
+
     @Test
     public void newInstall_noLaunchGrantPermission_installButton_success() throws Exception {
         grantRequestInstallPackagesPermission();
@@ -167,6 +202,48 @@ public class InstallationViaIntentTest extends InstallationTestBase {
         clickCancelButton();
 
         assertTestPackageNotInstalled();
+    }
+
+
+
+    @Test
+    public void update_noLauncherEntry_launchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        startNoLauncherActivityInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void update_disableEntry_launchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        disableTestPackageLauncherActivity();
+
+        startInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
     }
 
     @Test
@@ -260,6 +337,42 @@ public class InstallationViaIntentTest extends InstallationTestBase {
     }
 
     @Test
+    public void update_noLauncherEntry_noLaunchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        grantRequestInstallPackagesPermission();
+
+        startNoLauncherActivityInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickUpdateButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void update_disableEntry_noLaunchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        disableTestPackageLauncherActivity();
+
+        grantRequestInstallPackagesPermission();
+
+        startInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickUpdateButton(/* checkInstallingDialog= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
     public void update_noLaunchGrantPermission_updateButton_success() throws Exception {
         installTestPackage();
 
@@ -323,6 +436,47 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         clickCancelButton();
 
+        assertTestPackageInstalled();
+    }
+
+
+    @Test
+    public void updateWithPackageUri_noLauncherEntry_launchGrantPermission_updateButton_success()
+            throws Exception {
+        installNoLauncherActivityTestPackage();
+
+        startInstallationViaIntentWithPackageUri();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void updateWithPackageUri_disableEntry_launchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        disableTestPackageLauncherActivity();
+
+        startInstallationViaIntentWithPackageUri();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
         assertTestPackageInstalled();
     }
 
@@ -413,6 +567,42 @@ public class InstallationViaIntentTest extends InstallationTestBase {
 
         exitGrantPermissionSettings();
 
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void updateWithPackageUri_noLauncherEntry_noLaunchGrantPermission_updateButton_success()
+            throws Exception {
+        installNoLauncherActivityTestPackage();
+
+        grantRequestInstallPackagesPermission();
+
+        startInstallationViaIntentWithPackageUri();
+
+        waitForUiIdle();
+
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageInstalled();
+    }
+
+    @Test
+    public void updateWithPackageUri_disableEntry_noLaunchGrantPermission_updateButton_success()
+            throws Exception {
+        installTestPackage();
+
+        disableTestPackageLauncherActivity();
+
+        grantRequestInstallPackagesPermission();
+
+        startInstallationViaIntentWithPackageUri();
+
+        waitForUiIdle();
+
+        clickUpdateButton(/* checkInstallingDialog= */ false, /* isUpdatedViaPackageUri= */ true);
+
+        assertInstallSuccessDialogForNoLauncherActivity();
         assertTestPackageInstalled();
     }
 

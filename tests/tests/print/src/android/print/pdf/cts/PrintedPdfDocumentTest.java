@@ -23,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import android.content.Context;
 import android.graphics.Rect;
 import android.graphics.pdf.PdfDocument;
+import android.platform.test.annotations.Presubmit;
 import android.print.PrintAttributes;
 import android.print.pdf.PrintedPdfDocument;
 
@@ -37,6 +38,7 @@ import org.junit.runner.RunWith;
  * Tests {@link PrintedPdfDocument}. This class is a subclass of {@link PdfDocument}, hence only the
  * overridden methods are tested.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintedPdfDocumentTest {
     private static final PrintAttributes.Margins ZERO_MARGINS = new PrintAttributes.Margins(0, 0, 0,

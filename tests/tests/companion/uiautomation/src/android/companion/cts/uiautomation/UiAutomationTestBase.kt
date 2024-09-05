@@ -186,7 +186,8 @@ open class UiAutomationTestBase(
 
             assertTrue {
                 callback.invocations.contains(OnFailure(expectedError)) &&
-                        callback.invocations.contains(OnFailureCode(expectedResultCode))
+                        callback.invocations.contains(
+                            OnFailureCode(expectedResultCode, expectedError))
             }
         } else {
             // Check callback invocations: there should have been exactly 1 invocation of the
@@ -233,7 +234,8 @@ open class UiAutomationTestBase(
         if (Flags.associationFailureCode()) {
             assertTrue {
                 callback.invocations.contains(OnFailure(REASON_DISCOVERY_TIMEOUT)) &&
-                        callback.invocations.contains(OnFailureCode(RESULT_DISCOVERY_TIMEOUT))
+                        callback.invocations.contains(
+                            OnFailureCode(RESULT_DISCOVERY_TIMEOUT, REASON_DISCOVERY_TIMEOUT))
             }
         } else {
             assertContentEquals(

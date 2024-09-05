@@ -92,7 +92,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             its_session_utils.ANDROID14_API_LEVEL
         )
       should_run = (feature_combination_query_version >=
-                    its_session_utils.ANDROID15_API_LEVEL)
+                    its_session_utils.ANDROID15_API_LEVEL or
+                    self.feature_combo_verify)
       camera_properties_utils.skip_unless(should_run)
 
       # Log ffmpeg version being used
@@ -209,12 +210,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                   f'[{fps_range[0]}, {fps_range[1]}])')
               logging.debug('combination name: %s', combination_name)
 
-              # Is the feature combination supported?
-              supported = cam.is_stream_combination_supported(
-                  output_surfaces, settings)
-              if not supported:
-                logging.debug('%s not supported', combination_name)
-                break
+              if not self.feature_combo_verify:
+                # Is the feature combination supported?
+                supported = cam.is_stream_combination_supported(
+                    output_surfaces, settings)
+                if not supported:
+                  logging.debug('%s not supported', combination_name)
+                  break
 
               is_stabilized = False
               if (stabilize ==
@@ -263,7 +265,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
 
               # Verify FPS by inspecting the result metadata
               capture_results = recording_obj['captureMetadata']
-              assert len(capture_results) > 1
+              if len(capture_results) <= 1:
+                raise AssertionError(
+                    f'{combination_name}: captureMetadata has only '
+                    f'{len(capture_results)} frames')
               last_t = capture_results[-1]['android.sensor.timestamp']
               first_t = capture_results[0]['android.sensor.timestamp']
               avg_frame_duration = (

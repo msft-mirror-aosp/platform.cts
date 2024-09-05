@@ -20,10 +20,12 @@ import android.app.Instrumentation;
 import android.app.NotificationManager;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.AudioPlaybackConfiguration;
 import android.media.MediaPlayer;
 import android.media.session.MediaSessionManager.RemoteUserInfo;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
@@ -33,7 +35,9 @@ import com.android.compatibility.common.util.AmUtils;
 
 import junit.framework.Assert;
 
+import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -45,6 +49,8 @@ public class Utils {
     private static final String TAG = "CtsMediaTestUtil";
     private static final int TEST_TIMING_TOLERANCE_MS = 500;
     private static final String MEDIA_PATH_INSTR_ARG_KEY = "media-path";
+
+    public static final Uri RINGTONE_TEST_URI = Uri.parse("content://cts/ringtone/");
 
     public static void enableAppOps(String packageName, String operation,
             Instrumentation instrumentation) {
@@ -105,7 +111,9 @@ public class Utils {
     public static void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        int userId = instrumentation.getTargetContext().getUserId();
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + userId;
 
         // Get permission to enable accessibility
         UiAutomation uiAutomation = instrumentation.getUiAutomation();
@@ -177,6 +185,42 @@ public class Utils {
             }
             handlerThread.quitSafely();
         }
+    }
+
+    /**
+     * Gets the {@link com.android.internal.R.bool#config_ringtoneVibrationSettingsSupported} value.
+     * @return {@code true} If the device supports ringtone vibration settings.
+     */
+    public static boolean isRingtoneVibrationSupported(Context context) {
+        try {
+            int resId = Resources.getSystem().getIdentifier(
+                    "config_ringtoneVibrationSettingsSupported", "bool", "android");
+            return context.getResources().getBoolean(resId);
+        } catch (Resources.NotFoundException e) {
+            Log.w(TAG, "Unable to read system resource " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Returns a temp file which includes predefined the {@link android.os.VibrationEffect}
+     * information.
+     */
+    public static File getTestVibrationFile() throws IOException {
+        File tempFile = File.createTempFile("test_vibration_file", ".xml");
+        FileWriter writer = new FileWriter(tempFile);
+        writer.write("<vibration-effect>\n"
+                + "    <waveform-effect>\n"
+                + "        <!-- PRIMING -->\n"
+                + "        <waveform-entry durationMs=\"0\" amplitude=\"0\"/>\n"
+                + "        <waveform-entry durationMs=\"12\" amplitude=\"255\"/>\n"
+                + "        <waveform-entry durationMs=\"250\" amplitude=\"0\"/>\n"
+                + "        <waveform-entry durationMs=\"12\" amplitude=\"255\"/>\n"
+                + "        <waveform-entry durationMs=\"500\" amplitude=\"0\"/>\n"
+                + "    </waveform-effect>\n"
+                + "</vibration-effect>");
+        writer.close();
+        return tempFile;
     }
 
     private static class TestAudioPlaybackCallback extends AudioManager.AudioPlaybackCallback {

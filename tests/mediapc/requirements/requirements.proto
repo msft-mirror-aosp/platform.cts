@@ -121,6 +121,7 @@ message RequiredValue {
     double double_value = 5;
     bool bool_value = 6;
     int64 long_value = 7;
+    float float_value = 8;
   }
 }
 
@@ -155,6 +156,7 @@ enum Comparison {
   COMPARISON_GREATER_THAN_OR_EQUAL = 5;
   COMPARISON_INFO_ONLY = 6;
   COMPARISON_CONFIG = 7;
+  COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL = 8;
 }
 
 enum MeasurementType {
@@ -164,4 +166,5 @@ enum MeasurementType {
   MEASUREMENT_TYPE_INT = 3;
   MEASUREMENT_TYPE_STRING = 4;
   MEASUREMENT_TYPE_LONG = 5;
+  MEASUREMENT_TYPE_FLOAT = 6;
 }

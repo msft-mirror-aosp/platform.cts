@@ -55,4 +55,5 @@ android_test {
     ],
     manifest: "src/test/AndroidManifest.xml",
     min_sdk_version: "29",
+    sdk_version: "system_current",
 }

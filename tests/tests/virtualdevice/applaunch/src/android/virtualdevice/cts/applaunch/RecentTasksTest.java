@@ -126,8 +126,7 @@ public class RecentTasksTest {
         assertThat(isTaskIncludedInRecents(customPolicyTaskId)).isTrue();
     }
 
-    private VirtualDevice createVirtualDeviceWithRecentsPolicy(
-            @VirtualDeviceParams.DevicePolicy int recentsPolicy) {
+    private VirtualDevice createVirtualDeviceWithRecentsPolicy(int recentsPolicy) {
         return mRule.createManagedVirtualDevice(new VirtualDeviceParams.Builder()
                 .setDevicePolicy(POLICY_TYPE_RECENTS, recentsPolicy)
                 .build());

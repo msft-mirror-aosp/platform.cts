@@ -2515,7 +2515,7 @@ public class TunerTest {
     }
 
     private TunerFrontendInfo tunerFrontendInfo(
-            long handle, int frontendType, int exclusiveGroupId) {
+            int handle, int frontendType, int exclusiveGroupId) {
         TunerFrontendInfo info = new TunerFrontendInfo();
         info.handle = handle;
         info.type = frontendType;
@@ -2559,9 +2559,9 @@ public class TunerTest {
         }
     }
 
-    private void assignFeResource(
-            int clientId, int frontendType, boolean expectedResult, long expectedHandle) {
-        long[] feHandle = new long[1];
+    private void assignFeResource(int clientId, int frontendType,
+                                  boolean expectedResult, int expectedHandle) {
+        int[] feHandle = new int[1];
         TunerFrontendRequest request = new TunerFrontendRequest();
         request.clientId = clientId;
         request.frontendType = frontendType;

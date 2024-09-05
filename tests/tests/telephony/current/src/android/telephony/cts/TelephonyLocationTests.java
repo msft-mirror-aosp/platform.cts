@@ -33,6 +33,7 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -53,6 +54,8 @@ public class TelephonyLocationTests {
 
     private static final long TEST_TIMEOUT = 5000;
 
+    private Boolean mWasLocationEnabled;
+
     @Before
     public void setUp() {
         PackageManager pm = InstrumentationRegistry.getContext().getPackageManager();
@@ -62,6 +65,14 @@ public class TelephonyLocationTests {
                     .getHalVersion(TelephonyManager.HAL_SERVICE_RADIO);
         } catch (IllegalStateException e) {
             assumeNoException("Skipping tests because Telephony service is null", e);
+        }
+    }
+
+    @After
+    public void tearDown() {
+        if (mWasLocationEnabled != null) {
+            TelephonyManagerTest.setLocationEnabled(mWasLocationEnabled);
+            mWasLocationEnabled = null;
         }
     }
 
@@ -120,6 +131,7 @@ public class TelephonyLocationTests {
     @Test
     public void testServiceStateLocationSanitizationWithRenouncedPermission() {
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         HashSet<String> permissionsToRenounce =
                 new HashSet<>(Arrays.asList(android.Manifest.permission.ACCESS_FINE_LOCATION));
 
@@ -136,6 +148,7 @@ public class TelephonyLocationTests {
     @Test
     public void testServiceStateListeningWithRenouncedPermission() {
         TelephonyManagerTest.grantLocationPermissions();
+        mWasLocationEnabled = TelephonyManagerTest.setLocationEnabled(true);
         HashSet<String> permissionsToRenounce =
                 new HashSet<>(Arrays.asList(android.Manifest.permission.ACCESS_FINE_LOCATION));
         ServiceState ss = CtsLocationAccessService.listenForServiceState(
