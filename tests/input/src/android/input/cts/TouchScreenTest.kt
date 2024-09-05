@@ -27,13 +27,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
-import com.android.cts.input.VirtualDisplayActivityScenarioRule
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.DEFAULT_HEIGHT
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.DEFAULT_WIDTH
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
+import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_HEIGHT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_WIDTH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_0
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_180
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_270
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_90
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withFlags
 import com.android.cts.input.inputeventmatchers.withMotionAction
@@ -61,7 +61,7 @@ class TouchScreenTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {

@@ -35,6 +35,12 @@ import android.util.Size
 import android.view.Surface
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.CAPTURE_SECURE_VIDEO_OUTPUT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DENSITY
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.TAG
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DISPLAY_NAME
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -43,19 +49,10 @@ import org.junit.Assume.assumeTrue
 import org.junit.rules.ExternalResource
 import org.junit.rules.TestName
 
-/**
- * A test rule that sets up a virtual display, and launches the specified activity on that display.
- */
-class VirtualDisplayActivityScenarioRule<A : Activity>(
-    private val type: Class<A>,
-    val testName: TestName,
-    val useSecureDisplay: Boolean,
-    val size: Size,
-) : ExternalResource() {
+interface VirtualDisplayActivityScenario<A : Activity> {
     companion object {
-
-        const val TAG = "VirtualDisplayActivityScenarioRule"
-        const val VIRTUAL_DISPLAY_NAME = "CtsTouchScreenTestVirtualDisplay"
+        const val TAG = "VirtualDisplayActivityScenario"
+        const val VIRTUAL_DISPLAY_NAME = "CtsVirtualDisplay"
         const val CAPTURE_SECURE_VIDEO_OUTPUT = "android.permission.CAPTURE_SECURE_VIDEO_OUTPUT"
         const val DEFAULT_WIDTH = 480
         const val DEFAULT_HEIGHT = 800
@@ -70,57 +67,11 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
 
         /** See [DisplayManager.VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT].  */
         const val VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 shl 7
-
-        inline operator fun <reified A : Activity> invoke(
-            testName: TestName,
-            useSecureDisplay: Boolean = false,
-            size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
-        ): VirtualDisplayActivityScenarioRule<A> = VirtualDisplayActivityScenarioRule(
-            A::class.java,
-            testName,
-            useSecureDisplay,
-            size,
-        )
     }
 
-    private val instrumentation = InstrumentationRegistry.getInstrumentation()
-    private lateinit var reader: ImageReader
-
-    lateinit var virtualDisplay: VirtualDisplay
-    lateinit var activity: A
+    var virtualDisplay: VirtualDisplay
+    var activity: A
     val displayId: Int get() = virtualDisplay.display.displayId
-
-    /**
-     * Before the test starts, set up the virtual display and start the activity A on that
-     * display.
-     */
-    override fun before() {
-        assumeTrue(supportsMultiDisplay())
-        createDisplay()
-
-        val bundle =
-            ActivityOptions.makeBasic().setLaunchDisplayId(displayId)
-                .toBundle()
-        val intent = Intent(Intent.ACTION_VIEW)
-            .setClass(instrumentation.targetContext, type)
-            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        SystemUtil.runWithShellPermissionIdentity({
-            @Suppress("UNCHECKED_CAST")
-            activity = instrumentation.startActivitySync(intent, bundle) as A
-        }, Manifest.permission.INTERNAL_SYSTEM_WINDOW)
-        waitUntilActivityReadyForInput()
-    }
-
-    /**
-     * Clean up after the test completes.
-     */
-    override fun after() {
-        if (!supportsMultiDisplay()) {
-            return
-        }
-        releaseDisplay()
-        activity.finish()
-    }
 
     /**
      * This is a helper methods for tests to make assertions with the display rotated to the given
@@ -129,7 +80,130 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
      * @param orientation The orientation to which the display should be rotated.
      * @param runnable The function to run with the display is in the given orientation.
      */
-    fun runInDisplayOrientation(orientation: Int, runnable: () -> Unit) {
+    fun runInDisplayOrientation(orientation: Int, runnable: () -> Unit)
+
+    /**
+     * Retrieves a Bitmap screenshot from the internal ImageReader this virtual display writes to.
+     *
+     * <p>Currently only supports screenshots in the RGBA_8888.
+     */
+    fun getScreenshot(): Bitmap?
+
+    /**
+     * A [VirtualDisplayActivityScenario] that can be used within a test function.
+     */
+    class AutoClose<A : Activity> private constructor(
+        private val impl: Impl<A>
+    ) : AutoCloseable, VirtualDisplayActivityScenario<A> by impl {
+
+        companion object {
+            inline operator fun <reified A : Activity> invoke(
+                testName: TestName,
+                useSecureDisplay: Boolean = false,
+                size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            ): AutoClose<A> = AutoClose(
+                A::class.java,
+                testName,
+                useSecureDisplay,
+                size,
+            )
+        }
+
+        constructor(
+            type: Class<A>,
+            testName: TestName,
+            useSecureDisplay: Boolean,
+            size: Size
+        ) : this(Impl(type, testName, useSecureDisplay, size))
+
+        init {
+            impl.start()
+        }
+
+        override fun close() {
+            impl.stop()
+        }
+    }
+
+    /**
+     * A [VirtualDisplayActivityScenario] that can be used as a test rule.
+     */
+    class Rule<A : Activity> private constructor(
+        private val impl: Impl<A>
+    ) : ExternalResource(), VirtualDisplayActivityScenario<A> by impl {
+
+        companion object {
+            inline operator fun <reified A : Activity> invoke(
+                testName: TestName,
+                useSecureDisplay: Boolean = false,
+                size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
+            ): Rule<A> = Rule(
+                A::class.java,
+                testName,
+                useSecureDisplay,
+                size,
+            )
+        }
+
+        constructor(
+            type: Class<A>,
+            testName: TestName,
+            useSecureDisplay: Boolean,
+            size: Size
+        ) : this(Impl(type, testName, useSecureDisplay, size))
+
+        override fun before() {
+            impl.start()
+        }
+
+        override fun after() {
+            impl.stop()
+        }
+    }
+}
+
+/**
+ * The private implementation of a [VirtualDisplayActivityScenario].
+ */
+private class Impl<A : Activity>(
+    val type: Class<A>,
+    val testName: TestName,
+    val useSecureDisplay: Boolean,
+    val size: Size,
+) : VirtualDisplayActivityScenario<A> {
+
+    private val instrumentation = InstrumentationRegistry.getInstrumentation()
+    private lateinit var reader: ImageReader
+
+    override lateinit var virtualDisplay: VirtualDisplay
+    override lateinit var activity: A
+
+    /** Set up the virtual display and start the activity A on that display. */
+    fun start() {
+        assumeTrue(supportsMultiDisplay())
+        createDisplay()
+
+        val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
+        val intent =
+            Intent(Intent.ACTION_VIEW).setClass(instrumentation.targetContext, type)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        SystemUtil.runWithShellPermissionIdentity({
+            @Suppress("UNCHECKED_CAST")
+            activity = instrumentation.startActivitySync(intent, bundle) as A
+        }, Manifest.permission.INTERNAL_SYSTEM_WINDOW)
+        waitUntilActivityReadyForInput()
+    }
+
+    /** Clean up the resources related to the virtual display and the test activity. */
+    fun stop() {
+        if (!supportsMultiDisplay()) {
+            return
+        }
+        releaseDisplay()
+        activity.finish()
+    }
+
+    override fun runInDisplayOrientation(orientation: Int, runnable: () -> Unit) {
         val initialUserRotation =
             SystemUtil.runShellCommandOrThrow("wm user-rotation -d $displayId")!!
         SystemUtil.runShellCommandOrThrow("wm user-rotation -d $displayId lock $orientation")
@@ -163,27 +237,36 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
             }
         }, Handler(Looper.getMainLooper()))
         reader = ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2)
-        if (useSecureDisplay){
-            virtualDisplay =
-                runWithCaptureSecurePermissionIdentityOverride {
-                    displayManager.createVirtualDisplay(
-                        VIRTUAL_DISPLAY_NAME, size.width, size.height, DENSITY, reader.surface,
-                        VIRTUAL_DISPLAY_FLAG_SECURE or VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
-                                VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
-                    )
-                }
+        if (useSecureDisplay) {
+            virtualDisplay = runWithCaptureSecurePermissionIdentityOverride {
+                displayManager.createVirtualDisplay(
+                    VIRTUAL_DISPLAY_NAME,
+                    size.width,
+                    size.height,
+                    DENSITY,
+                    reader.surface,
+                    VIRTUAL_DISPLAY_FLAG_SECURE or
+                            VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
+                            VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+                )
+            }
         } else {
             virtualDisplay = displayManager.createVirtualDisplay(
-                VIRTUAL_DISPLAY_NAME, size.width, size.height, DENSITY, reader.surface,
+                VIRTUAL_DISPLAY_NAME,
+                size.width,
+                size.height,
+                DENSITY,
+                reader.surface,
                 VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
             )
         }
         assertTrue(displayCreated.await(5, TimeUnit.SECONDS))
     }
 
-    private fun runWithCaptureSecurePermissionIdentityOverride(command: () -> VirtualDisplay):
-            VirtualDisplay {
-        InstrumentationRegistry.getInstrumentation().uiAutomation.addOverridePermissionState(
+    private fun runWithCaptureSecurePermissionIdentityOverride(
+        command: () -> VirtualDisplay
+    ): VirtualDisplay {
+        instrumentation.uiAutomation.addOverridePermissionState(
             Process.myUid(),
             CAPTURE_SECURE_VIDEO_OUTPUT,
             PERMISSION_GRANTED
@@ -191,10 +274,7 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
         try {
             return command()
         } finally {
-            InstrumentationRegistry.getInstrumentation().uiAutomation
-                .clearOverridePermissionStates(
-                    Process.myUid()
-                )
+            instrumentation.uiAutomation.clearOverridePermissionStates(Process.myUid())
         }
     }
 
@@ -204,9 +284,9 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
     }
 
     private fun waitUntilActivityReadyForInput() {
-        // If we requested an orientation change, just waiting for the window to be visible is not
-        // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
-        // to process them before making sure the window is visible.
+        // If we requested an orientation change, just waiting for the window to be visible is
+        // not sufficient. We should first wait for the transitions to stop, and the for app's
+        // UI thread to process them before making sure the window is visible.
         WindowManagerStateHelper().waitUntilActivityReadyForInputInjection(
             activity,
             TAG,
@@ -214,12 +294,7 @@ class VirtualDisplayActivityScenarioRule<A : Activity>(
         )
     }
 
-    /**
-     * Retrieves a Bitmap screenshot from the internal ImageReader this virtual display writes to.
-     *
-     * <p>Currently only supports screenshots in the RGBA_8888.
-     */
-    fun getScreenshot(): Bitmap? {
+    override fun getScreenshot(): Bitmap? {
         val image = reader.acquireNextImage()
         if (image == null || image.format != PixelFormat.RGBA_8888) {
             return null
