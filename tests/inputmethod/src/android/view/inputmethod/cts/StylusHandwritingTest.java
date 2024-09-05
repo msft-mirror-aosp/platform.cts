@@ -33,6 +33,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_TRACK_DISABLED;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -845,6 +846,61 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
         }
     }
+
+    /**
+     * Set the default value of EditText's autoHandwritingEnabled to false. After it gains focus,
+     * set it to true and then inject stylus events, expecting handwriting to work correctly.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_HANDWRITING_TRACK_DISABLED)
+    public void testAutoHandwritingDisabledAndEnable() throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                final EditText editText = new EditText(activity);
+                editTextRef.set(editText);
+                // Make auto handwriting enabled to false
+                editText.setAutoHandwritingEnabled(false);
+                layout.addView(editText);
+                editText.setHint("focused editText");
+                editText.setPrivateImeOptions(marker);
+                editText.requestFocus();
+                return layout;
+            });
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", marker),
+                    NOT_EXPECT_TIMEOUT);
+
+            EditText editText = editTextRef.get();
+            TestUtils.waitOnMainUntil(() -> editText.hasWindowFocus()
+                    && editText.isFocused(), TIMEOUT);
+
+            // Make auto handwriting enable to true
+            editText.setAutoHandwritingEnabled(true);
+            addVirtualStylusIdForTestSession();
+
+            injectStylusEventToEditorAndVerify(editText, stream, imeSession,
+                    marker, true /* verifyHandwritingStart */,
+                    true /* verifyHandwritingWindowShown */,
+                    false /* verifyHandwritingWindowNotShown */);
+
+            // Finish handwriting to remove test stylus id.
+            imeSession.callFinishStylusHandwriting();
+            expectEvent(
+                    stream,
+                    editorMatcher("onFinishStylusHandwriting", marker),
+                    TIMEOUT_1_S);
+        }
+    }
+
 
     @Test
     /**
