@@ -458,10 +458,12 @@ public class InputJsonParser {
             try {
                 JSONObject testcaseEntry = json.getJSONObject(testCaseNumber);
                 testData.name = testcaseEntry.getString("name");
-                JSONArray reports = testcaseEntry.getJSONArray("injections");
-                for (int i = 0; i < reports.length(); i++) {
-                    String injections = reports.getString(i);
-                    testData.evdevEvents.add(injections);
+                JSONArray reports = testcaseEntry.optJSONArray("injections");
+                if (reports != null) {
+                    for (int i = 0; i < reports.length(); i++) {
+                        String injections = reports.getString(i);
+                        testData.evdevEvents.add(injections);
+                    }
                 }
 
                 final int source = sourceFromString(testcaseEntry.optString("source"));
@@ -691,6 +693,9 @@ public class InputJsonParser {
                     break;
                 case "SENSOR":
                     source |= InputDevice.SOURCE_SENSOR;
+                    break;
+                case "TOUCHSCREEN":
+                    source |= InputDevice.SOURCE_TOUCHSCREEN;
                     break;
                 default:
                     throw new RuntimeException("Unknown source chunk: " + trimmedSourceEntry
