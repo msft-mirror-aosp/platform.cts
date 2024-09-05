@@ -243,10 +243,10 @@ public class CodecDecoderValidationTest extends CodecDecoderTestBase {
                         2746035687L, -1, -1, 320, 180, CODEC_ALL},
                 {MEDIA_TYPE_VP9, new String[]{"bbb_640x360_512kbps_30fps_vp9.webm"}, null, -1.0f,
                         2974952943L, -1, -1, 640, 360, CODEC_ALL},
-                {MEDIA_TYPE_VP9, new String[]{"bbb_1920x1080_60fps_vp9_profile0.mp4"}, null, -1.0f,
+                {MEDIA_TYPE_VP9, new String[]{"bbb_1920x1080_60fps_vp9_profile0.webm"}, null, -1.0f,
                         3443986074L, -1, -1, 1920, 1080,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
-                {MEDIA_TYPE_VP9, new String[]{"bbb_3840x2160_60fps_vp9_profile0.mp4"}, null, -1.0f,
+                {MEDIA_TYPE_VP9, new String[]{"bbb_3840x2160_60fps_vp9_profile0.webm"}, null, -1.0f,
                         2669556628L, -1, -1, 3840, 2160,
                         MediaUtils.isTv() ? CODEC_HW : CODEC_OPTIONAL},
 
