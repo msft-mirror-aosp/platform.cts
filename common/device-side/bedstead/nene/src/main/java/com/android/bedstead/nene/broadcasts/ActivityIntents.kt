@@ -27,6 +27,7 @@ import java.io.IOException
 /**
  * Test Apis related to Activity Intents.
  */
+@SuppressWarnings("CheckReturnValue")
 object ActivityIntents {
     private const val LOG_TAG = "BedsteadActivityIntents"
     private const val MAX_WAIT_UNTIL_ATTEMPTS = 60
