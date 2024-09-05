@@ -671,8 +671,6 @@
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthPermissionCategoryPriorityTests#testUpdatePriority_withNewApps_updatesCorrectly" />
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthPermissionsPresenceTest#testGetHealthPermissions_returns_allHealthPermissions" />
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthPermissionsPresenceTest#testHealthPermissions_isDefined" />
-    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.SessionDatatypeDisabledFeatureTest#testReadExerciseSession_insertAndRead_sessionIsNotAvailable" />
-    <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.SessionDatatypeDisabledFeatureTest#testReadSleepSession_insertAndRead_sessionIsNotAvailable" />
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.SharedMemoryTest#getChangeLogs_viaSharedMemory_recordsMatch" />
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.aggregation.AggregationApisTest#groupByDurationWithLocalFilter_distanceTotal" />
     <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.aggregation.BasalCaloriesAggregationTest#testAggregation_BasalCaloriesBurntTotal_profile" />
