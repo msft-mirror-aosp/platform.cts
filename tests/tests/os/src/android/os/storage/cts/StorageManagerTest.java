@@ -425,14 +425,7 @@ public class StorageManagerTest {
         mStorageManager.registerStorageVolumeCallback(mContext.getMainExecutor(), callback);
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .executeShellCommand("sm unmount emulated;" + UserHandle.myUserId());
-        if (isAutomotive(mContext)) {
-            // TODO(b/343167829): Remove this conditional casing once the delayed unmount
-            // operation is addressed for Auto. The 65 second duration is explained in
-            // b/331333384#comment48.
-            assertTrue(unmounted.await(65, TimeUnit.SECONDS));
-        } else {
-            assertTrue(unmounted.await(30, TimeUnit.SECONDS));
-        }
+        assertTrue(unmounted.await(65, TimeUnit.SECONDS));
 
         // Now unregister and verify we don't hear future events
         mStorageManager.unregisterStorageVolumeCallback(callback);
