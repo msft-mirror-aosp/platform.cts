@@ -3865,7 +3865,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 500));
 
         // Time out to disable satellite. Telephony should respond SATELLITE_RESULT_MODEM_TIMEOUT to
-        // clients and stay in SATELLITE_MODEM_STATE_OUT_OF_SERVICE as satellite disable request
+        // clients and stay in SATELLITE_MODEM_STATE_NOT_CONNECTED as satellite disable request
         // failed.
         logd("testRequestSatelliteEnabled_timeout: disabling satellite...");
         callback.clearModemStates();
