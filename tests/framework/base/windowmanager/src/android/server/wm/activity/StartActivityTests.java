@@ -62,6 +62,7 @@ import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -82,6 +83,12 @@ public class StartActivityTests extends ActivityManagerTestBase {
             ACTIVITY_TYPE_ASSISTANT,
             ACTIVITY_TYPE_DREAM,
     };
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
+    }
 
     @Test
     public void testStartHomeIfNoActivities() {

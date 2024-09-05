@@ -84,7 +84,7 @@ import java.util.List;
 @Presubmit
 @android.server.wm.annotation.Group2
 public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
-
+    private static final String TEST_PACKAGE_SDK_30 = SDK_30_TEST_ACTIVITY.getPackageName();
     private TaskOrganizer mTaskOrganizer;
     private BasicTaskFragmentOrganizer mTaskFragmentOrganizer;
     private final ArrayList<BasicTaskFragmentOrganizer> mOrganizers = new ArrayList<>();
@@ -107,6 +107,7 @@ public class TaskFragmentOrganizerPolicyTest extends ActivityManagerTestBase {
         if (mTaskOrganizer != null) {
             NestedShellPermission.run(() -> mTaskOrganizer.unregisterOrganizer());
         }
+        stopTestPackage(TEST_PACKAGE_SDK_30);
     }
 
     /**
