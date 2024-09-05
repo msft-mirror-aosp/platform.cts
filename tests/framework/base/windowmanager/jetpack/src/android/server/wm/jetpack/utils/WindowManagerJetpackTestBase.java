@@ -356,7 +356,7 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         }
     }
 
-    private void resizeActivityTaskToSwitchOrientation(TestActivity activity) {
+    public void resizeActivityTaskToSwitchOrientation(TestActivity activity) {
         ComponentName activityName = activity.getComponentName();
         mWmState.computeState(activityName);
         final Rect boundsBeforeResize = mWmState.getTaskByActivity(activityName).getBounds();
