@@ -248,3 +248,10 @@ java_defaults {
         "CtsShortcutManagerLib",
     ],
 }
+
+test_module_config {
+    name: "CtsShortcutManagerTestCases_shortcutmanager_shortcutmanagerusagetest",
+    base: "CtsShortcutManagerTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest"],
+}

@@ -21,6 +21,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 import static junit.framework.Assert.fail;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
@@ -638,13 +639,15 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
     private void doTestLoadCodeFromNativeLib() throws Exception {
         try {
             // Install library
-            final String result = getDevice().installPackage(
-                    mBuildHelper.getTestFile(STATIC_LIB_NATIVE_PROVIDER_APK),
-                    /* reinstall= */ false, /* grantPermissions= */ false,
-                    /* extraArgs= */ "--abi " + getAbi().getName());
-            assertThat(result).isNull();
+            assertThat(installPackageWithCurrentAbi(STATIC_LIB_NATIVE_PROVIDER_APK)).isNull();
             // Install the library client
-            assertThat(install(STATIC_LIB_NATIVE_CONSUMER_APK)).isNull();
+            final String result = installPackageWithCurrentAbi(STATIC_LIB_NATIVE_CONSUMER_APK);
+            if (result != null) {
+                assumeFalse("The test consumer APK does not include the matched ABI library",
+                        result.contains("INSTALL_FAILED_NO_MATCHING_ABIS"));
+                // The test app can't be installed with the other errors
+                fail("The test consumer APK can not be installed on the device: " + result);
+            }
             // Ensure the client can load native code from the library
             runDeviceTests(STATIC_LIB_NATIVE_CONSUMER_PKG,
                     "android.os.lib.consumer.UseSharedLibraryTest",
@@ -653,6 +656,13 @@ public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBu
             getDevice().uninstallPackage(STATIC_LIB_NATIVE_CONSUMER_PKG);
             getDevice().uninstallPackage(STATIC_LIB_NATIVE_PROVIDER_PKG);
         }
+    }
+
+    private String installPackageWithCurrentAbi(String apkName) throws Exception {
+        return getDevice().installPackage(
+                mBuildHelper.getTestFile(apkName),
+                /* reinstall= */ false, /* grantPermissions= */ false,
+                /* extraArgs= */ "--abi " + getAbi().getName());
     }
 
     @AppModeInstant

@@ -62,3 +62,18 @@ java_test_host {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config_host {
+    name: "CtsOsHostTestCases_cts_staticsharedlibshosttests",
+    base: "CtsOsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StaticSharedLibsHostTests"],
+}
+
+test_module_config_host {
+    name: "CtsOsHostTestCases_cts_staticsharedlibshosttests_Presubmit",
+    base: "CtsOsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StaticSharedLibsHostTests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}

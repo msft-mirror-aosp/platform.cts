@@ -61,7 +61,6 @@
     <target_preparer class="com.android.tradefed.targetprep.FeatureFlagTargetPreparer" >
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.oem_enabled_satellite_flag=true" />
         <option name="flag-value" value="telephony/com.android.internal.telephony.flags.carrier_enabled_satellite_flag=true" />
-        <option name="flag-value" value="telephony/com.android.internal.telephony.flags.geofence_enhancement_for_better_ux=true" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />

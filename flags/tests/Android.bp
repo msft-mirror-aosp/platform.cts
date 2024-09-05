@@ -29,3 +29,10 @@ android_test {
     ],
     test_suites: ["general-tests"],
 }
+
+test_module_config {
+    name: "FlagAnnotationTests_tests_flagannotationtest",
+    base: "FlagAnnotationTests",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.flags.tests.FlagAnnotationTest"],
+}

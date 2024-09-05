@@ -644,6 +644,10 @@ public class SatelliteManagerTestBase {
             }
             return true;
         }
+
+        public void drainPermits() {
+            mSemaphore.drainPermits();
+        }
     }
 
     protected static class SatelliteCapabilitiesCallbackTest implements
@@ -1034,6 +1038,7 @@ public class SatelliteManagerTestBase {
             fail("requestSatelliteEnabled failed with ex=" + ex);
             return;
         }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
         assertNotNull(errorCode);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
@@ -1049,6 +1054,7 @@ public class SatelliteManagerTestBase {
             fail("requestSatelliteEnabled failed with ex=" + ex);
             return;
         }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
         assertNotNull(errorCode);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
@@ -1063,6 +1069,7 @@ public class SatelliteManagerTestBase {
         } catch (InterruptedException ex) {
             fail("requestSatelliteEnabled failed with ex=" + ex);
         }
+        logd("requestSatelliteEnabledWithResult: errorCode=" + errorCode);
         assertNotNull(errorCode);
         return errorCode;
     }
@@ -1082,6 +1089,7 @@ public class SatelliteManagerTestBase {
             fail("requestSatelliteEnabled failed with ex=" + ex);
             return;
         }
+        logd("requestSatelliteEnabledForDemoMode: errorCode=" + errorCode);
         assertNotNull(errorCode);
         assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, (long) errorCode);
     }
@@ -1099,6 +1107,107 @@ public class SatelliteManagerTestBase {
             fail("requestSatelliteEnabled failed with ex=" + ex);
             return;
         }
+        logd("requestSatelliteEnabled: errorCode=" + errorCode);
+        assertNotNull(errorCode);
+        assertEquals(expectedError, (long) errorCode);
+    }
+
+    protected static void verifyEmergencyMode(boolean expectedEmergencyMode) {
+        final AtomicReference<Boolean> emergency = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        emergency.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestIsEmergencyModeEnabled(getContext().getMainExecutor(),
+                receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            fail("Got InterruptedException for requestIsEmergencyModeEnabled, ex=" + ex);
+        }
+
+        Integer error = errorCode.get();
+        Boolean isEmergency = emergency.get();
+        if (error == null) {
+            logd("verifyEmergencyMode isEmergency=" + isEmergency);
+            assertNotNull(isEmergency);
+            assertEquals(expectedEmergencyMode, isEmergency);
+        } else {
+            fail("Got error for requestIsEmergencyModeEnabled, error=" + error);
+        }
+    }
+
+    protected static void verifyDemoMode(boolean expectedDemoMode) {
+        final AtomicReference<Boolean> demoMode = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        demoMode.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.requestIsDemoModeEnabled(getContext().getMainExecutor(),
+                receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException ex) {
+            fail("Got InterruptedException for requestIsEmergencyModeEnabled, ex=" + ex);
+        }
+
+        Integer error = errorCode.get();
+        Boolean isDemoModeEnabled = demoMode.get();
+        if (error == null) {
+            logd("verifyDemoMode isDemoModeEnabled=" + isDemoModeEnabled);
+            assertNotNull(isDemoModeEnabled);
+            assertEquals(expectedDemoMode, isDemoModeEnabled);
+        } else {
+            fail("Got error for requestIsEmergencyModeEnabled, error=" + error);
+        }
+    }
+
+    protected static LinkedBlockingQueue<Integer> requestSatelliteEnabledWithoutWaitingForResult(
+            boolean enabled, boolean demoMode, boolean emergency) {
+        LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
+        sSatelliteManager.requestEnabled(new EnableRequestAttributes.Builder(enabled)
+                        .setDemoMode(demoMode)
+                        .setEmergencyMode(emergency)
+                        .build(),
+                getContext().getMainExecutor(), error::offer);
+        return error;
+    }
+
+    protected static void assertResult(LinkedBlockingQueue<Integer> result, int expectedError) {
+        Integer errorCode;
+        try {
+            errorCode = result.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ex) {
+            fail("assertResult failed with ex=" + ex);
+            return;
+        }
+        logd("assertResult: errorCode=" + errorCode);
         assertNotNull(errorCode);
         assertEquals(expectedError, (long) errorCode);
     }
@@ -1448,6 +1557,7 @@ public class SatelliteManagerTestBase {
         if (!infos.isEmpty()) {
             return infos.get(0).getSubscriptionId();
         }
+        loge("getActiveSubIDForCarrierSatelliteTest: use invalid subscription ID");
         // There must be at least one active subscription.
         return SubscriptionManager.INVALID_SUBSCRIPTION_ID;
     }

@@ -20,6 +20,7 @@
 
 import dataclasses
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -134,6 +135,28 @@ def get_preview_video_sizes_union(cam, camera_id, min_area=0):
       largest_quality=largest_common_quality
   )
   return common_size_quality
+
+
+def clamp_preview_sizes(preview_sizes, min_area=0, max_area=math.inf):
+  """Returns a list of preview_sizes with areas between min/max_area.
+
+  Args:
+    preview_sizes: list; sizes to be filtered (ex. "1280x720")
+    min_area: int; optional filter to eliminate sizes <= to the specified
+        area (ex. 640*480).
+    max_area: int; optional filter to eliminate sizes >= to the specified
+        area (ex. 3840*2160).
+  Returns:
+    preview_sizes: list; filtered preview sizes clamped by min/max_area.
+  """
+  size_to_area = lambda size: int(size.split('x')[0])*int(size.split('x')[1])
+  filtered_preview_sizes = [
+      size for size in preview_sizes
+      if max_area >= size_to_area(size) >= min_area]
+  logging.debug('Filtered preview sizes: %s', filtered_preview_sizes)
+  if not filtered_preview_sizes:
+    raise AssertionError(f'No preview sizes between {min_area} and {max_area}')
+  return filtered_preview_sizes
 
 
 def log_ffmpeg_version():

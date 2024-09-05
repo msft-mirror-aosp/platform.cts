@@ -370,9 +370,9 @@ class ItsSession(object):
     time.sleep(1)
 
     its_device_utils.run(
-        f'{self.adb} shell am force-stop --user 0 {self.PACKAGE}')
+        f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
     its_device_utils.run(
-        f'{self.adb} shell am start-foreground-service --user 0 '
+        f'{self.adb} shell am start-foreground-service --user cur '
         f'-t text/plain -a {self.INTENT_START}'
     )
 
