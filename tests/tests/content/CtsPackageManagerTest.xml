@@ -156,13 +156,6 @@
         <option name="push-file" key="HelloWorldSdk1MajorVersion2.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2.apk" />
         <option name="push-file" key="HelloWorldSdk1MajorVersion2.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk1DifferentSigner.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1DifferentSigner.apk" />
-        <option name="push-file" key="HelloWorldSdk1DifferentSigner.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1DifferentSigner.apk.idsig" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion1WithHigherMinSdk.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion1WithHigherMinSdk.apk" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion1WithHigherMinSdk.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion1WithHigherMinSdk.apk.idsig" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion1WithHigherTargetSdk.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion1WithHigherTargetSdk.apk" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion1WithHigherTargetSdk.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion1WithHigherTargetSdk.apk.idsig" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion2WithHigherTargetSdk.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2WithHigherTargetSdk.apk" />
-        <option name="push-file" key="HelloWorldSdk1MajorVersion2WithHigherTargetSdk.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2WithHigherTargetSdk.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk2.apk" value="/data/local/tmp/cts/content/HelloWorldSdk2.apk" />
         <option name="push-file" key="HelloWorldSdk2.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk2.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk2Updated.apk" value="/data/local/tmp/cts/content/HelloWorldSdk2Updated.apk" />
