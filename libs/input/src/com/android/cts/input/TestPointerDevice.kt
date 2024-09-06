@@ -117,6 +117,49 @@ enum class TestPointerDevice {
         }
 
         override fun toString(): String = "DRAWING_TABLET"
+    },
+
+    TOUCHPAD {
+        private lateinit var touchpad: UinputTouchPad
+
+        override fun setUp(
+            context: Context,
+            display: Display,
+            associationInfo: AssociationInfo,
+        ) {
+            touchpad =
+                UinputTouchPad(
+                    InstrumentationRegistry.getInstrumentation(),
+                    display,
+                )
+        }
+
+        override fun hoverMove(dx: Int, dy: Int) {
+            val point = Point(20, 50)
+            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, isDown = true)
+            touchpad.sendBtnTouch(isDown = true)
+            touchpad.sendDown(id = 0, point)
+            touchpad.sync()
+
+            // TODO(b/310997010): Determine how we can consistently move the mouse pointer by a
+            //  fixed number of integer pixels using a touchpad.
+            point.offset(dx, dx)
+            touchpad.sendMove(id = 0, point)
+            touchpad.sync()
+
+            touchpad.sendUp(id = 0)
+            touchpad.sendBtnTouch(isDown = false)
+            touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, isDown = false)
+            touchpad.sync()
+        }
+
+        override fun tearDown() {
+            if (this::touchpad.isInitialized) {
+                touchpad.close()
+            }
+        }
+
+        override fun toString(): String = "TOUCHPAD"
     };
 
     abstract fun setUp(
