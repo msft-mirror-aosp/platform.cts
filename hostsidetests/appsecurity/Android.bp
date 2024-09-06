@@ -33,6 +33,11 @@ MCTS_TEST_SUITES_DEFAULT = [
     "mcts-mediaprovider",
 ]
 
+CTS_TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
+]
+
 java_library_host {
     name: "CtsAppSecurityUtils",
     defaults: ["cts_defaults"],
