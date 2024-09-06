@@ -29,6 +29,7 @@ import preview_processing_utils
 import video_processing_utils
 
 
+_LOW_RESOLUTION_SIZE_AREA = 110592  # 384*288
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _VIDEO_DURATION = 3  # seconds
 _MAX_8BIT_IMGS = 255
@@ -75,8 +76,9 @@ def _get_supported_preview_sizes(cam, camera_id):
           supported_preview_sizes, supported_video_qualities))
   largest_common_size_area = (
       int(common_size_max.split('x')[0])*int(common_size_max.split('x')[1]))
-  smallest_common_size_area = (
-      int(common_size_min.split('x')[0])*int(common_size_min.split('x')[1]))
+  smallest_common_size_area = max(
+      int(common_size_min.split('x')[0])*int(common_size_min.split('x')[1]),
+      _LOW_RESOLUTION_SIZE_AREA)
   # Clamp list of previews with min and max sizes' area
   supported_preview_sizes = cam.get_supported_preview_sizes(camera_id)
   supported_preview_sizes = (
