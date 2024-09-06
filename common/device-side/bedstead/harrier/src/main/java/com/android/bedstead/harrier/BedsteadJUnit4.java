@@ -102,6 +102,7 @@ import java.util.stream.Stream;
 // @AutoAnnotation is not able to set default value for a field with an annotated data type,
 // so we try to pass the default value explicitly that is accessed via reflection through this
 // class.
+@SuppressWarnings("AndroidJdkLibsChecker")
 @Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
