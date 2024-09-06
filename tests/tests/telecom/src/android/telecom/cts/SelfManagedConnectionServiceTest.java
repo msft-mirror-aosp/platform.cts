@@ -1039,7 +1039,7 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         setActiveAndVerify(connection);
 
         TestUtils.InvokeCounter counter = connection.getCallAudioStateChangedInvokeCounter();
-        counter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        counter.waitForCount(1);
         CallAudioState callAudioState = (CallAudioState) counter.getArgs(0)[0];
         int availableRoutes = callAudioState.getSupportedRouteMask();
 
@@ -1589,13 +1589,13 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
 
         TestUtils.InvokeCounter currentEndpointCounter =
                 connection.getCallEndpointChangedInvokeCounter();
-        currentEndpointCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        currentEndpointCounter.waitForCount(1);
         CallEndpoint currentEndpoint = (CallEndpoint) currentEndpointCounter.getArgs(0)[0];
         int currentEndpointType = currentEndpoint.getEndpointType();
 
         TestUtils.InvokeCounter availableEndpointsCounter =
                 connection.getAvailableEndpointsChangedInvokeCounter();
-        availableEndpointsCounter.waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        availableEndpointsCounter.waitForCount(1);
         List<CallEndpoint> availableEndpoints =
                 (List<CallEndpoint>) availableEndpointsCounter.getArgs(0)[0];
 
