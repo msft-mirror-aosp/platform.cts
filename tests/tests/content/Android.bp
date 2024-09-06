@@ -117,8 +117,6 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-documentsui",
-        "mcts-documentsui",
     ],
     static_libs: [
         "android.security.flags-aconfig-java",
