@@ -24,4 +24,5 @@
     <test class="com.android.compatibility.common.tradefed.testtype.JarHostTest" >
         <option name="jar" value="CtsStatsdAtomHostTestCases.jar" />
     </test>
+    <target_preparer class="com.android.testutils.ConnectivityTestTargetPreparer" />
 </configuration>
