@@ -369,7 +369,7 @@ public class VirtualDisplayTest {
     @Test
     public void testVirtualDisplayWithCutout() {
         DisplayCutout cutout = new DisplayCutout(
-                /* safeInsets= */ Insets.of(1, 2, 3, 4),
+                /* safeInsets= */ Insets.of(0, 0, 0, 0),
                 /* boundLeft= */ new Rect(5, 6, 7, 8),
                 /* boundTop= */ new Rect(9, 10, 11, 12),
                 /* boundRight= */ new Rect(13, 14, 15, 16),
@@ -381,7 +381,15 @@ public class VirtualDisplayTest {
                         .setDisplayCutout(cutout)
                         .build());
         try {
-            assertEquals(virtualDisplay.getDisplay().getCutout(), cutout);
+            // The safe insets are always computed by WindowManager based on the waterfall insets
+            // and the bounds. The values passed to the DisplayCutout constructor don't matter as
+            // they will be overridden by WindowManager. So do not validate the safe insets.
+            DisplayCutout actualCutout = virtualDisplay.getDisplay().getCutout();
+            assertEquals(actualCutout.getBoundingRectLeft(), cutout.getBoundingRectLeft());
+            assertEquals(actualCutout.getBoundingRectTop(), cutout.getBoundingRectTop());
+            assertEquals(actualCutout.getBoundingRectRight(), cutout.getBoundingRectRight());
+            assertEquals(actualCutout.getBoundingRectBottom(), cutout.getBoundingRectBottom());
+            assertEquals(actualCutout.getWaterfallInsets(), cutout.getWaterfallInsets());
         } finally {
             virtualDisplay.release();
         }

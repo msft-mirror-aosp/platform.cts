@@ -3882,7 +3882,8 @@ public class ItsService extends Service implements SensorEventListener {
 
             // Send a still capture request
             CaptureRequest.Builder stillCaptureRequest = stillCaptureRequests.get(0);
-            Logt.i(TAG, "Taking still capture with ON_AUTO_FLASH.");
+            int aeMode = stillCaptureRequest.get(CaptureRequest.CONTROL_AE_MODE);
+            Logt.i(TAG, String.format("Taking still capture with AE_MODE: %d", aeMode));
             stillCaptureRequest.addTarget(mOutputImageReaders[0].getSurface());
             mSession.capture(stillCaptureRequest.build(), mCaptureResultListener, mResultHandler);
             mCountCallbacksRemaining.set(1);

@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.EXPAND_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.HINGE_SPLIT_ATTRS;
@@ -31,6 +32,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerState.Task;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
 import android.server.wm.jetpack.utils.TestConfigChangeHandlingActivity;
@@ -99,21 +101,45 @@ public class ActivityEmbeddingBoundsTests extends ActivityEmbeddingTestBase {
                 primaryActivity, TestActivityWithId.class, splitPairRule, secondaryActivityId,
                 mSplitInfoConsumer);
 
-        // Resize the display multiple times to verify that the activities are correctly split or
+        // Resize multiple times to verify that the activities are correctly split or
         // stacked depending on the parent bounds. Resizing multiple times simulates a foldable
         // display is that folded and unfolded multiple times while running the same app.
         final int numTimesToResize = 2;
-        final Size originalDisplaySize = mReportedDisplayMetrics.getSize();
+        final Size origDisplaySize = mReportedDisplayMetrics.getSize();
+        mWmState.computeState(
+                primaryActivity.getComponentName(), secondaryActivity.getComponentName());
+        // Primary and secondary activities should be in the same task
+        final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
+        final Rect origTaskBounds = task.getBounds();
+        final boolean taskInFreeformMode = task.getWindowingMode() == WINDOWING_MODE_FREEFORM;
         for (int i = 0; i < numTimesToResize; i++) {
-            // Shrink the display by 10% to make the activities stacked
-            mReportedDisplayMetrics.setSize(new Size((int) (originalDisplaySize.getWidth() * 0.9),
-                    (int) (originalDisplaySize.getHeight() * 0.9)));
+            // Shrink by 10% to make the activities stacked.
+            // If the activity was launched in freeform windowing mode, resize the task bounds
+            // instead of resizing the display.
+            if (taskInFreeformMode) {
+                resizeActivityTask(primaryActivity.getComponentName(),
+                        origTaskBounds.left, origTaskBounds.top,
+                        origTaskBounds.left + (int) (origTaskBounds.width() * 0.9),
+                        origTaskBounds.top + (int) (origTaskBounds.height() * 0.9));
+            } else {
+                mReportedDisplayMetrics.setSize(
+                        new Size((int) (origDisplaySize.getWidth() * 0.9),
+                                 (int) (origDisplaySize.getHeight() * 0.9)));
+            }
+
             UiDevice.getInstance(mInstrumentation).waitForIdle();
             waitAndAssertResumedAndFillsTask(secondaryActivity);
             waitAndAssertNotVisible(primaryActivity);
 
-            // Return the display to its original size and verify that the activities are split
-            mReportedDisplayMetrics.setSize(originalDisplaySize);
+            // Return the task/display to its original size and verify that the activities are split
+            if (taskInFreeformMode) {
+                resizeActivityTask(primaryActivity.getComponentName(),
+                        origTaskBounds.left, origTaskBounds.top,
+                        origTaskBounds.right,origTaskBounds.bottom);
+            } else {
+                mReportedDisplayMetrics.setSize(origDisplaySize);
+            }
+
             UiDevice.getInstance(mInstrumentation).waitForIdle();
             assertValidSplit(primaryActivity, secondaryActivity, splitPairRule);
         }
