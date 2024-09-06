@@ -57,3 +57,60 @@ android_test {
         ],
     },
 }
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_autofillsavedialogtest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.AutofillSaveDialogTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_presimplesaveactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.PreSimpleSaveActivityTest"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_saveui_simplesaveactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.saveui.SimpleSaveActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_cts_inline_ExcludeAppModeFull",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.inline"],
+    exclude_annotations: [
+        "android.platform.test.annotations.AppModeFull",
+        "androidx.test.filters.LargeTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_dropdown_loginactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.dropdown.LoginActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_dropdown_checkoutactivitytest",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.dropdown.CheckoutActivityTest"],
+    exclude_annotations: ["android.platform.test.annotations.AppModeFull"],
+}
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_cts_inline",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.autofillservice.cts.inline"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
