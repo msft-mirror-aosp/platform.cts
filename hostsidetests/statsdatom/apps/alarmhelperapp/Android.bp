@@ -28,9 +28,9 @@ android_test_helper_app {
         ":statslog-statsdatom-cts-java-gen",
     ],
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.system",
         "junit",
-        "org.apache.http.legacy",
+        "org.apache.http.legacy.stubs.system",
     ],
     privileged: true,
     static_libs: [

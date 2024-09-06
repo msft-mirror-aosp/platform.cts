@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.AudioPresentation;
+import android.media.tv.flags.Flags;
 import android.media.tv.tuner.DemuxCapabilities;
 import android.media.tv.tuner.DemuxInfo;
 import android.media.tv.tuner.Descrambler;
@@ -118,6 +119,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.tv.cts.R;
 import android.util.SparseIntArray;
 
@@ -520,7 +522,7 @@ public class TunerTest {
         assertNotNull(mTuner);
         int version = TunerVersionChecker.getTunerVersion();
         assertTrue(version >= TunerVersionChecker.TUNER_VERSION_1_0);
-        assertTrue(version <= TunerVersionChecker.TUNER_VERSION_3_0);
+        assertTrue(version <= TunerVersionChecker.TUNER_VERSION_4_0);
     }
 
     @Test
@@ -652,6 +654,37 @@ public class TunerTest {
         // After tune(), the frontend assigned by applyFrontend should still be used.
         FrontendInfo currentFrontendInfo = mTuner.getFrontendInfo();
         assertEquals(frontendInfo.getId(), currentFrontendInfo.getId());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TUNER_W_APIS)
+    public void testApplyFrontendByTypeThenTune() throws Exception {
+        List<FrontendInfo> frontendInfos = mTuner.getAvailableFrontendInfos();
+        if (frontendInfos == null) return;
+        assertFalse(frontendInfos.isEmpty());
+
+        FrontendInfo frontendInfo = frontendInfos.get(0);
+
+        //Test reqesut frontend by type
+        int result = mTuner.applyFrontendByType(frontendInfo.getType());
+        assertEquals(Tuner.RESULT_SUCCESS, result);
+
+        FrontendInfo appliedFrontendInfo = mTuner.getFrontendInfo();
+        assertEquals(frontendInfo.getType(), appliedFrontendInfo.getType());
+
+        result = mTuner.tune(createFrontendSettings(appliedFrontendInfo));
+        assertEquals(Tuner.RESULT_SUCCESS, result);
+
+        for (FrontendInfo info2: frontendInfos) {
+            if (info2.getType() != frontendInfo.getType()) {
+                result = mTuner.tune(createFrontendSettings(info2));
+                assertEquals(Tuner.RESULT_INVALID_STATE, result);
+            }
+        }
+
+        // After tune(), the frontend assigned by applyFrontend should still be used.
+        FrontendInfo currentFrontendInfo = mTuner.getFrontendInfo();
+        assertEquals(frontendInfo.getType(), currentFrontendInfo.getType());
     }
 
     @Test
@@ -1690,7 +1723,6 @@ public class TunerTest {
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        FrontendSettings feSettings = createFrontendSettings(info);
 
         // first apply frontend with mTuner to acquire resource
         int res = mTuner.applyFrontend(info);
@@ -1708,11 +1740,11 @@ public class TunerTest {
 
         Message msgTune = new Message();
         msgTune.what = MSG_TUNER_HANDLER_TUNE;
-        msgTune.obj = (Object) feSettings;
+        msgTune.obj = (Object) info;
         tunerHandler.sendMessage(msgTune);
 
         // call mTuner.close in parallel
-        int sleepMS = 1;
+        int sleepMS = 4;
         //int sleepMS = (int) (Math.random() * 3.);
         try {
             Thread.sleep(sleepMS);
@@ -2184,6 +2216,13 @@ public class TunerTest {
             assertEquals(Tuner.RESULT_SUCCESS, res);
             assertNotNull(mTuner.getFrontendInfo());
             mTuner.closeFrontend();
+            if (TunerVersionChecker
+                    .isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_4_0)) {
+                res = mTuner.applyFrontendByType(info.getType());
+                assertEquals(Tuner.RESULT_SUCCESS, res);
+                assertNotNull(mTuner.getFrontendInfo());
+                mTuner.closeFrontend();
+            }
             res = mTuner.tune(feSettings);
             assertEquals(Tuner.RESULT_SUCCESS, res);
             assertNotNull(mTuner.getFrontendInfo());
@@ -2529,7 +2568,7 @@ public class TunerTest {
     }
 
     private TunerFrontendInfo tunerFrontendInfo(
-            long handle, int frontendType, int exclusiveGroupId) {
+            int handle, int frontendType, int exclusiveGroupId) {
         TunerFrontendInfo info = new TunerFrontendInfo();
         info.handle = handle;
         info.type = frontendType;
@@ -2573,9 +2612,9 @@ public class TunerTest {
         }
     }
 
-    private void assignFeResource(
-            int clientId, int frontendType, boolean expectedResult, long expectedHandle) {
-        long[] feHandle = new long[1];
+    private void assignFeResource(int clientId, int frontendType,
+                                  boolean expectedResult, int expectedHandle) {
+        int[] feHandle = new int[1];
         TunerFrontendRequest request = new TunerFrontendRequest();
         request.clientId = clientId;
         request.frontendType = frontendType;
@@ -3704,7 +3743,9 @@ public class TunerTest {
                 }
                 case MSG_TUNER_HANDLER_TUNE: {
                     synchronized (mLock) {
-                        FrontendSettings feSettings = (FrontendSettings) msg.obj;
+                        FrontendInfo info = (FrontendInfo) msg.obj;
+                        mHandlersTuner.applyFrontend(info);
+                        FrontendSettings feSettings = createFrontendSettings(info);
                         mResult = mHandlersTuner.tune(feSettings);
                     }
                     break;

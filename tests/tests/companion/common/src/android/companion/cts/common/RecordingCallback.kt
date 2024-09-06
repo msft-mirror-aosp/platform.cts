@@ -28,7 +28,7 @@ private constructor(
     private val onAssociationPendingAction: ((IntentSender) -> Unit)?,
     private val onAssociationCreatedAction: ((AssociationInfo) -> Unit)?,
     private val onFailureAction: ((CharSequence?) -> Unit)?,
-    private val onFailureCodeAction: ((Int) -> Unit)?
+    private val onFailureCodeAction: ((Int, CharSequence?) -> Unit)?
 ) : CompanionDeviceManager.Callback(),
     InvocationTracker<RecordingCallback.CallbackInvocation> by container {
 
@@ -37,7 +37,7 @@ private constructor(
         onAssociationPendingAction: ((IntentSender) -> Unit)? = null,
         onAssociationCreatedAction: ((AssociationInfo) -> Unit)? = null,
         onFailureAction: ((CharSequence?) -> Unit)? = null,
-        onFailureCodeAction: ((Int) -> Unit)? = null
+        onFailureCodeAction: ((Int, CharSequence?) -> Unit)? = null
     ) : this(
         InvocationContainer(),
             onDeviceFoundAction,
@@ -67,9 +67,9 @@ private constructor(
         onFailureAction?.invoke(error)
     }
 
-    override fun onFailure(resultCode: Int) {
-        logAndRecordInvocation(OnFailureCode(resultCode))
-        onFailureCodeAction?.invoke(resultCode)
+    override fun onFailure(resultCode: Int, error: CharSequence?) {
+        logAndRecordInvocation(OnFailureCode(resultCode, error))
+        onFailureCodeAction?.invoke(resultCode, error)
     }
 
     private fun logAndRecordInvocation(invocation: CallbackInvocation) {
@@ -82,5 +82,5 @@ private constructor(
     data class OnAssociationPending(val intentSender: IntentSender) : CallbackInvocation
     data class OnAssociationCreated(val associationInfo: AssociationInfo) : CallbackInvocation
     data class OnFailure(val error: CharSequence?) : CallbackInvocation
-    data class OnFailureCode(val resultCode: Int) : CallbackInvocation
+    data class OnFailureCode(val resultCode: Int, val char: CharSequence?) : CallbackInvocation
 }

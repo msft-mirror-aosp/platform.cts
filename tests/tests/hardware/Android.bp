@@ -56,8 +56,8 @@ android_test {
     ],
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "CtsVirtualDeviceCommonLib",
@@ -91,4 +91,19 @@ android_test {
         ":TestIme",
     ],
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_cts_tests",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.input.cts.tests"],
+}
+
+test_module_config {
+    name: "CtsHardwareTestCases_hardware_lights",
+    base: "CtsHardwareTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.hardware.lights"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

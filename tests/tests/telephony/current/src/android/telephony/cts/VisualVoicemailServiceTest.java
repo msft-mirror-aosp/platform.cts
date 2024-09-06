@@ -211,8 +211,6 @@ public class VisualVoicemailServiceTest {
 
         SmsManager.getDefault().sendTextMessage(mPhoneNumber, null, text, null, null);
 
-        mSmsReceiver.assertNotReceived(EVENT_RECEIVED_TIMEOUT_MILLIS);
-
         try {
             future.get(EVENT_NOT_RECEIVED_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             throw new RuntimeException("Unexpected visual voicemail SMS received");

@@ -35,6 +35,7 @@ import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteCapabilities;
 import android.telephony.satellite.stub.SatelliteDatagram;
 import android.telephony.satellite.stub.SatelliteImplBase;
+import android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.telephony.satellite.stub.SatelliteService;
@@ -45,12 +46,14 @@ import com.android.internal.util.FunctionalUtils;
 import com.android.telephony.Rlog;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MockSatelliteService extends SatelliteImplBase {
+    public static final int NOT_UPDATED_SATELLITE_MODEM_STATE = -1;
     private static final String TAG = "MockSatelliteService";
 
     // Hardcoded values below
@@ -107,8 +110,10 @@ public class MockSatelliteService extends SatelliteImplBase {
     private android.telephony.satellite.stub.NtnSignalStrength mNtnSignalStrength;
 
     private int[] mSupportedRadioTechnologies;
-    private IIntegerConsumer mRequestSatelliteEnabledErrorCallback;
-    private IIntegerConsumer mRequestSatelliteDisabledErrorCallback;
+    private LinkedList<IIntegerConsumer>
+            mRequestSatelliteEnabledErrorCallbackQueue = new LinkedList<IIntegerConsumer>();
+    private LinkedList<IIntegerConsumer>
+            mRequestSatelliteDisabledErrorCallbackQueue = new LinkedList<IIntegerConsumer>();
     private final Object mRequestSatelliteEnabledLock = new Object();
     private boolean mIsEmergnecy;
 
@@ -195,12 +200,14 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     @Override
-    public void requestSatelliteEnabled(boolean enableSatellite, boolean enableDemoMode,
-            boolean isEmergency, @NonNull IIntegerConsumer errorCallback) {
+    public void requestSatelliteEnabled(SatelliteModemEnableRequestAttributes enableAttributes,
+            @NonNull IIntegerConsumer errorCallback) {
         logd("requestSatelliteEnabled: mErrorCode=" + mErrorCode
-                + ", enableSatellite=" + enableSatellite
-                + ", enableDemoMode=" + enableDemoMode
-                + ", isEmergency= " + isEmergency
+                + ", isEnabled=" + enableAttributes.isEnabled
+                + ", isDemoMode=" + enableAttributes.isDemoMode
+                + ", isEmergency= " + enableAttributes.isEmergencyMode
+                + ", iccId=" + enableAttributes.satelliteSubscriptionInfo.iccId
+                + ", niddApn=" + enableAttributes.satelliteSubscriptionInfo.niddApn
                 + ", mShouldRespondTelephony=" + mShouldRespondTelephony.get());
         if (mErrorCode != SatelliteResult.SATELLITE_RESULT_SUCCESS) {
             if (mShouldRespondTelephony.get()) {
@@ -209,15 +216,16 @@ public class MockSatelliteService extends SatelliteImplBase {
             return;
         }
 
-        if (enableSatellite) {
+        if (enableAttributes.isEnabled) {
             enableSatellite(errorCallback);
         } else {
             disableSatellite(errorCallback);
         }
-        mIsEmergnecy = isEmergency;
+        mIsEmergnecy = enableAttributes.isEmergencyMode;
 
         if (mLocalListener != null) {
-            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(enableSatellite));
+            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(
+                    enableAttributes.isEmergencyMode));
         } else {
             loge("requestSatelliteEnabled: mLocalListener is null");
         }
@@ -228,9 +236,10 @@ public class MockSatelliteService extends SatelliteImplBase {
             mIsEnabled = true;
             runWithExecutor(() -> errorCallback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
             updateSatelliteModemState(SatelliteModemState.SATELLITE_MODEM_STATE_IDLE);
-        }
-        synchronized (mRequestSatelliteEnabledLock) {
-            mRequestSatelliteEnabledErrorCallback = errorCallback;
+        } else {
+            synchronized (mRequestSatelliteEnabledLock) {
+                mRequestSatelliteEnabledErrorCallbackQueue.addLast(errorCallback);
+            }
         }
     }
 
@@ -239,9 +248,10 @@ public class MockSatelliteService extends SatelliteImplBase {
             mIsEnabled = false;
             runWithExecutor(() -> errorCallback.accept(SatelliteResult.SATELLITE_RESULT_SUCCESS));
             updateSatelliteModemState(SatelliteModemState.SATELLITE_MODEM_STATE_OFF);
-        }
-        synchronized (mRequestSatelliteEnabledLock) {
-            mRequestSatelliteDisabledErrorCallback = errorCallback;
+        } else {
+            synchronized (mRequestSatelliteEnabledLock) {
+                mRequestSatelliteDisabledErrorCallbackQueue.addLast(errorCallback);
+            }
         }
     }
 
@@ -698,31 +708,51 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     /**
-     * Respond to the previous enable/disable request.
+     * Respond to the oldest enable/disable request.
      */
-    public boolean respondToRequestSatelliteEnabled(boolean isEnabled) {
+    public boolean respondToRequestSatelliteEnabled(boolean isEnabled, int modemState) {
         synchronized (mRequestSatelliteEnabledLock) {
             if (isEnabled) {
-                logd("respondToRequestSatelliteEnabled: isEnabled=" + isEnabled + ", "
-                        + (mRequestSatelliteEnabledErrorCallback != null));
-                if (mRequestSatelliteEnabledErrorCallback == null) {
+                logd("respondToRequestSatelliteEnabled: isEnabled=true, "
+                        + "mRequestSatelliteEnabledErrorCallbackQueue="
+                        + mRequestSatelliteEnabledErrorCallbackQueue.size());
+                if (mRequestSatelliteEnabledErrorCallbackQueue.isEmpty()) {
                     return false;
                 }
-                runWithExecutor(() -> mRequestSatelliteEnabledErrorCallback.accept(mErrorCode));
-                mRequestSatelliteEnabledErrorCallback = null;
-                return true;
+                runWithExecutor(() -> mRequestSatelliteEnabledErrorCallbackQueue
+                        .removeFirst().accept(mErrorCode));
             } else {
-                logd("respondToRequestSatelliteEnabled: isEnabled=" + isEnabled + ", "
-                        + (mRequestSatelliteDisabledErrorCallback != null));
-                if (mRequestSatelliteDisabledErrorCallback == null) {
+                logd("respondToRequestSatelliteEnabled: isEnabled=false, "
+                        + "mRequestSatelliteDisabledErrorCallbackQueue="
+                        + mRequestSatelliteDisabledErrorCallbackQueue.size());
+                if (mRequestSatelliteDisabledErrorCallbackQueue.isEmpty()) {
                     return false;
                 }
-                runWithExecutor(() -> mRequestSatelliteDisabledErrorCallback.accept(mErrorCode));
-                mRequestSatelliteDisabledErrorCallback = null;
-                return true;
+                runWithExecutor(() -> mRequestSatelliteDisabledErrorCallbackQueue
+                        .removeFirst().accept(mErrorCode));
             }
+            if (modemState != NOT_UPDATED_SATELLITE_MODEM_STATE) {
+                updateSatelliteModemState(modemState);
+            }
+            return true;
         }
     }
+
+    /**
+     * Clear the enable request queues.
+     */
+    public void clearSatelliteEnableRequestQueues() {
+        synchronized (mRequestSatelliteEnabledLock) {
+            logd("clearSatelliteEnableRequestQueues: isEnabled=true, "
+                    + "mRequestSatelliteEnabledErrorCallbackQueue="
+                    + mRequestSatelliteEnabledErrorCallbackQueue.size()
+                    + "mRequestSatelliteDisabledErrorCallbackQueue="
+                    + mRequestSatelliteDisabledErrorCallbackQueue.size());
+            mRequestSatelliteEnabledErrorCallbackQueue.clear();
+            mRequestSatelliteDisabledErrorCallbackQueue.clear();
+        }
+    }
+
 
     /**
      * Get the configured PLMN list supported by carrier.

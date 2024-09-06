@@ -33,7 +33,8 @@ public class DragDropCompatTest extends DragDropTest {
     static final String PACKAGE_NAME = "android.server.wm.cts";
 
     @Before
-    public void setUp() throws InterruptedException {
+    @Override
+    public void setUp() throws Exception {
         executeShellCommand("am compat enable --no-kill DOWNSCALED" + " " + PACKAGE_NAME);
         executeShellCommand("am compat enable --no-kill DOWNSCALE_50" + " " + PACKAGE_NAME);
         mInvCompatScale = 1 / 0.5f;

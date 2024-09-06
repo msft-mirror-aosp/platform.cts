@@ -19,7 +19,6 @@ package android.telephony.satellite.cts;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
 
-import android.annotation.ArrayRes;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
@@ -628,7 +627,7 @@ class MockSatelliteServiceManager {
         }
     }
 
-    void clearRequestSatelliteEnabledInfo() {
+    void clearRequestSatelliteEnabledPermits() {
         synchronized (mRequestSatelliteEnabledLock) {
             mRequestSatelliteEnabledSemaphore.drainPermits();
         }
@@ -1127,13 +1126,23 @@ class MockSatelliteServiceManager {
         return mSatelliteService.sendSavedDatagram();
     }
 
-    boolean respondToRequestSatelliteEnabled(boolean isEnabled) {
-        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled);
+    boolean respondToRequestSatelliteEnabled(boolean isEnabled, int modemState) {
+        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled
+                + ", modemState=" + modemState);
         if (mSatelliteService == null) {
             loge("respondToRequestSatelliteEnabled: mSatelliteService is null");
             return false;
         }
-        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled);
+        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled, modemState);
+    }
+
+    void clearSatelliteEnableRequestQueues() {
+        logd("clearSatelliteEnableRequestQueues");
+        if (mSatelliteService == null) {
+            loge("clearSatelliteEnableRequestQueues: mSatelliteService is null");
+            return;
+        }
+        mSatelliteService.clearSatelliteEnableRequestQueues();
     }
 
     boolean stopExternalSatelliteService() {

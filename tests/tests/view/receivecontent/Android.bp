@@ -24,7 +24,7 @@ android_test {
         "cts",
         "general-tests",
     ],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
     static_libs: [
         "androidx.test.ext.junit",
         "androidx.test.rules",

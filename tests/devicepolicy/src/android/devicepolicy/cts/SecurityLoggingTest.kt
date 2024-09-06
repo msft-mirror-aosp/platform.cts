@@ -18,30 +18,28 @@ package android.devicepolicy.cts
 import android.app.admin.DevicePolicyManager
 import android.app.admin.SecurityLog
 import android.app.admin.SecurityLog.SecurityEvent
-import android.app.admin.flags.Flags
 import android.os.SystemClock
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import com.android.bedstead.harrier.BedsteadJUnit4
-import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.UserType
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.permissions.annotations.EnsureHasPermission
-import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.UserType
+import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.harrier.annotations.Postsubmit
+import com.android.bedstead.harrier.annotations.SlowApiTest
 import com.android.bedstead.harrier.policies.GlobalSecurityLogging
 import com.android.bedstead.harrier.policies.SecurityLogging
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.users.UserReference
+import com.android.bedstead.permissions.CommonPermissions
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.BlockingCallback
 import com.android.eventlib.truth.EventLogsSubject.assertThat
@@ -397,7 +395,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#isAuditLogEnabled"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEnabled_withPermission_works() {
         ensureNoAdditionalFullUsers()
 
@@ -416,7 +413,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#isAuditLogEnabled"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEnabled_true_false_isFalse() {
         ensureNoAdditionalFullUsers()
         localDpm.setAuditLogEnabled(true)
@@ -432,7 +428,6 @@ class SecurityLoggingTest {
             apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled"]
     )
     @EnsureDoesNotHavePermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEnabled_withoutPermission_throws() {
         ensureNoAdditionalFullUsers()
 
@@ -456,7 +451,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_callbackInvokedInitially() {
         ensureNoAdditionalFullUsers()
 
@@ -481,7 +475,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_callbackInvokedFurther() {
         ensureNoAdditionalFullUsers()
 
@@ -511,7 +504,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_auditLoggingDisabled_notInvoked() {
         ensureNoAdditionalFullUsers()
 
@@ -541,7 +533,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_auditLoggingDisabled_withSecurityLoggingEnabled_notInvoked() {
         ensureNoAdditionalFullUsers()
 
@@ -578,7 +569,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_callbackCleared_notInvoked() {
         ensureNoAdditionalFullUsers()
 
@@ -606,7 +596,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun setAuditLogEventCallback_callbackReplaced_onlyNewCallbackInvoked() {
         ensureNoAdditionalFullUsers()
 
@@ -638,7 +627,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun mixedLogging_securityAndAuditLoggingWorkTogether() {
         ensureNoAdditionalFullUsers()
 
@@ -679,7 +667,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun mixedLogging_auditLoggingWorksAfterSecurityLoggingDisabled() {
         ensureNoAdditionalFullUsers()
 
@@ -722,7 +709,6 @@ class SecurityLoggingTest {
                 "android.app.admin.DevicePolicyManager#setAuditLogEnabled"]
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
-    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
     fun mixedLogging_securityLoggingWorksAfterAuditLoggingDisabled() {
         ensureNoAdditionalFullUsers()
 

@@ -39,7 +39,7 @@ open class SimpleActivity : Activity() {
         recv = object: BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
-                    PREFIX + ACTION_ACTIVITY_DO_FINISH -> {
+                    PREFIX + ACTION_FINISH_ACTIVITY -> {
                         Log.i(TAG, "Finishing activity, sending intent")
                         this@SimpleActivity.finish()
                         sendBroadcast(Intent(PREFIX + ACTION_ACTIVITY_FINISHED)
@@ -49,7 +49,7 @@ open class SimpleActivity : Activity() {
             }
         }
         getApplicationContext().registerReceiver(
-            recv, IntentFilter(PREFIX + ACTION_ACTIVITY_DO_FINISH), Context.RECEIVER_EXPORTED)
+            recv, IntentFilter(PREFIX + ACTION_FINISH_ACTIVITY), Context.RECEIVER_EXPORTED)
     }
 
     override fun onResume() {

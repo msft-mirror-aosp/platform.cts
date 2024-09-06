@@ -24,6 +24,7 @@ import static android.view.inputmethod.cts.util.TestUtils.isInputMethodPickerSho
 import static android.view.inputmethod.cts.util.TestUtils.waitOnMainUntil;
 
 import static com.android.compatibility.common.util.SystemUtil.runShellCommandOrThrow;
+import static com.android.sts.common.SystemUtil.withSetting;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -50,6 +51,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.annotations.SecurityTest;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -370,7 +372,7 @@ public class InputMethodManagerTest {
 
     /**
      * Shows the Input Method Picker menu and verifies opening the IME Language Settings activity
-     * by tapping on the button.
+     * by tapping on the button, when the device is provisioned.
      */
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
@@ -380,10 +382,12 @@ public class InputMethodManagerTest {
                 PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
-        try (var ignored = MockImeSession.create(
-                mInstrumentation.getContext(),
-                mInstrumentation.getUiAutomation(),
-                new ImeSettings.Builder())) {
+        try (var ignored1 = withSetting(mInstrumentation, "global",
+                Settings.Global.DEVICE_PROVISIONED, "1");
+                var ignored2 = MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                    new ImeSettings.Builder())) {
             final var activity = startActivityAndShowInputMethodPicker();
 
             final var info = mImManager.getCurrentInputMethodInfo();
@@ -410,6 +414,45 @@ public class InputMethodManagerTest {
 
             waitOnMainUntil(() -> !activity.hasWindowFocus(), TIMEOUT,
                     "Test activity shouldn't be focused");
+        }
+    }
+
+    /**
+     * Shows the Input Method Picker menu and verifies the IME Language Settings button is not
+     * visible when the device is not provisioned.
+     */
+    @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
+    @RequiresFlagsEnabled(Flags.FLAG_IME_SWITCHER_REVAMP)
+    @Test
+    public void testInputMethodPickerNoLanguageSettingsWhenDeviceNotProvisioned() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
+        try (var ignored1 = withSetting(mInstrumentation, "global",
+                Settings.Global.DEVICE_PROVISIONED, "0");
+                var ignored2 = MockImeSession.create(
+                        mInstrumentation.getContext(),
+                        mInstrumentation.getUiAutomation(),
+                     new ImeSettings.Builder())) {
+            startActivityAndShowInputMethodPicker();
+
+            final UiDevice uiDevice = getUiDevice();
+
+            final var container = uiDevice.wait(Until.findObject(By.res("android:id/container")),
+                    TIMEOUT);
+            assertNotNull("Container view should be found.", container);
+
+            // Make sure the container starts at the top.
+            container.scroll(Direction.UP, 100f);
+            final boolean hasButton = container.scrollUntil(Direction.DOWN,
+                    Until.hasObject(By.res("android:id/button1")));
+            assertFalse("Language settings button should not be found", hasButton);
+
+            mContext.sendBroadcast(
+                    new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
+            waitOnMainUntil(() -> !isInputMethodPickerShown(mImManager), TIMEOUT,
+                    "InputMethod picker should be closed");
         }
     }
 

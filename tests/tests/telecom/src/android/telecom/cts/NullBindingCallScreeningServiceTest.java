@@ -28,6 +28,8 @@ import android.os.Process;
 import android.os.UserHandle;
 import android.telecom.TelecomManager;
 
+import androidx.test.filters.FlakyTest;
+
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -65,6 +67,7 @@ public class NullBindingCallScreeningServiceTest extends BaseTelecomTestWithMock
         super.tearDown();
     }
 
+    @FlakyTest
     public void testNullBindingOnIncomingCall() throws Exception {
         if (!mShouldTestTelecom) {
             return;

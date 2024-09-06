@@ -22,10 +22,13 @@ import static org.junit.Assert.assertThrows;
 
 import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.GenericDocument;
+import android.os.Build;
 import android.os.Parcel;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+
+import androidx.test.filters.SdkSuppress;
 
 import com.android.appsearch.flags.Flags;
 
@@ -1377,9 +1380,9 @@ public class GenericDocumentCtsTest {
         assertThat(exception).hasMessageThat().contains("Embedding values cannot be empty.");
     }
 
-
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENABLE_GENERIC_DOCUMENT_OVER_IPC)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     public void testWriteToParcel() {
         GenericDocument inDoc =
                 new GenericDocument.Builder<>("namespace", "id1", "schema1")

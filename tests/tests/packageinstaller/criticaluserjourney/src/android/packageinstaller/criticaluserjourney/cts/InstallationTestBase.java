@@ -16,12 +16,16 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static android.Manifest.permission.INSTALL_PACKAGES;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_REQUEST_INSTALL_PACKAGES;
+import static android.app.PendingIntent.FLAG_MUTABLE;
+import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED;
+import static android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID;
 import static android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
 
@@ -30,10 +34,13 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.fail;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.IntentSender;
+import android.content.pm.PackageInstaller;
 import android.graphics.Rect;
 import android.net.Uri;
 import android.util.Log;
@@ -56,6 +63,7 @@ import org.junit.BeforeClass;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -82,9 +90,15 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static final String EXTRA_INSTALLER_APK_V2_URI = "extra_installer_apk_v2_uri";
     private static final String EXTRA_TEST_APK_URI = "extra_test_apk_uri";
     private static final String EXTRA_TEST_APK_V2_URI = "extra_test_apk_v2_uri";
+    private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_URI =
+            "extra_test_no_launcher_activity_apk_uri";
+    private static final String EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI =
+            "extra_test_no_launcher_activity_apk_v2_uri";
     private static final String EXTRA_TEST_PACKAGE_NAME = "extra_test_package_name";
 
     private static final String EXTRA_IS_UPDATE = "extra_is_update";
+    private static final String EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP =
+            "extra_no_launcher_activity_test_app";
     private static final String EXTRA_USE_TEST_APP = "extra_use_test_app";
 
     private static final int EVENT_REQUEST_INSTALLER_CLEAN_UP = -1;
@@ -157,22 +171,18 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void copyTestFiles() throws Exception {
-        final File dstFile = new File(sContext.getFilesDir(), TEST_APK_NAME);
+        copyTestFile(INSTALLER_APK_V2_NAME);
+        copyTestFile(TEST_APK_NAME);
+        copyTestFile(TEST_APK_V2_NAME);
+        copyTestFile(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME);
+        copyTestFile(TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME);
+    }
+
+    private static void copyTestFile(@NonNull String testApkName) throws Exception {
+        final File dstFile = new File(sContext.getFilesDir(), testApkName);
         if (!dstFile.exists()) {
-            final File apkFile = new File(TEST_APK_LOCATION, TEST_APK_NAME);
+            final File apkFile = new File(TEST_APK_LOCATION, testApkName);
             copyFile(apkFile, dstFile);
-        }
-
-        final File dstV2File = new File(sContext.getFilesDir(), TEST_APK_V2_NAME);
-        if (!dstV2File.exists()) {
-            final File apkV2File = new File(TEST_APK_LOCATION, TEST_APK_V2_NAME);
-            copyFile(apkV2File, dstV2File);
-        }
-
-        final File dstInstallerApkV2File = new File(sContext.getFilesDir(), INSTALLER_APK_V2_NAME);
-        if (!dstInstallerApkV2File.exists()) {
-            final File installerFile = new File(TEST_APK_LOCATION, INSTALLER_APK_V2_NAME);
-            copyFile(installerFile, dstInstallerApkV2File);
         }
     }
 
@@ -186,38 +196,94 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
     }
 
-    private static void startInstallerActivity() {
-        final File apkFile = new File(sContext.getFilesDir(), TEST_APK_NAME);
-        final File apkV2File = new File(sContext.getFilesDir(), TEST_APK_V2_NAME);
-        final File installerApkV2File = new File(sContext.getFilesDir(), INSTALLER_APK_V2_NAME);
-        final Intent intent = new Intent();
-        intent.setPackage(INSTALLER_PACKAGE_NAME);
-        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
-        intent.setAction(ACTION_LAUNCH_INSTALLER);
-
+    private static void getFileUriAndUpdateIntent(@NonNull String testApkName,
+            @NonNull String extraKey, @NonNull Intent intent) {
+        final File apkFile = new File(sContext.getFilesDir(), testApkName);
         final String contentAuthority = sContext.getPackageName() + AUTHORITY_NAME;
-        Uri testApkUri = FileProvider.getUriForFile(sContext, contentAuthority, apkFile);
-        Uri testApkV2Uri = FileProvider.getUriForFile(sContext, contentAuthority, apkV2File);
-        Uri installerApkV2Uri =
-                FileProvider.getUriForFile(sContext, contentAuthority, installerApkV2File);
-
-        intent.putExtra(EXTRA_TEST_APK_URI, testApkUri.toString());
-        intent.putExtra(EXTRA_TEST_APK_V2_URI, testApkV2Uri.toString());
-        intent.putExtra(EXTRA_INSTALLER_APK_V2_URI, installerApkV2Uri.toString());
-        intent.putExtra(EXTRA_TEST_PACKAGE_NAME, sContext.getPackageName());
+        final Uri testApkUri = FileProvider.getUriForFile(sContext, contentAuthority, apkFile);
+        intent.putExtra(extraKey, testApkUri.toString());
 
         // grant read uri permission to the installer
         sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkUri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkV2Uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, installerApkV2Uri,
-                Intent.FLAG_GRANT_READ_URI_PERMISSION);
+    }
+
+    private static void startInstallerActivity() {
+        final Intent intent = new Intent();
+        intent.setPackage(INSTALLER_PACKAGE_NAME);
+        intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
+        intent.setAction(ACTION_LAUNCH_INSTALLER);
+        intent.putExtra(EXTRA_TEST_PACKAGE_NAME, sContext.getPackageName());
+
+        getFileUriAndUpdateIntent(TEST_APK_NAME, EXTRA_TEST_APK_URI, intent);
+        getFileUriAndUpdateIntent(TEST_APK_V2_NAME, EXTRA_TEST_APK_V2_URI, intent);
+        getFileUriAndUpdateIntent(INSTALLER_APK_V2_NAME, EXTRA_INSTALLER_APK_V2_URI, intent);
+        getFileUriAndUpdateIntent(TEST_NO_LAUNCHER_ACTIVITY_APK_NAME,
+                EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_URI, intent);
+        getFileUriAndUpdateIntent(TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME,
+                EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI, intent);
+
         sContext.startActivity(intent);
     }
 
     private static void requestInstallerCleanUp() throws Exception {
         sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_CLEAN_UP);
+    }
+
+    private static void startInstallationViaPackageInstallerSessionWithPermission(
+            String apkName) throws Exception {
+        final PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
+                PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+        params.setAppPackageName(TEST_APP_PACKAGE_NAME);
+        final PackageInstaller packageInstaller = sPackageManager.getPackageInstaller();
+
+        try {
+            sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(INSTALL_PACKAGES);
+            final int sessionId = packageInstaller.createSession(params);
+            final PackageInstaller.Session session = packageInstaller.openSession(sessionId);
+            final File apkFile = new File(TEST_APK_LOCATION, apkName);
+            try (OutputStream os = session.openWrite("base.apk", 0, apkFile.length());
+                    InputStream is = new FileInputStream(apkFile)) {
+                writeFullStream(is, os);
+            }
+
+            final InstallResultReceiver installResultReceiver = new InstallResultReceiver();
+            try {
+                session.commit(installResultReceiver.getIntentSender(sContext));
+                assertThat(installResultReceiver.getInstallResult()).isEqualTo(STATUS_SUCCESS);
+            } finally {
+                installResultReceiver.unregisterReceiver(sContext);
+            }
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    private static void writeFullStream(InputStream inputStream, OutputStream outputStream)
+            throws IOException {
+        byte[] buffer = new byte[1024];
+        int length;
+        while ((length = inputStream.read(buffer)) != -1) {
+            outputStream.write(buffer, 0, length);
+        }
+    }
+
+    /**
+     * Start the installation via PackageInstaller.Session APIs with granting INSTALL_PACKAGES
+     * permission
+     */
+    public static void startInstallationViaPackageInstallerSessionWithPermission()
+            throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission(TEST_APK_NAME);
+    }
+
+    /**
+     * Start the installation to update the test apk from version 1 to version 2 via
+     * PackageInstaller.Session APIs with granting INSTALL_PACKAGES permission
+     */
+    public static void startInstallationUpdateViaPackageInstallerSessionWithPermission()
+            throws Exception {
+        startInstallationViaPackageInstallerSessionWithPermission(TEST_APK_V2_NAME);
     }
 
     /**
@@ -281,6 +347,26 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
+     * Start the installation with the test apk that has no launcher activity via startActivity
+     * with ACTION_INSTALL_PACKAGE
+     */
+    public static void startNoLauncherActivityInstallationViaIntent() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useTestApp= */ false,
+                /* update= */ false, /* isNoLauncherActivityTestApp= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
+     * Start the installation to update the test apk that has no launcher activity from version 1
+     * to version 2 via startActivity with ACTION_INSTALL_PACKAGE
+     */
+    public static void startNoLauncherActivityInstallationUpdateViaIntent() throws Exception {
+        sendRequestInstallerBroadcast(EVENT_REQUEST_INSTALLER_INTENT, /* useTestApp= */ false,
+                /* update= */ true, /* isNoLauncherActivityTestApp= */ true);
+        assertCUJInstallerStartActivityReady();
+    }
+
+    /**
      * Start the installation via startActivityForResult.
      */
     public static void startInstallationViaIntentForResult() throws Exception {
@@ -337,12 +423,19 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     private static void sendRequestInstallerBroadcast(int event, boolean useTestApp,
             boolean update) throws Exception {
+        sendRequestInstallerBroadcast(event, useTestApp, update,
+                /* isNoLauncherActivityTestApp= */ false);
+    }
+
+    private static void sendRequestInstallerBroadcast(int event, boolean useTestApp,
+            boolean update, boolean isNoLauncherActivityTestApp) throws Exception {
         final Intent intent = new Intent(ACTION_REQUEST_INSTALLER);
         intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         intent.putExtra(EXTRA_EVENT, event);
         intent.putExtra(EXTRA_USE_TEST_APP, useTestApp);
         intent.putExtra(EXTRA_IS_UPDATE, update);
+        intent.putExtra(EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, isNoLauncherActivityTestApp);
         sContext.sendBroadcast(intent);
     }
 
@@ -492,6 +585,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     public static void assertInstallSuccessDialogAndLaunchTestApp() throws Exception {
         assertInstallSuccessDialogAndLaunchApp(TEST_APP_PACKAGE_NAME, TEST_APP_LABEL);
     }
+
     /**
      * Assert the install success dialog and launch the app. Assert the label of the app
      * is {@link #INSTALLER_LABEL}.
@@ -514,6 +608,21 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
         // Press back to leave the app
         pressBack();
+    }
+
+    /**
+     * Assert the install success dialog for no launcher activity app. There is no OPEN button.
+     */
+    public static void assertInstallSuccessDialogForNoLauncherActivity() throws Exception {
+        // Assert the label and Done button exists
+        findPackageInstallerObject(By.textContains(APP_INSTALLED_LABEL), /* checkNull= */ true);
+        findPackageInstallerObject(BUTTON_DONE_LABEL);
+
+        final Pattern namePattern = Pattern.compile(BUTTON_OPEN_LABEL, Pattern.CASE_INSENSITIVE);
+        UiObject2 openButton = sUiDevice.findObject(
+                getPackageInstallerBySelector(By.text(namePattern)));
+
+        assertThat(openButton).isNull();
     }
 
     /**
@@ -807,6 +916,46 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
         public void resetResult() {
             mInstallerResponseResult = new CompletableFuture();
+        }
+    }
+
+    private static class InstallResultReceiver extends BroadcastReceiver {
+        private CompletableFuture<Integer> mInstallResult = new CompletableFuture<>();
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "InstallResultReceiver Received intent " + prettyPrint(intent));
+            mInstallResult.complete(intent.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID));
+        }
+
+        public void unregisterReceiver(Context context) {
+            context.unregisterReceiver(this);
+        }
+        public int getInstallResult() throws Exception {
+            return mInstallResult.get(10, TimeUnit.SECONDS);
+        }
+
+        public IntentSender getIntentSender(Context context) {
+            String action = InstallResultReceiver.class.getName();
+            context.registerReceiver(this, new IntentFilter(action),
+                    Context.RECEIVER_EXPORTED);
+            Intent intent = new Intent(action).setPackage(context.getPackageName())
+                    .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+            PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
+                    FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
+            return pending.getIntentSender();
+        }
+
+        private static String prettyPrint(Intent intent) {
+            int sessionId = intent.getIntExtra(PackageInstaller.EXTRA_SESSION_ID, -1);
+            int status = intent.getIntExtra(EXTRA_STATUS,
+                    PackageInstaller.STATUS_FAILURE);
+            String message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+            return String.format("%s: {\n"
+                    + "sessionId = %d\n"
+                    + "status = %d\n"
+                    + "message = %s\n"
+                    + "}", intent, sessionId, status, message);
         }
     }
 }

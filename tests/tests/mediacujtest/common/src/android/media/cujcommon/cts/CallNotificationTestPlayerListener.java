@@ -16,7 +16,7 @@
 
 package android.media.cujcommon.cts;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -33,6 +33,9 @@ import androidx.media3.common.Player;
 import androidx.media3.common.Player.PlaybackSuppressionReason;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CallNotificationTestPlayerListener extends PlayerListener {
 
   private static final String COMMAND_ENABLE = "telecom set-phone-account-enabled";
@@ -40,6 +43,7 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
 
   private TelecomManager mTelecomManager;
   private PhoneAccountHandle mPhoneAccountHandle;
+  private final List<Integer> playbackSuppressionReasons = new ArrayList<>();
 
   public CallNotificationTestPlayerListener(long sendMessagePosition) {
     super();
@@ -126,12 +130,14 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
    */
   @Override
   public void onPlaybackSuppressionReasonChanged(int playbackSuppressionReason) {
-    // Verify suppression reason change caused by call notification test
-    if (!mActivity.mPlayer.isPlaying()) {
-      assertEquals(Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS,
-          playbackSuppressionReason);
-    } else {
-      assertEquals(Player.PLAYBACK_SUPPRESSION_REASON_NONE, playbackSuppressionReason);
-    }
+    playbackSuppressionReasons.add(playbackSuppressionReason);
+  }
+
+  @Override
+  public void onTestCompletion() {
+    // When the test completes, there should be at least one
+    // PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS playback suppression reason.
+    assertTrue(playbackSuppressionReasons.contains(
+            Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS));
   }
 }

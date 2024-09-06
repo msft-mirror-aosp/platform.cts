@@ -377,7 +377,8 @@ public class CodecInitializationLatencyTest {
                 Requirements.addR5_1__H_1_13().to(pce).setCodecInitializationLatencyMs(
                         initializationLatency);
             } else {
-                pce.addR5_1__H_1_12().setCodecInitLatencyMs(initializationLatency);
+                Requirements.addR5_1__H_1_12().to(pce)
+                        .setCodecInitializationLatencyMs(initializationLatency);
             }
         }
         pce.submitAndCheck();

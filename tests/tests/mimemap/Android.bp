@@ -22,7 +22,7 @@ package {
 android_test {
     name: "CtsMimeMapTestCases",
     defaults: ["cts_defaults"],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     platform_apis: true,
 
     srcs: ["src/**/*.java"],

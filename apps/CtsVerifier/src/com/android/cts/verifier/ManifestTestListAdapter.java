@@ -30,7 +30,6 @@ import android.hardware.SensorPrivacyManager;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.UserManager;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.ListView;
 
@@ -145,8 +144,6 @@ public class ManifestTestListAdapter extends TestListAdapter {
 
     private static final String CONFIG_NO_EMULATOR = "config_no_emulator";
 
-    private static final String CONFIG_VOICE_CAPABLE = "config_voice_capable";
-
     private static final String CONFIG_HAS_RECENTS = "config_has_recents";
 
     private static final String CONFIG_HDMI_SOURCE = "config_hdmi_source";
@@ -158,6 +155,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
     private static final String CONFIG_HAS_CAMERA_TOGGLE = "config_has_camera_toggle";
 
     private static final String CONFIG_CHANGEABLE_VOLUME = "config_changeable_volume";
+
+    private static final String CONFIG_SUPPORTS_BUBBLE = "config_supports_bubble";
 
     /**
      * The config to represent that a test is only needed to run in the main display mode (i.e.
@@ -504,13 +503,6 @@ public class ManifestTestListAdapter extends TestListAdapter {
                             Log.e(LOG_TAG, "Exception while checking for emulator support.", e);
                         }
                         break;
-                    case CONFIG_VOICE_CAPABLE:
-                        TelephonyManager telephonyManager =
-                                context.getSystemService(TelephonyManager.class);
-                        if (!telephonyManager.isVoiceCapable()) {
-                            return false;
-                        }
-                        break;
                     case CONFIG_HAS_RECENTS:
                         if (!getSystemResourceFlag(context, "config_hasRecents")) {
                             return false;
@@ -547,6 +539,8 @@ public class ManifestTestListAdapter extends TestListAdapter {
                                 context, SensorPrivacyManager.Sensors.CAMERA);
                     case CONFIG_CHANGEABLE_VOLUME:
                         return !getSystemResourceFlag(context, "config_useFixedVolume");
+                    case CONFIG_SUPPORTS_BUBBLE:
+                        return getSystemResourceFlag(context, "config_supportsBubble");
                     default:
                         break;
                 }

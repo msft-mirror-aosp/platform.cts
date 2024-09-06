@@ -16,6 +16,7 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static android.Manifest.permission.DELETE_PACKAGES;
 import static android.app.PendingIntent.FLAG_MUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
@@ -39,8 +40,6 @@ import android.net.Uri;
 import android.util.Log;
 
 import androidx.test.uiautomator.By;
-
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -107,15 +106,23 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      * Start the uninstallation via PackageInstaller#uninstall api with granting DELETE_PACKAGES
      * permission
      */
-    public static void startUninstallationViaPackageInstallerApiWithDeletePackages()
-            throws Exception {
-        SystemUtil.runWithShellPermissionIdentity(() -> {
+    public static void startUninstallationViaPackageInstallerApiWithDeletePackages(
+            boolean isSameInstaller) throws Exception {
+        try {
+            sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(DELETE_PACKAGES);
             sPackageManager.getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
                     getIntentSender());
-        });
+        } finally {
+            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+        }
 
-        // Grant DELETE_PACKAGES permission, the test app will be uninstalled silently.
-        assertThat(getUninstallStatus()).isNotEqualTo(STATUS_PENDING_USER_ACTION);
+        if (isSameInstaller) {
+            // Grant DELETE_PACKAGES permission, the test app will be uninstalled silently.
+            assertThat(getUninstallStatus()).isNotEqualTo(STATUS_PENDING_USER_ACTION);
+        } else {
+            assertThat(getUninstallStatus()).isEqualTo(STATUS_PENDING_USER_ACTION);
+            getUninstallResultAndStartConfirmedActivity();
+        }
     }
 
     /**
@@ -127,6 +134,10 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
 
         assertThat(getUninstallStatus()).isEqualTo(STATUS_PENDING_USER_ACTION);
 
+        getUninstallResultAndStartConfirmedActivity();
+    }
+
+    private static void getUninstallResultAndStartConfirmedActivity() throws Exception {
         final Intent result = getUninstallResult();
         Intent extraIntent = result.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);

@@ -15,11 +15,15 @@
  */
 package android.app.cts.shortfgstest;
 
+import static android.app.cts.shortfgstesthelper.ShortFgsHelper.TAG;
+
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.content.ComponentName;
 import android.os.ParcelFileDescriptor;
 import android.os.UserHandle;
+import android.util.Base64;
+import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
 
@@ -36,20 +40,42 @@ import org.junit.Assert;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class DumpProtoUtils {
     private DumpProtoUtils() {
+    }
+
+    private static void logProtoDump(byte[] dump, Throwable th) {
+        Log.e(TAG, "Exception detected while parsing proto", th);
+        if (dump == null) {
+            Log.e(TAG, "Dump is null. This shouldn't happen.");
+            return;
+        }
+        Log.e(TAG, "Length=" + dump.length);
+        Log.e(TAG, "Dump in UTF-8=" + new String(dump, StandardCharsets.UTF_8));
+
+        Log.e(TAG, "Dump in base64:");
+        for (var s : Base64.encodeToString(dump, 0).split("\n")) {
+            Log.e(TAG, s);
+        }
     }
 
     /**
      * Returns the proto from `dumpsys activity --proto processes`
      */
     public static ActivityManagerServiceDumpProcessesProto dumpProcesses() {
+        byte[] dump = null;
         try {
-            return ActivityManagerServiceDumpProcessesProto.parseFrom(
-                    getDump("dumpsys activity --proto processes"));
-        } catch (InvalidProtocolBufferNanoException e) {
-            throw new RuntimeException(e);
+            try {
+                return ActivityManagerServiceDumpProcessesProto.parseFrom(
+                        dump = getDump("dumpsys activity --proto processes"));
+            } catch (InvalidProtocolBufferNanoException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Throwable th) {
+            logProtoDump(dump, th);
+            throw th;
         }
     }
 
@@ -57,11 +83,17 @@ public class DumpProtoUtils {
      * Returns the proto from `dumpsys activity --proto services`
      */
     public static ActivityManagerServiceDumpServicesProto dumpServices() {
+        byte[] dump = null;
         try {
-            return ActivityManagerServiceDumpServicesProto.parseFrom(
-                    getDump("dumpsys activity --proto service"));
-        } catch (InvalidProtocolBufferNanoException e) {
-            throw new RuntimeException(e);
+            try {
+                return ActivityManagerServiceDumpServicesProto.parseFrom(
+                        dump = getDump("dumpsys activity --proto service"));
+            } catch (InvalidProtocolBufferNanoException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (Throwable th) {
+            logProtoDump(dump, th);
+            throw th;
         }
     }
 
