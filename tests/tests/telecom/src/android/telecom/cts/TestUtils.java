@@ -43,6 +43,7 @@ import android.telecom.VideoProfile;
 
 import androidx.test.InstrumentationRegistry;
 
+import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
 
 import java.io.BufferedReader;
@@ -849,16 +850,6 @@ public class TestUtils {
             waitForCount(count, timeoutMillis, null);
         }
 
-        public void waitForCount(long timeoutMillis) {
-             synchronized (mLock) {
-             try {
-                  mLock.wait(timeoutMillis);
-             }catch (InterruptedException ex) {
-                  ex.printStackTrace();
-             }
-           }
-        }
-
         public void waitForCount(int count, long timeoutMillis, String message) {
             synchronized (mLock) {
                 final long startTimeMillis = SystemClock.uptimeMillis();
@@ -879,6 +870,19 @@ public class TestUtils {
                         /* ignore */
                     }
                 }
+            }
+        }
+
+        /**
+         * Try waiting for count to reach desired number, but instead of failing test on timeout,
+         * return false silently.
+         */
+        public boolean tryWaitForCount(int count, long timeoutMillis) {
+            try {
+                waitForCount(count, timeoutMillis);
+                return true;
+            } catch (AssertionFailedError e) {
+                return false;
             }
         }
 
