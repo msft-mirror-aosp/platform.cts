@@ -403,8 +403,9 @@ public class TelephonyUtils {
         if (TextUtils.isEmpty(packageName) || TextUtils.isEmpty(shaId)) {
             return;
         }
-        String allowList = "package:" + packageName + "," + "carrierId:" + String.valueOf(carrierId)
-                + "," + "callerSHA1Id:" + shaId;
+
+        String allowList = "package:" + packageName + "," + "carrierIds:" + carrierId + ","
+                + "callerSHA256Ids:" + shaId;
         executeShellCommand(instr, COMMAND_CARRIER_RESTRICTION_STATUS + allowList);
     }
 

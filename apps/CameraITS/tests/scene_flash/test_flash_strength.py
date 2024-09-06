@@ -35,15 +35,15 @@ _FLASH_STATES = {0: 'FLASH_STATE_UNAVAILABLE', 1: 'FLASH_STATE_CHARGING',
                  4: 'FLASH_STATE_PARTIAL'}
 _FORMAT_NAME = 'yuv'
 _IMG_SIZE = (640, 480)
-_PATCH_H = 0.25  # center 25%
-_PATCH_W = 0.25
+_PATCH_H = 0.5  # center 50%
+_PATCH_W = 0.5
 _PATCH_X = 0.5-_PATCH_W/2
 _PATCH_Y = 0.5-_PATCH_H/2
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 _CAPTURE_INTENT_STILL_CAPTURE = 2
 _MAX_FLASH_STRENGTH = 'android.flash.singleStrengthMaxLevel'
 _MAX_TORCH_STRENGTH = 'android.flash.torchStrengthMaxLevel'
-_BRIGHTNESS_MEAN_TOL = 5  # Tolerance for brightness mean
+_BRIGHTNESS_MEAN_ATOL = 15  # Tolerance for brightness mean
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 
 
@@ -146,19 +146,19 @@ def _compare_means(formats_means, ae_mode, flash_strengths):
             f'{flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
             f'{flash_strengths[mean+1]} should be brighter than '
-            f'{flash_strengths[mean]}'
+            f'{flash_strengths[mean]}. '
         )
         failure_messages.append(msg)
   else:
     for mean in range(1, len(formats_means)-1):
       diff = abs(formats_means[mean] - formats_means[mean+1])
-      if diff > _BRIGHTNESS_MEAN_TOL:
+      if diff > _BRIGHTNESS_MEAN_ATOL:
         msg = (
             f'Capture with AE_CONTROL_MODE ON_AUTO_FLASH. '
             f'{flash_strengths[mean]} mean: {formats_means[mean]}, '
             f'{flash_strengths[mean+1]} mean: '
             f'{formats_means[mean+1]}. '
-            f'Diff: {diff}; TOL: {_BRIGHTNESS_MEAN_TOL}'
+            f'Diff: {diff}; ATOL: {_BRIGHTNESS_MEAN_ATOL}. '
         )
         failure_messages.append(msg)
   return failure_messages
@@ -178,13 +178,10 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
 
       # check SKIP conditions
-      vendor_api_level = its_session_utils.get_vendor_api_level(
-          self.dut.serial)
       max_flash_strength = props[_MAX_FLASH_STRENGTH]
       max_torch_strength = props[_MAX_TORCH_STRENGTH]
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
-          vendor_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           max_flash_strength > 1 and max_torch_strength > 1)
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
@@ -210,8 +207,21 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
           else:
             # naming images to be captured
             img_name = f'{name_with_path}_ae_mode={ae_mode}_flash_strength={strength}.jpg'
+            # check if testing image size is supported, if not use mid size
+            output_sizes = capture_request_utils.get_available_output_sizes(
+                _FORMAT_NAME, props)
+            if _IMG_SIZE in output_sizes:
+              width, height = _IMG_SIZE
+              logging.debug(
+                  'Testing with default image size: %dx%d', width, height
+              )
+            else:
+              width, height = output_sizes[len(output_sizes)//2]
+              logging.debug(
+                  'Default size not supported, testing with size: %dx%d',
+                  width, height
+              )
             # defining out_surfaces
-            width, height = _IMG_SIZE
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate

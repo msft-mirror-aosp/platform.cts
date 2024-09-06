@@ -16,7 +16,8 @@
 
 package android.packageinstaller.install.cts
 
-import android.content.pm.Flags
+import android.Manifest
+import android.content.AttributionSource
 import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DEFAULT
@@ -24,32 +25,24 @@ import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_DENIED
 import android.content.pm.PackageInstaller.SessionParams.PERMISSION_STATE_GRANTED
 import android.content.pm.PackageManager
 import android.content.pm.PermissionInfo
-import android.Manifest
-import android.content.AttributionSource
 import android.permission.PermissionManager
 import android.platform.test.annotations.AppModeFull
-import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
-import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import java.io.File
 import kotlin.test.assertFailsWith
-import org.junit.BeforeClass
 import org.junit.Before
-import org.junit.Rule
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
+@ScreenRecord
 class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
-
-    @JvmField
-    @Rule
-    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
         private const val FULL_SCREEN_INTENT_APK = "CtsEmptyTestApp_FullScreenIntent.apk"
@@ -63,15 +56,6 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
             context.packageManager
                 .getPermissionInfo(Manifest.permission.USE_FULL_SCREEN_INTENT, 0)
                 .protection == PermissionInfo.PROTECTION_NORMAL
-        }
-
-        @JvmStatic
-        @BeforeClass
-        fun copySubclassTestApk() {
-            File(TEST_APK_LOCATION, FULL_SCREEN_INTENT_APK).copyTo(
-                target = File(context.filesDir, FULL_SCREEN_INTENT_APK),
-                overwrite = true
-            )
         }
 
         @JvmStatic
@@ -231,7 +215,6 @@ class SessionParamsPermissionStateTest : PackageInstallerTestBase() {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun checkInstall() {
         val block = {
             startInstallationViaSession(

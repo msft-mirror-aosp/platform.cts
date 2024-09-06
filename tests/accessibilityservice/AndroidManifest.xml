@@ -43,6 +43,7 @@
 
         <activity android:label="@string/accessibility_query_window_test_activity"
              android:name=".activities.AccessibilityWindowQueryActivity"
+             android:theme="@style/AppTheme"
              android:supportsPictureInPicture="true"
              android:screenOrientation="locked"/>
 
@@ -58,9 +59,12 @@
              android:name=".activities.AccessibilityTextTraversalActivity"
              android:screenOrientation="locked"/>
 
+        <!-- Use windowSoftInputMode STATE_HIDDEN so that the IME does not launch
+             when opening the activity, which confuses the test window checks. -->
         <activity android:label="Activity for testing window accessibility reporting"
              android:name=".activities.AccessibilityWindowReportingActivity"
              android:supportsPictureInPicture="true"
+             android:windowSoftInputMode="stateHidden"
              android:screenOrientation="locked"/>
 
         <activity android:label="Activity for testing window accessibility reporting"

@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsContactKeysProviderPrivilegedApp",
+    team: "trendy_team_security",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     test_suites: [

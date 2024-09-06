@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.OBSERVE_APP_USAGE;
+import static com.android.bedstead.permissions.CommonPermissions.OBSERVE_APP_USAGE;
 import static com.android.bedstead.nene.utils.Assert.assertThrows;
 
 import android.app.PendingIntent;
@@ -26,7 +26,7 @@ import android.content.Intent;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;

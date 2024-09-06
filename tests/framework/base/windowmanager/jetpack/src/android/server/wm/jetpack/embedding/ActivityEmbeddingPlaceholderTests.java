@@ -26,7 +26,7 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAsser
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndGetTaskBounds;
 import static android.server.wm.jetpack.utils.TestActivityLauncher.KEY_ACTIVITY_ID;
 
-import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
+import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -46,7 +46,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitPlaceholderRule;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -144,29 +143,30 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
     /**
      * Tests that when a placeholder activity that is created from a rule that sets
      * finishPrimaryWithSecondary to
-     * {@link androidx.window.extensions.embedding.SplitRule#FINISH_NEVER} is finished, then the
-     * activity it launched with is not finished.
+     * {@link androidx.window.extensions.embedding.SplitRule#FINISH_ADJACENT} is finished, then the
+     * primary activity is also finished when they are in split.
+     * TODO(b/332649523): verify primary is not finished when placeholder is not in split
      */
     @Test
-    @Ignore("b/222188067")
-    public void testPlaceholderFinishPrimaryWithSecondary_FinishNever() {
+    public void testPlaceholderFinishPrimaryWithSecondary_finishAdjacentWhenSplit() {
         // Set embedding rules with finishPrimaryWithSecondary set to FINISH_NEVER
         final SplitPlaceholderRule splitPlaceholderRule =
                 new SplitPlaceholderRuleBuilderWithDefaults(PRIMARY_ACTIVITY_ID,
-                        PLACEHOLDER_ACTIVITY_ID).setFinishPrimaryWithSecondary(FINISH_NEVER)
+                        PLACEHOLDER_ACTIVITY_ID)
+                        .setFinishPrimaryWithSecondary(FINISH_ADJACENT)
                         .build();
         mActivityEmbeddingComponent.setEmbeddingRules(Collections.singleton(splitPlaceholderRule));
 
         // Launch activity with placeholder
         final Pair<Activity, Activity> activityPair = launchActivityWithPlaceholderAndVerifySplit(
                 PRIMARY_ACTIVITY_ID, PLACEHOLDER_ACTIVITY_ID, splitPlaceholderRule);
-        final TestActivity primaryActivity = (TestActivity) activityPair.first;
+        final Activity primaryActivity = activityPair.first;
         final Activity placeholderActivity = activityPair.second;
 
         // Finish the placeholder activity and verify that the primary activity does not finish
         // and fills the task.
         placeholderActivity.finish();
-        waitAndAssertResumedAndFillsTask(primaryActivity);
+        waitAndAssertFinishing(primaryActivity);
     }
 
     /**

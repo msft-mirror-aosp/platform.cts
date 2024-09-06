@@ -51,6 +51,7 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.CtsMouseUtil.ActionMatcher;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.DebugInputRule;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,6 +76,9 @@ public class PointerCaptureTest {
     private PointerCaptureGroup mInner;
     private PointerCaptureView mTarget;
     private PointerCaptureGroup mTarget2;
+
+    @Rule
+    public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     @Rule(order = 0)
     public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
@@ -152,10 +156,11 @@ public class PointerCaptureTest {
         injectMotionEvent(obtainRelativeMouseEvent(action, x, y));
     }
 
-    private static MotionEvent obtainRelativeMouseEvent(int action, int x, int y) {
+    private MotionEvent obtainRelativeMouseEvent(int action, int x, int y) {
         final long eventTime = SystemClock.uptimeMillis();
         MotionEvent event = MotionEvent.obtain(eventTime, eventTime, action, x, y, 0);
         event.setSource(InputDevice.SOURCE_MOUSE_RELATIVE);
+        event.setDisplayId(mActivity.getDisplayId());
         return event;
     }
 
@@ -245,16 +250,17 @@ public class PointerCaptureTest {
     }
 
     @Test
+    @DebugInputRule.DebugInput(bug = 336890318)
     public void testWindowFocusChangeEndsCapture() throws Throwable {
         requestCaptureSync();
         assertPointerCapture(true);
 
         // Show a context menu on a widget.
-        mActivity.registerForContextMenu(mTarget);
-        // TODO(kaznacheev) replace the below line with a call to showContextMenu once b/65487689
-        // is fixed. Meanwhile, emulate a long press which takes long enough time to avoid the race
-        // condition.
-        mCtsTouchUtils.emulateLongPressOnViewCenter(mInstrumentation, mActivityRule, mTarget, 0);
+        mActivityRule.runOnUiThread(() -> {
+            mActivity.registerForContextMenu(mTarget);
+            mActivity.openContextMenu(mTarget);
+        });
+
         PollingCheck.waitFor(TIMEOUT_DELTA, () -> !mOuter.hasWindowFocus());
         PollingCheck.waitFor(TIMEOUT_DELTA,
                 () -> !mTarget.hasPointerCapture() && !mActivity.hasPointerCapture());

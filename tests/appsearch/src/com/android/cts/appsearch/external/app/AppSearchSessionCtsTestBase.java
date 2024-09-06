@@ -39,6 +39,7 @@ import android.app.appsearch.AppSearchSchema.LongPropertyConfig;
 import android.app.appsearch.AppSearchSchema.PropertyConfig;
 import android.app.appsearch.AppSearchSchema.StringPropertyConfig;
 import android.app.appsearch.AppSearchSessionShim;
+import android.app.appsearch.EmbeddingVector;
 import android.app.appsearch.Features;
 import android.app.appsearch.GenericDocument;
 import android.app.appsearch.GetByDocumentIdRequest;
@@ -61,9 +62,14 @@ import android.app.appsearch.exceptions.AppSearchException;
 import android.app.appsearch.testutil.AppSearchEmail;
 import android.app.appsearch.util.DocumentIdUtil;
 import android.content.Context;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.ArrayMap;
 
 import androidx.test.core.app.ApplicationProvider;
+
+import com.android.appsearch.flags.Flags;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -73,6 +79,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -88,6 +95,14 @@ import java.util.concurrent.ExecutorService;
 public abstract class AppSearchSessionCtsTestBase {
     static final String DB_NAME_1 = "";
     static final String DB_NAME_2 = "testDb2";
+
+    // Since we cannot call non-public API in the cts test, make a copy of these 2 action types, so
+    // we can create taken actions in GenericDocument form.
+    private static final int ACTION_TYPE_SEARCH = 1;
+    private static final int ACTION_TYPE_CLICK = 2;
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final Context mContext = ApplicationProvider.getApplicationContext();
 
@@ -173,6 +188,182 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_SCHEMA);
         assertThat(exception).hasMessageThat().contains("Schema is incompatible.");
         assertThat(exception).hasMessageThat().contains("Deleted types: {builtin:Email}");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    public void testSetSchema_schemaDescription_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email1")
+                        .setDescription("Unsupported description")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request = new SetSchemaRequest.Builder().addSchemas(schema).build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mDb1.setSchemaAsync(request).get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SCHEMA_SET_DESCRIPTION
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    public void testSetSchema_propertyDescription_notSupported() throws Exception {
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email1")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("Unsupported description")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest request = new SetSchemaRequest.Builder().addSchemas(schema).build();
+
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mDb1.setSchemaAsync(request).get());
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SCHEMA_SET_DESCRIPTION
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    public void testSetSchema_updateSchemaDescription() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build()).get();
+
+        Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
+        assertThat(actualSchemaTypes).containsExactly(schema1);
+
+        // Change the type description.
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("Like mail but with an 'a'.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build()).get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTIONS) // setDescription
+    public void testSetSchema_updatePropertyDescription() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_SET_DESCRIPTION));
+
+        AppSearchSchema schema1 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("A summary of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All of the content of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema1).build()).get();
+
+        Set<AppSearchSchema> actualSchemaTypes = mDb1.getSchemaAsync().get().getSchemas();
+        assertThat(actualSchemaTypes).containsExactly(schema1);
+
+        // Change the type description.
+        AppSearchSchema schema2 =
+                new AppSearchSchema.Builder("Email")
+                        .setDescription("A type of electronic message.")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("subject")
+                                        .setDescription("The most important part of the email.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setDescription("All the other stuff.")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema2).build()).get();
+
+        GetSchemaResponse getSchemaResponse = mDb1.getSchemaAsync().get();
+        assertThat(getSchemaResponse.getSchemas()).containsExactly(schema2);
     }
 
     @Test
@@ -825,11 +1016,11 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier1)
+                                "Email1", /* visible= */ true, packageIdentifier1)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier2)
+                                "Email1", /* visible= */ true, packageIdentifier2)
                         .addRequiredPermissionsForSchemaTypeVisibility(
                                 "Email1",
                                 ImmutableSet.of(
@@ -944,11 +1135,11 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier1)
+                                "Email1", /* visible= */ true, packageIdentifier1)
                         .setSchemaTypeVisibilityForPackage(
-                                "Email1", /*visible=*/ true, packageIdentifier2)
+                                "Email1", /* visible= */ true, packageIdentifier2)
                         .build();
 
         mDb1.setSchemaAsync(request).get();
@@ -977,7 +1168,7 @@ public abstract class AppSearchSessionCtsTestBase {
         SetSchemaRequest request =
                 new SetSchemaRequest.Builder()
                         .addSchemas(emailSchema)
-                        .setSchemaTypeDisplayedBySystem("Email1", /*displayed=*/ false)
+                        .setSchemaTypeDisplayedBySystem("Email1", /* displayed= */ false)
                         .addRequiredPermissionsForSchemaTypeVisibility(
                                 "Email1", ImmutableSet.of(SetSchemaRequest.READ_SMS))
                         .build();
@@ -1543,17 +1734,28 @@ public abstract class AppSearchSessionCtsTestBase {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
 
         // Schema registration
-        AppSearchSchema takenActionSchema =
-                new AppSearchSchema.Builder("builtin:TakenAction")
+        AppSearchSchema searchActionSchema =
+                new AppSearchSchema.Builder("builtin:SearchAction")
                         .addProperty(
-                                new StringPropertyConfig.Builder("finalQuery")
+                                new LongPropertyConfig.Builder("actionType")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("query")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
                                         .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
                                         .build())
+                        .build();
+        AppSearchSchema clickActionSchema =
+                new AppSearchSchema.Builder("builtin:ClickAction")
                         .addProperty(
-                                new StringPropertyConfig.Builder("name")
+                                new LongPropertyConfig.Builder("actionType")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("query")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
@@ -1568,14 +1770,24 @@ public abstract class AppSearchSessionCtsTestBase {
                                         .build())
                         .build();
 
-        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(takenActionSchema).build())
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(searchActionSchema, clickActionSchema)
+                                .build())
                 .get();
 
-        // Put a taken action generic document
-        GenericDocument takenActionGenericDocument =
-                new GenericDocument.Builder<>("namespace", "id", "builtin:TakenAction")
-                        .setPropertyString("finalQuery", "body")
-                        .setPropertyString("name", "click")
+        // Put search action and click action generic documents.
+        GenericDocument searchAction =
+                new GenericDocument.Builder<>("namespace", "search", "builtin:SearchAction")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyLong("actionType", ACTION_TYPE_SEARCH)
+                        .setPropertyString("query", "body")
+                        .build();
+        GenericDocument clickAction =
+                new GenericDocument.Builder<>("namespace", "click", "builtin:ClickAction")
+                        .setCreationTimestampMillis(2000)
+                        .setPropertyLong("actionType", ACTION_TYPE_CLICK)
+                        .setPropertyString("query", "body")
                         .setPropertyString("referencedQualifiedId", "pkg$db/ns#refId")
                         .build();
 
@@ -1583,9 +1795,10 @@ public abstract class AppSearchSessionCtsTestBase {
                 checkIsBatchResultSuccess(
                         mDb1.putAsync(
                                 new PutDocumentsRequest.Builder()
-                                        .addTakenActionGenericDocuments(takenActionGenericDocument)
+                                        .addTakenActionGenericDocuments(searchAction, clickAction)
                                         .build()));
-        assertThat(result.getSuccesses()).containsExactly("id", null);
+        assertThat(result.getSuccesses()).containsEntry("search", null);
+        assertThat(result.getSuccesses()).containsEntry("click", null);
         assertThat(result.getFailures()).isEmpty();
     }
 
@@ -2678,20 +2891,31 @@ public abstract class AppSearchSessionCtsTestBase {
     }
 
     @Test
-    public void testQueryRankByTakenActions_useGenericDocument() throws Exception {
+    public void testQueryRankByTakenActions_useTakenActionGenericDocument() throws Exception {
         assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.JOIN_SPEC_AND_QUALIFIED_ID));
 
-        AppSearchSchema takenActionSchema =
-                new AppSearchSchema.Builder("builtin:TakenAction")
+        AppSearchSchema searchActionSchema =
+                new AppSearchSchema.Builder("builtin:SearchAction")
                         .addProperty(
-                                new StringPropertyConfig.Builder("finalQuery")
+                                new LongPropertyConfig.Builder("actionType")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("query")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
                                         .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
                                         .build())
+                        .build();
+        AppSearchSchema clickActionSchema =
+                new AppSearchSchema.Builder("builtin:ClickAction")
                         .addProperty(
-                                new StringPropertyConfig.Builder("name")
+                                new LongPropertyConfig.Builder("actionType")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("query")
                                         .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
                                         .setIndexingType(
                                                 StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
@@ -2709,7 +2933,10 @@ public abstract class AppSearchSessionCtsTestBase {
         // Schema registration
         mDb1.setSchemaAsync(
                         new SetSchemaRequest.Builder()
-                                .addSchemas(AppSearchEmail.SCHEMA, takenActionSchema)
+                                .addSchemas(
+                                        AppSearchEmail.SCHEMA,
+                                        searchActionSchema,
+                                        clickActionSchema)
                                 .build())
                 .get();
 
@@ -2736,54 +2963,60 @@ public abstract class AppSearchSessionCtsTestBase {
         String qualifiedId2 =
                 DocumentIdUtil.createQualifiedId(mContext.getPackageName(), DB_NAME_1, inEmail2);
 
-        GenericDocument takenAction1 =
-                new GenericDocument.Builder<>("namespace", "action1", "builtin:TakenAction")
-                        .setPropertyString("finalQuery", "body")
-                        .setPropertyString("name", "click")
+        GenericDocument searchAction =
+                new GenericDocument.Builder<>("namespace", "search1", "builtin:SearchAction")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyLong("actionType", ACTION_TYPE_SEARCH)
+                        .setPropertyString("query", "body")
+                        .build();
+        GenericDocument clickAction1 =
+                new GenericDocument.Builder<>("namespace", "click1", "builtin:ClickAction")
+                        .setCreationTimestampMillis(2000)
+                        .setPropertyLong("actionType", ACTION_TYPE_CLICK)
+                        .setPropertyString("query", "body")
                         .setPropertyString("referencedQualifiedId", qualifiedId1)
                         .build();
-        GenericDocument takenAction2 =
-                new GenericDocument.Builder<>("namespace", "action2", "builtin:TakenAction")
-                        .setPropertyString("finalQuery", "body")
-                        .setPropertyString("name", "click")
+        GenericDocument clickAction2 =
+                new GenericDocument.Builder<>("namespace", "click2", "builtin:ClickAction")
+                        .setCreationTimestampMillis(3000)
+                        .setPropertyLong("actionType", ACTION_TYPE_CLICK)
+                        .setPropertyString("query", "body")
                         .setPropertyString("referencedQualifiedId", qualifiedId2)
                         .build();
-        GenericDocument takenAction3 =
-                new GenericDocument.Builder<>("namespace", "action3", "builtin:TakenAction")
-                        .setPropertyString("finalQuery", "body")
-                        .setPropertyString("name", "click")
+        GenericDocument clickAction3 =
+                new GenericDocument.Builder<>("namespace", "click3", "builtin:ClickAction")
+                        .setCreationTimestampMillis(4000)
+                        .setPropertyLong("actionType", ACTION_TYPE_CLICK)
+                        .setPropertyString("query", "body")
                         .setPropertyString("referencedQualifiedId", qualifiedId1)
                         .build();
 
         checkIsBatchResultSuccess(
                 mDb1.putAsync(
                         new PutDocumentsRequest.Builder()
-                                .addGenericDocuments(
-                                        inEmail1,
-                                        inEmail2,
-                                        takenAction1,
-                                        takenAction2,
-                                        takenAction3)
+                                .addGenericDocuments(inEmail1, inEmail2)
+                                .addTakenActionGenericDocuments(
+                                        searchAction, clickAction1, clickAction2, clickAction3)
                                 .build()));
 
         SearchSpec nestedSearchSpec =
                 new SearchSpec.Builder()
                         .setRankingStrategy(SearchSpec.RANKING_STRATEGY_DOCUMENT_SCORE)
                         .setOrder(SearchSpec.ORDER_DESCENDING)
-                        .addFilterSchemas("builtin:TakenAction")
+                        .addFilterSchemas("builtin:ClickAction")
                         .build();
 
         // Note: SearchSpec.Builder#setMaxJoinedResultCount only limits the number of child
         // documents returned. It does not affect the number of child documents that are scored.
         JoinSpec js =
                 new JoinSpec.Builder("referencedQualifiedId")
-                        .setNestedSearch("finalQuery:body", nestedSearchSpec)
+                        .setNestedSearch("query:body", nestedSearchSpec)
                         .setAggregationScoringStrategy(JoinSpec.AGGREGATION_SCORING_RESULT_COUNT)
                         .setMaxJoinedResultCount(0)
                         .build();
 
-        // Search "body" for AppSearchEmail documents, ranking by TakenAction signals with
-        // finalQuery = "body".
+        // Search "body" for AppSearchEmail documents, ranking by ClickAction signals with
+        // query = "body".
         SearchResultsShim searchResults =
                 mDb1.search(
                         "body",
@@ -2995,7 +3228,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(documents).hasSize(1);
         assertThat(documents).containsExactly(inDoc);
 
-        // Query only for non-exist type
+        // Query only for non-existent type
         searchResults =
                 mDb1.search(
                         "body",
@@ -3102,7 +3335,7 @@ public abstract class AppSearchSessionCtsTestBase {
         assertThat(documents).hasSize(1);
         assertThat(documents).containsExactly(expectedEmail);
 
-        // Query only for non-exist namespace
+        // Query only for non-existent namespace
         searchResults =
                 mDb1.search(
                         "body",
@@ -4286,10 +4519,10 @@ public abstract class AppSearchSessionCtsTestBase {
                         "A commonly used fake word is foo. "
                                 + "Another nonsense word that’s used a lot is bar");
         assertThat(matchInfo.getExactMatchRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 29, /*upper=*/ 32));
+                .isEqualTo(new SearchResult.MatchRange(/* start= */ 29, /* end= */ 32));
         assertThat(matchInfo.getExactMatch()).isEqualTo("foo");
         assertThat(matchInfo.getSnippetRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 26, /*upper=*/ 33));
+                .isEqualTo(new SearchResult.MatchRange(/* start= */ 26, /* end= */ 33));
         assertThat(matchInfo.getSnippet()).isEqualTo("is foo.");
 
         if (!mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
@@ -4297,7 +4530,7 @@ public abstract class AppSearchSessionCtsTestBase {
             assertThrows(UnsupportedOperationException.class, matchInfo::getSubmatch);
         } else {
             assertThat(matchInfo.getSubmatchRange())
-                    .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 29, /*upper=*/ 31));
+                    .isEqualTo(new SearchResult.MatchRange(/* start= */ 29, /* end= */ 31));
             assertThat(matchInfo.getSubmatch()).isEqualTo("fo");
         }
     }
@@ -4437,7 +4670,7 @@ public abstract class AppSearchSessionCtsTestBase {
         SearchResult.MatchInfo matchInfo = matchInfos.get(0);
         assertThat(matchInfo.getFullText()).isEqualTo(japanese);
         assertThat(matchInfo.getExactMatchRange())
-                .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 44, /*upper=*/ 45));
+                .isEqualTo(new SearchResult.MatchRange(/* start= */ 44, /* end= */ 45));
         assertThat(matchInfo.getExactMatch()).isEqualTo("は");
 
         if (!mDb1.getFeatures().isFeatureSupported(Features.SEARCH_RESULT_MATCH_INFO_SUBMATCH)) {
@@ -4445,7 +4678,7 @@ public abstract class AppSearchSessionCtsTestBase {
             assertThrows(UnsupportedOperationException.class, matchInfo::getSubmatch);
         } else {
             assertThat(matchInfo.getSubmatchRange())
-                    .isEqualTo(new SearchResult.MatchRange(/*lower=*/ 44, /*upper=*/ 45));
+                    .isEqualTo(new SearchResult.MatchRange(/* start= */ 44, /* end= */ 45));
             assertThat(matchInfo.getSubmatch()).isEqualTo("は");
         }
     }
@@ -4961,8 +5194,8 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .build()));
 
         // Check the presence of the documents
-        assertThat(doGet(mDb1, /*namespace=*/ "email", "id1", "id2")).hasSize(2);
-        assertThat(doGet(mDb1, /*namespace=*/ "document", "id3")).hasSize(1);
+        assertThat(doGet(mDb1, /* namespace= */ "email", "id1", "id2")).hasSize(2);
+        assertThat(doGet(mDb1, /* namespace= */ "document", "id3")).hasSize(1);
 
         // Delete the email namespace
         mDb1.removeAsync(
@@ -5028,8 +5261,8 @@ public abstract class AppSearchSessionCtsTestBase {
                         new PutDocumentsRequest.Builder().addGenericDocuments(email2).build()));
 
         // Check the presence of the documents
-        assertThat(doGet(mDb1, /*namespace=*/ "email", "id1")).hasSize(1);
-        assertThat(doGet(mDb2, /*namespace=*/ "email", "id2")).hasSize(1);
+        assertThat(doGet(mDb1, /* namespace= */ "email", "id1")).hasSize(1);
+        assertThat(doGet(mDb2, /* namespace= */ "email", "id2")).hasSize(1);
 
         // Delete the email namespace in instance 1
         mDb1.removeAsync(
@@ -5593,7 +5826,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /*resultLimit=*/ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /* limit= */ 1)
                                 .build());
         List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4);
@@ -5606,7 +5839,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /*resultLimit=*/ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4, inEmail2);
@@ -5621,7 +5854,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /*resultLimit=*/ 1)
+                                        /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inEmail4, inEmail2);
@@ -5731,7 +5964,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /* resultLimit= */ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_PACKAGE, /* limit= */ 1)
                                 .build());
         List<GenericDocument> documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3);
@@ -5744,8 +5977,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE,
-                                        /* resultLimit= */ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail2);
@@ -5758,8 +5990,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE,
-                                        /* resultLimit= */ 2)
+                                        SearchSpec.GROUPING_TYPE_PER_NAMESPACE, /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents)
@@ -5773,7 +6004,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* resultLimit= */ 1)
+                                        SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inEmail5);
@@ -5786,7 +6017,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         new SearchSpec.Builder()
                                 .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
                                 .setResultGrouping(
-                                        SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* resultLimit= */ 2)
+                                        SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail4);
@@ -5801,7 +6032,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 1)
+                                        /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail2);
@@ -5817,7 +6048,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 2)
+                                        /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents)
@@ -5833,7 +6064,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_SCHEMA
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 1)
+                                        /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inEmail5);
@@ -5848,7 +6079,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_SCHEMA
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 2)
+                                        /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail4);
@@ -5863,7 +6094,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_SCHEMA,
-                                        /* resultLimit= */ 1)
+                                        /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail2);
@@ -5879,7 +6110,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 .setResultGrouping(
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_SCHEMA,
-                                        /* resultLimit= */ 2)
+                                        /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents)
@@ -5896,7 +6127,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_SCHEMA
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 1)
+                                        /* limit= */ 1)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents).containsExactly(inDoc3, inDoc2, inEmail5, inEmail2);
@@ -5913,7 +6144,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                         SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                                 | SearchSpec.GROUPING_TYPE_PER_SCHEMA
                                                 | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                        /* resultLimit= */ 2)
+                                        /* limit= */ 2)
                                 .build());
         documents = convertSearchResultsToDocuments(searchResults);
         assertThat(documents)
@@ -5977,8 +6208,7 @@ public abstract class AppSearchSessionCtsTestBase {
         SearchSpec searchSpec1 =
                 new SearchSpec.Builder()
                         .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
-                        .setResultGrouping(
-                                SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* resultLimit= */ 1)
+                        .setResultGrouping(SearchSpec.GROUPING_TYPE_PER_SCHEMA, /* limit= */ 1)
                         .build();
         UnsupportedOperationException exception =
                 assertThrows(
@@ -5999,7 +6229,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         .setResultGrouping(
                                 SearchSpec.GROUPING_TYPE_PER_PACKAGE
                                         | SearchSpec.GROUPING_TYPE_PER_SCHEMA,
-                                /* resultLimit= */ 1)
+                                /* limit= */ 1)
                         .build();
         exception =
                 assertThrows(
@@ -6020,7 +6250,7 @@ public abstract class AppSearchSessionCtsTestBase {
                         .setResultGrouping(
                                 SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                         | SearchSpec.GROUPING_TYPE_PER_SCHEMA,
-                                /* resultLimit= */ 1)
+                                /* limit= */ 1)
                         .build();
         exception =
                 assertThrows(
@@ -6042,7 +6272,7 @@ public abstract class AppSearchSessionCtsTestBase {
                                 SearchSpec.GROUPING_TYPE_PER_NAMESPACE
                                         | SearchSpec.GROUPING_TYPE_PER_SCHEMA
                                         | SearchSpec.GROUPING_TYPE_PER_PACKAGE,
-                                /* resultLimit= */ 1)
+                                /* limit= */ 1)
                         .build();
         exception =
                 assertThrows(
@@ -6425,8 +6655,6 @@ public abstract class AppSearchSessionCtsTestBase {
                         .build();
         mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(email).build()).get();
 
-        // ListFilterQueryLanguage is enabled so that EXPERIMENTAL_ICING_ADVANCED_QUERY gets enabled
-        // in IcingLib.
         // Disable VERBATIM_SEARCH in the SearchSpec.
         SearchResultsShim searchResults =
                 mDb1.search(
@@ -7587,8 +7815,9 @@ public abstract class AppSearchSessionCtsTestBase {
                 UnsupportedOperationException.class,
                 () ->
                         mDb1.searchSuggestionAsync(
-                                        /*suggestionQueryExpression=*/ "t",
-                                        new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 2)
+                                        /* suggestionQueryExpression= */ "t",
+                                        new SearchSuggestionSpec.Builder(
+                                                        /* maximumResultCount= */ 2)
                                                 .build())
                                 .get());
     }
@@ -7644,8 +7873,9 @@ public abstract class AppSearchSessionCtsTestBase {
 
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions)
                 .containsExactly(resultOne, resultTwo, resultThree, resultFour)
@@ -7654,8 +7884,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Query first 2 suggestions, and they will be ranked.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 2).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 2)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultOne, resultTwo).inOrder();
     }
@@ -7706,8 +7937,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace1 has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .build())
                         .get();
@@ -7716,8 +7947,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace2 has 1 result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace2")
                                         .build())
                         .get();
@@ -7726,8 +7957,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // namespace2 and 3 has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace2", "namespace3")
                                         .build())
                         .get();
@@ -7736,8 +7967,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // non exist namespace has empty result
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("nonExistNamespace")
                                         .build())
                         .get();
@@ -7796,8 +8027,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .build())
@@ -7807,8 +8038,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and namespace1/doc2
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace1")
                                         .addFilterDocumentIds(
                                                 "namespace1", ImmutableList.of("id1", "id2"))
@@ -7819,8 +8050,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and namespace2/doc3
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterNamespaces("namespace1", "namespace2")
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .addFilterDocumentIds("namespace2", ImmutableList.of("id3"))
@@ -7831,8 +8062,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Only search for namespace1/doc1 and everything in namespace2
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterDocumentIds("namespace1", "id1")
                                         .build())
                         .get();
@@ -7909,8 +8140,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type1 has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type1")
                                         .build())
                         .get();
@@ -7919,8 +8150,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type2 has 1 result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type2")
                                         .build())
                         .get();
@@ -7929,8 +8160,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // Type2 and 3 has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type2", "Type3")
                                         .build())
                         .get();
@@ -7939,8 +8170,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // non exist type has empty result.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("nonExistType")
                                         .build())
                         .get();
@@ -7999,16 +8230,18 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix f has 2 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultFoo, resultFool);
 
         // prefix b has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "b",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "b",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultBar, resultBaz);
     }
@@ -8062,8 +8295,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by NONE, the order should be arbitrary but all terms appear.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_NONE)
@@ -8074,8 +8307,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by document count, the order should be term1:3 > term2:2 > term3:1
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_DOCUMENT_COUNT)
@@ -8086,8 +8319,8 @@ public abstract class AppSearchSessionCtsTestBase {
         // rank by term frequency, the order should be term3:5 > term2:4 > term1:3
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10)
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .setRankingStrategy(
                                                 SearchSuggestionSpec
                                                         .SUGGESTION_RANKING_STRATEGY_TERM_FREQUENCY)
@@ -8142,8 +8375,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 3 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultTwo, resultThree, resultTart);
 
@@ -8157,8 +8391,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // now prefix t has 2 results.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultThree, resultTart);
     }
@@ -8200,8 +8435,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 3 results.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultTwo, resultThree, resultTart);
 
@@ -8217,8 +8453,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // prefix t has 2 results for now.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultThree, resultTwist);
     }
@@ -8261,16 +8498,18 @@ public abstract class AppSearchSessionCtsTestBase {
         // database 1 could get suggestion results
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).containsExactly(resultOne, resultTwo).inOrder();
 
         // database 2 couldn't get suggestion results
         suggestions =
                 mDb2.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "t",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "t",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         assertThat(suggestions).isEmpty();
     }
@@ -8313,8 +8552,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search "bar AND f" only document 1 should match the search.
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar fo").build();
@@ -8324,8 +8564,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar OR cat f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar OR cat f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barCatFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar OR cat fo").build();
@@ -8336,8 +8577,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "(bar AND cat) OR f", all documents could match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "(bar cat) OR f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "(bar cat) OR f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barCatOrFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("(bar cat) OR fo").build();
@@ -8352,8 +8594,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "-bar f", document2 "cat foo" could and document3 "fool" could match.
         suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "-bar f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "-bar f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult noBarFoo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("-bar foo").build();
@@ -8434,7 +8677,7 @@ public abstract class AppSearchSessionCtsTestBase {
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
                                 /* suggestionQueryExpression= */ "t",
-                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type1")
                                         .addFilterProperties(
                                                 "Type1", ImmutableList.of("propertyone"))
@@ -8446,7 +8689,7 @@ public abstract class AppSearchSessionCtsTestBase {
         suggestions =
                 mDb1.searchSuggestionAsync(
                                 /* suggestionQueryExpression= */ "t",
-                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type1")
                                         .addFilterProperties(
                                                 "Type1",
@@ -8459,7 +8702,7 @@ public abstract class AppSearchSessionCtsTestBase {
         suggestions =
                 mDb1.searchSuggestionAsync(
                                 /* suggestionQueryExpression= */ "t",
-                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type1", "Type2")
                                         .addFilterProperties(
                                                 "Type1", ImmutableList.of("propertyone"))
@@ -8473,7 +8716,7 @@ public abstract class AppSearchSessionCtsTestBase {
         suggestions =
                 mDb1.searchSuggestionAsync(
                                 /* suggestionQueryExpression= */ "t",
-                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterSchemas("Type1", "Type2")
                                         .addFilterProperties(
                                                 "Type1", ImmutableList.of("propertyone"))
@@ -8488,7 +8731,7 @@ public abstract class AppSearchSessionCtsTestBase {
         suggestions =
                 mDb1.searchSuggestionAsync(
                                 /* suggestionQueryExpression= */ "t",
-                                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                                         .addFilterProperties(
                                                 "Type1", ImmutableList.of("propertyone"))
                                         .build())
@@ -8503,7 +8746,7 @@ public abstract class AppSearchSessionCtsTestBase {
                 mDb1.getFeatures().isFeatureSupported(Features.SEARCH_SPEC_ADD_FILTER_PROPERTIES));
 
         SearchSuggestionSpec searchSuggestionSpec =
-                new SearchSuggestionSpec.Builder(/* totalResultCount= */ 10)
+                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
                         .addFilterSchemas("Type1")
                         .addFilterProperties("Type1", ImmutableList.of("property"))
                         .build();
@@ -8573,8 +8816,9 @@ public abstract class AppSearchSessionCtsTestBase {
         // Search for "bar AND subject:f"
         List<SearchSuggestionResult> suggestions =
                 mDb1.searchSuggestionAsync(
-                                /*suggestionQueryExpression=*/ "bar subject:f",
-                                new SearchSuggestionSpec.Builder(/*totalResultCount=*/ 10).build())
+                                /* suggestionQueryExpression= */ "bar subject:f",
+                                new SearchSuggestionSpec.Builder(/* maximumResultCount= */ 10)
+                                        .build())
                         .get();
         SearchSuggestionResult barSubjectFo =
                 new SearchSuggestionResult.Builder().setSuggestedResult("bar subject:fo").build();
@@ -8618,6 +8862,13 @@ public abstract class AppSearchSessionCtsTestBase {
         Set<AppSearchSchema> actual = mDb1.getSchemaAsync().get().getSchemas();
         assertThat(actual).hasSize(3);
         assertThat(actual).isEqualTo(request.getSchemas());
+
+        // Check that calling getParentType() for the EmailMessage schema returns Email and Message
+        for (AppSearchSchema schema : actual) {
+            if (schema.getSchemaType().equals("EmailMessage")) {
+                assertThat(schema.getParentTypes()).containsExactly("Email", "Message");
+            }
+        }
     }
 
     @Test
@@ -8647,6 +8898,69 @@ public abstract class AppSearchSessionCtsTestBase {
                 .contains(
                         Features.SCHEMA_ADD_PARENT_TYPE
                                 + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    public void testGetSchema_indexableNestedPropsList() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SCHEMA_ADD_INDEXABLE_NESTED_PROPERTIES));
+
+        AppSearchSchema personSchema =
+                new AppSearchSchema.Builder("Person")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("name")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "worksFor", "Organization")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setShouldIndexNestedProperties(false)
+                                        .addIndexableNestedProperties(Collections.singleton("name"))
+                                        .build())
+                        .build();
+        AppSearchSchema organizationSchema =
+                new AppSearchSchema.Builder("Organization")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("name")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REQUIRED)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_EXACT_TERMS)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .addProperty(
+                                new StringPropertyConfig.Builder("notes")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .build())
+                        .build();
+
+        SetSchemaRequest setSchemaRequest =
+                new SetSchemaRequest.Builder().addSchemas(personSchema, organizationSchema).build();
+        mDb1.setSchemaAsync(setSchemaRequest).get();
+
+        Set<AppSearchSchema> actual = mDb1.getSchemaAsync().get().getSchemas();
+        assertThat(actual).hasSize(2);
+        assertThat(actual).isEqualTo(setSchemaRequest.getSchemas());
+
+        for (AppSearchSchema schema : actual) {
+            if (schema.getSchemaType().equals("Person")) {
+                for (PropertyConfig property : schema.getProperties()) {
+                    if (property.getName().equals("worksFor")) {
+                        assertThat(
+                                        ((DocumentPropertyConfig) property)
+                                                .getIndexableNestedProperties())
+                                .containsExactly("name");
+                    }
+                }
+            }
+        }
     }
 
     @Test
@@ -9480,5 +9794,774 @@ public abstract class AppSearchSessionCtsTestBase {
                 "indexableNestedProperties: [name, worksFor.notes, worksFor.name]";
 
         assertThat(emailSchema.toString()).contains(expectedIndexableNestedPropertyMessage);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearch_simple() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, 0.4f, 0.5f},
+                                        "my_model_v1"),
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model_v2"))
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f},
+                                        "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model_v2"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5 (embedding1), 0.3 (embedding2)
+        // - document 1: -0.9 (embedding1)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model_v1");
+
+        // Match documents that have embeddings with a similarity closer to 0 that is
+        // greater than -1.
+        //
+        // The matched embeddings for each doc are:
+        // - document 0: -0.5 (embedding1), 0.3 (embedding2)
+        // - document 1: -0.9 (embedding1)
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: sum({-0.5, 0.3}) + sum({}) = -0.2
+        // - document 1: sum({-0.9}) + sum({}) = -0.9
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search("semanticSearch(getSearchSpecEmbedding(0), -1, 1)", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-0.2);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-0.9);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearch_propertyRestriction() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, 0.4f, 0.5f},
+                                        "my_model_v1"),
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model_v2"))
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f},
+                                        "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model_v2"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5 (embedding1), 0.3 (embedding2)
+        // - document 1: -0.9 (embedding1)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model_v1");
+
+        // Create a query similar as above but with a property restriction, which still matches
+        // document 0 and document 1 but the semantic score 0.3 should be removed from document 0.
+        //
+        // The matched embeddings for each doc are:
+        // - document 0: -0.5 (embedding1)
+        // - document 1: -0.9 (embedding1)
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: sum({-0.5}) = -0.5
+        // - document 1: sum({-0.9}) = -0.9
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "embedding1:semanticSearch(getSearchSpecEmbedding(0), -1, 1)", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-0.5);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-0.9);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearch_multipleSearchEmbeddings() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, 0.4f, 0.5f},
+                                        "my_model_v1"),
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model_v2"))
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f},
+                                        "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model_v2"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5 (embedding1), 0.3 (embedding2)
+        // - document 1: -0.9 (embedding1)
+        EmbeddingVector searchEmbedding1 =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model_v1");
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5 (embedding2)
+        // - document 1: -2.1 (embedding2)
+        EmbeddingVector searchEmbedding2 =
+                new EmbeddingVector(new float[] {-1, -1, 1}, "my_model_v2");
+
+        // Create a complex query that matches all hits from all documents.
+        //
+        // The matched embeddings for each doc are:
+        // - document 0: -0.5 (embedding1), 0.3 (embedding2), -0.5 (embedding2)
+        // - document 1: -0.9 (embedding1), -2.1 (embedding2)
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: sum({-0.5, 0.3}) + sum({-0.5}) = -0.7
+        // - document 1: sum({-0.9}) + sum({-2.1}) = -3
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding1, searchEmbedding2)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0))) + "
+                                    + "sum(this.matchedSemanticScores(getSearchSpecEmbedding(1)))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "semanticSearch(getSearchSpecEmbedding(0)) OR "
+                                + "semanticSearch(getSearchSpecEmbedding(1))",
+                        searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(-0.7);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-3);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearch_hybrid() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, 0.4f, 0.5f},
+                                        "my_model_v1"),
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model_v2"))
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f},
+                                        "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, -0.8f}, "my_model_v2"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: -0.5 (embedding2)
+        // - document 1: -2.1 (embedding2)
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {-1, -1, 1}, "my_model_v2");
+
+        // Create a hybrid query that matches document 0 because of term-based search
+        // and document 1 because of embedding-based search.
+        //
+        // The matched embeddings for each doc are:
+        // - document 1: -2.1 (embedding2)
+        // The scoring expression for each doc will be evaluated as:
+        // - document 0: sum({}) = 0
+        // - document 1: sum({-2.1}) = -2.1
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search(
+                        "foo OR semanticSearch(getSearchSpecEmbedding(0), -10, -1)", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(0);
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-2.1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearchWithoutEnablingFeatureFails() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding1")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding2")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding1",
+                                new EmbeddingVector(
+                                        new float[] {0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, "my_model_v1"))
+                        .setPropertyEmbedding(
+                                "embedding2",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, 0.4f, 0.5f},
+                                        "my_model_v1"),
+                                new EmbeddingVector(new float[] {0.6f, 0.7f, 0.8f}, "my_model_v2"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(new PutDocumentsRequest.Builder().addGenericDocuments(doc).build()));
+
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model_v1");
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search("semanticSearch(getSearchSpecEmbedding(0), -1, 1)", searchSpec);
+        ExecutionException executionException =
+                assertThrows(
+                        ExecutionException.class, () -> searchResults.getNextPageAsync().get());
+        assertThat(executionException).hasCauseThat().isInstanceOf(AppSearchException.class);
+        AppSearchException exception = (AppSearchException) executionException.getCause();
+        assertThat(exception.getResultCode()).isEqualTo(RESULT_INVALID_ARGUMENT);
+        assertThat(exception).hasMessageThat().contains("Attempted use of unenabled feature");
+        assertThat(exception).hasMessageThat().contains("EMBEDDING_SEARCH");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG)
+    public void testEmbeddingSearch_notSupported() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_QUERY_LANGUAGE));
+        assumeFalse(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () ->
+                                mDb1.search(
+                                        "semanticSearch(getSearchSpecEmbedding(0), -1, 1)",
+                                        searchSpec));
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIST_FILTER_TOKENIZE_FUNCTION)
+    public void testTokenizeSearch_simple() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_QUERY_LANGUAGE));
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_TOKENIZE_FUNCTION));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new StringPropertyConfig.Builder("body")
+                                        .setCardinality(PropertyConfig.CARDINALITY_OPTIONAL)
+                                        .setTokenizerType(StringPropertyConfig.TOKENIZER_TYPE_PLAIN)
+                                        .setIndexingType(
+                                                StringPropertyConfig.INDEXING_TYPE_PREFIXES)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setPropertyString("body", "foo bar")
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setPropertyString("body", "bar")
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        GenericDocument doc2 =
+                new GenericDocument.Builder<>("namespace", "id2", "Email")
+                        .setPropertyString("body", "foo")
+                        .setCreationTimestampMillis(1000)
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder()
+                                .addGenericDocuments(doc0, doc1, doc2)
+                                .build()));
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setTermMatch(SearchSpec.TERM_MATCH_EXACT_ONLY)
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setListFilterTokenizeFunctionEnabled(true)
+                        .build();
+        SearchResultsShim searchResults = mDb1.search("tokenize(\"foo.\")", searchSpec);
+        List<GenericDocument> results = convertSearchResultsToDocuments(searchResults);
+        assertThat(results).containsExactly(doc2, doc0);
+
+        searchResults = mDb1.search("tokenize(\"bar, foo\")", searchSpec);
+        results = convertSearchResultsToDocuments(searchResults);
+        assertThat(results).containsExactly(doc0);
+
+        searchResults = mDb1.search("tokenize(\"\\\"bar, \\\"foo\\\"\")", searchSpec);
+        results = convertSearchResultsToDocuments(searchResults);
+        assertThat(results).containsExactly(doc0);
+
+        searchResults = mDb1.search("tokenize(\"bar ) foo\")", searchSpec);
+        results = convertSearchResultsToDocuments(searchResults);
+        assertThat(results).containsExactly(doc0);
+
+        searchResults = mDb1.search("tokenize(\"bar foo(\")", searchSpec);
+        results = convertSearchResultsToDocuments(searchResults);
+        assertThat(results).containsExactly(doc0);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_LIST_FILTER_TOKENIZE_FUNCTION)
+    public void testTokenizeSearch_notSupported() throws Exception {
+        assumeTrue(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_QUERY_LANGUAGE));
+        assumeFalse(mDb1.getFeatures().isFeatureSupported(Features.LIST_FILTER_TOKENIZE_FUNCTION));
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setListFilterTokenizeFunctionEnabled(true)
+                        .build();
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class,
+                        () -> mDb1.search("tokenize(\"foo.\")", searchSpec));
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.LIST_FILTER_TOKENIZE_FUNCTION
+                                + " is not available on this AppSearch implementation.");
+    }
+
+    @Test
+    @RequiresFlagsEnabled({
+        Flags.FLAG_ENABLE_INFORMATIONAL_RANKING_EXPRESSIONS,
+        Flags.FLAG_ENABLE_SCHEMA_EMBEDDING_PROPERTY_CONFIG
+    })
+    public void testInformationalRankingExpressions() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures().isFeatureSupported(Features.SCHEMA_EMBEDDING_PROPERTY_CONFIG));
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS));
+
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("Email")
+                        .addProperty(
+                                new AppSearchSchema.EmbeddingPropertyConfig.Builder("embedding")
+                                        .setCardinality(PropertyConfig.CARDINALITY_REPEATED)
+                                        .setIndexingType(
+                                                AppSearchSchema.EmbeddingPropertyConfig
+                                                        .INDEXING_TYPE_SIMILARITY)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(new SetSchemaRequest.Builder().addSchemas(schema).build()).get();
+
+        // Index documents
+        final int doc0DocScore = 2;
+        GenericDocument doc0 =
+                new GenericDocument.Builder<>("namespace", "id0", "Email")
+                        .setScore(doc0DocScore)
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, -0.4f, -0.5f},
+                                        "my_model"))
+                        .build();
+        final int doc1DocScore = 3;
+        GenericDocument doc1 =
+                new GenericDocument.Builder<>("namespace", "id1", "Email")
+                        .setScore(doc1DocScore)
+                        .setCreationTimestampMillis(1000)
+                        .setPropertyEmbedding(
+                                "embedding",
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, 0.2f, -0.3f, -0.4f, 0.5f}, "my_model"),
+                                new EmbeddingVector(
+                                        new float[] {-0.1f, -0.2f, -0.3f, -0.4f, -0.5f},
+                                        "my_model"))
+                        .build();
+        checkIsBatchResultSuccess(
+                mDb1.putAsync(
+                        new PutDocumentsRequest.Builder().addGenericDocuments(doc0, doc1).build()));
+
+        // Add an embedding search with dot product semantic scores:
+        // - document 0: 0.5
+        // - document 1: -0.9, 0.5
+        EmbeddingVector searchEmbedding =
+                new EmbeddingVector(new float[] {1, -1, -1, 1, -1}, "my_model");
+
+        // Make an embedding query that matches all documents.
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setDefaultEmbeddingSearchMetricType(
+                                SearchSpec.EMBEDDING_SEARCH_METRIC_TYPE_DOT_PRODUCT)
+                        .addSearchEmbeddings(searchEmbedding)
+                        .setRankingStrategy(
+                                "sum(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .addInformationalRankingExpressions(
+                                "len(this.matchedSemanticScores(getSearchSpecEmbedding(0)))")
+                        .addInformationalRankingExpressions("this.documentScore()")
+                        .setListFilterQueryLanguageEnabled(true)
+                        .setEmbeddingSearchEnabled(true)
+                        .build();
+        SearchResultsShim searchResults =
+                mDb1.search("semanticSearch(getSearchSpecEmbedding(0))", searchSpec);
+        List<SearchResult> results = retrieveAllSearchResults(searchResults);
+        assertThat(results).hasSize(2);
+        // doc0:
+        assertThat(results.get(0).getGenericDocument()).isEqualTo(doc0);
+        assertThat(results.get(0).getRankingSignal()).isWithin(0.00001).of(0.5);
+        // doc0 has 1 embedding vector and a document score of 2.
+        assertThat(results.get(0).getInformationalRankingSignals())
+                .containsExactly(1.0, (double) doc0DocScore)
+                .inOrder();
+
+        // doc1:
+        assertThat(results.get(1).getGenericDocument()).isEqualTo(doc1);
+        assertThat(results.get(1).getRankingSignal()).isWithin(0.00001).of(-0.9 + 0.5);
+        // doc1 has 2 embedding vectors and a document score of 3.
+        assertThat(results.get(1).getInformationalRankingSignals())
+                .containsExactly(2.0, (double) doc1DocScore)
+                .inOrder();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_INFORMATIONAL_RANKING_EXPRESSIONS)
+    public void testInformationalRankingExpressions_notSupported() throws Exception {
+        assumeTrue(
+                mDb1.getFeatures()
+                        .isFeatureSupported(Features.SEARCH_SPEC_ADVANCED_RANKING_EXPRESSION));
+        assumeFalse(
+                mDb1.getFeatures()
+                        .isFeatureSupported(
+                                Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS));
+
+        SearchSpec searchSpec =
+                new SearchSpec.Builder()
+                        .setRankingStrategy("this.documentScore() + 1")
+                        .addInformationalRankingExpressions("this.documentScore()")
+                        .build();
+        UnsupportedOperationException exception =
+                assertThrows(
+                        UnsupportedOperationException.class, () -> mDb1.search("foo", searchSpec));
+        assertThat(exception)
+                .hasMessageThat()
+                .contains(
+                        Features.SEARCH_SPEC_ADD_INFORMATIONAL_RANKING_EXPRESSIONS
+                                + " are not available on this AppSearch implementation.");
+    }
+
+    @Test
+    public void testPutDocuments_emptyBytesAndDocuments() throws Exception {
+        // Schema registration
+        AppSearchSchema schema =
+                new AppSearchSchema.Builder("testSchema")
+                        .addProperty(
+                                new AppSearchSchema.BytesPropertyConfig.Builder("bytes")
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED)
+                                        .build())
+                        .addProperty(
+                                new AppSearchSchema.DocumentPropertyConfig.Builder(
+                                                "document", AppSearchEmail.SCHEMA_TYPE)
+                                        .setCardinality(
+                                                AppSearchSchema.PropertyConfig.CARDINALITY_REPEATED)
+                                        .setShouldIndexNestedProperties(true)
+                                        .build())
+                        .build();
+        mDb1.setSchemaAsync(
+                        new SetSchemaRequest.Builder()
+                                .addSchemas(schema, AppSearchEmail.SCHEMA)
+                                .build())
+                .get();
+
+        // Index a document
+        GenericDocument document =
+                new GenericDocument.Builder<>("namespace", "id1", "testSchema")
+                        .setPropertyBytes("bytes")
+                        .setPropertyDocument("document")
+                        .build();
+
+        AppSearchBatchResult<String, Void> result =
+                checkIsBatchResultSuccess(
+                        mDb1.putAsync(
+                                new PutDocumentsRequest.Builder()
+                                        .addGenericDocuments(document)
+                                        .build()));
+        assertThat(result.getSuccesses()).containsExactly("id1", null);
+        assertThat(result.getFailures()).isEmpty();
+
+        GetByDocumentIdRequest request =
+                new GetByDocumentIdRequest.Builder("namespace").addIds("id1").build();
+        List<GenericDocument> outDocuments = doGet(mDb1, request);
+        assertThat(outDocuments).hasSize(1);
+        GenericDocument outDocument = outDocuments.get(0);
+        assertThat(outDocument.getPropertyBytesArray("bytes")).isEmpty();
+        assertThat(outDocument.getPropertyDocumentArray("document")).isEmpty();
     }
 }

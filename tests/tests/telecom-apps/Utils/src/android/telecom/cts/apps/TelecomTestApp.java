@@ -81,6 +81,11 @@ public enum TelecomTestApp implements Parcelable {
                     new ComponentName(SELF_MANAGED_CS_MAIN_PACKAGE_NAME,
                             SELF_MANAGED_CS_MAIN_SERVICE), CUSTOM_ID);
 
+    public static final PhoneAccountHandle SELF_MANAGED_CS_MAIN_TRANSACTIONAL_HANDLE =
+            new PhoneAccountHandle(
+                    new ComponentName(SELF_MANAGED_CS_MAIN_PACKAGE_NAME,
+                            SELF_MANAGED_CS_MAIN_PACKAGE_NAME), CUSTOM_ID);
+
     public static final PhoneAccountHandle SELF_MANAGED_CS_CLONE_HANDLE =
             new PhoneAccountHandle(
                     new ComponentName(SELF_MANAGED_CS_CLONE_PACKAGE_NAME,
@@ -98,6 +103,14 @@ public enum TelecomTestApp implements Parcelable {
                             "SelfManaged_Main C-Label")
                     .setCapabilities(
                             PhoneAccount.CAPABILITY_SELF_MANAGED
+                    ).build();
+
+    public static final PhoneAccount SELF_MANAGED_CS_MAIN_ACCOUNT_TRANSACTIONAL =
+            PhoneAccount.builder(SELF_MANAGED_CS_MAIN_TRANSACTIONAL_HANDLE,
+                            "SelfManaged_Main Transactional-Label")
+                    .setCapabilities(
+                            PhoneAccount.CAPABILITY_SELF_MANAGED
+                                    | PhoneAccount.CAPABILITY_SUPPORTS_TRANSACTIONAL_OPERATIONS
                     ).build();
 
     public static final PhoneAccount SELF_MANAGED_CS_CLONE_ACCOUNT =

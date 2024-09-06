@@ -26,11 +26,11 @@ import android.companion.cts.common.TestBase
 import android.companion.cts.common.waitFor
 import android.platform.test.annotations.AppModeFull
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Test
-import org.junit.runner.RunWith
 import kotlin.test.assertFalse
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import org.junit.Test
+import org.junit.runner.RunWith
 
 /**
  * Tests CDM handling the case when the companion application does not define a valid
@@ -50,35 +50,36 @@ class NoCompanionDeviceServiceTest : TestBase() {
      * do not define any valid CompanionDeviceServices.
      */
     @Test
-    fun test_noService() =
-            withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
-                val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
+    fun test_noService() {
+        val associationId = createSelfManagedAssociation(DEVICE_DISPLAY_NAME_A)
 
-                // This should neither throw an Exception nor cause system to crash, even when the
-                // companion application does not define any valid CompanionDeviceServices.
-                // (If the system crashes this instrumentation test won't complete).
-                cdm.notifyDeviceAppeared(associationId)
+        // This should neither throw an Exception nor cause system to crash, even when the
+        // companion application does not define any valid CompanionDeviceServices.
+        // (If the system crashes this instrumentation test won't complete).
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceAppeared(associationId)
+        }
 
-                // Every 100ms check if any of the services is bound or received a callback.
-                assertFalse("None of the services should be bound or receive a callback") {
-                    waitFor(timeout = 1.seconds, interval = 100.milliseconds) {
-                        val isBound = PrimaryCompanionService.isBound ||
-                                SecondaryCompanionService.isBound ||
-                                MissingPermissionCompanionService.isBound ||
-                                MissingIntentFilterActionCompanionService.isBound
-                        val receivedCallback =
-                                PrimaryCompanionService.connectedDevices.isNotEmpty() ||
-                                SecondaryCompanionService.connectedDevices.isNotEmpty() ||
-                                MissingPermissionCompanionService.connectedDevices.isNotEmpty() ||
-                                MissingIntentFilterActionCompanionService.connectedDevices
-                                        .isNotEmpty()
-                        return@waitFor isBound || receivedCallback
-                    }
-                }
-
-                // This should neither throw an Exception nor cause system to crash, even when the
-                // companion application does not define any valid CompanionDeviceServices.
-                // (If the system crashes this instrumentation test won't complete).
-                cdm.notifyDeviceDisappeared(associationId)
+        // Every 100ms check if any of the services is bound or received a callback.
+        assertFalse("None of the services should be bound or receive a callback") {
+            waitFor(timeout = 1.seconds, interval = 100.milliseconds) {
+                val isBound = PrimaryCompanionService.isBound ||
+                        SecondaryCompanionService.isBound ||
+                        MissingPermissionCompanionService.isBound ||
+                        MissingIntentFilterActionCompanionService.isBound
+                val receivedCallback = PrimaryCompanionService.connectedDevices.isNotEmpty() ||
+                        SecondaryCompanionService.connectedDevices.isNotEmpty() ||
+                        MissingPermissionCompanionService.connectedDevices.isNotEmpty() ||
+                        MissingIntentFilterActionCompanionService.connectedDevices.isNotEmpty()
+                return@waitFor isBound || receivedCallback
             }
+        }
+
+        // This should neither throw an Exception nor cause system to crash, even when the
+        // companion application does not define any valid CompanionDeviceServices.
+        // (If the system crashes this instrumentation test won't complete).
+        withShellPermissionIdentity(REQUEST_COMPANION_SELF_MANAGED) {
+            cdm.notifyDeviceDisappeared(associationId)
+        }
+    }
 }

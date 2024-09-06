@@ -16,7 +16,7 @@
 
 package android.providerui.cts;
 
-import static android.provider.cts.ProviderTestUtils.resolveVolumeName;
+import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeName;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -43,7 +43,7 @@ import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.provider.cts.ProviderTestUtils;
+import android.provider.cts.media.MediaProviderTestUtils;
 import android.providerui.cts.GetResultActivity.Result;
 import android.system.Os;
 import android.text.format.DateUtils;
@@ -104,7 +104,7 @@ public class MediaStoreUiTest {
 
     @Parameters
     public static Iterable<? extends Object> data() {
-        return ProviderTestUtils.getSharedVolumeNames();
+        return MediaProviderTestUtils.getSharedVolumeNames();
     }
 
     @Before
@@ -346,7 +346,7 @@ public class MediaStoreUiTest {
      * Clears the DocumentsUI package data.
      */
     protected void clearDocumentsUi() throws Exception {
-        executeShellCommand("pm clear " + getDocumentsUiPackageId());
+        executeShellCommand("pm clear --user current " + getDocumentsUiPackageId());
     }
 
     private UiObject findDocument(String label) throws UiObjectNotFoundException {
@@ -406,8 +406,7 @@ public class MediaStoreUiTest {
     private boolean supportsHardware() {
         final PackageManager pm = mContext.getPackageManager();
         return !pm.hasSystemFeature("android.hardware.type.television")
-                && !pm.hasSystemFeature("android.hardware.type.watch")
-                && !pm.hasSystemFeature("android.hardware.type.automotive");
+                && !pm.hasSystemFeature("android.hardware.type.watch");
     }
 
     public File getVolumePath(String volumeName) {

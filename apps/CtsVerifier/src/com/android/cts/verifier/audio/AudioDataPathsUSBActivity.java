@@ -22,6 +22,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
 // MegaAudio
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
@@ -30,18 +31,26 @@ import org.hyphonate.megaaudio.recorder.AudioSinkProvider;
 import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 
 public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
+    private static final String TAG = "AudioDataPathsUSBActivity";
+
+    private int mUsbDeviceSupport;
+    private int mUsbHeadsetSupport;
+    private boolean mCanRunTest;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.audio_datapaths_usb);
+
+        mUsbDeviceSupport = AudioDeviceUtils.supportsUsbAudioInterface(this);
+        mUsbHeadsetSupport  = AudioDeviceUtils.supportsUsbHeadset(this);
+        mCanRunTest = mUsbDeviceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO
+                || mUsbHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO;
 
         super.onCreate(savedInstanceState);
         setInfoResources(
                 R.string.audio_datapaths_USB_test, R.string.audio_datapaths_USB_info, -1);
 
-        // Make sure there are devices to test, or else enable pass button.
-        if (!mHasUsb && mTestManager.countValidTestModules() == 0) {
-            getPassButton().setEnabled(true);
-        }
+        enableTestButtons(mCanRunTest);
     }
 
     void gatherTestModules(TestManager testManager) {
@@ -56,8 +65,8 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
         TestModule testModule;
 
         // These just make it easier to turn on/off various categories
-        boolean doUsbDevice = true;
-        boolean doUsbHeadset = true;
+        boolean doUsbDevice = mUsbDeviceSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO;
+        boolean doUsbHeadset = mUsbHeadsetSupport != AudioDeviceUtils.SUPPORTSDEVICE_NO;
 
         //
         // USB Device
@@ -124,21 +133,41 @@ public class AudioDataPathsUSBActivity extends AudioDataPathsBaseActivity {
     }
 
     void postValidateTestDevices(int numValidTestModules) {
-        TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
+        AudioDeviceUtils.validateUsbDevice(this);
 
+        TextView promptView = findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
-            if (mTestManager.countTestedTestModules() != 0) {
-                // There are already tested devices in the list, so they must be attaching
-                // another test peripheral
+            if (mUsbDeviceSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES
+                    && mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+                if (mTestManager.countTestedTestModules() != 0) {
+                    // There are already tested devices in the list, so they must be attaching
+                    // another test peripheral
+                    promptView.setText(
+                            getResources().getString(R.string.audio_datapaths_usb_nextperipheral));
+                } else {
+                    promptView.setText(
+                            getResources().getString(R.string.audio_datapaths_usb_nodevices));
+                    enableTestButtons(false);
+                }
+                promptView.setVisibility(numValidTestModules == 0 ? View.VISIBLE : View.GONE);
+            } else if (mUsbDeviceSupport == AudioDeviceUtils.SUPPORTSDEVICE_NO
+                    && mUsbHeadsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_NO) {
                 promptView.setText(
-                        getResources().getString(R.string.audio_datapaths_usb_nextperipheral));
+                        getResources().getString(R.string.audio_datapaths_usb_nosupport));
             } else {
+                // AudioDeviceUtils.SUPPORTSDEVICE_UNDETERMINED
                 promptView.setText(
-                        getResources().getString(R.string.audio_datapaths_usb_nodevices));
+                        getResources().getString(R.string.audio_datapaths_usb_undetermined));
+                enableTestButtons(false);
             }
-            promptView.setVisibility(numValidTestModules == 0 ? View.VISIBLE : View.GONE);
         } else {
             promptView.setVisibility(View.GONE);
         }
+
+        enableTestButtons(numValidTestModules != 0);
+    }
+
+    protected boolean hasPeripheralSupport() {
+        return mCanRunTest;
     }
 }

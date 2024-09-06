@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsHibernationTestCases",
+    team: "trendy_team_android_go",
     defaults: [
         "cts_defaults",
         "mts-target-sdk-version-current",
@@ -48,6 +49,7 @@ android_test {
         "cts",
         "general-tests",
         "mts-permission",
+        "mcts-permission",
     ],
     sdk_version: "test_current",
     libs: [

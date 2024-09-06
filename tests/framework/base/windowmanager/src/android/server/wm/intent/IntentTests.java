@@ -24,8 +24,11 @@ import android.content.res.AssetManager;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.intent.Persistence.IntentFlag;
 import android.server.wm.intent.Persistence.TestCase;
+import android.view.Display;
 
 import androidx.test.filters.LargeTest;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import com.google.common.collect.Lists;
 
@@ -51,11 +54,11 @@ import java.util.stream.Collectors;
  * Running a single test using this class is not supported.
  * For this use case look at {@link IntentGenerationTests#verifySingle()}
  *
- * Note: atest CtsWindowManagerDeviceTestCases:IntentTests#verify does not work because the
+ * Note: atest CtsWindowManagerDeviceActivity:IntentTests#verify does not work because the
  * Parameterized runner won't expose the test that way to atest.
  *
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceTestCases:IntentTests
+ * atest CtsWindowManagerDeviceActivity:IntentTests
  */
 @Presubmit
 @LargeTest
@@ -81,8 +84,14 @@ public class IntentTests extends IntentTestBase {
      */
     private TestCase mTestCase;
 
+    /**
+     * The id of the display where the test will be performed
+     */
+    private int mLaunchDisplayId = Display.DEFAULT_DISPLAY;
+
     public IntentTests(TestCase testCase, String name) {
         mTestCase = testCase;
+        mLaunchDisplayId = new UserHelper(TARGET_CONTEXT).getMainDisplayId();
     }
 
     /**
@@ -98,7 +107,7 @@ public class IntentTests extends IntentTestBase {
 
     @Test
     public void verify() {
-        mLaunchRunner.verify(TARGET_CONTEXT, mTestCase);
+        mLaunchRunner.verify(TARGET_CONTEXT, mTestCase, mLaunchDisplayId);
     }
 
 

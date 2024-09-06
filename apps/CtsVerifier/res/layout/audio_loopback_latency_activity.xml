@@ -13,17 +13,12 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    style="@style/RootLayoutPadding">
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/scrollView">
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/scrollView"
+        style="@style/RootLayoutPadding">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -31,46 +26,31 @@
             android:orientation="vertical">
 
             <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                style="?android:attr/buttonBarStyle"
+                android:id="@+id/audio_loopback_utilities_layout">
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:text="@string/audio_loopback_calibrate_button"
+                    android:id="@+id/audio_loopback_calibrate_button"/>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:text="@string/audio_loopback_devsupport_button"
+                    android:id="@+id/audio_loopback_devsupport_button"/>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:id="@+id/audio_loopback_headset_port">
-
-                <LinearLayout
-                    xmlns:android="http://schemas.android.com/apk/res/android"
-                    android:orientation="vertical"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:id="@+id/audio_loopback_layout">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/audio_loopback_instructions2"
-                        android:id="@+id/audio_loopback_instructions2" />
-
-                    <SeekBar
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_level_seekbar"
-                        android:nextFocusForward="@+id/audio_loopback_test_btn"
-                        android:nextFocusUp="@+id/audio_loopback_plug_ready_btn"
-                        android:nextFocusDown="@+id/audio_loopback_test_btn"
-                        android:nextFocusLeft="@+id/audio_loopback_plug_ready_btn"
-                        android:nextFocusRight="@+id/audio_loopback_test_btn" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/audio_loopback_level_text"
-                        android:id="@+id/audio_loopback_level_text" />
-                </LinearLayout>
-
-                <Button
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/audio_datapaths_calibrate"
-                    android:id="@+id/audio_loopback_calibrate_button"/>
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -217,8 +197,7 @@
                     <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_layout">
+                        android:layout_height="wrap_content">
 
                         <Button
                             android:layout_width="wrap_content"
@@ -251,8 +230,7 @@
                     <LinearLayout
                         android:orientation="horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/audio_loopback_layout">
+                        android:layout_height="wrap_content">
 
                         <Button
                             android:layout_width="wrap_content"
@@ -264,7 +242,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="fill"
-                            android:text="@string/audio_loopback_headsetpath_instructions"
                             android:id="@+id/audio_loopback_headsetpath_info" />
                     </LinearLayout>
             </LinearLayout>
@@ -296,12 +273,10 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="fill"
-                        android:text="@string/audio_loopback_usbpath_instructions"
                         android:id="@+id/audio_loopback_usbpath_info" />
                 </LinearLayout>
 
             </LinearLayout>
-
                 <LinearLayout
                     xmlns:android="http://schemas.android.com/apk/res/android"
                     android:layout_width="match_parent"
@@ -320,10 +295,7 @@
                         android:id="@+id/audio_loopback_status_text"
                         android:textSize="20dp" />
                 </LinearLayout>
-
             </LinearLayout>
             <include layout="@layout/pass_fail_buttons" />
         </LinearLayout>
     </ScrollView>
-
-</LinearLayout>

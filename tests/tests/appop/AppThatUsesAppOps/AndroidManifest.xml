@@ -20,6 +20,11 @@
     package="android.app.appops.cts.appthatusesappops">
   <attribution android:tag="testAttribution" android:label="@string/dummyLabel" />
 
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+  <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+
   <application
       android:attributionsAreUserVisible="true">
     <service android:name=".AppOpsUserService" android:exported="true" />

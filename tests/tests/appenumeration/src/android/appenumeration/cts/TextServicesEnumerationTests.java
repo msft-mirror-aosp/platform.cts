@@ -25,6 +25,8 @@ import static android.appenumeration.cts.Utils.installPackage;
 import static android.appenumeration.cts.Utils.uninstallPackage;
 import static android.content.Intent.EXTRA_RETURN_RESULT;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.os.Bundle;
 import android.view.textservice.SpellCheckerInfo;
 import android.view.textservice.TextServicesManager;
@@ -45,6 +47,10 @@ public class TextServicesEnumerationTests extends AppEnumerationTestsBase {
 
     @BeforeClass
     public static void prepareSpellChecker() throws Exception {
+        if (!hasTextServicesManager()) {
+            return;
+        }
+
         installPackage(CTS_MOCK_SPELL_CHECKER_APK);
 
         PollingCheck.check("Failed to wait for " + MOCK_SPELL_CHECKER_PKG
@@ -60,6 +66,7 @@ public class TextServicesEnumerationTests extends AppEnumerationTestsBase {
     @Test
     public void queriesNothing_getEnabledSpellCheckerInfos_cannotSeeMockSpellChecker()
             throws Exception {
+        assumeTrue(hasTextServicesManager());
         assertNotVisible(
                 QUERIES_NOTHING, MOCK_SPELL_CHECKER_PKG, this::getEnabledSpellCheckerInfos);
     }
@@ -67,6 +74,7 @@ public class TextServicesEnumerationTests extends AppEnumerationTestsBase {
     @Test
     public void queriesPackage_getEnabledSpellCheckerInfos_canSeeMockSpellChecker()
             throws Exception {
+        assumeTrue(hasTextServicesManager());
         assertVisible(
                 QUERIES_PACKAGE, MOCK_SPELL_CHECKER_PKG, this::getEnabledSpellCheckerInfos);
     }
@@ -81,6 +89,10 @@ public class TextServicesEnumerationTests extends AppEnumerationTestsBase {
                 .map(info -> info.getPackageName())
                 .distinct()
                 .toArray(String[]::new);
+    }
+
+    private static boolean hasTextServicesManager() {
+        return sContext.getSystemService(TextServicesManager.class) != null;
     }
 
     private static boolean hasSpellChecker(String packageName) {

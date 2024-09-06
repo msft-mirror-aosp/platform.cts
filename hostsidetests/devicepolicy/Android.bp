@@ -34,10 +34,12 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-permission",
-        "mcts-permission",
     ],
     static_libs: [
         "cts-statsd-atom-host-test-utils",
+        "flag-junit-host",
+        "device_policy_aconfig_flags_lib_host",
+        "android.permission.flags-aconfig-java-host",
     ],
     java_resource_dirs: ["res"],
     data: [

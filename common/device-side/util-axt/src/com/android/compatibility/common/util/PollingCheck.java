@@ -54,6 +54,10 @@ public abstract class PollingCheck {
 
     protected abstract boolean check();
 
+    protected String getErrorMessage() {
+        return mErrorMessage;
+    }
+
     public void run() {
         if (check()) {
             return;
@@ -74,7 +78,7 @@ public abstract class PollingCheck {
             timeout -= TIME_SLICE;
         }
 
-        Assert.assertTrue(mErrorMessage, check());
+        Assert.assertTrue(getErrorMessage(), check());
     }
 
     public <E> E runWaitAndReturnResult(Supplier<E> supplier, Function<E, Boolean> condition) {
@@ -138,6 +142,21 @@ public abstract class PollingCheck {
             @Override
             protected boolean check() {
                 return condition.canProceed();
+            }
+        }.run();
+    }
+
+    public static void waitFor(long timeout, final PollingCheckCondition condition,
+            Supplier<String> errorMessage) {
+        new PollingCheck(timeout) {
+            @Override
+            protected boolean check() {
+                return condition.canProceed();
+            }
+
+            @Override
+            protected String getErrorMessage() {
+                return errorMessage.get();
             }
         }.run();
     }

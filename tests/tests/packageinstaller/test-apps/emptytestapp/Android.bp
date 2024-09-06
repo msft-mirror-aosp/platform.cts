@@ -62,12 +62,46 @@ android_test_helper_app {
 
 android_test_helper_app {
     name: "CtsEmptyTestApp_AppMetadataInApk",
+    resource_dirs: [
+        "res",
+        "app_metadata_res",
+    ],
     defaults: ["cts_defaults"],
-    assets: ["app.metadata"],
+    manifest: "AndroidManifest_AslInApk.xml",
     sdk_version: "current",
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit",
+    resource_dirs: [
+        "res",
+        "bad_app_metadata_res",
+    ],
+    defaults: ["cts_defaults"],
+    manifest: "AndroidManifest_AslInApk_ExceedSizeLimit.xml",
+    sdk_version: "current",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+    ],
+}
+
+android_test_helper_app {
+    name: "CtsEmptyTestApp_RejectedByVerifier",
+    defaults: ["cts_defaults"],
+    target_sdk_version: "18",
+    manifest: "AndroidManifest_RejectedByVerifier.xml",
+    // tag this module as a cts test artifact
+    test_suites: [
+        "arcts",
+        "cts",
+        "general-tests",
+        "sts",
     ],
 }

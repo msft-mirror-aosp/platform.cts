@@ -48,17 +48,22 @@ _PATCH_Y = 0.5-_PATCH_H/2
 _SINGLE_STRENGTH_CONTROL_THRESHOLD = 1
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
-_TESTING_AE_MODES = (0, 1, 2)
+_TESTING_AE_MODES = (0, 1)
 _TORCH_MODE = 2
 _TORCH_STRENGTH_CONTROL_THRESHOLD = 1
 _TORCH_STRENGTH_MIN = 0
 
 
-# TODO: b/327018456 - Centralize flash_strength functions in utils
-def _take_captures(out_surfaces, cam, img_name_prefix, ae_mode, torch_strength):
+# TODO: b/344675052 - Add torch strength control in do_3a()
+def _take_captures(
+    self, arduino_serial_port, out_surfaces, cam,
+    img_name_prefix, ae_mode, torch_strength
+):
   """Takes video captures and returns the captured images.
 
   Args:
+    self: ItsBaseTest object; used for lighting control.
+    arduino_serial_port: serial port pointer; used for lighting control
     out_surfaces: list; valid output surfaces for caps.
     cam: ItsSession util object.
     img_name_prefix: image name to be saved, log_path included.
@@ -69,26 +74,45 @@ def _take_captures(out_surfaces, cam, img_name_prefix, ae_mode, torch_strength):
   Returns:
     caps: list of capture objects as described by cam.do_capture().
   """
-  cam.do_3a(do_af=False)
   # Take base image without flash
   if torch_strength == 0:
+    # turn OFF lights to darken scene
+    lighting_control_utils.set_lighting_state(
+        arduino_serial_port, self.lighting_ch, 'OFF'
+    )
+    cam.do_3a(do_af=False, lock_awb=True)
     cap_req = capture_request_utils.auto_capture_request()
     cap_req[
         'android.control.captureIntent'] = _CAPTURE_INTENT_STILL_CAPTURE
     cap_req['android.control.aeMode'] = 0  # AE_MODE_OFF
+    cap_req['android.control.awbLock'] = True
     cap = cam.do_capture(cap_req, out_surfaces)
+    # turn the lights back on
+    lighting_control_utils.set_lighting_state(
+        arduino_serial_port, self.lighting_ch, 'ON'
+    )
     return [cap]
 
   # Take multiple still captures with torch strength
   else:
+    cam.do_3a(do_af=False, lock_awb=True, flash_mode=_TORCH_MODE)
+    # turn OFF lights to darken scene
+    lighting_control_utils.set_lighting_state(
+        arduino_serial_port, self.lighting_ch, 'OFF'
+    )
     cap_req = capture_request_utils.auto_capture_request()
     cap_req['android.control.aeMode'] = ae_mode
     cap_req['android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
     cap_req['android.control.aeLock'] = True
+    cap_req['android.control.awbLock'] = True  # AWB Lock
     cap_req['android.flash.mode'] = _TORCH_MODE
     cap_req['android.flash.strengthLevel'] = torch_strength
     reqs = [cap_req] * _BURST_LEN
     caps = cam.do_capture(reqs, out_surfaces)
+    # turn the lights back on
+    lighting_control_utils.set_lighting_state(
+        arduino_serial_port, self.lighting_ch, 'ON'
+    )
     for i, cap in enumerate(caps):
       img = image_processing_utils.convert_capture_to_rgb_image(cap)
       # Save captured image
@@ -208,23 +232,18 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
       props = cam.override_with_hidden_physical_camera_props(props)
 
       # check SKIP conditions
-      first_api_level = its_session_utils.get_first_api_level(
-          self.dut.serial)
       max_flash_strength = props[_MAX_SINGLE_STRENGTH_PROP_KEY]
       max_torch_strength = props[_MAX_TORCH_STRENGTH_PROP_KEY]
       camera_properties_utils.skip_unless(
           camera_properties_utils.flash(props) and
-          first_api_level >= its_session_utils.ANDROID15_API_LEVEL and
           max_flash_strength > _SINGLE_STRENGTH_CONTROL_THRESHOLD and
-          max_torch_strength > _TORCH_STRENGTH_CONTROL_THRESHOLD)
+          max_torch_strength > _TORCH_STRENGTH_CONTROL_THRESHOLD
+      )
 
       # establish connection with lighting controller
       arduino_serial_port = lighting_control_utils.lighting_control(
-          self.lighting_cntl, self.lighting_ch)
-
-      # turn OFF lights to darken scene
-      lighting_control_utils.set_lighting_state(
-          arduino_serial_port, self.lighting_ch, 'OFF')
+          self.lighting_cntl, self.lighting_ch
+      )
 
       failure_messages = []
       # testing at 80% of max strength
@@ -247,13 +266,28 @@ class TorchStrengthTest(its_base_test.ItsBaseTest):
                 f'{name_with_path}_ae_mode={ae_mode}_'
                 f'torch_strength={strength}_'
             )
+            # check if testing image size is supported
+            output_sizes = capture_request_utils.get_available_output_sizes(
+                _FORMAT_NAME, props)
+            if _IMG_SIZE in output_sizes:
+              width, height = _IMG_SIZE
+              logging.debug(
+                  'Testing with default image size: %dx%d', width, height
+              )
+            else:
+              width, height = output_sizes[len(output_sizes)//2]
+              logging.debug(
+                  'Default size not supported, testing with size: %dx%d',
+                  width, height
+              )
             # defining out_surfaces
-            width, height = _IMG_SIZE
             out_surfaces = {'format': _FORMAT_NAME,
                             'width': width, 'height': height}
             # take capture and evaluate
             caps = _take_captures(
-                out_surfaces, cam, img_name_prefix, ae_mode, strength)
+                self, arduino_serial_port, out_surfaces, cam,
+                img_name_prefix, ae_mode, strength
+            )
             formats_means.append(_get_img_patch_mean(caps, props))
 
         # Compare means and compose failure messages

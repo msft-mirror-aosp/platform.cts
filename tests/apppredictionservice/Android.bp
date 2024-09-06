@@ -14,15 +14,20 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_launcher",
 }
 
 android_test {
     name: "CtsAppPredictionServiceTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "android.service.appprediction.flags-aconfig-java",
         "androidx.annotation_annotation",
+        "androidx.test.rules",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
+        "flag-junit",
+        "platform-test-annotations",
         "truth",
     ],
     srcs: ["src/**/*.java"],

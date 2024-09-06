@@ -39,6 +39,18 @@ fun withCoords(pt: PointF): Matcher<MotionEvent> = object : TypeSafeMatcher<Moti
     }
 }
 
+fun withPointerCount(count: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With pointer count = $count")
+    }
+
+    override fun matchesSafely(event: MotionEvent): Boolean {
+        return event.pointerCount == count
+    }
+}
+
+fun withCoords(pt: Point): Matcher<MotionEvent> = withCoords(PointF(pt))
+
 fun withCoordsForPointerIndex(index: Int, pt: PointF): Matcher<MotionEvent> =
         object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {

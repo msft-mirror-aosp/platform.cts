@@ -16,21 +16,23 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_TO_OWN_USER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_FACE;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_FINGERPRINT;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_IRIS;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_REMOTE_INPUT;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_SECURE_CAMERA;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_SECURE_NOTIFICATIONS;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_TRUST_AGENTS;
-import static com.android.bedstead.nene.flags.CommonFlags.KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_FACE;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_FINGERPRINT;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_IRIS;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_REMOTE_INPUT;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_SECURE_CAMERA;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_SECURE_NOTIFICATIONS;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_TRUST_AGENTS;
+import static android.app.admin.DevicePolicyManager.KEYGUARD_DISABLE_UNREDACTED_NOTIFICATIONS;
+
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_PROFILE_OWNER_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_TO_OWN_USER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.CANNOT_BE_APPLIED_BY_ROLE_HOLDER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.INHERITABLE;
 
 import com.android.bedstead.harrier.PolicyArguments;
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 import java.util.Set;
 
@@ -43,7 +45,7 @@ import java.util.Set;
 @EnterprisePolicy(
         dpc = APPLIED_BY_DEVICE_OWNER | APPLIED_BY_PROFILE_OWNER_USER
                 | CANNOT_BE_APPLIED_BY_ROLE_HOLDER
-                | APPLIES_TO_OWN_USER)
+                | APPLIES_TO_OWN_USER | INHERITABLE)
 public final class KeyguardDisableFeatures extends PolicyArguments<Integer> {
 
     @Override

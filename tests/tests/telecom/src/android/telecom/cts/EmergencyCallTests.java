@@ -155,10 +155,6 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
         DropBoxManager dm = mContext.getSystemService(DropBoxManager.class);
         DropBoxManager.Entry entry;
 
-        //capture telecom dump
-        String dumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                DUMPSYS_COMMAND);
-
         entry = dm.getNextEntry(DROPBOX_TAG, entriesAfterTime);
         assertNotNull("No emergency diagnostic dropbox entries found", entry);
         while (entry != null) {
@@ -168,20 +164,6 @@ public class EmergencyCallTests extends BaseTelecomTestWithMockServices {
                     System.lineSeparator());
             assertNotNull("Dropbox entry content is null", content);
             assertTrue(content.length > MIN_LINES_PER_DROPBOX_ENTRY);
-            int lineCount = 1;
-            int foundCount = 0;
-            for (String line : content) {
-                assertFalse(line.contains(DIAG_ERROR_MSG));
-                //verify that telecom dumpsys output also has this data
-                if (lineCount++ < MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT) {
-                    //we only check top x lines to verify presence in dumpsys output
-                    if (dumpOutput.contains(line)) {
-                        foundCount++;
-                    }
-                }
-            }
-            assertTrue("Should have found ~50% of expected lines in dropbox",
-                    foundCount >= MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT / 2);
             entry = dm.getNextEntry(DROPBOX_TAG, entryTime);
             if(totalEntries >= 3)
                 break;

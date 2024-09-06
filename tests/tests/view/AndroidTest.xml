@@ -39,6 +39,7 @@
         <option name="test-timeout" value="300000" />
         <option name="hidden-api-checks" value="false" />
         <option name="isolated-storage" value="false" />
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
         <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
         <!-- DefaultUITraceListener args -->
         <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
@@ -47,9 +48,9 @@
     <!-- Collect the dumped files for debugging -->
     <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
         <option name="pull-pattern-keys" value="view_.*" />
+        <!-- Collect the files generated on error -->
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png"/>
+        <option name="directory-keys" value="/data/user/0/android.view.cts/files" />
+        <option name="collect-on-run-ended-only" value="false" />
     </metrics_collector>
-    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
-        <!-- Take screenshot upon test failure -->
-        <option name="screenshot-on-failure" value="true" />
-    </object>
 </configuration>

@@ -39,6 +39,7 @@ import android.hardware.display.DisplayManager;
 import android.os.Process;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
+import android.util.ArraySet;
 import android.util.Log;
 import android.view.Display;
 
@@ -75,6 +76,19 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
     private static String TAG = CarOccupantZoneManagerTest.class.getSimpleName();
 
     private static final String SERVICE_NAME = "CarOccupantZoneService";
+
+    /**
+     * Set of public display types. Hidden display types are not included since testing with the
+     * non-hidden display types is sufficient.
+     */
+    private static final ArraySet<Integer> DISPLAY_TYPES_FOR_TESTING = new ArraySet<>(new Integer[]{
+            CarOccupantZoneManager.DISPLAY_TYPE_UNKNOWN,
+            CarOccupantZoneManager.DISPLAY_TYPE_MAIN,
+            CarOccupantZoneManager.DISPLAY_TYPE_INSTRUMENT_CLUSTER,
+            CarOccupantZoneManager.DISPLAY_TYPE_HUD,
+            CarOccupantZoneManager.DISPLAY_TYPE_INPUT,
+            CarOccupantZoneManager.DISPLAY_TYPE_AUXILIARY
+    });
 
     private OccupantZoneInfo mDriverZoneInfo;
 
@@ -466,6 +480,10 @@ public final class CarOccupantZoneManagerTest extends AbstractCarTestCase {
 
         // Ensure that input types match the ones from dumpsys
         for (DisplayConfig c : configs) {
+            if (!DISPLAY_TYPES_FOR_TESTING.contains(c.displayType)) {
+                Log.i(TAG, "Display type " + c.displayType + " not relevant for testing.");
+                continue;
+            }
             Optional<OccupantZoneInfo> occupantZoneInfo = mAllZones.stream().filter(
                     z -> z.zoneId == c.occupantZoneId).findFirst();
             if (occupantZoneInfo.isEmpty()) {

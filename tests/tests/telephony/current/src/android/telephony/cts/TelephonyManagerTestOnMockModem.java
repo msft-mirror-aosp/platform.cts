@@ -15,8 +15,11 @@
  */
 package android.telephony.cts;
 
+import static android.telephony.CarrierRestrictionRules.CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED;
+import static android.telephony.CarrierRestrictionRules.MULTISIM_POLICY_NONE;
 import static android.telephony.PreciseDisconnectCause.NO_DISCONNECT_CAUSE_AVAILABLE;
 import static android.telephony.PreciseDisconnectCause.TEMPORARY_FAILURE;
+import static android.telephony.TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
@@ -84,6 +87,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -251,7 +255,7 @@ public class TelephonyManagerTestOnMockModem {
     private static String getShaId(String packageName) {
         try {
             final PackageManager packageManager = getContext().getPackageManager();
-            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA1");
+            MessageDigest sha1MDigest = MessageDigest.getInstance("SHA-256");
             final PackageInfo packageInfo = packageManager.getPackageInfo(packageName,
                     PackageManager.GET_SIGNATURES);
             for (Signature signature : packageInfo.signatures) {
@@ -907,7 +911,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -934,12 +938,12 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
         assertNotNull(value);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED, value.intValue());
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED, value.intValue());
     }
 
     /**
@@ -962,7 +966,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -991,12 +995,12 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
         assertNotNull(value);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED,
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED,
                 value.intValue());
     }
 
@@ -1020,7 +1024,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1048,7 +1052,7 @@ public class TelephonyManagerTestOnMockModem {
                             carrierRestrictionStatusResult::offer),
                     Manifest.permission.READ_PHONE_STATE);
         } catch (SecurityException ex) {
-            fail();
+            fail(ex.getMessage());
         }
         Integer value = carrierRestrictionStatusResult.poll(TIMEOUT_IN_SEC_FOR_MODEM_CB,
                 TimeUnit.SECONDS);
@@ -1128,8 +1132,29 @@ public class TelephonyManagerTestOnMockModem {
         CarrierRestrictionRules rules =runWithShellPermissionIdentity(() -> {
             return sTelephonyManager.getCarrierRestrictionRules();
         }, android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
-        assertEquals(TelephonyManager.CARRIER_RESTRICTION_STATUS_RESTRICTED,
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED,
                 rules.getCarrierRestrictionStatus());
+    }
+
+    /**
+     * Verifies the API CarrierRestrictionRules#setCarrierRestrictionStatus
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_SET_CARRIER_RESTRICTION_STATUS)
+    @Test
+    public void setCarrierRestrictionStatus() {
+        CarrierRestrictionRules crr = new CarrierRestrictionRules.Builder()
+                .setMultiSimPolicy(MULTISIM_POLICY_NONE)
+                .setDefaultCarrierRestriction(CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED)
+                .setAllowedCarriers(Collections.EMPTY_LIST)
+                .setExcludedCarriers(Collections.EMPTY_LIST)
+                .setCarrierRestrictionStatus(CARRIER_RESTRICTION_STATUS_RESTRICTED)
+                .build();
+
+        assertEquals(MULTISIM_POLICY_NONE, crr.getMultiSimPolicy());
+        assertEquals(CARRIER_RESTRICTION_DEFAULT_NOT_ALLOWED, crr.getDefaultCarrierRestriction());
+        assertEquals(Collections.EMPTY_LIST, crr.getAllowedCarriers());
+        assertEquals(Collections.EMPTY_LIST, crr.getExcludedCarriers());
+        assertEquals(CARRIER_RESTRICTION_STATUS_RESTRICTED, crr.getCarrierRestrictionStatus());
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)
@@ -1163,7 +1188,7 @@ public class TelephonyManagerTestOnMockModem {
         assertEquals(carrierInfo1.getMnc(), "654");
         assertEquals(carrierInfo1.getSpn(), "Airtel");
         assertEquals(carrierRules.getMultiSimPolicy(),
-                CarrierRestrictionRules.MULTISIM_POLICY_NONE);
+                MULTISIM_POLICY_NONE);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_RESTRICTION_RULES_ENHANCEMENT)

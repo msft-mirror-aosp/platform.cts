@@ -16,8 +16,11 @@
 
 package android.devicepolicy.cts;
 
-import static android.app.admin.flags.Flags.FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED;
+import static android.app.admin.DevicePolicyIdentifiers.getIdentifierForUserRestriction;
+import static android.app.admin.TargetUser.GLOBAL_USER_ID;
+import static android.app.admin.flags.Flags.FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED;
 
+import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_AIRPLANE_MODE;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -25,26 +28,37 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.DpcAuthority;
+import android.app.admin.EnforcingAdmin;
+import android.app.admin.PolicyState;
+import android.app.admin.PolicyUpdateResult;
+import android.app.admin.UserRestrictionPolicyKey;
 import android.content.Context;
+import android.devicepolicy.cts.utils.PolicyEngineUtils;
+import android.devicepolicy.cts.utils.PolicySetResultUtils;
+import android.os.Bundle;
+import android.os.UserHandle;
 
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDpc;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
+import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.users.UserReference;
+import com.android.bedstead.permissions.CommonPermissions;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.compatibility.common.util.ApiTest;
+import com.android.xts.root.annotations.RequireRootInstrumentation;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
 
 /**
@@ -63,6 +77,8 @@ public final class DevicePolicyManagerTest {
     private static final String MANAGE_PROFILE_AND_DEVICE_OWNERS =
             "android.permission.MANAGE_PROFILE_AND_DEVICE_OWNERS";
     private static final String MANAGE_DEVICE_ADMINS = "android.permission.MANAGE_DEVICE_ADMINS";
+
+    private static final int NO_LIMIT = -1;
 
     @EnsureHasDeviceOwner
     @EnsureDoesNotHavePermission(MANAGE_DEVICE_ADMINS)
@@ -133,44 +149,209 @@ public final class DevicePolicyManagerTest {
                 TestApis.context().instrumentationContext().getUser()));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureHasPermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
-    @Ignore
     public void setMaxPolicyStorageLimit_setsLimit() {
         int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
         try {
+            sDevicePolicyManager.setMaxPolicyStorageLimit(NO_LIMIT);
 
-            sDevicePolicyManager.setMaxPolicyStorageLimit(-1);
-
-            assertThat(sDevicePolicyManager.getMaxPolicyStorageLimit()).isEqualTo(-1);
+            assertThat(sDevicePolicyManager.getMaxPolicyStorageLimit()).isEqualTo(NO_LIMIT);
 
         } finally {
             sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
         }
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasPermission({
+            CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS,
+            CommonPermissions.MANAGE_DEVICE_POLICY_STORAGE_LIMIT})
+    @EnsureHasDeviceOwner
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
+    @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
+    @RequireRootInstrumentation(reason = "Use of root only test API "
+            + "DPM#forceSetMaxPolicyStorageLimit")
+    public void setMaxPolicyStorageLimit_limitReached_doesNotSetPolicy() {
+        int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
+        try {
+            // Set the limit to the current size of policies set by the admin. setting any new
+            // policy should hit the size limit.
+            int newLimit = TestApis.devicePolicy().getPolicySizeForAdmin(
+                    new EnforcingAdmin(
+                            sDeviceState.dpc().packageName(),
+                            DpcAuthority.DPC_AUTHORITY,
+                            sDeviceState.dpc().user().userHandle()));
+            TestApis.devicePolicy().setMaxPolicySize(newLimit);
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+
+           sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                   sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+
+            PolicySetResultUtils.assertPolicySetResultReceived(sDeviceState,
+                    getIdentifierForUserRestriction(DISALLOW_AIRPLANE_MODE),
+                    PolicyUpdateResult.RESULT_FAILURE_STORAGE_LIMIT_REACHED, GLOBAL_USER_ID,
+                    new Bundle());
+            PolicyState<Boolean> policyState = PolicyEngineUtils.getBooleanPolicyState(
+                    new UserRestrictionPolicyKey(
+                            getIdentifierForUserRestriction(DISALLOW_AIRPLANE_MODE),
+                            DISALLOW_AIRPLANE_MODE),
+                    UserHandle.ALL);
+            assertThat(policyState == null || policyState.getCurrentResolvedPolicy() == null)
+                    .isTrue();
+
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
+        }
+    }
+
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @EnsureHasDeviceOwner
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
+    @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
+    @RequireRootInstrumentation(reason = "Use of root only test API "
+            + "DPM#forceSetMaxPolicyStorageLimit")
+    public void setMaxPolicyStorageLimit_policySet_sizeIncreases() {
+        int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
+        try {
+            EnforcingAdmin admin = new EnforcingAdmin(
+                    sDeviceState.dpc().packageName(),
+                    DpcAuthority.DPC_AUTHORITY,
+                    sDeviceState.dpc().user().userHandle(),
+                    sDeviceState.dpc().componentName());
+            int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
+
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+
+            assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin))
+                    .isGreaterThan(currentSize);
+
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
+        }
+    }
+
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @EnsureHasDeviceOwner
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
+    @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
+    @RequireRootInstrumentation(reason = "Use of root only test API "
+            + "DPM#forceSetMaxPolicyStorageLimit")
+    public void setMaxPolicyStorageLimit_policySetThenUnset_sizeResets() {
+        int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
+        try {
+            EnforcingAdmin admin = new EnforcingAdmin(
+                    sDeviceState.dpc().packageName(),
+                    DpcAuthority.DPC_AUTHORITY,
+                    sDeviceState.dpc().user().userHandle(),
+                    sDeviceState.dpc().componentName());
+            int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
+
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+
+            assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin)).isEqualTo(currentSize);
+
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
+        }
+    }
+
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @EnsureHasDeviceOwner
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
+    @CanSetPolicyTest(policy = DisallowAirplaneMode.class)
+    @RequireRootInstrumentation(reason = "Use of root only test API "
+            + "DPM#forceSetMaxPolicyStorageLimit")
+    public void setMaxPolicyStorageLimit_setSamePolicyTwice_sizeDoesNotIncrease() {
+        int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
+        try {
+            EnforcingAdmin admin = new EnforcingAdmin(
+                    sDeviceState.dpc().packageName(),
+                    DpcAuthority.DPC_AUTHORITY,
+                    sDeviceState.dpc().user().userHandle(),
+                    sDeviceState.dpc().componentName());
+            TestApis.devicePolicy().setMaxPolicySize(NO_LIMIT);
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            int currentSize = TestApis.devicePolicy().getPolicySizeForAdmin(admin);
+
+            sDeviceState.dpc().devicePolicyManager().addUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+
+            assertThat(TestApis.devicePolicy().getPolicySizeForAdmin(admin)).isEqualTo(currentSize);
+
+        } finally {
+            sDeviceState.dpc().devicePolicyManager().clearUserRestriction(
+                    sDeviceState.dpc().componentName(), DISALLOW_AIRPLANE_MODE);
+            sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
+        }
+    }
+
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
-    @Ignore
     public void setMaxPolicyStorageLimit_noPermission_throwsException() {
         assertThrows(
                 SecurityException.class, () -> sDevicePolicyManager.setMaxPolicyStorageLimit(-1));
     }
 
-    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_ENABLED)
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
     @Postsubmit(reason = "new test")
     @Test
     @EnsureDoesNotHavePermission(MANAGE_PROFILE_AND_DEVICE_OWNERS)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#getMaxPolicyStorageLimit")
-    @Ignore
     public void getMaxPolicyStorageLimit_noPermission_throwsException() {
         assertThrows(
                 SecurityException.class, () -> sDevicePolicyManager.getMaxPolicyStorageLimit());
     }
+
+    @RequireFlagsEnabled(FLAG_DEVICE_POLICY_SIZE_TRACKING_INTERNAL_BUG_FIX_ENABLED)
+    @Postsubmit(reason = "new test")
+    @Test
+    @EnsureHasPermission(CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS)
+    @RequireRootInstrumentation(reason = "Use of root only test API "
+            + "DPM#forceSetMaxPolicyStorageLimit")
+    @ApiTest(apis = "android.app.admin.DevicePolicyManager#setMaxPolicyStorageLimit")
+    public void getMaxPolicyStorageLimit_getsLimit() {
+        int currentLimit = sDevicePolicyManager.getMaxPolicyStorageLimit();
+        try {
+            int newLimit = 10;
+            TestApis.devicePolicy().setMaxPolicySize(newLimit);
+
+            assertThat(sDevicePolicyManager.getMaxPolicyStorageLimit()).isEqualTo(newLimit);
+
+        } finally {
+            sDevicePolicyManager.setMaxPolicyStorageLimit(currentLimit);
+        }
+    }
+
 }

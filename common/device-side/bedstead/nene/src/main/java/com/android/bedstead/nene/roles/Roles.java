@@ -16,9 +16,11 @@
 
 package com.android.bedstead.nene.roles;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.BYPASS_ROLE_QUALIFICATION;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
+import static android.app.role.RoleManager.ROLE_BROWSER;
+
+import static com.android.bedstead.permissions.CommonPermissions.BYPASS_ROLE_QUALIFICATION;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ROLE_HOLDERS;
 import static com.android.bedstead.nene.utils.Versions.T;
 
 import android.annotation.TargetApi;
@@ -30,7 +32,7 @@ import android.os.UserHandle;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 import com.android.bedstead.nene.utils.Versions;
 
@@ -81,12 +83,29 @@ public class Roles {
      * @see RoleManager#getRoleHoldersAsUser(String, UserHandle)
      */
     @Experimental
-    public Set<String> getRoleHoldersAsUser(String role, UserReference user) {
+    public Set<String> getRoleHoldersAsUser(UserReference user, String role) {
         try (PermissionContext p = TestApis.permissions().withPermission(
                 MANAGE_ROLE_HOLDERS).withPermission(INTERACT_ACROSS_USERS_FULL)) {
             return new HashSet<>(
                     sContext.getSystemService(RoleManager.class).getRoleHoldersAsUser(role,
                             user.userHandle()));
         }
+    }
+
+    /**
+     * Returns true if any package holds {@link RoleManager#ROLE_BROWSER}
+     */
+    @Experimental
+    public boolean hasBrowserRoleHolder() {
+        return hasBrowserRoleHolderAsUser(/* user= */ TestApis.users().instrumented());
+    }
+
+    /**
+     * Returns true if any package holds {@link RoleManager#ROLE_BROWSER} for a given user.
+     */
+    @Experimental
+    public boolean hasBrowserRoleHolderAsUser(UserReference user) {
+        return getRoleHoldersAsUser(user, ROLE_BROWSER).isEmpty();
+
     }
 }

@@ -17,6 +17,6 @@ object BugReports {
 
     /** True if quick bug reports are enabled. */
     fun willTakeQuickBugReports(): Boolean =
-        TestApis.properties().get("dumpstate.dry_run").contains("true")
+        TestApis.properties().get("dumpstate.dry_run")?.contains("true") ?: false
 
 }

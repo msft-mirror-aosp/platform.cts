@@ -20,7 +20,6 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.app.Instrumentation;
-import android.content.AttributionSource;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -40,7 +39,6 @@ import android.media.tv.TvInputManager;
 import android.media.tv.TvInputManager.Hardware;
 import android.media.tv.TvInputManager.HardwareCallback;
 import android.media.tv.TvInputManager.Session;
-import android.media.tv.TvInputManager.SessionCallback;
 import android.media.tv.TvInputService;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvView;
@@ -48,7 +46,6 @@ import android.media.tv.cts.TvViewTest.MockCallback;
 import android.media.tv.tunerresourcemanager.TunerResourceManager;
 import android.net.Uri;
 import android.os.Binder;
-import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
@@ -56,8 +53,13 @@ import android.test.ActivityInstrumentationTestCase2;
 import android.tv.cts.R;
 import android.util.Log;
 import android.view.Surface;
+
 import androidx.test.InstrumentationRegistry;
+
 import com.android.compatibility.common.util.PollingCheck;
+
+import org.xmlpull.v1.XmlPullParserException;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,7 +67,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import org.xmlpull.v1.XmlPullParserException;
 
 /**
  * Test for {@link android.media.tv.TvInputManager}.
@@ -75,6 +76,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
 
     /** The maximum time to wait for an operation. */
     private static final long TIME_OUT_MS = 15000L;
+    private static final long LONG_TIME_OUT_MS = 30000L;
     private static final int PRIORITY_HINT_USE_CASE_TYPE_INVALID = 1000;
 
     private static final int DUMMY_DEVICE_ID = Integer.MAX_VALUE;
@@ -167,7 +169,7 @@ public class TvInputManagerTest extends ActivityInstrumentationTestCase2<TvViewS
                 new ComponentName(getActivity(), StubHardwareTvInputService.class);
         pm.setComponentEnabledSetting(component, PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
                 PackageManager.DONT_KILL_APP);
-        new PollingCheck(TIME_OUT_MS) {
+        new PollingCheck(LONG_TIME_OUT_MS) {
             @Override
             protected boolean check() {
                 return null != getInfoForClassName(

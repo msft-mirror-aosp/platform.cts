@@ -178,25 +178,6 @@
         If Garage Mode ran as required, the pass button will be enabled.</string>
     <string name="car_component_power_on_policy_check">Verify Component Power On Policy</string>
     <string name="car_component_power_off_policy_check">Verify Component Power Off Policy</string>
-    <string name="car_uxre_test">Car UX Restrictions Test</string>
-    <string name="car_uxre_test_req_distraction_optimization">Requires Distraction Optimization</string>
-    <string name="car_uxre_test_not_req_distraction_optimization">No Distraction Optimization required</string>
-    <string name="car_uxre_test_parked">Parked</string>
-    <string name="car_uxre_test_idling">Idling</string>
-    <string name="car_uxre_test_moving">Moving</string>
-    <string name="car_uxre_test_unknown">Unknown</string>
-    <string name="car_uxre_test_driving_state">Driving state: %s</string>
-    <string name="car_uxre_test_test_pass">Finished, please mark test as passed</string>
-    <string name="car_uxre_test_test_progress">Test in progress</string>
-    <string name="car_uxre_test_desc">
-        For driver: Put the car in driving mode and make sure that the CTS Verifier activity is
-        blocked. Then park the car and make sure the CTS Verifier activity is shown again and mark
-        it as pass; mark it as fail if the CTS Verifier activity does not get blocked.
-        \n\n
-        For passenger: Put the car in driving mode and make sure that the CTS Verifier activity is
-        not blocked. Then park the car and make sure the CTS Verifier activity is still shown and
-        mark it as pass; mark it as fail if the CTS Verifier activity gets blocked.
-    </string>
     <string name="car_power_policy_test">Car Power Policy Test</string>
     <string name="car_power_policy_test_desc">
         This test verifies that Wi-Fi, Bluetooth and Location settings UI behaviors with respect
@@ -2486,7 +2467,7 @@
     <string name="notification_custom_layout_text">Custom content here!</string>
     <string name="ns_custom_content_alt_text">This is the expanded version of the notification.\nPlease collapse it to check the custom content view.</string>
     <string name="ns_custom_big_content_alt_text">This is the collapsed version of the notification.\nPlease expand it to check the custom big content view.</string>
-    <string name="ns_custom_heads_up_content_alt_text">This is the expanded version of the notification.\nPlease collapse it (while it\'s showing as heads-up, not in the shade) to check the heads-up content view.</string>
+    <string name="ns_custom_heads_up_content_alt_text">This is the expanded version of the notification.\nPlease collapse it (while it\'s showing as heads-up, not in the shade) to check the heads-up content view.\n[extra text 1]\n[extra text 2]</string>
     <string name="ns_bigpicture_animated_instructions">A notification with an animated BigPicture was posted. Expand it, and verify that the image is indeed animated.</string>
     <string name="np_start_channel_settings">Launch Channel Settings</string>
     <string name="np_start_security_settings">Launch Security Settings</string>
@@ -2748,6 +2729,15 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="widget_name">Widget Framework Test</string>
     <string name="widget_pass">Pass</string>
     <string name="widget_fail">Fail</string>
+    <string name="widget_generated_previews_test">Widget Generated Previews Test</string>
+    <string name="widget_generated_previews_test_info">This test checks that the widget picker
+        displays the generated preview for a widget if it is available. In order to perform the
+        test, press the Home button and open the widget picker. Scroll to find the widget titled
+        \"Generated Previews\", and verify that the widget preview displays the text
+        \"This is a generated preview\".</string>
+    <string name="widget_generated_previews_widget_name">Generated Previews</string>
+    <string name="widget_generated_previews_default_preview_text">static previewLayout preview</string>
+    <string name="widget_generated_previews_generated_preview_text">This is a generated preview</string>
 
     <string name="provisioning_byod_non_market_apps">Non-market app installation restrictions</string>
     <string name="provisioning_byod_non_market_apps_info">
@@ -2895,7 +2885,7 @@ You should be prompted to select credentials; choose the ones you just installed
            \"adb uninstall com.android.cts.vpnfirewall\"\n
 
         2. Install the first test app, by running\n
-           \"adb install /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
 
         3. Tap \"Prepare VPN\" button below and consent to the VPN connection.\n
 
@@ -2935,7 +2925,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="provisioning_byod_always_on_vpn_api23_instruction">
         1. Re-install CtsVpnFirewallAppApi23.apk (skip this if you already have the correct version
            installed):\n
-           \"adb install -r /path/to/CtsVpnFirewallAppApi23.apk\"\n
+           \"adb install -r --bypass-low-target-sdk-block /path/to/CtsVpnFirewallAppApi23.apk\"\n
         2. Tap \"Go\" button below to go to the VPN settings page.\n
         3. Open configuration details page for CtsVpnFirewallApp.\n
         4. Confirm the \"Always-on VPN\" and \"Block connections without VPN\" switches are both off
@@ -4421,7 +4411,10 @@ You should be prompted to select credentials; choose the ones you just installed
         Set \'%s\' user restriction by turning on the switch below.
     </string>
     <string name="disallow_add_user">Disallow add user</string>
-    <string name="disallow_add_user_action">Accessing the multiple users settings page, or if the device allows access to the page, then attempting to enable the feature </string>
+    <string name="disallow_add_user_action">  -  If accessing the \'Users\' settings page is disabled, then try to access it.
+        \n  -  If accessing \'Users\' page is allowed, then attempt to enable the feature.
+        \n  -  Or if the device allows enabling the feature, then click \"Add user\"
+        \nThe specific action that triggers the dialog will depend on the device. If any of the actions above triggers a dialog, then consider this step successful </string>
     <string name="disallow_adjust_volume">Disallow adjust volume</string>
     <string name="disallow_adjust_volume_action">Adjusting the volume\n
         NOTE: If the device does not support volume adjustment in Settings app please skip this test and mark it as passing.\n</string>
@@ -4501,7 +4494,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_disallow_remove_user_info">
         Please press \'Create uninitialized user\' to create a user that is not set up. Then press the
         \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Multiple users\' setting. \n
+        Then press \'Go\' to open \'Users\' setting. \n
         Click the managed user to open settings.\n\n
 
         Mark this test as passed if:\n\n
@@ -4512,7 +4505,7 @@ You should be prompted to select credentials; choose the ones you just installed
     </string>
     <string name="managed_user_disallow_remove_user_info">
         Please press the \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open \'Multiple users\' setting. \n\n
+        Then press \'Go\' to open \'Users\' setting. \n\n
 
         Mark this test as passed if all of the following conditions are met:\n\n
         - The \"Delete managed user from this device\" option in the overflow menu is disabled\n
@@ -4968,13 +4961,21 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="device_owner_disallow_user_switch_info">
         Press \'Create uninitialized user\' to create a user that is not setup.
         Then press \'Set restriction\' button to set the user restriction.
-        Then press \'Go\' to open multiple users settings.
+        Then press \'Go\' to open \'Users\' settings.
         Confirm that:\n
         \n
         - Main switch is disabled and in off position\n
+        - Tapping main switch shows a \"Blocked by work policy\" dialog.\n
         \n
-        In additional, if quick settings is available, confirm that user switcher is hidden or
-        disabled.
+        In addition, if quick settings is available, confirm that user switcher is hidden or
+        disabled.\n
+        \n
+        The following steps apply only if the created user is visible on Users page. Confirm that:\n
+        \n
+        - Pressing on managed user opens user details page.\n
+        - \"Switch to managed user\" is disabled\n
+        - Tapping \"Switch to managed user\" shows a \"Blocked by work policy\" dialog.\n
+        \n
         Use the Back button to return to this page.
     </string>
     <string name="device_owner_disallow_user_switch_create_user">Create uninitialized user</string>
@@ -5337,33 +5338,35 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Setup:
         \nDisconnect any wired audio peripherals.
         \n\nTest Process:
-        \n1. Verify that the DUT supports USB or Analog audio peripherals.
-        \n2. Press the \"Record\" button.
-        \n3. Connect a wired input peripheral. A connect routing message should appear.
-        \n4. Press the \"Stop\" button.
+        \n1. Connect a wired input peripheral. A connection routing message should appear.
         \n\nTest Criteria:
         \nThe test passes if either the device DOES NOT support wired input peripherals, or
         the routing notifications are received.
     </string>
     <string name="audio_output_routingnotifications_test">Audio Output Routing Notifications Test</string>
     <string name="audio_output_routingnotification_instructions">
-        Test whether appropriate output routing notifications are sent when audio output peripherals are
+        Test whether appropriate routing notifications are sent when audio output peripherals are
         connected to the device.
         \n\nTest Setup:
         \nDisconnect any wired audio peripherals.
         \n\nTest Process:
-        \n1. Verify that the DUT supports USB or Analog audio peripherals.
-        \n2. Press the \"Play\" button.
-        \n3. Connect a wired output peripheral. A connect routing message should appear.
-        \n4. Press the \"Stop\" button.
+        \n1. Connect a wired output peripheral. A connection routing message should appear.
         \n\nTest Criteria:
         \nThe test passes if either the device DOES NOT support wired output peripherals, or
         the routing notifications are received.
     </string>
-    <string name="audio_routingnotification_playHeader">AudioTrack Routing Notifications</string>
-    <string name="audio_routingnotification_recHeader">AudioRecord Routing Notifications</string>
+    <string name="audio_routingnotification_header">Routing Notifications:</string>
     <string name="audio_routingnotification_trackRoutingMsg">AudioTrack rerouting</string>
     <string name="audio_routingnotification_recordRoutingMsg">AudioRecord rerouting</string>
+    <string name="audio_routingnotification_nosupport">No Support</string>
+    <string name="audio_routingnotification_supported">Supported</string>
+    <string name="audio_routingnotification_supportundetermined">Support Undetermined</string>
+    <string name="audio_routingnotification_devicesupportcr">Device Support\n</string>
+    <string name="audio_routingnotification_analogheadsetcolon">Analog Headset: </string>
+    <string name="audio_routingnotification_usbheadsetcolon">USB Headset: </string>
+    <string name="audio_routingnotification_usbdevicecolon">USB Device: </string>
+    <string name="audio_routingnotification_connected">Connected</string>
+    <string name="audio_routingnotification_passmessage">Test PASSES - Routing notification received</string>
 
     <!-- USB Audio Peripheral Tests -->
     <string name="profileLabel">Profile</string>
@@ -5588,6 +5591,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_start">Start</string>
     <string name="audio_general_stop">Stop</string>
     <string name="audio_general_done">Done</string>
+    <string name="audio_general_close">Close</string>
     <string name="audio_general_status">Status</string>
     <string name="audio_general_pass">PASS</string>
     <string name="audio_general_teststatus_pass">Test Status: PASS</string>
@@ -5596,12 +5600,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_not_tested">Not Tested</string>
     <string name="audio_general_not_required">Please Test If Supported</string>
     <string name="audio_general_required">Required</string>
+    <string name="audio_general_nohardware">No supporting hardware.</string>
+    <string name="audio_general_unknownhardware">Unknown hardware support. Please test if supported.</string>
     <string name="audio_general_run">Run</string>
     <string name="audio_general_cancel">Cancel</string>
     <string name="audio_general_left">Left</string>
     <string name="audio_general_right">Right</string>
     <string name="audio_general_Input">Input</string>
+    <string name="audio_general_inputcolon">Input:</string>
     <string name="audio_general_Output">Output</string>
+    <string name="audio_general_outputcolon">Output:</string>
 
     <string name="audio_general_record">Record</string>
     <string name="audio_general_play">Play</string>
@@ -5619,6 +5627,23 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_general_play_colon"> play:</string>
     <string name="audio_general_record_colon"> record:</string>
 
+    <string name="audio_general_results">Results</string>
+
+    <string name="audio_general_supporteddevices">Supported Devices</string>
+    <string name="audio_general_availabledevices">Available Devices</string>
+    <string name="audio_general_inputscolon">Inputs:</string>
+    <string name="audio_general_outputscolon">Outputs:</string>
+
+    <!-- Audio Loopback Calibration -->
+    <string name="audio_calibration_info">
+        This panel allows you to set levels for loopback signals
+        The process is as follows:
+        &#8226;Select the input and output devices on which the loopback is executing.
+        &#8226;Click "Left" to play a sine wave on the left channel of the selected output device.
+        &#8226;Use the volume control on the DUT and/or external peripheral to set an appropriate signal level.
+        &#8226;Repeat the process for the right channel.
+    </string>
+
     <!-- Audio Data Paths Test-->
     <string name="audio_datapaths_clearresults">Clear Results</string>
     <string name="audio_datapaths_legacy">Legacy</string>
@@ -5626,8 +5651,30 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_mmap_exclusive">MMAP Exclusive</string>
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
+    <string name="perf_mode_none_abreviation">None</string>
+    <string name="perf_mode_lowlatency_abreviation">LwLt</string>
+    <string name="perf_mode_powersave_abreviation">PwSv</string>
+    <string name="perf_mode_unknown_abreviation">/?/?/?</string>
+
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>
+    <string name="audio_datapaths_devices">Audio Devices</string>
     <string name="audio_datapaths_calibratetitle">Calibrate Loopback Audio</string>
+
+    <string name="audio_devicesupport_title">Audio Devices</string>
+    <string name="audio_devicesupport_cantdetermine">Audio device support could not be determined.</string>
+
+    <string name="audio_supported_devices_explain">This is a list of audio devices which are
+        supported by the hardware of this Android device. This includes both built-in
+        devices and audio peripherals that can be connected. A given audio device may or may
+        not be available, i.e. an audio peripheral device may or may not be actually connected
+        to the Android device.
+    </string>
+
+    <string name="audio_available_devices_explain">This is a list of currently available audio devices.
+        It contains both built-in audio devices and any audio peripherals that are currently connected
+        to this Android device. The contents of this list will change as audio peripherals are connected
+        and disconnected.
+    </string>
 
     <string name="audio_exempt_nonhandheld">This is a non-handheld device and is exempt from this test.
         Press the \"Pass\" button (below) to continue.</string>
@@ -5668,9 +5715,14 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Completion:
         \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
     </string>
-    <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test. If the DUT does not support
-        an Analog Headset Jack, the test may PASS. If the DUT does support an Analog Headset Jack, please insert an Analog Loopback Plug
-        into the Analog Headset Jack and run the test.</string>
+
+    <string name="audio_datapaths_analog_nodevices">There are no peripherals currently available for this test.
+        Please insert an Analog Loopback Plug into the Analog Headset Jack and run the test.</string>
+
+    <string name="audio_datapaths_analog_noanalogjack">This device does not have an Analog Headset Jack. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_analog_headsetundetermined">Support for an Analog Headset Jack could not be determined.
+        If an Analog Headset Jack is available, please insert an Analog Loopback Plug and run the test.</string>
+    <string name="audio_datapaths_analog_autopass">Non-Handheld device. A PASS is automatically granted.</string>
 
     <string name="audio_datapaths_USB_test">Audio Data Paths USB Test</string>
     <string name="audio_datapaths_USB_info">This test verifies basic functionality over a set of audio routes
@@ -5686,15 +5738,48 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nTest Completion:
         \n • Once each of the data paths and APIs have been measured, the test can be marked successful.
     </string>
-    <string name="audio_datapaths_usb_nodevices">There are no peripherals currently available for this test. If the DUT does not support
-        USB audio, the test may PASS. If the DUT does support USB audio, please connect each type of USB audio peripheral and
-        run the test for each type.</string>
+    <string name="audio_datapaths_usb_nodevices">There are no peripherals currently available for this test.
+        Please connect each type of USB Audio Peripheral and run the test for each type.</string>
     <string name="audio_datapaths_usb_nextperipheral">Please connect the next USB peripheral to be tested and
         run the test again.</string>
+
+    <string name="audio_datapaths_usb_nosupport">This device does not have a host-mode USB port. A PASS is automatically granted.</string>
+    <string name="audio_datapaths_usb_undetermined">Support for host-mode USB could not be determined.
+        If available, connect each type of USB Audio Peripheral and run the test for each type.</string>
+
     <string name="audio_datapaths_noio">"No valid datapaths. PASS."</string>
     <string name="audio_datapaths_results">%1$s\n%2$s -> %3$s</string>
 
     <string name="audio_loopback_calibrate_default">Default</string>
+    <string name="audio_loopback_running">Running&#8230;</string>
+
+    <!-- USB Device Warning Dialog -->
+    <string name="usbwarning_message_caption">USB Headset Adapter Warning</string>
+    <string name="usbwarning_message_heading">Unvalidated USB Audio Adapter</string>
+    <string name="usbwarning_paragraph_0">The connected USB audio device has not been verified for
+        use in this test.</string>
+    <string name="usbwarning_paragraph_1_1">The test may pass using this USB peripheral.
+        However, some adapters have been seen to implement noise
+        suppression and/or echo cancellation, or introduce significant latency that
+        may cause the test to fail. If the test does not pass with this adapter,
+        you should obtain the</string>
+    <string name="usbwarning_googadapter">Google USB-C to 3.5mm Adapter</string>
+    <string name="usbwarning_paragraph_1_2">for use in this test.</string>
+
+    <!-- Immersive Audio Test -->
+    <string name="immersive_audio_test">Immersive Audio Test</string>
+    <string name="immersive_audio_test_info">This test verifies that the Immersive Audio Test has
+        been run on the associated test fixture and includes the results in the CTS Verifier report
+        sent to Google.
+        If you are not testing an Immersive audio device on the associated fixture, you are not
+        required to run this test and so can simply press the PASS button.
+    </string>
+    <string name="immersive_audio_onscreen_instructions">Invoke this test from the Immersive Audio test fixture.
+        If you are not testing an Immersive Audio device, and the DUT DOES NOT support low-latency head tracking,
+        simply press the PASS button. If you are not testing an Immersive Audio device, and the DUT DOES support
+        low-latency head tracking, you must exit by pressing the BACK button.
+    </string>
+    <string name="immersive_audio_noheadtracking">"This Android device does not support low-latency headtracking."</string>
 
     <!-- Audio Loopback Latency Test -->
     <string name="audio_loopback_latency_test">Audio Loopback Latency Test</string>
@@ -5722,10 +5807,10 @@ You should be prompted to select credentials; choose the ones you just installed
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
     </string>
     <string name="audio_loopback_plug_ready_btn">Loopback Plug Ready</string>
-    <string name="audio_loopback_instructions2">
-          Set the audio level to a suitable value, then press Test button.
-          It might require multiple tries until a sufficient confidence is achieved.
-    </string>
+
+    <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
+    <string name="audio_loopback_devsupport_button">Audio Devices</string>
+
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
     <string name="audio_loopback_results_text">Results...</string>
@@ -5734,13 +5819,13 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_test_non_handheld">This device is not a phone. Test can pass.</string>
     <string name="audio_loopback_test_internal_devices">Speaker/Mic</string>
     <string name="audio_loopback_speakermicpath_instructions">Place the DUT flat on a table
-    in a quiet room. Press the Start button and allow the test to proceed.</string>
+        in a quiet room. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_headsetpath_instructions">If supported, insert the loopback plug
-        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_headsetpath_instructions">Insert the loopback plug
+        into the headset jack. Press the \"Start\" button and allow the test to proceed.</string>
 
-    <string name="audio_loopback_usbpath_instructions">If USB Audio supported, Connect the USB
-        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+    <string name="audio_loopback_usbpath_instructions">Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the \"Start\"
         button and allow the test to proceed.</string>
 
     <string name="audio_loopback_failure">FAILURE - Could not allocate analyzer thread.</string>
@@ -5761,17 +5846,93 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_resultcode_none">Result: None.</string>
     <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
     <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
-    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency not met.</string>
-    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency not met.</string>
-    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path not met.</string>
-    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency not met.</string>
-    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency not met.</string>
+    <string name="audio_loopback_notmet">not met.</string>
+    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency</string>
+    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency</string>
+    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path</string>
+    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency</string>
+    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency</string>
     <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
-    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency for wired path not met.</string>
+    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency. At least one wired path must be tested.</string>
     <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
     <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
 
-    <!-- Audio Cold-Start Latency Test -->
+    <!-- Status Strings -->
+    <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownanalog">Support for an Analog Headset Jack could not be determined. If supported, insert the loopback plug
+        into the headset jack.  Press the Start button and allow the test to proceed.</string>
+    <string name="audio_loopback_nousb">The DUT does not support a USB Audio Port. This Test phase is automatically PASSED.</string>
+    <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
+        port to an appropriate USB audio test peripheral with loopback set up. Press the Start
+        button and allow the test to proceed.</string>
+
+    <!-- Multichannel Mixdown Test -->
+    <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
+    <string name="audio_multichannel_mixdown_info">
+        This test verifies that for High Channel Count Positional Playback (QUAD, 5.1, 7.1, 7.1.4),
+        all playback channels are represented in a stereo mix. It does not verify placement
+        in the output field.
+        \n\nThis test requires a 2-channel loopback device such as a 2-channel USB audio interface
+        correctly configured for audio loopback (see the Audio Loopback Latency test for more
+        information).
+        \n\nThe test should be run for each supported peripheral: Speaker/Mic, Analog Headset Jack,
+        USB Interface and USB Headset.
+        \nOnce each peripheral is tested, a PASS will be granted
+        even if not all channel configurations pass.
+        \nPlease use this information to fix those
+        broken configurations. In future versions, ALL channel configurations
+        will be required to PASS.
+    </string>
+    <string name="audio_mixdown_clearresults">Clear Results</string>
+    <string name="audio_mixdown_calibrate">Calibrate Audio</string>
+    <string name="audio_mixdown_devices">Audio Devices</string>
+
+    <string name="audio_mixdown_stereo">Stereo</string>
+    <string name="audio_mixdown_quad">Quad</string>
+    <string name="audio_mixdown_sevendotone">7.1</string>
+    <string name="audio_mixdown_fivedotone">5.1</string>
+    <string name="audio_mixdown_sevendotonedotfour">7.1.4</string>
+
+    <!-- Mixdown Route Names -->
+    <string name="audio_mixdown_micspeaker">Mic/Speaker</string>
+    <string name="audio_mixdown_analogheadset">Analog Headset Jack + Loopback</string>
+    <string name="audio_mixdown_usbdevice">USB Interface + Loopback</string>
+    <string name="audio_mixdown_usbheadset">USB Headset Adapter + Looback</string>
+
+    <!-- Mixdown status strings -->
+    <string name="audio_mixdown_invalidinput">Invalid Input.</string>
+    <string name="audio_mixdown_invalidoutput">Invalid Output.</string>
+    <string name="audio_mixdown_testcanceled">Test Canceled.</string>
+    <string name="audio_mixdown_cantstart">Couldn\'t Start Duplex Audio.</string>
+
+    <string name="audio_mixdown_required">Required</string>
+    <string name="audio_mixdown_notrequired">Not Required</string>
+    <string name="audio_mixdown_completed">Completed</string>
+    <string name="audio_mixdown_not_completed">Not Completed</string>
+
+    <string name="audio_mixdown_req">required</string>
+    <string name="audio_mixdown_done">done</string>
+
+    <string name="audio_mixdown_runspeakermic">Please run the test for the Mic/Speaker Route.</string>
+    <string name="audio_mixdown_runanalogheadset">Please run the test for the Analog Headset Route.</string>
+    <string name="audio_mixdown_runusbinterface">Please run the test for the USB Interface Route.</string>
+    <string name="audio_mixdown_runusbheadset">Please run the test for the USB Headset Route.</string>
+
+    <!-- Channel Position Names -->
+    <string name="audio_channel_mask_left">Left</string>
+    <string name="audio_channel_mask_right">Right</string>
+    <string name="audio_channel_mask_center">Center</string>
+    <string name="audio_channel_mask_sideleft">Side Left</string>
+    <string name="audio_channel_mask_sideright">Side Right</string>
+    <string name="audio_channel_mask_backleft">Back Left</string>
+    <string name="audio_channel_mask_backright">Back Right</string>
+    <string name="audio_channel_mask_lowfreq">Low Freq</string>
+    <string name="audio_channel_mask_topfrontleft">Top Front Left</string>
+    <string name="audio_channel_mask_topfrontright">Top Front Right</string>
+    <string name="audio_channel_mask_topbackleft">Top Back Left</string>
+    <string name="audio_channel_mask_topbackright">Top Back Right</string>
+
+     <!-- Audio Cold-Start Latency Test -->
     <string name="audio_coldstart_out_latency_test">Audio Cold Start Output Latency Test</string>
     <string name="audio_coldstart_in_latency_test">Audio Cold Start Input Latency Test</string>
 
@@ -5943,7 +6104,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="analog_headset_pass_noheadset">"PASS - No headset port available"</string>
     <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
-    <string name="analog_headset_port_detected">"Analog port detected"</string>
+    <string name="analog_headset_port_detected">"Headset port detected"</string>
+    <string name="analog_headset_port_notsupported">"Headset not support on this device."</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Analog headset connected</string>
@@ -5977,7 +6139,7 @@ You should be prompted to select credentials; choose the ones you just installed
         The Acoustic Coupling Factor (ACF) will be computed for each case. A successful test expects ACF less than 0.4 for AEC ON,
         and ACF greater than 0.6 for AEC OFF.
         This test requires a quiet environment, and no headphones or similar connected.
-        This test must pass on any device which implements AEC.
+        This test must pass in devices where AEC functionality is mandatory or any device which implements AEC.
     </string>
     <string name="audio_aec_instructions">Press [TEST] to play a voice recording twice with different parameters.</string>
     <string name="audio_aec_mandatory_test">Is AEC mandatory in this device?</string>
@@ -6625,13 +6787,16 @@ You should be prompted to select credentials; choose the ones you just installed
     <!-- Add bubble from overflow -->
     <string name="bubbles_test_add_from_overflow_title">Add bubble from overflow</string>
     <string name="bubbles_test_add_from_overflow_verify">1. Expand the stack and open the bubble
-        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened
-        and removed from the overflow.</string>
+        overflow.\n\n 2. Tap on a bubble in the overflow, pass this test if that bubble is opened.
+    </string>
     <!-- Cancel removes bubbles in overflow -->
     <string name="bubbles_test_cancel_overflow_title">Cancel removes overflowed bubbles</string>
     <string name="bubbles_test_cancel_overflow_verify">1. Press the button below, it will cancel all
         previous bubble notifications and post one more.\n\n
         2. Expand that bubble, navigate to the overflow and ensure that it is empty.</string>
+    <string name="bubbles_test_cancel_overflow_verify2">1. Press the button below, it will cancel
+        all previous bubble notifications and post one more.\n\n
+        2. Expand that bubble, observe that there is no overflow button.</string>
     <string name="bubbles_test_cancel_overflow_button">Cancel previous bubbles and post a
         single bubble</string>
     <!-- Tap on notification with bubble in the overflow -->
@@ -7040,6 +7205,7 @@ You should be prompted to select credentials; choose the ones you just installed
     devices on the lock screen as part of their intent extras.\n\n
     For this test, you will need to have set up a screen lock.</string>
     <string name="controls_panel_settings_test_open_lockscreen_settings">Open Settings</string>
+    <string name="controls_panel_settings_test_dreams_not_supported_message">Dreams are not supported on this device. Test passed automatically.</string>
     <string name="controls_panel_setting_test_instructions">Using the button below, open Settings.
         Find the setting that allows you to control external devices from the lockscreen
         (you might need to enable other settings for it to be available). Set that setting to %1$s.
@@ -7147,6 +7313,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="sharesheet_wrong_intent_action">Wrong intent action; test failed.</string>
     <string name="sharesheet_wrong_intent_mime_type">Wrong intent mime type; test failed.</string>
     <string name="sharesheet_wrong_shared_items">Wrong set of shared items; test failed.</string>
+    <string name="sharesheet_missing_result_intent_sender_invocation">Result intent sender was not invoked.</string>
+    <string name="sharesheet_wrong_result_intent_sender_invocation">Incorrect result intent sender was invoked.</string>
 
     <string name="sharesheet_album_test">Sharesheet Album Label Test</string>
     <string name="sharesheet_album_test_info">This test verifies that the system sharesheet responds to the \"album\" hint if provided by the app.</string>
@@ -7161,22 +7329,33 @@ You should be prompted to select credentials; choose the ones you just installed
         \n\nIf the sharesheet indicates that it\'s an album being shared, pass the test, otherwise fail.</string>
 
     <!-- Sharesheet ChooserResult test -->
-    <string name="sharesheet_result_test">Sharesheet Chooser Result Test</string>
-    <string name="sharesheet_result_test_info">This test verifies an app is notified of actions taken when sharing content.</string>
-    <string name="sharesheet_result_test_instructions">For each step, tap the \"Share\" button below and then take the requested action within the Sharing UI.</string>
-    <string name="sharesheet_result_test_app_instructions">Tap the icon for \'CtsVerifier\'.
-        \n\nIf it does not appear, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_copy_instructions">Press the \"Copy\" button.
-        \n\nIf there is no \'Copy\' button, dismiss the Share UI. </string>
-    <string name="sharesheet_result_test_edit_instructions">Press the \"Edit\" button.
-        \n\nIf there is no \'Edit\' button, dismiss the Share UI. </string>
+    <string name="sharesheet_result_test_edit">Chooser Result: Edit</string>
+    <string name="sharesheet_result_test_edit_info">This test verifies an app is notified taken the EDIT action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_edit_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, press the EDIT button.\n\nIf an EDIT button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_edit_instructions_short">Press Edit.</string>
+    <string name="sharesheet_result_test_edit_pressed">The EDIT button was pressed</string>
+    <string name="sharesheet_result_test_edit_not_found">The EDIT button could not be found</string>
+
+    <string name="sharesheet_result_test_copy">Chooser Result: Copy</string>
+    <string name="sharesheet_result_test_copy_info">This test verifies an app is notified taken the COPY action is invoked within the Sharing UI.</string>
+    <string name="sharesheet_result_test_copy_instructions">Tap the \"Share\" button below.\nWhen the Share UI open, press the COPY button.\n\nIf a COPY button cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_copy_instructions_short">Press Copy .</string>
+    <string name="sharesheet_result_test_copy_pressed">The COPY button was pressed</string>
+    <string name="sharesheet_result_test_copy_not_found">The COPY button could not be found</string>
+
+   <string name="sharesheet_result_test_component">Chooser Result: Component</string>
+    <string name="sharesheet_result_test_component_info">This test verifies an app is notified when a target component (APP) is selected in the Sharing UI.</string>
+    <string name="sharesheet_result_test_component_instructions">Tap the \"Share\" button below.\nWhen the Share UI opens, tap the icon labeled \""CtsVerifier\".\n\nIf the \"CtsVerifier\" icon cannot be found, dismiss the UI to continue.</string>
+    <string name="sharesheet_result_test_component_instructions_short">Tap the CtsVerifier Icon</string>
+    <string name="sharesheet_result_test_component_selected">The CtsVerifier icon was selected</string>
+    <string name="sharesheet_result_test_component_not_found">The CtsVerifier icon could not be found</string>
+
     <string name="sharesheet_result_test_instructions_after_share">Choose from the options below:</string>
-    <string name="sharesheet_result_test_pressed">I pressed the button</string>
-    <string name="sharesheet_result_test_not_found">I couldn\'t locate the button</string>
+
     <string name="sharesheet_result_test_try_again">Try again</string>
     <string name="sharesheet_result_test_no_result_message">No result received - test failed</string>
-    <string name="sharesheet_result_test_no_button">Some actions not available - test passed</string>
-    <string name="sharesheet_result_test_passed">Test passed.</string>
+    <string name="sharesheet_result_test_incorrect_result">Incorrect result received - test failed</string>
+    <string name="sharesheet_result_test_no_button">Action not available - test passed</string>
 
     <!-- Strings for CaptureContentForNotes test -->
     <string name="ccfn_tests">Capture Content For Notes Tests</string>
@@ -7296,4 +7475,91 @@ You should be prompted to select credentials; choose the ones you just installed
         \n3. Verify the CtsDefaultNotesApp informs can use API returned false.
         \n4. If so, pass this test else fail.
     </string>
+
+    <string name="notif_hiding_test">Notification Hiding Test</string>
+    <string name="notif_hiding_shade_test">Notification Hiding In Notification Shade During Screen Recording Test</string>
+    <string name="notif_hiding_app_test">Notification Triggers Hiding App Content During Screen Recording Test</string>
+    <string name="notif_hiding_shade_partial_test">Notification Not Hiding In Notification Shade During Single-App Screen Recording Test</string>
+    <string name="notif_hiding_launcher_test">Notification Hiding In Launcher During Screen Recording Test</string>
+    <string name="notif_hiding_bubble_test">Notification Hiding In Bubbles During Screen Recording Test</string>
+    <string name="notif_hiding_shade_local_screen_recorder_test">Notification Hiding In Notification Shade During Screen Recording From Local Screen Recorder Test</string>
+    <string name="notif_hiding_app_local_screen_recorder_test">Notification Triggers Hiding App Content During Screen Recording From Local Screen Recorder Test</string>
+    <string name="notif_hiding_shade_disable_protections_test">Notification Hiding In Notification Shade During Screen Recording With Protections Disabled Test</string>
+    <string name="notif_hiding_app_disable_protections_test">Notification Triggers Hiding App Content During Screen Recording With Protections Disabled Test</string>
+    <string name="notif_hiding_shade_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n3. Press \"Send notification\". Verify the notification popup does not include the text \"Sensitive Text\".
+        \n4. Open the notification shade, and verify there is no notification that includes the text \"Sensitive Text\".
+        \n5. If there is no such notification, click \"Pass\", otherwise click \"Fail\".
+        \n\n* Screenshots can be used for notification validation steps 3 and 4
+    </string>
+    <string name="notif_hiding_app_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n3. Press \"Send notification\".
+        \n4. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" does not appear in the screenshot".
+        \n5. If screenshot is blank, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_partial_test_instructions">
+        1. Press \"Start screen recording\", then select \"A Single App\" in the resulting recording dialog, then select \"Start\", then pick \"Cts Verifier\" in the list of apps that shows.
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_launcher_test_instructions">
+        1. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send Notification\".
+        \n3. Return to the home screen, open the app drawer, and drag \"CTS Verifier\" onto the launcher home screen.
+        \n4. Long press \"CTS Verifier\" in the launcher. Verify that no message shows with the text \"Sensitive Text\".
+        \n5. Return to the verifier app. If there was no such message when long pressing, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_bubble_test_instructions">
+        1. Press \"Send Notification\", then pull down the notification shade and press the bubble button on the bottom right of the notification.
+        \n2. Exit the bubble activity by tapping on the bubble icon at the top of the screen
+        \n3. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n4. Press \"Send Notification\", and verify that no message containing the text \"Sensitive Text\" shows next to the bubble.
+        \n5. If no such message shows, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_local_screen_recorder_test_instructions">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n4. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+    </string>
+    <string name="notif_hiding_app_local_screen_recorder_test_instructions">
+        1. Start \"Screen record\", from Quick Settings then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n3. Take a screenshot of CtsVerifier App, and verify the text \"Sensitive Text\" appears in the screenshot".
+        \n4. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+    </string>
+    <string name="notif_hiding_shade_disable_protections_test_instructions">
+        1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
+        \nConfirm that:
+        \n   - "Disable screen share protections" is enabled.
+        \nReturn back to this page. Remember to undo this after the test.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n5. Open the notification shade, and verify there is a notification that includes the text \"Sensitive Text\".
+        \n6. If there is such a notification, click \"Pass\", otherwise click \"Fail\".
+        \n7. Remember to disable the "Disable screen share protections" developer options.
+    </string>
+    <string name="notif_hiding_app_disable_protections_test_instructions">
+        1. Go to the "Disable screen share protections" developer setting. It is often located under \"Developer options\".
+        \nConfirm that:
+        \n   - "Disable screen share protections" is enabled.
+        \nReturn back to this page. Remember to undo this after the test.
+        \n2. Press \"Start screen recording\", then select \"Entire screen\" in the resulting recording dialog, then select \"Start\".
+        \n3. Open the notification shade, and verify there is a notification that includes the text \"FGS Running\".
+        \n2. Press \"Send notification\". Verify the notification popup includes the text \"Sensitive Text\".
+        \n5. Take a screenshot of CtsVerifier App, and verify there is content in screenshot".
+        \n6. If screenshot is has content, click \"Pass\", otherwise (if blank) click \"Fail\".
+        \n7. Remember to disable the "Disable screen share protections" developer options.
+    </string>
+    <string name="notif_hiding_no_local_screen_recorder_warning">This test requires a local screen recorder that declares uses-permission of android.permission.RECORD_SENSITIVE_CONTENT to exempt it from protections</string>
+    <string name="notif_hiding_start_screen_recording">Start screen recording</string>
+    <string name="notif_hiding_send_notification">Send notification</string>
+    <string name="notif_hiding_success">No failures found, please press the green check mark</string>
+    <string name="notif_hiding_failure">%1$d out of %2$d tests failed, please press the red \"!\"</string>
 </resources>

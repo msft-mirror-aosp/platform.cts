@@ -26,6 +26,7 @@ from scipy import ndimage
 import its_base_test
 import camera_properties_utils
 import capture_request_utils
+import error_util
 import image_processing_utils
 import its_session_utils
 import lighting_control_utils
@@ -221,6 +222,10 @@ class HdrExtensionTest(its_base_test.ItsBaseTest):
       # Take capture without HDR extension activated as baseline
       logging.debug('Taking capture without HDR extension')
       out_surfaces = {'format': _FMT_NAME, 'width': _WIDTH, 'height': _HEIGHT}
+      try:
+        cam.do_3a()
+      except error_util.CameraItsError:
+        logging.error('Could not converge 3A in HDR scene')
       req = capture_request_utils.auto_capture_request()
       no_hdr_start_of_capture = time.time()
       no_hdr_cap = cam.do_capture(req, out_surfaces)

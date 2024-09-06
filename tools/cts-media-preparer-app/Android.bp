@@ -35,7 +35,6 @@ android_test {
         "cts",
         "general-tests",
         "mts-media",
-        "mcts-media",
     ],
     sdk_version: "test_current",
     min_sdk_version: "29",

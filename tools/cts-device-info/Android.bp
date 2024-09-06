@@ -42,7 +42,6 @@ android_test_helper_app {
         "mcts-adservices",
         "mcts-appsearch",
         "mcts-art",
-        "mcts-bluetooth",
         "mcts-cellbroadcast",
         "mcts-configinfrastructure",
         "mcts-conscrypt",
@@ -69,6 +68,7 @@ android_test_helper_app {
         "mcts-wifi",
     ],
     static_libs: [
+        "camera_platform_flags_java_lib",
         "compatibility-device-info",
         "compatibility-device-util-axt",
     ],
@@ -80,7 +80,7 @@ android_test_helper_app {
     optimize: {
         enabled: false,
     },
-    sdk_version: "current",
+    sdk_version: "test_current",
     manifest: ":CtsDeviceInfo_Manifest",
 }
 
@@ -97,6 +97,7 @@ genrule {
         " -r android.permission.QUERY_ALL_PACKAGES" +
         " -a com.android.compatibility.common.deviceinfo.GlesStubActivity " +
         " -a com.android.cts.deviceinfo.CameraDeviceInfo " +
+        " -a com.android.cts.deviceinfo.DisplayDeviceInfo " +
         " -a com.android.cts.deviceinfo.SensorDeviceInfo " +
         " -a com.android.cts.deviceinfo.VulkanDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.AppStandbyDeviceInfo " +
@@ -121,6 +122,7 @@ genrule {
         " -a com.android.compatibility.common.deviceinfo.MediaOutputDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.MemoryDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.PackageDeviceInfo " +
+        " -a com.android.compatibility.common.deviceinfo.PermissionDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.ScreenDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.StorageDeviceInfo " +
         " -a com.android.compatibility.common.deviceinfo.UserDeviceInfo " +

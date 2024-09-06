@@ -435,7 +435,8 @@ public class ConnectionServiceTest extends BaseTelecomTestWithMockServices {
      */
     @CddTest(requirement = "7.4.1.1/C-1-4")
     public void testCallLogForBlockedNumberIncomingCall() throws Exception {
-        if (!mShouldTestTelecom) {
+        // Only devices with a dialer app support the blocked numbers provider.
+        if (!mShouldTestTelecom || !hasDialerRole(mContext)) {
             return;
         }
 

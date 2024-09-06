@@ -72,6 +72,10 @@ public class ApiComplianceChecker extends ApiPresenceChecker {
         IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.put(
                 "android.media.tv.tuner.frontend.FrontendSettings#FEC_77_90(long)",
                 new FieldValuePair("8", "34359738368"));
+        // Allow for change in toString() conversion for Float.MIN_NORMAL (b/328666063).
+        IGNORE_FIELD_VALUES_MODIFIER_ALLOWED_LIST.put(
+                "java.lang.Float#MIN_NORMAL(float)",
+                new FieldValuePair("1.1754944E-38", "1.17549435E-38"));
     }
 
     /** Indicates that the class is an annotation. */

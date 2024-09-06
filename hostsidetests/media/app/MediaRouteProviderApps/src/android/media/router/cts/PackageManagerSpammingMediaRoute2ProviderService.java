@@ -55,7 +55,7 @@ public final class PackageManagerSpammingMediaRoute2ProviderService
         // ensuring it's always available for scanning. Otherwise, it could be disabled at the
         // moment when scanning would otherwise re-start it.
         ComponentName componentName =
-                new ComponentName(this, FakeMediaRoute2ProviderService2.class);
+                new ComponentName(this, FakeMediaRoute2ProviderService1.class);
         PackageManager pm = getApplicationContext().getPackageManager();
         if (pm.getComponentEnabledSetting(componentName)
                 == PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {

@@ -16,7 +16,14 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.android.cts.appsearch" >
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.android.cts.appsearch">
+
+    <!--The Harrier library uses the READ_EXTERNAL_STORAGE permission. We have a test that
+        assumes this test app does not have this permission. So removes it. -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        tools:node="remove" />
 
     <queries>
         <package android:name="com.android.cts.appsearch.helper.a" />
@@ -25,6 +32,20 @@
 
     <application android:label="CtsAppSearchTestCases">
         <uses-library android:name="android.test.runner"/>
+
+        <activity android:name="android.app.appsearch.testutil.functions.ActivityCreationSynchronizer"
+                  android:exported="true"/>
+        <service android:name="android.app.appsearch.testutil.functions.TestAppFunctionService"
+                 android:exported="true"
+                 android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
+                 android:process=":appfunctions">
+            <intent-filter>
+                <action android:name="android.app.appsearch.functions.AppFunctionService"/>
+            </intent-filter>
+        </service>
+        <receiver
+            android:name="android.app.appsearch.testutil.functions.TestAppFunctionServiceLifecycleReceiver"
+            android:exported="false"/>
     </application>
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
                      android:targetPackage="com.android.cts.appsearch"

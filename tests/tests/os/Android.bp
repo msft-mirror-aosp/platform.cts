@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsOsTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
@@ -68,7 +69,6 @@ android_test {
         "general-tests",
         "sts",
         "mts-documentsui",
-        "mcts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
@@ -84,12 +84,17 @@ android_test {
 android_ravenwood_test {
     name: "CtsOsTestCasesRavenwood",
     defaults: ["cts_defaults"],
+    sdk_version: "test_current",
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "android.os.flags-aconfig-java",
+        "backstage_power_flags_lib",
+        "sdk_sandbox_flags_lib",
     ],
     srcs: [
+        "src/android/os/connectivity/cts/WifiActivityEnergyInfoTest.java",
         "src/android/os/cts/BadParcelableExceptionTest.java",
         "src/android/os/cts/BinderTest.java",
         "src/android/os/cts/BuildTest.java",

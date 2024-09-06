@@ -179,3 +179,10 @@ pce.submitAndCheck();
 The test results are then processed and reported creating a file
 cts_media_performance_class_test_cases.reportlog.json which will eventually have
 its data upload and processed.
+
+You can view the file with
+
+```shell
+adb root
+adb shell cat /storage/emulated/0/report-log-files/CtsMediaPerformanceClassTestCases.reportlog.json
+```

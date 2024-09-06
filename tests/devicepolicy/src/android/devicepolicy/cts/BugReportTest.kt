@@ -24,41 +24,23 @@ import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
 import com.android.bedstead.harrier.annotations.NotificationsTest
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
+import com.android.bedstead.harrier.annotations.SlowApiTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.policies.RequestBugReport
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder
-import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject
 import com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat
 import com.android.bedstead.nene.TestApis
-import com.android.bedstead.nene.types.OptionalBoolean
+import com.android.bedstead.nene.notifications.NotificationListener
 import com.android.bedstead.nene.types.OptionalBoolean.TRUE
 import com.android.bedstead.nene.users.UserReference
-import com.android.bedstead.remotedpc.RemoteDpc
 import com.android.compatibility.common.util.ApiTest
-import com.android.eventlib.truth.EventLogsSubject
-import com.android.interactive.Step
-import com.android.interactive.annotations.Interactive
-import com.android.interactive.steps.enterprise.bugreport.BugReportNotificationDeclineToShareBugReportStep
-import com.android.interactive.steps.enterprise.bugreport.BugReportNotificationShareBugReportStep
-import android.util.Log
-import com.android.bedstead.harrier.annotations.SlowApiTest
-import com.android.bedstead.nene.notifications.NotificationListener
-import com.android.bedstead.nene.utils.Poll
 import com.android.eventlib.truth.EventLogsSubject.assertThat
-import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
-import org.junit.After
-import org.junit.Assert
-import org.junit.Before
-import org.junit.ClassRule
-import org.junit.Ignore
-import org.junit.Rule
-import org.junit.Test
+import org.junit.*
 import org.junit.runner.RunWith
 import org.testng.Assert.assertThrows
-import java.util.stream.Collectors
 
 @RunWith(BedsteadJUnit4::class)
 @EnsureWillTakeQuickBugReports
@@ -152,7 +134,9 @@ class BugReportTest {
             .filter { u: UserReference ->
                 (u != TestApis.users().instrumented()
                         && u != deviceState.additionalUser()
-                        && u != TestApis.users().current())
+                        && u != TestApis.users().current()
+                        && u != TestApis.users().initial()
+                        && u != TestApis.users().system())
             }
             .forEach { obj: UserReference -> obj.remove() }
         val affiliationIds = HashSet(
@@ -226,9 +210,9 @@ class BugReportTest {
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#requestBugReport",
         "android.app.admin.DeviceAdminReceiver#onBugReportShared"])
     @NotificationsTest
+    @EnsureHasNoAdditionalUser
     fun requestBugReport_logsEvent() {
         removeOtherUsers()
-
         EnterpriseMetricsRecorder.create().use { metrics ->
             TestApis.notifications().createListener().use { notifications ->
 
@@ -253,7 +237,9 @@ class BugReportTest {
         TestApis.users().all().stream()
             .filter { u: UserReference ->
                 (u != TestApis.users().instrumented()
-                        && u != TestApis.users().current())
+                        && u != TestApis.users().current()
+                        && u != TestApis.users().initial()
+                        && u != TestApis.users().system())
             }
             .forEach { obj: UserReference -> obj.remove() }
     }

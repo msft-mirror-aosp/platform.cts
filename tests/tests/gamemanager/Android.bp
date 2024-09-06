@@ -19,12 +19,15 @@ android_test {
 
     static_libs: [
         "androidx.test.core",
+        "android.server.app.flags-aconfig-java",
         "compatibility-device-util-axt",
         "ctsdeviceutillegacy-axt",
         "ctstestrunner-axt",
         "ctstestserver",
+        "flag-junit",
         "framework-annotations-lib",
         "junit",
+        "surfaceflinger_flags_java_lib",
         "truth",
     ],
 

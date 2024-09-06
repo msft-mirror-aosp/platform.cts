@@ -46,6 +46,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.ImageWriter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
@@ -59,6 +60,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.DeviceReportLog;
+import com.android.compatibility.common.util.PropertyUtil;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.Stat;
@@ -72,6 +74,7 @@ import org.junit.runners.JUnit4;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Objects;
@@ -922,22 +925,26 @@ public class PerformanceTest {
      * Testing Zoom settings override performance for zoom in from 1.0x
      *
      * The range of zoomRatio being tested is [1.0x, maxZoomRatio]
+     * The test is skipped if minZoomRatio == 1.0x.
      */
     @Test
     public void testZoomSettingsOverrideLatencyInFrom1x() throws Exception {
         testZoomSettingsOverrideLatency("zoom_in_from_1x",
-                ZoomDirection.ZOOM_IN, ZoomRange.RATIO_1_OR_LARGER);
+                ZoomDirection.ZOOM_IN, ZoomRange.RATIO_1_OR_LARGER,
+                /*checkSmoothZoom*/ false);
     }
 
     /**
      * Testing Zoom settings override performance for zoom out to 1.0x
      *
      * The range of zoomRatio being tested is [maxZoomRatio, 1.0x]
+     * The test is skipped if minZoomRatio == 1.0x.
      */
     @Test
     public void testZoomSettingsOverrideLatencyOutTo1x() throws Exception {
         testZoomSettingsOverrideLatency("zoom_out_to_1x",
-                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_1_OR_LARGER);
+                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_1_OR_LARGER,
+                /*checkSmoothZoom*/ false);
     }
 
     /**
@@ -949,31 +956,92 @@ public class PerformanceTest {
     @Test
     public void testZoomSettingsOverrideLatencyOutFrom1x() throws Exception {
         testZoomSettingsOverrideLatency("zoom_out_from_1x",
-                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_1_OR_SMALLER);
+                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_1_OR_SMALLER,
+                /*checkSmoothZoom*/ false);
     }
 
     /**
-     * Testing Zoom settings override performance for zoom in on a camera with ultrawide lens
+     * Testing Zoom settings override performance for zoom in full range
      *
      * The range of zoomRatios being tested is [minZoomRatio, maxZoomRatio].
-     * The test is skipped if minZoomRatio == 1.0x.
      */
     @Test
     public void testZoomSettingsOverrideLatencyInWithUltraWide() throws Exception {
         testZoomSettingsOverrideLatency("zoom_in_from_ultrawide",
-                ZoomDirection.ZOOM_IN, ZoomRange.RATIO_FULL_RANGE);
+                ZoomDirection.ZOOM_IN, ZoomRange.RATIO_FULL_RANGE,
+                /*checkSmoothZoom*/ true);
     }
 
     /**
-     * Testing Zoom settings override performance for zoom out on a camera with ultrawide lens
+     * Testing Zoom settings override performance for zoom out full range
      *
      * The range of zoomRatios being tested is [maxZoomRatio, minZoomRatio].
-     * The test is skipped if minZoomRatio == 1.0x.
      */
     @Test
     public void testZoomSettingsOverrideLatencyOutWithUltraWide() throws Exception {
         testZoomSettingsOverrideLatency("zoom_out_to_ultrawide",
-                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_FULL_RANGE);
+                ZoomDirection.ZOOM_OUT, ZoomRange.RATIO_FULL_RANGE,
+                /*checkSmoothZoom*/ true);
+    }
+
+    /**
+     * Get zoom ratios to be tested for zoom settings override test
+     */
+    private double[] getZoomRatiosToTest(StaticMetadata staticMetadata,
+            boolean checkSmoothZoomForV, ZoomDirection direction, ZoomRange range) {
+        Range<Float> zoomRatioRange = staticMetadata.getZoomRatioRangeChecked();
+        final float kSmoothZoomStep = 0.1f;
+        final float kMaxZoomRatio = 10.0f;
+        float startRatio = zoomRatioRange.getLower();
+        float endRatio = Math.min(zoomRatioRange.getUpper(), kMaxZoomRatio);
+
+        if (range == ZoomRange.RATIO_1_OR_LARGER) {
+            startRatio = 1.0f;
+        } else if (range == ZoomRange.RATIO_1_OR_SMALLER) {
+            endRatio = 1.0f;
+        }
+
+        ArrayList<Double> zoomRatios = new ArrayList<>();
+        if (!checkSmoothZoomForV) {
+            // If not checking smooth zoom, equally divide zoom range into NUM_ZOOM_STEPS
+            // equal pieces.
+            for (int i = 0; i <= NUM_ZOOM_STEPS; i++) {
+                double ratio = startRatio + (endRatio - startRatio) * i / NUM_ZOOM_STEPS;
+                zoomRatios.add(roundAwayFrom1(ratio));
+            }
+        } else {
+            // If checking smooth zoom:
+            // 1. Divide zoom range logarithmically to align with user perception.
+            // 2. Smaller steps to simulate pinch zoom better, and at the same time giving
+            //    lens switch enough time.
+            double stepLog = Math.log(1.0f + kSmoothZoomStep);
+            // Add zoom-out ratios
+            for (double logRatio = 0.0f; logRatio >= Math.log(startRatio);
+                    logRatio -= stepLog) {
+                zoomRatios.addFirst(roundAwayFrom1(Math.exp(logRatio)));
+            }
+            // Add zoom-in ratios
+            for (double logRatio = stepLog; logRatio <= Math.log(endRatio);
+                    logRatio += stepLog) {
+                zoomRatios.add(roundAwayFrom1(Math.exp(logRatio)));
+            }
+        }
+
+        if (direction == ZoomDirection.ZOOM_OUT) {
+            Collections.reverse(zoomRatios);
+        }
+        return zoomRatios.stream().mapToDouble(d -> d).toArray();
+    }
+
+    /**
+     * Round the given zoom ratio so that it is not equal to 1.0
+     *
+     * TODO: b/350076823: Stay away from 1.0x so that camera framework doesn't
+     * move the effective zoom rate to SCALER_CROP_REGION.
+     */
+    private double roundAwayFrom1(double zoomRatio) {
+        final double kZoomRatioAt1x = 1.01f;
+        return zoomRatio == 1.0 ? kZoomRatioAt1x : zoomRatio;
     }
 
     /**
@@ -981,12 +1049,15 @@ public class PerformanceTest {
      * override.
      */
     private void testZoomSettingsOverrideLatency(String testCase,
-            ZoomDirection direction, ZoomRange range) throws Exception {
-        final int ZOOM_STEPS = 5;
+            ZoomDirection direction, ZoomRange range, boolean checkSmoothZoom) throws Exception {
         final float ZOOM_ERROR_MARGIN = 0.05f;
         final float ERROR_THRESH_FACTOR = 0.33f;
         final int ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES = 1;
         final int MAX_IMPROVEMENT_VARIATION = 2;
+        final boolean atLeastV =
+                PropertyUtil.getFirstApiLevel() > Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+        final boolean checkSmoothZoomForV = checkSmoothZoom && atLeastV;
+
         for (String id : mTestRule.getCameraIdsUnderTest()) {
             StaticMetadata staticMetadata = mTestRule.getAllStaticInfo().get(id);
             CameraCharacteristics ch = staticMetadata.getCharacteristics();
@@ -999,28 +1070,20 @@ public class PerformanceTest {
                 continue;
             }
 
-            // Figure out start and end zoom ratio
             Range<Float> zoomRatioRange = staticMetadata.getZoomRatioRangeChecked();
-            float startRatio = zoomRatioRange.getLower();
-            float endRatio = zoomRatioRange.getUpper();
-            if (startRatio >= 1.0f && (range == ZoomRange.RATIO_FULL_RANGE
-                    || range == ZoomRange.RATIO_1_OR_SMALLER)) {
+            float minZoomRatio = zoomRatioRange.getLower();
+            if (minZoomRatio >= 1.0f && (range != ZoomRange.RATIO_FULL_RANGE)) {
+                // Skip if the tests are overlapping with the full range tests.
                 continue;
             }
-            if (range == ZoomRange.RATIO_1_OR_LARGER) {
-                startRatio = 1.0f;
-            } else if (range == ZoomRange.RATIO_1_OR_SMALLER) {
-                endRatio = 1.0f;
-            }
-            if (direction == ZoomDirection.ZOOM_OUT) {
-                float temp = startRatio;
-                startRatio = endRatio;
-                endRatio = temp;
-            }
 
-            int[] overrideImprovements = new int[NUM_ZOOM_STEPS];
-            float[] zoomRatios = new float[NUM_ZOOM_STEPS];
+            // Figure out zoom ratios to test
+            double[] ratiosToTest = getZoomRatiosToTest(staticMetadata,
+                    checkSmoothZoomForV, direction, range);
+            int numZoomSteps = ratiosToTest.length;
+            int[] overrideImprovements = new int[numZoomSteps - 1];
 
+            Log.v(TAG, "Camera " + id + " zoom settings: " + Arrays.toString(ratiosToTest));
             String streamName = "test_camera_zoom_override_latency";
             mReportLog = new DeviceReportLog(REPORT_LOG_NAME, streamName);
             mReportLog.addValue("camera_id", id, ResultType.NEUTRAL, ResultUnit.NONE);
@@ -1038,17 +1101,17 @@ public class PerformanceTest {
                         CameraMetadata.CONTROL_VIDEO_STABILIZATION_MODE_OFF);
                 previewBuilder.set(CaptureRequest.CONTROL_SETTINGS_OVERRIDE,
                         CameraMetadata.CONTROL_SETTINGS_OVERRIDE_ZOOM);
-                previewBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, startRatio);
+                float startZoomRatio = (float) ratiosToTest[0];
+                previewBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, startZoomRatio);
                 SimpleCaptureCallback resultListener = new SimpleCaptureCallback();
                 int sequenceId = mTestRule.getCameraSession().setRepeatingRequest(
                         previewBuilder.build(), resultListener, mTestRule.getHandler());
                 CaptureResult result = CameraTestUtils.waitForNumResults(
                         resultListener, NUM_RESULTS_WAIT, WAIT_FOR_RESULT_TIMEOUT_MS);
 
-                float previousRatio = startRatio;
-                for (int j = 0; j < NUM_ZOOM_STEPS; j++) {
-                    float zoomFactor = startRatio + (endRatio - startRatio)
-                             * (j + 1) / NUM_ZOOM_STEPS;
+                float previousRatio = startZoomRatio;
+                for (int j = 0; j < numZoomSteps - 1; j++) {
+                    float zoomFactor = (float) ratiosToTest[j + 1];
                     // The error margin needs to be adjusted based on the zoom step size.
                     // We take the min of ZOOM_ERROR_MARGIN and 1/3 of zoom ratio step.
                     float zoomErrorMargin = Math.min(ZOOM_ERROR_MARGIN,
@@ -1070,7 +1133,6 @@ public class PerformanceTest {
                         frameNumber = zoomResult.getFrameNumber();
                         float resultZoomFactor = zoomResult.get(CaptureResult.CONTROL_ZOOM_RATIO);
 
-                        Log.v(TAG, "frameNumber " + frameNumber + " zoom: " + resultZoomFactor);
                         assertTrue(String.format("Zoom ratio should monotonically increase/decrease"
                                 + " or stay the same (previous = %f, current = %f", previousRatio,
                                 resultZoomFactor),
@@ -1084,29 +1146,38 @@ public class PerformanceTest {
                                 && improvement == 0) {
                             improvement = (int) (lastFrameNumberForRequest + 1 - frameNumber);
                         }
+                        Log.v(TAG, "frameNumber " + frameNumber + " zoom: " + resultZoomFactor
+                                + " improvement: " + improvement);
                         previousRatio = resultZoomFactor;
                     }
 
-                    // Zoom in from 1.0x must have at least 1 frame latency improvement.
-                    if (direction == ZoomDirection.ZOOM_IN
-                            && range == ZoomRange.RATIO_1_OR_LARGER
+                    // For firstApiLevel < V, zoom in must have at least 1 frame latency
+                    // improvement. For firstApiLevel >= V, both zoom in and out must have
+                    // at least 1 frame latency improvement.
+                    if ((checkSmoothZoomForV || (range == ZoomRange.RATIO_1_OR_LARGER
+                            && direction == ZoomDirection.ZOOM_IN))
                             && staticMetadata.isPerFrameControlSupported()) {
                         mTestRule.getCollector().expectTrue(
                                 "Zoom-in latency improvement (" + improvement
                                 + ") must be at least " + ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES,
                                 improvement >= ZOOM_IN_MIN_IMPROVEMENT_IN_FRAMES);
                     }
-                    zoomRatios[j] = zoomFactor;
                     overrideImprovements[j] = improvement;
 
                     sequenceId = newSequenceId;
                 }
 
-                int variation = Arrays.stream(overrideImprovements).max().getAsInt() -
-                        Arrays.stream(overrideImprovements).min().getAsInt();
-                assertTrue(String.format("Zoom latency improvement variation %d is too large",
-                        variation), variation <= MAX_IMPROVEMENT_VARIATION);
-                mReportLog.addValues("Camera zoom ratios", zoomRatios, ResultType.NEUTRAL,
+                int minImprovement = Arrays.stream(overrideImprovements).min().getAsInt();
+                int maxImprovement = Arrays.stream(overrideImprovements).max().getAsInt();
+                int variation = maxImprovement - minImprovement;
+                // To check smooth zoom for V, the latency improvement must not introduce
+                // extra pipeline delay variation.
+                int maxVariation = checkSmoothZoomForV ? 0 : MAX_IMPROVEMENT_VARIATION;
+                assertTrue(
+                        String.format("Zoom latency improvement variation %d must not exceed %d",
+                                variation, MAX_IMPROVEMENT_VARIATION), variation <= maxVariation);
+
+                mReportLog.addValues("Camera zoom ratios", ratiosToTest, ResultType.NEUTRAL,
                         ResultUnit.NONE);
                 mReportLog.addValues("Latency improvements", overrideImprovements,
                         ResultType.HIGHER_BETTER, ResultUnit.FRAMES);
@@ -1118,7 +1189,7 @@ public class PerformanceTest {
             mReportLog.submit(mInstrumentation);
 
             if (VERBOSE) {
-                Log.v(TAG, "Camera " + id + " zoom settings: " + Arrays.toString(zoomRatios));
+                Log.v(TAG, "Camera " + id + " zoom settings: " + Arrays.toString(ratiosToTest));
                 Log.v(TAG, "Camera " + id + " zoom settings override latency improvements "
                         + "(in frames): " + Arrays.toString(overrideImprovements));
             }

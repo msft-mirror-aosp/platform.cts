@@ -42,7 +42,6 @@ import androidx.window.extensions.embedding.SplitPairRule;
 
 import com.android.compatibility.common.util.ApiTest;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -57,7 +56,6 @@ import java.util.stream.Collectors;
  * Build/Install/Run:
  *     atest CtsWindowManagerJetpackTestCases:ActivityStackApisTests
  */
-@Ignore("It's only available after Window Manager Extensions vendor API level 5.")
 public class ActivityStackApisTests extends ActivityEmbeddingTestBase {
     @ApiTest(apis = {"androidx.window.extensions.embedding.ActivityEmbeddingComponent"
             + "#finishActivityStacks"})

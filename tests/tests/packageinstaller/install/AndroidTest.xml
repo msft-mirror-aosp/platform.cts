@@ -38,6 +38,13 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="settings put system pointer_location 1" />
+        <option name="run-command" value="settings put system show_touches 1" />
+        <option name="teardown-command" value="settings put system pointer_location 0" />
+        <option name="teardown-command" value="settings put system show_touches 0" />
+    </target_preparer>
+
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
         <option name="run-command" value="pm uninstall android.packageinstaller.emptytestapp.cts" />
         <!-- dismiss all system dialogs before launch test -->
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
@@ -46,17 +53,24 @@
 
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
+        <option name="push" value="CtsArchiveInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveInstallerApp.apk" />
+        <option name="push" value="CtsArchiveTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsArchiveTestApp.apk" />
         <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp.apk" />
         <option name="push" value="CtsEmptyTestAppV2.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestAppV2.apk" />
         <option name="push" value="CtsEmptyTestApp_pl.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_pl.apk" />
         <option name="push" value="CtsEmptyInstallerApp.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyInstallerApp.apk" />
         <option name="push" value="CtsEmptyTestApp_FullScreenIntent.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_FullScreenIntent.apk" />
         <option name="push" value="CtsEmptyTestApp_AppMetadataInApk.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk.apk" />
+        <option name="push" value="CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_AppMetadataInApk_ExceedSizeLimit.apk" />
+        <option name="push" value="CtsEmptyTestApp_RejectedByVerifier.apk->/data/local/tmp/cts/packageinstaller/CtsEmptyTestApp_RejectedByVerifier.apk" />
+        <option name="push" value="CtsSufficientVerifierReject.apk->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk" />
+        <option name="push" value="CtsSufficientVerifierReject.apk.idsig->/data/local/tmp/cts/packageinstaller/CtsSufficientVerifierReject.apk.idsig" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="test-file-name" value="CtsPackageInstallTestCases.apk" />
+        <option name="test-file-name" value="CtsDisabledLauncherActivityApp.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
@@ -81,6 +95,7 @@
         <option name="teardown-command" value="pm uninstall com.android.cts.install.lib.testapp.S" />
         <option name="teardown-command" value="pm uninstall com.test.sdk.user" />
         <option name="teardown-command" value="pm uninstall com.test.sdk1_1" />
+        <option name="teardown-command" value="pm uninstall android.packageinstaller.disabledlauncheractivity.cts" />
         <option name="run-command" value="input keyevent KEYCODE_WAKEUP" />
         <option name="run-command" value="wm dismiss-keyguard" />
         <!-- Collapse notifications -->
@@ -89,10 +104,16 @@
         <option name="run-command" value="am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS" />
     </target_preparer>
 
-    <!-- Required for UserRestrictionInstallTest (b/277987631) -->
+    <!-- Ensures that screen recording is captured -->
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">
-        <option name="force-root" value="false" />
+        <option name="force-root" value="true" />
+        <option name="throw-on-error" value="false" />
     </target_preparer>
+
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="directory-keys" value="/data/user/0/android.packageinstaller.install.cts/files" />
+        <option name="collect-on-run-ended-only" value="true" />
+    </metrics_collector>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.packageinstaller.install.cts" />

@@ -88,7 +88,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
     private static final Set<Activity> sVisibleActivities = new HashSet<>();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         mInstrumentation = getInstrumentation();
         assertNotNull(mInstrumentation);
         mContext = getApplicationContext();

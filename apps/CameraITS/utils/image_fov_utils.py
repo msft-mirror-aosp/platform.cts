@@ -18,6 +18,8 @@ import logging
 import math
 
 import cv2
+import numpy as np
+
 import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
@@ -215,11 +217,13 @@ def find_fov_reference(cam, req, props, raw_bool, ref_img_name_stem):
     # Resize back up to full scale.
     img = cv2.resize(img, (0, 0), fx=2.0, fy=2.0)
 
+    fd = float(cap['metadata']['android.lens.focalLength'])
+    k = camera_properties_utils.get_intrinsic_calibration(
+        props, cap['metadata'], True, fd
+    )
     if (camera_properties_utils.distortion_correction(props) and
-        camera_properties_utils.intrinsic_calibration(props)):
+        isinstance(k, np.ndarray)):
       logging.debug('Applying intrinsic calibration and distortion params')
-      fd = float(cap['metadata']['android.lens.focalLength'])
-      k = camera_properties_utils.get_intrinsic_calibration(props, True, fd)
       opencv_dist = camera_properties_utils.get_distortion_matrix(props)
       k_new = cv2.getOptimalNewCameraMatrix(
           k, opencv_dist, (img.shape[1], img.shape[0]), 0)[0]

@@ -21,6 +21,8 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNCHANGED
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeInvisible;
 import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -29,11 +31,15 @@ import static org.junit.Assert.fail;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.support.test.uiautomator.UiDevice;
 import android.view.MotionEvent;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController.OnControllableInsetsChangedListener;
 import android.view.WindowManager;
+import android.view.inputmethod.Flags;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.MetricsRecorder;
@@ -55,6 +61,7 @@ import com.android.os.nano.AtomsProto;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -71,10 +78,19 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
 
     private static final String TAG = "InputMethodStatsTest";
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final int EDIT_TEXT_ID = 1;
     private static final int TEXT_VIEW_ID = 2;
 
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(20);
+    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+
+    /** Time to wait for statsd to setup. */
+    private static final long WAIT_TIME_LONG = 1000;
+
+    /** Time to wait for atoms to be reported. */
+    private static final long WAIT_TIME_SHORT = 500;
 
     private Instrumentation mInstrumentation;
 
@@ -83,11 +99,19 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
 
     @Before
     public void setUp() throws Exception {
-        MetricsRecorder.removeConfig();
-        MetricsRecorder.clearReports();
-
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mPkgName = mInstrumentation.getContext().getPackageName();
+
+        // Finish tracking any pending IME visibility requests from previous tests to avoid issues.
+        final var imm = mInstrumentation.getContext().getSystemService(InputMethodManager.class);
+        runWithShellPermissionIdentity(() -> {
+            imm.finishTrackingPendingImeVisibilityRequests();
+        });
+
+        MetricsRecorder.removeConfig();
+        MetricsRecorder.clearReports();
+        // TODO(b/330143218): Add a proper fence for statsd
+        Thread.sleep(WAIT_TIME_LONG);
     }
 
     @After
@@ -184,11 +208,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the client.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testClientShowImeRequestFinished() throws Throwable {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
-                false /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     awaitControl(WindowInsets.Type.ime(), activity);
                     expectImeInvisible(TIMEOUT);
 
@@ -205,11 +229,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the client.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testClientHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
-                false /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     TestUtils.runOnMainSync(() -> activity.getWindow()
                             .getDecorView()
                             .getWindowInsetsController()
@@ -223,11 +247,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the server.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testServerShowImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_SERVER, ImeProtoEnums.ORIGIN_SERVER_START_INPUT),
-                false /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
 
                     expectImeVisible(TIMEOUT);
@@ -238,11 +262,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the server.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testServerHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_SERVER, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),
-                false /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     imeSession.hideSoftInputFromServerForTest();
 
                     expectImeInvisible(TIMEOUT);
@@ -253,12 +277,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from the IME.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testImeShowImeRequestFinished() throws Exception {
         // In the past, the origin of this request was considered in the server.
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_IME, ImeProtoEnums.ORIGIN_SERVER_START_INPUT),
-                true /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     imeSession.callRequestShowSelf(0 /* flags */);
 
                     expectImeVisible(TIMEOUT);
@@ -270,11 +294,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from the IME.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testImeHideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_IME, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),
-                true /* fromImeProcess */, false /* fromUser */,
-                (imeSession, activity) -> {
+                false /* fromUser */, (imeSession, activity) -> {
                     imeSession.callRequestHideSelf(0 /* flags */);
 
                     expectImeInvisible(TIMEOUT);
@@ -285,11 +309,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME show request from a user interaction using InputMethodManager.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withImm_showImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
-                false /* fromImeProcess */, true /* fromUser */,
-                (imeSession, activity) -> {
+                true /* fromUser */, (imeSession, activity) -> {
                     final EditText editText = activity.requireViewById(EDIT_TEXT_ID);
                     editText.setShowSoftInputOnFocus(false);
                     // onClickListener is run later, so ViewRootImpl#isHandlingPointeEvent will
@@ -313,11 +337,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from a user interaction using InputMethodManager.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withImm_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
-                false /* fromImeProcess */, true /* formUser */,
-                (imeSession, activity) -> {
+                true /* formUser */, (imeSession, activity) -> {
                     final TextView textView = activity.requireViewById(TEXT_VIEW_ID);
                     // onClickListener is run later, so ViewRootImpl#isHandlingPointeEvent will
                     // be false. onTouchListener runs immediately, so the value will be true.
@@ -341,11 +365,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * WindowInsetsController.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withWic_showImeRequestFinished() throws Exception {
         verifyLogging(true /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_SHOW_SOFT_INPUT),
-                false /* fromImeProcess */, true /* fromUser */,
-                (imeSession, activity) -> {
+                true /* fromUser */, (imeSession, activity) -> {
                     final EditText editText = activity.requireViewById(EDIT_TEXT_ID);
                     editText.setShowSoftInputOnFocus(false);
                     // onClickListener is run later, so ViewRootImpl#isHandlingPointeEvent will
@@ -369,11 +393,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * WindowInsetsController.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withWic_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_CLIENT, ImeProtoEnums.ORIGIN_CLIENT_HIDE_SOFT_INPUT),
-                false /* fromImeProcess */, true /* fromUser */,
-                (imeSession, activity) -> {
+                true /* fromUser */, (imeSession, activity) -> {
                     final TextView textView = activity.requireViewById(TEXT_VIEW_ID);
                     // onClickListener is run later, so ViewRootImpl#isHandlingPointeEvent will
                     // be false. onTouchListener runs immediately, so the value will be true.
@@ -395,10 +419,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      * Test the logging for an IME hide request from a user interaction using back button press.
      */
     @Test
+    @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testFromUser_withBackPress_hideImeRequestFinished() throws Exception {
         verifyLogging(false /* show */,
                 List.of(ImeProtoEnums.ORIGIN_IME, ImeProtoEnums.ORIGIN_SERVER_HIDE_INPUT),
-                true /* fromImeProcess */, true /* fromUser */, (imeSession, activity) -> {
+                true /* fromUser */, (imeSession, activity) -> {
                     UiDevice.getInstance(mInstrumentation)
                             .pressBack();
 
@@ -413,13 +438,11 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
      *                       or hide request (starts with IME shown).
      * @param origins        the expected IME request origins. This is a list of possible origins,
      *                       to also allow previously deprecated ones.
-     * @param fromImeProcess whether this request is expected to be created in the IME process,
-     *                       or the test app process.
      * @param fromUser       whether this request is expected to be created from user interaction.
      * @param runnable       the runnable with the test code to execute.
      */
-    private void verifyLogging(boolean show, @NonNull List<Integer> origins, boolean fromImeProcess,
-            boolean fromUser, @NonNull TestRunnable runnable) throws Exception {
+    private void verifyLogging(boolean show, @NonNull List<Integer> origins, boolean fromUser,
+            @NonNull TestRunnable runnable) throws Exception {
         // Create mockImeSession to decouple from real IMEs,
         // and enable calling expectImeVisible and expectImeInvisible.
         try (var imeSession = MockImeSession.create(
@@ -430,12 +453,6 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
             PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
                     "Test Setup Failed: There should be no pending IME requests present when the "
                             + "test starts.");
-
-            // Expect atoms pushed from either from the IME process, or from the test app process.
-            MetricsRecorder.uploadConfigForPushedAtomWithUid(
-                    fromImeProcess ? imeSession.getMockImePackageName() : mPkgName,
-                    AtomsProto.Atom.IME_REQUEST_FINISHED_FIELD_NUMBER,
-                    false /* useUidAttributionChain */);
 
             final TestActivity activity;
             if (show) {
@@ -449,10 +466,17 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                 // Wait for any outstanding IME requests to finish, to capture all atoms.
                 PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
                         "Test Error: Pending IME requests took too long, likely timing out.");
-
-                // Remove logs for the show requests.
-                MetricsRecorder.clearReports();
             }
+
+            // Wait for any atoms from activity start to be sent.
+            // TODO(b/330143218): Add a proper fence for statsd
+            Thread.sleep(WAIT_TIME_SHORT);
+
+            // Expect atoms pushed from either the IME process, or from the test app process.
+            MetricsRecorder.uploadConfigForPushedAtomWithUid(
+                    new String[]{mPkgName, imeSession.getMockImePackageName()},
+                    AtomsProto.Atom.IME_REQUEST_FINISHED_FIELD_NUMBER,
+                    false /* useUidAttributionChain */);
 
             // Run the given test.
             runnable.run(imeSession, activity);
@@ -460,6 +484,10 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
             // Wait for any outstanding IME requests to finish, to capture all atoms.
             PollingCheck.waitFor(() -> !imeSession.hasPendingImeVisibilityRequests(),
                     "Test Error: Pending IME requests took too long, likely timing out.");
+
+            // Wait for any atoms from the test runnable to be sent.
+            // TODO(b/330143218): Add a proper fence for statsd
+            Thread.sleep(WAIT_TIME_SHORT);
 
             // Must have at least one atom received.
             final var data = MetricsRecorder.getEventMetricDataList();

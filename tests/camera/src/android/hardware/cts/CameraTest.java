@@ -2591,8 +2591,12 @@ public class CameraTest extends Assert {
         // Run preview for a bit
         for (int f = 0; f < 100; f++) {
             previewDone0.close();
-            assertTrue("testMultiCameraRelease: First camera preview timed out on frame " + f + "!",
-                       previewDone0.block( WAIT_FOR_COMMAND_TO_COMPLETE));
+            if (!previewDone0.block(WAIT_FOR_COMMAND_TO_COMPLETE)) {
+                terminateMessageLooper(false, NO_ERROR, looperInfo0);
+                terminateMessageLooper(false, NO_ERROR, looperInfo1);
+                fail("testMultiCameraRelease: First camera preview timed out on frame "
+                        + f + "!");
+            }
         }
         if (VERBOSE) Log.v(TAG, "testMultiCameraRelease: Stopping preview on camera 0");
         looperInfo0.camera.stopPreview();
@@ -2606,8 +2610,12 @@ public class CameraTest extends Assert {
         looperInfo1.camera.startPreview();
         for (int f = 0; f < 100; f++) {
             previewDone1.close();
-            assertTrue("testMultiCameraRelease: Second camera preview timed out on frame " + f + "!",
-                       previewDone1.block( WAIT_FOR_COMMAND_TO_COMPLETE));
+            if (!previewDone1.block(WAIT_FOR_COMMAND_TO_COMPLETE)) {
+                terminateMessageLooper(false, NO_ERROR, looperInfo0);
+                terminateMessageLooper(false, NO_ERROR, looperInfo1);
+                fail("testMultiCameraRelease: Second camera preview timed out on frame "
+                        + f + "!");
+            }
             if (f == 50) {
                 // Release first camera mid-preview, should cause no problems
                 if (VERBOSE) Log.v(TAG, "testMultiCameraRelease: Releasing camera 0");

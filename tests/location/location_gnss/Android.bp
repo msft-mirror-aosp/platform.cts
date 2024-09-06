@@ -41,6 +41,7 @@ java_test_helper_library {
 
 android_test {
     name: "CtsLocationGnssTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",

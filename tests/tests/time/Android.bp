@@ -20,6 +20,7 @@ package {
 
 android_test {
     name: "CtsTimeTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     test_suites: [
         "cts",

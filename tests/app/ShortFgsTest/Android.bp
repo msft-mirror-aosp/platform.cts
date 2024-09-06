@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsShortFgsTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     libs: [
         "android.test.runner.stubs.system",

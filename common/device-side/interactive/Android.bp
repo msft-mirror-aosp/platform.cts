@@ -8,6 +8,9 @@ java_library_host {
         "common/src/main/java/**/*.java",
         "common/src/main/java/**/*.kt",
     ],
+    static_libs: [
+        "bedstead-core-annotations",
+    ],
 }
 
 android_library {
@@ -17,8 +20,12 @@ android_library {
         "common/src/main/java/**/*.kt",
     ],
     manifest: "common/src/main/AndroidManifest.xml",
+    sdk_version: "current",
     min_sdk_version: "29",
     platform_apis: true,
+    static_libs: [
+        "HarrierCommonAndroid",
+    ],
 }
 
 android_library {
@@ -30,11 +37,14 @@ android_library {
         "steps/src/main/java/**/*.kt",
     ],
     manifest: "src/main/AndroidManifest.xml",
+    sdk_version: "test_current",
     min_sdk_version: "29",
     static_libs: [
         "Nene",
         "Harrier",
         "InteractiveCommonAndroid",
+        "bedstead-usb",
+        "bedstead-adb",
     ],
     resource_dirs: ["src/main/res"],
 }

@@ -110,7 +110,7 @@ class AutoframingTest(its_base_test.ItsBaseTest):
           control_zoom_ratio = cap['metadata']['android.control.zoomRatio']
           logging.debug('Control zoom ratio: %d', control_zoom_ratio)
           # Save image when autoframing state converges
-          self.save_image(caps, props, faces)
+          self.save_image(cap, props, faces)
           num_faces_found = len(faces)
           if num_faces_found != _NUM_FACES:
             raise AssertionError('Wrong num of faces found! Found: '
@@ -118,14 +118,14 @@ class AutoframingTest(its_base_test.ItsBaseTest):
 
           # Also check the faces with open cv to make sure the scene is not
           # distorted or anything.
-          self.assert_no_face_distortion(caps, props, faces)
+          self.assert_no_face_distortion(cap, props, faces)
           break
 
         # Autoframing didn't converge till the last frame
         elif i == _NUM_TEST_FRAMES - 1:
           # Save image (for debugging) when autoframing state hasn't converged
           # by the last frame
-          self.save_image(caps, props, faces)
+          self.save_image(cap, props, faces)
           raise AssertionError('Autoframing failed to converge')
 
         logging.debug('Faces: %s', str(faces))

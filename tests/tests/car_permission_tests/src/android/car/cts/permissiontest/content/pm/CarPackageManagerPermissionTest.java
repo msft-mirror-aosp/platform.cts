@@ -92,7 +92,7 @@ public class CarPackageManagerPermissionTest extends AbstractCarManagerPermissio
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_COMPATIBILITY)
-    @EnsureHasPermission({Car.PERMISSION_QUERY_DISPLAY_COMPATIBILITY, QUERY_ALL_PACKAGES})
+    @EnsureHasPermission({Car.PERMISSION_MANAGE_DISPLAY_COMPATIBILITY, QUERY_ALL_PACKAGES})
     public void testActivityRequiresDisplayCompatWorksWithPermission()
             throws NameNotFoundException {
         assertThat(mPm.requiresDisplayCompat("android.car.cts.permissiontest"))

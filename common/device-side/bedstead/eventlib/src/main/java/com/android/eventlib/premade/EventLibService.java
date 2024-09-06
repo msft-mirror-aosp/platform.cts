@@ -34,6 +34,8 @@ import com.android.eventlib.events.services.ServiceStartedEvent;
 import com.android.eventlib.events.services.ServiceTaskRemovedEvent;
 import com.android.eventlib.events.services.ServiceUnboundEvent;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * An {@link Service} which logs events for all lifecycle events.
  */
@@ -95,6 +97,7 @@ public class EventLibService extends Service {
     }
 
     @Override
+    @CanIgnoreReturnValue
     public IBinder onBind(Intent intent) {
         ServiceBoundEvent.logger(this, getClassName(), intent).log();
         return mBinder;

@@ -16,31 +16,38 @@
 
 package android.virtualdevice.cts.camera;
 
+import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.camera.VirtualCameraConfig.SENSOR_ORIENTATION_0;
 import static android.graphics.ImageFormat.YUV_420_888;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_EXTERNAL;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
+import static android.virtualdevice.cts.camera.VirtualCameraUtils.getMaximumTextureSize;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static org.junit.Assert.assertThrows;
 
+import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
+import android.companion.virtual.VirtualDeviceParams;
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
 import android.os.Parcel;
+import android.os.ServiceSpecificException;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
+import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.Executor;
 
@@ -58,12 +65,27 @@ public class VirtualCameraConfigTest {
     private static final int CAMERA_LENS_FACING = LENS_FACING_FRONT;
 
     @Rule
-    public MockitoRule mRule = MockitoJUnit.rule();
+    public VirtualDeviceRule mRule =
+            VirtualDeviceRule.createDefault().withVirtualCameraSupportCheck();
 
     @Mock
     private VirtualCameraCallback mCallback;
 
+    private VirtualDevice mVirtualDevice;
+    private int mMaximumTextureSize;
+
     private final Executor mExecutor = getApplicationContext().getMainExecutor();
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+
+        mVirtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setDevicePolicy(POLICY_TYPE_CAMERA, DEVICE_POLICY_CUSTOM)
+                        .build());
+        mMaximumTextureSize = getMaximumTextureSize();
+    }
 
     @Test
     public void virtualCameraConfigBuilder_buildsCorrectConfig() {
@@ -90,14 +112,26 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    public void virtualCameraConfigBuilder_tooLargeWidth_throwsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualCameraConfig.Builder(CAMERA_NAME)
-                        .addStreamConfig(3000 /* width */, CAMERA_HEIGHT, CAMERA_FORMAT,
-                                CAMERA_MAX_FPS)
-                        .setVirtualCameraCallback(mExecutor, mCallback)
-                        .setLensFacing(CAMERA_LENS_FACING)
-                        .build());
+    public void virtualCameraConfig_largestWidth_succeeds() throws Exception {
+        mVirtualDevice.createVirtualCamera(
+            new VirtualCameraConfig.Builder(CAMERA_NAME)
+                    .addStreamConfig(mMaximumTextureSize, CAMERA_HEIGHT, CAMERA_FORMAT,
+                    CAMERA_MAX_FPS)
+                    .setVirtualCameraCallback(mExecutor, mCallback)
+                    .setLensFacing(CAMERA_LENS_FACING)
+                    .build());
+    }
+
+    @Test
+    public void virtualCameraConfig_tooLargeWidth_throwsException() throws Exception {
+        assertThrows(ServiceSpecificException.class,
+                () -> mVirtualDevice.createVirtualCamera(
+                        new VirtualCameraConfig.Builder(CAMERA_NAME)
+                                .addStreamConfig(mMaximumTextureSize + 1, CAMERA_HEIGHT,
+                                        CAMERA_FORMAT, CAMERA_MAX_FPS)
+                                .setVirtualCameraCallback(mExecutor, mCallback)
+                                .setLensFacing(CAMERA_LENS_FACING)
+                                .build()));
     }
 
     @Test
@@ -112,14 +146,26 @@ public class VirtualCameraConfigTest {
     }
 
     @Test
-    public void virtualCameraConfigBuilder_tooLargeHeight_throwsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new VirtualCameraConfig.Builder(CAMERA_NAME)
-                        .addStreamConfig(CAMERA_WIDTH, 3000 /* height */, CAMERA_FORMAT,
+    public void virtualCameraConfig_largestHeight_succeeds() throws Exception {
+        mVirtualDevice.createVirtualCamera(
+                new VirtualCameraConfig.Builder(CAMERA_NAME)
+                        .addStreamConfig(CAMERA_WIDTH, mMaximumTextureSize, CAMERA_FORMAT,
                                 CAMERA_MAX_FPS)
                         .setVirtualCameraCallback(mExecutor, mCallback)
                         .setLensFacing(CAMERA_LENS_FACING)
                         .build());
+    }
+
+    @Test
+    public void virtualCameraConfig_tooLargeHeight_throwsException() throws Exception {
+        assertThrows(ServiceSpecificException.class,
+                () -> mVirtualDevice.createVirtualCamera(
+                        new VirtualCameraConfig.Builder(CAMERA_NAME)
+                                .addStreamConfig(CAMERA_WIDTH, mMaximumTextureSize + 1,
+                                        CAMERA_FORMAT, CAMERA_MAX_FPS)
+                                .setVirtualCameraCallback(mExecutor, mCallback)
+                                .setLensFacing(CAMERA_LENS_FACING)
+                                .build()));
     }
 
     @Test

@@ -22,6 +22,8 @@ import android.provider.Settings;
 import static android.provider.Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
 /**
  * Test {@link DevicePolicyManager#setSystemSetting}.
+ *
+ * TODO (b/329662993): delete once FLAG_ALLOW_SCREEN_BRIGHTNESS_CONTROL_ON_COPE is permanently on.
  */
 public class SetSystemSettingTest extends BaseDeviceAdminTest {
 

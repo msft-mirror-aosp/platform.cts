@@ -16,11 +16,15 @@
 
 package android.view.inputmethod.cts;
 
+import static android.view.inputmethod.cts.util.InputMethodVisibilityVerifier.expectImeVisible;
+import static android.view.inputmethod.cts.util.TestUtils.runOnMainSync;
+
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 
-import android.os.SystemClock;
+import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.EndToEndImeTestBase;
 import android.view.inputmethod.cts.util.TestActivity;
 import android.view.inputmethod.cts.util.UnlockScreenRule;
@@ -40,6 +44,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 @MediumTest
 @RunWith(AndroidJUnit4.class)
@@ -48,13 +53,6 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
 
     @Rule
     public final UnlockScreenRule mUnlockScreenRule = new UnlockScreenRule();
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.FocusHandlingTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
 
     @Test
     public void testSwitchingIme() throws Exception {
@@ -87,10 +85,68 @@ public final class ImeSwitchingTest extends EndToEndImeTestBase {
             stream1.skipAll();
 
             expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
-            expectEvent(stream2, event -> "onDestroy".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream2, eventMatcher("onDestroy"), TIMEOUT);
 
-            expectEvent(stream1, event -> "onCreate".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
             expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+        }
+    }
+
+    /**
+     * Test if IMEs remain to be visible after switching to other IMEs.
+     *
+     * <p>Regression test for Bug 152876819.</p>
+     */
+    @Test
+    public void testImeRemainsVisibleAfterSwitchingIme() throws Exception {
+        final var instrumentation = InstrumentationRegistry.getInstrumentation();
+        try (var session1 = MockImeSession.create(
+                instrumentation.getContext(),
+                instrumentation.getUiAutomation(), new ImeSettings.Builder());
+                var session2 = MockImeSession.create(
+                         instrumentation.getContext(),
+                         instrumentation.getUiAutomation(),
+                         new ImeSettings.Builder()
+                                 .setMockImePackageName(MockImePackageNames.MockIme2)
+                                 .setSuppressResetIme(true))) {
+            var stream1 = session1.openEventStream();
+            var stream2 = session2.openEventStream();
+            final String marker = getTestMarker();
+
+            // Launch an Activity that shows up an IME.
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            TestActivity.startSync(activity-> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+
+                final EditText editText = new EditText(activity);
+                editText.setPrivateImeOptions(marker);
+                editText.setHint("editText");
+                editText.requestFocus();
+                layout.addView(editText);
+
+                editTextRef.set(editText);
+                return layout;
+            });
+
+            // Make sure that MockIme2 eventually becomes visible
+            expectEvent(stream2, editorMatcher("onStartInput", marker), TIMEOUT);
+            runOnMainSync(() -> editTextRef.get()
+                    .getContext()
+                    .getSystemService(InputMethodManager.class)
+                    .showSoftInput(editTextRef.get(), 0));
+            expectEvent(stream2, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
+
+            // Then switch to MockIme1
+            stream1.skipAll();
+            expectCommand(stream2, session2.callSwitchInputMethod(session1.getImeId()), TIMEOUT);
+
+            // Make sure that MockIme2 eventually becomes visible
+            expectEvent(stream1, eventMatcher("onCreate"), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectEvent(stream1, editorMatcher("onStartInputView", marker), TIMEOUT);
+            expectImeVisible(TIMEOUT);
         }
     }
 }
