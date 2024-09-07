@@ -71,8 +71,10 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.telephony.CarrierConfigManager;
+import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.mockmodem.MockModemManager;
 import android.telephony.satellite.AntennaDirection;
@@ -5973,6 +5975,115 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged()
+            throws Exception {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterCarrierConfigChanged:");
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+        Context context = getContext();
+        grantSatellitePermission();
+        try {
+            receiver.clearQueue();
+            // Check if the ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent is sent by reading
+            // carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL value and setting the opposite
+            // value.
+            boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+            PersistableBundle bundle = new PersistableBundle();
+            bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL,
+                    !eSosSupported);
+            overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+            assertTrue(receiver.waitForReceive());
+        } finally {
+            resetSatelliteReceiverTest(context, receiver);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentActionSatelliteSubscriberIdListChangedAfterDefaultSmsSubIdChanged()
+            throws Exception {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testReceiveIntentActionSatelliteSubscriberIdListChangedAfterDefaultSmsSubIdChanged:");
+        SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+        Context context = getContext();
+        SubscriptionManager subscriptionManager = context.getSystemService(
+                SubscriptionManager.class);
+        int defaultSmsSubId = subscriptionManager.getDefaultSmsSubscriptionId();
+        grantSatellitePermission();
+        try {
+            boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                    CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+            // Set carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL to true.
+            if (!eSosSupported) {
+                PersistableBundle bundle = new PersistableBundle();
+                bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+                overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+                waitFor(TimeUnit.MINUTES.toMillis(1));
+            }
+            receiver.clearQueue();
+            // When the default SMS subId changes, check if the
+            // ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent has been sent.
+            setDefaultSmsSubId(context, SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+            assertTrue(receiver.waitForReceive());
+        } finally {
+            resetSatelliteReceiverTest(context, receiver);
+            setDefaultSmsSubId(context, defaultSmsSubId);
+            revokeSatellitePermission();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testReceiveIntentAfterChangedToOnlyHaveIsNtnOnlyCase() throws Exception {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testReceiveIntentAfterChangedToOnlyHaveIsNtnOnlyCase:");
+        Context context = getContext();
+        SubscriptionManager sm = context.getSystemService(SubscriptionManager.class);
+        List<SubscriptionInfo> subscriptionInfoList = sm.getAllSubscriptionInfoList();
+        boolean isNtnOnlySimExist = false;
+        for (SubscriptionInfo info : subscriptionInfoList) {
+            if (info.isOnlyNonTerrestrialNetwork()) {
+                isNtnOnlySimExist = true;
+            }
+        }
+
+        if (isNtnOnlySimExist) {
+            SatelliteReceiverTest receiver = setUpSatelliteReceiverTest();
+            grantSatellitePermission();
+            try {
+                boolean eSosSupported = getConfigForSubId(context, sTestSubIDForCarrierSatellite,
+                        CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL).getBoolean(
+                        CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+                PersistableBundle bundle = new PersistableBundle();
+                // Set carrier config KEY_SATELLITE_ESOS_SUPPORTED_BOOL to true.
+                if (!eSosSupported) {
+                    bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+                    overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+                    waitFor(TimeUnit.MINUTES.toMillis(1));
+                }
+                // When only is ntn only sim exists for supporting the satellite, check if the
+                // ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent has been sent.
+                receiver.clearQueue();
+                bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, false);
+                overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+                assertTrue(receiver.waitForReceive());
+            } finally {
+                resetSatelliteReceiverTest(context, receiver);
+                revokeSatellitePermission();
+            }
+        }
+    }
+
     /*
      * Before calling this function, caller need to make sure the modem is in LISTENING or IDLE
      * state.
@@ -7131,5 +7242,24 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(sMockSatelliteServiceManager.setCountryCodes(true, null, null, null, 0));
         assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
                 true, true, null, 0, null));
+    }
+
+    private SatelliteReceiverTest setUpSatelliteReceiverTest() {
+        SatelliteReceiverTest receiver = new SatelliteReceiverTest();
+        sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        Context context = getContext();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
+                "package"));
+        assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
+                "class"));
+        context.registerReceiver(receiver, new IntentFilter(SatelliteReceiver.TEST_INTENT),
+                Context.RECEIVER_EXPORTED);
+        return receiver;
+    }
+
+    private void resetSatelliteReceiverTest(Context context, SatelliteReceiverTest receiver) {
+        assertTrue(sMockSatelliteServiceManager
+                .setSatelliteSubscriberIdListChangedIntentComponent("reset"));
+        context.unregisterReceiver(receiver);
     }
 }
