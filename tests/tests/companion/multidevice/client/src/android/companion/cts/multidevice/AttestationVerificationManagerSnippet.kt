@@ -29,6 +29,7 @@ import android.security.attestationverification.AttestationVerificationManager.P
 import android.security.attestationverification.AttestationVerificationManager.TYPE_CHALLENGE
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.test.platform.app.InstrumentationRegistry
 import com.google.android.mobly.snippet.Snippet
 import com.google.android.mobly.snippet.rpc.Rpc
@@ -66,7 +67,7 @@ class AttestationVerificationManagerSnippet : Snippet {
             AttestationProfile(PROFILE_PEER_DEVICE),
             TYPE_CHALLENGE,
             requirements,
-            attestation.toByteArray(Charsets.UTF_8),
+            Base64.decode(attestation, Base64.NO_WRAP),
             executor,
             callback
         )
@@ -96,7 +97,7 @@ class AttestationVerificationManagerSnippet : Snippet {
         for (certificate in certificateChain) {
             buffer.writeBytes(certificate.encoded)
         }
-        return buffer.toString(Charsets.UTF_8)
+        return Base64.encodeToString(buffer.toByteArray(), Base64.NO_WRAP)
     }
 
     companion object {
