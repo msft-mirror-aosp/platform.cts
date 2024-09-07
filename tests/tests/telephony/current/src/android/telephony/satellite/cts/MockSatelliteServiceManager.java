@@ -90,6 +90,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-access-control-overlay-configs";
     private static final String SET_IS_SATELLITE_COMMUNICATION_ALLOWED_FOR_CURRENT_LOCATION_CACHE =
             "cmd phone set-is-satellite-communication-allowed-for-current-location-cache ";
+    private static final String SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT =
+            "cmd phone set-satellite-subscriberid-list-changed-intent-component ";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -1414,6 +1416,30 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setIsSatelliteCommunicationAllowedForCurrentLocationCache: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteSubscriberIdListChangedIntentComponent(String name) {
+        String option;
+        if ("package".equalsIgnoreCase(name)) {
+            option = "-p";
+        } else if ("class".equalsIgnoreCase(name)) {
+            option = "-c";
+        } else if ("reset".equalsIgnoreCase(name)) {
+            option = "-r";
+        } else {
+            return false;
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT + option);
+            logd("setSatelliteSubscriberIdListChangedIntentComponent(" + option + "): result = "
+                    + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSatelliteSubscriberIdListChangedIntentComponent: e=" + e);
             return false;
         }
     }
