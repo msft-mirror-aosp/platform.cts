@@ -35,6 +35,7 @@ import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppInstance
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.queryable.annotations.Query
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.Assume
 
 /**
@@ -66,7 +67,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
         checkTestAppExistsWithKey(testAppKey)
         try {
             testApps[testAppKey]!!.permissions()
-                    .withPermissionOnVersionBetween(minVersion, maxVersion, *permissions)
+                .withPermissionOnVersionBetween(minVersion, maxVersion, *permissions)
         } catch (e: NeneException) {
             if (failureMode == FailureMode.SKIP && e.message!!.contains("Cannot grant") ||
                 e.message!!.contains("Error granting")
@@ -109,7 +110,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     ) {
         checkTestAppExistsWithKey(testAppKey)
         testApps[testAppKey]!!.permissions()
-                .withAppOpOnVersionBetween(minVersion, maxVersion, *appOps)
+            .withAppOpOnVersionBetween(minVersion, maxVersion, *appOps)
     }
 
     private fun checkTestAppExistsWithKey(testAppKey: String) {
@@ -124,6 +125,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     /**
      * See [EnsureTestAppInstalled]
      */
+    @CanIgnoreReturnValue
     fun ensureTestAppInstalled(testApp: TestApp, user: UserReference): TestAppInstance? {
         return ensureTestAppInstalled(key = null, testApp, user)
     }
@@ -131,6 +133,7 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     /**
      * See [EnsureTestAppInstalled]
      */
+    @CanIgnoreReturnValue
     fun ensureTestAppInstalled(
         key: String?,
         testApp: TestApp,

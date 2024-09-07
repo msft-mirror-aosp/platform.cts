@@ -47,6 +47,8 @@ import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
 
+import com.android.server.telecom.flags.Flags;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -1349,7 +1351,9 @@ public class SingleCallingTest extends BaseAppVerifier {
             boolean shouldWaitForMusicfocusLoss)
             throws Exception {
         String mo = addOutgoingCallAndVerify(appControlWrapper);
-        if (appControlWrapper.isTransactionalControl()) {
+
+        if (appControlWrapper.isTransactionalControl()
+                && !Flags.disconnectSelfManagedStuckStartupCalls()) {
             verifyCallIsInState(mo, STATE_CONNECTING);
         } else {
             verifyCallIsInState(mo, STATE_DIALING);

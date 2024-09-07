@@ -17,7 +17,20 @@ package {
 }
 
 java_defaults {
-    name: "cts-run-jvmti-defaults",
+    name: "cts-run-jvmti-test-defaults",
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mcts-art",
+        "mts-art",
+    ],
+    test_options: {
+        unit_test: false,
+    },
+}
+
+java_defaults {
+    name: "cts-run-jvmti-app-defaults",
     dex_preopt: {
         enabled: false,
     },

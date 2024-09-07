@@ -27,7 +27,6 @@ import static org.testng.Assert.assertThrows;
 import android.app.admin.NoArgsPolicyKey;
 import android.app.admin.PolicyState;
 import android.app.admin.PolicyUpdateResult;
-import android.app.admin.flags.Flags;
 import android.devicepolicy.cts.utils.PolicyEngineUtils;
 import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
@@ -36,7 +35,6 @@ import android.os.UserHandle;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled;
@@ -71,7 +69,6 @@ public final class SetUsbDataSignalingTest {
     }
 
     @RequireUsbDataSignalingCanBeDisabled
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_ENGINE_MIGRATION_V2_ENABLED)
     @CanSetPolicyTest(policy = SetUsbDataSignaling.class)
     public void getDevicePolicyState_setUsbDataSignalingEnabled_returnsCorrectResolutionMechanism() {
         sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
@@ -85,7 +82,6 @@ public final class SetUsbDataSignalingTest {
     }
 
     @RequireUsbDataSignalingCanBeDisabled
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_ENGINE_MIGRATION_V2_ENABLED)
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
     public void getDevicePolicyState_setUsbDataSignalingEnabled_returnsPolicy() {
         sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
@@ -99,7 +95,6 @@ public final class SetUsbDataSignalingTest {
 
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_ENGINE_MIGRATION_V2_ENABLED)
     public void policyUpdateReceiver_setUsbDataSignaling_receivedPolicySetBroadcast() {
         sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
 
@@ -111,7 +106,6 @@ public final class SetUsbDataSignalingTest {
     @Ignore("b/277071699")
     @RequireUsbDataSignalingCanBeDisabled
     @PolicyAppliesTest(policy = SetUsbDataSignaling.class)
-    @RequireFlagsEnabled(Flags.FLAG_POLICY_ENGINE_MIGRATION_V2_ENABLED)
     public void usbDataSignaling_serialisation_loadsPolicy() {
         sDeviceState.dpc().devicePolicyManager().setUsbDataSignalingEnabled(true);
 

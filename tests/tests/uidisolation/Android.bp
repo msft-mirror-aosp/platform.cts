@@ -30,9 +30,9 @@ android_test {
         "ctstestserver",
     ],
     libs: [
-        "org.apache.http.legacy",
-        "android.test.runner",
-        "android.test.base",
+        "org.apache.http.legacy.stubs",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: ["src/**/*.java"],
     sdk_version: "current",

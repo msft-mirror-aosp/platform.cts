@@ -27,6 +27,6 @@ android_test_helper_app {
     ],
     srcs: ["src/**/*.java"],
     static_libs: ["androidx.test.rules"],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     platform_apis: true,
 }

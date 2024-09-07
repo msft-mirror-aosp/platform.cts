@@ -102,12 +102,14 @@ import java.util.stream.Stream;
 // @AutoAnnotation is not able to set default value for a field with an annotated data type,
 // so we try to pass the default value explicitly that is accessed via reflection through this
 // class.
+@SuppressWarnings("AndroidJdkLibsChecker")
 @Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
+    private boolean mHasManualHarrierRule = false;
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -1175,37 +1177,45 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
     }
 
     @Override
+    protected List<TestRule> getTestRules(Object target) {
+        var testRules = super.getTestRules(target);
+        if (mHasManualHarrierRule) {
+            return testRules;
+        }
+        var harrier = findHarrier(testRules);
+        if (harrier == null) {
+            testRules.add(getHarrierRule());
+        }
+        return testRules;
+    }
+
+    @Override
     protected List<TestRule> classRules() {
         List<TestRule> rules = super.classRules();
 
-        for (TestRule rule : rules) {
-            if (rule instanceof HarrierRule) {
-                mHarrierRule = (HarrierRule) rule;
-                break;
-            }
-        }
+        mHarrierRule = findHarrier(rules);
+        mHasManualHarrierRule = mHarrierRule != null;
 
         if (mHarrierRule == null) {
-            try {
-                mHarrierRule =
-                        (HarrierRule)
-                                Class.forName("com.android.bedstead.harrier.DeviceState")
-                                        .newInstance();
-                rules = new ArrayList<>(rules);
-                rules.add(mHarrierRule);
-            } catch (ClassNotFoundException e) {
-                // Must be running on the host - for now we don't add anything
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException("Error initialising Harrier Rule", e);
-            }
+            mHarrierRule = new DeviceState();
+        }
+        if (!rules.contains(mHarrierRule)) {
+            rules.add(mHarrierRule);
         }
 
-        if (mHarrierRule != null) {
-            mHarrierRule.setSkipTestTeardown(true);
-            mHarrierRule.setUsingBedsteadJUnit4(true);
-        }
+        mHarrierRule.setSkipTestTeardown(true);
+        mHarrierRule.setUsingBedsteadJUnit4(true);
 
         return rules;
+    }
+
+    private HarrierRule findHarrier(List<TestRule> rules) {
+        for (TestRule rule : rules) {
+            if (rule instanceof HarrierRule) {
+                return (HarrierRule) rule;
+            }
+        }
+        return null;
     }
 
     /**

@@ -376,6 +376,7 @@ public class TestHelper {
         public boolean onAvailableCalled = false;
         public boolean onUnavailableCalled = false;
         public boolean onLostCalled = false;
+        public boolean onLosingCalled = false;
         public NetworkCapabilities networkCapabilities;
 
         TestNetworkCallback() {
@@ -413,7 +414,15 @@ public class TestHelper {
         }
 
         @Override
+        public void onLosing(Network network, int maxMsToLive) {
+            Log.i(TAG, "onLosing + " + maxMsToLive);
+            onLosingCalled = true;
+            mBlocker.countDown();
+        }
+
+        @Override
         public void onLost(Network network) {
+            Log.i(TAG, "onLost ");
             onLostCalled = true;
             mBlocker.countDown();
         }

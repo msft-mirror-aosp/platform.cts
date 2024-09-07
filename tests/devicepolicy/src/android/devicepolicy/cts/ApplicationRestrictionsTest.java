@@ -26,10 +26,8 @@ import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
-import android.app.admin.flags.Flags;
 import android.content.ComponentName;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
@@ -44,7 +42,6 @@ import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
@@ -142,7 +139,6 @@ public final class ApplicationRestrictionsTest {
     //TODO: wait for b/332662548 so we can test DMRH calling
     // dpm.getParentInstance().getApplicationRestrictions()
     public void getApplicationRestrictions_applicationRestrictionsAreSet_returnsApplicationRestrictions() {
-        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -286,7 +282,6 @@ public final class ApplicationRestrictionsTest {
     @PolicyAppliesTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_restrictionsChangedBroadcastIsReceived() {
-        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -353,7 +348,6 @@ public final class ApplicationRestrictionsTest {
     @PolicyAppliesTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void setApplicationRestrictions_logged() {
-        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -396,7 +390,6 @@ public final class ApplicationRestrictionsTest {
     @CanSetPolicyTest(policy = {
             ApplicationRestrictions.class, DmrhOnlyApplicationRestrictions.class})
     public void getApplicationRestrictionsPerAdmin_restrictionsSetForOneAdmin_returnsApplicationRestrictions() {
-        skipRoleHolderTestIfFlagNotEnabled();
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
                         .getApplicationRestrictions(
@@ -427,7 +420,6 @@ public final class ApplicationRestrictionsTest {
 
     @Postsubmit(reason = "New test")
     @CanSetPolicyTest(policy = DmrhOnlyApplicationRestrictions.class)
-    @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
     public void roleHolderSetApplicationRestrictions_UserManagerReturnsNull() {
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()
@@ -453,7 +445,6 @@ public final class ApplicationRestrictionsTest {
 
     @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true, onUser = WORK_PROFILE)
     @EnsureHasWorkProfile(isOrganizationOwned = true)
-    @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
     @UserTest({INITIAL_USER, PRIVATE_PROFILE})
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_successWithBroadcastSent() {
@@ -487,7 +478,6 @@ public final class ApplicationRestrictionsTest {
 
     @EnsureHasDevicePolicyManagerRoleHolder(isPrimary = true, onUser = WORK_PROFILE)
     @EnsureHasWorkProfile(isOrganizationOwned = false)
-    @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
     @RequireRunOnInitialUser
     @Test
     public void roleHolderSetApplicationRestrictionsOnParent_throwExceptionIfNotCope() {
@@ -509,11 +499,9 @@ public final class ApplicationRestrictionsTest {
     @Postsubmit(reason = "New test")
     @EnsureHasDevicePolicyManagerRoleHolder
     @EnsureHasProfileOwner(isPrimary = true)
-    @RequireFlagsEnabled(Flags.FLAG_DMRH_SET_APP_RESTRICTIONS)
     @RequireRunOnInitialUser
     @Test
     public void dpcAndRoleHolderSetApplicationRestrictions_doesNotOverlap() {
-        skipRoleHolderTestIfFlagNotEnabled();
         ComponentName dpcAdmin = sDeviceState.dpc().componentName();
         ComponentName dmrhAdmin = sDeviceState.dpmRoleHolder().componentName();
         Bundle originalDpcAppRestrictions = sDeviceState.dpc().devicePolicyManager()
@@ -539,18 +527,6 @@ public final class ApplicationRestrictionsTest {
                     dpcAdmin, sTestApp.packageName(), originalDpcAppRestrictions);
             sDeviceState.dpmRoleHolder().devicePolicyManager().setApplicationRestrictions(
                     dmrhAdmin, sTestApp.packageName(), originalRoleHolderAppRestrictions);
-        }
-    }
-
-    private void skipRoleHolderTestIfFlagNotEnabled() {
-        try {
-            if (sDeviceState.dpc() == sDeviceState.dpmRoleHolder()) {
-                assumeTrue("This test only runs with flag "
-                        + Flags.FLAG_DMRH_SET_APP_RESTRICTIONS
-                        + " is enabled", Flags.dmrhSetAppRestrictions());
-            }
-        } catch (IllegalStateException e) {
-            // Fine - DMRH is not set
         }
     }
 }

@@ -575,9 +575,9 @@ android_test {
     target_sdk_version: "33",
     min_sdk_version: "29",
     libs: [
-        "android.test.base",
-        "android.test.mock",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     java_resources: [
         ":CtsScopedStorageTestAppA34",
@@ -626,9 +626,9 @@ android_test {
     target_sdk_version: "33",
     min_sdk_version: "29",
     libs: [
-        "android.test.base",
-        "android.test.mock",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     java_resources: [
         ":CtsScopedStorageTestAppA",
@@ -673,9 +673,9 @@ android_test {
     target_sdk_version: "33",
     min_sdk_version: "29",
     libs: [
-        "android.test.base",
-        "android.test.mock",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     java_resources: [
         ":CtsScopedStorageTestAppA",
@@ -720,9 +720,9 @@ android_test {
     target_sdk_version: "33",
     min_sdk_version: "29",
     libs: [
-        "android.test.base",
-        "android.test.mock",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.mock.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     java_resources: [
         ":CtsScopedStorageTestAppB",

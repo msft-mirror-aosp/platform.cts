@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 
 import its_base_test
@@ -104,18 +104,18 @@ def create_plots(idx, raw_means, yuv_means, name_with_log_path):
     name_with_log_path: file name & path to save files.
   """
 
-  pylab.clf()
+  plt.clf()
   for i, _ in enumerate(_COLORS):
-    pylab.plot(idx, [ch[i] for ch in yuv_means], '-'+'rgb'[i]+'s', label='YUV',
-               alpha=0.7)
-    pylab.plot(idx, [ch[i] for ch in raw_means], '-'+'rgb'[i]+'o', label='RAW',
-               alpha=0.7)
-  pylab.ylim([0, 1])
-  pylab.title(_NAME)
-  pylab.xlabel('requests')
-  pylab.ylabel('RGB means')
-  pylab.legend(loc='lower right', numpoints=1, fancybox=True)
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+    plt.plot(idx, [ch[i] for ch in yuv_means], '-'+'rgb'[i]+'s', label='YUV',
+             alpha=0.7)
+    plt.plot(idx, [ch[i] for ch in raw_means], '-'+'rgb'[i]+'o', label='RAW',
+             alpha=0.7)
+  plt.ylim([0, 1])
+  plt.title(_NAME)
+  plt.xlabel('requests')
+  plt.ylabel('RGB means')
+  plt.legend(loc='lower right', numpoints=1, fancybox=True)
+  plt.savefig(f'{name_with_log_path}_plot_means.png')
 
 
 class PostRawSensitivityBoost(its_base_test.ItsBaseTest):

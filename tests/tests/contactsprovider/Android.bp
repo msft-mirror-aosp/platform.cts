@@ -16,9 +16,9 @@ android_test {
     ],
 
     libs: [
-        "android.test.mock",
-        "android.test.base",
-        "android.test.runner",
+        "android.test.mock.stubs.test",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
 
     static_libs: [

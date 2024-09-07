@@ -43,7 +43,7 @@ android_test {
         "Harrier",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
 
     srcs: [
         "src/**/*.java",
@@ -64,4 +64,14 @@ android_test {
         ":CtsWidgetApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsWidgetTestCases_seekbar_and_numberpicker",
+    base: "CtsWidgetTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.widget.cts.SeekBarTest",
+        "android.widget.cts.NumberPickerTest",
+    ],
 }

@@ -20,6 +20,7 @@ import androidx.annotation.NonNull;
 
 import com.android.compatibility.common.util.SystemUtil;
 
+// TODO(b/362562898): Convert this to use a proper test API when that becomes available.
 /**
  * Utility methods for collecting feature flag information.
  */

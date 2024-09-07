@@ -29,8 +29,8 @@ android_test {
         "CtsSharedUserMigrationTestLibs",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: ["src/**/*.kt"],
     // Tag this module as a cts test artifact
@@ -51,4 +51,11 @@ android_test {
         ":CtsSharedUserMigrationInstallTestApp2",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsSharedUserMigrationTestCases_uidmigration_cts",
+    base: "CtsSharedUserMigrationTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.uidmigration.cts"],
 }

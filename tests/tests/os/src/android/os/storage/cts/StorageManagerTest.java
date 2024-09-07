@@ -175,9 +175,8 @@ public class StorageManagerTest {
     @AppModeFull(reason = "Instant apps cannot access external storage")
     public void testAttemptMountObbWrongPackage() {
         for (File target : getTargetFiles()) {
-            target = new File(target, "test1_wrongpackage.obb");
-            Log.d(TAG, "Testing path " + target);
-            doAttemptMountObbWrongPackage(target);
+            final File outFile = new File(target, "test1_wrongpackage.obb");
+            assertThrows(SecurityException.class, () -> doAttemptMountObbWrongPackage(outFile));
         }
     }
 

@@ -86,10 +86,11 @@ public final class MethodSignature {
             if (method.contains("static")) {
                 String name = methodParts[3].substring(0, methodParts[3].indexOf("("));
                 String returnType = methodParts[2];
+                ImmutableList<String> parameterTypes = parameterTypes(method);
 
                 return new MethodSignature(frameworkClass, name, new ReturnType(returnType,
                         /* proxyType= */ null), parameterTypes(method), /* isStatic= */ true,
-                        /* isGetter= */ false);
+                        /* isGetter= */ isGetterInternal(name, parameterTypes));
             } else {
                 String name = methodParts[2].substring(0, methodParts[2].indexOf("("));
                 String returnType = methodParts[1];

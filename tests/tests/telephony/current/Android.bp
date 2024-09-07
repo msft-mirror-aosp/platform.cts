@@ -45,8 +45,8 @@ android_test {
     defaults: ["cts_defaults"],
     libs: [
         "telephony-common",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
         "voip-common",
     ],
     // uncomment when EuiccService tests do not use hidden APIs (Binder instances)

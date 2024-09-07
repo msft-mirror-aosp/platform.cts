@@ -34,7 +34,7 @@ android_test {
     ],
     //sdl_version: "current",
     platform_apis: true,
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.system"],
     static_libs: ["ctstestrunner-axt"],
 }
 

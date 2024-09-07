@@ -51,8 +51,8 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     test_suites: [
         "cts",
@@ -93,8 +93,8 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
@@ -106,4 +106,18 @@ android_test {
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
+}
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_cts_encodedecodetest",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.EncodeDecodeTest"],
+}
+
+test_module_config {
+    name: "CtsMediaCodecTestCases_cts_decodeeditencodetest",
+    base: "CtsMediaCodecTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.codec.cts.DecodeEditEncodeTest"],
 }

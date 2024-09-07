@@ -22,7 +22,7 @@ package {
 android_test_helper_app {
     name: "CtsExtendedMockingTestCases",
     defaults: ["cts_defaults"],
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs"],
     static_libs: [
         "mockito-target-extended",
         "androidx.test.rules",

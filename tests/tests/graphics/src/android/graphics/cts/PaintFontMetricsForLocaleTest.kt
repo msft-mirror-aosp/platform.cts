@@ -41,11 +41,19 @@ class PaintFontMetricsForLocaleTest {
 
     companion object {
         val PAINT = Paint().apply {
+            textLocales = LocaleList.forLanguageTags("ja-JP")
             textSize = 100f // make 1em = 100px
         }
 
-        val JP_ASCENT = TextRunShaper.shapeTextRun("あ", 0, 1, 0, 1, 0f, 0f, false, PAINT).ascent
-        val JP_DESCENT = TextRunShaper.shapeTextRun("あ", 0, 1, 0, 1, 0f, 0f, false, PAINT).descent
+        val glyphs = TextRunShaper.shapeTextRun("あ", 0, 1, 0, 1, 0f, 0f, false, PAINT)
+
+        val latinExtent = FontMetrics().apply{
+            PAINT.getFontMetrics(this)
+        }
+
+        // The getFontMetricsForLocale reserves the minimum line height of the Roboto.
+        val JP_ASCENT = Math.min(latinExtent.ascent, glyphs.ascent)
+        val JP_DESCENT = Math.max(latinExtent.descent, glyphs.descent)
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)

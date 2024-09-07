@@ -26,6 +26,8 @@ import android.graphics.Matrix44;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.platform.test.flag.junit.RavenwoodFlagsValueProvider;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -44,8 +46,12 @@ public class Matrix44Test {
     private float[] mValues;
 
     @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
+    public final RavenwoodRule mRavenwood = new RavenwoodRule.Builder().build();
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = RavenwoodRule.isOnRavenwood()
+            ? RavenwoodFlagsValueProvider.createAllOnCheckFlagsRule()
+            : DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setup() {

@@ -34,8 +34,8 @@ android_test {
         "sts-device-util",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     srcs: [
         "src/**/*.java",
@@ -173,4 +173,22 @@ filegroup {
         "TestApp1/aidl/**/*.aidl",
     ],
     path: "TestApp1/aidl",
+}
+
+test_module_config {
+    name: "CtsUsageStatsTestCases_cts_usagestatstest",
+    base: "CtsUsageStatsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.usage.cts.UsageStatsTest"],
+    exclude_annotations: [
+        "androidx.test.filters.MediumTest",
+        "androidx.test.filters.LargeTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsUsageStatsTestCases_cts_usagestatstest_ExcludeMediumAndLarge",
+    base: "CtsUsageStatsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.usage.cts.UsageStatsTest"],
 }

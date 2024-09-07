@@ -131,9 +131,9 @@ android_library {
     ],
     platform_apis: true,
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     min_sdk_version: "29",
     target_sdk_version: "31",

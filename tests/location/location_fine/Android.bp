@@ -30,7 +30,7 @@ android_test {
         "truth",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
     srcs: ["src/**/*.java"],
     test_suites: [

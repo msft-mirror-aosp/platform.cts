@@ -39,8 +39,8 @@ class CompanionDeviceManagerTestClass(cdm_base_test.BaseTestClass):
         asserts.skip_if(self.secondary.cdm.isWatch(), 'Cannot create association as a watch.')
 
         # Assume both devices are on same build type (debug vs user)
-        primary_debuggable = self.primary.build_info['debuggable']
-        secondary_debuggable = self.secondary.build_info['debuggable']
+        primary_debuggable = self.primary.build_info['debuggable'] == '1'
+        secondary_debuggable = self.secondary.build_info['debuggable'] == '1'
         asserts.skip_if(primary_debuggable != secondary_debuggable, 'Both devices must be on the same type of build')
 
         # If on user build, assume AVF compliance for peer profiles

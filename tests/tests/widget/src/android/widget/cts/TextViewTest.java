@@ -22,7 +22,6 @@ import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
 import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
 import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
-import static com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -7037,28 +7036,24 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_CHARACTER, textView.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testUseBoundsForWidth_ByXml_false() {
         TextView textView = findTextView(R.id.use_bounds_for_width_false);
         assertFalse(textView.getUseBoundsForWidth());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testUseBoundsForWidth_ByXml_true() {
         TextView textView = findTextView(R.id.use_bounds_for_width_true);
         assertTrue(textView.getUseBoundsForWidth());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testShiftDrawingOffsetForStartOverhang_ByXml_false() {
         TextView textView = findTextView(R.id.shift_draw_offset_false);
         assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testShiftDrawingOffsetForStartOverhang_ByXml_true() {
         TextView textView = findTextView(R.id.shift_draw_offset_true);
@@ -9532,7 +9527,6 @@ public class TextViewTest {
         assertEquals(measuredWidth, textView.getMeasuredWidth());
     }
 
-    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void setGetShiftDrawingOffsetForStartOverhang() {
         TextView textView = new TextView(mActivity);

@@ -282,7 +282,7 @@ package android {
     field public static final String REQUEST_IGNORE_BATTERY_OPTIMIZATIONS = "android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS";
     field public static final String REQUEST_INSTALL_PACKAGES = "android.permission.REQUEST_INSTALL_PACKAGES";
     field public static final String REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE = "android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE";
-    field @FlaggedApi("android.companion.flags.device_presence") public static final String REQUEST_OBSERVE_DEVICE_UUID_PRESENCE = "android.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE";
+    field @FlaggedApi("android.companion.device_presence") public static final String REQUEST_OBSERVE_DEVICE_UUID_PRESENCE = "android.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE";
     field public static final String REQUEST_PASSWORD_COMPLEXITY = "android.permission.REQUEST_PASSWORD_COMPLEXITY";
     field @Deprecated public static final String RESTART_PACKAGES = "android.permission.RESTART_PACKAGES";
     field public static final String RUN_USER_INITIATED_JOBS = "android.permission.RUN_USER_INITIATED_JOBS";
@@ -451,12 +451,12 @@ package android {
     field public static final int alertDialogTheme = 16843529; // 0x1010309
     field public static final int alignmentMode = 16843642; // 0x101037a
     field public static final int allContactsName = 16843468; // 0x10102cc
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int allow;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int allow = 16844430; // 0x101068e
     field public static final int allowAudioPlaybackCapture = 16844289; // 0x1010601
     field public static final int allowBackup = 16843392; // 0x1010280
     field public static final int allowClearUserData = 16842757; // 0x1010005
     field public static final int allowClickWhenDisabled = 16844312; // 0x1010618
-    field @FlaggedApi("android.security.asm_restrictions_enabled") public static final int allowCrossUidActivitySwitchFromBelow;
+    field @FlaggedApi("android.security.asm_restrictions_enabled") public static final int allowCrossUidActivitySwitchFromBelow = 16844449; // 0x10106a1
     field public static final int allowEmbedded = 16843765; // 0x10103f5
     field public static final int allowGameAngleDriver = 16844376; // 0x1010658
     field public static final int allowGameDownscaling = 16844377; // 0x1010659
@@ -511,7 +511,7 @@ package android {
     field public static final int autoSizeTextType = 16844085; // 0x1010535
     field public static final int autoStart = 16843445; // 0x10102b5
     field @Deprecated public static final int autoText = 16843114; // 0x101016a
-    field @FlaggedApi("android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP") public static final int autoTransact;
+    field @FlaggedApi("android.nfc.nfc_read_polling_loop") public static final int autoTransact = 16844441; // 0x1010699
     field public static final int autoUrlDetect = 16843404; // 0x101028c
     field public static final int autoVerify = 16844014; // 0x10104ee
     field public static final int autofillHints = 16844118; // 0x1010556
@@ -658,7 +658,7 @@ package android {
     field public static final int contentInsetRight = 16843862; // 0x1010456
     field public static final int contentInsetStart = 16843859; // 0x1010453
     field public static final int contentInsetStartWithNavigation = 16844066; // 0x1010522
-    field @FlaggedApi("android.view.flags.sensitive_content_app_protection_api") public static final int contentSensitivity;
+    field @FlaggedApi("android.view.flags.sensitive_content_app_protection_api") public static final int contentSensitivity = 16844446; // 0x101069e
     field public static final int contextClickable = 16844007; // 0x10104e7
     field public static final int contextDescription = 16844078; // 0x101052e
     field public static final int contextPopupMenuStyle = 16844033; // 0x1010501
@@ -688,7 +688,7 @@ package android {
     field public static final int debuggable = 16842767; // 0x101000f
     field public static final int defaultFocusHighlightEnabled = 16844130; // 0x1010562
     field public static final int defaultHeight = 16844021; // 0x10104f5
-    field @FlaggedApi("android.content.res.default_locale") public static final int defaultLocale;
+    field @FlaggedApi("android.content.res.default_locale") public static final int defaultLocale = 16844424; // 0x1010688
     field public static final int defaultToDeviceProtectedStorage = 16844036; // 0x1010504
     field public static final int defaultValue = 16843245; // 0x10101ed
     field public static final int defaultWidth = 16844020; // 0x10104f4
@@ -858,7 +858,7 @@ package android {
     field public static final int format24Hour = 16843723; // 0x10103cb
     field public static final int fraction = 16843992; // 0x10104d8
     field public static final int fragment = 16843491; // 0x10102e3
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentAdvancedPattern;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentAdvancedPattern = 16844438; // 0x1010696
     field public static final int fragmentAllowEnterTransitionOverlap = 16843976; // 0x10104c8
     field public static final int fragmentAllowReturnTransitionOverlap = 16843977; // 0x10104c9
     field public static final int fragmentCloseEnterAnimation = 16843495; // 0x10102e7
@@ -869,13 +869,13 @@ package android {
     field public static final int fragmentFadeExitAnimation = 16843498; // 0x10102ea
     field public static final int fragmentOpenEnterAnimation = 16843493; // 0x10102e5
     field public static final int fragmentOpenExitAnimation = 16843494; // 0x10102e6
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentPattern;
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentPrefix;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentPattern = 16844437; // 0x1010695
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentPrefix = 16844436; // 0x1010694
     field public static final int fragmentReenterTransition = 16843975; // 0x10104c7
     field public static final int fragmentReturnTransition = 16843973; // 0x10104c5
     field public static final int fragmentSharedElementEnterTransition = 16843972; // 0x10104c4
     field public static final int fragmentSharedElementReturnTransition = 16843974; // 0x10104c6
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentSuffix;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int fragmentSuffix = 16844439; // 0x1010697
     field public static final int freezesText = 16843116; // 0x101016c
     field public static final int fromAlpha = 16843210; // 0x10101ca
     field public static final int fromDegrees = 16843187; // 0x10101b3
@@ -1058,7 +1058,7 @@ package android {
     field public static final int label = 16842753; // 0x1010001
     field public static final int labelFor = 16843718; // 0x10103c6
     field @Deprecated public static final int labelTextSize = 16843317; // 0x1010235
-    field @FlaggedApi("android.view.inputmethod.ime_switcher_revamp") public static final int languageSettingsActivity;
+    field @FlaggedApi("android.view.inputmethod.ime_switcher_revamp_api") public static final int languageSettingsActivity;
     field public static final int languageTag = 16844040; // 0x1010508
     field public static final int largeHeap = 16843610; // 0x101035a
     field public static final int largeScreens = 16843398; // 0x1010286
@@ -1345,15 +1345,15 @@ package android {
     field public static final int propertyYName = 16843893; // 0x1010475
     field public static final int protectionLevel = 16842761; // 0x1010009
     field public static final int publicKey = 16843686; // 0x10103a6
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int query;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int query = 16844431; // 0x101068f
     field public static final int queryActionMsg = 16843227; // 0x10101db
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryAdvancedPattern;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryAdvancedPattern = 16844434; // 0x1010692
     field public static final int queryAfterZeroResults = 16843394; // 0x1010282
     field public static final int queryBackground = 16843911; // 0x1010487
     field public static final int queryHint = 16843608; // 0x1010358
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryPattern;
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryPrefix;
-    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int querySuffix;
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryPattern = 16844433; // 0x1010691
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int queryPrefix = 16844432; // 0x1010690
+    field @FlaggedApi("android.content.pm.relative_reference_intent_filters") public static final int querySuffix = 16844435; // 0x1010693
     field public static final int quickContactBadgeStyleSmallWindowLarge = 16843443; // 0x10102b3
     field public static final int quickContactBadgeStyleSmallWindowMedium = 16843442; // 0x10102b2
     field public static final int quickContactBadgeStyleSmallWindowSmall = 16843441; // 0x10102b1
@@ -1382,7 +1382,7 @@ package android {
     field public static final int reqTouchScreen = 16843303; // 0x1010227
     field public static final int requestLegacyExternalStorage = 16844291; // 0x1010603
     field public static final int requestRawExternalStorageAccess = 16844357; // 0x1010645
-    field @FlaggedApi("android.security.content_uri_permission_apis") public static final int requireContentUriPermissionFromCaller;
+    field @FlaggedApi("android.security.content_uri_permission_apis") public static final int requireContentUriPermissionFromCaller = 16844443; // 0x101069b
     field public static final int requireDeviceScreenOn = 16844317; // 0x101061d
     field public static final int requireDeviceUnlock = 16843756; // 0x10103ec
     field public static final int required = 16843406; // 0x101028e
@@ -1494,12 +1494,12 @@ package android {
     field @Deprecated public static final int sharedUserLabel = 16843361; // 0x1010261
     field public static final int sharedUserMaxSdkVersion = 16844365; // 0x101064d
     field public static final int shell = 16844180; // 0x1010594
-    field @FlaggedApi("com.android.text.flags.use_bounds_for_width") public static final int shiftDrawingOffsetForStartOverhang;
+    field @FlaggedApi("com.android.text.flags.use_bounds_for_width") public static final int shiftDrawingOffsetForStartOverhang = 16844450; // 0x10106a2
     field public static final int shortcutDisabledMessage = 16844075; // 0x101052b
     field public static final int shortcutId = 16844072; // 0x1010528
     field public static final int shortcutLongLabel = 16844074; // 0x101052a
     field public static final int shortcutShortLabel = 16844073; // 0x1010529
-    field @FlaggedApi("android.nfc.Flags.FLAG_OBSERVE_MODE") public static final int shouldDefaultToObserveMode;
+    field @FlaggedApi("android.nfc.nfc_observe_mode") public static final int shouldDefaultToObserveMode = 16844448; // 0x10106a0
     field public static final int shouldDisableView = 16843246; // 0x10101ee
     field public static final int shouldUseDefaultUnfoldTransition = 16844364; // 0x101064c
     field public static final int showAsAction = 16843481; // 0x10102d9
@@ -1610,7 +1610,7 @@ package android {
     field public static final int supportedTypes = 16844369; // 0x1010651
     field public static final int supportsAssist = 16844016; // 0x10104f0
     field public static final int supportsBatteryGameMode = 16844374; // 0x1010656
-    field @FlaggedApi("android.view.inputmethod.connectionless_handwriting") public static final int supportsConnectionlessStylusHandwriting;
+    field @FlaggedApi("android.view.inputmethod.connectionless_handwriting") public static final int supportsConnectionlessStylusHandwriting = 16844447; // 0x101069f
     field public static final int supportsInlineSuggestions = 16844301; // 0x101060d
     field public static final int supportsInlineSuggestionsWithTouchExploration = 16844397; // 0x101066d
     field public static final int supportsLaunchVoiceAssistFromKeyguard = 16844017; // 0x10104f1
@@ -1631,7 +1631,7 @@ package android {
     field public static final int switchTextOff = 16843628; // 0x101036c
     field public static final int switchTextOn = 16843627; // 0x101036b
     field public static final int syncable = 16842777; // 0x1010019
-    field @FlaggedApi("android.multiuser.enable_system_user_only_for_services_and_providers") public static final int systemUserOnly;
+    field @FlaggedApi("android.multiuser.enable_system_user_only_for_services_and_providers") public static final int systemUserOnly = 16844429; // 0x101068d
     field public static final int tabStripEnabled = 16843453; // 0x10102bd
     field public static final int tabStripLeft = 16843451; // 0x10102bb
     field public static final int tabStripRight = 16843452; // 0x10102bc
@@ -1808,12 +1808,12 @@ package android {
     field public static final int updatePeriodMillis = 16843344; // 0x1010250
     field public static final int use32bitAbi = 16844053; // 0x1010515
     field public static final int useAppZygote = 16844183; // 0x1010597
-    field @FlaggedApi("com.android.text.flags.use_bounds_for_width") public static final int useBoundsForWidth;
+    field @FlaggedApi("com.android.text.flags.use_bounds_for_width") public static final int useBoundsForWidth = 16844440; // 0x1010698
     field public static final int useDefaultMargins = 16843641; // 0x1010379
     field public static final int useEmbeddedDex = 16844190; // 0x101059e
     field public static final int useIntrinsicSizeAsMinimum = 16843536; // 0x1010310
     field public static final int useLevel = 16843167; // 0x101019f
-    field @FlaggedApi("com.android.text.flags.fix_line_height_for_locale") public static final int useLocalePreferredLineHeightForMinimum;
+    field @FlaggedApi("com.android.text.flags.fix_line_height_for_locale") public static final int useLocalePreferredLineHeightForMinimum = 16844445; // 0x101069d
     field public static final int userVisible = 16843409; // 0x1010291
     field public static final int usesCleartextTraffic = 16844012; // 0x10104ec
     field public static final int usesPermissionFlags = 16844356; // 0x1010644
@@ -1892,7 +1892,7 @@ package android {
     field public static final int windowFullscreen = 16843277; // 0x101020d
     field public static final int windowHideAnimation = 16842935; // 0x10100b7
     field public static final int windowIsFloating = 16842839; // 0x1010057
-    field @FlaggedApi("android.view.flags.toolkit_set_frame_rate_read_only") public static final int windowIsFrameRatePowerSavingsBalanced;
+    field @FlaggedApi("android.view.flags.toolkit_set_frame_rate_read_only") public static final int windowIsFrameRatePowerSavingsBalanced = 16844451; // 0x10106a3
     field public static final int windowIsTranslucent = 16842840; // 0x1010058
     field public static final int windowLayoutAffinity = 16844313; // 0x1010619
     field public static final int windowLayoutInDisplayCutoutMode = 16844166; // 0x1010586
@@ -1903,7 +1903,7 @@ package android {
     field public static final int windowNoDisplay = 16843294; // 0x101021e
     field public static final int windowNoMoveAnimation = 16844421; // 0x1010685
     field public static final int windowNoTitle = 16842838; // 0x1010056
-    field @FlaggedApi("com.android.window.flags.enforce_edge_to_edge") public static final int windowOptOutEdgeToEdgeEnforcement;
+    field @FlaggedApi("com.android.window.flags.enforce_edge_to_edge") public static final int windowOptOutEdgeToEdgeEnforcement = 16844442; // 0x101069a
     field @Deprecated public static final int windowOverscan = 16843727; // 0x10103cf
     field public static final int windowReenterTransition = 16843951; // 0x10104af
     field public static final int windowReturnTransition = 16843950; // 0x10104ae
@@ -2015,19 +2015,19 @@ package android {
     field public static final int system_control_highlight_light = 17170558; // 0x106007e
     field public static final int system_control_normal_dark = 17170600; // 0x10600a8
     field public static final int system_control_normal_light = 17170557; // 0x106007d
-    field public static final int system_error_0;
-    field public static final int system_error_10;
-    field public static final int system_error_100;
-    field public static final int system_error_1000;
-    field public static final int system_error_200;
-    field public static final int system_error_300;
-    field public static final int system_error_400;
-    field public static final int system_error_50;
-    field public static final int system_error_500;
-    field public static final int system_error_600;
-    field public static final int system_error_700;
-    field public static final int system_error_800;
-    field public static final int system_error_900;
+    field public static final int system_error_0 = 17170629; // 0x10600c5
+    field public static final int system_error_10 = 17170630; // 0x10600c6
+    field public static final int system_error_100 = 17170632; // 0x10600c8
+    field public static final int system_error_1000 = 17170641; // 0x10600d1
+    field public static final int system_error_200 = 17170633; // 0x10600c9
+    field public static final int system_error_300 = 17170634; // 0x10600ca
+    field public static final int system_error_400 = 17170635; // 0x10600cb
+    field public static final int system_error_50 = 17170631; // 0x10600c7
+    field public static final int system_error_500 = 17170636; // 0x10600cc
+    field public static final int system_error_600 = 17170637; // 0x10600cd
+    field public static final int system_error_700 = 17170638; // 0x10600ce
+    field public static final int system_error_800 = 17170639; // 0x10600cf
+    field public static final int system_error_900 = 17170640; // 0x10600d0
     field public static final int system_error_container_dark = 17170597; // 0x10600a5
     field public static final int system_error_container_light = 17170554; // 0x106007a
     field public static final int system_error_dark = 17170595; // 0x10600a3
@@ -2077,7 +2077,7 @@ package android {
     field public static final int system_on_secondary_fixed_variant = 17170619; // 0x10600bb
     field public static final int system_on_secondary_light = 17170533; // 0x1060065
     field public static final int system_on_surface_dark = 17170584; // 0x1060098
-    field public static final int system_on_surface_disabled;
+    field public static final int system_on_surface_disabled = 17170627; // 0x10600c3
     field public static final int system_on_surface_light = 17170541; // 0x106006d
     field public static final int system_on_surface_variant_dark = 17170593; // 0x10600a1
     field public static final int system_on_surface_variant_light = 17170550; // 0x1060076
@@ -2088,7 +2088,7 @@ package android {
     field public static final int system_on_tertiary_fixed_variant = 17170623; // 0x10600bf
     field public static final int system_on_tertiary_light = 17170537; // 0x1060069
     field public static final int system_outline_dark = 17170594; // 0x10600a2
-    field public static final int system_outline_disabled;
+    field public static final int system_outline_disabled = 17170628; // 0x10600c4
     field public static final int system_outline_light = 17170551; // 0x1060077
     field public static final int system_outline_variant_dark = 17170625; // 0x10600c1
     field public static final int system_outline_variant_light = 17170624; // 0x10600c0
@@ -2129,7 +2129,7 @@ package android {
     field public static final int system_surface_dark = 17170583; // 0x1060097
     field public static final int system_surface_dim_dark = 17170591; // 0x106009f
     field public static final int system_surface_dim_light = 17170548; // 0x1060074
-    field public static final int system_surface_disabled;
+    field public static final int system_surface_disabled = 17170626; // 0x10600c2
     field public static final int system_surface_light = 17170540; // 0x106006c
     field public static final int system_surface_variant_dark = 17170592; // 0x10600a0
     field public static final int system_surface_variant_light = 17170549; // 0x1060075
@@ -2456,7 +2456,7 @@ package android {
     field public static final int config_longAnimTime = 17694722; // 0x10e0002
     field public static final int config_mediumAnimTime = 17694721; // 0x10e0001
     field public static final int config_shortAnimTime = 17694720; // 0x10e0000
-    field public static final int status_bar_notification_info_maxnum = 17694723; // 0x10e0003
+    field @Deprecated public static final int status_bar_notification_info_maxnum = 17694723; // 0x10e0003
   }
 
   public static final class R.interpolator {
@@ -2550,7 +2550,7 @@ package android {
     field public static final int search_go = 17039372; // 0x104000c
     field public static final int selectAll = 17039373; // 0x104000d
     field public static final int selectTextMode = 17039382; // 0x1040016
-    field public static final int status_bar_notification_info_overflow = 17039383; // 0x1040017
+    field @Deprecated public static final int status_bar_notification_info_overflow = 17039383; // 0x1040017
     field public static final int unknownName = 17039374; // 0x104000e
     field public static final int untitled = 17039375; // 0x104000f
     field @Deprecated public static final int yes = 17039379; // 0x1040013
@@ -3344,9 +3344,9 @@ package android.accessibilityservice {
   public abstract class AccessibilityService extends android.app.Service {
     ctor public AccessibilityService();
     method public void attachAccessibilityOverlayToDisplay(int, @NonNull android.view.SurfaceControl);
-    method @FlaggedApi("android.view.accessibility.a11y_overlay_callbacks") public void attachAccessibilityOverlayToDisplay(int, @NonNull android.view.SurfaceControl, @NonNull java.util.concurrent.Executor, @NonNull java.util.function.IntConsumer);
+    method @FlaggedApi("android.view.accessibility.a11y_overlay_callbacks") public final void attachAccessibilityOverlayToDisplay(int, @NonNull android.view.SurfaceControl, @NonNull java.util.concurrent.Executor, @NonNull java.util.function.IntConsumer);
     method public void attachAccessibilityOverlayToWindow(int, @NonNull android.view.SurfaceControl);
-    method @FlaggedApi("android.view.accessibility.a11y_overlay_callbacks") public void attachAccessibilityOverlayToWindow(int, @NonNull android.view.SurfaceControl, @NonNull java.util.concurrent.Executor, @NonNull java.util.function.IntConsumer);
+    method @FlaggedApi("android.view.accessibility.a11y_overlay_callbacks") public final void attachAccessibilityOverlayToWindow(int, @NonNull android.view.SurfaceControl, @NonNull java.util.concurrent.Executor, @NonNull java.util.function.IntConsumer);
     method public boolean clearCache();
     method public boolean clearCachedSubtree(@NonNull android.view.accessibility.AccessibilityNodeInfo);
     method public final void disableSelf();
@@ -3354,7 +3354,7 @@ package android.accessibilityservice {
     method public android.view.accessibility.AccessibilityNodeInfo findFocus(int);
     method @NonNull public final android.accessibilityservice.AccessibilityButtonController getAccessibilityButtonController();
     method @NonNull public final android.accessibilityservice.AccessibilityButtonController getAccessibilityButtonController(int);
-    method @FlaggedApi("android.view.accessibility.braille_display_hid") @NonNull public android.accessibilityservice.BrailleDisplayController getBrailleDisplayController();
+    method @FlaggedApi("android.view.accessibility.braille_display_hid") @NonNull public final android.accessibilityservice.BrailleDisplayController getBrailleDisplayController();
     method @NonNull @RequiresPermission(android.Manifest.permission.USE_FINGERPRINT) public final android.accessibilityservice.FingerprintGestureController getFingerprintGestureController();
     method @Nullable public final android.accessibilityservice.InputMethod getInputMethod();
     method @NonNull public final android.accessibilityservice.AccessibilityService.MagnificationController getMagnificationController();
@@ -3453,6 +3453,8 @@ package android.accessibilityservice {
     field public static final int GLOBAL_ACTION_HOME = 2; // 0x2
     field public static final int GLOBAL_ACTION_KEYCODE_HEADSETHOOK = 10; // 0xa
     field public static final int GLOBAL_ACTION_LOCK_SCREEN = 8; // 0x8
+    field @FlaggedApi("android.view.accessibility.global_action_media_play_pause") public static final int GLOBAL_ACTION_MEDIA_PLAY_PAUSE = 22; // 0x16
+    field @FlaggedApi("android.view.accessibility.global_action_menu") public static final int GLOBAL_ACTION_MENU = 21; // 0x15
     field public static final int GLOBAL_ACTION_NOTIFICATIONS = 4; // 0x4
     field public static final int GLOBAL_ACTION_POWER_DIALOG = 6; // 0x6
     field public static final int GLOBAL_ACTION_QUICK_SETTINGS = 5; // 0x5
@@ -5605,7 +5607,6 @@ package android.app {
     method @Deprecated public void onCancel(android.content.DialogInterface);
     method @Deprecated public android.app.Dialog onCreateDialog(android.os.Bundle);
     method @Deprecated public void onDismiss(android.content.DialogInterface);
-    method public android.view.LayoutInflater onGetLayoutInflater(android.os.Bundle);
     method @Deprecated public void setCancelable(boolean);
     method @Deprecated public void setShowsDialog(boolean);
     method @Deprecated public void setStyle(int, int);
@@ -6700,7 +6701,7 @@ package android.app {
     method @NonNull public android.app.Notification.Builder setExtras(android.os.Bundle);
     method @NonNull public android.app.Notification.Builder setFlag(int, boolean);
     method @NonNull public android.app.Notification.Builder setForegroundServiceBehavior(int);
-    method @NonNull public android.app.Notification.Builder setFullScreenIntent(android.app.PendingIntent, boolean);
+    method @NonNull @RequiresPermission(android.Manifest.permission.USE_FULL_SCREEN_INTENT) public android.app.Notification.Builder setFullScreenIntent(android.app.PendingIntent, boolean);
     method @NonNull public android.app.Notification.Builder setGroup(String);
     method @NonNull public android.app.Notification.Builder setGroupAlertBehavior(int);
     method @NonNull public android.app.Notification.Builder setGroupSummary(boolean);
@@ -6841,6 +6842,9 @@ package android.app {
     method public CharSequence getText();
     method public long getTimestamp();
     method public android.app.Notification.MessagingStyle.Message setData(String, android.net.Uri);
+  }
+
+  @FlaggedApi("android.app.api_rich_ongoing") public abstract static class Notification.RichOngoingStyle extends android.app.Notification.Style {
   }
 
   public abstract static class Notification.Style {
@@ -9801,6 +9805,7 @@ package android.companion {
     method @NonNull public java.util.List<android.companion.AssociationInfo> getMyAssociations();
     method @Deprecated public boolean hasNotificationAccess(android.content.ComponentName);
     method @FlaggedApi("android.companion.perm_sync_user_consent") public boolean isPermissionTransferUserConsented(int);
+    method @FlaggedApi("android.companion.unpair_associated_device") @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public boolean removeBond(int);
     method public void requestNotificationAccess(android.content.ComponentName);
     method @FlaggedApi("android.companion.association_tag") public void setAssociationTag(int, @NonNull String);
     method @RequiresPermission(android.Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) public void startObservingDevicePresence(@NonNull String) throws android.companion.DeviceNotAssociatedException;
@@ -9824,6 +9829,7 @@ package android.companion {
     method public void onAssociationPending(@NonNull android.content.IntentSender);
     method @Deprecated public void onDeviceFound(@NonNull android.content.IntentSender);
     method public abstract void onFailure(@Nullable CharSequence);
+    method @FlaggedApi("android.companion.association_failure_code") public void onFailure(int);
   }
 
   public abstract class CompanionDeviceService extends android.app.Service {
@@ -9877,7 +9883,7 @@ package android.companion {
     ctor public ObservingDevicePresenceRequest.Builder();
     method @NonNull public android.companion.ObservingDevicePresenceRequest build();
     method @NonNull public android.companion.ObservingDevicePresenceRequest.Builder setAssociationId(int);
-    method @NonNull @RequiresPermission(android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE) public android.companion.ObservingDevicePresenceRequest.Builder setUuid(@NonNull android.os.ParcelUuid);
+    method @NonNull @RequiresPermission(allOf={android.Manifest.permission.REQUEST_OBSERVE_DEVICE_UUID_PRESENCE, android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN}) public android.companion.ObservingDevicePresenceRequest.Builder setUuid(@NonNull android.os.ParcelUuid);
   }
 
   public final class WifiDeviceFilter implements android.companion.DeviceFilter<android.net.wifi.ScanResult> {
@@ -11333,7 +11339,7 @@ package android.content {
     field public static final String CATEGORY_UNIT_TEST = "android.intent.category.UNIT_TEST";
     field public static final String CATEGORY_VOICE = "android.intent.category.VOICE";
     field public static final String CATEGORY_VR_HOME = "android.intent.category.VR_HOME";
-    field @FlaggedApi("android.service.chooser.chooser_album_text") public static final int CHOOSER_CONTENT_TYPE_ALBUM = 1; // 0x1
+    field public static final int CHOOSER_CONTENT_TYPE_ALBUM = 1; // 0x1
     field @NonNull public static final android.os.Parcelable.Creator<android.content.Intent> CREATOR;
     field public static final String EXTRA_ALARM_COUNT = "android.intent.extra.ALARM_COUNT";
     field public static final String EXTRA_ALLOW_MULTIPLE = "android.intent.extra.ALLOW_MULTIPLE";
@@ -11356,7 +11362,7 @@ package android.content {
     field public static final String EXTRA_CHANGED_PACKAGE_LIST = "android.intent.extra.changed_package_list";
     field public static final String EXTRA_CHANGED_UID_LIST = "android.intent.extra.changed_uid_list";
     field @FlaggedApi("android.service.chooser.chooser_payload_toggling") public static final String EXTRA_CHOOSER_ADDITIONAL_CONTENT_URI = "android.intent.extra.CHOOSER_ADDITIONAL_CONTENT_URI";
-    field @FlaggedApi("android.service.chooser.chooser_album_text") public static final String EXTRA_CHOOSER_CONTENT_TYPE_HINT = "android.intent.extra.CHOOSER_CONTENT_TYPE_HINT";
+    field public static final String EXTRA_CHOOSER_CONTENT_TYPE_HINT = "android.intent.extra.CHOOSER_CONTENT_TYPE_HINT";
     field public static final String EXTRA_CHOOSER_CUSTOM_ACTIONS = "android.intent.extra.CHOOSER_CUSTOM_ACTIONS";
     field @FlaggedApi("android.service.chooser.chooser_payload_toggling") public static final String EXTRA_CHOOSER_FOCUSED_ITEM_POSITION = "android.intent.extra.CHOOSER_FOCUSED_ITEM_POSITION";
     field public static final String EXTRA_CHOOSER_MODIFY_SHARE_ACTION = "android.intent.extra.CHOOSER_MODIFY_SHARE_ACTION";
@@ -11391,7 +11397,7 @@ package android.content {
     field public static final String EXTRA_LOCALE_LIST = "android.intent.extra.LOCALE_LIST";
     field public static final String EXTRA_LOCAL_ONLY = "android.intent.extra.LOCAL_ONLY";
     field public static final String EXTRA_LOCUS_ID = "android.intent.extra.LOCUS_ID";
-    field @FlaggedApi("android.service.chooser.enable_sharesheet_metadata_extra") public static final String EXTRA_METADATA_TEXT = "android.intent.extra.METADATA_TEXT";
+    field public static final String EXTRA_METADATA_TEXT = "android.intent.extra.METADATA_TEXT";
     field public static final String EXTRA_MIME_TYPES = "android.intent.extra.MIME_TYPES";
     field public static final String EXTRA_NOT_UNKNOWN_SOURCE = "android.intent.extra.NOT_UNKNOWN_SOURCE";
     field public static final String EXTRA_ORIGINATING_URI = "android.intent.extra.ORIGINATING_URI";
@@ -11600,6 +11606,7 @@ package android.content {
     method public static android.content.IntentSender readIntentSenderOrNullFromParcel(android.os.Parcel);
     method public void sendIntent(android.content.Context, int, android.content.Intent, android.content.IntentSender.OnFinished, android.os.Handler) throws android.content.IntentSender.SendIntentException;
     method public void sendIntent(android.content.Context, int, android.content.Intent, android.content.IntentSender.OnFinished, android.os.Handler, String) throws android.content.IntentSender.SendIntentException;
+    method @FlaggedApi("com.android.window.flags.bal_send_intent_with_options") public void sendIntent(@Nullable android.content.Context, int, @Nullable android.content.Intent, @Nullable String, @Nullable android.os.Bundle, @Nullable java.util.concurrent.Executor, @Nullable android.content.IntentSender.OnFinished) throws android.content.IntentSender.SendIntentException;
     method public static void writeIntentSenderOrNullToParcel(android.content.IntentSender, android.os.Parcel);
     method public void writeToParcel(android.os.Parcel, int);
     field @NonNull public static final android.os.Parcelable.Creator<android.content.IntentSender> CREATOR;
@@ -12040,6 +12047,7 @@ package android.content.pm {
     field public static final int COLOR_MODE_DEFAULT = 0; // 0x0
     field public static final int COLOR_MODE_HDR = 2; // 0x2
     field public static final int COLOR_MODE_WIDE_COLOR_GAMUT = 1; // 0x1
+    field @FlaggedApi("android.content.res.handle_all_config_changes") public static final int CONFIG_ASSETS_PATHS = -2147483648; // 0x80000000
     field public static final int CONFIG_COLOR_MODE = 16384; // 0x4000
     field public static final int CONFIG_DENSITY = 4096; // 0x1000
     field public static final int CONFIG_FONT_SCALE = 1073741824; // 0x40000000
@@ -12053,6 +12061,7 @@ package android.content.pm {
     field public static final int CONFIG_MNC = 2; // 0x2
     field public static final int CONFIG_NAVIGATION = 64; // 0x40
     field public static final int CONFIG_ORIENTATION = 128; // 0x80
+    field @FlaggedApi("android.content.res.handle_all_config_changes") public static final int CONFIG_RESOURCES_UNUSED = 134217728; // 0x8000000
     field public static final int CONFIG_SCREEN_LAYOUT = 256; // 0x100
     field public static final int CONFIG_SCREEN_SIZE = 1024; // 0x400
     field public static final int CONFIG_SMALLEST_SCREEN_SIZE = 2048; // 0x800
@@ -12491,6 +12500,7 @@ package android.content.pm {
     method @FlaggedApi("android.os.allow_private_profile") @Nullable @RequiresPermission(conditional=true, anyOf={"android.permission.ACCESS_HIDDEN_PROFILES_FULL", android.Manifest.permission.ACCESS_HIDDEN_PROFILES}) public final android.content.pm.LauncherUserInfo getLauncherUserInfo(@NonNull android.os.UserHandle);
     method public android.content.pm.LauncherApps.PinItemRequest getPinItemRequest(android.content.Intent);
     method @FlaggedApi("android.os.allow_private_profile") @NonNull @RequiresPermission(conditional=true, anyOf={"android.permission.ACCESS_HIDDEN_PROFILES_FULL", android.Manifest.permission.ACCESS_HIDDEN_PROFILES}) public java.util.List<java.lang.String> getPreInstalledSystemPackages(@NonNull android.os.UserHandle);
+    method @FlaggedApi("android.os.get_private_space_settings") @Nullable @RequiresPermission(conditional=true, anyOf={"android.permission.ACCESS_HIDDEN_PROFILES_FULL", android.Manifest.permission.ACCESS_HIDDEN_PROFILES}) public android.content.IntentSender getPrivateSpaceSettingsIntent();
     method @RequiresPermission(conditional=true, anyOf={"android.permission.ACCESS_HIDDEN_PROFILES_FULL", android.Manifest.permission.ACCESS_HIDDEN_PROFILES}) public java.util.List<android.os.UserHandle> getProfiles();
     method public android.graphics.drawable.Drawable getShortcutBadgedIconDrawable(android.content.pm.ShortcutInfo, int);
     method @Nullable public android.content.IntentSender getShortcutConfigActivityIntent(@NonNull android.content.pm.LauncherActivityInfo);
@@ -13040,6 +13050,7 @@ package android.content.pm {
     method @CheckResult public abstract boolean isPermissionRevokedByPolicy(@NonNull String, @NonNull String);
     method public abstract boolean isSafeMode();
     method @FlaggedApi("android.content.pm.get_package_info") @WorkerThread public <T> T parseAndroidManifest(@NonNull java.io.File, @NonNull java.util.function.Function<android.content.res.XmlResourceParser,T>) throws java.io.IOException;
+    method @FlaggedApi("android.content.pm.get_package_info_with_fd") @WorkerThread public <T> T parseAndroidManifest(@NonNull android.os.ParcelFileDescriptor, @NonNull java.util.function.Function<android.content.res.XmlResourceParser,T>) throws java.io.IOException;
     method @NonNull public java.util.List<android.content.pm.PackageManager.Property> queryActivityProperty(@NonNull String);
     method @NonNull public java.util.List<android.content.pm.PackageManager.Property> queryApplicationProperty(@NonNull String);
     method @NonNull public abstract java.util.List<android.content.pm.ResolveInfo> queryBroadcastReceivers(@NonNull android.content.Intent, int);
@@ -15973,6 +15984,7 @@ package android.graphics {
     enum_constant public static final android.graphics.ColorSpace.Named LINEAR_EXTENDED_SRGB;
     enum_constant public static final android.graphics.ColorSpace.Named LINEAR_SRGB;
     enum_constant public static final android.graphics.ColorSpace.Named NTSC_1953;
+    enum_constant @FlaggedApi("com.android.graphics.flags.ok_lab_colorspace") public static final android.graphics.ColorSpace.Named OK_LAB;
     enum_constant public static final android.graphics.ColorSpace.Named PRO_PHOTO_RGB;
     enum_constant public static final android.graphics.ColorSpace.Named SMPTE_C;
     enum_constant public static final android.graphics.ColorSpace.Named SRGB;
@@ -18087,6 +18099,11 @@ package android.graphics.text {
 
   public class LineBreaker {
     method @NonNull public android.graphics.text.LineBreaker.Result computeLineBreaks(@NonNull android.graphics.text.MeasuredText, @NonNull android.graphics.text.LineBreaker.ParagraphConstraints, @IntRange(from=0) int);
+    method @FlaggedApi("com.android.text.flags.missing_getter_apis") public int getBreakStrategy();
+    method @FlaggedApi("com.android.text.flags.missing_getter_apis") public int getHyphenationFrequency();
+    method @FlaggedApi("com.android.text.flags.missing_getter_apis") @Nullable public int[] getIndents();
+    method @FlaggedApi("com.android.text.flags.missing_getter_apis") public int getJustificationMode();
+    method @FlaggedApi("com.android.text.flags.missing_getter_apis") public boolean getUseBoundsForWidth();
     field public static final int BREAK_STRATEGY_BALANCED = 2; // 0x2
     field public static final int BREAK_STRATEGY_HIGH_QUALITY = 1; // 0x1
     field public static final int BREAK_STRATEGY_SIMPLE = 0; // 0x0
@@ -19904,7 +19921,6 @@ package android.hardware.camera2 {
   }
 
   @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") public final class ExtensionCaptureRequest {
-    ctor public ExtensionCaptureRequest();
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureRequest.Key<java.lang.Boolean> EFV_AUTO_ZOOM;
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureRequest.Key<java.lang.Float> EFV_MAX_PADDING_ZOOM_FACTOR;
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureRequest.Key<java.lang.Float> EFV_PADDING_ZOOM_FACTOR;
@@ -19917,7 +19933,6 @@ package android.hardware.camera2 {
   }
 
   @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") public final class ExtensionCaptureResult {
-    ctor public ExtensionCaptureResult();
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureResult.Key<java.lang.Boolean> EFV_AUTO_ZOOM;
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureResult.Key<int[]> EFV_AUTO_ZOOM_PADDING_REGION;
     field @FlaggedApi("com.android.internal.camera.flags.concert_mode_api") @NonNull public static final android.hardware.camera2.CaptureResult.Key<java.lang.Float> EFV_MAX_PADDING_ZOOM_FACTOR;
@@ -20347,6 +20362,7 @@ package android.hardware.display {
     method public android.view.Surface getSurface();
     method public void release();
     method public void resize(int, int, int);
+    method @FlaggedApi("android.companion.virtualdevice.flags.virtual_display_rotation_api") public void setRotation(int);
     method public void setSurface(android.view.Surface);
   }
 
@@ -26553,7 +26569,7 @@ package android.media.midi {
 package android.media.projection {
 
   public final class MediaProjection {
-    method public android.hardware.display.VirtualDisplay createVirtualDisplay(@NonNull String, int, int, int, int, @Nullable android.view.Surface, @Nullable android.hardware.display.VirtualDisplay.Callback, @Nullable android.os.Handler);
+    method @Nullable public android.hardware.display.VirtualDisplay createVirtualDisplay(@NonNull String, int, int, int, int, @Nullable android.view.Surface, @Nullable android.hardware.display.VirtualDisplay.Callback, @Nullable android.os.Handler);
     method public void registerCallback(@NonNull android.media.projection.MediaProjection.Callback, @Nullable android.os.Handler);
     method public void stop();
     method public void unregisterCallback(@NonNull android.media.projection.MediaProjection.Callback);
@@ -26577,7 +26593,7 @@ package android.media.projection {
   public final class MediaProjectionManager {
     method @NonNull public android.content.Intent createScreenCaptureIntent();
     method @NonNull public android.content.Intent createScreenCaptureIntent(@NonNull android.media.projection.MediaProjectionConfig);
-    method public android.media.projection.MediaProjection getMediaProjection(int, @NonNull android.content.Intent);
+    method @Nullable public android.media.projection.MediaProjection getMediaProjection(int, @NonNull android.content.Intent);
   }
 
 }
@@ -26592,7 +26608,7 @@ package android.media.session {
     method public long getFlags();
     method @Nullable public android.media.MediaMetadata getMetadata();
     method public String getPackageName();
-    method @Nullable public android.media.session.MediaController.PlaybackInfo getPlaybackInfo();
+    method @NonNull public android.media.session.MediaController.PlaybackInfo getPlaybackInfo();
     method @Nullable public android.media.session.PlaybackState getPlaybackState();
     method @Nullable public java.util.List<android.media.session.MediaSession.QueueItem> getQueue();
     method @Nullable public CharSequence getQueueTitle();
@@ -26611,7 +26627,7 @@ package android.media.session {
 
   public abstract static class MediaController.Callback {
     ctor public MediaController.Callback();
-    method public void onAudioInfoChanged(android.media.session.MediaController.PlaybackInfo);
+    method public void onAudioInfoChanged(@NonNull android.media.session.MediaController.PlaybackInfo);
     method public void onExtrasChanged(@Nullable android.os.Bundle);
     method public void onMetadataChanged(@Nullable android.media.MediaMetadata);
     method public void onPlaybackStateChanged(@Nullable android.media.session.PlaybackState);
@@ -32743,7 +32759,7 @@ package android.os {
     field public static final int S_V2 = 32; // 0x20
     field public static final int TIRAMISU = 33; // 0x21
     field public static final int UPSIDE_DOWN_CAKE = 34; // 0x22
-    field @FlaggedApi("android.os.android_os_build_vanilla_ice_cream") public static final int VANILLA_ICE_CREAM = 10000; // 0x2710
+    field public static final int VANILLA_ICE_CREAM = 35; // 0x23
   }
 
   public final class Bundle extends android.os.BaseBundle implements java.lang.Cloneable android.os.Parcelable {
@@ -34049,6 +34065,7 @@ package android.os {
     field public static final String DISALLOW_BLUETOOTH_SHARING = "no_bluetooth_sharing";
     field public static final String DISALLOW_CAMERA_TOGGLE = "disallow_camera_toggle";
     field public static final String DISALLOW_CELLULAR_2G = "no_cellular_2g";
+    field @FlaggedApi("android.nfc.enable_nfc_user_restriction") public static final String DISALLOW_CHANGE_NEAR_FIELD_COMMUNICATION_RADIO = "no_change_near_field_communication_radio";
     field public static final String DISALLOW_CHANGE_WIFI_STATE = "no_change_wifi_state";
     field public static final String DISALLOW_CONFIG_BLUETOOTH = "no_config_bluetooth";
     field public static final String DISALLOW_CONFIG_BRIGHTNESS = "no_config_brightness";
@@ -34144,6 +34161,7 @@ package android.os {
     field public static final int USAGE_CLASS_UNKNOWN = 0; // 0x0
     field public static final int USAGE_COMMUNICATION_REQUEST = 65; // 0x41
     field public static final int USAGE_HARDWARE_FEEDBACK = 50; // 0x32
+    field @FlaggedApi("android.os.vibrator.vibration_attribute_ime_usage_api") public static final int USAGE_IME_FEEDBACK = 82; // 0x52
     field public static final int USAGE_MEDIA = 19; // 0x13
     field public static final int USAGE_NOTIFICATION = 49; // 0x31
     field public static final int USAGE_PHYSICAL_EMULATION = 34; // 0x22
@@ -39388,10 +39406,8 @@ package android.security {
   }
 
   public final class FileIntegrityManager {
-    method @FlaggedApi("android.security.fsverity_api") @Nullable public byte[] getFsVerityDigest(@NonNull java.io.File) throws java.io.IOException;
     method public boolean isApkVeritySupported();
     method @Deprecated @RequiresPermission(anyOf={android.Manifest.permission.INSTALL_PACKAGES, android.Manifest.permission.REQUEST_INSTALL_PACKAGES}) public boolean isAppSourceCertificateTrusted(@NonNull java.security.cert.X509Certificate) throws java.security.cert.CertificateEncodingException;
-    method @FlaggedApi("android.security.fsverity_api") public void setupFsVerity(@NonNull java.io.File) throws java.io.IOException;
   }
 
   public final class KeyChain {
@@ -43713,6 +43729,7 @@ package android.telephony {
     field public static final String KEY_CARRIER_NR_AVAILABILITIES_INT_ARRAY = "carrier_nr_availabilities_int_array";
     field public static final String KEY_CARRIER_PROVISIONS_WIFI_MERGED_NETWORKS_BOOL = "carrier_provisions_wifi_merged_networks_bool";
     field public static final String KEY_CARRIER_RCS_PROVISIONING_REQUIRED_BOOL = "carrier_rcs_provisioning_required_bool";
+    field @FlaggedApi("com.android.internal.telephony.flags.carrier_roaming_nb_iot_ntn") public static final String KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT = "carrier_roaming_ntn_emergency_call_to_satellite_handover_type_int";
     field public static final String KEY_CARRIER_SERVICE_NAME_STRING_ARRAY = "carrier_service_name_array";
     field public static final String KEY_CARRIER_SERVICE_NUMBER_STRING_ARRAY = "carrier_service_number_array";
     field public static final String KEY_CARRIER_SETTINGS_ACTIVITY_COMPONENT_NAME_STRING = "carrier_settings_activity_component_name_string";
@@ -43894,6 +43911,8 @@ package android.telephony {
     field @FlaggedApi("com.android.internal.telephony.flags.carrier_enabled_satellite_flag") public static final String KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT = "satellite_connection_hysteresis_sec_int";
     field @FlaggedApi("com.android.internal.telephony.flags.carrier_enabled_satellite_flag") public static final String KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT = "satellite_entitlement_status_refresh_days_int";
     field @FlaggedApi("com.android.internal.telephony.flags.carrier_enabled_satellite_flag") public static final String KEY_SATELLITE_ENTITLEMENT_SUPPORTED_BOOL = "satellite_entitlement_supported_bool";
+    field @FlaggedApi("com.android.internal.telephony.flags.carrier_roaming_nb_iot_ntn") public static final String KEY_SATELLITE_ESOS_SUPPORTED_BOOL = "satellite_esos_supported_bool";
+    field @FlaggedApi("com.android.internal.telephony.flags.carrier_roaming_nb_iot_ntn") public static final String KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT = "satellite_screen_off_inactivity_timeout_duration_sec_int";
     field public static final String KEY_SHOW_4G_FOR_3G_DATA_ICON_BOOL = "show_4g_for_3g_data_icon_bool";
     field public static final String KEY_SHOW_4G_FOR_LTE_DATA_ICON_BOOL = "show_4g_for_lte_data_icon_bool";
     field public static final String KEY_SHOW_APN_SETTING_CDMA_BOOL = "show_apn_setting_cdma_bool";
@@ -47129,6 +47148,8 @@ package android.telephony.ims {
     method public int describeContents();
     method public int getAttributeFlags();
     method @NonNull public java.util.Set<java.lang.String> getFeatureTags();
+    method @FlaggedApi("com.android.internal.telephony.flags.emergency_registration_state") public boolean getFlagRegistrationTypeEmergency();
+    method @FlaggedApi("com.android.internal.telephony.flags.emergency_registration_state") public boolean getFlagVirtualRegistrationForEmergencyCall();
     method @Nullable public android.telephony.ims.SipDetails getSipDetails();
     method public int getTransportType();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -54479,7 +54500,6 @@ package android.view {
     field @FlaggedApi("com.android.window.flags.cover_display_opt_in") public static final int COMPAT_SMALL_COVER_SCREEN_OPT_IN = 1; // 0x1
     field public static final String PROPERTY_ACTIVITY_EMBEDDING_ALLOW_SYSTEM_OVERRIDE = "android.window.PROPERTY_ACTIVITY_EMBEDDING_ALLOW_SYSTEM_OVERRIDE";
     field public static final String PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED = "android.window.PROPERTY_ACTIVITY_EMBEDDING_SPLITS_ENABLED";
-    field @FlaggedApi("com.android.window.flags.untrusted_embedding_state_sharing") public static final String PROPERTY_ALLOW_UNTRUSTED_ACTIVITY_EMBEDDING_STATE_SHARING = "android.window.PROPERTY_ALLOW_UNTRUSTED_ACTIVITY_EMBEDDING_STATE_SHARING";
     field public static final String PROPERTY_CAMERA_COMPAT_ALLOW_FORCE_ROTATION = "android.window.PROPERTY_CAMERA_COMPAT_ALLOW_FORCE_ROTATION";
     field public static final String PROPERTY_CAMERA_COMPAT_ALLOW_REFRESH = "android.window.PROPERTY_CAMERA_COMPAT_ALLOW_REFRESH";
     field public static final String PROPERTY_CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE = "android.window.PROPERTY_CAMERA_COMPAT_ENABLE_REFRESH_VIA_PAUSE";
@@ -55304,7 +55324,7 @@ package android.view.accessibility {
     field public static final int TYPE_MAGNIFICATION_OVERLAY = 6; // 0x6
     field public static final int TYPE_SPLIT_SCREEN_DIVIDER = 5; // 0x5
     field public static final int TYPE_SYSTEM = 3; // 0x3
-    field @FlaggedApi("android.view.accessibility.add_type_window_control") public static final int TYPE_WINDOW_CONTROL = 7; // 0x7
+    field @FlaggedApi("android.view.accessibility.enable_type_window_control") public static final int TYPE_WINDOW_CONTROL = 7; // 0x7
   }
 
   public class CaptioningManager {
@@ -56321,7 +56341,7 @@ package android.view.inputmethod {
   public final class InputMethodInfo implements android.os.Parcelable {
     ctor public InputMethodInfo(android.content.Context, android.content.pm.ResolveInfo) throws java.io.IOException, org.xmlpull.v1.XmlPullParserException;
     ctor public InputMethodInfo(String, String, CharSequence, String);
-    method @FlaggedApi("android.view.inputmethod.ime_switcher_revamp") @Nullable public android.content.Intent createImeLanguageSettingsActivityIntent();
+    method @FlaggedApi("android.view.inputmethod.ime_switcher_revamp_api") @Nullable public android.content.Intent createImeLanguageSettingsActivityIntent();
     method @Nullable public android.content.Intent createStylusHandwritingSettingsActivityIntent();
     method public int describeContents();
     method public void dump(android.util.Printer, String);
@@ -56342,7 +56362,7 @@ package android.view.inputmethod {
     method public boolean supportsStylusHandwriting();
     method public boolean suppressesSpellChecker();
     method public void writeToParcel(android.os.Parcel, int);
-    field @FlaggedApi("android.view.inputmethod.ime_switcher_revamp") public static final String ACTION_IME_LANGUAGE_SETTINGS = "android.view.inputmethod.action.IME_LANGUAGE_SETTINGS";
+    field @FlaggedApi("android.view.inputmethod.ime_switcher_revamp_api") public static final String ACTION_IME_LANGUAGE_SETTINGS = "android.view.inputmethod.action.IME_LANGUAGE_SETTINGS";
     field public static final String ACTION_STYLUS_HANDWRITING_SETTINGS = "android.view.inputmethod.action.STYLUS_HANDWRITING_SETTINGS";
     field @NonNull public static final android.os.Parcelable.Creator<android.view.inputmethod.InputMethodInfo> CREATOR;
   }
@@ -59014,7 +59034,7 @@ package android.widget {
   }
 
   public static interface CompoundButton.OnCheckedChangeListener {
-    method public void onCheckedChanged(android.widget.CompoundButton, boolean);
+    method public void onCheckedChanged(@NonNull android.widget.CompoundButton, boolean);
   }
 
   public abstract class CursorAdapter extends android.widget.BaseAdapter implements android.widget.Filterable android.widget.ThemedSpinnerAdapter {
@@ -60079,7 +60099,7 @@ package android.widget {
   }
 
   public static interface RadioGroup.OnCheckedChangeListener {
-    method public void onCheckedChanged(android.widget.RadioGroup, @IdRes int);
+    method public void onCheckedChanged(@NonNull android.widget.RadioGroup, @IdRes int);
   }
 
   public class RatingBar extends android.widget.AbsSeekBar {
