@@ -27,5 +27,5 @@ object Properties {
     /** Get the value of a system property. */
     fun get(key: String): String? =
             ShellCommand.builder("getprop").addOperand(key)
-                    .executeAndParseOutput { it.trimEnd() }.ifEmpty { null }
+                    .executeAndParseOutput { it.stripTrailing() }.ifEmpty { null }
 }

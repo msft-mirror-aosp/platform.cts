@@ -16,7 +16,7 @@
 
 package com.android.bedstead.nene;
 
-import static android.cts.testapisreflection.TestApisReflectionKt.getQuickSettingsSupported;
+import static android.cts.testapisreflection.TestApisReflectionKt.isQuickSettingsSupported;
 import static org.junit.Assert.fail;
 
 import android.service.quicksettings.TileService;
@@ -214,7 +214,7 @@ public class TestApisTest {
     @Test
     public void quickSettings_isSupported_returns() {
         Truth.assertThat(TestApis.quickSettings().isSupported()).isEqualTo(
-                getQuickSettingsSupported(new TileService()));
+                isQuickSettingsSupported(new TileService()));
     }
 
     @Test

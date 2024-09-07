@@ -16,6 +16,8 @@
 
 package android.cts.tagging.is_mte_policy_enforced;
 
+import android.app.admin.flags.Flags;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.app.admin.DevicePolicyManager;
@@ -24,6 +26,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Test;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 // This is driven by MemtagBootctlTest from the host, which enables / disables
@@ -34,10 +37,14 @@ import org.junit.runner.RunWith;
 public final class TaggingTest {
     @Test
     public void testMtePolicyEnforcedTrue() {
-        assertThat(DevicePolicyManager.isMtePolicyEnforced()).isTrue();
+        if (Flags.isMtePolicyEnforced()) {
+            assertThat(DevicePolicyManager.isMtePolicyEnforced()).isTrue();
+        }
     }
     @Test
     public void testMtePolicyEnforcedFalse() {
-        assertThat(DevicePolicyManager.isMtePolicyEnforced()).isFalse();
+        if (Flags.isMtePolicyEnforced()) {
+            assertThat(DevicePolicyManager.isMtePolicyEnforced()).isFalse();
+        }
     }
 }

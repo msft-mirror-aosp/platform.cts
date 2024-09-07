@@ -26,7 +26,7 @@ object QuickSettings {
      * See [android.service.quicksettings.TileService#isQuickSettingsSupported].
      */
     fun isSupported(): Boolean {
-        return TileService().quickSettingsSupported
+        return TileService().isQuickSettingsSupported()
     }
 
 }

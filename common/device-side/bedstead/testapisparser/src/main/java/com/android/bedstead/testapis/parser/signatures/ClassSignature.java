@@ -66,8 +66,7 @@ public final class ClassSignature {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof ClassSignature)) return false;
-        ClassSignature that = (ClassSignature) o;
+        if (!(o instanceof ClassSignature that)) return false;
         return Objects.equals(mName, that.mName) && Objects.equals(mPackageName,
                 that.mPackageName);
     }

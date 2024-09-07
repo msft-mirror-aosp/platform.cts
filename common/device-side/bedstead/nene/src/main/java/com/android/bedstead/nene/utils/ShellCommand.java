@@ -34,7 +34,6 @@ import java.util.function.Function;
 /**
  * A tool for progressively building and then executing a shell command.
  */
-@SuppressWarnings("CheckReturnValue")
 public final class ShellCommand {
 
     // 10 seconds

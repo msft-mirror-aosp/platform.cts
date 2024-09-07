@@ -16,6 +16,7 @@
 
 package com.android.queryable.queries;
 
+import static com.android.queryable.annotations.IntegerQuery.DEFAULT_INT_QUERY_PARAMETERS_VALUE;
 import static com.android.queryable.util.ParcelableUtils.readNullableBoolean;
 import static com.android.queryable.util.ParcelableUtils.writeNullableBoolean;
 
@@ -29,7 +30,6 @@ import com.google.auto.value.AutoAnnotation;
 
 import java.util.Objects;
 
-@SuppressWarnings("CheckReturnValue")
 public final class BooleanQueryHelper<E extends Queryable> implements BooleanQuery<E> {
 
     private final transient E mQuery;

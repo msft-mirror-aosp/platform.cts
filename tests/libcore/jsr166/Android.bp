@@ -46,10 +46,3 @@ android_test {
     host_required: ["cts-dalvik-host-test-runner"],
     sdk_version: "test_current",
 }
-
-test_module_config {
-    name: "CtsLibcoreJsr166TestCases_jsr166",
-    base: "CtsLibcoreJsr166TestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["jsr166"],
-}

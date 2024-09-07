@@ -172,14 +172,12 @@ SUB_CAMERA_TESTS = {
     'scene1_1': (
         'test_burst_capture',
         'test_burst_sameness_manual',
+        'test_dng_noise_model',
         'test_exposure_x_iso',
         'test_linearity',
     ),
     'scene1_2': (
         'test_raw_exposure',
-    ),
-    'scene1_3': (
-        'test_dng_noise_model',
         'test_raw_sensitivity',
         'test_yuv_plus_raw',
     ),

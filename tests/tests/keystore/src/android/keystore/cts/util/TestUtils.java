@@ -20,8 +20,6 @@ import static android.security.keystore.KeyProperties.DIGEST_NONE;
 import static android.security.keystore.KeyProperties.DIGEST_SHA256;
 import static android.security.keystore.KeyProperties.DIGEST_SHA512;
 
-import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -242,7 +240,27 @@ public class TestUtils {
      * Returns VSR API level.
      */
     public static int getVendorApiLevel() {
-        return getVsrApiLevel();
+        int vendorApiLevel = SystemProperties.getInt("ro.vendor.api_level", -1);
+        if (vendorApiLevel != -1) {
+            return vendorApiLevel;
+        }
+
+        // Android S and older devices do not define ro.vendor.api_level
+        vendorApiLevel = SystemProperties.getInt("ro.board.api_level", -1);
+        if (vendorApiLevel == -1) {
+            vendorApiLevel = SystemProperties.getInt("ro.board.first_api_level", -1);
+        }
+
+        int productApiLevel = SystemProperties.getInt("ro.product.first_api_level", -1);
+        if (productApiLevel == -1) {
+            productApiLevel = Build.VERSION.SDK_INT;
+        }
+
+        // VSR API level is the minimum of vendorApiLevel and productApiLevel.
+        if (vendorApiLevel == -1 || vendorApiLevel > productApiLevel) {
+            return productApiLevel;
+        }
+        return vendorApiLevel;
     }
 
     /**

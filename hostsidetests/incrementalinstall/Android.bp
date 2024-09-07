@@ -46,21 +46,3 @@ java_test_host {
     ],
     per_testcase_directory: true,
 }
-
-test_module_config_host {
-    name: "CtsIncrementalInstallHostTestCases_incrementalinstall_cts",
-    base: "CtsIncrementalInstallHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.incrementalinstall.cts"],
-    exclude_annotations: [
-        "androidx.test.filters.LargeTest",
-        "android.platform.test.annotations.LargeTest",
-    ],
-}
-
-test_module_config_host {
-    name: "CtsIncrementalInstallHostTestCases_cts_incrementalfeaturetest",
-    base: "CtsIncrementalInstallHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.incrementalinstall.cts.IncrementalFeatureTest"],
-}

@@ -58,10 +58,3 @@ android_test {
     ],
     per_testcase_directory: true,
 }
-
-test_module_config {
-    name: "CtsBackupTestCases_cts_permissiontest",
-    base: "CtsBackupTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.backup.cts.PermissionTest"],
-}

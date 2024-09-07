@@ -40,13 +40,11 @@ import com.android.bedstead.multiuser.annotations.RequireHasMainUser
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.users.UserType
-import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.AssumptionViolatedException
 
 fun RequireHasMainUser.logic() = assumeTrue(reason, users().main() != null)
-
 fun RequireMultiUserSupport.logic() {
     checkFailOrSkip(
         "This test is only supported on multi user devices",
@@ -163,7 +161,6 @@ fun EnsureCanAddUser.logic() {
 /**
  * See [RequireUserSupported]
  */
-@CanIgnoreReturnValue
 fun RequireUserSupported.logic(): UserType {
     val resolvedUserType = users().supportedType(value)
     checkFailOrSkip(

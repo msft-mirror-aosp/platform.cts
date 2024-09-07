@@ -32,7 +32,6 @@ import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Tags.hasTag
 import com.android.bedstead.remotedpc.RemotePolicyManager
-import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.AssumptionViolatedException
 
 /**
@@ -112,7 +111,6 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         }
     }
 
-    @CanIgnoreReturnValue
     private fun trySetUserRestrictionWithDeviceOwner(restriction: String): Boolean {
         mDeviceOwnerComponent.ensureHasDeviceOwner()
         val dpc: RemotePolicyManager = mDeviceOwnerComponent.deviceOwner()
@@ -127,7 +125,6 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         return true
     }
 
-    @CanIgnoreReturnValue
     private fun trySetUserRestrictionWithProfileOwner(
         onUser: UserReference,
         restriction: String
@@ -241,7 +238,6 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         mRemovedUserRestrictions.clear()
     }
 
-    @CanIgnoreReturnValue
     private fun tryClearUserRestrictionWithDeviceOwner(restriction: String): Boolean {
         mDeviceOwnerComponent.ensureHasDeviceOwner()
         val dpc: RemotePolicyManager = mDeviceOwnerComponent.deviceOwner()
@@ -256,7 +252,6 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         return true
     }
 
-    @CanIgnoreReturnValue
     private fun tryClearUserRestrictionWithProfileOwner(
         onUser: UserReference,
         restriction: String

@@ -30,19 +30,21 @@ import static org.testng.Assert.fail;
 import android.app.admin.RemoteDevicePolicyManager;
 import android.app.admin.SecurityLog;
 import android.app.admin.SecurityLog.SecurityEvent;
+import android.app.admin.flags.Flags;
 import android.app.backup.BackupManager;
 import android.content.ComponentName;
 import android.content.Context;
 
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
-import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.EnumTestParameter;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.Backup;
 import com.android.bedstead.harrier.policies.BackupAndSecurityLogging;
 import com.android.bedstead.nene.TestApis;
@@ -190,6 +192,7 @@ public final class BackupTest {
 
     /** Positive test for SecurityLog#TAG_BACKUP_SERVICE_TOGGLED */
     @CanSetPolicyTest(policy = {BackupAndSecurityLogging.class})
+    @RequireFlagsEnabled(Flags.FLAG_BACKUP_SERVICE_SECURITY_LOG_EVENT_ENABLED)
     @ApiTest(apis = {"android.app.admin.SecurityLog#TAG_BACKUP_SERVICE_TOGGLED"})
     @Postsubmit(reason = "new test")
     public void setBackupServiceEnabled_SecurityLogEventsEmitted(

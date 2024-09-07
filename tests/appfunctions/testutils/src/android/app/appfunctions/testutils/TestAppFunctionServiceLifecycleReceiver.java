@@ -23,7 +23,9 @@ import android.content.Intent;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-/** Provides utilities to listen to lifecycle events of the {@link TestAppFunctionService}. */
+/**
+ * Provides utilities to listen to lifecycle events of the {@link TestAppFunctionService}.
+ */
 public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     private static final String ACTION_SERVICE_ON_CREATE = "oncreate";
     private static final String ACTION_SERVICE_ON_DESTROY = "ondestroy";
@@ -41,8 +43,8 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     }
 
     /**
-     * Resets the latch and enables another wait cycle. Should never call this method with any other
-     * methods in parallel.
+     * Resets the latch and enables another wait cycle. Should never call this method with any
+     * other methods in parallel.
      */
     public static void reset() {
         sOnCreateLatch = new CountDownLatch(1);
@@ -54,7 +56,7 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
      * specified timeout elapses.
      *
      * @param timeout The duration to wait for.
-     * @param unit The unit of time for the timeout value.
+     * @param unit    The unit of time for the timeout value.
      * @return True if the onDestroy was invoked within the timeout, false otherwise.
      * @throws InterruptedException If the current thread is interrupted while waiting.
      */
@@ -68,7 +70,7 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
      * specified timeout elapses.
      *
      * @param timeout The duration to wait for.
-     * @param unit The unit of time for the timeout value.
+     * @param unit    The unit of time for the timeout value.
      * @return True if the onCreate was invoked within the timeout, false otherwise.
      * @throws InterruptedException If the current thread is interrupted while waiting.
      */

@@ -145,7 +145,6 @@ package android.net.wifi {
   public final class WifiAvailableChannel implements android.os.Parcelable {
     ctor public WifiAvailableChannel(int, int);
     method public int describeContents();
-    method @FlaggedApi("com.android.wifi.flags.get_channel_width_api") public int getChannelWidth();
     method public int getFrequencyMhz();
     method public int getOperationalModes();
     method public void writeToParcel(@NonNull android.os.Parcel, int);
@@ -584,7 +583,6 @@ package android.net.wifi {
     field public static final int STATUS_LOCAL_ONLY_CONNECTION_FAILURE_NOT_FOUND = 4; // 0x4
     field public static final int STATUS_LOCAL_ONLY_CONNECTION_FAILURE_NO_RESPONSE = 5; // 0x5
     field public static final int STATUS_LOCAL_ONLY_CONNECTION_FAILURE_UNKNOWN = 0; // 0x0
-    field @FlaggedApi("com.android.wifi.flags.local_only_connection_optimization") public static final int STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT = 6; // 0x6
     field public static final int STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_DUPLICATE = 3; // 0x3
     field public static final int STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_EXCEEDS_MAX_PER_APP = 4; // 0x4
     field public static final int STATUS_NETWORK_SUGGESTIONS_ERROR_ADD_INVALID = 7; // 0x7

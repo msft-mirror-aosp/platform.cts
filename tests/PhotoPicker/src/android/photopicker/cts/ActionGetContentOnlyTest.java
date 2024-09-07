@@ -39,6 +39,7 @@ import android.util.Pair;
 
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
 
 import org.junit.After;
@@ -192,6 +193,32 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
     }
 
     @Test
+    public void testPickerSupportedFromDocumentsUi() throws Exception {
+        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        mActivity.startActivityForResult(intent, REQUEST_CODE);
+
+        findAndClickMediaIcon();
+
+        // Should open Picker
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+    }
+
+    @Test
+    public void testPickerLaunchTabWithGetContent() throws Exception {
+        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_LAUNCH_TAB, MediaStore.PICK_IMAGES_TAB_ALBUMS);
+
+        mActivity.startActivityForResult(Intent.createChooser(intent, TAG), REQUEST_CODE);
+
+        findAndClickMediaIcon();
+
+        // Should open Picker
+        UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+    }
+
+    @Test
     public void testPickerAccentColorWithGetContent() throws Exception {
         final Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
@@ -202,6 +229,34 @@ public class ActionGetContentOnlyTest extends PhotoPickerBaseTest {
 
         // Should open the picker
         UiAssertionUtils.assertThatShowsPickerUi(intent.getType());
+    }
+
+    private void findAndClickMediaIcon() throws Exception {
+        final UiSelector appList = new UiSelector().resourceId(sDocumentsUiPackageName
+                + ":id/apps_row");
+
+        // Wait for the first app list item to appear
+        assertWithMessage("Waiting for app list to appear in DocumentsUi").that(
+                new UiObject(appList).waitForExists(SHORT_TIMEOUT)).isTrue();
+
+        String photoPickerAppName = "Media";
+        UiObject mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
+        if (!new UiScrollable(appList).setAsHorizontalList().scrollIntoView(mediaButton)) {
+            // While solving an accessibility bug the app_label was modified from 'Media' to
+            // 'Media picker' and after making the modification, since this test had the
+            // hardcoded value for the name as 'Media' it started failing. After fixing this some
+            // versions of the code became incompatible with this test and hence have modified
+            // the code to work with both names.
+            photoPickerAppName = "Media picker";
+            mediaButton = sDevice.findObject(new UiSelector().text(photoPickerAppName));
+        }
+        assertWithMessage("Timed out waiting for " + photoPickerAppName
+                + " app icon to appear")
+                .that(new UiScrollable(appList).setAsHorizontalList().scrollIntoView(mediaButton))
+                .isTrue();
+        sDevice.waitForIdle();
+
+        clickAndWait(sDevice, mediaButton);
     }
 
     private void assertThatShowsDocumentsUiButtons() {

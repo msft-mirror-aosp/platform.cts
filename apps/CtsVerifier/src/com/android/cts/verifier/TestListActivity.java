@@ -146,9 +146,6 @@ public class TestListActivity extends AbstractTestListActivity implements View.O
             }
             return;
         }
-        if (grantResults.length == 0) {
-            return;
-        }
         if (requestCode == CTS_VERIFIER_BACKGROUND_LOCATION_PERMISSION_REQUEST) {
             if (grantResults[0] == PackageManager.PERMISSION_DENIED) {
                 Log.v(TAG, "Didn't grant background permission.");

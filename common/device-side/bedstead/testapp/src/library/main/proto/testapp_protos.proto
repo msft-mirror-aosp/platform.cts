@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package com.android.bedstead.testapp;
 
-option java_package = "com.android.bedstead.testapp";
-
 message TestAppIndex {
   repeated AndroidApp apps = 1;
 }

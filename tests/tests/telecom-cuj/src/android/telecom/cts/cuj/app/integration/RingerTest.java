@@ -27,24 +27,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.media.AudioManager;
 import android.media.AudioManager.AudioPlaybackCallback;
 import android.media.AudioPlaybackConfiguration;
-import android.media.audio.Flags;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Vibrator;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.Settings;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.VideoProfile;
 import android.telecom.cts.apps.AppControlWrapper;
 import android.telecom.cts.cuj.BaseAppVerifier;
-import android.telecom.cts.cuj.TestUtils;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -263,7 +259,6 @@ public class RingerTest extends BaseAppVerifier {
         assumeTrue(mShouldTestTelecom);
         assumeTrue(mSupportsManagedCalls);
         assumeTrue(hasVibrator());
-        assumeFalse(TestUtils.isRingtoneVibrationSupported(mContext));
 
         // Configure the audio manager and register the audio playback callback:
         LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
@@ -343,10 +338,9 @@ public class RingerTest extends BaseAppVerifier {
             verifyCallIsInState(mt, STATE_RINGING);
             Boolean originalRingingState =
                     queue.poll(WAIT_FOR_NO_RING_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            if (!TestUtils.isRingtoneVibrationSupported(mContext)) {
-                assertNull("Telecom should not have played a ringtone since ringer is in "
-                        + "VIBRATE mode", originalRingingState);
-            }
+            assertNull("Telecom should not have played a ringtone since ringer is in "
+                    + "VIBRATE mode", originalRingingState);
+
             // Verify that the device is vibrating by inspecting the vibrator dumpsys:
             waitForRingtoneVibrationLogOrTimeout();
 
@@ -362,62 +356,6 @@ public class RingerTest extends BaseAppVerifier {
             assertTrue("Telecom should have played a ringtone.", updatedRingingState);
 
             // Verify that the device is still vibrating by inspecting the vibrator dumpsys:
-            waitForRingtoneVibrationLogOrTimeout();
-
-            // Disconnect the call:
-            answerViaInCallServiceAndVerify(mt, VideoProfile.STATE_AUDIO_ONLY);
-            setCallStateAndVerify(managedApp, mt, STATE_DISCONNECTED);
-        } finally {
-            tearDownApp(managedApp);
-            audioManager.unregisterAudioPlaybackCallback(callback);
-        }
-    }
-
-    /**
-     * Test the scenario where a new MANAGED incoming call is created and transitions to RINGING
-     * while the ringer is in VIBRATE mode and "Vibrations & haptics" are enabled if device
-     * supports ringtone vibration settings.
-     * <p>
-     *
-     * <h3> Test Steps: </h3>
-     *  1. create a managed call that is backed by a {@link android.telecom.ConnectionService }
-     *  via {@link android.telecom.TelecomManager#addNewIncomingCall(PhoneAccountHandle, Bundle)}
-     * <p>
-     *  2. verify that the call rang and that {@link AudioPlaybackCallback} was triggered.
-     * <p>
-     *  3. disconnect the call
-     */
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RINGTONE_HAPTICS_CUSTOMIZATION)
-    public void testIncomingCallVibrateMode_vibrationSettingsSupported_VibrateAndRing()
-            throws Exception {
-        assumeTrue(mShouldTestTelecom);
-        assumeTrue(mSupportsManagedCalls);
-        assumeTrue(hasVibrator());
-        assumeTrue(TestUtils.isRingtoneVibrationSupported(mContext));
-
-        // Configure the audio manager and register the audio playback callback:
-        LinkedBlockingQueue<Boolean> queue = new LinkedBlockingQueue<>(1);
-        AudioPlaybackCallback callback = createAudioPlaybackCallback(queue);
-        AudioManager audioManager =
-                configureAudioManager(AudioManager.RINGER_MODE_VIBRATE, callback);
-
-        // Configure the "Vibrations & haptics" settings:
-        configureVibrationSettings(ON);
-
-        AppControlWrapper managedApp = null;
-        try {
-            managedApp = bindToApp(ManagedConnectionServiceApp);
-            String mt = addIncomingCallAndVerify(managedApp);
-
-            // Verify that the call rang:
-            verifyCallIsInState(mt, STATE_RINGING);
-            Boolean ringing = queue.poll(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-            assertNotNull("Telecom should have played a ringtone, timed out waiting for "
-                    + "state change", ringing);
-            assertTrue("Telecom should have played a ringtone.", ringing);
-
-            // Verify that the device is vibrating by inspecting the vibrator dumpsys:
             waitForRingtoneVibrationLogOrTimeout();
 
             // Disconnect the call:

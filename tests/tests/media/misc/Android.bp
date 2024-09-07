@@ -180,10 +180,3 @@ android_test {
     min_sdk_version: "29",
     target_sdk_version: "31",
 }
-
-test_module_config {
-    name: "CtsMediaMiscTestCases_cts_mediametadataretrievertest",
-    base: "CtsMediaMiscTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.media.misc.cts.MediaMetadataRetrieverTest"],
-}

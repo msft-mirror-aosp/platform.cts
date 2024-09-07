@@ -370,9 +370,9 @@ class ItsSession(object):
     time.sleep(1)
 
     its_device_utils.run(
-        f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
+        f'{self.adb} shell am force-stop --user 0 {self.PACKAGE}')
     its_device_utils.run(
-        f'{self.adb} shell am start-foreground-service --user cur '
+        f'{self.adb} shell am start-foreground-service --user 0 '
         f'-t text/plain -a {self.INTENT_START}'
     )
 
@@ -1643,9 +1643,8 @@ class ItsSession(object):
     cmd['previewRequestIdle'] = [preview_request_idle]
     cmd['stillCaptureRequest'] = [still_capture_req]
     cmd['outputSurfaces'] = [out_surface]
-    if 'android.control.aeMode' in still_capture_req:
-      logging.debug('Capturing image with aeMode: %d',
-                    still_capture_req['android.control.aeMode'])
+
+    logging.debug('Capturing image with ON_AUTO_FLASH.')
     return self.do_simple_capture(cmd, out_surface)
 
   def do_capture_with_extensions(self,

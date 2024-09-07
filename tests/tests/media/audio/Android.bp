@@ -115,29 +115,3 @@ android_test {
     target_sdk_version: "31",
     min_sdk_version: "31",
 }
-
-test_module_config {
-    name: "CtsMediaAudioTestCases_cts_audiofocuswithvdmtest",
-    base: "CtsMediaAudioTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.media.audio.cts.AudioFocusWithVdmTest"],
-}
-
-test_module_config {
-    name: "CtsMediaAudioTestCases_android_server_audio",
-    base: "CtsMediaAudioTestCases",
-    test_suites: ["general-tests"],
-    include_filters: [
-        "android.media.audio.cts.AudioFocusTest",
-        "android.media.audio.cts.SpatializerTest",
-        "android.media.audio.cts.AudioManagerTest",
-    ],
-}
-
-test_module_config {
-    name: "CtsMediaAudioTestCases_cts_audionativetest_Presubmit",
-    base: "CtsMediaAudioTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.media.audio.cts.AudioNativeTest"],
-    include_annotations: ["android.platform.test.annotations.Presubmit"],
-}

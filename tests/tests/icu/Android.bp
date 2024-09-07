@@ -68,10 +68,3 @@ java_test_host {
         "general-tests",
     ],
 }
-
-test_module_config {
-    name: "CtsIcuTestCases_android_i18n",
-    base: "CtsIcuTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["com.android.i18n"],
-}

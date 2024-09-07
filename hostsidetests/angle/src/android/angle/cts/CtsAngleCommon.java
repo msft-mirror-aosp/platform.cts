@@ -21,7 +21,6 @@ import com.android.tradefed.result.TestDescription;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringTokenizer;
 
 class CtsAngleCommon {
     // General
@@ -37,11 +36,6 @@ class CtsAngleCommon {
     static final String SETTINGS_GLOBAL_DRIVER_VALUES = "angle_gl_driver_selection_values";
     static final String SETTINGS_GLOBAL_ALLOWLIST = "angle_allowlist";
     static final String SETTINGS_GLOBAL_ANGLE_IN_USE_DIALOG_BOX = "show_angle_in_use_dialog_box";
-
-    // Vulkan Feature
-    static final int VULKAN_1_1 = 0x00401000; // 1.1.0
-    static final String VULKAN_VERSION_FEATURE = "feature:android.hardware.vulkan.version";
-    static final String VULKAN_LEVEL_FEATURE = "feature:android.hardware.vulkan.level";
 
     // ANGLE
     static final String ANGLE_PACKAGE_NAME = "com.android.angle";
@@ -140,67 +134,6 @@ class CtsAngleCommon {
 
     static boolean isAnglePresent(ITestDevice device) throws Exception {
         return isAnglePresentAsNonDefault(device) || isAngleDefaultDriver(device);
-    }
-
-    // Check if device supports vulkan 1.1.
-    // If the device includes a Vulkan driver, feature list returned by
-    // "adb shell pm list features" should contain
-    // "feature:android.hardware.vulkan.level" (FEATURE_VULKAN_HARDWARE_LEVEL) and
-    // "feature:android.hardware.vulkan.version" (FEATURE_VULKAN_HARDWARE_VERSION)
-    // reference: https://source.android.com/docs/core/graphics/implement-vulkan
-    static boolean isVulkan11Supported(ITestDevice device) throws Exception {
-        final String features = device.executeShellCommand("pm list features");
-
-        StringTokenizer featureToken = new StringTokenizer(features, "\n");
-
-        boolean isVulkanLevelFeatureSupported = false;
-
-        boolean isVulkanVersionFeatureSupported = false;
-
-        boolean isVulkan_1_1_Supported = false;
-
-        while (featureToken.hasMoreTokens()) {
-            String currentFeature = featureToken.nextToken();
-
-            // Check if currentFeature strings starts with "feature:android.hardware.vulkan.level"
-            // Check that currentFeature string length is at least the length of
-            // "feature:android.hardware.vulkan.level" before calling substring so that the endIndex
-            // is not out of bound.
-            if (currentFeature.length() >= VULKAN_LEVEL_FEATURE.length()
-                    && currentFeature
-                            .substring(0, VULKAN_LEVEL_FEATURE.length())
-                            .equals(VULKAN_LEVEL_FEATURE)) {
-                isVulkanLevelFeatureSupported = true;
-            }
-
-            // Check if currentFeature strings starts with "feature:android.hardware.vulkan.version"
-            // Check that currentFeature string length is at least the length of
-            // "feature:android.hardware.vulkan.version" before calling substring so that the
-            // endIndex is not out of bound.
-            if (currentFeature.length() >= VULKAN_VERSION_FEATURE.length()
-                    && currentFeature
-                            .substring(0, VULKAN_VERSION_FEATURE.length())
-                            .equals(VULKAN_VERSION_FEATURE)) {
-                isVulkanVersionFeatureSupported = true;
-
-                // If android.hardware.vulkan.version feature is supported by the device,
-                // check if the vulkan version supported is at least vulkan 1.1.
-                // ANGLE is only intended to work properly with vulkan version >= vulkan 1.1
-                String[] currentFeatureAndValue = currentFeature.split("=");
-                if (currentFeatureAndValue.length > 1) {
-                    int vulkanVersionLevelSupported = Integer.parseInt(currentFeatureAndValue[1]);
-                    isVulkan_1_1_Supported = vulkanVersionLevelSupported >= VULKAN_1_1;
-                }
-            }
-
-            if (isVulkanLevelFeatureSupported
-                    && isVulkanVersionFeatureSupported
-                    && isVulkan_1_1_Supported) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // If ANGLE is the default GLES driver, then the test method for default GLES driver should

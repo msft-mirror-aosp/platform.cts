@@ -16,12 +16,9 @@
 
 package android.keystore.cts;
 
-import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
-
 import static com.google.common.base.Functions.forMap;
 import static com.google.common.collect.Collections2.transform;
 
-import android.os.Build;
 import android.security.keystore.KeyProperties;
 import android.util.Log;
 
@@ -230,14 +227,7 @@ public class AuthorizationList {
         for (; entry != null; entry = parseAsn1TaggedObject(parser)) {
             prevTag = currentTag;
             currentTag = entry.getTagNo();
-            // The ASN.1 schema for the `AuthorizationList` in the attestation extension requires
-            // that the fields appear in numerical order of their ASN.1 tag value / KeyMint Tag
-            // value.
-            //
-            // However, this was not previously checked for, so we can only be strict about
-            // requiring the correct ordering for later VSR devices.
-            if ((prevTag > currentTag)
-                    && (getVsrApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
+            if (prevTag > currentTag) {
                 throw new CertificateParsingException(
                         "Incorrect order of tags in authorization list: " + currentTag);
             }

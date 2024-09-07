@@ -31,5 +31,5 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@+id/compat_view"
-        android:text="Compat scale subview" />
+        android:text="Compat scale subview 2" />
 </RelativeLayout>

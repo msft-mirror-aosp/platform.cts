@@ -21,12 +21,12 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.BaseColumns;
 import android.provider.Telephony;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import com.google.android.mms.ContentType;
@@ -107,7 +107,7 @@ public class SmsBackupRestoreTest extends TestCaseThatRunsIfTelephonyIsEnabled {
 
     private boolean isFeatureSupported() throws Exception {
         return (ProviderTestUtils.hasBackupTransport(LOCAL_BACKUP_COMPONENT, mUiAutomation)
-                && TelephonyManager.from(mContext).isDeviceSmsCapable());
+                && mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
     }
 
     private void clearMessages() {

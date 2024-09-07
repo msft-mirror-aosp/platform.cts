@@ -252,7 +252,7 @@ public class AppBindingHostTest extends BaseHostJUnit4Test implements IBuildRece
     }
 
     private void checkBound(String packageName, String serviceClass, int userId) throws Throwable {
-        runWithRetries(DEFAULT_LONG_TIMEOUT_SEC, () -> {
+        runWithRetries(DEFAULT_TIMEOUT_SEC, () -> {
             runCommand("dumpsys activity service " + packageName + "/" + serviceClass,
                     Pattern.quote("[" + packageName + "]") + " .* "
                     + Pattern.quote("[" + serviceClass + "]"));

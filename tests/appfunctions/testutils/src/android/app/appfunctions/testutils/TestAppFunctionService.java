@@ -28,8 +28,8 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
- * An implementation of {@link android.app.appfunctions.AppFunctionService} that provides some
- * simple functions for testing purposes.
+ * An implementation of {@link android.app.appfunctions.AppFunctionService} that provides
+ * some simple functions for testing purposes.
  */
 public class TestAppFunctionService extends AppFunctionService {
     private final Executor mExecutor = Executors.newSingleThreadExecutor();
@@ -67,33 +67,32 @@ public class TestAppFunctionService extends AppFunctionService {
                 break;
             }
             case "addAsync": {
-                mExecutor.execute(
-                        () -> {
-                            ExecuteAppFunctionResponse result = add(request);
-                            callback.accept(result);
-                        });
+                mExecutor.execute(() -> {
+                    ExecuteAppFunctionResponse result = add(request);
+                    callback.accept(result);
+                });
                 break;
             }
             case "noOp": {
-                callback.accept(
-                        ExecuteAppFunctionResponse.newSuccess(
-                                buildEmptyGenericDocument(), /* extras= */ null));
+                callback.accept(ExecuteAppFunctionResponse.newSuccess(
+                        buildEmptyGenericDocument(), /*extras=*/ null));
                 break;
             }
             case "noSuchMethod": {
-                callback.accept(
-                        ExecuteAppFunctionResponse.newFailure(
-                                ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
-                                "Function does not exist",
-                                /* extras= */ null));
+                callback.accept(ExecuteAppFunctionResponse.newFailure(
+                        ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
+                        "Function does not exist",
+                        /*extras=*/ null
+                ));
                 break;
             }
             default:
                 callback.accept(
                         ExecuteAppFunctionResponse.newFailure(
                                 ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
-                                /* errorMessage= */ null,
-                                /* extras= */ null));
+                                /*errorMessage=*/ null,
+                                /*extras=*/ null)
+                );
         }
     }
 
@@ -104,11 +103,10 @@ public class TestAppFunctionService extends AppFunctionService {
     private ExecuteAppFunctionResponse add(ExecuteAppFunctionRequest request) {
         long a = request.getParameters().getPropertyLong("a");
         long b = request.getParameters().getPropertyLong("b");
-        GenericDocument result =
-                new GenericDocument.Builder<>("", "", "")
-                        .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
-                        .build();
-        return ExecuteAppFunctionResponse.newSuccess(result, /* extras= */ null);
+        GenericDocument result = new GenericDocument.Builder<>("", "", "")
+                .setPropertyLong(ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE, a + b)
+                .build();
+        return ExecuteAppFunctionResponse.newSuccess(result, /*extras=*/ null);
     }
 
     @Override

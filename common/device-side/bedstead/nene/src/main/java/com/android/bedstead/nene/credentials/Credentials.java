@@ -41,6 +41,7 @@ import com.android.bedstead.nene.utils.Versions;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /** Helper methods for using credential manager. */
 public final class Credentials {

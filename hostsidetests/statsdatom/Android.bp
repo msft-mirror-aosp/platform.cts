@@ -124,39 +124,3 @@ java_library_host {
         "truth",
     ],
 }
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_voiceinteraction",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.voiceinteraction"],
-}
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_jobscheduler",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.jobscheduler"],
-}
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_appexit_appexithosttest",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.appexit.AppExitHostTest"],
-    exclude_annotations: ["androidx.test.filters.LargeTest"],
-}
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_gamemanager",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.gamemanager"],
-}
-
-test_module_config_host {
-    name: "CtsStatsdAtomHostTestCases_statsdatom_powermanager",
-    base: "CtsStatsdAtomHostTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.cts.statsdatom.powermanager"],
-}

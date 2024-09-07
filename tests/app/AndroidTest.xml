@@ -65,10 +65,4 @@
         <option name="hidden-api-checks" value="false"/>
     </test>
 
-    <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
-        <option name="cleanup" value="true"/>
-        <option name="push-file" key="CtsAppTestStubsApp1.apk"
-                value="/data/local/tmp/cts/apps/CtsAppTestStubsApp1.apk"/>
-    </target_preparer>
-
 </configuration>

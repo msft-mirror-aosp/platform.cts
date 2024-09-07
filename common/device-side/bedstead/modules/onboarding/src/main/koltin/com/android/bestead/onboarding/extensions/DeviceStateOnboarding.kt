@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.onboarding.extensions
+package com.android.bestead.onboarding.extensions
 
 import com.android.onboarding.bedsteadonboarding.OnboardingTestsRule
 import com.android.bedstead.harrier.DeviceState

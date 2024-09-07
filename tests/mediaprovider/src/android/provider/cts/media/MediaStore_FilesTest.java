@@ -55,7 +55,6 @@ import androidx.test.filters.SdkSuppress;
 import com.android.providers.media.flags.Flags;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -203,7 +202,6 @@ public class MediaStore_FilesTest {
     }
 
     @Test
-    @Ignore("b/364840943")
     @RequiresFlagsEnabled(Flags.FLAG_INFERRED_MEDIA_DATE)
     public void testStandardSorting() throws Exception {
         mResolver.delete(MediaStore.Downloads.getContentUri(mVolumeName),

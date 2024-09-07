@@ -49,10 +49,3 @@ android_test {
     min_sdk_version: "30",
     per_testcase_directory: true,
 }
-
-test_module_config {
-    name: "CtsContactKeysManagerTestCases_cts_contactkeys",
-    base: "CtsContactKeysManagerTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.provider.cts.contactkeys."],
-}

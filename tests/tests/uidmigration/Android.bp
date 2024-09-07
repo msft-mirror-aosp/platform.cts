@@ -52,10 +52,3 @@ android_test {
     ],
     per_testcase_directory: true,
 }
-
-test_module_config {
-    name: "CtsSharedUserMigrationTestCases_uidmigration_cts",
-    base: "CtsSharedUserMigrationTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["android.uidmigration.cts"],
-}

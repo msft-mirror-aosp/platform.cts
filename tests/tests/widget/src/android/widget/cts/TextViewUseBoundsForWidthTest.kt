@@ -16,11 +16,14 @@
 package android.widget.cts
 
 import android.os.Build
+import android.platform.test.annotations.RequiresFlagsDisabled
+import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.widget.TextView
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
+import com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -40,6 +43,7 @@ class TextViewUseBoundsForWidthTest {
     val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     @Test
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     fun testSetGetUseBoundsForWidth() {
         val textView = TextView(context)
         textView.useBoundsForWidth = true
@@ -50,6 +54,7 @@ class TextViewUseBoundsForWidthTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     fun testLayoutUseBoundsForTest() {
         val textView = TextView(context)
         textView.text = "Hello, World.\n This is Android."
@@ -64,8 +69,16 @@ class TextViewUseBoundsForWidthTest {
     }
 
     @Test
-    fun testDefaultUseBoundsForTest_TargetSdk() {
+    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    fun testDefaultUseBoundsForTest_TargetSdk_VIC_FlagOn() {
         context.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM
         assertThat(TextView(context).useBoundsForWidth).isTrue()
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_USE_BOUNDS_FOR_WIDTH)
+    fun testDefaultUseBoundsForTest_TargetSdk_VIC_FlagOff() {
+        context.getApplicationInfo().targetSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM
+        assertThat(TextView(context).useBoundsForWidth).isFalse()
     }
 }

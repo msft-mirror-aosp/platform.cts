@@ -50,8 +50,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.annotation.processing.ProcessingEnvironment;
@@ -65,7 +63,6 @@ import kotlin.Suppress;
 public final class CodeGenerator {
 
     private static final String LOG_TAG = "TestApisReflection";
-    private static final Pattern sGetterPattern = Pattern.compile("^(is|get)[A-Z]");
 
     private final ProcessingEnvironment mProcessingEnvironment;
 
@@ -723,12 +720,11 @@ public final class CodeGenerator {
     }
 
     private static String removeGetPrefix(String name) {
-        Matcher matcher = sGetterPattern.matcher(name);
-        if (!matcher.find()) {
+        if (!name.startsWith("get")) {
             return name;
         }
 
-        char[] c = name.replaceFirst(matcher.group(1), "").toCharArray();
+        char[] c = name.replaceAll("get", "").toCharArray();
         c[0] = Character.toLowerCase(c[0]);
         return new String(c);
     }

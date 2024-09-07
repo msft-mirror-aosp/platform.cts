@@ -64,8 +64,8 @@ test_module_config {
     base: "CtsLibcoreOjTestCases",
     test_suites: ["general-tests"],
     include_filters: [
-        "org.openjdk.tests.java.lang.invoke",
         "test.java.lang.invoke",
+        "org.openjdk.tests.java.lang.invoke",
     ],
 }
 
@@ -148,40 +148,5 @@ test_module_config {
         "test.java.time.zone",
         "tck.java.time.zone.serial",
         "tck.java.time.zone",
-    ],
-}
-
-test_module_config {
-    name: "CtsLibcoreOjTestCases_java_lang",
-    base: "CtsLibcoreOjTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["test.java.lang"],
-}
-
-test_module_config {
-    name: "CtsLibcoreOjTestCases_java_net",
-    base: "CtsLibcoreOjTestCases",
-    test_suites: ["general-tests"],
-    include_filters: ["test.java.net"],
-}
-
-test_module_config {
-    name: "CtsLibcoreOjTestCases_util",
-    base: "CtsLibcoreOjTestCases",
-    test_suites: ["general-tests"],
-    include_filters: [
-        "test.java.util",
-        "org.openjdk.tests.java.util",
-    ],
-}
-
-test_module_config {
-    name: "CtsLibcoreOjTestCases_util_stream",
-    base: "CtsLibcoreOjTestCases",
-    test_suites: ["general-tests"],
-    include_filters: [
-        "org.openjdk.tests.java.util.stream",
-        "org.openjdk.testlib.java.util.stream",
-        "java.util.stream",
     ],
 }

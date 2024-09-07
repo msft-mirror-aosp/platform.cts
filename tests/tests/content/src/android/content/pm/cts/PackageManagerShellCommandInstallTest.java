@@ -167,6 +167,12 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_SDK1_UPDATED = "HelloWorldSdk1Updated.apk";
     private static final String TEST_SDK1_MAJOR_VERSION2 = "HelloWorldSdk1MajorVersion2.apk";
     private static final String TEST_SDK1_DIFFERENT_SIGNER = "HelloWorldSdk1DifferentSigner.apk";
+    private static final String TEST_SDK1_HIGHER_MIN_SDK =
+            "HelloWorldSdk1MajorVersion1WithHigherMinSdk.apk";
+    private static final String TEST_SDK1_HIGHER_TARGET_SDK =
+            "HelloWorldSdk1MajorVersion1WithHigherTargetSdk.apk";
+    private static final String TEST_SDK1_MAJOR_VERSION2_HIGHER_TARGET_SDK =
+            "HelloWorldSdk1MajorVersion2WithHigherTargetSdk.apk";
 
     private static final String TEST_SDK2 = "HelloWorldSdk2.apk";
     private static final String TEST_SDK2_UPDATED = "HelloWorldSdk2Updated.apk";
@@ -1062,6 +1068,50 @@ public class PackageManagerShellCommandInstallTest {
         } finally {
             getUiAutomation().dropShellPermissionIdentity();
         }
+    }
+
+    @Test
+    public void testSdkUpdate_changingTargetSdkFailsWithoutChangingVersionMajor() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+
+        // Updating should fail because targetSdkVersion has changed but the versionMajor of the
+        // sdk library has not changed
+        installPackage(TEST_SDK1_HIGHER_TARGET_SDK,
+                "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE");
+        // It doesn't affect the previously installed sdk library version
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+    }
+
+    @Test
+    public void testSdkUpdate_changingMinSdkFailsWithoutChangingVersionMajor() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+
+        // Updating should fail because minSdkVersion has changed but the versionMajor of the
+        // sdk library has not changed
+        installPackage(TEST_SDK1_HIGHER_MIN_SDK,
+                "Failure [INSTALL_FAILED_UPDATE_INCOMPATIBLE");
+        // It doesn't affect the previously installed sdk library version
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+    }
+
+    @Test
+    public void testSdkUpdate_changingTargetSdkPassesWithChangingVersionMajor() throws Exception {
+        onBeforeSdkTests();
+
+        installPackage(TEST_SDK1);
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 1));
+
+        // Updating should go through because targetSdkVersion has changed and the versionMajor of
+        // the sdk library has also changed
+        installPackage(TEST_SDK1_MAJOR_VERSION2_HIGHER_TARGET_SDK);
+        // The installed sdk library version should be updated now
+        assertTrue(isSdkInstalled(TEST_SDK1_NAME, 2));
     }
 
     @Test

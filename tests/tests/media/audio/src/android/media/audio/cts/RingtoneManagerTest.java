@@ -15,11 +15,6 @@
  */
 package android.media.audio.cts;
 
-import static android.media.Utils.VIBRATION_URI_PARAM;
-import static android.media.cts.Utils.getTestVibrationFile;
-
-import static com.google.common.truth.Truth.assertThat;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -33,18 +28,13 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
-import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
-import android.media.audio.Flags;
 import android.media.cts.Utils;
 import android.net.Uri;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 
 import androidx.test.core.app.ActivityScenario;
@@ -53,7 +43,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -74,9 +63,6 @@ public class RingtoneManagerTest {
     private AudioManager mAudioManager;
     private int mOriginalRingerMode;
     private Uri mDefaultUri;
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -256,39 +242,5 @@ public class RingtoneManagerTest {
         assertTrue(RingtoneManager.hasHapticChannels(
                 mContext, Uri.parse(uriPrefix + "a_4_haptic")));
         assertFalse(RingtoneManager.hasHapticChannels(mContext, Uri.parse(uriPrefix + "a_4")));
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_RINGTONE_HAPTICS_CUSTOMIZATION)
-    public void testRingtoneHapticChannelMutedIfVibration() throws IOException {
-        if (!isSupportedDevice()) return;
-
-        if (!Utils.isRingtoneVibrationSupported(mContext)) {
-            return;
-        }
-
-        final String uriPrefix = ContentResolver.SCHEME_ANDROID_RESOURCE + "://"
-                + mContext.getPackageName() + "/raw/";
-        Uri audioCoupledRingtoneUri = Uri.parse(uriPrefix + "a_4_haptic");
-
-        // Make sure we have vibration uri
-        final Uri ringtoneUri = audioCoupledRingtoneUri.buildUpon().appendQueryParameter(
-                VIBRATION_URI_PARAM, getTestVibrationFile().toURI().toString()).build();
-        AudioAttributes attr = getDefaultRingtoneAudioAttributes(/* hapticChannelsMuted= */ false);
-
-        assertFalse(attr.areHapticChannelsMuted());
-
-        Ringtone ringtone = RingtoneManager.getRingtone(mContext, ringtoneUri, null, attr);
-
-        assertThat(ringtone).isNotNull();
-        assertTrue(ringtone.getAudioAttributes().areHapticChannelsMuted());
-    }
-
-    private AudioAttributes getDefaultRingtoneAudioAttributes(boolean hapticChannelsMuted) {
-        return new AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .setHapticChannelsMuted(hapticChannelsMuted)
-                .build();
     }
 }

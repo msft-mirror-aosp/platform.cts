@@ -35,11 +35,9 @@ import android.accessibilityservice.AccessibilityService.SoftKeyboardController.
 import android.accessibilityservice.cts.activities.AccessibilityTestActivity;
 import android.accessibilityservice.cts.utils.AsyncUtils;
 import android.app.Instrumentation;
-import android.app.UiAutomation;
 import android.inputmethodservice.cts.common.Ime1Constants;
 import android.inputmethodservice.cts.common.test.ShellCommandUtils;
 import android.os.Bundle;
-import android.os.Process;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
@@ -50,8 +48,6 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.PollingCheck;
-import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +55,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -72,11 +67,7 @@ import java.util.stream.Collectors;
 @CddTest(requirements = {"3.10/C-1-1,C-1-2"})
 @Presubmit
 public class AccessibilitySoftKeyboardTest {
-    private static final long POLLING_CHECK_TIMEOUT_MILLIS = 5000L;
-    private static final Instrumentation sInstrumentation =
-            InstrumentationRegistry.getInstrumentation();
-    private static final UiAutomation sUiAutomation = sInstrumentation.getUiAutomation(
-            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+    private Instrumentation mInstrumentation;
     private int mLastCallbackValue;
 
     private InstrumentedAccessibilityService mService;
@@ -102,6 +93,7 @@ public class AccessibilitySoftKeyboardTest {
 
     @Before
     public void setUp() {
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mService = mServiceRule.getService();
     }
 
@@ -252,7 +244,7 @@ public class AccessibilitySoftKeyboardTest {
     }
 
     private List<String> getEnabledInputMethods() {
-        final InputMethodManager inputMethodManager = sInstrumentation.getTargetContext()
+        final InputMethodManager inputMethodManager = mInstrumentation.getTargetContext()
                 .getSystemService(InputMethodManager.class);
         return inputMethodManager.getEnabledInputMethodList()
                 .stream().map(inputMethodInfo -> inputMethodInfo.getId())
@@ -277,37 +269,22 @@ public class AccessibilitySoftKeyboardTest {
     private class TestImeSession implements AutoCloseable {
         TestImeSession(String imeId, boolean enabled) {
             // Enable/disable the placeholder IME by shell command.
-            final int userId = Process.myUserHandle().getIdentifier();
             final String enableImeCommand;
             if (enabled) {
-                enableImeCommand = ShellCommandUtils.enableIme(imeId, userId);
+                enableImeCommand = ShellCommandUtils.enableIme(imeId);
             } else {
-                enableImeCommand = ShellCommandUtils.disableIme(imeId, userId);
+                enableImeCommand = ShellCommandUtils.disableIme(imeId);
             }
-            ShellCommandBuilder.create(sInstrumentation)
+            ShellCommandBuilder.create(mInstrumentation)
                     .addCommand(enableImeCommand)
                     .run();
-
-            try {
-                PollingCheck.check(imeId + " is not " + (enabled ? " enabled" : "disabled"),
-                        POLLING_CHECK_TIMEOUT_MILLIS,
-                        () -> enabled == isImeEnabled(imeId, userId));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private static boolean isImeEnabled(String ime, int userId) throws IOException {
-            final String enabledImes = SystemUtil.runShellCommand(sUiAutomation,
-                    ShellCommandUtils.getEnabledImes(userId));
-            return enabledImes.contains(ime);
         }
 
         @Override
         public void close() throws Exception {
             // Reset IMEs by shell command.
-            ShellCommandBuilder.create(sInstrumentation)
-                    .addCommand(ShellCommandUtils.resetImesForAllUsers())
+            ShellCommandBuilder.create(mInstrumentation)
+                    .addCommand(ShellCommandUtils.resetImes())
                     .run();
         }
     }

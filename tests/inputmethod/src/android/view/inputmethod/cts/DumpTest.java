@@ -31,15 +31,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -49,18 +45,11 @@ import java.util.concurrent.TimeUnit;
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-// TODO(b/356239178): Add tests for concurrent multi-user
 public final class DumpTest {
 
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
-    // Required for Bedstead annotations to take effect.
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
-
     @Test
-    @RequireNotVisibleBackgroundUsers(reason = "Test IMMS dump on single user mode")
     public void test_dumpDoesNotContainEditorText() throws Exception {
         final String marker = "TEST_MARKER/" + SystemClock.elapsedRealtimeNanos();
         final String text = "TEST_TEXT/" + SystemClock.elapsedRealtimeNanos();
@@ -84,7 +73,7 @@ public final class DumpTest {
             });
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
-            final String output = SystemUtil.runShellCommandOrThrow("dumpsys input_method");
+            final String output = SystemUtil.runShellCommand("dumpsys input_method");
             assertThat(output).contains("Input method client state");
             assertThat(output).contains("Input method service state");
             assertThat(output).doesNotContain(text);
