@@ -111,6 +111,7 @@ android_test {
         "general-tests",
     ],
     static_libs: [
+        "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
         "TestParameterInjector",
