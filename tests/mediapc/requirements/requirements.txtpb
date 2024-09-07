@@ -23,18 +23,21 @@ requirements {
     key: "720p"
     value: {
       description: "Tests running at 720p"
+      proto_field_number: 1
     }
   }
   test_configs: {
     key: "1080p"
     value: {
       description: "Tests running at 1080p"
+      proto_field_number: 2
     }
   }
   test_configs: {
     key: "4k"
     value: {
       description: "Tests running at 4k"
+      proto_field_number: 3
     }
   }
   variants: {
@@ -55,6 +58,7 @@ requirements {
       description: "The number of concurrent sessions"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -63,6 +67,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 4
     }
   }
   specs {
@@ -229,22 +234,22 @@ requirements {
   test_configs: {
     key: "720p"
     value: {
-      id: "720p"
       description: "Tests running at 720p"
+      proto_field_number: 4
     }
   }
   test_configs: {
     key: "1080p"
     value: {
-      id: "1080p"
       description: "Tests running at 1080p"
+      proto_field_number: 5
     }
   }
   test_configs: {
     key: "4k"
     value: {
-      id: "4k"
       description: "Tests running at 4k"
+      proto_field_number: 6
     }
   }
   variants: {
@@ -265,6 +270,7 @@ requirements {
       description: "The number of frames per second that can be decoded concurrently"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -273,6 +279,7 @@ requirements {
       description: "The number of frames dropped per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -281,6 +288,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -454,18 +462,21 @@ requirements {
     key: "720p"
     value: {
       description: "Tests running at 720p"
+      proto_field_number: 7
     }
   }
   test_configs: {
     key: "1080p"
     value: {
       description: "Tests running at 1080p"
+      proto_field_number: 8
     }
   }
   test_configs: {
     key: "4k"
     value: {
       description: "Tests running at 4k"
+      proto_field_number: 9
     }
   }
   variants: {
@@ -486,6 +497,7 @@ requirements {
       description: "The number of concurrent sessions"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -494,6 +506,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 4
     }
   }
   specs {
@@ -660,22 +673,22 @@ requirements {
   test_configs: {
     key: "720p"
     value: {
-      id: "720p"
       description: "Tests running at 720p"
+      proto_field_number: 10
     }
   }
   test_configs: {
     key: "1080p"
     value: {
-      id: "1080p"
       description: "Tests running at 1080p"
+      proto_field_number: 11
     }
   }
   test_configs: {
     key: "4k"
     value: {
-      id: "4k"
       description: "Tests running at 4k"
+      proto_field_number: 12
     }
   }
   variants: {
@@ -690,6 +703,7 @@ requirements {
       description: "The number of frames per second that can be decoded concurrently"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -698,6 +712,7 @@ requirements {
       description: "The number of frames dropped per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -706,6 +721,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -914,18 +930,21 @@ requirements {
     key: "720p"
     value: {
       description: "Tests running at 720p"
+      proto_field_number: 13
     }
   }
   test_configs: {
     key: "1080p"
     value: {
       description: "Tests running at 1080p"
+      proto_field_number: 14
     }
   }
   test_configs: {
     key: "4k"
     value: {
       description: "Tests running at 4k"
+      proto_field_number: 15
     }
   }
   variants: {
@@ -946,6 +965,7 @@ requirements {
       description: "The number of concurrent sessions"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -954,6 +974,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 4
     }
   }
   specs {
@@ -1120,22 +1141,22 @@ requirements {
   test_configs: {
     key: "720p"
     value: {
-      id: "720p"
       description: "Tests running at 720p"
+      proto_field_number: 16
     }
   }
   test_configs: {
     key: "1080p"
     value: {
-      id: "1080p"
       description: "Tests running at 1080p"
+      proto_field_number: 17
     }
   }
   test_configs: {
     key: "4k"
     value: {
-      id: "4k"
       description: "Tests running at 4k"
+      proto_field_number: 18
     }
   }
   variants: {
@@ -1156,6 +1177,7 @@ requirements {
       description: "The number of frames per second that can be decoded concurrently"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -1164,6 +1186,7 @@ requirements {
       description: "The number of frames dropped per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -1172,6 +1195,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -1346,16 +1370,16 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      proto_field_number: 19
     }
   }
-
   measurements: {
     key: "codec_initialization_latency_ms"
     value: {
       description: "Codec initialization latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   variants: {
@@ -1519,7 +1543,7 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      proto_field_number: 20
     }
   }
   measurements: {
@@ -1528,6 +1552,7 @@ requirements {
       description: "Codec initialization latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs: {
@@ -1604,12 +1629,14 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 21
     }
   }
   test_configs: {
     key: "HDR"
     value: {
       description: "Test config for hdr tests"
+      proto_field_number: 22
     }
   }
   measurements: {
@@ -1618,6 +1645,7 @@ requirements {
       description: "Achieved FPS"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -1626,6 +1654,7 @@ requirements {
       description: "Number of frame drops per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -1634,6 +1663,7 @@ requirements {
       description: "Whether the test is HDR or not"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -1721,15 +1751,15 @@ requirements {
   test_configs: {
     key: "1080p"
     value: {
-      id: "1080p"
       description: "Test config for 1080p"
+      proto_field_number: 23
     }
   }
   test_configs: {
     key: "4k"
     value: {
-      id: "4k"
       description: "Test config for 4k"
+      proto_field_number: 24
     }
   }
   measurements: {
@@ -1738,6 +1768,7 @@ requirements {
       description: "Achieved FPS"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -1746,6 +1777,7 @@ requirements {
       description: "Number of frame drops per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -1754,6 +1786,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -1831,6 +1864,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 25
     }
   }
   measurements: {
@@ -1839,6 +1873,7 @@ requirements {
       description: "Are secure hardware decoders supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -1888,7 +1923,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 26
     }
   }
   variants: {
@@ -1903,6 +1939,7 @@ requirements {
       description: "Codec initialization latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -1985,7 +2022,7 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      proto_field_number: 27
     }
   }
   measurements: {
@@ -1994,6 +2031,7 @@ requirements {
       description: "Codec initialization latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2043,7 +2081,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 28
     }
   }
   measurements: {
@@ -2052,6 +2091,7 @@ requirements {
       description: "Is AV1 hardware decoder supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2111,7 +2151,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 29
     }
   }
   measurements: {
@@ -2120,6 +2161,7 @@ requirements {
       description: "Number of 4K60 hardware decoders."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2169,7 +2211,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 30
     }
   }
   measurements: {
@@ -2178,6 +2221,7 @@ requirements {
       description: "Number of 4K60 hardware encoders."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2227,7 +2271,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 31
     }
   }
   measurements: {
@@ -2236,6 +2281,7 @@ requirements {
       description: "has decoder supporting AVIF Baseline Profile supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2272,7 +2318,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 32
     }
   }
   measurements: {
@@ -2281,6 +2328,7 @@ requirements {
       description: "Resolution of the test."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -2289,6 +2337,7 @@ requirements {
       description: "Achieved FPS."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -2297,6 +2346,7 @@ requirements {
       description: "Bitrate of the test."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -2375,6 +2425,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 33
     }
   }
   measurements: {
@@ -2383,6 +2434,7 @@ requirements {
       description: "The number of frames per second that can be decoded concurrently"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -2391,6 +2443,7 @@ requirements {
       description: "The number of frames dropped per second"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -2399,6 +2452,7 @@ requirements {
       description: "The resolution the test was run at"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -2453,7 +2507,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 34
     }
   }
   measurements: {
@@ -2462,6 +2517,7 @@ requirements {
       description: "Is hdr Editing supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2485,7 +2541,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 35
     }
   }
   measurements: {
@@ -2494,6 +2551,7 @@ requirements {
       description: "Is Dynamic Color Aspect supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2517,7 +2575,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 36
     }
   }
   measurements: {
@@ -2526,6 +2585,7 @@ requirements {
       description: "Is Portrait Resolution supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2549,7 +2609,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 37
     }
   }
   measurements: {
@@ -2558,6 +2619,7 @@ requirements {
       description: "Is RGBA_1010102 supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2594,7 +2656,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 38
     }
   }
   measurements: {
@@ -2603,6 +2666,7 @@ requirements {
       description: "Is EXT_YUV_target supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -2639,7 +2703,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 39
     }
   }
   measurements: {
@@ -2648,6 +2713,7 @@ requirements {
       description: "BDRATE-VMAF result"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -2659,6 +2725,7 @@ requirements {
         "the calculation was done."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -2667,6 +2734,7 @@ requirements {
       description: "Codec name"
       measurement_type: MEASUREMENT_TYPE_STRING
       comparison: COMPARISON_INFO_ONLY
+      proto_field_number: 5
     }
   }
   measurements: {
@@ -2675,6 +2743,7 @@ requirements {
       description: "The encoding is allowed to include b-frames."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_INFO_ONLY
+      proto_field_number: 6
     }
   }
   measurements: {
@@ -2685,6 +2754,7 @@ requirements {
         "(for example 1080x1920p)."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_INFO_ONLY
+      proto_field_number: 7
     }
   }
   specs {
@@ -2769,46 +2839,52 @@ requirements {
   test_configs: {
     key: "1080p_30fps"
     value: {
-      id: "1080p_30fps"
       description: "Tests frame drop at 1080p resolution and 30fps"
+      proto_field_number: 40
     }
   }
   test_configs: {
     key: "1080p_60fps"
     value: {
-      id: "1080p_60fps"
       description: "Tests frame drop at 1080p resolution and 60fps"
+      proto_field_number: 41
     }
   }
   test_configs: {
     key: "4k_60fps"
     value: {
-      id: "4k_60fps"
       description: "Tests frame drop at 4k resolution and 60fps"
+      proto_field_number: 42
     }
   }
   measurements: {
     key: "frame_drops_per_30sec"
     value: {
+      id: "frame_drops_per_30sec"
       description: "Frame dropped in 30 seconds"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
     key: "frame_rate"
     value: {
+      id: "frame_rate"
       description: "Frame rate the test was ran at."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_CONFIG
+      proto_field_number: 4
     }
   }
   measurements: {
     key: "resolution"
     value: {
+      id: "resolution"
       description: "Resolution the test was ran at."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -2949,22 +3025,22 @@ requirements {
   test_configs: {
     key: "1080p_30fps"
     value: {
-      id: "1080p_30fps"
       description: "Tests adaptive playback at 1080p resolution and 30fps"
+      proto_field_number: 43
     }
   }
   test_configs: {
     key: "1080p_60fps"
     value: {
-      id: "1080p_60fps"
       description: "Tests adaptive playback at 1080p resolution and 60fps"
+      proto_field_number: 44
     }
   }
   test_configs: {
     key: "4k_60fps"
     value: {
-      id: "4k_60fps"
       description: "Tests adaptive playback at 4k resolution and 60fps"
+      proto_field_number: 45
     }
   }
   measurements: {
@@ -2973,6 +3049,7 @@ requirements {
       description: "Frame dropped in 30 seconds"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -2981,6 +3058,7 @@ requirements {
       description: "Frame rate the test was ran at."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_CONFIG
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -2989,6 +3067,7 @@ requirements {
       description: "Resolution the test was ran at."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CONFIG
+      proto_field_number: 5
     }
   }
   specs {
@@ -3131,6 +3210,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 46
     }
   }
   measurements: {
@@ -3139,6 +3219,7 @@ requirements {
       description: "Native latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -3147,6 +3228,7 @@ requirements {
       description: "Java latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -3254,6 +3336,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 47
     }
   }
   measurements: {
@@ -3262,6 +3345,7 @@ requirements {
       description: "Round-trip audio latency in milliseconds"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -3313,6 +3397,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 48
     }
   }
   measurements: {
@@ -3321,6 +3406,7 @@ requirements {
       description: "Is 24-bit audio supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -3456,6 +3542,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 49
     }
   }
   measurements: {
@@ -3464,6 +3551,7 @@ requirements {
       description: "Number of crypto hw secure all supported."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -3528,6 +3616,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 50
     }
   }
   measurements: {
@@ -3536,6 +3625,7 @@ requirements {
       description: "Is the primary camera available"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -3544,6 +3634,7 @@ requirements {
       description: "Resolution of the primary camera"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -3552,6 +3643,7 @@ requirements {
       description: "Video size requirement satisfied at 4k"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 5
     }
   }
   measurements: {
@@ -3560,6 +3652,7 @@ requirements {
       description: "Video size requirement satisfied at 1080p"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 6
     }
   }
   measurements: {
@@ -3568,6 +3661,7 @@ requirements {
       description: "Video size requirement satisfied at 720p"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 7
     }
   }
   measurements: {
@@ -3576,6 +3670,7 @@ requirements {
       description: "Video fps at 4k"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 8
     }
   }
   measurements: {
@@ -3584,6 +3679,7 @@ requirements {
       description: "Video fps at 1080p"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 9
     }
   }
   measurements: {
@@ -3592,6 +3688,7 @@ requirements {
       description: "Video fps at 720p"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 10
     }
   }
   specs {
@@ -3782,6 +3879,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 51
     }
   }
   measurements: {
@@ -3790,6 +3888,7 @@ requirements {
       description: "Is the primary camera available"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -3798,6 +3897,7 @@ requirements {
       description: "Resolution of the primary camera"
       measurement_type: MEASUREMENT_TYPE_LONG
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -3806,6 +3906,7 @@ requirements {
       description: "Video size requirement satisfied"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 5
     }
   }
   measurements: {
@@ -3814,6 +3915,7 @@ requirements {
       description: "Video fps"
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 6
     }
   }
   specs {
@@ -3980,6 +4082,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 52
     }
   }
   measurements: {
@@ -3988,6 +4091,7 @@ requirements {
       description: "Hardware level of the primary camera"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -3996,6 +4100,7 @@ requirements {
       description: "Hardware level of the secondary camera"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4101,7 +4206,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 53
     }
   }
   measurements: {
@@ -4110,6 +4216,7 @@ requirements {
       description: "Is the rear primary camera timestamp source realtime"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4118,6 +4225,7 @@ requirements {
       description: "Is the front primary camera timestamp source realtime"
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4220,10 +4328,12 @@ requirements {
   id: "7.5/H-1-5"
   name: "Camera Capture Latency"
   description: "Capture latencies"
+  is_non_cts_test: true
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 54
     }
   }
   measurements: {
@@ -4232,6 +4342,7 @@ requirements {
       description: "Capture latency in ms for the rear primary camera"
       measurement_type: MEASUREMENT_TYPE_FLOAT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4240,6 +4351,7 @@ requirements {
       description: "Capture latency in ms for the front primary camera"
       measurement_type: MEASUREMENT_TYPE_FLOAT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4342,10 +4454,12 @@ requirements {
   id: "7.5/H-1-6"
   name: "Camera Startup Latency"
   description: "Startup latencies"
+  is_non_cts_test: true
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 55
     }
   }
   measurements: {
@@ -4354,6 +4468,7 @@ requirements {
       description: "Startup latency in ms for the rear primary camera"
       measurement_type: MEASUREMENT_TYPE_FLOAT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4362,6 +4477,7 @@ requirements {
       description: "Startup latency in ms for the front primary camera"
       measurement_type: MEASUREMENT_TYPE_FLOAT
       comparison: COMPARISON_LESS_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4468,6 +4584,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 56
     }
   }
   measurements: {
@@ -4476,6 +4593,7 @@ requirements {
       description: "Is the rear primary camera RAW capability supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -4538,7 +4656,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 57
     }
   }
   measurements: {
@@ -4547,6 +4666,7 @@ requirements {
       description: "Is the rear primary camera slow motion supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -4596,7 +4716,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 58
     }
   }
   measurements: {
@@ -4605,6 +4726,7 @@ requirements {
       description: "Zoom ratio for rear primary camera is met"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4613,6 +4735,7 @@ requirements {
       description: "Zoom ratio for front primary camera is met"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4680,7 +4803,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 59
     }
   }
   measurements: {
@@ -4689,6 +4813,7 @@ requirements {
       description: "Is the rear primary camera concurrent front-back streaming supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -4738,7 +4863,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 60
     }
   }
   measurements: {
@@ -4747,6 +4873,7 @@ requirements {
       description: "Is the rear primary camera preview stabilization supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -4796,7 +4923,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 61
     }
   }
   measurements: {
@@ -4805,6 +4933,7 @@ requirements {
       description: "Is the rear primary camera logical multi-camera supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -4854,7 +4983,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 62
     }
   }
   measurements: {
@@ -4863,6 +4993,7 @@ requirements {
       description: "Is the rear primary camera stream use case supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4871,6 +5002,7 @@ requirements {
       description: "Is the front primary camera stream use case supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -4938,7 +5070,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 63
     }
   }
   measurements: {
@@ -4947,6 +5080,7 @@ requirements {
       description: "Is the rear Camera2 night mode extension supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -4955,6 +5089,7 @@ requirements {
       description: "Is the front Camera2 night mode extension supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   measurements: {
@@ -4963,6 +5098,7 @@ requirements {
       description: "Is the rear CameraX night mode extension supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 5
     }
   }
   measurements: {
@@ -4971,6 +5107,7 @@ requirements {
       description: "Is the front CameraX night mode extension supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 6
     }
   }
   specs {
@@ -5043,7 +5180,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 64
     }
   }
   measurements: {
@@ -5052,6 +5190,7 @@ requirements {
       description: "Is the rear primary camera 10 bit dynamic range supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -5060,6 +5199,7 @@ requirements {
       description: "Is the front primary camera 10 bit dynamic range supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5108,7 +5248,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 65
     }
   }
   measurements: {
@@ -5117,6 +5258,7 @@ requirements {
       description: "Is the rear primary camera face detection supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -5125,6 +5267,7 @@ requirements {
       description: "Is the front primary camera face detection supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5173,7 +5316,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 66
     }
   }
   measurements: {
@@ -5182,6 +5326,7 @@ requirements {
       description: "Is the rear primary camera JPEG R supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -5190,6 +5335,7 @@ requirements {
       description: "Is the front primary camera JPEG R supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5219,7 +5365,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 67
     }
   }
   measurements: {
@@ -5228,6 +5375,7 @@ requirements {
       description: "Is the rear primary camera stabilization supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5248,10 +5396,12 @@ requirements {
   id: "7.5/H-1-20"
   name: "Camera Ultra HDR"
   description: "Ultra HDR support for primary camera"
+  is_non_cts_test: true
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 68
     }
   }
   measurements: {
@@ -5260,6 +5410,7 @@ requirements {
       description: "Is the rear primary camera Ultra HDR supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -5268,6 +5419,7 @@ requirements {
       description: "Is the front primary camera Ultra HDR supported"
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5297,7 +5449,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 69
     }
   }
   measurements {
@@ -5307,6 +5460,7 @@ requirements {
       description: "The screen resolution width in pixels (longer of the two dimensions)."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements {
@@ -5316,6 +5470,7 @@ requirements {
       description: "The screen resolution height in pixels (shorter of the two dimensions)."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5345,7 +5500,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 70
     }
   }
   measurements {
@@ -5355,6 +5511,7 @@ requirements {
       description: "The screen resolution width in pixels (longer of the two dimensions)."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   measurements {
@@ -5364,6 +5521,7 @@ requirements {
       description: "The screen resolution height in pixels (shorter of the two dimensions)."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -5450,7 +5608,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 71
     }
   }
   measurements {
@@ -5460,6 +5619,7 @@ requirements {
       description: "The screen display density in pixels per square inch."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5483,7 +5643,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 72
     }
   }
   measurements {
@@ -5493,6 +5654,7 @@ requirements {
       description: "The screen display density in pixels per square inch."
       measurement_type: MEASUREMENT_TYPE_INT
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5555,29 +5717,30 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 73
     }
   }
-  measurements: [
-    {
-      key: "is_hdr"
-      value: {
-        id: "is_hdr"
-        description: "Does the display support HDR"
-        measurement_type: MEASUREMENT_TYPE_BOOL
-        comparison: COMPARISON_EQUAL
-      }
-    },
-    {
-      key: "display_luminance_nits"
-      value: {
-        id: "display_luminance_nits"
-        description: "The display luminance in nits."
-        measurement_type: MEASUREMENT_TYPE_DOUBLE
-        comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-      }
+  measurements: {
+    key: "is_hdr"
+    value: {
+      id: "is_hdr"
+      description: "Does the display support HDR"
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
-  ]
+  }
+  measurements: {
+    key: "display_luminance_nits"
+    value: {
+      id: "display_luminance_nits"
+      description: "The display luminance in nits."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 4
+    }
+  }
   specs {
     key: 35
     value {
@@ -5609,7 +5772,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 74
     }
   }
   measurements: {
@@ -5618,6 +5782,7 @@ requirements {
       description: "Physical memory in MiB as reported by ActivityManager.MemeryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
+      proto_field_number: 3
     }
   }
   specs {
@@ -5641,7 +5806,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 75
     }
   }
   measurements: {
@@ -5650,6 +5816,7 @@ requirements {
       description: "Physical memory in MiB as reported by ActivityManager.MemoryInfo.totalMemory."
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
       measurement_type: MEASUREMENT_TYPE_LONG
+      proto_field_number: 3
     }
   }
   specs {
@@ -5712,7 +5879,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 76
     }
   }
   measurements: {
@@ -5722,6 +5890,7 @@ requirements {
       description: "Sequential write performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5784,7 +5953,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 77
     }
   }
   measurements: {
@@ -5794,6 +5964,7 @@ requirements {
       description: "Sequential write performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5817,7 +5988,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 78
     }
   }
   measurements: {
@@ -5827,6 +5999,7 @@ requirements {
       description: "Random write performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5889,7 +6062,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 79
     }
   }
   measurements: {
@@ -5899,6 +6073,7 @@ requirements {
       description: "Random write performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5922,7 +6097,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 80
     }
   }
   measurements: {
@@ -5932,6 +6108,7 @@ requirements {
       description: "Sequential read performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -5994,7 +6171,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 81
     }
   }
   measurements: {
@@ -6004,6 +6182,7 @@ requirements {
       description: "Sequential read performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -6027,7 +6206,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 82
     }
   }
   measurements: {
@@ -6037,6 +6217,7 @@ requirements {
       description: "Random read performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -6099,7 +6280,8 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 83
     }
   }
   measurements: {
@@ -6109,6 +6291,7 @@ requirements {
       description: "Random read performance in MB per second."
       measurement_type: MEASUREMENT_TYPE_DOUBLE
       comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 3
     }
   }
   specs {
@@ -6137,6 +6320,7 @@ requirements {
     key: ""
     value: {
       description: "Default test config"
+      proto_field_number: 84
     }
   }
   measurements: {
@@ -6146,6 +6330,7 @@ requirements {
       description: "Is EGL_IMG_context_priority supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
   }
   measurements: {
@@ -6155,6 +6340,7 @@ requirements {
       description: "Is EGL_EXT_protected_content supported."
       measurement_type: MEASUREMENT_TYPE_BOOL
       comparison: COMPARISON_EQUAL
+      proto_field_number: 4
     }
   }
   specs {
@@ -6184,35 +6370,37 @@ requirements {
   test_configs: {
     key: ""
     value: {
-      id: ""
+      description: "Default test config"
+      proto_field_number: 85
     }
   }
-  measurements: [
-    {
-      key: "vk_ext_global_priority"
-      value: {
-        description: "Is VK_EXT_global_priority supported."
-        measurement_type: MEASUREMENT_TYPE_BOOL
-        comparison: COMPARISON_EQUAL
-      }
-    },
-    {
-      key: "vk_physical_device_protected_memory"
-      value: {
-        description: "Is VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory supported."
-        measurement_type: MEASUREMENT_TYPE_BOOL
-        comparison: COMPARISON_EQUAL
-      }
-    },
-    {
-      key: "vk_non_cpu_device_count"
-      value: {
-        description: "The count of non VK_PHYSICAL_DEVICE_TYPE_CPU Vulcan Devices."
-        measurement_type: MEASUREMENT_TYPE_INT
-        comparison: COMPARISON_GREATER_THAN_OR_EQUAL
-      }
+  measurements: {
+    key: "vk_ext_global_priority"
+    value: {
+      description: "Is VK_EXT_global_priority supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+      proto_field_number: 3
     }
-  ]
+  }
+  measurements: {
+    key: "vk_physical_device_protected_memory"
+    value: {
+      description: "Is VkPhysicalDeviceProtectedMemoryFeatures.protectedMemory supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+      proto_field_number: 4
+    }
+  }
+  measurements: {
+    key: "vk_non_cpu_device_count"
+    value: {
+      description: "The count of non VK_PHYSICAL_DEVICE_TYPE_CPU Vulcan Devices."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+      proto_field_number: 5
+    }
+  }
   specs {
     key: 35
     value {
