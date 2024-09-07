@@ -326,4 +326,18 @@
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runOnDeviceClassifier_usingGetMethodToCreateManager" />
     <option name="compatibility:exclude-filter" value="CtsAdExtServicesEndToEndTests com.android.adservices.tests.cts.topics.TopicsManagerTest#testTopicsManager_runDefaultClassifier" />
+    <!-- b/357552749 -->
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlViewHostTests#testEmbeddedViewReceivesRawInputCoordinatesInDisplaySpace" />
+
+    <!-- b/357552752 -->
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceInput android.server.wm.input.WallpaperWindowInputTests#testShowWallpaper_withTouchEnabled" />
+
+    <!-- b/355285596 -->
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[instant] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:1:TENT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:2:HALF_FOLDED] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:3:OPEN] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
 </configuration>
