@@ -3882,7 +3882,8 @@ public class ItsService extends Service implements SensorEventListener {
 
             // Send a still capture request
             CaptureRequest.Builder stillCaptureRequest = stillCaptureRequests.get(0);
-            Logt.i(TAG, "Taking still capture with ON_AUTO_FLASH.");
+            int aeMode = stillCaptureRequest.get(CaptureRequest.CONTROL_AE_MODE);
+            Logt.i(TAG, String.format("Taking still capture with AE_MODE: %d", aeMode));
             stillCaptureRequest.addTarget(mOutputImageReaders[0].getSurface());
             mSession.capture(stillCaptureRequest.build(), mCaptureResultListener, mResultHandler);
             mCountCallbacksRemaining.set(1);
@@ -4911,6 +4912,17 @@ public class ItsService extends Service implements SensorEventListener {
     class RecordingResultListener extends CaptureResultListener {
         private Map<Long, RecordingResult> mTimestampToCaptureResultsMap =
                 new ConcurrentHashMap<>();
+
+        /**
+         * Time to wait for autofocus to converge.
+         */
+        private static final long PREVIEW_AUTOFOCUS_TIMEOUT_MS = 1000;
+
+        /**
+         * {@link ConditionVariable} to open when autofocus has converged.
+         */
+        private ConditionVariable mAfConverged = new ConditionVariable();
+
         @Override
         public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
                 long timestamp, long frameNumber) {
@@ -4927,6 +4939,7 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, buildLogString(result));
 
                 RecordingResult partialResult = new RecordingResult();
+                int afState = result.get(CaptureResult.CONTROL_AF_STATE);
                 Logt.i(TAG, "TotalCaptureResult # " + mTimestampToCaptureResultsMap.size()
                         + " timestamp = " + result.get(CaptureResult.SENSOR_TIMESTAMP)
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
@@ -4934,7 +4947,7 @@ public class ItsService extends Service implements SensorEventListener {
                         + " phyid = "
                         + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
                         + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
-                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AF_STATE = " + afState
                         + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
@@ -4942,6 +4955,11 @@ public class ItsService extends Service implements SensorEventListener {
                     partialResult.addVKeys(result);
                 }
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);
+
+                if (afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED ||
+                    afState == CaptureResult.CONTROL_AF_STATE_PASSIVE_FOCUSED) {
+                    mAfConverged.open();
+                }
             } catch (ItsException e) {
                 throw new ItsRuntimeException("Error handling capture result", e);
             }
@@ -4958,6 +4976,14 @@ public class ItsService extends Service implements SensorEventListener {
          */
         public Map<Long, RecordingResult> getCaptureResultsMap() {
             return mTimestampToCaptureResultsMap;
+        }
+
+        /**
+         * Blocks until the next {@link CaptureResult} that shows AF convergence.
+         */
+        public boolean waitForAfConvergence() throws InterruptedException {
+            mAfConverged.close();
+            return mAfConverged.block(PREVIEW_AUTOFOCUS_TIMEOUT_MS);
         }
     }
 
