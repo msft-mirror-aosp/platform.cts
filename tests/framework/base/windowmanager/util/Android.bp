@@ -49,6 +49,7 @@ java_test_helper_library {
         "androidx.test.rules",
         "hamcrest-library",
         "CtsMockInputMethodLib",
+        "com.android.window.flags.window-aconfig-java",
     ],
 
     sdk_version: "test_current",

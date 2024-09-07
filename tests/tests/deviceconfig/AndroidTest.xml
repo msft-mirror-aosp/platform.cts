@@ -20,6 +20,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="mainline-param" value="com.google.android.configinfrastructure.apex" />
     <target_preparer class="com.android.tradefed.targetprep.RebootTargetPreparer">
         <option name="pre-reboot" value="false" />

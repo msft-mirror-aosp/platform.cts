@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_onboarding",
 }
 
 java_test_host {
@@ -24,7 +25,6 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-permission",
-        "mcts-permission",
         "sts",
     ],
     libs: [
@@ -37,9 +37,36 @@ java_test_host {
         "platformprotos",
     ],
     data: [
+        ":AdbBackupApp",
+        ":BackupAllowedApp",
+        ":BackupNotAllowedApp",
+        ":CtsAutoRestoreApp",
         ":CtsBackupOtherSoundsSettingsApp",
+        ":CtsBackupRestoreAnyVersionApp",
+        ":CtsBackupRestoreAnyVersionAppUpdate",
+        ":CtsBackupRestoreAnyVersionNoRestoreApp",
+        ":CtsBackupSuccessNotificationApp",
+        ":CtsBackupSyncAdapterSettingsApp",
+        ":CtsBackupTransportApp",
+        ":CtsDataExtractionRulesApp",
+        ":CtsDataExtractionRulesApplicabilityApp",
+        ":CtsEncryptionAttributeApp",
+        ":CtsFullBackupContentApp",
         ":CtsHostsideTestsFullBackupApp",
+        ":CtsKeyValueBackupRestoreApp",
+        ":CtsPreservedSettingsApp",
+        ":CtsProfileFullBackupApp",
         ":CtsProfileKeyValueApp",
+        ":CtsProfileSerialNumberApp",
+        ":CtsRestoreSessionApp",
+        ":CtsRestoreSessionApp1",
+        ":CtsRestoreSessionApp2",
+        ":CtsSharedPreferencesRestoreApp",
+        ":DebuggableApp",
+        ":FullBackupOnlyFalseNoAgentApp",
+        ":FullBackupOnlyFalseWithAgentApp",
+        ":FullBackupOnlyTrueWithAgentApp",
+        ":NonDebuggableApp",
     ],
     per_testcase_directory: true,
 }

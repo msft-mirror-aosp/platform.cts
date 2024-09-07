@@ -33,7 +33,6 @@ import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.Service;
 import android.app.WallpaperManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -46,8 +45,10 @@ import android.net.TrafficStats;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.IBinder;
+import android.os.Process;
 import android.os.RemoteException;
 import android.os.StrictMode;
+import android.os.UserManager;
 import android.os.StrictMode.ThreadPolicy.Builder;
 import android.os.StrictMode.ViolationInfo;
 import android.os.strictmode.CleartextNetworkViolation;
@@ -66,6 +67,7 @@ import android.os.strictmode.UntaggedSocketViolation;
 import android.os.strictmode.Violation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 import android.system.Os;
 import android.system.OsConstants;
@@ -86,7 +88,6 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -116,16 +117,11 @@ import java.util.zip.GZIPOutputStream;
 
 /** Tests for {@link StrictMode} */
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class StrictModeTest {
     private static final String TAG = "StrictModeTest";
     private static final String REMOTE_SERVICE_ACTION = "android.app.REMOTESERVICE";
     private static final String UNSAFE_INTENT_LAUNCH = "UnsafeIntentLaunch";
-    private static final String UNSAFE_IMPLICIT_INTENT_EXPORTED_ACTIVITY_LAUNCH =
-            "android.os.cts.INTERNAL_IMPLICIT_INTENT_LAUNCH_EXPORTED_ACTIVITY";
-    private static final String UNSAFE_IMPLICIT_INTENT_NON_EXPORTED_RECEIVER_LAUNCH =
-            "android.os.cts.INTERNAL_IMPLICIT_INTENT_LAUNCH_NON_EXPORTED_RECEIVER";
-    private static final String UNSAFE_IMPLICIT_INTENT_EXPORTED_RECEIVER_LAUNCH =
-            "android.os.cts.INTERNAL_IMPLICIT_INTENT_LAUNCH_EXPORTED_RECEIVER";
 
     private static final int VIOLATION_TIMEOUT_IN_SECOND = 5;
     private static final int NO_VIOLATION_TIMEOUT_IN_SECOND = 2;
@@ -138,22 +134,8 @@ public class StrictModeTest {
             new GestureDetector.SimpleOnGestureListener();
     private static final String WM_CLASS_NAME = WindowManager.class.getSimpleName();
 
-    private Context getContext() {
+    private static Context getContext() {
         return ApplicationProvider.getApplicationContext();
-    }
-
-    public static final class InternalImplicitIntentLaunchNonExportedReceiver
-            extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-        }
-    }
-
-    public static final class InternalImplicitIntentLaunchExportedReceiver
-            extends BroadcastReceiver {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-        }
     }
 
     @Before
@@ -868,9 +850,9 @@ public class StrictModeTest {
     @Presubmit
     @ApiTest(apis = {
             "android.content.Context#createWindowContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -902,10 +884,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.app.Activity",
-            "android.content.Context#getSystemSrvice",
+            "android.app.Activity#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -942,9 +924,9 @@ public class StrictModeTest {
             "android.content.Context#createWindowContext",
             "android.content.Context#createConfigurationContext",
             "android.content.Context#createAttributionContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1000,9 +982,9 @@ public class StrictModeTest {
     @ApiTest(apis = {
             "android.content.Context#createWindowContext",
             "android.content.Context#createDisplayContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1043,9 +1025,9 @@ public class StrictModeTest {
     @Presubmit
     @ApiTest(apis = {
             "android.content.Context#createConfigurationContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1088,9 +1070,9 @@ public class StrictModeTest {
     @ApiTest(apis = {
             "android.content.Context#createConfigurationContext",
             "android.content.Context#createDisplayContext",
-            "android.content.Context#getSystemSrvice",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1133,10 +1115,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.app.Service",
-            "android.content.Context#getSystemSrvice",
+            "android.app.Service#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
     })
     @Test
@@ -1181,10 +1163,10 @@ public class StrictModeTest {
 
     @Presubmit
     @ApiTest(apis = {
-            "android.window.WindowProviderService",
-            "android.content.Context#getSystemSrvice",
+            "android.window.WindowProviderService#getSystemService",
+            "android.content.Context#getSystemService",
             "android.view.ViewConfiguration#get",
-            "android.view.GestureDetector",
+            "android.view.GestureDetector#GestureDetector",
             "android.app.WallpaperManager#getDesiredMinimumWidth",
             "android.view.WindowManager#addView",
     })
@@ -1248,6 +1230,10 @@ public class StrictModeTest {
      * instant mode.
      */
     private boolean isWallpaperSupported() {
+        if (Process.isSdkSandbox()) {
+            // SDK Sandbox does not have access to WallpaperManager.
+            return false;
+        }
         final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getContext());
         return wallpaperManager != null && wallpaperManager.isWallpaperSupported();
     }
@@ -1461,50 +1447,6 @@ public class StrictModeTest {
         assertNoViolation(() -> context.startActivity(intent));
     }
 
-    @Test
-    public void testUnsafeImplicitIntentLaunch_InternalExportedActivity_NoViolation()
-            throws Exception {
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectUnsafeIntentLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        Intent intent = new Intent(UNSAFE_IMPLICIT_INTENT_EXPORTED_ACTIVITY_LAUNCH);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-        assertNoViolation(() -> context.startActivity(intent));
-    }
-
-    @Test
-    @Ignore // ToDo: b/274909194
-    public void testUnsafeImplicitIntentLaunch_InternalNonExportedReceiver_ThrowsViolation()
-            throws Exception {
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectUnsafeIntentLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        Intent intent = new Intent(UNSAFE_IMPLICIT_INTENT_NON_EXPORTED_RECEIVER_LAUNCH);
-
-        assertViolation(UNSAFE_INTENT_LAUNCH, () -> context.sendBroadcast(intent));
-    }
-
-    @Test
-    public void testUnsafeImplicitIntentLaunch_InternalExportedReceiver_NoViolation()
-            throws Exception {
-        StrictMode.setVmPolicy(
-                new StrictMode.VmPolicy.Builder()
-                        .detectUnsafeIntentLaunch()
-                        .penaltyLog()
-                        .build());
-        Context context = getContext();
-        Intent intent = new Intent(UNSAFE_IMPLICIT_INTENT_EXPORTED_RECEIVER_LAUNCH);
-
-        assertNoViolation(() -> context.sendBroadcast(intent));
-    }
-
     private Context createWindowContext() {
         final Display display = getContext().getSystemService(DisplayManager.class)
                 .getDisplay(DEFAULT_DISPLAY);
@@ -1593,6 +1535,8 @@ public class StrictModeTest {
 
     public static class TestWindowService extends WindowProviderService {
         private final TestToken mToken = new TestToken();
+        private final int mDisplayId = getContext().getSystemService(UserManager.class)
+                .getMainDisplayIdAssignedToUser();
 
         @Override
         public IBinder onBind(Intent intent) {
@@ -1602,6 +1546,11 @@ public class StrictModeTest {
         @Override
         public int getWindowType() {
             return TYPE_APPLICATION_OVERLAY;
+        }
+
+        @Override
+        public int getInitialDisplayId() {
+            return mDisplayId;
         }
 
         public class TestToken extends Binder {

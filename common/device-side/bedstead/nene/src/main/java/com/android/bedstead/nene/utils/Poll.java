@@ -21,6 +21,8 @@ import android.util.Log;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.exceptions.PollValueFailedException;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
@@ -98,6 +100,7 @@ public final class Poll<E> {
     }
 
     /** Expect the value to be null. */
+    @CanIgnoreReturnValue
     public Poll<E> toBeNull() {
         toMeet(Objects::isNull);
         softErrorOnFail((valueName, value) ->
@@ -106,6 +109,7 @@ public final class Poll<E> {
     }
 
     /** Expect the value to not be null. */
+    @CanIgnoreReturnValue
     public Poll<E> toNotBeNull() {
         toMeet(Objects::nonNull);
         softErrorOnFail((valueName, value) ->
@@ -114,6 +118,7 @@ public final class Poll<E> {
     }
 
     /** Expect the value to be equal to {@code other}. */
+    @CanIgnoreReturnValue
     public Poll<E> toBeEqualTo(E other) {
         toMeet(v -> Objects.equals(v, other));
         softErrorOnFail((valueName, value) ->
@@ -122,6 +127,7 @@ public final class Poll<E> {
     }
 
     /** Expect the value to not be equal to {@code other}. */
+    @CanIgnoreReturnValue
     public Poll<E> toNotBeEqualTo(E other) {
         toMeet(v -> !Objects.equals(v, other));
         softErrorOnFail((valueName, value) ->
@@ -136,12 +142,14 @@ public final class Poll<E> {
      * to not have met the requirements. If true is returned then the value will be considered to
      * have met the requirements.
      */
+    @CanIgnoreReturnValue
     public Poll<E> toMeet(ValueChecker<E> checker) {
         mChecker = checker;
         return this;
     }
 
     /** Throw an exception on failure instead of returning the incorrect value. */
+    @CanIgnoreReturnValue
     public Poll<E> errorOnFail() {
         mErrorOnFail = true;
         return this;
@@ -154,6 +162,7 @@ public final class Poll<E> {
      * the latest value in the error message (and have it auto-provided) use
      * {@link #errorOnFail(String)}.
      */
+    @CanIgnoreReturnValue
     public Poll<E> errorOnFail(Function<E, String> errorSupplier) {
         softErrorOnFail((vn, v) -> errorSupplier.apply(v));
         mErrorOnFail = true;
@@ -165,6 +174,7 @@ public final class Poll<E> {
      *
      * <p>The {@code error} will be used as the failure message, with the latest value added.
      */
+    @CanIgnoreReturnValue
     public Poll<E> errorOnFail(String error) {
         softErrorOnFail((vn, v) -> error + ". " + vn + " was " + v);
         mErrorOnFail = true;
@@ -176,6 +186,7 @@ public final class Poll<E> {
     }
 
     /** Change the default timeout before the check is considered failed (default 30 seconds). */
+    @CanIgnoreReturnValue
     public Poll<E> timeout(Duration timeout) {
         mTimeout = timeout;
         return this;
@@ -190,6 +201,7 @@ public final class Poll<E> {
      * <p>By default, the most recent value will be returned even after timeout.
      * See {@link #errorOnFail()} to change this behavior.
      */
+    @CanIgnoreReturnValue
     public E await() {
         Instant startTime = Instant.now();
         Instant endTime = startTime.plus(mTimeout);
@@ -263,6 +275,7 @@ public final class Poll<E> {
      * <p>If true is returned, then no more retries will be attempted, otherwise retries will
      * continue until timeout.
      */
+    @CanIgnoreReturnValue
     public Poll<E> terminalValue(Function<E, Boolean> terminalChecker) {
         mTerminalValueChecker = terminalChecker;
         return this;
@@ -277,6 +290,7 @@ public final class Poll<E> {
      * <p>If true is returned, then no more retries will be attempted, otherwise retries will
      * continue until timeout.
      */
+    @CanIgnoreReturnValue
     public Poll<E> terminalException(Function<Throwable, Boolean> terminalChecker) {
         mTerminalExceptionChecker = terminalChecker;
         return this;
@@ -291,6 +305,7 @@ public final class Poll<E> {
      * <p>If true is returned, then no more retries will be attempted, otherwise retries will
      * continue until timeout.
      */
+    @CanIgnoreReturnValue
     public Poll<E> terminal(Supplier<Boolean> terminalChecker) {
         terminalValue((e) -> terminalChecker.get());
         terminalException((e) -> terminalChecker.get());

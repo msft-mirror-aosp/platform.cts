@@ -64,6 +64,14 @@ public final class MainActivity extends Activity {
         return getIntent().getStringExtra(key);
     }
 
+    private Integer getIntegerIntentExtra(String key) {
+        String value = getIntent().getStringExtra(key);
+        if (value != null) {
+            return Integer.parseInt(value);
+        }
+        return null;
+    }
+
     private boolean getBooleanIntentExtra(String key) {
         if (getPackageManager().isInstantApp()) {
             final Uri uri = getIntent().getData();
@@ -137,10 +145,16 @@ public final class MainActivity extends Activity {
                 mEditor.setHandwritingDelegateFlags(
                         InputMethodManager.HANDWRITING_DELEGATE_FLAG_HOME_DELEGATOR_ALLOWED);
             }
+            Integer softInputMode = getIntegerIntentExtra(
+                    MockTestActivityUtil.EXTRA_SOFT_INPUT_MODE);
+            if (softInputMode != null) {
+                getWindow().setSoftInputMode(softInputMode);
+            }
             mEditor.requestFocus();
             layout.addView(mEditor);
         }
 
+        layout.setFitsSystemWindows(true);
         setContentView(layout);
     }
 

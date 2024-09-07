@@ -104,9 +104,9 @@ public class EnsureBarContrastTest extends WindowManagerTestBase {
                         hasNoScrim(lightBars));
             } else {
                 // Bar is NOT tap through, may therefore have a scrim.
+                assertThat(bar.name + "Bar: Ensure contrast was requested, therefore contrast "
+                        + "must be ensured", bitmap, hasContrast(lightBars));
             }
-            assertThat(bar.name + "Bar: Ensure contrast was requested, therefore contrast " +
-                    "must be ensured", bitmap, hasContrast(lightBars));
         }
     }
 

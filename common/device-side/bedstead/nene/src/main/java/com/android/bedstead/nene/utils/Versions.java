@@ -18,8 +18,6 @@ package com.android.bedstead.nene.utils;
 
 import static android.os.Build.VERSION.CODENAME;
 
-import static com.android.compatibility.common.util.VersionCodes.R;
-
 import android.os.Build;
 import android.os.Build.VERSION;
 import android.util.Log;
@@ -36,7 +34,8 @@ public final class Versions {
     public static final int R = Build.VERSION_CODES.R;
     public static final int T = Build.VERSION_CODES.TIRAMISU;
     public static final int U = Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-    public static final int V = Build.VERSION_CODES.CUR_DEVELOPMENT;
+    public static final int V = Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    public static final int W = Build.VERSION_CODES.CUR_DEVELOPMENT;
 
     /** Any version. */
     public static final int ANY = -1;

@@ -72,6 +72,9 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
+        // TODO(b/354950619): Re-enable tests when assistant is supported on non-default displays.
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Assistant is not supported for visible background users");
         try (final AssistantSession assistantSession = new AssistantSession()) {
             assistantSession.setVoiceInteractionService(ASSISTANT_VOICE_INTERACTION_SERVICE);
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK);

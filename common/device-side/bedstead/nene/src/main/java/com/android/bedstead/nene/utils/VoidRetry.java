@@ -18,6 +18,8 @@ package com.android.bedstead.nene.utils;
 
 import com.android.bedstead.nene.exceptions.NeneException;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -36,6 +38,7 @@ public final class VoidRetry {
     }
 
     /** Change the default timeout before the check is considered failed (default 30 seconds). */
+    @CanIgnoreReturnValue
     public VoidRetry timeout(Duration timeout) {
         mRetry.timeout(timeout);
         return this;
@@ -49,6 +52,7 @@ public final class VoidRetry {
      * <p>If true is returned, then no more retries will be attempted, otherwise retries will
      * continue until timeout.
      */
+    @CanIgnoreReturnValue
     public VoidRetry terminalException(Function<Throwable, Boolean> terminalChecker) {
         mRetry.terminalException(terminalChecker);
         return this;

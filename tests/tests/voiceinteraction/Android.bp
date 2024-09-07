@@ -35,6 +35,7 @@ android_test {
         "Nene",
         "ActivityContext",
         "TestApp",
+        "android.multiuser.flags-aconfig-java",
     ],
     aidl: {
         local_include_dirs: [

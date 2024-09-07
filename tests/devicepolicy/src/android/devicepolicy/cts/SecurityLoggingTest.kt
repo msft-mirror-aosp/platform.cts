@@ -17,31 +17,41 @@ package android.devicepolicy.cts
 
 import android.app.admin.DevicePolicyManager
 import android.app.admin.SecurityLog
+import android.app.admin.SecurityLog.SecurityEvent
 import android.app.admin.flags.Flags
+import android.os.SystemClock
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasPermission
+import com.android.bedstead.permissions.annotations.EnsureHasPermission
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasProfileOwner
+import com.android.bedstead.harrier.annotations.SlowApiTest
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner
 import com.android.bedstead.harrier.policies.GlobalSecurityLogging
 import com.android.bedstead.harrier.policies.SecurityLogging
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.permissions.CommonPermissions
+import com.android.bedstead.permissions.CommonPermissions
 import com.android.bedstead.nene.users.UserReference
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.BlockingCallback
-import com.android.eventlib.truth.EventLogsSubject
-import com.google.common.truth.Truth
+import com.android.eventlib.truth.EventLogsSubject.assertThat
+import com.google.common.truth.Truth.assertThat
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.util.concurrent.BlockingQueue
 import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import java.util.function.Consumer
 import org.junit.ClassRule
 import org.junit.Rule
@@ -77,7 +87,7 @@ class SecurityLoggingTest {
                 deviceState.dpc().componentName(),
                 true
             )
-            Truth.assertThat(
+            assertThat(
                 deviceState.dpc().devicePolicyManager().isSecurityLoggingEnabled(
                     deviceState.dpc().componentName()
                 )
@@ -104,7 +114,7 @@ class SecurityLoggingTest {
                 deviceState.dpc().componentName(),
                 false
             )
-            Truth.assertThat(
+            assertThat(
                 deviceState.dpc().devicePolicyManager().isSecurityLoggingEnabled(
                     deviceState.dpc().componentName()
                 )
@@ -155,11 +165,11 @@ class SecurityLoggingTest {
             dpc.devicePolicyManager().setSecurityLoggingEnabled(dpc.componentName(), true)
 
             TestApis.devicePolicy().forceSecurityLogs()
-            EventLogsSubject.assertThat(dpc.events().securityLogsAvailable()).eventOccurred()
+            assertThat(dpc.events().securityLogsAvailable()).eventOccurred()
 
             val logs = dpc.devicePolicyManager().retrieveSecurityLogs(dpc.componentName())
-            Truth.assertThat(logs).isNotNull()
-            Truth.assertThat(logs.stream().filter { e -> e.tag == SecurityLog.TAG_LOGGING_STARTED })
+            assertThat(logs).isNotNull()
+            assertThat(logs.stream().filter { e -> e.tag == SecurityLog.TAG_LOGGING_STARTED })
                     .isNotNull()
         } finally {
             dpc.devicePolicyManager().setSecurityLoggingEnabled(dpc.componentName(), false)
@@ -393,10 +403,27 @@ class SecurityLoggingTest {
 
         localDpm.setAuditLogEnabled(true)
         try {
-            Truth.assertThat(localDpm.isAuditLogEnabled()).isTrue()
+            assertThat(localDpm.isAuditLogEnabled()).isTrue()
         } finally {
             localDpm.setAuditLogEnabled(false)
         }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#isAuditLogEnabled"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEnabled_true_false_isFalse() {
+        ensureNoAdditionalFullUsers()
+        localDpm.setAuditLogEnabled(true)
+
+        localDpm.setAuditLogEnabled(false)
+
+        assertThat(localDpm.isAuditLogEnabled()).isFalse()
     }
 
     @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
@@ -430,20 +457,334 @@ class SecurityLoggingTest {
     )
     @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
     @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
-    fun setAuditLogEventCallback_callbackInvoked() {
+    fun setAuditLogEventCallback_callbackInvokedInitially() {
         ensureNoAdditionalFullUsers()
 
         localDpm.setAuditLogEnabled(true)
         try {
             val callback = SecurityEventCallback()
-
             localDpm.setAuditLogEventCallback(executor, callback)
 
-            Truth.assertThat(callback.await().stream().filter { e ->
+            val events = callback.await()
+            assertThat(events.stream().filter { e ->
                 e.tag == SecurityLog.TAG_LOGGING_STARTED
             }).isNotNull()
         } finally {
             localDpm.setAuditLogEnabled(false)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEventCallback_callbackInvokedFurther() {
+        ensureNoAdditionalFullUsers()
+
+        localDpm.setAuditLogEnabled(true)
+        try {
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+
+            TestApis.devicePolicy().forceSecurityLogs()
+
+            // Wait for any events.
+            assertThat(callback.poll({true})).isNotNull()
+
+            val eventPredicate = makeUniqueEvent()
+
+            assertThat(callback.poll(eventPredicate)).isNotNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+        }
+    }
+
+    @SlowApiTest("callback is invoked once a minute, this test waits for 2m to ensure it is not.")
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEventCallback_auditLoggingDisabled_notInvoked() {
+        ensureNoAdditionalFullUsers()
+
+        localDpm.setAuditLogEnabled(true)
+        try {
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+
+            // Disable audit logging
+            localDpm.setAuditLogEnabled(false)
+
+            // Generate new event
+            val eventPredicate = makeUniqueEvent()
+
+            // We can't force logs since logging is not enabled, will need longer timeout.
+            assertThat(callback.poll(eventPredicate, TimeUnit.MINUTES.toMillis(2))).isNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+        }
+    }
+
+    @SlowApiTest("Test needs to wait to ensure the callback is not invoked.")
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEventCallback_auditLoggingDisabled_withSecurityLoggingEnabled_notInvoked() {
+        ensureNoAdditionalFullUsers()
+
+        val dpc = deviceState.dpc()
+        val remoteDpm = dpc.devicePolicyManager()
+        val who = dpc.componentName()
+
+        localDpm.setAuditLogEnabled(true)
+        try {
+            remoteDpm.setSecurityLoggingEnabled(who, true)
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+
+            // Disable audit logging
+            localDpm.setAuditLogEnabled(false)
+
+            // Generate new event
+            val eventPredicate = makeUniqueEvent()
+            TestApis.devicePolicy().forceSecurityLogs()
+
+            // Should timeout
+            assertThat(callback.poll(eventPredicate)).isNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+            remoteDpm.setSecurityLoggingEnabled(who, false)
+        }
+    }
+
+    @SlowApiTest("Test needs to wait to ensure the callback is not invoked.")
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEventCallback_callbackCleared_notInvoked() {
+        ensureNoAdditionalFullUsers()
+
+        localDpm.setAuditLogEnabled(true)
+        try {
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+            localDpm.clearAuditLogEventCallback()
+
+            val eventPredicate = makeUniqueEvent()
+            TestApis.devicePolicy().forceSecurityLogs()
+
+            // Should timeout
+            assertThat(callback.poll(eventPredicate)).isNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+        }
+    }
+
+    @SlowApiTest("Test needs to wait to ensure the callback is not invoked.")
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun setAuditLogEventCallback_callbackReplaced_onlyNewCallbackInvoked() {
+        ensureNoAdditionalFullUsers()
+
+        localDpm.setAuditLogEnabled(true)
+        try {
+            val callback1 = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback1)
+
+            val callback2 = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback2)
+
+            val eventPredicate = makeUniqueEvent()
+            TestApis.devicePolicy().forceSecurityLogs()
+
+            // Should timeout on the old callback, but invoke the new one.
+            assertThat(callback1.poll(eventPredicate)).isNull()
+            assertThat(callback2.poll(eventPredicate)).isNotNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setSecurityLoggingEnabled",
+                "android.app.admin.DevicePolicyManager#retrieveSecurityLogs",
+                "android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun mixedLogging_securityAndAuditLoggingWorkTogether() {
+        ensureNoAdditionalFullUsers()
+
+        val dpc = deviceState.dpc()
+        val remoteDpm = dpc.devicePolicyManager()
+        val who = dpc.componentName()
+
+        try {
+            // Enable both mechanisms
+            remoteDpm.setSecurityLoggingEnabled(who, true)
+            localDpm.setAuditLogEnabled(true)
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+
+            // Generate new event
+            val eventPredicate = makeUniqueEvent()
+
+            // Verify that the new event is available in audit logging API.
+            TestApis.devicePolicy().forceSecurityLogs()
+            assertThat(callback.poll(eventPredicate)).isNotNull()
+
+            // Verify that the new event is available in security logging API.
+            assertThat(dpc.events().securityLogsAvailable()).eventOccurred()
+            val logs = dpc.devicePolicyManager().retrieveSecurityLogs(dpc.componentName())
+            assertThat(logs).isNotNull()
+            assertThat(logs.stream().filter(eventPredicate)).isNotNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+            remoteDpm.setSecurityLoggingEnabled(who, false)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setSecurityLoggingEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEnabled",
+                "android.app.admin.DevicePolicyManager#setAuditLogEventCallback"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun mixedLogging_auditLoggingWorksAfterSecurityLoggingDisabled() {
+        ensureNoAdditionalFullUsers()
+
+        val dpc = deviceState.dpc()
+        val remoteDpm = dpc.devicePolicyManager()
+        val who = dpc.componentName()
+
+        try {
+            // Enable both mechanisms
+            remoteDpm.setSecurityLoggingEnabled(who, true)
+            localDpm.setAuditLogEnabled(true)
+            val callback = QueueingEventCallback()
+            localDpm.setAuditLogEventCallback(executor, callback)
+
+            TestApis.devicePolicy().forceSecurityLogs()
+
+            // Ensure we get the first callback:
+            assertThat(callback.poll({it.tag == SecurityLog.TAG_LOGGING_STARTED})).isNotNull()
+
+            // Disable security logging
+            remoteDpm.setSecurityLoggingEnabled(who, false)
+
+            // Generate new event
+            val eventPredicate = makeUniqueEvent()
+
+            // Verify that new event is still delivered via audit logging API.
+            TestApis.devicePolicy().forceSecurityLogs()
+            assertThat(callback.poll(eventPredicate)).isNotNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+            remoteDpm.setSecurityLoggingEnabled(who, false)
+        }
+    }
+
+    @CanSetPolicyTest(policy = [GlobalSecurityLogging::class, SecurityLogging::class])
+    @Postsubmit(reason = "new test")
+    @ApiTest(
+            apis = ["android.app.admin.DevicePolicyManager#setSecurityLoggingEnabled",
+                "android.app.admin.DevicePolicyManager#retrieveSecurityLogs",
+                "android.app.admin.DevicePolicyManager#setAuditLogEnabled"]
+    )
+    @EnsureHasPermission(CommonPermissions.MANAGE_DEVICE_POLICY_AUDIT_LOGGING)
+    @RequiresFlagsEnabled(Flags.FLAG_SECURITY_LOG_V2_ENABLED)
+    fun mixedLogging_securityLoggingWorksAfterAuditLoggingDisabled() {
+        ensureNoAdditionalFullUsers()
+
+        val dpc = deviceState.dpc()
+        val remoteDpm = dpc.devicePolicyManager()
+        val who = dpc.componentName()
+
+        try {
+            // Enable both mechanisms
+            localDpm.setAuditLogEnabled(true)
+            remoteDpm.setSecurityLoggingEnabled(who, true)
+
+            // Ensure security logging is working initially.
+            TestApis.devicePolicy().forceSecurityLogs()
+            assertThat(dpc.events().securityLogsAvailable().poll()).isNotNull()
+
+            // Disable audit logging
+            localDpm.setAuditLogEnabled(false)
+
+            // Generate new event
+            val eventPredicate = makeUniqueEvent()
+
+            // Verify that new event is still delivered via security logging API.
+            TestApis.devicePolicy().forceSecurityLogs()
+            assertThat(dpc.events().securityLogsAvailable().poll()).isNotNull()
+            val logs = dpc.devicePolicyManager().retrieveSecurityLogs(dpc.componentName())
+            assertThat(logs).isNotNull()
+            assertThat(logs.stream().filter(eventPredicate)).isNotNull()
+        } finally {
+            localDpm.setAuditLogEnabled(false)
+            remoteDpm.setSecurityLoggingEnabled(who, false)
+        }
+    }
+
+    private fun SecurityEvent.stringAt(idx: Int): String {
+        val dataArray = this.data as Array<*>
+        return dataArray[idx] as String
+    }
+
+    /**
+     * Emits a unique event into security log (if enabled) and returns a predicate to match it.
+     */
+    private fun makeUniqueEvent(): (SecurityEvent) -> Boolean {
+        // Unique alias for a keystore key.
+        val alias = "${this::class.qualifiedName}.key_${System.nanoTime()}"
+
+        // Key generation emits TAG_KEY_GENERATED event.
+        val spec = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN).build()
+        val keyPair = with(KeyPairGenerator.getInstance("RSA", "AndroidKeyStore")) {
+            initialize(spec)
+            generateKeyPair()
+        }
+        assertThat(keyPair).isNotNull()
+
+        // Remove key pair from keystore.
+        with(KeyStore.getInstance("AndroidKeyStore")) {
+            load(null)
+            deleteEntry(alias)
+        }
+
+        return {
+            it.tag == SecurityLog.TAG_KEY_GENERATED && it.stringAt(KEY_ALIAS_INDEX) == alias
         }
     }
 
@@ -473,10 +814,45 @@ class SecurityLoggingTest {
         }
     }
 
-    class SecurityEventCallback : BlockingCallback<List<SecurityLog.SecurityEvent>>(),
-            Consumer<List<SecurityLog.SecurityEvent>> {
-        override fun accept(events: List<SecurityLog.SecurityEvent>) {
+    /**
+     * Callback that stores the list of events with which it is invoked.
+     */
+    private class SecurityEventCallback : BlockingCallback<List<SecurityEvent>>(),
+            Consumer<List<SecurityEvent>> {
+        override fun accept(events: List<SecurityEvent>) {
             callbackTriggered(events)
+        }
+    }
+
+    /**
+     * Callback that flattens all events it gets into a queue and allows querying.
+     * TODO(b/328738574): replace with BlockingCallback.
+     */
+    private class QueueingEventCallback : Consumer<List<SecurityEvent>> {
+
+        private val queue: BlockingQueue<SecurityEvent> = LinkedBlockingQueue()
+
+        override fun accept(items: List<SecurityEvent>) {
+            items.forEach{ queue.offer(it) }
+        }
+
+        fun poll(
+                predicate: (SecurityEvent) -> Boolean,
+                timeoutMs: Long = TimeUnit.MINUTES.toMillis(1)
+        ): SecurityEvent? {
+            val deadline = SystemClock.elapsedRealtime() + timeoutMs
+            while (SystemClock.elapsedRealtime() < deadline) {
+                queue.poll(
+                    deadline - SystemClock.elapsedRealtime(),
+                    TimeUnit.MILLISECONDS
+                )?.let { event ->
+                    if (predicate(event)) {
+                        return event
+                    }
+                }
+            }
+
+            return null
         }
     }
 
@@ -488,6 +864,8 @@ class SecurityLoggingTest {
         val context = TestApis.context().instrumentedContext()
         val executor = Executors.newSingleThreadExecutor()
         var localDpm = context.getSystemService(DevicePolicyManager::class.java)!!
+
+        private const val KEY_ALIAS_INDEX = 1
     }
 
     @JvmField

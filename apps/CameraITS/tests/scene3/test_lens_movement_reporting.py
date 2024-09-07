@@ -33,7 +33,7 @@ _FRAME_ATOL_MS = 10
 _LENS_INTRINSIC_CAL_FX_IDX = 0
 _LENS_INTRINSIC_CAL_FY_IDX = 1
 _LENS_INTRINSIC_CAL_RTOL = 0.01
-_MIN_AF_FD_TOL = 1.2  # AF value must < 1.2*min
+_MIN_AF_FD_RTOL = 0.2  # AF value must 20% larger than min_fd
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_PER_FD = 12
 _POSITION_RTOL = 0.10  # 10%
@@ -216,9 +216,9 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
 
       logging.debug('Assert AF focus distance > minimum focus distance')
       min_fd = data_min_fd[last_key]['fd']
-      if af_fd > min_fd * _MIN_AF_FD_TOL:
+      if af_fd > min_fd * (1 + _MIN_AF_FD_RTOL):
         raise AssertionError(f'AF focus distance > min focus distance! af: '
-                             f'{af_fd}, min: {min_fd}, TOL: {_MIN_AF_FD_TOL}')
+                             f'{af_fd}, min: {min_fd}, RTOL: {_MIN_AF_FD_RTOL}')
 
       # Check LENS_INTRINSIC_CALIBRATION
       if (its_session_utils.get_first_api_level(self.dut.serial) >=

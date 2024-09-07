@@ -87,9 +87,6 @@
     <!-- b/63916274 -->
     <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.WiredHeadsetTest" />
 
-    <!-- b/340793169 -->
-    <option name="compatibility:exclude-filter" value="CtsTelecomTestCases android.telecom.cts.ExtendedInCallServiceTest#testSwitchCallEndpoint" />
-
     <!-- b/62302163 -->
     <option name="compatibility:exclude-filter" value="CtsSecurityBulletinHostTestCases android.security.cts.Poc17_04#testPocCVE_2017_0564" />
 
@@ -278,9 +275,6 @@
     <!-- b/216546060 -->
     <option name="compatibility:exclude-filter" value="CtsFragmentTestCases android.fragment.cts.FragmentAnimatorTest#saveWhileAnimatingAway" />
 
-    <!-- b/208909067 -->
-    <option name="compatibility:exclude-filter" value="CtsDisplayTestCases android.display.cts.DisplayTest#testActivityContextGetMetrics" />
-
     <!-- b/266101051-->
     <option name="compatibility:exclude-filter" value="CtsGameServiceTestCases" />
 
@@ -299,4 +293,48 @@
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_small_medium_sizes" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_large_sizes" />
     <option name="compatibility:exclude-filter" value="CtsBionicTestCases malloc#zeroed_allocations_realloc" />
+
+    <!-- b/333710905 -->
+    <option name="compatibility:exclude-filter" value="CtsNfcHceMultiDeviceTestCases" />
+
+    <!-- b/322965201 -->
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CameraExtensionCharacteristicsTest#testExtensionAvailability" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.CameraManagerTest#testCameraManagerGetDeviceIdList[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ConcurrentCameraTest#testMandatoryConcurrentStreamCombination[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
+    <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
+
+    <!-- b/337925894 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />
+
+    <!-- b/330018295 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+
+    <!-- b/341195751 -->
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication032" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication400" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication600" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication128" />
+    <option name="compatibility:exclude-filter" value="CtsSimpleCpuTestCases android.simplecpu.cts.SimpleCpuTest#testMatrixMultiplication200" />
+
+    <!-- b/358008915 -->
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.TopicsApiLoggingHostTest#testGetTopicsLog" />
+    <option name="compatibility:exclude-filter" value="CtsAdServicesHostTests com.android.adservices.cts.UiApiLoggingHostTest#testStartSettingMainActivityAndGetUiLog" />
+
+    <!-- b/357552749 -->
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlViewHostTests#testEmbeddedViewReceivesRawInputCoordinatesInDisplaySpace" />
+
+    <!-- b/357552752 -->
+    <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceInput android.server.wm.input.WallpaperWindowInputTests#testShowWallpaper_withTouchEnabled" />
+
+    <!-- b/355285596 -->
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[instant] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:1:TENT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:2:HALF_FOLDED] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:3:OPEN] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
+    <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases[foldable:5:REAR_DUAL] android.appwidget.cts.AppWidgetTest#testCollectionWidgets" />
 </configuration>

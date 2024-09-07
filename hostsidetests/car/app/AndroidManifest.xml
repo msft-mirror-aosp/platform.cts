@@ -21,6 +21,8 @@
     <uses-permission android:name="android.car.permission.CAR_POWER"/>
     <uses-permission android:name="android.car.permission.CONTROL_SHUTDOWN_PROCESS"/>
     <uses-permission android:name="android.car.permission.READ_CAR_POWER_POLICY"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
     <uses-permission android:name="android.permission.READ_LOGS"/>
     <uses-permission android:name="android.permission.STORAGE_INTERNAL"/>
 
@@ -50,7 +52,9 @@
             </intent-filter>
         </activity>
 
-        <service android:name="android.car.cts.app.CarPowerTestService" android:exported="true">
+        <service android:name="android.car.cts.app.CarPowerTestService"
+                 android:exported="true"
+                 android:foregroundServiceType="specialUse">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.DEFAULT"/>

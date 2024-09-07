@@ -16,6 +16,8 @@
 
 package android.view.cts.input;
 
+import static android.view.InputDevice.SOURCE_KEYBOARD;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -25,7 +27,6 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.view.cts.R;
@@ -37,12 +38,11 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WindowUtil;
+import com.android.cts.input.ConfigurationItem;
 import com.android.cts.input.InputJsonParser;
 import com.android.cts.input.UinputDevice;
+import com.android.cts.input.UinputRegisterCommand;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -51,6 +51,7 @@ import org.junit.runner.RunWith;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -77,8 +78,6 @@ public class InputDeviceKeyLayoutMapTest {
     private static final int EV_KEY = 1;
     private static final int EV_KEY_DOWN = 1;
     private static final int EV_KEY_UP = 0;
-    private static final int UI_SET_EVBIT = 100;
-    private static final int UI_SET_KEYBIT = 101;
     private static final int GOOGLE_VENDOR_ID = 0x18d1;
     private static final int GOOGLE_VIRTUAL_KEYBOARD_ID = 0x001f;
     private static final int POLL_EVENT_TIMEOUT_SECONDS = 5;
@@ -93,6 +92,7 @@ public class InputDeviceKeyLayoutMapTest {
                 "BACK",
                 "BRIGHTNESS_DOWN",
                 "BRIGHTNESS_UP",
+                "EMOJI_PICKER",
                 "HOME",
                 "KEYBOARD_BACKLIGHT_DOWN",
                 "KEYBOARD_BACKLIGHT_TOGGLE",
@@ -103,11 +103,16 @@ public class InputDeviceKeyLayoutMapTest {
                 "MACRO_3",
                 "MACRO_4",
                 "MUTE",
+                "NOTIFICATION",
                 "POWER",
                 "RECENT_APPS",
+                "SCREENSHOT",
                 "SEARCH",
                 "SLEEP",
                 "SOFT_SLEEP",
+                "STYLUS_BUTTON_TERTIARY",
+                "STYLUS_BUTTON_PRIMARY",
+                "STYLUS_BUTTON_SECONDARY",
                 "SYSRQ",
                 "WAKEUP",
                 "VOICE_ASSIST",
@@ -156,9 +161,8 @@ public class InputDeviceKeyLayoutMapTest {
                 Resources.getSystem().getIdentifier("config_handleVolumeKeysInWindowManager",
                         "bool", "android"));
         mKeyLayout = nativeLoadKeyLayout(mParser.readRegisterCommand(R.raw.Generic));
-        mUinputDevice = new UinputDevice(mInstrumentation, DEVICE_ID, GOOGLE_VENDOR_ID,
-                GOOGLE_VIRTUAL_KEYBOARD_ID, InputDevice.SOURCE_KEYBOARD,
-                createDeviceRegisterCommand());
+        mUinputDevice = new UinputDevice(
+                mInstrumentation, SOURCE_KEYBOARD, createDeviceRegisterCommand());
     }
 
     @After
@@ -184,45 +188,23 @@ public class InputDeviceKeyLayoutMapTest {
         assertEquals(keyCode, receivedKeyEvent.getKeyCode());
     }
 
-    /**
-     * Create the uinput device registration command, in JSON format of uinput commandline tool.
-     * Refer to {@link framework/base/cmds/uinput/README.md}
-     */
-    private String createDeviceRegisterCommand() {
-        JSONObject json = new JSONObject();
-        JSONArray arrayConfigs =  new JSONArray();
-        try {
-            json.put("id", DEVICE_ID);
-            json.put("type", "uinput");
-            json.put("command", "register");
-            json.put("name", "Virtual All Buttons Device (Test)");
-            json.put("vid", GOOGLE_VENDOR_ID);
-            json.put("pid", GOOGLE_VIRTUAL_KEYBOARD_ID);
-            json.put("bus", "bluetooth");
+    private UinputRegisterCommand createDeviceRegisterCommand() {
+        List<ConfigurationItem> configurationItems = Arrays.asList(
+                new ConfigurationItem("UI_SET_EVBIT", List.of("EV_KEY")),
+                new ConfigurationItem("UI_SET_KEYBIT", mKeyLayout.values().stream().toList())
+        );
 
-            JSONObject jsonSetEvBit = new JSONObject();
-            JSONArray arraySetEvBit =  new JSONArray();
-            arraySetEvBit.put(EV_KEY);
-            jsonSetEvBit.put("type", UI_SET_EVBIT);
-            jsonSetEvBit.put("data", arraySetEvBit);
-            arrayConfigs.put(jsonSetEvBit);
-
-            // Configure device have all keys from key layout map.
-            JSONArray arraySetKeyBit = new JSONArray();
-            for (Map.Entry<String, Integer> entry : mKeyLayout.entrySet()) {
-                arraySetKeyBit.put(entry.getValue());
-            }
-            JSONObject jsonSetKeyBit = new JSONObject();
-            jsonSetKeyBit.put("type", UI_SET_KEYBIT);
-            jsonSetKeyBit.put("data", arraySetKeyBit);
-            arrayConfigs.put(jsonSetKeyBit);
-            json.put("configuration", arrayConfigs);
-        } catch (JSONException e) {
-            throw new RuntimeException(
-                    "Could not create JSON object");
-        }
-
-        return json.toString();
+        return new UinputRegisterCommand(
+                DEVICE_ID,
+                "Virtual All Buttons Device (Test)",
+                GOOGLE_VENDOR_ID,
+                GOOGLE_VIRTUAL_KEYBOARD_ID,
+                "bluetooth",
+                "bluetooth:1",
+                configurationItems,
+                Map.of(),
+                /* ffEffectsMax= */ null
+        );
     }
 
     /**

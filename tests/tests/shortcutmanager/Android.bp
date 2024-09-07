@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsShortcutManagerTestCases",
+    team: "trendy_team_launcher",
     defaults: [
         "cts_defaults",
         "CtsShortcutManagerDefaults",

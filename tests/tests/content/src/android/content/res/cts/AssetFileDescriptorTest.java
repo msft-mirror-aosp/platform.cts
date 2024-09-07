@@ -16,14 +16,27 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertSame;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,7 +46,12 @@ import java.io.IOException;
 import java.util.Arrays;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class AssetFileDescriptorTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AssetFileDescriptorTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private static final long START_OFFSET = 0;
     private static final long LENGTH = 100;
     private static final String FILE_NAME = "testAssetFileDescriptor";
@@ -46,9 +64,8 @@ public class AssetFileDescriptorTest extends AndroidTestCase {
     private FileOutputStream mOutputStream;
     private FileInputStream mInputStream;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mFile = new File(getContext().getFilesDir(), FILE_NAME);
         mFile.createNewFile();
         initAssetFileDescriptor();
@@ -59,9 +76,8 @@ public class AssetFileDescriptorTest extends AndroidTestCase {
         mAssetFileDes = new AssetFileDescriptor(mFd, START_OFFSET, LENGTH);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         // As {@link AssetFileDescripter#createOutputStream()}
         // and {@link AssetFileDescripter#createInputStream()} doc,
         // the input and output stream will be auto closed when the AssetFileDescriptor closed.
@@ -72,6 +88,7 @@ public class AssetFileDescriptorTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testConstructor() throws IOException {
         ParcelFileDescriptor fd = ParcelFileDescriptor.open(
                 mFile, ParcelFileDescriptor.MODE_READ_WRITE);
@@ -96,6 +113,7 @@ public class AssetFileDescriptorTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testInputOutputStream() throws IOException {
         /*
          * test createOutputStream() and createInputStrean()
@@ -169,6 +187,7 @@ public class AssetFileDescriptorTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testMiscMethod() {
         // test getLength()
         assertEquals(LENGTH, mAssetFileDes.getLength());

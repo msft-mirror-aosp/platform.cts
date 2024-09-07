@@ -16,6 +16,9 @@
 
 package com.android.bedstead.remoteframeworkclasses.processor;
 
+import static com.android.bedstead.remoteframeworkclasses.processor.Processor.ALLOWLISTED_TEST_CLASSES;
+import static com.android.bedstead.remoteframeworkclasses.processor.Processor.TEST_APIS_REFLECTION_PACKAGE;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -138,6 +141,11 @@ public final class MethodSignature {
             return types.getNoType(TypeKind.VOID);
         }
 
+        if (isTypeAnnotatedWithTestApi(typeName)) {
+            // Use the proxy type instead
+            typeName = proxyType(typeName);
+        }
+
         if (typeName.contains("<")) {
             // Because of type erasure we can just drop the type argument
             return typeForString(typeName.split("<", 2)[0], types, elements);
@@ -167,6 +175,15 @@ public final class MethodSignature {
         return element.asType();
     }
 
+    private static boolean isTypeAnnotatedWithTestApi(String typeName) {
+        return ALLOWLISTED_TEST_CLASSES.contains(typeName);
+    }
+
+    private static String proxyType(String typeName) {
+        return TEST_APIS_REFLECTION_PACKAGE + "." +
+                typeName.substring(typeName.lastIndexOf(".") + 1) + "Proxy";
+    }
+
     enum Visibility {
         PUBLIC,
         PROTECTED;
@@ -183,7 +200,7 @@ public final class MethodSignature {
     }
 
     private final Visibility mVisibility;
-    public final String mReturnType;
+    private final String mReturnType;
     private final String mName;
     public final ImmutableList<String> mParameterTypes;
     public final ImmutableSet<String> mExceptions;
@@ -198,6 +215,14 @@ public final class MethodSignature {
                 .collect(Collectors.toList()));
         mExceptions = ImmutableSet.copyOf(exceptions.stream().map(TypeMirror::toString).collect(
                 Collectors.toSet()));
+    }
+
+    public String getReturnType() {
+        return mReturnType;
+    }
+
+    public String getName() {
+        return mName;
     }
 
     @Override

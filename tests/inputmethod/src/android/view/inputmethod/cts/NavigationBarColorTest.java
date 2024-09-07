@@ -28,6 +28,7 @@ import static android.view.inputmethod.cts.util.NavigationBarColorVerifier.expec
 import static android.view.inputmethod.cts.util.NavigationBarColorVerifier.expectNavigationBarColorSupported;
 import static android.view.inputmethod.cts.util.TestUtils.getOnMainSync;
 
+import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.waitForInputViewLayoutStable;
@@ -61,21 +62,19 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeLayoutInfo;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
-@RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class NavigationBarColorTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
@@ -268,13 +267,7 @@ public class NavigationBarColorTest extends EndToEndImeTestBase {
                 expectBindInput(stream, Process.myPid(), TIMEOUT);
 
                 // Wait until "onStartInput" gets called for the EditText.
-                expectEvent(stream, event -> {
-                    if (!TextUtils.equals("onStartInputView", event.getEventName())) {
-                        return false;
-                    }
-                    final EditorInfo editorInfo = event.getArguments().getParcelable("editorInfo");
-                    return TextUtils.equals(TEST_MARKER, editorInfo.privateImeOptions);
-                }, TIMEOUT);
+                expectEvent(stream, editorMatcher("onStartInputView", TEST_MARKER), TIMEOUT);
 
                 // Wait until MockIme's layout becomes stable.
                 final ImeLayoutInfo lastLayout =

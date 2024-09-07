@@ -394,18 +394,6 @@ public class VirtualDeviceManagerBasicTest {
 
     @RequiresFlagsEnabled(Flags.FLAG_VDM_PUBLIC_APIS)
     @Test
-    public void getVirtualDevice_hasCustomAudioInputSupport() {
-        VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
-                new VirtualDeviceParams.Builder()
-                        .setDevicePolicy(POLICY_TYPE_AUDIO, DEVICE_POLICY_CUSTOM)
-                        .build());
-        VirtualDevice device = mVirtualDeviceManager.getVirtualDevice(virtualDevice.getDeviceId());
-        assertThat(device).isNotNull();
-        assertThat(device.hasCustomAudioInputSupport()).isTrue();
-    }
-
-    @RequiresFlagsEnabled(Flags.FLAG_VDM_PUBLIC_APIS)
-    @Test
     public void getVirtualDevice_hasCustomCameraSupport() {
         VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()

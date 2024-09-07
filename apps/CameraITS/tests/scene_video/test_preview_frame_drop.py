@@ -86,8 +86,6 @@ class PreviewFrameDropTest(its_base_test.ItsBaseTest):
 
       # Record preview at largest supported size
       supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
       supported_video_sizes = cam.get_supported_video_sizes_capped(
           self.camera_id)
       max_video_size = supported_video_sizes[-1]
@@ -141,6 +139,9 @@ class PreviewFrameDropTest(its_base_test.ItsBaseTest):
       frame_delta_local_max = _get_local_maximum(
           frame_deltas, window_size=_FRAME_DELTA_WINDOW_SIZE)
       logging.debug('Frame delta local maximum: %.4f', frame_delta_local_max)
+      # Below print statements are for metrics logging purpose.
+      # Do not replace with logging.debug().
+      print(f'{_NAME}_max_delta: {frame_delta_local_max:.4f}')
       maximum_tolerable_frame_delta = _FRAME_DELTA_MAXIMUM_FACTOR / video_fps
       if frame_delta_local_max > maximum_tolerable_frame_delta:
         failure_messages.append(

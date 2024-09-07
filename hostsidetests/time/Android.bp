@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsLocationTimeZoneManagerHostTest",
+    team: "trendy_team_location_time",
     srcs: ["host/src/**/*.java"],
     libs: [
         "cts-tradefed",

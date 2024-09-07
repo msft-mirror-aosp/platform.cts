@@ -433,6 +433,7 @@ public final class ActivityManagerForegroundServiceTypeTest {
                 // If there is a feature flag to turn the permission check off, it should succeed.
                 if (permFlag != null) {
                     helper.set(permFlag, "false");
+                    Thread.sleep(1000);
                     grantPermissions(allOfPermissions, testPackageName);
                     startAndStopFgsType(TEST_COMP_TARGET_FGS_ALL_TYPE, type, null);
                     resetPermissions(anyOfPermissions, testPackageName);

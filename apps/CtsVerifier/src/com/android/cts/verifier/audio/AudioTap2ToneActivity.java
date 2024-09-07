@@ -19,6 +19,10 @@ package com.android.cts.verifier.audio;
 import static com.android.cts.verifier.TestListActivity.sCurrentDisplayMode;
 import static com.android.cts.verifier.TestListAdapter.setTestNameSuffix;
 
+import android.content.Context;
+import android.media.AudioDeviceCallback;
+import android.media.AudioDeviceInfo;
+import android.media.AudioManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.TapToToneLatencyRequirement;
@@ -38,6 +42,7 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.analyzers.TapLatencyAnalyzer;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.CircularBufferFloat;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
@@ -65,6 +70,11 @@ public class AudioTap2ToneActivity
         extends PassFailButtons.Activity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioTap2ToneActivity";
+
+    private Context mContext;
+    private AudioManager mAudioManager;
+
+    private ConnectListener mConnectListener;
 
     private boolean mHasMic;
     private boolean mHasSpeaker;
@@ -145,6 +155,10 @@ public class AudioTap2ToneActivity
         setContentView(R.layout.audio_tap2tone_activity);
 
         super.onCreate(savedInstanceState);
+
+        mContext = this;
+
+        mAudioManager = getSystemService(AudioManager.class);
 
         mHasMic = AudioSystemFlags.claimsInput(this);
         mHasSpeaker = AudioSystemFlags.claimsOutput(this);
@@ -260,12 +274,21 @@ public class AudioTap2ToneActivity
         stopAudio();
         calculateTestPass();
 
+        mConnectListener = new ConnectListener();
+
         DisplayUtils.setKeepScreenOn(this, true);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
     }
 
     @Override
     public void onStop() {
         stopAudio();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         super.onStop();
     }
 
@@ -599,4 +622,22 @@ public class AudioTap2ToneActivity
             }
         }
     }
+
+    private class ConnectListener extends AudioDeviceCallback {
+        ConnectListener() {}
+
+        //
+        // AudioDevicesManager.OnDeviceConnectionListener
+        //
+        @Override
+        public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
+            AudioDeviceUtils.validateUsbDevice(mContext);
+        }
+
+        @Override
+        public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+
+        }
+    }
+
 }

@@ -45,7 +45,7 @@ _THRESH_MAX_LEVEL_DIFF_WIDE_RANGE = 0.06
 _THRESH_MAX_OUTLIER_DIFF = 0.1
 _THRESH_ROUND_DOWN_ISO = 0.04
 _THRESH_ROUND_DOWN_EXP = 0.03
-_THRESH_ROUND_DOWN_EXP0 = 1.00  # TOL at 0ms exp; theoretical limit @ 4-line exp
+_THRESH_ROUND_DOWN_EXP0 = 1.00  # RTOL @0ms exp; theoretical limit @ 4-line exp
 _THRESH_EXP_KNEE = 6E6  # exposures less than knee have relaxed tol
 _WIDE_EXP_RANGE_THRESH = 64.0  # threshold for 'wide' range sensor
 
@@ -267,10 +267,10 @@ class ExposureXIsoTest(its_base_test.ItsBaseTest):
               (_THRESH_EXP_KNEE - e_req) / _THRESH_EXP_KNEE)
         if not 0 <= s_req - s_res < s_req * _THRESH_ROUND_DOWN_ISO:
           raise AssertionError(f's_req: {s_req}, s_res: {s_res}, '
-                               f'TOL=-{_THRESH_ROUND_DOWN_ISO*100}%')
+                               f'RTOL=-{_THRESH_ROUND_DOWN_ISO*100}%')
         if not 0 <= e_req - e_res < e_req * thresh_round_down_exp:
           raise AssertionError(f'e_req: {e_req}ns, e_res: {e_res}ns, '
-                               f'TOL=-{thresh_round_down_exp*100}%')
+                               f'RTOL=-{thresh_round_down_exp*100}%')
         s_e_product_res = s_res * e_res
         req_res_ratio = s_e_product / s_e_product_res
         logging.debug('Capture result s: %d, e: %dns', s_res, e_res)

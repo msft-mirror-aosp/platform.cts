@@ -64,6 +64,8 @@ import java.util.List;
 public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
     private static final String DEVICE_TEST_CLASS = ".PowerManagerTests";
+    private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
+    private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
 
     private IBuildInfo mCtsBuild;
 
@@ -77,6 +79,7 @@ public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuild
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+        DeviceUtils.installTestApp(getDevice(), ADPF_ATOM_APP_APK, ADPF_ATOM_APP_PKG, mCtsBuild);
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 

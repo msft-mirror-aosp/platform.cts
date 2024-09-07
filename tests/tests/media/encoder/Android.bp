@@ -18,10 +18,12 @@ package {
         "Android-Apache-2.0",
         "cts_tests_tests_media_license",
     ],
+    default_team: "trendy_team_android_media_codec_framework",
 }
 
 android_test {
     name: "CtsMediaEncoderTestCases",
+    team: "trendy_team_android_video_image_codecs",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -67,6 +69,7 @@ android_test {
     jni_uses_sdk_apis: true,
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",

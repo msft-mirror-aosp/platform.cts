@@ -43,7 +43,7 @@ import android.util.ArraySet;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppProvider;
 
@@ -70,8 +70,8 @@ import java.util.function.Supplier;
 @RunWith(JUnit4.class)
 public class SilentUpdateTests {
     private static final String CURRENT_APK = "SilentInstallCurrent.apk";
-    private static final String R_APK = "SilentInstallR.apk";
     private static final String S_APK = "SilentInstallS.apk";
+    private static final String T_APK = "SilentInstallT.apk";
     private static final String INSTALLER_PACKAGE_NAME = "com.android.tests.silentupdate";
     static final long SILENT_UPDATE_THROTTLE_TIME_SECOND = 10;
 
@@ -143,17 +143,17 @@ public class SilentUpdateTests {
     }
 
     @Test
-    public void updatePreSApp_RequiresUserAction() throws Exception {
-        Assert.assertEquals("Updating to a pre-S app should require user action",
+    public void updatePreTApp_RequiresUserAction() throws Exception {
+        Assert.assertEquals("Updating to a pre-T app should require user action",
                 PackageInstaller.STATUS_PENDING_USER_ACTION,
-                silentInstallResource(R_APK));
+                silentInstallResource(S_APK));
     }
 
     @Test
-    public void updateSApp_RequiresNoUserAction() throws Exception {
-        Assert.assertEquals("Updating to an S app should not require user action",
+    public void updateTApp_RequiresNoUserAction() throws Exception {
+        Assert.assertEquals("Updating to a T app should not require user action",
                 PackageInstaller.STATUS_SUCCESS,
-                silentInstallResource(S_APK));
+                silentInstallResource(T_APK));
     }
 
     @Test

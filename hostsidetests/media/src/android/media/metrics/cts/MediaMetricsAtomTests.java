@@ -470,7 +470,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(-1L);
         assertThat(atom.getExporterName()).isEqualTo("");
         assertThat(atom.getMuxerName()).isEqualTo("");
-        assertThat(atom.getFinalState().toString()).isEqualTo("SUCCEEDED");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
         assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
     }
 
@@ -499,9 +499,17 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getTimeSinceEditingCreatedMillis()).isEqualTo(17630000L);
         assertThat(atom.getExporterName()).isEqualTo("");
         assertThat(atom.getMuxerName()).isEqualTo("androidx.media3:media3-muxer:1.2.1");
-        assertThat(atom.getFinalState().toString()).isEqualTo("ERROR");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_ERROR");
         assertThat(atom.getFinalProgressPercent()).isEqualTo(10f);
         assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_FAILED_RUNTIME_CHECK");
+        assertThat(atom.getOperationTypeVideoTranscode()).isFalse();
+        assertThat(atom.getOperationTypeAudioTranscode()).isFalse();
+        assertThat(atom.getOperationTypeVideoEdit()).isTrue();
+        assertThat(atom.getOperationTypeAudioEdit()).isFalse();
+        assertThat(atom.getOperationTypeVideoTransmux()).isFalse();
+        assertThat(atom.getOperationTypeAudioTransmux()).isTrue();
+        assertThat(atom.getOperationTypeWasPaused()).isFalse();
+        assertThat(atom.getOperationTypeWasResumed()).isFalse();
     }
 
     @Test
@@ -530,11 +538,22 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getExporterName())
                 .isEqualTo("androidx.media3:media3-transformer:1.3.0-beta01");
         assertThat(atom.getMuxerName()).isEqualTo("androidx.media3:media3-muxer:1.3.0-beta01");
-        assertThat(atom.getFinalState().toString()).isEqualTo("SUCCEEDED");
+        assertThat(atom.getFinalState().toString()).isEqualTo("FINAL_STATE_SUCCEEDED");
         assertThat(atom.getFinalProgressPercent()).isEqualTo(100f);
         assertThat(atom.getErrorCode().toString()).isEqualTo("ERROR_CODE_NONE");
         assertThat(atom.getInputMediaItemCount()).isEqualTo(1);
         assertThat(atom.getInputMediaItem1SourceType().toString()).isEqualTo("SOURCE_TYPE_CAMERA");
+        assertThat(atom.getInputMediaItem1HasDataTypeImage()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeVideo()).isTrue();
+        assertThat(atom.getInputMediaItem1HasDataTypeAudio()).isTrue();
+        assertThat(atom.getInputMediaItem1HasDataTypeMetadata()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeDepth()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeGainMap()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeHighFrameRate()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeCuePoints()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeGapless()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeSpatialAudio()).isFalse();
+        assertThat(atom.getInputMediaItem1HasDataTypeHighDynamicRangeVideo()).isTrue();
         assertThat(atom.getInputMediaItem1DurationMillis()).isEqualTo(3_750L);
         assertThat(atom.getInputMediaItem1ClipDurationMillis()).isEqualTo(1_875L);
         assertThat(atom.getInputMediaItem1ContainerMimeType()).isEqualTo("video/mp4");
@@ -545,6 +564,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getInputMediaItem1CodecName2()).isEqualTo("c2.android.aac.decoder");
         assertThat(atom.getInputMediaItem1AudioSampleRateHz()).isEqualTo(44100);
         assertThat(atom.getInputMediaItem1AudioChannelCount()).isEqualTo(2);
+        assertThat(atom.getInputMediaItem1AudioSampleCount()).isEqualTo(10_000L);
         assertThat(atom.getInputMediaItem1VideoRawWidthPixels()).isEqualTo(1080);
         assertThat(atom.getInputMediaItem1VideoRawHeightPixels()).isEqualTo(1920);
         assertThat(atom.getInputMediaItem1VideoResolution().toString())
@@ -555,6 +575,17 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
                 .isEqualTo(/* BT2020 | HLG | FULL */ 0b1010000001100000000000000000);
         assertThat(atom.getInputMediaItem1VideoFrameRate()).isEqualTo(25);
         assertThat(atom.getThroughputFps()).isEqualTo(50);
+        assertThat(atom.getOutputMediaItemHasDataTypeImage()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeVideo()).isTrue();
+        assertThat(atom.getOutputMediaItemHasDataTypeAudio()).isTrue();
+        assertThat(atom.getOutputMediaItemHasDataTypeMetadata()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeDepth()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeGainMap()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeHighFrameRate()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeCuePoints()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeGapless()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeSpatialAudio()).isFalse();
+        assertThat(atom.getOutputMediaItemHasDataTypeHighDynamicRangeVideo()).isFalse();
         assertThat(atom.getOutputMediaItemDurationMillis()).isEqualTo(1_875L);
         assertThat(atom.getOutputMediaItemContainerMimeType()).isEqualTo("video/mp4");
         assertThat(atom.getOutputMediaItemAudioSampleMimeType()).isEqualTo("audio/mp4a-latm");
@@ -564,6 +595,7 @@ public class MediaMetricsAtomTests extends BaseHostJUnit4Test {
         assertThat(atom.getOutputMediaItemCodecName2()).isEqualTo("c2.android.aac.encoder");
         assertThat(atom.getOutputMediaItemAudioSampleRateHz()).isEqualTo(44100);
         assertThat(atom.getOutputMediaItemAudioChannelCount()).isEqualTo(2);
+        assertThat(atom.getOutputMediaItemAudioSampleCount()).isEqualTo(10_000L);
         assertThat(atom.getOutputMediaItemVideoRawWidthPixels()).isEqualTo(720);
         assertThat(atom.getOutputMediaItemVideoRawHeightPixels()).isEqualTo(1280);
         assertThat(atom.getOutputMediaItemVideoResolution().toString())

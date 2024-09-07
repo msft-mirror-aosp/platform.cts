@@ -59,6 +59,7 @@ java_library {
         "cts_window-extensions",
         "cts_window-extensions-core",
         "cts_window-sidecar",
+        "com.android.window.flags.window-aconfig-java",
     ],
     sdk_version: "test_current",
 }
@@ -74,12 +75,14 @@ java_library {
         "cts_window-extensions",
         "cts_window-extensions-core",
         "cts_window-sidecar",
+        "com.android.window.flags.window-aconfig-java",
     ],
     sdk_version: "test_current",
 }
 
 android_test {
     name: "CtsWindowManagerJetpackTestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     static_libs: [
@@ -91,6 +94,8 @@ android_test {
         "cts_window-sidecar",
         "cts_window-extensions",
         "cts_window-extensions-core",
+        "com.android.window.flags.window-aconfig-java",
+        "truth",
     ],
     libs: [
         "android.test.base.stubs.test",

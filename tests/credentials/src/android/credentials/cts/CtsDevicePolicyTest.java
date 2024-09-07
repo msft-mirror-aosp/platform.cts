@@ -30,11 +30,12 @@ import android.credentials.CredentialProviderInfo;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireFeature;
+import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.CredentialManagerPolicy;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.testapp.TestApp;
@@ -105,6 +106,7 @@ public class CtsDevicePolicyTest {
                     .isNotEqualTo("true")
                     .get();
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @CannotSetPolicyTest(policy = CredentialManagerPolicy.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCredentialManagerPolicy")
@@ -121,6 +123,7 @@ public class CtsDevicePolicyTest {
                                                 Set.of(PACKAGE_NAME))));
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @CanSetPolicyTest(policy = CredentialManagerPolicy.class)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCredentialManagerPolicy")
@@ -138,6 +141,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @CanSetPolicyTest(policy = CredentialManagerPolicy.class, singleTestOnly = true)
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setCredentialManagerPolicy")
@@ -147,6 +151,7 @@ public class CtsDevicePolicyTest {
         assertThat(sDeviceState.dpc().devicePolicyManager().getCredentialManagerPolicy()).isNull();
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyAppliesTest(policy = CredentialManagerPolicy.class)
@@ -188,6 +193,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyAppliesTest(policy = CredentialManagerPolicy.class)
@@ -230,6 +236,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyAppliesTest(policy = CredentialManagerPolicy.class)
@@ -269,6 +276,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyAppliesTest(policy = CredentialManagerPolicy.class)
@@ -307,6 +315,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyAppliesTest(policy = CredentialManagerPolicy.class)
@@ -337,6 +346,7 @@ public class CtsDevicePolicyTest {
         }
     }
 
+    @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")
     @Test
     @RequireFeature(PackageManager.FEATURE_CREDENTIALS)
     @PolicyDoesNotApplyTest(policy = CredentialManagerPolicy.class)

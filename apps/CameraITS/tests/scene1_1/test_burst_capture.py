@@ -24,14 +24,15 @@ import capture_request_utils
 import image_processing_utils
 import its_session_utils
 
-_FRAME_TIME_DELTA_ATOL = 60  # ideal frame delta: 33ms
+_FRAME_TIME_DELTA_RTOL = 0.1  # allow 10% variation from reported value
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NS_TO_MS = 1.0E-6
+_NR_MODE_FAST = 1  # burst capture uses noise reduction mode FAST
 _NUM_TEST_FRAMES = 15
 _PATCH_H = 0.1  # center 10% patch params
 _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
 _PATCH_Y = 0.5 - _PATCH_H/2
+_START_FRAME = 2  # allow 1st frame to have some push out (see test_jitter.py)
 _THRESH_MIN_LEVEL = 0.1  # check images aren't too dark
 
 
@@ -49,9 +50,20 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+
+      # Check SKIP conditions
       camera_properties_utils.skip_unless(
-          camera_properties_utils.backward_compatible(props))
+          camera_properties_utils.backward_compatible(props) and
+          camera_properties_utils.burst_capture_capable
+      )
+
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance)
+
       req = capture_request_utils.auto_capture_request()
+      if camera_properties_utils.noise_reduction_mode(props, _NR_MODE_FAST):
+        req['android.noiseReduction.mode'] = _NR_MODE_FAST
       cam.do_3a()
       caps = cam.do_capture([req] * _NUM_TEST_FRAMES)
       img = image_processing_utils.convert_capture_to_rgb_image(
@@ -70,15 +82,35 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
                              f'THRESH: {_THRESH_MIN_LEVEL}')
 
       # Check frames are consecutive
-      frame_times = [cap['metadata']['android.sensor.timestamp']
-                     for cap in caps]
-      for i, time in enumerate(frame_times):
-        if i > 1:
-          frame_time_delta = (time - frame_times[i-1]) * _NS_TO_MS
-          if frame_time_delta > _FRAME_TIME_DELTA_ATOL:
-            raise AssertionError(
-                f'Frame drop! Frame time delta: {frame_time_delta}ms, '
-                f'ATOL: {_FRAME_TIME_DELTA_ATOL}')
+      error_msg = []
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      frame_time_duration_deltas = []
+      if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+        frame_times = [cap['metadata']['android.sensor.timestamp']
+                       for cap in caps]
+        for i, time in enumerate(frame_times):
+          if i < _START_FRAME:
+            continue
+          frame_time_delta = time - frame_times[i-1]
+          frame_duration = caps[i]['metadata']['android.sensor.frameDuration']
+          logging.debug('cap %d frameDuration: %d ns', i, frame_duration)
+          frame_time_delta_atol = frame_duration * (1+_FRAME_TIME_DELTA_RTOL)
+          frame_time_duration_deltas.append(frame_time_delta - frame_duration)
+          logging.debug(
+              'frame_time-frameDuration: %d ns', frame_time_delta-frame_duration
+          )
+          if frame_time_delta > frame_time_delta_atol:
+            error_msg.append(
+                f'Frame {i-1} --> {i} delta: {frame_time_delta}, '
+                f'ATOL: {frame_time_delta_atol:.1f} ns. '
+            )
+        # Note: Do not change from print to logging. print used for data-mining
+        print(
+            f'{_NAME}_max_frame_time_minus_frameDuration_ns: '
+            f'{max(frame_time_duration_deltas)}'
+        )
+        if error_msg:
+          raise AssertionError(f'Frame drop(s)! {error_msg}')
 
 
 if __name__ == '__main__':

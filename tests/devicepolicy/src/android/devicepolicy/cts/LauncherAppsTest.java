@@ -16,7 +16,7 @@
 
 package android.devicepolicy.cts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
+import static com.android.bedstead.permissions.CommonPermissions.CHANGE_COMPONENT_ENABLED_STATE;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -34,13 +34,13 @@ import android.os.Process;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUserWithNoDpc;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnParentOfProfileOwnerWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnPrimaryUserWithNoDpc;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnProfileOwnerProfileWithNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSystemDeviceOwnerUser;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;

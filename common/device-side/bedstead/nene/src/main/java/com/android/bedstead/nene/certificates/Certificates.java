@@ -47,10 +47,28 @@ public final class Certificates {
 
     private Certificates() {}
 
-    /** Generate a private key. */
-    public PrivateKey generatePrivateKey(final byte[] key, KeyAlgorithmType keyAlgorithmType) {
+    /** Generate a private key using the RSA algorithm. */
+    public PrivateKey generateRSAPrivateKey(final byte[] key) {
         try {
-            return KeyFactory.getInstance(keyAlgorithmType.getValue()).generatePrivate(
+            // We pass in a string constant to KeyFactory.getInstance
+            // to avoid "[InsecureCryptoUsage] Insecure usage of a crypto API: the algorithm
+            // specification is not a compile-time constant expression. Please contact
+            // go/ise-crypto-yaqs for assistance with this issue".
+            return KeyFactory.getInstance("RSA").generatePrivate(
+                            new PKCS8EncodedKeySpec(key));
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            throw new AssertionError("Unable to get private key." + e);
+        }
+    }
+
+    /** Generate a private key using the EC algorithm. */
+    public PrivateKey generateECPrivateKey(final byte[] key) {
+        try {
+            // We pass in a string constant to KeyFactory.getInstance
+            // to avoid "[InsecureCryptoUsage] Insecure usage of a crypto API: the algorithm
+            // specification is not a compile-time constant expression. Please contact
+            // go/ise-crypto-yaqs for assistance with this issue".
+            return KeyFactory.getInstance("EC").generatePrivate(
                     new PKCS8EncodedKeySpec(key));
         } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
             throw new AssertionError("Unable to get private key." + e);

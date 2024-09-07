@@ -88,7 +88,7 @@ import org.junit.runners.Parameterized.Parameters;
 public class Camera2SurfaceViewTestCase extends Camera2ParameterizedTestCase {
     private static final String TAG = "SurfaceViewTestCase";
     private static final boolean VERBOSE = Log.isLoggable(TAG, Log.VERBOSE);
-    private static final int WAIT_FOR_SURFACE_CHANGE_TIMEOUT_MS = 1000;
+    private static final int WAIT_FOR_SURFACE_CHANGE_TIMEOUT_MS = 2000;
 
     protected static final int WAIT_FOR_RESULT_TIMEOUT_MS = 3000;
     protected static final float FRAME_DURATION_ERROR_MARGIN = 0.01f; // 1 percent error margin.

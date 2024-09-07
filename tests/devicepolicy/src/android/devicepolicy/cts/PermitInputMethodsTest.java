@@ -19,13 +19,9 @@ package android.devicepolicy.cts;
 import static android.app.admin.DevicePolicyIdentifiers.PERMITTED_INPUT_METHODS_POLICY;
 import static android.app.admin.TargetUser.LOCAL_USER_ID;
 
-import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest.DPC_1;
-import static com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest.DPC_2;
-import static com.android.bedstead.nene.flags.CommonFlags.DevicePolicyManager.ENABLE_DEVICE_POLICY_ENGINE_FLAG;
-import static com.android.bedstead.nene.flags.CommonFlags.NAMESPACE_DEVICE_POLICY_MANAGER;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.QUERY_ADMIN_POLICY;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.permissions.CommonPermissions.QUERY_ADMIN_POLICY;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -44,17 +40,15 @@ import android.util.Log;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasDeviceOwner;
-import com.android.bedstead.harrier.annotations.enterprise.MostRestrictiveCoexistenceTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyDoesNotApplyTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
 import com.android.bedstead.harrier.policies.PermittedInputMethods;
 import com.android.bedstead.harrier.policies.PermittedSystemInputMethods;
-import com.android.bedstead.harrier.policies.ScreenCaptureDisabled;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
 import com.android.bedstead.nene.packages.Package;
@@ -62,11 +56,11 @@ import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.After;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -285,159 +279,20 @@ public final class PermitInputMethodsTest {
         }
     }
 
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setPermittedInputMethods",
-            "android.app.admin.DevicePolicyManager#getPermittedInputMethods"})
-    @MostRestrictiveCoexistenceTest(policy = PermittedInputMethods.class)
-    @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
-    public void setPermittedInputMethods_bothSet_appliesMostRecent() {
-        try {
-            List<String> firstPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            List<String> secondPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            secondPackages.add("additionalPackage");
-            Set<String> secondPackagesPlusSystem = new HashSet<>(secondPackages);
-            secondPackagesPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, firstPackages);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, secondPackages);
-
-
-            PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
-                    new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
-                    TestApis.users().instrumented().userHandle());
-            assertThat(policyState.getCurrentResolvedPolicy()).containsExactlyElementsIn(
-                    secondPackages);
-            assertThat(sLocalDevicePolicyManager.getPermittedInputMethods())
-                    .containsExactlyElementsIn(secondPackagesPlusSystem);
-
-        } finally {
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setPermittedInputMethods",
-            "android.app.admin.DevicePolicyManager#getPermittedInputMethods"})
-    @MostRestrictiveCoexistenceTest(policy = PermittedInputMethods.class)
-    @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
-    public void setPermittedInputMethods_bothSetReverseOrder_appliesMostRecent() {
-        try {
-            List<String> firstPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            List<String> secondPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            secondPackages.add("additionalPackage");
-            Set<String> firstPackagesPlusSystem = new HashSet<>(firstPackages);
-            firstPackagesPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, secondPackages);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, firstPackages);
-
-
-            PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
-                    new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
-                    TestApis.users().instrumented().userHandle());
-            assertThat(policyState.getCurrentResolvedPolicy()).containsExactlyElementsIn(
-                    firstPackages);
-            assertThat(sLocalDevicePolicyManager.getPermittedInputMethods())
-                    .containsExactlyElementsIn(firstPackagesPlusSystem);
-
-        } finally {
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setPermittedInputMethods",
-            "android.app.admin.DevicePolicyManager#getPermittedInputMethods"})
-    @MostRestrictiveCoexistenceTest(policy = PermittedInputMethods.class)
-    @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
-    public void setPermittedInputMethods_bothSetThenOneUnsets_setsToPrevious() {
-        try {
-            List<String> firstPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            List<String> secondPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            secondPackages.add("additionalPackage");
-            Set<String> secondPackagesPlusSystem = new HashSet<>(secondPackages);
-            secondPackagesPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, firstPackages);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, secondPackages);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-
-
-            PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
-                    new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
-                    TestApis.users().instrumented().userHandle());
-            assertThat(policyState.getCurrentResolvedPolicy()).containsExactlyElementsIn(
-                    secondPackages);
-            assertThat(sLocalDevicePolicyManager.getPermittedInputMethods())
-                    .containsExactlyElementsIn(secondPackagesPlusSystem);
-
-        } finally {
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-        }
-    }
-
-    // TODO: use most recent test annotation
-    @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setPermittedInputMethods",
-            "android.app.admin.DevicePolicyManager#getPermittedInputMethods"})
-    @MostRestrictiveCoexistenceTest(policy = PermittedInputMethods.class)
-    @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY})
-    public void setPermittedInputMethods_bothSetThenBothUnsets_unsets() {
-        try {
-            List<String> firstPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            List<String> secondPackages = new ArrayList<>(NON_SYSTEM_INPUT_METHOD_PACKAGES);
-            secondPackages.add("additionalPackage");
-            Set<String> secondPackagesPlusSystem = new HashSet<>(secondPackages);
-            secondPackagesPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, firstPackages);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, secondPackages);
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-
-
-            PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
-                    new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
-                    TestApis.users().instrumented().userHandle());
-            assertThat(policyState).isNull();
-            assertThat(sLocalDevicePolicyManager.getPermittedInputMethods()).isNull();
-
-        } finally {
-            sDeviceState.testApp(DPC_1).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-            sDeviceState.testApp(DPC_2).devicePolicyManager().setPermittedInputMethods(
-                    /* componentName= */ null, /* packageNames= */ null);
-        }
-    }
-
     @PolicyAppliesTest(policy = PermittedInputMethods.class)
     @Postsubmit(reason = "new test")
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, QUERY_ADMIN_POLICY,
             MANAGE_PROFILE_AND_DEVICE_OWNERS})
     @ApiTest(apis = {"android.app.admin.DevicePolicyManager#setPermittedInputMethods",
             "android.app.admin.DevicePolicyManager#getPermittedInputMethods"})
+    @Ignore // need to restore with some root-only capability to force migration
     public void setPermittedInputMethods_policyMigration_works() {
         try {
             assumeFalse("A system input method is required",
                     SYSTEM_INPUT_METHODS_PACKAGES.isEmpty());
 
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "false");
             List<String> enabledNonSystemImes = NON_SYSTEM_INPUT_METHOD_PACKAGES;
             Set<String> permittedPlusSystem = new HashSet<>();
             permittedPlusSystem.addAll(SYSTEM_INPUT_METHODS_PACKAGES);
@@ -446,8 +301,8 @@ public final class PermitInputMethodsTest {
                     sDeviceState.dpc().componentName(), /* packageNames= */ enabledNonSystemImes);
 
             sLocalDevicePolicyManager.triggerDevicePolicyEngineMigration(true);
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, "true");
 
             PolicyState<Set<String>> policyState = PolicyEngineUtils.getStringSetPolicyState(
                     new NoArgsPolicyKey(PERMITTED_INPUT_METHODS_POLICY),
@@ -464,8 +319,8 @@ public final class PermitInputMethodsTest {
         } finally {
             sDeviceState.dpc().devicePolicyManager().setPermittedInputMethods(
                     sDeviceState.dpc().componentName(), /* packageNames= */ null);
-            TestApis.flags().set(
-                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
+//            TestApis.flags().set(
+//                    NAMESPACE_DEVICE_POLICY_MANAGER, ENABLE_DEVICE_POLICY_ENGINE_FLAG, null);
         }
     }
 }

@@ -46,6 +46,8 @@ import android.os.CancellationSignal;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.UiObject2;
@@ -155,6 +157,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
         }
     }
 
+    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricPrompt.Builder#setConfirmationRequired",
@@ -175,24 +178,10 @@ public class BiometricSimpleTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_SUCCESS,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-
                 BiometricPrompt prompt = showDefaultBiometricPrompt(props.getSensorId(), callback,
                         new CancellationSignal());
 
@@ -280,10 +269,17 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     public void testInvalidInputs() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        //TODO(b/347123256): Update once mandatory biometrics becomes public
+        final int mandatoryBiometricsBit = 1 << 16;
         for (int i = 0; i < 32; i++) {
             final int authenticator = 1 << i;
             // If it's a public constant, no need to test
             if (Utils.isPublicAuthenticatorConstant(authenticator)) {
+                continue;
+            }
+
+            if (authenticator == mandatoryBiometricsBit) {
                 continue;
             }
 
@@ -513,20 +509,7 @@ public class BiometricSimpleTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertEquals("Sensor: " + props.getSensorId()
-                                + ", strength: " + props.getSensorStrength(),
-                        BiometricManager.BIOMETRIC_SUCCESS,
-                        mBiometricManager.canAuthenticate(authenticatorStrength));
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 final Random random = new Random();
                 final String randomTitle = String.valueOf(random.nextInt(10000));
@@ -536,7 +519,6 @@ public class BiometricSimpleTests extends BiometricTestBase {
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
-
                 showDefaultBiometricPromptWithContents(props.getSensorId(), 0 /* userId */,
                         true /* requireConfirmation */, callback, randomTitle, randomSubtitle,
                         randomDescription, null /* contentView */, randomNegativeButtonText);

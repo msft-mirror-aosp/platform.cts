@@ -55,6 +55,8 @@ android_test {
         "android.view.inputmethod.flags-aconfig-java",
         "com.android.input.flags-aconfig-java",
         "ui-trace-collector",
+        "collector-device-lib",
+        "hwui_flags_java_lib",
     ],
 
     jni_libs: [
@@ -64,6 +66,7 @@ android_test {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
     ],
 
     sdk_version: "test_current",

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertThrows;
 import android.content.Context;
 import android.location.LocationManager;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.Presubmit;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -60,6 +61,7 @@ public class GnssHardwareProviderUnprivilegedTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates() {
         assertThrows(
                 IllegalArgumentException.class,

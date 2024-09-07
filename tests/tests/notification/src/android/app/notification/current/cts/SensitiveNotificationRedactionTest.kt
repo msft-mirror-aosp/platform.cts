@@ -17,6 +17,7 @@ package android.app.notification.current.cts
 
 import android.Manifest.permission.POST_NOTIFICATIONS
 import android.Manifest.permission.RECEIVE_SENSITIVE_NOTIFICATIONS
+import android.app.AppOpsManager
 import android.app.Notification
 import android.app.Notification.CATEGORY_MESSAGE
 import android.app.Notification.EXTRA_MESSAGES
@@ -40,6 +41,7 @@ import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Bundle
 import android.os.Parcelable
+import android.os.Process
 import android.permission.cts.PermissionUtils
 import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
@@ -51,9 +53,13 @@ import android.service.notification.Flags
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import androidx.test.runner.AndroidJUnit4
+import com.android.compatibility.common.util.CddTest
 import com.android.compatibility.common.util.SystemUtil.runShellCommand
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.google.common.truth.Truth.assertWithMessage
+import org.junit.Assert
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeFalse
 import org.junit.Before
 import org.junit.Rule
@@ -94,12 +100,13 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         category: String = CATEGORY_MESSAGE,
         actions: List<Notification.Action>? = null,
         style: Notification.Style? = null,
-        extras: Bundle? = null
+        extras: Bundle? = null,
+        tag: String = groupKey
     ) {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.setFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
         )
         intent.setAction(Intent.ACTION_MAIN)
         intent.setPackage(mContext.getPackageName())
@@ -122,7 +129,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         if (extras != null) {
             nb.addExtras(extras)
         }
-        mNotificationManager.notify(groupKey, NOTIFICATION_ID, nb.build())
+        mNotificationManager.notify(tag, NOTIFICATION_ID, nb.build())
     }
 
     private fun createTestPendingIntent(): PendingIntent {
@@ -147,10 +154,11 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     }
 
     private fun waitForNotification(
-        searchType: SEARCH_TYPE = SEARCH_TYPE.POSTED
+        searchType: SEARCH_TYPE = SEARCH_TYPE.POSTED,
+        tag: String = groupKey
     ): StatusBarNotification {
-        val sbn = mNotificationHelper.findPostedNotification(groupKey, NOTIFICATION_ID, searchType)
-        assertWithMessage("Expected to find a notification with tag $groupKey")
+        val sbn = mNotificationHelper.findPostedNotification(tag, NOTIFICATION_ID, searchType)
+        assertWithMessage("Expected to find a notification with tag $tag")
                 .that(sbn).isNotNull()
         return sbn!!
     }
@@ -187,7 +195,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         val intent = Intent(Intent.ACTION_MAIN)
         intent.setFlags(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
         )
         intent.setAction(Intent.ACTION_MAIN)
         intent.setPackage(mContext.getPackageName())
@@ -221,11 +229,38 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
             sbn.notification.extras.getParcelableArray(EXTRA_MESSAGES, Parcelable::class.java)
         )
         assertWithMessage("expected notification to have exactly one message")
-                .that(messages.size).isEqualTo( 1)
+                .that(messages.size).isEqualTo(1)
         assertWithMessage("expected single message not to contain otp: ${messages[0].text}")
                 .that(messages[0].text.toString()).doesNotContain(OTP_CODE)
         assertWithMessage("expected message person to be redacted: ${messages[0].senderPerson}")
                 .that(messages[0].senderPerson?.name.toString()).isNotEqualTo(PERSON_NAME)
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS,
+        Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_BIG_TEXT_STYLE
+    )
+    fun testBigTextRedacted() {
+        val style = Notification.BigTextStyle()
+        val bigText = "BIG TEXT"
+        val bigTitleText = "BIG TITLE TEXT"
+        val summaryText = "summary text"
+        style.bigText(bigText)
+        style.setBigContentTitle(bigTitleText)
+        style.setSummaryText(summaryText)
+        sendNotification(style = style)
+        val sbn = waitForNotification()
+        val extras = sbn.notification.extras
+        val testBigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT).toString()
+        val testBigTitleText = extras.getCharSequence(Notification.EXTRA_TITLE_BIG).toString()
+        val testSummaryText = extras.getCharSequence(Notification.EXTRA_SUMMARY_TEXT).toString()
+        assertWithMessage("expected big text to be redacted: $testBigText")
+            .that(testBigText).doesNotContain(bigText)
+        assertWithMessage("expected big title text to be redacted: $testBigTitleText")
+            .that(testBigTitleText).doesNotContain(bigTitleText)
+        assertWithMessage("expected summary text to be redacted: $testSummaryText")
+            .that(testSummaryText).doesNotContain(summaryText)
     }
 
     @Test
@@ -284,12 +319,12 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     ) {
         val ranking = NotificationListenerService.Ranking()
         val foundPostedNotifRanking = rankingMap.getRanking(key, ranking)
-         assertWithMessage("Expected to find a ranking with key $key")
+        assertWithMessage("Expected to find a ranking with key $key")
                 .that(foundPostedNotifRanking).isTrue()
         assertWithMessage("Expected smart actions to be empty").that(ranking.smartActions)
-                    .isEmpty()
+                .isEmpty()
         assertWithMessage("Expected smart replies to be empty").that(ranking.smartReplies)
-                    .isEmpty()
+                .isEmpty()
     }
 
     @Test
@@ -316,13 +351,16 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testListenerWithCdmAssociationGetsUnredacted() {
-        assumeFalse(mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE))
+        assumeFalse(
+            mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE) ||
+                mPackageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+        )
         val cdmManager = mContext.getSystemService(CompanionDeviceManager::class.java)!!
         val macAddress = MacAddress.fromString("00:00:00:00:00:AA")
         try {
             runShellCommand(
                 "cmd companiondevice associate " +
-                    "${mContext.userId} ${mContext.packageName} $macAddress"
+                        "${mContext.userId} ${mContext.packageName} $macAddress"
             )
             // Trusted status is cached on helper enable, so disable + enable the listener
             mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
@@ -342,7 +380,7 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
-    fun testListenerWithReceiveSensitiveNotificationsGetsUnredacted() {
+    fun testListenerWithReceiveSensitiveNotificationsPermissionsGetsUnredacted() {
         runWithShellPermissionIdentity(
             {
                 // Trusted status is cached on helper enable, so disable + enable the listener
@@ -355,9 +393,163 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+    fun testListenerWithReceiveSensitiveNotificationsAppOpGetsUnredacted() {
+        val appOpsManager = mContext.getSystemService(AppOpsManager::class.java)!!
+        try {
+            runWithShellPermissionIdentity {
+                assertEquals(
+                    AppOpsManager.MODE_IGNORED,
+                    appOpsManager.checkOp(
+                        AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                        Process.myUid(),
+                        STUB_PACKAGE_NAME
+                    )
+                )
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_ALLOWED
+                )
+            }
+            // Trusted status is cached on helper enable, so disable + enable the listener
+            mNotificationHelper.disableListener(STUB_PACKAGE_NAME)
+            mNotificationHelper.enableListener(STUB_PACKAGE_NAME)
+            assertNotificationNotRedacted()
+        } finally {
+            runWithShellPermissionIdentity {
+                appOpsManager.setUidMode(
+                    AppOpsManager.OPSTR_RECEIVE_SENSITIVE_NOTIFICATIONS,
+                    Process.myUid(),
+                    AppOpsManager.MODE_IGNORED
+                )
+            }
+        }
+    }
+
+    @Test
     @RequiresFlagsDisabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testStandardListenerGetsUnredactedWhenFlagDisabled() {
         assertNotificationNotRedacted()
+    }
+
+    // see packages/modules/ExtServices/java/tests/src/android/ext/services/notification/
+    // NotificationOtpDetectionHelperTest.kt for more granular tests of these otp messages
+    @Test
+    @CddTest(requirement = "3.8.3.4/C-1-1")
+    @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+    fun testE2ERedaction_shouldRedact() {
+        assumeFalse(
+            mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) ||
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+        )
+        assertTrue(
+            "Expected a notification assistant to be present",
+            mPreviousEnabledAssistant != null
+        )
+        mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
+        mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
+        // We just re-enabled the NAS. send one notification in order to start its process
+        sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
+        waitForNotification(tag = "start")
+
+        val shouldRedact = mutableListOf(
+            "123G5",
+            "123456F8",
+            "123ķ4",
+            "123Ŀ4",
+            "1-1-01 is the date of your code T3425",
+            "your code 54-234-3 was sent on 1-1-01",
+            "34-58-30",
+            "12-1-3089",
+            "G-3d523",
+            "G-FD-745",
+            "your code is:G-345821",
+            "your code is (G-345821",
+            "your code is \nG-345821",
+            "you code is G-345821.",
+            "you code is (G-345821)",
+            "c'est g4zy75",
+            "2109",
+            "3035",
+            "1899")
+        var notifNum = 0
+        val notRedactedFailures = StringBuilder("")
+        for (otp in shouldRedact) {
+            val tag = "$groupKey #$notifNum"
+            sendNotification(text = otp, title = "", subtext = "", tag = tag)
+            val sbn = waitForNotification(tag = tag)
+            val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+            if (text.contains(otp)) {
+                notRedactedFailures.append("otp \"$otp\" is in notification text \"$text\"\n")
+            }
+            notifNum += 1
+        }
+
+        if (notRedactedFailures.toString() != "") {
+            Assert.fail(
+                "The following codes were not redacted, but should have been:" +
+                        "\n$notRedactedFailures"
+            )
+        }
+    }
+
+    // see packages/modules/ExtServices/java/tests/src/android/ext/services/notification/
+    // NotificationOtpDetectionHelperTest.kt for more granular tests of these otp messages
+    @Test
+    @CddTest(requirement = "3.8.3.4/C-1-1")
+    @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
+    fun testE2ERedaction_shouldNotRedact() {
+        assertTrue(
+            "Expected a notification assistant to be present",
+            mPreviousEnabledAssistant != null
+        )
+        mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME)
+        mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant)
+        // We just re-enabled the NAS. send one notification in order to start its process
+        sendNotification(text = "staring NAS process", title = "", subtext = "", tag = "start")
+        waitForNotification(tag = "start")
+
+        val shouldNotRedact =
+            mutableListOf(
+                "123G",
+                "123",
+                "12 345",
+                "123T56789",
+                "TEFHXES",
+                "01-01-2001",
+                "1-1-2001",
+                "1-1-01",
+                "6--7893",
+                "------",
+                "your code isG-345821",
+                "your code is G-345821for real",
+                "GVRXY 2",
+                "2009",
+                "1945",
+            )
+        var notifNum = 0
+        val redactedFailures = StringBuilder("")
+        for (notOtp in shouldNotRedact) {
+            val tag = "$groupKey #$notifNum"
+            sendNotification(text = notOtp, title = "", subtext = "", tag = tag)
+            val sbn = waitForNotification(tag = tag)
+            val text = sbn.notification.extras.getCharSequence(EXTRA_TEXT)!!.toString()
+            if (!text.contains(notOtp)) {
+                redactedFailures.append(
+                    "non-otp message \"$notOtp\" is not in notification text " +
+                        "\"$text\"\n"
+                )
+            }
+            notifNum += 1
+        }
+
+        if (redactedFailures.toString() != "") {
+            Assert.fail(
+                "The following codes were redacted, but should not have been:" +
+                        "\n$redactedFailures"
+            )
+        }
     }
 
     private fun assertNotificationNotRedacted() {
@@ -380,6 +572,5 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
         private const val PERSON_NAME = "Alan Smithee"
         private const val NOTIFICATION_ID = 42
         private const val SHORT_SLEEP_TIME_MS: Long = 100
-        private const val SLEEP_TIME_MS: Long = 5000
     }
 }

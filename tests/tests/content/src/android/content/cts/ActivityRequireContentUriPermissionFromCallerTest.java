@@ -25,6 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.app.Activity;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ClipData;
@@ -40,6 +41,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -111,6 +113,12 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
     private static final String TEST_RECEIVER_ACTION =
             "android.content.cts.REQUIRE_CONTENT_URI_TEST_RECEIVER_ACTION";
 
+    private static final String EXTRA_ASSERT_THROWS = "assertThrows";
+    private static final String EXTRA_ERROR_MSG = "errorMsg";
+    private static final String EXTRA_IS_RESULT = "isResult";
+    private static final String EXTRA_MODE_FLAGS_ORDINAL = "modeFlags";
+    private static final String EXTRA_TESTED_ATTRIBUTE_ORDINAL = "testedAttribute";
+
     private static CountDownLatch sLatch;
     /** Used to verify passing a non-Uri object into EXTRA_STREAM does not affect its retrieval. */
     private static String sExtraStreamString;
@@ -164,72 +172,85 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testNoneAttribute_allModeFlags_doNotThrow(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"NONE", "READ", "WRITE", "READ_AND_WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertDoesNotThrow(TestedAttributeActivity.NONE, modeFlags, uriLocation);
+        internalTestAssertDoesNotThrow(TestedAttributeActivity.NONE, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadAttribute_readModeFlags_doNotThrow(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"READ", "READ_AND_WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ, modeFlags, uriLocation);
+        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadAttribute_noneAndWriteModeFlags_throw(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"NONE", "WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertThrows(TestedAttributeActivity.READ, modeFlags, uriLocation);
+        internalTestAssertThrows(TestedAttributeActivity.READ, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testWriteAttribute_writeModeFlags_doNotThrow(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"WRITE", "READ_AND_WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertDoesNotThrow(TestedAttributeActivity.WRITE, modeFlags, uriLocation);
+        internalTestAssertDoesNotThrow(TestedAttributeActivity.WRITE, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testWriteAttribute_noneAndReadModeFlags_throw(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"NONE", "READ"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertThrows(TestedAttributeActivity.WRITE, modeFlags, uriLocation);
+        internalTestAssertThrows(TestedAttributeActivity.WRITE, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadOrWriteAttribute_allButNoneModeFlags_doNotThrow(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"READ", "WRITE", "READ_AND_WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ_OR_WRITE, modeFlags,
-                uriLocation);
+        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ_OR_WRITE, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadOrWriteAttribute_noneModeFlags_throws(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertThrows(TestedAttributeActivity.READ_OR_WRITE, ModeFlags.NONE,
-                uriLocation);
+        internalTestAssertThrows(TestedAttributeActivity.READ_OR_WRITE, testedActivityStart,
+                ModeFlags.NONE, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadAndWriteAttribute_readAndWriteModeFlags_doesNotThrow(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ_AND_WRITE,
+        internalTestAssertDoesNotThrow(TestedAttributeActivity.READ_AND_WRITE, testedActivityStart,
                 ModeFlags.READ_AND_WRITE, uriLocation);
     }
 
@@ -237,15 +258,17 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
     public void testReadAndWriteAttribute_allButReadAndWriteModeFlags_throw(
+            @TestParameter TestedActivityStart testedActivityStart,
             @TestParameter({"NONE", "READ", "WRITE"}) ModeFlags modeFlags,
             @TestParameter UriLocation uriLocation) throws Exception {
-        internalTestAssertThrows(TestedAttributeActivity.READ_AND_WRITE, modeFlags, uriLocation);
+        internalTestAssertThrows(TestedAttributeActivity.READ_AND_WRITE, testedActivityStart,
+                modeFlags, uriLocation);
     }
 
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
-    public void testAllAttributes_passingAnyUriInUnknownExtra_doesNotThrow(
+    public void testAllAttributes_startActivity_passingAnyUriInUnknownExtra_doesNotThrow(
             @TestParameter TestedAttributeActivity testedAttributeActivity,
             @TestParameter ModeFlags modeFlags) throws Exception {
         Intent intent = getTestIntent(testedAttributeActivity.mComponent);
@@ -267,7 +290,8 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
     @Test
     @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
     @CddTest(requirements = {"4/C-0-2"})
-    public void testAllAttributes_passingNonUriExtraStreamDoesNotAffectRetrievalOfExtras(
+    public void
+    testAllAttributes_startActivity_passingNonUriExtraStreamDoesNotAffectRetrievalOfExtras(
             @TestParameter TestedAttributeActivity testedAttributeActivity) throws Exception {
         Intent intent = getTestIntent(testedAttributeActivity.mComponent);
         String nonUriExtraStream = "non-uri";
@@ -285,18 +309,84 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
                 sReferrerName);
     }
 
+
+    @Test
+    @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
+    @CddTest(requirements = {"4/C-0-2"})
+    public void testAllAttributes_startActivityForResult_passingAnyUriInUnknownExtra_doesNotThrow(
+            @TestParameter TestedAttributeActivity testedAttributeActivity,
+            @TestParameter ModeFlags modeFlags) throws Exception {
+        Intent intent = getTestIntent(new ComponentName(sContext,
+                StartActivityForResultTestActivity.class));
+        intent.putExtra(EXTRA_TESTED_ATTRIBUTE_ORDINAL, testedAttributeActivity.ordinal());
+
+        Uri uri = sUrisFromService[modeFlags.mIdFromService];
+        intent.putExtra("UNKNOWN_EXTRA", uri);
+        intent.putExtra(EXTRA_ASSERT_THROWS, false);
+        intent.putExtra(EXTRA_ERROR_MSG, "Should not throw a SecurityException because the URI was"
+                + " passed into an unknown extra");
+
+        sContext.startActivity(intent);
+
+        assertActivityWasInvoked();
+    }
+
+    @Test
+    @ApiTest(apis = {"android.R.attr#requireContentUriPermissionFromCaller"})
+    @CddTest(requirements = {"4/C-0-2"})
+    public void
+    testAllAttributes_startActivityForResult_passingNonUriExtraStreamDoesNotAffectRetrievalOfExtras(
+            @TestParameter TestedAttributeActivity testedAttributeActivity) throws Exception {
+        Intent intent = getTestIntent(new ComponentName(sContext,
+                StartActivityForResultTestActivity.class));
+        intent.putExtra(EXTRA_TESTED_ATTRIBUTE_ORDINAL, testedAttributeActivity.ordinal());
+
+        String nonUriExtraStream = "non-uri";
+        String referrerName = "ComponentCaller";
+        intent.putExtra(Intent.EXTRA_STREAM, nonUriExtraStream);
+        intent.putExtra(Intent.EXTRA_REFERRER_NAME, referrerName);
+        intent.putExtra(EXTRA_ERROR_MSG, "Should not throw a SecurityException because no URIs were"
+                + " passed");
+
+        sContext.startActivity(intent);
+
+        assertActivityWasInvoked();
+        assertEquals("Passing a non-URI item as EXTRA_STREAM should not affect the retrieval of"
+                + " EXTRA_STREAM", nonUriExtraStream, sExtraStreamString);
+        assertEquals("Passing a non-URI item as EXTRA_STREAM should not affect the retrieval of"
+                        + " other extras, such as EXTRA_REFERRER_NAME", referrerName,
+                sReferrerName);
+    }
+
     private void internalTestAssertDoesNotThrow(TestedAttributeActivity attributeActivity,
-            ModeFlags modeFlags, UriLocation uriLocation) throws Exception {
-        internalTest(attributeActivity, modeFlags, uriLocation, /* assertThrows */ false);
+            TestedActivityStart testedActivityStart, ModeFlags modeFlags, UriLocation uriLocation)
+            throws Exception {
+        internalTest(attributeActivity, testedActivityStart, modeFlags, uriLocation,
+                /* assertThrows */ false);
     }
 
     private void internalTestAssertThrows(TestedAttributeActivity attributeActivity,
-            ModeFlags modeFlags, UriLocation uriLocation) throws Exception {
-        internalTest(attributeActivity, modeFlags, uriLocation, /* assertThrows */ true);
+            TestedActivityStart testedActivityStart, ModeFlags modeFlags, UriLocation uriLocation)
+            throws Exception {
+        internalTest(attributeActivity, testedActivityStart, modeFlags, uriLocation,
+                /* assertThrows */ true);
     }
 
-    private void internalTest(TestedAttributeActivity attributeActivity, ModeFlags modeFlags,
-            UriLocation uriLocation, boolean assertThrows) throws Exception {
+    private void internalTest(TestedAttributeActivity attributeActivity,
+            TestedActivityStart testedActivityStart, ModeFlags modeFlags, UriLocation uriLocation,
+            boolean assertThrows) throws Exception {
+        switch (testedActivityStart) {
+            case START_ACTIVITY ->
+                    internalTest_startActivity(attributeActivity, modeFlags, uriLocation,
+                            assertThrows);
+            case START_ACTIVITY_FOR_RESULT ->
+                    internalTest_startActivityForResult(attributeActivity, modeFlags, uriLocation,
+                            assertThrows);
+        }
+    }
+
+    private void internalTest_startActivity(TestedAttributeActivity attributeActivity,
+            ModeFlags modeFlags, UriLocation uriLocation, boolean assertThrows) throws Exception {
         Intent intent = getTestIntent(attributeActivity.mComponent, modeFlags, uriLocation);
 
         boolean securityExceptionCaught = false;
@@ -314,7 +404,23 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
         }
     }
 
-    private String getErrorMessage(ModeFlags modeFlags, boolean assertThrows, boolean isOr) {
+    private void internalTest_startActivityForResult(TestedAttributeActivity attributeActivity,
+            ModeFlags modeFlags, UriLocation uriLocation, boolean assertThrows) throws Exception {
+        ComponentName testActivity = new ComponentName(sContext,
+                StartActivityForResultTestActivity.class);
+        Intent intent = getTestIntent(testActivity, modeFlags, uriLocation);
+        intent.putExtra(EXTRA_TESTED_ATTRIBUTE_ORDINAL, attributeActivity.ordinal());
+        intent.putExtra(EXTRA_MODE_FLAGS_ORDINAL, modeFlags.ordinal());
+        intent.putExtra(EXTRA_ASSERT_THROWS, assertThrows);
+
+        sContext.startActivity(intent);
+
+        if (!assertThrows) {
+            assertActivityWasInvoked();
+        }
+    }
+
+    private static String getErrorMessage(ModeFlags modeFlags, boolean assertThrows, boolean isOr) {
         String requiredModeFlags = switch (modeFlags) {
             case NONE -> assertThrows ? "any" : "no";
             case READ -> "read";
@@ -400,6 +506,52 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
         }
     }
 
+    public static final class StartActivityForResultTestActivity extends Activity {
+        private static final String TAG = "StartActivityForResultTestActivity";
+
+        @Override
+        public void onStart() {
+            super.onStart();
+            Intent intent = getIntent();
+            Log.i(TAG, "intent: " + intent);
+
+            int attributeOrdinal = intent.getIntExtra(EXTRA_TESTED_ATTRIBUTE_ORDINAL, -1);
+            boolean assertThrows = intent.getBooleanExtra(EXTRA_ASSERT_THROWS, false);
+
+            TestedAttributeActivity testedAttributeActivity = TestedAttributeActivity
+                    .values()[attributeOrdinal];
+
+            Intent testIntent = new Intent(getIntent());
+            testIntent.setComponent(testedAttributeActivity.mComponent);
+            testIntent.putExtra(EXTRA_IS_RESULT, true);
+            testIntent.setFlags(0);
+
+            boolean securityExceptionCaught = false;
+            try {
+                startActivityForResult(testIntent, 0);
+            } catch (SecurityException e) {
+                securityExceptionCaught = true;
+            }
+
+            String errorMsg = intent.getStringExtra(EXTRA_ERROR_MSG);
+            if (errorMsg == null) {
+                int modeFlagsOrdinal = intent.getIntExtra(EXTRA_MODE_FLAGS_ORDINAL, -1);
+                ModeFlags modeFlags = ModeFlags.values()[modeFlagsOrdinal];
+                errorMsg = getErrorMessage(modeFlags, assertThrows, testedAttributeActivity.mIsOr);
+            }
+            assertEquals(errorMsg, securityExceptionCaught, assertThrows);
+        }
+
+        @Override
+        public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+            Log.i(TAG, "intent: " + intent);
+            intent.setComponent(new ComponentName(sContext, TestReceiver.class));
+            intent.setAction(TEST_RECEIVER_ACTION);
+            sendBroadcast(intent);
+            finish();
+        }
+    }
+
     public enum ModeFlags {
         NONE(0, URI_NO_PERMISSION_ID),
         READ(Intent.FLAG_GRANT_READ_URI_PERMISSION, URI_READ_PERMISSION_ID),
@@ -438,4 +590,6 @@ public class ActivityRequireContentUriPermissionFromCallerTest {
             this.mIsOr = isOr;
         }
     }
+
+    public enum TestedActivityStart { START_ACTIVITY, START_ACTIVITY_FOR_RESULT }
 }

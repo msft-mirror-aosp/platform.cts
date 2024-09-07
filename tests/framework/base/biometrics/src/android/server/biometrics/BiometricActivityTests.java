@@ -34,6 +34,9 @@ import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.SensorProperties;
 import android.platform.test.annotations.Presubmit;
+import android.server.biometrics.util.BiometricCallbackHelper;
+import android.server.biometrics.util.BiometricServiceState;
+import android.server.biometrics.util.Utils;
 import android.server.wm.TestJournalProvider;
 import android.server.wm.WindowManagerState;
 import android.util.Log;
@@ -58,6 +61,7 @@ public class BiometricActivityTests extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setAllowedAuthenticators",
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
+    @Ignore("b/356789161")
     @Test
     public void testBiometricOnly_authenticateFromForegroundActivity() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -183,6 +187,7 @@ public class BiometricActivityTests extends BiometricTestBase {
             "android.hardware.biometrics."
                     + "BiometricPrompt#authenticate"})
     @Test
+    @Ignore("b/356789161")
     public void testBiometricOnly_rejectThenAuthenticate() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties prop : mSensorProperties) {

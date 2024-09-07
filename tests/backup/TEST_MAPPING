@@ -19,5 +19,15 @@
         }
       ]
     }
+  ],
+  "permission-mainline-presubmit": [
+    {
+      "name": "CtsBackupTestCases",
+      "options": [
+        {
+          "include-filter": "android.backup.cts.PermissionTest"
+        }
+      ]
+    }
   ]
 }

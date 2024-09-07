@@ -28,6 +28,7 @@ import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
 import android.stats.devicepolicy.EventId;
 
+import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.IgnoreOnHeadlessSystemUserMode;
 import com.android.cts.devicepolicy.DeviceAdminFeaturesCheckerRule.RequiresAdditionalFeatures;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper;
 import com.android.cts.devicepolicy.metrics.DevicePolicyEventWrapper.Builder;
@@ -138,6 +139,8 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
      */
     @FlakyTest
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testBindDeviceAdminServiceAsUser_secondaryUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -162,6 +165,8 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testWipeData_secondaryUser() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 
@@ -174,6 +179,8 @@ public final class DeviceOwnerPlusProfileOwnerTest extends BaseDevicePolicyTest 
     }
 
     @Test
+    @IgnoreOnHeadlessSystemUserMode(reason = "CreateAndManageUsers is blocked on headless single "
+            + "user mode")
     public void testWipeData_secondaryUserLogged() throws Exception {
         assumeCanCreateAdditionalUsers(1);
 

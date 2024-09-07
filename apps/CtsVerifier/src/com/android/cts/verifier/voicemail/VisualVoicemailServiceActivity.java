@@ -19,6 +19,7 @@ package com.android.cts.verifier.voicemail;
 import android.os.Bundle;
 import android.telecom.PhoneAccountHandle;
 import android.telephony.VisualVoicemailService.VisualVoicemailTask;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -35,6 +36,7 @@ import com.android.cts.verifier.voicemail.CtsVisualVoicemailService.Callback;
  * service connected and SIM removed events with the {@link android.telephony.VisualVoicemailService}.
  */
 public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
+    private static final String LOG_TAG = "VisualVoicemailServiceActivity";
 
     private DefaultDialerChanger mDefaultDialerChanger;
 
@@ -61,6 +63,8 @@ public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
             mConnectedReceived = true;
             mInsertSimImage.setImageDrawable(getDrawable(R.drawable.fs_good));
             mInsertSimText.setText(getText(R.string.visual_voicemail_service_insert_sim_received));
+            Log.i(LOG_TAG, "onCellServiceConnected: taskId=" + task.hashCode() + ", phac="
+                    + phoneAccountHandle + ", insert sim (PASSED)");
             checkPassed();
         }
 
@@ -69,6 +73,8 @@ public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
             mSimRemovalReceived = true;
             mRemoveSimImage.setImageDrawable(getDrawable(R.drawable.fs_good));
             mRemoveSimText.setText(getText(R.string.visual_voicemail_service_remove_sim_received));
+            Log.i(LOG_TAG, "onSimRemoved: taskId=" + task.hashCode() + ", phac="
+                    + phoneAccountHandle + ", remove sim (PASSED)");
             checkPassed();
         }
     };
@@ -76,6 +82,7 @@ public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.i(LOG_TAG, "onCreate");
         CtsVisualVoicemailService.setCallback(mCallback);
         View view = getLayoutInflater().inflate(R.layout.visual_voicemail_service, null);
         setContentView(view);
@@ -103,6 +110,7 @@ public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
         mRemoveSimBeforeTestNAButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.i(LOG_TAG, "onClick - removed the sim before starting test (N/A)");
                 getPassButton().setEnabled(true);
                 mSetDefaultDialerImage.setImageDrawable(getDrawable(R.drawable.fs_warning));
                 mRestoreDefaultDialerImage.setImageDrawable(getDrawable(R.drawable.fs_warning));
@@ -116,12 +124,15 @@ public class VisualVoicemailServiceActivity extends PassFailButtons.Activity {
         mRemoveSimBeforeTestOkButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.i(LOG_TAG, "onClick - removed the sim before starting test (PASS)");
                 mRemoveSimBeforeTestImage.setImageDrawable(getDrawable(R.drawable.fs_good));
             }
         });
     }
 
     private void checkPassed() {
+        Log.i(LOG_TAG, "checkPassed - connected=" + mConnectedReceived + ", simRemovalReceived="
+                + mSimRemovalReceived);
         if (mConnectedReceived && mSimRemovalReceived) {
             getPassButton().setEnabled(true);
             mDefaultDialerChanger.setRestorePending(true);

@@ -38,6 +38,7 @@ java_test_host {
 
     data: [
         ":CtsInputHostTestHelperApp",
+        ":TestIme",
     ],
 
     libs: [

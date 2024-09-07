@@ -16,27 +16,39 @@
 
 package android.content.res.cts;
 
+import static junit.framework.TestCase.assertEquals;
+
+import android.content.Context;
 import android.content.cts.R;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.platform.test.annotations.AppModeSdkSandbox;
-import android.test.AndroidTestCase;
 import android.util.TypedValue;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class PrimitiveTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class PrimitiveTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private Resources mResources;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        mResources = mContext.getResources();
+    @Before
+    public void setUp() throws Exception {
+        mResources = getContext().getResources();
     }
 
     private void tryEnum(final int resid, final int expected) {
-        final TypedArray sa = mContext.obtainStyledAttributes(resid, R.styleable.EnumStyle);
+        final TypedArray sa = getContext().obtainStyledAttributes(resid, R.styleable.EnumStyle);
         final int value = sa.getInt(R.styleable.EnumStyle_testEnum, -1);
         sa.recycle();
 
@@ -45,6 +57,7 @@ public class PrimitiveTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testEnum() {
         tryEnum(R.style.TestEnum1, 1);
         tryEnum(R.style.TestEnum2, 2);
@@ -53,7 +66,7 @@ public class PrimitiveTest extends AndroidTestCase {
     }
 
     private void tryFlag(final int resid, final int expected) {
-        final TypedArray sa = mContext.obtainStyledAttributes(resid, R.styleable.FlagStyle);
+        final TypedArray sa = getContext().obtainStyledAttributes(resid, R.styleable.FlagStyle);
         final int value = sa.getInt(R.styleable.FlagStyle_testFlags, -1);
         sa.recycle();
 
@@ -62,6 +75,7 @@ public class PrimitiveTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testFlags() throws Exception {
         tryFlag(R.style.TestFlag1, 0x1);
         tryFlag(R.style.TestFlag2, 0x2);
@@ -72,17 +86,18 @@ public class PrimitiveTest extends AndroidTestCase {
 
     private void tryBoolean(final int resid, final boolean expected) {
         final TypedValue v = new TypedValue();
-        mContext.getResources().getValue(resid, v, true);
+        getContext().getResources().getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_INT_BOOLEAN, v.type);
         assertEquals("Expecting boolean value " + expected + " got " + v
                 + " from TypedValue: in resource 0x" + Integer.toHexString(resid),
                 expected, v.data != 0);
         assertEquals("Expecting boolean value " + expected + " got " + v
                 + " from getBoolean(): in resource 0x" + Integer.toHexString(resid),
-                expected, mContext.getResources().getBoolean(resid));
+                expected, getContext().getResources().getBoolean(resid));
     }
 
     @SmallTest
+    @Test
     public void testBoolean() {
         tryBoolean(R.bool.trueRes, true);
         tryBoolean(R.bool.falseRes, false);
@@ -90,7 +105,7 @@ public class PrimitiveTest extends AndroidTestCase {
 
     private void tryString(final int resid, final String expected) {
         final TypedValue v = new TypedValue();
-        mContext.getResources().getValue(resid, v, true);
+        getContext().getResources().getValue(resid, v, true);
         assertEquals(TypedValue.TYPE_STRING, v.type);
         assertEquals("Expecting string value " + expected + " got " + v
                 + ": in resource 0x" + Integer.toHexString(resid),
@@ -98,6 +113,7 @@ public class PrimitiveTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testStringCoerce() {
         tryString(R.string.coerceIntegerToString, "100");
         tryString(R.string.coerceBooleanToString, "true");
@@ -114,6 +130,7 @@ public class PrimitiveTest extends AndroidTestCase {
     }
 
     @SmallTest
+    @Test
     public void testFormattedString() {
         // Make sure the regular one doesn't format anything
         checkString(R.string.formattedStringNone,

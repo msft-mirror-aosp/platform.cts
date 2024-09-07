@@ -24,6 +24,7 @@ import android.graphics.Mesh
 import android.graphics.MeshSpecification
 import android.graphics.Paint
 import android.graphics.Point
+import android.graphics.PointF
 import android.graphics.Rect
 import android.graphics.RectF
 import android.uirendering.cts.bitmapverifiers.RectVerifier
@@ -1107,6 +1108,57 @@ class MeshTest : ActivityTestBase() {
         createTest().addCanvasClient({ canvas: Canvas, width: Int, height: Int ->
             canvas.drawMesh(mesh, BlendMode.SRC, paint)
         }, true).runWithVerifier(RectVerifier(Color.WHITE, paint.color, rect))
+    }
+
+    @Test
+    fun testDrawMeshTwiceWithDifferentUniforms() {
+        val vertexShader = """
+                uniform float2 positionDelta;
+                Varyings main(const Attributes attributes) {
+                    Varyings varyings;
+                    varyings.position = attributes.position + positionDelta;
+                    return varyings;
+                }
+            """.trimIndent()
+
+        val meshSpec = MeshSpecification.make(simpleAttributeList, 8, simpleVaryingList,
+                vertexShader, simpleFragmentShader)
+
+        val vertexBuffer = FloatBuffer.allocate(8)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(20f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(0f)
+        vertexBuffer.put(20f)
+        vertexBuffer.put(20f)
+        vertexBuffer.put(20f)
+        vertexBuffer.rewind()
+
+        val indexBuffer = ShortBuffer.allocate(6)
+        indexBuffer.put(0, 0)
+        indexBuffer.put(1, 1)
+        indexBuffer.put(2, 2)
+        indexBuffer.put(3, 1)
+        indexBuffer.put(4, 2)
+        indexBuffer.put(5, 3)
+        indexBuffer.rewind()
+
+        val firstDelta = PointF(30f, 10f)
+        val secondDelta = PointF(30f, 30f)
+        val combinedRect = Rect(30, 10, 50, 50)
+        val paint = Paint()
+        paint.color = Color.BLUE
+        val mesh = Mesh(
+            meshSpec, Mesh.TRIANGLES, vertexBuffer, 4, indexBuffer, RectF(0f, 0f, 100f, 100f)
+        )
+
+        createTest().addCanvasClient({ canvas: Canvas, width: Int, height: Int ->
+            mesh.setFloatUniform("positionDelta", firstDelta.x, firstDelta.y)
+            canvas.drawMesh(mesh, BlendMode.SRC, paint)
+            mesh.setFloatUniform("positionDelta", secondDelta.x, secondDelta.y)
+            canvas.drawMesh(mesh, BlendMode.SRC, paint)
+        }, true).runWithVerifier(RectVerifier(Color.WHITE, paint.color, combinedRect))
     }
 
     @Test

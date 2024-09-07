@@ -277,6 +277,27 @@ prebuilt_apex {
 }
 
 prebuilt_apex {
+    name: "StagedInstallTestApexV2_AddApkToApex",
+    arch: {
+        arm: {
+            src: "testdata/apex/arm/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        arm64: {
+            src: "testdata/apex/arm/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        // TODO(oyalcin): Enable riscv64 tests after successfully dropping the prebuilts.
+        x86: {
+            src: "testdata/apex/x86/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+        x86_64: {
+            src: "testdata/apex/x86/com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+        },
+    },
+    filename: "com.android.apex.cts.shim.v2_add_apk_to_apex.apex",
+    installable: false,
+}
+
+prebuilt_apex {
     name: "StagedInstallTestApexV2_AdditionalFile",
     arch: {
         arm: {

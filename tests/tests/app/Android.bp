@@ -36,6 +36,7 @@ android_test {
         "flag-junit",
         "TestParameterInjector",
         "cts-wm-util",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",

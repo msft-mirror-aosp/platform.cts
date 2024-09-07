@@ -38,8 +38,6 @@ import java.lang.annotation.RetentionPolicy;
  * Class contains static methods to adopt all or a subset of the shell's permissions while invoking
  * a {@link ThrowingRunnable}. Also, if an {@link AssumptionViolatedException} is thrown while
  * executing {@link ThrowingRunnable}, it will pass it through to the test infrastructure.
- *
- * TODO(b/250108245): Replace class with PermissionCheckerRule annotations.
  */
 public final class ShellPermissionUtils {
     private ShellPermissionUtils() {
@@ -53,7 +51,16 @@ public final class ShellPermissionUtils {
     public static void runWithShellPermissionIdentity(ThrowingRunnable throwingRunnable) {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity();
-        run(throwingRunnable, uiAutomation);
+        try {
+            throwingRunnable.run();
+        } catch (AssumptionViolatedException e) {
+            // Make sure we allow AssumptionViolatedExceptions through.
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Caught exception", e);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     /**
@@ -103,25 +110,21 @@ public final class ShellPermissionUtils {
             @PermissionCheckMode int checkMode, String... permissions) {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(permissions);
-        if (checkMode != CHECK_MODE_NONE) {
-            for (String permission : permissions) {
-                boolean adopted = ContextCompat.checkSelfPermission(
-                        InstrumentationRegistry.getInstrumentation().getTargetContext(),
-                        permission) == PackageManager.PERMISSION_GRANTED;
-                String msg = "Unable to adopt shell permission: " + permission;
-                if (checkMode == CHECK_MODE_ASSUME) {
-                    assumeTrue(msg, adopted);
-                }
-                if (checkMode == CHECK_MODE_ASSERT) {
-                    assertWithMessage(msg).that(adopted).isTrue();
+        try {
+            if (checkMode != CHECK_MODE_NONE) {
+                for (String permission : permissions) {
+                    boolean adopted = ContextCompat.checkSelfPermission(
+                            InstrumentationRegistry.getInstrumentation().getTargetContext(),
+                            permission) == PackageManager.PERMISSION_GRANTED;
+                    String msg = "Unable to adopt shell permission: " + permission;
+                    if (checkMode == CHECK_MODE_ASSUME) {
+                        assumeTrue(msg, adopted);
+                    }
+                    if (checkMode == CHECK_MODE_ASSERT) {
+                        assertWithMessage(msg).that(adopted).isTrue();
+                    }
                 }
             }
-        }
-        run(throwingRunnable, uiAutomation);
-    }
-
-    private static void run(ThrowingRunnable throwingRunnable, UiAutomation uiAutomation) {
-        try {
             throwingRunnable.run();
         } catch (AssumptionViolatedException e) {
             // Make sure we allow AssumptionViolatedExceptions through.

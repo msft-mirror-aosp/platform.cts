@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CarWifiHostTest extends CarHostJUnit4TestCase {
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
+    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(25);
 
     private static final String GET_PERSISTENT_TETHERING =
             "settings get global android.car.ENABLE_PERSISTENT_TETHERING";
@@ -56,8 +56,6 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
             "dumpsys car_service --services CarWifiService";
     private static final String CMD_DUMPSYS_WIFI_PROTO =
             "dumpsys car_service --services CarWifiService --proto";
-    private static final String GET_TETHERING_CAPABILITY =
-            "cmd car_service get-tethering-capability";
     private static final String WIFI_HOTSPOT_ON = "cmd wifi start-softap CarWifiService open";
     private static final String WIFI_HOTSPOT_OFF = "cmd wifi stop-softap";
     private static boolean sTetheringStatusBefore;
@@ -147,8 +145,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringEnabled_tetheringOnReboot()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -162,8 +159,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_withCapabilityTetheringDisabled_noTetheringOnReboot()
             throws Exception {
         assumeTrue("Skipping test: tethering capability disabled",
@@ -178,8 +174,7 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     @Test
     @RequiresFlagsEnabled({Flags.FLAG_PERSIST_AP_SETTINGS, Flags.FLAG_CAR_DUMP_TO_PROTO})
-    @ApiTest(apis = {"android.car.wifi.CarWifiManager#canControlPersistTetheringSettings",
-            "android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
+    @ApiTest(apis = {"android.car.settings.CarSettings#ENABLE_PERSISTENT_TETHERING"})
     public void testPersistTetheringCarSetting_noCapabilityTetheringEnabled_noTetheringOnReboot()
             throws Exception {
         assumeFalse("Skipping test: tethering capability enabled",
@@ -205,13 +200,23 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
     }
 
     private boolean isPersistTetheringCapabilityEnabled() throws Exception {
-        String output = executeCommand(GET_TETHERING_CAPABILITY);
-        return output.contains("true");
+        CarWifiDumpProto carWifiDump = ProtoUtils.getProto(getDevice(),
+                CarWifiDumpProto.parser(), CMD_DUMPSYS_WIFI_PROTO);
+        return carWifiDump.getPersistTetheringCapabilitiesEnabled();
     }
 
     private void enablePersistTetheringAndReboot(boolean enableTethering) throws Exception {
         String hotspotCommand = (enableTethering ? WIFI_HOTSPOT_ON : WIFI_HOTSPOT_OFF);
-        executeCommand(hotspotCommand);
+        String hotspotResult = executeCommand(hotspotCommand);
+
+        // Tethering must be enabled or disabled successfully for testing to validate.
+        if (enableTethering) {
+            assumeTrue("Skipping test: wi-fi hotspot was not successfully enabled",
+                    hotspotResult.contains("SAP is enabled"));
+        } else {
+            assumeTrue("Skipping test: wi-fi hotspot was not successfully disabled",
+                    hotspotResult.contains("Soft AP stopped"));
+        }
 
         executeCommand(ENABLE_PERSISTENT_TETHERING);
 

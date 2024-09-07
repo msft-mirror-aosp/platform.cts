@@ -83,6 +83,8 @@ public abstract class BaseNotificationManagerTest {
 
     static final String STUB_PACKAGE_NAME = "android.app.stubs";
     protected static final String NOTIFICATION_CHANNEL_ID = "NotificationManagerTest";
+    protected static final NotificationChannel NOTIFICATION_CHANNEL = new NotificationChannel(
+            NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT);
     protected static final String SHARE_SHORTCUT_CATEGORY =
             "android.app.stubs.SHARE_SHORTCUT_CATEGORY";
     protected static final String SHARE_SHORTCUT_ID = "shareShortcut";
@@ -106,6 +108,7 @@ public abstract class BaseNotificationManagerTest {
     protected TestNotificationListener mListener;
     protected Instrumentation mInstrumentation;
     protected NotificationHelper mNotificationHelper;
+    protected String mPreviousEnabledAssistant;
 
     @Before
     public void baseSetUp() throws Exception {
@@ -118,20 +121,20 @@ public abstract class BaseNotificationManagerTest {
         assertEquals("Previous test left system in a bad state ",
                 0, mNotificationManager.getActiveNotifications().length);
 
-        mNotificationManager.createNotificationChannel(new NotificationChannel(
-                NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT));
+        mNotificationManager.createNotificationChannel(NOTIFICATION_CHANNEL);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mPackageManager = mContext.getPackageManager();
         mAudioManager = mContext.getSystemService(AudioManager.class);
         mRoleManager = mContext.getSystemService(RoleManager.class);
 
+        mPreviousEnabledAssistant = mNotificationHelper.getEnabledAssistant();
         // ensure listener access isn't allowed before test runs (other tests could put
         // TestListener in an unexpected state)
         mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, true);
-        mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL);
+        runAsSystemUi(() -> mNotificationManager.setInterruptionFilter(INTERRUPTION_FILTER_ALL));
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
 
         // Ensure that the tests are exempt from global service-related rate limits
@@ -160,6 +163,7 @@ public abstract class BaseNotificationManagerTest {
 
         mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
         mNotificationHelper.disableAssistant(STUB_PACKAGE_NAME);
+        mNotificationHelper.enableOtherPkgAssistantIfNeeded(mPreviousEnabledAssistant);
         toggleNotificationPolicyAccess(mContext.getPackageName(), mInstrumentation, false);
 
         List<NotificationChannelGroup> groups = mNotificationManager.getNotificationChannelGroups();
@@ -204,7 +208,7 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleExternalListenerAccess(ComponentName listenerComponent, boolean on)
             throws IOException {
         String command = " cmd notification " + (on ? "allow_listener " : "disallow_listener ")
-                + listenerComponent.flattenToString();
+                + listenerComponent.flattenToString() + " " + mContext.getUserId();
         mNotificationHelper.runCommand(command, InstrumentationRegistry.getInstrumentation());
     }
 
@@ -366,7 +370,8 @@ public abstract class BaseNotificationManagerTest {
     protected void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + mContext.getUserId();
 
         mNotificationHelper.runCommand(command, instrumentation);
         AmUtils.waitForBroadcastBarrier();

@@ -49,6 +49,7 @@ import android.os.PowerManager.LowPowerStandbyPolicy;
 import android.os.PowerManager.LowPowerStandbyPortDescription;
 import android.os.PowerManager.WakeLock;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.util.ArraySet;
 
 import androidx.annotation.NonNull;
@@ -57,10 +58,9 @@ import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureFeatureFlagEnabled;
-import com.android.bedstead.harrier.annotations.EnsureHasPermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.BlockingBroadcastReceiver;
 import com.android.compatibility.common.util.CallbackAsserter;
@@ -82,13 +82,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(BedsteadJUnit4.class)
 public class LowPowerStandbyTest {
-    private static final String DEVICE_CONFIG_NAMESPACE = "low_power_standby";
-    private static final String DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY = "enable_policy";
-    private static final String DEVICE_CONFIG_FEATURE_FLAG_ENABLE_STANDBY_PORTS =
-            "enable_standby_ports";
-
     private static final int BROADCAST_TIMEOUT_SEC = 3;
     private static final int WAKELOCK_STATE_TIMEOUT = 1000;
     private static final long LOW_POWER_STANDBY_ACTIVATE_TIMEOUT = TimeUnit.MINUTES.toMillis(2);
@@ -300,8 +296,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isExemptFromLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isExempt_whenEnabled() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(true);
         mPowerManager.setLowPowerStandbyPolicy(emptyPolicy());
@@ -325,8 +319,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isExemptFromLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isExempt_whenDisabled() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(false);
         mPowerManager.setLowPowerStandbyPolicy(emptyPolicy());
@@ -339,8 +331,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#getLowPowerStandbyPolicy"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_getPolicy() throws Exception {
         LowPowerStandbyPolicy policy = new LowPowerStandbyPolicy(
                 "testLowPowerStandby_getPolicy",
@@ -359,8 +349,6 @@ public class LowPowerStandbyTest {
     @ApiTest(apis = "android.os.PowerManager#setLowPowerStandbyPolicy")
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_setPolicy_changeBroadcastIsSent() throws Exception {
         CallbackAsserter broadcastAsserter = CallbackAsserter.forBroadcast(
                 new IntentFilter(PowerManager.ACTION_LOW_POWER_STANDBY_POLICY_CHANGED));
@@ -374,8 +362,6 @@ public class LowPowerStandbyTest {
     @ApiTest(apis = "android.os.PowerManager#setLowPowerStandbyPolicy")
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_setPolicy_exemptPackageIsNotRestricted() throws Exception {
         WakeLock testWakeLock = mPowerManager.newWakeLock(PARTIAL_WAKE_LOCK, TEST_WAKE_LOCK_TAG);
         testWakeLock.acquire();
@@ -408,8 +394,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isAllowedInLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isAllowedReason_falseIfNotAllowed() throws Exception {
         mPowerManager.setLowPowerStandbyPolicy(emptyPolicy());
         mPowerManager.setLowPowerStandbyEnabled(true);
@@ -423,8 +407,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isAllowedInLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isAllowedReason_trueIfAllowed() throws Exception {
         mPowerManager.setLowPowerStandbyPolicy(policyWithAllowedReasons(
                 LOW_POWER_STANDBY_ALLOWED_REASON_VOICE_INTERACTION));
@@ -450,8 +432,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isAllowedInLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isAllowedFeature_falseIfNotAllowed() throws Exception {
         mPowerManager.setLowPowerStandbyPolicy(emptyPolicy());
         mPowerManager.setLowPowerStandbyEnabled(true);
@@ -465,8 +445,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#isAllowedInLowPowerStandby"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_isAllowedFeature_trueIfAllowed() throws Exception {
         mPowerManager.setLowPowerStandbyPolicy(policyWithAllowedFeatures(
                 FEATURE_WAKE_ON_LAN_IN_LOW_POWER_STANDBY));
@@ -480,8 +458,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#LOW_POWER_STANDBY_ALLOWED_REASON_TEMP_POWER_SAVE_ALLOWLIST"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_allowedReason_tempPowerSaveAllowlist() throws Exception {
         WakeLock testWakeLock = mPowerManager.newWakeLock(PARTIAL_WAKE_LOCK, TEST_WAKE_LOCK_TAG);
         testWakeLock.acquire();
@@ -514,8 +490,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#LOW_POWER_STANDBY_ALLOWED_REASON_ONGOING_CALL"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_allowedReason_ongoingCall_phoneCallServiceExempt()
             throws Exception {
         Intent intent = LowPowerStandbyForegroundService.createIntentWithForegroundServiceType(
@@ -539,8 +513,6 @@ public class LowPowerStandbyTest {
             "android.os.PowerManager#LOW_POWER_STANDBY_ALLOWED_REASON_ONGOING_CALL"})
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission(Manifest.permission.MANAGE_LOW_POWER_STANDBY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
     public void testLowPowerStandby_allowedReason_ongoingCall_otherFgsServiceNotExempt()
             throws Exception {
         Intent intent = LowPowerStandbyForegroundService.createIntentWithForegroundServiceType(
@@ -564,10 +536,6 @@ public class LowPowerStandbyTest {
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission({Manifest.permission.MANAGE_LOW_POWER_STANDBY,
             Manifest.permission.SET_LOW_POWER_STANDBY_PORTS})
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_STANDBY_PORTS)
     public void testActiveStandbyPorts_disabled() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(false);
         mPowerManager.setLowPowerStandbyPolicy(ownPackageExemptPolicy());
@@ -586,10 +554,6 @@ public class LowPowerStandbyTest {
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission({Manifest.permission.MANAGE_LOW_POWER_STANDBY,
             Manifest.permission.SET_LOW_POWER_STANDBY_PORTS})
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_STANDBY_PORTS)
     public void testActiveStandbyPorts_notExempt() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(true);
 
@@ -609,10 +573,6 @@ public class LowPowerStandbyTest {
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission({Manifest.permission.MANAGE_LOW_POWER_STANDBY,
             Manifest.permission.SET_LOW_POWER_STANDBY_PORTS})
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_STANDBY_PORTS)
     public void testActiveStandbyPorts_exempt() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(true);
         mPowerManager.setLowPowerStandbyPolicy(ownPackageExemptPolicy());
@@ -664,10 +624,6 @@ public class LowPowerStandbyTest {
     @AppModeFull(reason = "Instant apps cannot hold MANAGE_LOW_POWER_STANDBY permission")
     @EnsureHasPermission({Manifest.permission.MANAGE_LOW_POWER_STANDBY,
             Manifest.permission.SET_LOW_POWER_STANDBY_PORTS})
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_POLICY)
-    @EnsureFeatureFlagEnabled(namespace = DEVICE_CONFIG_NAMESPACE,
-            key = DEVICE_CONFIG_FEATURE_FLAG_ENABLE_STANDBY_PORTS)
     public void testActiveStandbyPorts_becomesActiveOnceExempt() throws Exception {
         mPowerManager.setLowPowerStandbyEnabled(true);
         PowerManager.LowPowerStandbyPortsLock standbyPorts =

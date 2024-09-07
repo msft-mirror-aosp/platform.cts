@@ -20,6 +20,7 @@ import static android.car.feature.Flags.FLAG_CLUSTER_HEALTH_MONITORING;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Activity;
@@ -54,7 +55,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public final class ClusterHomeManagerTest {
-    private static final long TIMEOUT_MS = 5_000;
+    private static final long TIMEOUT_MS = 10_000;
+    private static final String FEATURE_CAR_SPLITSCREEN_MULTITASKING =
+            "android.software.car.splitscreen_multitasking";
     private static final String CLUSTER_HOME_SERVICE = "ClusterHomeService";
     private static final String DUMP_TPL_COUNT = "mTrustedPresentationListenerCount";
     private static final String DUMP_CLUSTER_SURFACE = "mClusterActivitySurface";
@@ -86,6 +89,7 @@ public final class ClusterHomeManagerTest {
     private CarAppFocusManager mCarAppFocusManager;
     private CarNavigationStatusManager mCarNavigationStatusManager;
     private TestActivity mTestActivity;
+    private String mTestMonitoringSurface;
 
     @Before
     public void setUp() {
@@ -103,7 +107,20 @@ public final class ClusterHomeManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        // mTestActivity is not cleaned up here so each test that uses it needs to clean it up.
+        // Destroy the test activity.
+        if (mTestActivity != null) {
+            mTestActivity.finishAndRemoveTask();
+            mTestActivity.waitForDestroyed();
+            mTestActivity = null;
+        }
+        if (mTestMonitoringSurface != null && !mTestMonitoringSurface.equals("null")) {
+            // Ensure that visibility monitoring has stopped.
+            PollingCheck.waitFor(TIMEOUT_MS, () -> {
+                String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
+                        .get(DUMP_CLUSTER_SURFACE);
+                return !monitoringSurface.equals(mTestMonitoringSurface);
+            });
+        }
 
         mUiAutomation.dropShellPermissionIdentity();
     }
@@ -112,6 +129,10 @@ public final class ClusterHomeManagerTest {
     @RequiresFlagsEnabled(FLAG_CLUSTER_HEALTH_MONITORING)
     @ApiTest(apis = {"android.car.cluster.ClusterHomeManager#startVisibilityMonitoring(Activity)"})
     public void testStartVisibilityMonitoring() throws Exception {
+        // TODO(b/338221434) Explicitly skip the test until the RRO issue is resolved.
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                FEATURE_CAR_SPLITSCREEN_MULTITASKING));
+
         var oldDump = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount = Integer.valueOf(oldDump.get(DUMP_TPL_COUNT));
 
@@ -129,6 +150,7 @@ public final class ClusterHomeManagerTest {
 
         var oldDump2 = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount2 = Integer.valueOf(oldDump2.get(DUMP_TPL_COUNT));
+        mTestMonitoringSurface = oldDump2.get(DUMP_CLUSTER_SURFACE);
 
         // Insets can be accessible only in the Activity's thread.
         mTestActivity.getMainExecutor().execute(() -> {
@@ -144,19 +166,6 @@ public final class ClusterHomeManagerTest {
             int count = Integer.valueOf(dump.get(DUMP_TPL_COUNT));
             boolean visible = Boolean.parseBoolean(dump.get(DUMP_CLUSTER_VISIBLE));
             return count > oldCount2 && !visible;
-        });
-
-        // Destroy the test activity.
-        if (mTestActivity != null) {
-            mTestActivity.finishAndRemoveTask();
-            mTestActivity.waitForDestroyed();
-            mTestActivity = null;
-        }
-        // Ensure that visibility monitoring has stopped.
-        PollingCheck.waitFor(TIMEOUT_MS, () -> {
-            String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
-                    .get(DUMP_CLUSTER_SURFACE);
-            return monitoringSurface.equals("null");
         });
     }
 

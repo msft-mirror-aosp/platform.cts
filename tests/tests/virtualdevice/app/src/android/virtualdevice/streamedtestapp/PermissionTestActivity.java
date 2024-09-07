@@ -18,6 +18,9 @@ package android.virtualdevice.streamedtestapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.Bundle;
+
+import androidx.annotation.Nullable;
 
 /**
  * Activity used for testing permission requests on different devices. It needs to be in a separate
@@ -25,9 +28,10 @@ import android.content.Intent;
  */
 
 public class PermissionTestActivity extends Activity {
+
     @Override
-    protected void onResume() {
-        super.onResume();
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
         String permission = getIntent().getStringExtra(Intent.EXTRA_PERMISSION_NAME);
         String[] permissions = { permission };
