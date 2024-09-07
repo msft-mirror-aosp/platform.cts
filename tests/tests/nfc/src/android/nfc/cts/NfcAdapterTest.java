@@ -764,6 +764,10 @@ public class NfcAdapterTest {
         public void onHceEventReceived(int action) {
         }
 
+        @Override
+        public void onReaderOptionChanged(boolean enabled) {
+        }
+
         public void onCardEmulationActivated(boolean isActivated) {
             mTagDetectedCountDownLatch.countDown();
         }

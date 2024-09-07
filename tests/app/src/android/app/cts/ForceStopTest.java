@@ -16,6 +16,7 @@
 package android.app.cts;
 
 import static android.app.Flags.FLAG_APP_START_INFO;
+import static android.app.Flags.FLAG_USE_APP_INFO_NOT_LAUNCHED;
 import static android.content.pm.Flags.FLAG_STAY_STOPPED;
 
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
@@ -80,10 +81,12 @@ public final class ForceStopTest {
 
     // A simple test activity from another package.
     private static final String APP_PACKAGE = "com.android.app1";
+    private static final String APP_APK = "/data/local/tmp/cts/apps/CtsAppTestStubsApp1.apk";
     private static final String APP_ACTIVITY = "android.app.stubs.SimpleActivity";
     private static final String APP_PROVIDER_PACKAGE = "com.android.app.cts.provider";
 
     private static final long DELAY_MILLIS = 10_000;
+    private static final long SHORT_DELAY_MILLIS = 1_000;
 
     private Context mTargetContext;
     private ActivityManager mActivityManager;
@@ -279,6 +282,95 @@ public final class ForceStopTest {
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));
     }
 
+    // Verifies that no BOOT_COMPLETED broadcasts are received on first launch for given action
+    private void verifyNoBootCompletedBroadcastsGeneric(Runnable r) throws Exception {
+        // Re-install the app to reset the notLaunched package state
+        executeShellCommand("pm uninstall " + APP_PACKAGE);
+        executeShellCommand("pm install -r --force-queryable " + APP_APK);
+
+        final ConditionVariable gotLockedBoot = new ConditionVariable();
+        final ConditionVariable gotBoot = new ConditionVariable();
+        final ConditionVariable gotAppStarted = new ConditionVariable();
+
+        final BroadcastReceiver receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                final String action = intent.getAction();
+                if (BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED.equals(action)) {
+                    final String extraAction = intent.getStringExtra(
+                            BootReceiver.EXTRA_BOOT_COMPLETED_ACTION);
+                    if (Intent.ACTION_LOCKED_BOOT_COMPLETED.equals(extraAction)) {
+                        gotLockedBoot.open();
+                    } else if (Intent.ACTION_BOOT_COMPLETED.equals(extraAction)) {
+                        gotBoot.open();
+                    }
+                }
+            }
+        };
+        final IntentFilter filter = new IntentFilter();
+        filter.addAction(BootReceiver.ACTION_BOOT_COMPLETED_RECEIVED);
+        filter.addAction(SimpleActivity.ACTION_ACTIVITY_STARTED);
+        mTargetContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+
+        r.run();
+
+        CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
+                CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
+                0, null,
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        gotAppStarted.open();
+                    }
+                });
+
+        assertTrue("App didn't start", gotAppStarted.block(DELAY_MILLIS));
+
+        assertFalse("Got unexpected LOCKED_BOOT_COMPLETED", gotLockedBoot.block(DELAY_MILLIS));
+        assertFalse("Got unexpected BOOT_COMPLETED", gotBoot.block(SHORT_DELAY_MILLIS));
+
+        runWithShellPermissionIdentity(
+                () -> mActivityManager.forceStopPackage(APP_PACKAGE));
+    }
+
+    /**
+     * Verifies no BOOT_COMPLETED broadcast on first launch for an activity start.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    public void testNoBootCompletedBroadcastsOnFirstLaunch_activity() throws Exception {
+        verifyNoBootCompletedBroadcastsGeneric(() -> {
+            final Intent intent = createSimpleActivityIntent();
+            mTargetContext.startActivity(intent);
+        });
+    }
+
+    /**
+     * Verifies no BOOT_COMPLETED broadcast on first launch for a broadcast.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    public void testNoBootCompletedBroadcastsOnFirstLaunch_broadcast() throws Exception {
+        verifyNoBootCompletedBroadcastsGeneric(() -> {
+            CommandReceiver.sendCommandWithResultReceiver(mTargetContext,
+                    CommandReceiver.COMMAND_EMPTY, APP_PACKAGE, APP_PACKAGE,
+                    0, null, null);
+        });
+    }
+
+    /**
+     * Verifies no BOOT_COMPLETED broadcast on first launch for a service binding.
+     */
+    @Test
+    @RequiresFlagsEnabled(FLAG_USE_APP_INFO_NOT_LAUNCHED)
+    public void testNoBootCompletedBroadcastsOnFirstLaunch_bindService() throws Exception {
+        verifyNoBootCompletedBroadcastsGeneric(() -> {
+            int startReason = getStartReasonFromAppPackageService();
+            assertNotEquals("ForceStop reason should not be returned, should be -ve",
+                    ApplicationStartInfo.START_REASON_SERVICE, startReason);
+        });
+    }
+
     @Test
     @RequiresFlagsEnabled(FLAG_STAY_STOPPED)
     public void testBootCompletedBroadcasts_broadcast() throws Exception {
@@ -310,7 +402,7 @@ public final class ForceStopTest {
                     }
                 });
 
-        assertTrue("Activity didn't start", appStarted.block(DELAY_MILLIS));
+        assertTrue("App didn't start", appStarted.block(DELAY_MILLIS));
 
         runWithShellPermissionIdentity(
                 () -> mActivityManager.forceStopPackage(APP_PACKAGE));

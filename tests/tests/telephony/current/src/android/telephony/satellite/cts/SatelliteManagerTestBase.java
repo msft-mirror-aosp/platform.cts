@@ -37,11 +37,14 @@ import android.nfc.NfcAdapter;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.OutcomeReceiver;
+import android.os.PersistableBundle;
 import android.provider.Settings;
+import android.telephony.CarrierConfigManager;
 import android.telephony.Rlog;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
+import android.telephony.cts.SatelliteReceiver;
 import android.telephony.cts.TelephonyManagerTest.ServiceStateRadioStateListener;
 import android.telephony.satellite.EnableRequestAttributes;
 import android.telephony.satellite.NtnSignalStrength;
@@ -1636,5 +1639,58 @@ public class SatelliteManagerTestBase {
             fail(e.toString());
         }
         return new Pair<>(requestResult.get(), errorCode.get());
+    }
+
+    @NonNull
+    protected PersistableBundle getConfigForSubId(Context context, int subId, String key) {
+        PersistableBundle config = null;
+        CarrierConfigManager carrierConfigManager = context.getSystemService(
+                CarrierConfigManager.class);
+        if (carrierConfigManager != null) {
+            config = carrierConfigManager.getConfigForSubId(subId, key);
+        }
+        if (config == null || config.isEmpty()) {
+            config = CarrierConfigManager.getDefaultConfig();
+        }
+        return config;
+    }
+
+    protected void setDefaultSmsSubId(Context context, int subId) {
+        SubscriptionManager subscriptionManager = context.getSystemService(
+                SubscriptionManager.class);
+        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(subscriptionManager, (sm) ->
+                        sm.setDefaultSmsSubId(subId),
+                android.Manifest.permission.MODIFY_PHONE_STATE);
+    }
+
+    protected static class SatelliteReceiverTest extends BroadcastReceiver {
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (SatelliteReceiver.TEST_INTENT.equals(intent.getAction())) {
+                logd("SatelliteReceiverTest: receive the "
+                        + SatelliteManager.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED);
+                mSemaphore.release();
+            }
+        }
+
+        public void clearQueue() {
+            logd("SatelliteReceiverTest: clearQueue");
+            mSemaphore.drainPermits();
+        }
+
+        boolean waitForReceive() {
+            try {
+                if (!mSemaphore.tryAcquire(TimeUnit.SECONDS.toMillis(65), TimeUnit.MILLISECONDS)) {
+                    logd("SatelliteReceiverTest: Timeout to receive");
+                    return false;
+                }
+            } catch (Exception ex) {
+                logd("SatelliteReceiverTest: waitForReceive: Got exception=" + ex);
+                return false;
+            }
+            return true;
+        }
     }
 }
