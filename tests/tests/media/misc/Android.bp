@@ -99,9 +99,9 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -164,9 +164,9 @@ android_test {
     platform_apis: true,
     jni_uses_sdk_apis: true,
     libs: [
-        "org.apache.http.legacy",
-        "android.test.base",
-        "android.test.runner",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
@@ -179,4 +179,11 @@ android_test {
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
+}
+
+test_module_config {
+    name: "CtsMediaMiscTestCases_cts_mediametadataretrievertest",
+    base: "CtsMediaMiscTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.misc.cts.MediaMetadataRetrieverTest"],
 }

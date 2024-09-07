@@ -36,8 +36,8 @@ android_test {
         "src/**/*.java",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs",
+        "android.test.runner.stubs",
     ],
     test_suites: [
         "cts",

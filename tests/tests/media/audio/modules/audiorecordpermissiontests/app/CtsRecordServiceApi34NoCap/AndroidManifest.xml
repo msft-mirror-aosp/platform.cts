@@ -23,6 +23,7 @@
     <!-- a non-mic service type to check denial on no mic caps -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.UPDATE_APP_OP_STATS"/>
 
     <application android:usesCleartextTraffic="true">
         <activity android:name=".SimpleActivity"

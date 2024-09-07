@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.media.AudioPresentation;
+import android.media.tv.flags.Flags;
 import android.media.tv.tuner.DemuxCapabilities;
 import android.media.tv.tuner.DemuxInfo;
 import android.media.tv.tuner.Descrambler;
@@ -118,6 +119,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.tv.cts.R;
 import android.util.SparseIntArray;
 
@@ -652,6 +654,37 @@ public class TunerTest {
         // After tune(), the frontend assigned by applyFrontend should still be used.
         FrontendInfo currentFrontendInfo = mTuner.getFrontendInfo();
         assertEquals(frontendInfo.getId(), currentFrontendInfo.getId());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_TUNER_W_APIS)
+    public void testApplyFrontendByTypeThenTune() throws Exception {
+        List<FrontendInfo> frontendInfos = mTuner.getAvailableFrontendInfos();
+        if (frontendInfos == null) return;
+        assertFalse(frontendInfos.isEmpty());
+
+        FrontendInfo frontendInfo = frontendInfos.get(0);
+
+        //Test reqesut frontend by type
+        int result = mTuner.applyFrontendByType(frontendInfo.getType());
+        assertEquals(Tuner.RESULT_SUCCESS, result);
+
+        FrontendInfo appliedFrontendInfo = mTuner.getFrontendInfo();
+        assertEquals(frontendInfo.getType(), appliedFrontendInfo.getType());
+
+        result = mTuner.tune(createFrontendSettings(appliedFrontendInfo));
+        assertEquals(Tuner.RESULT_SUCCESS, result);
+
+        for (FrontendInfo info2: frontendInfos) {
+            if (info2.getType() != frontendInfo.getType()) {
+                result = mTuner.tune(createFrontendSettings(info2));
+                assertEquals(Tuner.RESULT_INVALID_STATE, result);
+            }
+        }
+
+        // After tune(), the frontend assigned by applyFrontend should still be used.
+        FrontendInfo currentFrontendInfo = mTuner.getFrontendInfo();
+        assertEquals(frontendInfo.getType(), currentFrontendInfo.getType());
     }
 
     @Test
@@ -2183,6 +2216,13 @@ public class TunerTest {
             assertEquals(Tuner.RESULT_SUCCESS, res);
             assertNotNull(mTuner.getFrontendInfo());
             mTuner.closeFrontend();
+            if (TunerVersionChecker
+                    .isHigherOrEqualVersionTo(TunerVersionChecker.TUNER_VERSION_4_0)) {
+                res = mTuner.applyFrontendByType(info.getType());
+                assertEquals(Tuner.RESULT_SUCCESS, res);
+                assertNotNull(mTuner.getFrontendInfo());
+                mTuner.closeFrontend();
+            }
             res = mTuner.tune(feSettings);
             assertEquals(Tuner.RESULT_SUCCESS, res);
             assertNotNull(mTuner.getFrontendInfo());

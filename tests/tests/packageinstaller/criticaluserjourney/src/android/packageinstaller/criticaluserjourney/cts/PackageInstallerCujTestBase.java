@@ -16,6 +16,8 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -23,6 +25,7 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import android.app.Instrumentation;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -108,6 +111,9 @@ public class PackageInstallerCujTestBase {
 
     private static final long TEST_APK_VERSION = 1;
     private static final long TEST_APK_V2_VERSION = 2;
+
+    private static final ComponentName TEST_APP_ACTIVITY_COMPONENT = new ComponentName(
+            TEST_APP_PACKAGE_NAME, "android.packageinstaller.cts.cuj.app.MainActivity");
 
     @ClassRule
     public static final DisableAnimationRule sDisableAnimationRule = new DisableAnimationRule();
@@ -387,14 +393,15 @@ public class PackageInstallerCujTestBase {
      * Install the test apk with update-ownership.
      */
     public static void installTestPackageWithUpdateOwnership() throws Exception {
-        SystemUtil.runShellCommand("pm install -t  --update-ownership "
-                + new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath());
+        SystemUtil.runShellCommand(String.format("pm install -t  --update-ownership -i %s %s",
+                sContext.getPackageName(),
+                new File(TEST_APK_LOCATION, TEST_APK_NAME).getCanonicalPath()));
         assertTestPackageInstalled();
 
-        // assert the updateOwner package name is com.android.shell
+        // assert the updateOwner package name is sContext.getPackageName()
         final String updateOwnerPackageName = sPackageManager.getInstallSourceInfo(
                 TEST_APP_PACKAGE_NAME).getUpdateOwnerPackageName();
-        assertThat(updateOwnerPackageName).isEqualTo("com.android.shell");
+        assertThat(updateOwnerPackageName).isEqualTo(sContext.getPackageName());
     }
 
     /**
@@ -514,6 +521,16 @@ public class PackageInstallerCujTestBase {
                     + sContext.getUser() + ": " + e);
             return false;
         }
+    }
+
+    /**
+     * Disable the launcher activity of the test app.
+     */
+    public static void disableTestPackageLauncherActivity() {
+        SystemUtil.runWithShellPermissionIdentity(
+                () -> sPackageManager.setComponentEnabledSetting(TEST_APP_ACTIVITY_COMPONENT,
+                        PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                        PackageManager.DONT_KILL_APP), CHANGE_COMPONENT_ENABLED_STATE);
     }
 
     @Nullable

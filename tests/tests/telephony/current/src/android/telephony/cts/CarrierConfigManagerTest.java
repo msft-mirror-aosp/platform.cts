@@ -32,8 +32,11 @@ import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MO
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
-import static android.telephony.CarrierConfigManager.KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -257,6 +260,9 @@ public class CarrierConfigManagerTest {
                     TimeUnit.SECONDS.toMillis(30));
             assertFalse("KEY_SATELLITE_ESOS_SUPPORTED_BOOL doesn't match static default.",
                     config.getBoolean(KEY_SATELLITE_ESOS_SUPPORTED_BOOL));
+            assertFalse("KEY_SATELLITE_P2P_SMS_SUPPORTED_BOOL "
+                            + "doesn't match static default.",
+                    config.getBoolean(KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL));
             assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
                     config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
                     CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
@@ -269,9 +275,15 @@ public class CarrierConfigManagerTest {
                             + "doesn't match static default.",
                     config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
                     180);
-            assertEquals("KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT "
+            assertEquals("KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT "
                     + "doesn't match static default.",
-                    config.getInt(KEY_SATELLITE_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT), 30);
+                    config.getInt(KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT), 30);
+            assertEquals("KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT), 180);
+            assertEquals("KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT), 600);
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",

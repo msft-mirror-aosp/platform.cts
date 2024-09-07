@@ -47,6 +47,24 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
     }
 
     @Test
+    public void disableEntry_launchGrantPermission_updateAnyway_success() throws Exception {
+        disableTestPackageLauncherActivity();
+
+        startInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
     public void launchGrantPermission_updateAnyway_success() throws Exception {
         startInstallationUpdateViaIntent();
 
@@ -119,6 +137,22 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
         grantRequestInstallPackagesPermission();
 
         startNoLauncherActivityInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void disableEntry_noLaunchGrantPermission_updateAnyway_success() throws Exception {
+        disableTestPackageLauncherActivity();
+
+        grantRequestInstallPackagesPermission();
+
+        startInstallationUpdateViaIntent();
 
         waitForUiIdle();
 

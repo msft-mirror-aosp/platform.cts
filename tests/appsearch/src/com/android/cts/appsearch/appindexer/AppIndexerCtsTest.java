@@ -232,7 +232,7 @@ public class AppIndexerCtsTest {
                     assertThat(appFunctions).hasSize(1);
                     GenericDocument appFunction = appFunctions.getFirst();
                     assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
-                            .isEqualTo("com.example.utils#print1");
+                            .isEqualTo("com.example.utils#print5");
                     assertThat(appFunction.getPropertyBoolean(PROPERTY_ENABLED_BY_DEFAULT))
                             .isEqualTo(true);
                     assertThat(
@@ -240,6 +240,85 @@ public class AppIndexerCtsTest {
                                             PROPERTY_RESTRICT_CALLERS_WITH_EXECUTE_APP_FUNCTIONS))
                             .isEqualTo(false);
                 });
+    }
+
+    @Test
+    public void indexAppFunctions_installAppWithNoAppFunction_retainIndexedFunctions()
+            throws Throwable {
+        // Install the test app B V1 which has one app function. That function should be indexed.
+        {
+            installPackage(TEST_APP_B_V1_PATH);
+            retryAssert(
+                    () -> {
+                        List<GenericDocument> appFunctions =
+                                searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
+                        assertThat(appFunctions).hasSize(1);
+                        GenericDocument appFunction = appFunctions.getFirst();
+                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
+                                .isEqualTo("com.example.utils#print5");
+                    });
+        }
+
+        // Install test app A v1 which does not have any app function. The functions from B
+        // should be retained.
+        {
+            installPackage(TEST_APP_A_V1_PATH);
+            retryAssert(
+                    () -> {
+                        // Ensure the app A is indexed before checking if the function is retained.
+                        // This prevents a false positive result if the indexer hasn't finished
+                        // running yet.
+                        GenericDocument mobileApplication =
+                                searchMobileApplicationWithId(TEST_APP_A_PKG);
+                        assertThat(mobileApplication).isNotNull();
+
+                        List<GenericDocument> appFunctions =
+                                searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
+                        assertThat(appFunctions).hasSize(1);
+                        GenericDocument appFunction = appFunctions.getFirst();
+                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
+                                .isEqualTo("com.example.utils#print5");
+                    });
+        }
+    }
+
+    @Test
+    public void indexAppFunctionsFromTwoApps() throws Throwable {
+        // Install the test app B V1 which has one app function. That function should be indexed.
+        {
+            installPackage(TEST_APP_B_V1_PATH);
+            retryAssert(
+                    () -> {
+                        List<GenericDocument> appFunctions =
+                                searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
+                        assertThat(appFunctions).hasSize(1);
+                        GenericDocument appFunction = appFunctions.getFirst();
+                        assertThat(appFunction.getPropertyString(PROPERTY_FUNCTION_ID))
+                                .isEqualTo("com.example.utils#print5");
+                    });
+        }
+
+        // Install test app A v2 which also has one app function. The function from B should be
+        // retained and the new function from A should be indexed.
+        {
+            installPackage(TEST_APP_A_V2_PATH);
+            retryAssert(
+                    () -> {
+                        List<GenericDocument> appFunctionsFromB =
+                                searchAppFunctionsWithPackageName(TEST_APP_B_PKG);
+                        assertThat(appFunctionsFromB).hasSize(1);
+                        GenericDocument appFunctionFromB = appFunctionsFromB.getFirst();
+                        assertThat(appFunctionFromB.getPropertyString(PROPERTY_FUNCTION_ID))
+                                .isEqualTo("com.example.utils#print5");
+
+                        List<GenericDocument> appFunctionsFromA =
+                                searchAppFunctionsWithPackageName(TEST_APP_A_PKG);
+                        assertThat(appFunctionsFromA).hasSize(1);
+                        GenericDocument appFunctionFromA = appFunctionsFromA.getFirst();
+                        assertThat(appFunctionFromA.getPropertyString(PROPERTY_FUNCTION_ID))
+                                .isEqualTo("com.example.utils#print1");
+                    });
+        }
     }
 
     @Test
@@ -261,7 +340,7 @@ public class AppIndexerCtsTest {
                                 appFunctions.stream()
                                         .map(doc -> doc.getPropertyString(PROPERTY_FUNCTION_ID))
                                         .toList();
-                        assertThat(functionIds).containsExactly("com.example.utils#print1");
+                        assertThat(functionIds).containsExactly("com.example.utils#print5");
                     });
         }
     }

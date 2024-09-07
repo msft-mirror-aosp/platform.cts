@@ -490,6 +490,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             // There is a slight possibility that the returned stats do not include the latest data,
             // so query usage stats again after a 1s wait for the most recent data
             SystemClock.sleep(1000);
+            endTime += 1000;
             stats = getAggregateUsageStats(startTime, endTime, targetPackage);
             assertNotNull(stats);
             lastTimeVisible = stats.getLastTimeVisible();
@@ -508,6 +509,7 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
             // There is a slight possibility that the returned stats do not include the latest data,
             // so query usage stats again after a 1s wait for the most recent data
             SystemClock.sleep(1000);
+            endTime += 1000;
             stats = getAggregateUsageStats(startTime, endTime, targetPackage);
             assertNotNull(stats);
             lastTimeAnyComponentUsed = stats.getLastTimeAnyComponentUsed();
@@ -515,11 +517,13 @@ public class UsageStatsTest extends StsExtraBusinessLogicTestCase {
         assertLessThanOrEqual(startTime, lastTimeAnyComponentUsed);
         assertLessThanOrEqual(lastTimeAnyComponentUsed, endTime);
 
+        final long lastDayLowerBound = startTime / DAY;
+        final long lastDayUpperBound = endTime / DAY;
         SystemUtil.runWithShellPermissionIdentity(()-> {
             final long lastDayAnyComponentUsedGlobal =
                     mUsageStatsManager.getLastTimeAnyComponentUsed(targetPackage) / DAY;
-            assertLessThanOrEqual(startTime / DAY, lastDayAnyComponentUsedGlobal);
-            assertLessThanOrEqual(lastDayAnyComponentUsedGlobal, endTime / DAY);
+            assertLessThanOrEqual(lastDayLowerBound, lastDayAnyComponentUsedGlobal);
+            assertLessThanOrEqual(lastDayAnyComponentUsedGlobal, lastDayUpperBound);
         });
     }
 

@@ -52,6 +52,7 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.NonMainlineTest;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -144,6 +145,8 @@ public class AudioPlaybackCaptureTest {
     };
     private APCTestConfig mAPCTestConfig;
 
+    private boolean mSetupRequiresVolumeChange;
+
     @Before
     public void setup() throws Exception {
         mPlaybackBeforeCapture = false;
@@ -152,6 +155,23 @@ public class AudioPlaybackCaptureTest {
         mAudioManager = mActivity.getSystemService(AudioManager.class);
         mUid = mActivity.getApplicationInfo().uid;
         mMediaProjection = mActivity.waitForMediaProjection();
+        mSetupRequiresVolumeChange =
+                mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0;
+        if (mSetupRequiresVolumeChange) {
+            // PlaybackCaptureTests will fail with 0 volume, so adjust up.
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                                          1 /* index */, 0 /* flags */);
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (mSetupRequiresVolumeChange
+                && mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 1) {
+            // Restore volume
+            mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                    0 /* index */, 0 /* flags */);
+        }
     }
 
     private AudioRecord createDefaultPlaybackCaptureRecord() throws Exception {
@@ -419,51 +439,56 @@ public class AudioPlaybackCaptureTest {
         MediaPlayer mediaPlayer = createMediaPlayer(ALLOW_CAPTURE_BY_ALL,
                                                     R.raw.testwav_16bit_44100hz,
                                                     AudioAttributes.USAGE_MEDIA);
-        mediaPlayer.start();
+        try {
+            mediaPlayer.start();
 
-        AudioRecord audioRecord = createDefaultPlaybackCaptureRecord();
-        audioRecord.startRecording();
-        ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
-        assertFalse("Expected data, but only silence was recorded",
-                    onlySilence(rawBuffer.asShortBuffer()));
+            AudioRecord audioRecord = createDefaultPlaybackCaptureRecord();
+            try {
+                audioRecord.startRecording();
+                ByteBuffer rawBuffer = readToBuffer(audioRecord, BUFFER_SIZE);
+                assertFalse("Expected data, but only silence was recorded",
+                        onlySilence(rawBuffer.asShortBuffer()));
 
-        final int nativeBufferSize = audioRecord.getBufferSizeInFrames()
-                                     * audioRecord.getChannelCount();
+                final int nativeBufferSize = audioRecord.getBufferSizeInFrames()
+                        * audioRecord.getChannelCount();
 
-        // Stop the media projection
-        CountDownLatch stopCDL = new CountDownLatch(1);
-        mMediaProjection.registerCallback(new MediaProjection.Callback() {
-                public void onStop() {
-                    stopCDL.countDown();
+                // Stop the media projection
+                CountDownLatch stopCDL = new CountDownLatch(1);
+                mMediaProjection.registerCallback(new MediaProjection.Callback() {
+                    public void onStop() {
+                        stopCDL.countDown();
+                    }
+                }, new Handler(Looper.getMainLooper()));
+                mMediaProjection.stop();
+                assertTrue("Could not stop the MediaProjection in " + STOP_TIMEOUT_MS + "ms",
+                        stopCDL.await(STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+
+                // With the remote submix disabled, no new samples should feed the track buffer.
+                // As a result, read() should fail after at most the total buffer size read.
+                // Even if the projection is stopped, the policy unregisteration is async,
+                // so double that to be on the conservative side.
+                final int MAX_READ_SIZE = 8 * nativeBufferSize;
+                int readSize = 0;
+                ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
+                int status;
+                while ((status = audioRecord.read(buffer, BUFFER_SIZE)) > 0) {
+                    readSize += status;
+                    assertThat("audioRecord did not stop, current state is "
+                            + audioRecord.getRecordingState(), readSize, lessThan(MAX_READ_SIZE));
                 }
-            }, new Handler(Looper.getMainLooper()));
-        mMediaProjection.stop();
-        assertTrue("Could not stop the MediaProjection in " + STOP_TIMEOUT_MS + "ms",
-                   stopCDL.await(STOP_TIMEOUT_MS, TimeUnit.MILLISECONDS));
+                audioRecord.stop();
+                audioRecord.startRecording();
 
-        // With the remote submix disabled, no new samples should feed the track buffer.
-        // As a result, read() should fail after at most the total buffer size read.
-        // Even if the projection is stopped, the policy unregisteration is async,
-        // so double that to be on the conservative side.
-        final int MAX_READ_SIZE = 8 * nativeBufferSize;
-        int readSize = 0;
-        ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
-        int status;
-        while ((status = audioRecord.read(buffer, BUFFER_SIZE)) > 0) {
-            readSize += status;
-            assertThat("audioRecord did not stop, current state is "
-                       + audioRecord.getRecordingState(), readSize, lessThan(MAX_READ_SIZE));
+                // Check that the audioRecord can no longer receive audio
+                assertThat("Can still record after policy unregistration",
+                        audioRecord.read(buffer, BUFFER_SIZE), lessThan(0));
+            } finally {
+                audioRecord.release();
+            }
+            mediaPlayer.stop();
+        } finally {
+            mediaPlayer.release();
         }
-        audioRecord.stop();
-        audioRecord.startRecording();
-
-        // Check that the audioRecord can no longer receive audio
-        assertThat("Can still record after policy unregistration",
-                   audioRecord.read(buffer, BUFFER_SIZE), lessThan(0));
-
-        audioRecord.release();
-        mediaPlayer.stop();
-        mediaPlayer.release();
     }
 
 
