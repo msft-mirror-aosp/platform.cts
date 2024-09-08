@@ -40,6 +40,7 @@ android_test {
         "android.test.base.stubs",
         "android.test.runner.stubs",
         "framework-mediaprovider.impl",
+        "framework-photopicker.impl",
         "framework-res",
         "android_test_stubs_current",
     ],

@@ -139,10 +139,11 @@ public final class BedsteadFrameworkMethod extends FrameworkMethod {
             return false;
         }
 
-        if (!(obj instanceof BedsteadFrameworkMethod other)) {
+        if (!(obj instanceof BedsteadFrameworkMethod)) {
             return false;
         }
 
+        BedsteadFrameworkMethod other = (BedsteadFrameworkMethod) obj;
         return equivalence.equivalent(mParameterizedAnnotations, other.mParameterizedAnnotations);
     }
 
