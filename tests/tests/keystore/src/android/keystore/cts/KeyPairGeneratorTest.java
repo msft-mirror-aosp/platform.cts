@@ -21,6 +21,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.keystore.cts.util.StrictModeDetector;
@@ -667,6 +668,19 @@ public class KeyPairGeneratorTest {
 
     @Test
     public void testGenerate_VerifyDifferentValidityPeriods() throws Exception {
+        generateKeyWithDifferentValidityPeriods(false /* useStrongbox */);
+    }
+
+    @Test
+    public void testGenerate_VerifyDifferentValidityPeriods_StrongBox() throws Exception {
+        assumeTrue(TestUtils.hasStrongBox(getContext()));
+        assumeTrue(TestUtils.hasKeystoreVersion(true /*isStrongBoxBased*/,
+                Attestation.KM_VERSION_KEYMINT_3));
+
+        generateKeyWithDifferentValidityPeriods(true /* useStrongbox */);
+    }
+
+    private void generateKeyWithDifferentValidityPeriods(boolean useStrongbox) throws Exception {
         // Generate keys with different validity durations, (Now, Now + 1 year),
         // (Now, Now + 2 years), ..., (Now, Now + 10 years)
         List<Pair<Date, Date>> certDurations = new ArrayList<Pair<Date, Date>>();
@@ -677,16 +691,7 @@ public class KeyPairGeneratorTest {
         // Add a new entry with not-before = Jan, 01, 2011 and not-after = Jan 01, 2032
         certDurations.add(new Pair<Date, Date>(new Date(1293840000000L), new Date(1956528000000L)));
 
-        generateKeyWithDifferentValidityPeriods(certDurations, false /* useStrongbox */);
-        if (TestUtils.hasStrongBox(getContext())) {
-            generateKeyWithDifferentValidityPeriods(certDurations, true /* useStrongbox */);
-        }
-    }
-
-    private void generateKeyWithDifferentValidityPeriods(
-            List<Pair<Date, Date>> durations, boolean useStrongbox)
-            throws Exception {
-        for (Pair<Date, Date> pair : durations) {
+        for (Pair<Date, Date> pair : certDurations) {
             KeyPairGenerator generator = getRsaGenerator();
             Date certNotBefore = pair.first;
             Date certNotAfter = pair.second;

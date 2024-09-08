@@ -103,9 +103,9 @@ android_test {
     name: "CtsAppTestCases",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -184,9 +184,9 @@ android_test {
     name: "CtsDownloadManagerApi28",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -220,9 +220,9 @@ android_test {
     name: "CtsDownloadManagerInstaller",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "org.apache.http.legacy.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -256,9 +256,9 @@ android_test {
     name: "CtsAppExitTestCases",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
@@ -297,9 +297,9 @@ android_test {
     name: "CtsAppFgsTestCases",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
@@ -335,4 +335,60 @@ android_test {
         ":CtsAppTestFgsTestHelperApi33",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsAppTestCases_android_server_am_Presubmit",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.app.cts.ActivityManagerProcessStateTest",
+        "android.app.cts.ServiceTest",
+        "android.app.cts.ActivityManagerTest",
+        "android.app.cts.ActivityManagerFgsBgStartTest",
+        "android.app.cts.TaskDescriptionTest",
+    ],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_android_server_am",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.app.cts.ActivityManagerProcessStateTest",
+        "android.app.cts.ServiceTest",
+        "android.app.cts.ActivityManagerTest",
+        "android.app.cts.ActivityManagerFgsBgStartTest",
+        "android.app.cts.TaskDescriptionTest",
+    ],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_activitymanagerapi29test",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ActivityManagerApi29Test"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_requesttileserviceaddtest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.RequestTileServiceAddTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_toolbaractionbartest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ToolbarActionBarTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_cts_downloadmanagertest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.DownloadManagerTest"],
 }

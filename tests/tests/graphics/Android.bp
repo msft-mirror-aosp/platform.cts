@@ -22,8 +22,8 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -73,4 +73,18 @@ android_ravenwood_test {
         "src/android/graphics/cts/RectFTest.java",
     ],
     auto_gen_config: true,
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_icontest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.drawable.cts.IconTest"],
+}
+
+test_module_config {
+    name: "CtsGraphicsTestCases_cts_vulkanpretransformtest",
+    base: "CtsGraphicsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.cts.VulkanPreTransformTest"],
 }

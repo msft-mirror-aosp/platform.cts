@@ -30,8 +30,8 @@ android_test {
         "CtsAppTestStubsShared",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "sdk_public_34_android.test.runner",
+        "sdk_public_34_android.test.base",
     ],
     srcs: [
         "src/**/*.java",

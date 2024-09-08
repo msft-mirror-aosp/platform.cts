@@ -21,8 +21,8 @@ android_test {
     defaults: ["cts_defaults"],
     sdk_version: "current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     static_libs: [
         "ctstestrunner-axt",

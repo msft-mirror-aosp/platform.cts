@@ -12,7 +12,7 @@ android_test {
         "general-tests",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
 
     static_libs: [
         "androidx.slice_slice-core",
