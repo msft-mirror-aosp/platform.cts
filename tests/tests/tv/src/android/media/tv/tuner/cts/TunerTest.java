@@ -1688,7 +1688,6 @@ public class TunerTest {
         assertFalse(ids.isEmpty());
         int targetFrontendId = sTunerCtsConfiguration.getTargetFrontendId().intValueExact();
         FrontendInfo info = mTuner.getFrontendInfoById(ids.get(targetFrontendId));
-        FrontendSettings feSettings = createFrontendSettings(info);
 
         // first apply frontend with mTuner to acquire resource
         int res = mTuner.applyFrontend(info);
@@ -1706,11 +1705,11 @@ public class TunerTest {
 
         Message msgTune = new Message();
         msgTune.what = MSG_TUNER_HANDLER_TUNE;
-        msgTune.obj = (Object) feSettings;
+        msgTune.obj = (Object) info;
         tunerHandler.sendMessage(msgTune);
 
         // call mTuner.close in parallel
-        int sleepMS = 1;
+        int sleepMS = 4;
         //int sleepMS = (int) (Math.random() * 3.);
         try {
             Thread.sleep(sleepMS);
@@ -2076,10 +2075,9 @@ public class TunerTest {
             // see if tune still works just in case
             tunerA = new Tuner(mContext, null, 100);
             assertEquals(Tuner.RESULT_SUCCESS, tunerA.tune(feSettings));
-            tunerA.close();
         } finally {
-            tunerA = null;
-            tunerB = null;
+            tunerA.close();
+            tunerB.close();
         }
     }
 
@@ -2148,7 +2146,7 @@ public class TunerTest {
             FrontendStatus status = tunerB.getFrontendStatus(statusCapabilities);
             assertNotNull(status);
         } finally {
-            tunerA = null;
+            tunerA.close();
         }
     }
 
@@ -2356,9 +2354,9 @@ public class TunerTest {
             throw (e);
         } finally {
             cleanupTRMCustomFeResourceMapTest();
-            tunerA = null;
-            tunerB = null;
-            tunerC = null;
+            tunerA.close();
+            tunerB.close();
+            tunerC.close();
         }
     }
 
@@ -3703,7 +3701,9 @@ public class TunerTest {
                 }
                 case MSG_TUNER_HANDLER_TUNE: {
                     synchronized (mLock) {
-                        FrontendSettings feSettings = (FrontendSettings) msg.obj;
+                        FrontendInfo info = (FrontendInfo) msg.obj;
+                        mHandlersTuner.applyFrontend(info);
+                        FrontendSettings feSettings = createFrontendSettings(info);
                         mResult = mHandlersTuner.tune(feSettings);
                     }
                     break;

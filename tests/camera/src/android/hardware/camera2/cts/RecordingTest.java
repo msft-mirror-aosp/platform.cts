@@ -399,8 +399,11 @@ public class RecordingTest extends Camera2SurfaceViewTestCase {
         @Override
         public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
             synchronized (mCondition) {
-                mTrackId = mMediaMuxer.addTrack(format);
-                mMediaMuxer.start();
+                if (mTrackId < 0) {
+                    mTrackId = mMediaMuxer.addTrack(format);
+                    mMediaMuxer.start();
+                    return;
+                }
             }
         }
     }

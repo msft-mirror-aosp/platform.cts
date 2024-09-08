@@ -20,6 +20,7 @@ import static android.autofillservice.cts.testcore.UiBot.PORTRAIT;
 import static android.provider.Settings.Secure.AUTOFILL_SERVICE;
 import static android.provider.Settings.Secure.SELECTED_INPUT_METHOD_SUBTYPE;
 import static android.provider.Settings.Secure.USER_SETUP_COMPLETE;
+import static android.service.autofill.FillEventHistory.Event;
 import static android.service.autofill.FillEventHistory.Event.TYPE_AUTHENTICATION_SELECTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_CONTEXT_COMMITTED;
 import static android.service.autofill.FillEventHistory.Event.TYPE_DATASETS_SHOWN;
@@ -105,6 +106,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -1967,5 +1969,18 @@ public final class Helper {
             this.categoryIds = categoryIds;
             this.scores = scores;
         }
+    }
+
+    public static void assertHasEventMatchingTypeAndFilter(int type,
+            Consumer<Event> f, List<Event> events) {
+        boolean eventFound = false;
+        for (Event event : events) {
+            if (event.getType() == type) {
+                f.accept(event);
+                eventFound = true;
+                break;
+            }
+        }
+        assertThat(eventFound).isTrue();
     }
 }

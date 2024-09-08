@@ -133,14 +133,18 @@ public class CodecDecoderTestBase extends CodecTestBase {
         return null;
     }
 
-    int getColorFormat(String name, String mediaType, boolean surfaceMode, boolean hbdMode)
-            throws IOException {
+    int getColorFormat(String name, String mediaType, boolean surfaceMode, boolean hbdMode) {
         if (surfaceMode) return COLOR_FormatSurface;
         if (hbdMode) {
-            MediaCodec codec = MediaCodec.createByCodecName(name);
-            MediaCodecInfo.CodecCapabilities cap =
-                    codec.getCodecInfo().getCapabilitiesForType(mediaType);
-            codec.release();
+            MediaCodecInfo.CodecCapabilities cap = null;
+            for (MediaCodecInfo codecInfo : MEDIA_CODEC_LIST_ALL.getCodecInfos()) {
+                if (name.equals(codecInfo.getName())) {
+                    cap = codecInfo.getCapabilitiesForType(mediaType);
+                    break;
+                }
+            }
+            assertNotNull("did not receive capabilities for codec: " + name + ", media type: "
+                    + mediaType + "\n" + mTestConfig + mTestEnv, cap);
             for (int c : cap.colorFormats) {
                 if (c == COLOR_FormatYUVP010) {
                     return c;

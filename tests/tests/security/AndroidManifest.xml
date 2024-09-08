@@ -318,6 +318,17 @@
 
         <activity android:name="android.security.cts.BUG_293602970.PocActivity" />
 
+        <!-- CVE-2024-31316 -->
+        <service android:name="android.security.cts.CVE_2024_31316.PocService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.accounts.AccountAuthenticator" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accounts.AccountAuthenticator"
+                android:resource="@xml/authenticator" />
+        </service>
+
         <activity android:name="android.security.cts.BUG_283103220.PipActivity"
             android:process=":pipActivity"
             android:supportsPictureInPicture="true" />

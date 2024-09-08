@@ -813,36 +813,32 @@ public class DecodeOnlyTest extends MediaTestBase {
         @Override
         public void onOutputBufferAvailable(MediaCodec codec, int index,
                 MediaCodec.BufferInfo info) {
-            if (!mDone.get()) {
-                ByteBuffer outputBuffer = mAudioCodec.getOutputBuffer(index);
-                byte[] audioArray = new byte[info.size];
-                outputBuffer.get(audioArray);
-                outputBuffer.clear();
-                ByteBuffer audioData = ByteBuffer.wrap(audioArray);
-                int writtenSize = 0;
-                // This is a workaround, just to avoid blocking audio track write and codec
-                // crashes caused by invalid index after audio track pause and codec flush.
-                // b/291959069 to fix the outstanding callback issue.
-                while (!mDone.get()) {
-                    int written = mAudioTrack.write(audioData, info.size - writtenSize,
-                            AudioTrack.WRITE_BLOCKING, info.presentationTimeUs * 1000);
-                    if (written >= 0) {
-                        writtenSize += written;
-                        if (writtenSize >= info.size) {
-                            break;
-                        }
-                        // When audio track is not in playing state, the write operation does not
-                        // block in WRITE_BLOCKING mode. And when audio track is full, the audio
-                        // data can not be fully written. Must sleep here to wait for free spaces.
-                        try {
-                            Thread.sleep(50);
-                        } catch (InterruptedException ignored) {
-                        }
-                    } else {
-                        Assert.fail("AudioTrack write failure.");
+            // TODO(b/291959069): Remove this once stale callbacks aren't fired by MediaCodec
+            if (mDone.get()) {
+                return;
+            }
+            ByteBuffer outputBuffer = mAudioCodec.getOutputBuffer(index);
+            byte[] audioArray = new byte[info.size];
+            outputBuffer.get(audioArray);
+            outputBuffer.clear();
+            long presentationTimeUs = info.presentationTimeUs;
+            mAudioCodec.releaseOutputBuffer(index, false);
+
+            ByteBuffer audioData = ByteBuffer.wrap(audioArray);
+            while (audioData.remaining() > 0 && !mDone.get()) {
+                int written = mAudioTrack.write(audioData, audioData.remaining(),
+                        AudioTrack.WRITE_BLOCKING, presentationTimeUs * 1000);
+                if (written >= 0) {
+                    // When audio track is not in playing state, the write operation does not
+                    // block in WRITE_BLOCKING mode. And when audio track is full, the audio
+                    // data can not be fully written. Must sleep here to wait for free spaces.
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException ignored) {
                     }
+                } else {
+                    Assert.fail("AudioTrack write failure.");
                 }
-                mAudioCodec.releaseOutputBuffer(index, false);
             }
         }
 

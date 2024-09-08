@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package android.server.wm.jetpack.utils;
+package android.server.wm.jetpack.extensions.util;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * Consumer that provides a simple way to wait for a specific count of values to be received within
  * a timeout and then return the last value.
  *
- * It requires the vendor API version at least {@link ExtensionUtil#EXTENSION_VERSION_2} because
+ * It requires the vendor API version at least {@link ExtensionsUtil#EXTENSION_VERSION_2} because
  * it uses extensions core version of {@link Consumer} instead of
  * {@link java.util.function.Consumer Java 8 version Consumer}.
  */
@@ -56,6 +56,10 @@ public class TestValueCountConsumer<T> implements Consumer<T> {
         mCount = count;
     }
 
+    /**
+     * Returns the value that was reported after the count was reached from
+     * {@link TestValueCountConsumer#setCount(int)}.
+     */
     @Nullable
     public T waitAndGet() throws InterruptedException {
         T value = null;

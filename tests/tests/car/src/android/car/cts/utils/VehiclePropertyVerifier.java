@@ -50,6 +50,7 @@ import android.car.hardware.property.PropertyNotAvailableAndRetryException;
 import android.car.hardware.property.PropertyNotAvailableErrorCode;
 import android.car.hardware.property.PropertyNotAvailableException;
 import android.os.SystemClock;
+import android.util.ArrayMap;
 import android.util.Log;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -2296,17 +2297,44 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        List<SetPropertyRequest<?>> setPropertyRequests = new ArrayList<>();
-        SparseIntArray requestIdToAreaIdMap = new SparseIntArray();
-        for (int areaId : carPropertyConfig.getAreaIds()) {
+        ArrayMap<Integer, List<T>> areaIdToPossibleValuesMap = new ArrayMap<>();
+        // The maximum possible values count for all areaIds.
+        int maxPossibleValuesCount = 0;
+
+        for (int areaId : carPropertyConfig.getAreaIds()) {;
             Collection<T> possibleValues = getPossibleValues(areaId);
             if (possibleValues == null || possibleValues.size() == 0) {
                 continue;
             }
-            for (T possibleValue : possibleValues) {
+            // Convert to a list so that we can access via index later.
+            areaIdToPossibleValuesMap.put(areaId, new ArrayList<T>(possibleValues));
+            if (possibleValues.size() > maxPossibleValuesCount) {
+                maxPossibleValuesCount = possibleValues.size();
+            }
+        }
+
+        // For each possible value index, generate one async request containing all areaIds that has
+        // possible values defined.
+        // For example, [value0ForArea1, value0ForArea2], [value1ForArea1, value1ForArea2].
+        // If we run out of possible values for one areaId, just use the last possible value for
+        // that areaId.
+        for (int i = 0; i < maxPossibleValuesCount; i++) {
+            SparseIntArray requestIdToAreaIdMap = new SparseIntArray();
+            List<SetPropertyRequest<?>> setPropertyRequests = new ArrayList<>();
+            for (int areaId : carPropertyConfig.getAreaIds()) {
+                if (!areaIdToPossibleValuesMap.containsKey(areaId)) {
+                    continue;
+                }
+                List<T> possibleValues = areaIdToPossibleValuesMap.get(areaId);
+                int index = i;
+                if (index >= possibleValues.size() - 1) {
+                    // Always use the last possible value if we run out of possible values.
+                    index = possibleValues.size() - 1;
+                }
+
                 SetPropertyRequest setPropertyRequest =
                         mCarPropertyManager.generateSetPropertyRequest(mPropertyId, areaId,
-                                possibleValue);
+                                possibleValues.get(index));
                 if (carPropertyConfig.getAccess()
                         == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
                     setPropertyRequest.setWaitForPropertyUpdate(false);
@@ -2314,39 +2342,39 @@ public class VehiclePropertyVerifier<T> {
                 requestIdToAreaIdMap.put(setPropertyRequest.getRequestId(), areaId);
                 setPropertyRequests.add(setPropertyRequest);
             }
-        }
 
-        TestSetPropertyCallback testSetPropertyCallback = new TestSetPropertyCallback(
-                requestIdToAreaIdMap.size());
-        mCarPropertyManager.setPropertiesAsync(setPropertyRequests, /* cancellationSignal: */ null,
-                /* callbackExecutor: */ null, testSetPropertyCallback);
-        testSetPropertyCallback.waitForResults();
+            TestSetPropertyCallback testSetPropertyCallback = new TestSetPropertyCallback(
+                    requestIdToAreaIdMap.size());
+            mCarPropertyManager.setPropertiesAsync(setPropertyRequests, /* cancellationSignal: */ null,
+                    /* callbackExecutor: */ null, testSetPropertyCallback);
+            testSetPropertyCallback.waitForResults();
 
-        for (SetPropertyResult setPropertyResult :
-                testSetPropertyCallback.getSetPropertyResults()) {
-            int requestId = setPropertyResult.getRequestId();
-            if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
-                assertWithMessage(
-                        "setPropertiesAsync received SetPropertyResult with unknown requestId: "
-                                + setPropertyResult).fail();
+            for (SetPropertyResult setPropertyResult :
+                    testSetPropertyCallback.getSetPropertyResults()) {
+                int requestId = setPropertyResult.getRequestId();
+                if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
+                    assertWithMessage(
+                            "setPropertiesAsync received SetPropertyResult with unknown requestId: "
+                                    + setPropertyResult).fail();
+                }
+                assertThat(setPropertyResult.getPropertyId()).isEqualTo(mPropertyId);
+                assertThat(setPropertyResult.getAreaId()).isEqualTo(
+                        requestIdToAreaIdMap.get(requestId));
+                assertThat(setPropertyResult.getUpdateTimestampNanos()).isAtLeast(0);
+                assertThat(setPropertyResult.getUpdateTimestampNanos()).isLessThan(
+                        SystemClock.elapsedRealtimeNanos());
             }
-            assertThat(setPropertyResult.getPropertyId()).isEqualTo(mPropertyId);
-            assertThat(setPropertyResult.getAreaId()).isEqualTo(
-                    requestIdToAreaIdMap.get(requestId));
-            assertThat(setPropertyResult.getUpdateTimestampNanos()).isAtLeast(0);
-            assertThat(setPropertyResult.getUpdateTimestampNanos()).isLessThan(
-                    SystemClock.elapsedRealtimeNanos());
-        }
 
-        for (PropertyAsyncError propertyAsyncError :
-                testSetPropertyCallback.getPropertyAsyncErrors()) {
-            int requestId = propertyAsyncError.getRequestId();
-            if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
-                assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
-                        + "requestId: " + propertyAsyncError).fail();
+            for (PropertyAsyncError propertyAsyncError :
+                    testSetPropertyCallback.getPropertyAsyncErrors()) {
+                int requestId = propertyAsyncError.getRequestId();
+                if (requestIdToAreaIdMap.indexOfKey(requestId) < 0) {
+                    assertWithMessage("setPropertiesAsync received PropertyAsyncError with unknown "
+                            + "requestId: " + propertyAsyncError).fail();
+                }
+                assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
+                        + propertyAsyncError).fail();
             }
-            assertWithMessage("Received PropertyAsyncError when testing setPropertiesAsync: "
-                    + propertyAsyncError).fail();
         }
     }
 

@@ -573,14 +573,16 @@ public class TunerFrontendTest {
             assertNotNull(info);
             assertThat(info).isEqualTo(infoFromMap);
             assertEquals(id, info.getId());
-            assertTrue(info.getFrequencyRange().getLower() > 0);
-            assertTrue(info.getSymbolRateRange().getLower() >= 0);
-            assertTrue(info.getAcquireRange() > 0);
+            if (info.getType() != FrontendSettings.TYPE_IPTV) {
+                assertTrue(info.getFrequencyRange().getLower() > 0);
+                assertTrue(info.getSymbolRateRange().getLower() >= 0);
+                assertTrue(info.getAcquireRange() > 0);
+            }
             info.getExclusiveGroupId();
             info.getStatusCapabilities();
 
             FrontendCapabilities caps = info.getFrontendCapabilities();
-            if (info.getType() <= FrontendSettings.TYPE_ISDBT) {
+            if (info.getType() <= FrontendSettings.TYPE_IPTV) {
                 assertNotNull(caps);
             }
             switch(info.getType()) {
@@ -613,6 +615,9 @@ public class TunerFrontendTest {
                     break;
                 case FrontendSettings.TYPE_DTMB:
                     testDtmbFrontendCapabilities(caps);
+                    break;
+                case FrontendSettings.TYPE_IPTV:
+                    testIptvFrontendCapabilities(caps);
                     break;
                 default:
                     break;
@@ -1134,14 +1139,16 @@ public class TunerFrontendTest {
             assertNotNull(info);
             assertThat(info).isEqualTo(infoFromMap);
             assertEquals(id, info.getId());
-            assertTrue(info.getFrequencyRangeLong().getLower() > 0);
-            assertTrue(info.getSymbolRateRange().getLower() >= 0);
-            assertTrue(info.getAcquireRangeLong() > 0);
+            if (info.getType() != FrontendSettings.TYPE_IPTV) {
+                assertTrue(info.getFrequencyRangeLong().getLower() > 0);
+                assertTrue(info.getSymbolRateRange().getLower() >= 0);
+                assertTrue(info.getAcquireRangeLong() > 0);
+            }
             info.getExclusiveGroupId();
             info.getStatusCapabilities();
 
             FrontendCapabilities caps = info.getFrontendCapabilities();
-            if (info.getType() <= FrontendSettings.TYPE_ISDBT) {
+            if (info.getType() <= FrontendSettings.TYPE_IPTV) {
                 assertNotNull(caps);
             }
             switch(info.getType()) {

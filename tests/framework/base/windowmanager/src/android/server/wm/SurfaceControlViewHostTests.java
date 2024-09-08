@@ -53,7 +53,6 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.Region;
-import android.graphics.Point;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -961,11 +960,7 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
         Thread.sleep(100);
         // Check to see if the click went through - this only would happen if the surface package
         // was replaced
-        boolean success = CtsWindowInfoUtils.tapOnWindowCenter(mInstrumentation,
-                () -> mEmbeddedView.getWindowToken(), /* useGlobalInjection= */ true);
-        if (!success) {
-            CtsWindowInfoUtils.dumpWindowsOnScreen(TAG, "test " + mName.getMethodName());
-        }
+        mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, mActivityRule, mSurfaceView);
         assertTrue(mClicked);
     }
 

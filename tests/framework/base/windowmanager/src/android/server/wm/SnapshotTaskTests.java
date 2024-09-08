@@ -18,6 +18,7 @@ package android.server.wm;
 
 import static android.server.wm.WindowManagerTestBase.startActivity;
 import static android.view.WindowInsets.Type.captionBar;
+import static android.view.WindowInsets.Type.systemBars;
 import static android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
@@ -30,6 +31,7 @@ import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.view.SurfaceControl;
@@ -94,11 +96,15 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         boolean matchesPixels = false;
         while (retries < 5) {
             Bitmap bitmap = mWindowManager.snapshotTaskForRecents(mActivity.getTaskId());
+            Rect boundToCheck =  new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+            // Even when the activity requests immersive mode, the bars may or may not be hidden
+            // depending on the form-factor.
+            boundToCheck.inset(mActivity.getSystemBarOverlaps());
             if (bitmap != null) {
                 int expectedMatching =
-                        bitmap.getWidth() * bitmap.getHeight() - MATCHING_PIXEL_MISMATCH_ALLOWED
+                        boundToCheck.width() * boundToCheck.height()
+                                - MATCHING_PIXEL_MISMATCH_ALLOWED
                                 - (captionBarHeight * decor.getWidth());
-                Rect boundToCheck = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
                 int matchingPixels = pixelChecker.getNumMatchingPixels(bitmap, boundToCheck);
                 matchesPixels = matchingPixels >= expectedMatching;
             }
@@ -133,6 +139,7 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
         Bitmap bitmap = mWindowManager.snapshotTaskForRecents(mActivity.getTaskId());
         assertNotNull(bitmap);
         Rect boundToCheck = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        boundToCheck.inset(mActivity.getSystemBarOverlaps());
         int matchingPixels = pixelChecker.getNumMatchingPixels(bitmap, boundToCheck);
         assertTrue("Expected <=" + MATCHING_PIXEL_MISMATCH_ALLOWED + " matched " + matchingPixels,
                 matchingPixels <= MATCHING_PIXEL_MISMATCH_ALLOWED);
@@ -140,6 +147,8 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
 
     public static class TestActivity extends WindowManagerTestBase.FocusableActivity {
         private final CountDownLatch mReadyToStart = new CountDownLatch(3);
+        private Insets mSystemBarOverlaps = Insets.of(0, 0, 0, 0);
+
 
         @Override
         public void onEnterAnimationComplete() {
@@ -182,6 +191,15 @@ public class SnapshotTaskTests extends ActivityManagerTestBase {
                 splashView.remove();
                 mReadyToStart.countDown();
             });
+
+            getWindow().getDecorView().setOnApplyWindowInsetsListener((v, insets) -> {
+                mSystemBarOverlaps = insets.getInsets(systemBars());
+                return insets;
+            });
+        }
+
+        public Insets getSystemBarOverlaps() {
+            return mSystemBarOverlaps;
         }
     }
 }

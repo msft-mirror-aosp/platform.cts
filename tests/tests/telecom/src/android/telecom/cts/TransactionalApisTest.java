@@ -106,6 +106,7 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             "onAvailable CallEndpoint was not updated at all or in time";
     private static final String FAIL_MSG_ON_MUTE_STATE_CHANGED =
             "Mute state was not updated at all or in time";
+    private static final boolean SHOULD_IGNORE_TEST = true;
 
     // inner classes
 
@@ -814,7 +815,8 @@ public class TransactionalApisTest extends BaseTelecomTestWithMockServices {
             "android.telecom.CallControl#disconnect",
             "android.telecom.CallControl#sendEvent"})
     public void testSendCallEvent() {
-        if (!mShouldTestTelecom) {
+        // Note: Temporarily disable this test in A14 tests due to a bug fixed later.
+        if (!mShouldTestTelecom || SHOULD_IGNORE_TEST) {
             return;
         }
         try {

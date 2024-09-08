@@ -364,7 +364,7 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
       logging.info('Capturing an image to check the test scene')
       cap = cam.do_capture(req, fmt)
       img = image_processing_utils.convert_capture_to_rgb_image(cap)
-      img_name = os.path.join(out_path, f'test_{scene}.jpg')
+      img_name = os.path.join(out_path, f'test_{scene.replace("/", "_")}.jpg')
       logging.info('Please check scene setup in %s', img_name)
       image_processing_utils.write_image(img, img_name)
       choice = input(f'Is the image okay for ITS {scene}? (Y/N)').lower()
