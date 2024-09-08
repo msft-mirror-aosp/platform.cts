@@ -292,5 +292,5 @@
         <receiver android:name="com.android.bedstead.testapp.TestAppBroadcastController"
                   android:exported="true" />
     </application>
-    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35"/>
 </manifest>

@@ -775,6 +775,48 @@
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1683]"/>
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1696]"/>
   <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1704]"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetSystemSetting"/>
+  <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetSystemSetting"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_openDataManagement"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_seeAllEntries_flagEnabled_showsMindfulness"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_deleteMindfulnessData"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_showsDeleteCategoryData"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_filterByApp"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeDate_updatesSelectedDate"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_navigateToYesterday"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeUnit_showsUpdatedUnit"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_deletesData"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_showsInsertedEntry"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1357]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1387]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1412]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1421]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1426]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1433]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1452]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1482]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1486]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1497]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1501]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1513]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1538]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1562]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1611]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1618]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1626]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1631]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1635]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1639]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1643]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1647]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1672]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1673]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1686]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1699]"/>
+  <option name="compatibility:include-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxNeverallowRulesTest#testNeverallowRules[1707]"/>
+  <option name="compatibility:include-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndIntentFilterTarget"/>
+
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.wsi.*" />
