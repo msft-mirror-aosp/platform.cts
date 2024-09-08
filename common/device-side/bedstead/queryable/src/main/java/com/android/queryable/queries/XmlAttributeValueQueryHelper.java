@@ -104,7 +104,8 @@ public final class XmlAttributeValueQueryHelper<E extends Queryable>
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof XmlAttributeValueQueryHelper<?> that)) return false;
+        if (!(o instanceof XmlAttributeValueQueryHelper<?>)) return false;
+        XmlAttributeValueQueryHelper<?> that = (XmlAttributeValueQueryHelper<?>) o;
         return Objects.equals(mAttribute, that.mAttribute) && Objects.equals(
                 mValueQuery, that.mValueQuery);
     }

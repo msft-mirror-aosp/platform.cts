@@ -564,7 +564,7 @@ object DevicePolicy {
     @Experimental
     fun isNewUserDisclaimerAcknowledged(user: UserReference = TestApis.users().instrumented()): Boolean =
             TestApis.permissions().withPermission(CommonPermissions.INTERACT_ACROSS_USERS).use {
-                devicePolicyManager(user).isNewUserDisclaimerAcknowledged
+                devicePolicyManager(user).newUserDisclaimerAcknowledged
             }
 
     /**
@@ -800,7 +800,7 @@ object DevicePolicy {
 
     /** See [DevicePolicyManager.isFactoryResetProtectionPolicySupported]  */
     fun isFactoryResetProtectionPolicySupported(): Boolean =
-            devicePolicyManager.isFactoryResetProtectionPolicySupported
+            devicePolicyManager.factoryResetProtectionPolicySupported
 
     @Experimental
     fun notifyPendingSystemUpdate(updateReceivedTime: Long, isSecurityPatch: Boolean? = null) {
@@ -824,7 +824,7 @@ object DevicePolicy {
     @JvmOverloads
     fun isCurrentInputMethodSetByOwner(user: UserReference = TestApis.users().instrumented()) =
             TestApis.permissions().withPermission(QUERY_ADMIN_POLICY).use {
-                devicePolicyManager(user).isCurrentInputMethodSetByOwner
+                devicePolicyManager(user).currentInputMethodSetByOwner
             }
 
     /** See [DevicePolicyManager#getOwnerInstalledCaCerts]. */

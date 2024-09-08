@@ -34,5 +34,5 @@
             </intent-filter>
         </receiver>
     </application>
-    <uses-sdk android:minSdkVersion="29"/>
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35"/>
 </manifest>
