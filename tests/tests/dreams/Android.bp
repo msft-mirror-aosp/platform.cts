@@ -27,8 +27,8 @@ android_test {
         "junit",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: ["src/**/*.java"],
     // Need access to ServiceManager - see b/13307221

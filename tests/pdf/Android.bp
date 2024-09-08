@@ -20,7 +20,7 @@ android_test {
     name: "CtsPdfTestCases",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "androidx.test.rules",
         "mockito-target-minus-junit4",

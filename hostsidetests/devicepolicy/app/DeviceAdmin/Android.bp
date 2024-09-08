@@ -27,8 +27,8 @@ android_test_helper_app {
         "DpmWrapper",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     sdk_version: "test_current",
     min_sdk_version: "23",
@@ -52,8 +52,8 @@ android_test_helper_app {
         "DpmWrapper",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     sdk_version: "test_current",
     // TODO: should it be "24":
@@ -79,8 +79,8 @@ android_test_helper_app {
         "DpmWrapper",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     sdk_version: "test_current",
     // tag this module as a cts test artifact

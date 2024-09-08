@@ -24,8 +24,8 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",
@@ -46,8 +46,8 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",
@@ -68,8 +68,8 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",
@@ -90,8 +90,8 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",
@@ -112,8 +112,8 @@ android_test_helper_app {
         "androidx.test.rules",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
     ],
     srcs: [
         "src/**/*.java",

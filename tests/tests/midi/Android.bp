@@ -40,7 +40,7 @@ android_test {
         "android.media.midi-aconfig-java",
     ],
 
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
 
     srcs: ["src/**/*.java"],
 

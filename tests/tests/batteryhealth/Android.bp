@@ -32,8 +32,8 @@ android_test {
         "android.os.flags-aconfig-java",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: [
         "src/**/*.java",

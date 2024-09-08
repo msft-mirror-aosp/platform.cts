@@ -20,8 +20,8 @@ android_test {
     name: "CtsShortFgsTestCases",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
         "truth",
     ],
     static_libs: [
