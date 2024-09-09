@@ -20,11 +20,21 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.security.cts.usepermission">
 
-    <permission-tree android:name="com.android.voicemail.permission"/>
     <permission-tree android:name="android.security.cts.usepermission"/>
+    <permission android:name="android.security.cts.usepermission.DYNAMIC_PERMISSION"/>
 
-    <application android:label="Dynamic Permission Test Attacker App">
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.security.cts.usepermission.DYNAMIC_PERMISSION"/>
+
+    <application android:label="Updated Dynamic Permission Test Attacker App">
         <service android:name="android.security.cts.usepermission.DynamicPermissionService"
                  android:exported="true"/>
+        <activity android:name="android.security.cts.usepermission.RequestPermissionActivity"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
