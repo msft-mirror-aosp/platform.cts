@@ -35,6 +35,7 @@ import com.android.bedstead.nene.accounts.AccountReference
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator
 import com.android.bedstead.remoteaccountauthenticator.RemoteAccountAuthenticator.REMOTE_ACCOUNT_AUTHENTICATOR_TEST_APP
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 
 /**
  * Contains logic specific to accounts for Bedstead tests using [DeviceState] rule
@@ -119,6 +120,7 @@ class AccountsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
     /**
      * See [EnsureHasAccount]
      */
+    @CanIgnoreReturnValue
     fun ensureHasAccount(
         onUser: UserType,
         key: String,

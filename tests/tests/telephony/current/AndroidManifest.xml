@@ -85,6 +85,14 @@
             </intent-filter>
         </receiver>
 
+        <!-- BroadcastReceiver that listens for ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent -->
+        <receiver android:name=".SatelliteReceiver"
+             android:exported="true">
+            <intent-filter>
+                <action android:name="android.telephony.action.ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED"/>
+            </intent-filter>
+        </receiver>
+
         <!-- Activity that allows the user to send new SMS/MMS messages -->
         <activity android:name=".ComposeSmsActivity"
              android:exported="true">
