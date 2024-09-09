@@ -22,14 +22,14 @@ import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.EmbeddedPhotoPickerClient;
-import android.provider.EmbeddedPhotoPickerFeatureInfo;
-import android.provider.EmbeddedPhotoPickerProvider;
-import android.provider.EmbeddedPhotoPickerProviderFactory;
-import android.provider.EmbeddedPhotoPickerSession;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.photopicker.EmbeddedPhotoPickerClient;
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
+import android.widget.photopicker.EmbeddedPhotoPickerProvider;
+import android.widget.photopicker.EmbeddedPhotoPickerProviderFactory;
+import android.widget.photopicker.EmbeddedPhotoPickerSession;
 
 import androidx.annotation.NonNull;
 
@@ -62,7 +62,7 @@ public class EmbeddedTestActivity extends Activity {
      */
     private final EmbeddedPhotoPickerClient mClient = new EmbeddedPhotoPickerClient() {
         @Override
-        public void onItemsDeselected(@NonNull List<Uri> uris) {
+        public void onUriPermissionRevoked(@NonNull List<Uri> uris) {
             mSelectedUris.removeAll(uris);
 
             if (mItemsDeselectedClientInvocationLatch != null) {
@@ -71,7 +71,7 @@ public class EmbeddedTestActivity extends Activity {
         }
 
         @Override
-        public void onItemsSelected(@NonNull List<Uri> uris) {
+        public void onUriPermissionGranted(@NonNull List<Uri> uris) {
             mSelectedUris.addAll(uris);
 
             if (mItemsSelectedClientInvocationLatch != null) {
