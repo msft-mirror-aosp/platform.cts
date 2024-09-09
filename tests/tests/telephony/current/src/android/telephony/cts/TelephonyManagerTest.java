@@ -4045,21 +4045,14 @@ public class TelephonyManagerTest {
 
         // test with permission
         try {
-            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(
-                    mTelephonyManager,
-                    (tm) -> tm.setAllowedNetworkTypesForReason(
-                            TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER,
-                            allowedNetworkTypes));
-
-            long deviceAllowedNetworkTypes = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> {
-                        return tm.getAllowedNetworkTypesForReason(
-                                TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER);
-                    }
-            );
-            assertEquals(allowedNetworkTypes, deviceAllowedNetworkTypes);
-        } catch (SecurityException se) {
-            fail("testSetAllowedNetworkTypes: SecurityException not expected");
+            // Register telephony callback for AllowedNetworkTypesListener
+            AllowedNetworkTypesListener listener = new AllowedNetworkTypesListener();
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.registerTelephonyCallback(mSimpleExecutor, listener));
+            verifySetAndGetAllowedNetworkTypesForReason(listener,
+                    TelephonyManager.ALLOWED_NETWORK_TYPES_REASON_POWER, allowedNetworkTypes);
+        } catch (Exception e) {
+            fail("testSetAllowedNetworkTypes: Exception is not expected e:" + e);
         }
     }
 
