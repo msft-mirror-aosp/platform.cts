@@ -18,7 +18,8 @@ package android.mediav2.cts;
 
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
-import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -191,7 +192,11 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         }
         // Skip stream validation as there is no reference for tone mapped input
         if (muxOutput && !mIsOutputToneMapped) {
-            if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;
+            // HDR support introduced with T, with pieces in both system+vendor
+            if (mEncCfgParams.mInputBitDepth > 8) {
+                if (!FIRST_SDK_IS_AT_LEAST_T) return;
+                if (!BOARD_SDK_IS_AT_LEAST_T) return;
+            }
             CodecEncoderTestBase.validateEncodedPSNR(mTestFileMediaType, mTestFile, mEncMediaType,
                     tmpPath, false, false, ACCEPTABLE_WIRELESS_TX_QUALITY);
         }
@@ -226,7 +231,11 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
         if (tmpPath != null) {
-            if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;
+            // HDR support introduced with T, with pieces in both system+vendor
+            if (mEncCfgParams.mInputBitDepth > 8) {
+                if (!FIRST_SDK_IS_AT_LEAST_T) return;
+                if (!BOARD_SDK_IS_AT_LEAST_T) return;
+            }
             CodecEncoderTestBase.validateEncodedPSNR(mTestFileMediaType, mTestFile, mEncMediaType,
                     tmpPath, false, false, ACCEPTABLE_WIRELESS_TX_QUALITY);
         }
