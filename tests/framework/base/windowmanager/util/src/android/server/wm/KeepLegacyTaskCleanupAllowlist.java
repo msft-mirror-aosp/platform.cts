@@ -53,7 +53,6 @@ public class KeepLegacyTaskCleanupAllowlist {
             "android.localemanager.cts.LocaleManagerSystemLocaleTest",
             "android.localemanager.cts.LocaleManagerTests",
             "android.security.identity.cts.UserAuthTest",
-            "android.server.wm.ActivitySecurityModelTest",
             "android.server.wm.activity.ActivityCaptureCallbackTests",
             "android.server.wm.activity.ActivityRecordInputSinkTests",
             "android.server.wm.activity.ConfigurationCallbacksTest",
