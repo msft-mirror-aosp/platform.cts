@@ -71,12 +71,15 @@ import android.view.inputmethod.InputMethodManager;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.android.compatibility.common.util.EnableAnimationRule;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
@@ -104,6 +107,9 @@ import java.util.stream.Collectors;
 //TODO(b/159167851) @Presubmit
 @RunWith(Parameterized.class)
 public class WindowInsetsAnimationControllerTests extends WindowManagerTestBase {
+
+    @ClassRule
+    public static final EnableAnimationRule sEnableAnimationRule = new EnableAnimationRule();
 
     TestActivity mActivity;
     View mRootView;
