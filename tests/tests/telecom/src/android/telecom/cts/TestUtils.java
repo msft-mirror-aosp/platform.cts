@@ -491,9 +491,11 @@ public class TestUtils {
 
     public static String setCtsPhoneAccountSuggestionService(Instrumentation instrumentation,
             ComponentName componentName) throws Exception {
+        final long currentUserSerial = getCurrentUserSerialNumber(instrumentation);
         return executeShellCommand(instrumentation,
                 COMMAND_SET_ACCT_SUGGESTION
-                        + (componentName == null ? "" : componentName.flattenToString()));
+                        + (componentName == null ? "" : componentName.flattenToString())
+                            + " " + currentUserSerial);
     }
 
     public static String getDefaultDialer(Instrumentation instrumentation) throws Exception {
