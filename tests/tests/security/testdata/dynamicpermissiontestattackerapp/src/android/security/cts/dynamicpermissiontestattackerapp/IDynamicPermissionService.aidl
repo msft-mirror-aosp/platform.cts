@@ -16,6 +16,9 @@
 
 package android.security.cts.dynamicpermissiontestattackerapp;
 
-interface IRemovePermissionService {
+interface IDynamicPermissionService {
     void removePermission(in String permissionName);
+
+    void addPermission(in String permissionName, in String packageName,
+            in int protectionLevel, String group);
 }
