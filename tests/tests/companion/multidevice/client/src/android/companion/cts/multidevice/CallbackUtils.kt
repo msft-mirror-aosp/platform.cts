@@ -108,11 +108,11 @@ object CallbackUtils {
         }
     }
 
-    class AttestationVerificationCallback : BiConsumer<Int, VerificationToken> {
+    class AttestationVerificationCallback : BiConsumer<Int, VerificationToken?> {
         private val completed = CountDownLatch(1)
         private val result = AtomicBoolean(false)
 
-        override fun accept(resultCode: Int, token: VerificationToken) {
+        override fun accept(resultCode: Int, token: VerificationToken?) {
             result.set(resultCode == AttestationVerificationManager.RESULT_SUCCESS)
             completed.countDown()
         }

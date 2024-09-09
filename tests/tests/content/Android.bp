@@ -121,6 +121,7 @@ android_test {
         "mcts-documentsui",
     ],
     static_libs: [
+        "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
         "TestParameterInjector",
@@ -274,9 +275,6 @@ android_test {
         ":HelloWorldSdk1DifferentSigner",
         ":HelloWorldSdk1MajorVersion2",
         ":HelloWorldSdk1Updated",
-        ":HelloWorldSdk1MajorVersion1WithHigherMinSdk",
-        ":HelloWorldSdk1MajorVersion1WithHigherTargetSdk",
-        ":HelloWorldSdk1MajorVersion2WithHigherTargetSdk",
         ":HelloWorldSdk2",
         ":HelloWorldSdk2Updated",
         ":HelloWorldSdk3UsingSdk1",
