@@ -102,6 +102,9 @@ public final class GameFrameRateTest {
         mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
         boolean changeIsEnabled =
                 CompatChanges.isChangeEnabled(DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE_CHANGEID);
+
+        // setting idle time to 0 to disable the display idle timeout feature
+        mUiDevice.executeShellCommand("setprop vendor.display.idle_time 0");
         Log.i(TAG, "DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE_CHANGEID is "
                 + (changeIsEnabled ? "enabled" : "disabled"));
     }
