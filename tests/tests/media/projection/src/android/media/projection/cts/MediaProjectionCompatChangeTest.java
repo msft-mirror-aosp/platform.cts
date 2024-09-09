@@ -18,8 +18,8 @@ package android.media.projection.cts;
 
 import static android.media.cts.MediaProjectionActivity.CANCEL_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
+import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
 import static android.media.cts.MediaProjectionActivity.SINGLE_APP_STRING_RES_NAME;
-import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay;
 import static android.media.projection.MediaProjectionConfig.createConfigForUserChoice;
@@ -163,10 +163,9 @@ public class MediaProjectionCompatChangeTest {
 
         // check if we can find a view which has the expected default option
         boolean foundOptionString = sDevice.hasObject(
-                By.res(SCREEN_SHARE_OPTIONS_RESOURCE_ID)
+                By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)
                         .hasDescendant(
                                 By.text(expectedSpinnerString)));
-
 
         // close the dialog so it doesn't linger for subsequent tests
         UiObject2 cancelButton = sDevice.findObject(By.res(CANCEL_RESOURCE_ID));
