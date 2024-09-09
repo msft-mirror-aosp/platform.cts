@@ -23,8 +23,6 @@ import static android.cts.testapisreflection.TestApisReflectionKt.clearOverrideP
 import static android.cts.testapisreflection.TestApisReflectionKt.getAdoptedShellPermissions;
 import static android.cts.testapisreflection.TestApisReflectionKt.removeOverridePermissionState;
 
-import static com.google.common.truth.Truth.assertWithMessage;
-
 import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -456,10 +454,10 @@ public final class Permissions {
 
         if (removedPermissionContext != null) {
             removedPermissionContext.grantedAppOps().stream().filter(
-                            (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
                     .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
             removedPermissionContext.deniedAppOps().stream().filter(
-                            (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
+                    (i) -> !grantedAppOps.contains(i) && !deniedAppOps.contains(i))
                     .forEach(i -> appOpPackage.appOps().set(i, AppOpsMode.DEFAULT));
         }
 
@@ -602,7 +600,7 @@ public final class Permissions {
         // TODO: replace with dependency on bedstead-root when properly modularised
         if (Tags.hasTag("root-instrumentation")
                 && Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
-            // We must reset as it may have been set previously
+             // We must reset as it may have been set previously
             resetRootPermissionState(pkg, user);
 
             for (String grantedPermission : permissionsToGrant) {
@@ -642,7 +640,7 @@ public final class Permissions {
             // We need MANAGE_APP_OPS_MODES to change app op permissions - but don't want to
             // infinite loop so won't use .appOps().set()
             Set<String> previousAdoptedShellPermissions = getAdoptedShellPermissions(
-                    ShellCommandUtils.uiAutomation());
+                            ShellCommandUtils.uiAutomation());
             adoptShellPermissionIdentity(CommonPermissions.MANAGE_APP_OPS_MODES);
             for (String appOp : filteredGrantedAppOps) {
                 sAppOpsManager.setMode(appOp, pkg.uid(sUser),
@@ -766,31 +764,19 @@ public final class Permissions {
     }
 
     private static boolean hasAdoptedShellPermissionIdentity = false;
-
-    private static void adoptShellPermissionIdentity(String... permissions) {
-        adoptShellPermissionIdentity(new HashSet<>(Arrays.asList(permissions)));
+    private static void adoptShellPermissionIdentity(Collection<String> permissions) {
+        adoptShellPermissionIdentity(permissions.toArray(new String[0]));
     }
 
-    private static void adoptShellPermissionIdentity(Collection<String> permissions) {
-        if (permissions.isEmpty()) {
+    private static void adoptShellPermissionIdentity(String... permissions) {
+        if (permissions.length == 0) {
             dropShellPermissionIdentity();
             return;
         }
 
-        Log.d(LOG_TAG, "Adopting " + permissions);
+        Log.d(LOG_TAG, "Adopting " + Arrays.toString(permissions));
         hasAdoptedShellPermissionIdentity = true;
-        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(
-                permissions.toArray(new String[0]));
-
-        // b/365494315: verify if the adoption was successful.
-        Set<String> adoptedPermissions =
-                ShellCommandUtils.uiAutomation().getAdoptedShellPermissions();
-        if (!adoptedPermissions.containsAll(permissions)) {
-            String message = "Expected all of the following permissions to be adopted but "
-                    + "were not: " + permissions + ". Actual adopted permissions: " +
-                    adoptedPermissions + ". See the stacktrace to find the caller.";
-            throw new NeneException(message);
-        }
+        ShellCommandUtils.uiAutomation().adoptShellPermissionIdentity(permissions);
     }
 
     private static void adoptShellPermissionIdentity() {
