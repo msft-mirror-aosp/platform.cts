@@ -1660,46 +1660,46 @@ public class SelfManagedConnectionServiceTest extends BaseTelecomTestWithMockSer
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity();
 
-        // Specific user defined scenarios:
-        // Verify TelecomManager#isInSelfManagedCall for specified user -> true.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                TEST_SELF_MANAGED_HANDLE_1.getUserHandle());
-        // Deliberately pass in different UserHandle different from the phone account handle user to
-        // ensure that the API indicates that there aren't any ongoing calls -> false.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1,
-                UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID));
+        SelfManagedConnection connection = null;
+        try {
+            // Create self-managed call
+            connection = placeSelfManagedCallAndGetConnection(
+                    TEST_SELF_MANAGED_HANDLE_1, TEST_ADDRESS_1);
 
-        // Cross-user scenario: ensure that passing UserHandle.ALL correctly identifies calls for
-        // any user with self-managed calls.
-        verifyIsInSelfManagedCallCrossUsers(TEST_SELF_MANAGED_HANDLE_1, UserHandle.ALL);
+            // Case 1: Verify TelecomManager#isInSelfManagedCall for specified user -> true.
+            UserHandle userHandle = TEST_SELF_MANAGED_HANDLE_1.getUserHandle();
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+
+            // Case 2: Deliberately pass in different UserHandle different from the phone account
+            // handle user to ensure that the API indicates that there aren't any ongoing calls ->
+            // false.
+            userHandle = UserHandle.of(UserHandle.MIN_SECONDARY_USER_ID);
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+
+            // Case 3: Cross-user scenario: ensure that passing UserHandle.ALL correctly
+            // identifies calls for any user with self-managed calls.
+            userHandle = UserHandle.ALL;
+            verifyIsInSelfManagedCallCrossUsers(userHandle);
+        } finally {
+            if (connection != null) {
+                // Disconnect the call
+                connection.disconnectAndDestroy();
+                assertIsInCall(false);
+            }
+        }
 
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .dropShellPermissionIdentity();
     }
 
-    private void verifyIsInSelfManagedCallCrossUsers(PhoneAccountHandle handle,
-            UserHandle userHandle) throws Exception {
-        SelfManagedConnection connection = null;
+    private void verifyIsInSelfManagedCallCrossUsers(UserHandle userHandle) {
+        boolean assertIsInSelfManagedCall = userHandle.equals(UserHandle.ALL)
+                || TEST_SELF_MANAGED_HANDLE_1.getUserHandle().equals(userHandle);
 
-        boolean assertIsInSelfManagedCall = true;
-        if (!userHandle.equals(UserHandle.ALL) && !handle.getUserHandle().equals(userHandle)) {
-            assertIsInSelfManagedCall = false;
-        }
-
-        try {
-            connection = placeSelfManagedCallAndGetConnection(handle, TEST_ADDRESS_1);
-            boolean isInSelfManagedCall;
-            isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
-                    handle.getComponentName().getPackageName(), userHandle);
-            assertEquals(assertIsInSelfManagedCall, isInSelfManagedCall);
-        } finally {
-            if (connection != null) {
-                // Disconnect the call
-                connection.disconnectAndDestroy();
-                TestUtils.waitOnAllHandlers(getInstrumentation());
-                assertIsInCall(false);
-            }
-        }
+        boolean isInSelfManagedCall;
+        isInSelfManagedCall = mTelecomManager.isInSelfManagedCall(
+                TEST_SELF_MANAGED_HANDLE_1.getComponentName().getPackageName(), userHandle);
+        assertEquals(assertIsInSelfManagedCall, isInSelfManagedCall);
     }
 
     private void registerSimAccountIfNeeded() {
