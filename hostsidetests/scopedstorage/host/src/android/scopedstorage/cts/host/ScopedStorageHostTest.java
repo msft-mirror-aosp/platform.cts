@@ -360,6 +360,12 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
         }
     }
 
+    @Test
+    // TODO(b/364875662): Use flag filtering to enable / disable test
+    public void testMediaStoreVersion() throws Exception {
+        runDeviceTest("testMediaStoreVersion");
+    }
+
     private void grantPermissionsToPackage(String packageName, String... perms) throws Exception {
         int currentUserId = getCurrentUserId();
         for (String perm : perms) {
