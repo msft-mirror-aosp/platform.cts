@@ -25,7 +25,7 @@ public final class NavigateToWorkAccountSettingsStepAutomation implements Automa
     @Override
     public Nothing automate() {
         // There is only one Settings app
-        new NavigateToPersonalAccountSettingsStepAutomation().automate();
+        Nothing unused = new NavigateToPersonalAccountSettingsStepAutomation().automate();
 
         return Nothing.NOTHING;
     }
