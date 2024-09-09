@@ -82,7 +82,7 @@ public abstract class BackgroundActivityTestBase extends ActivityManagerTestBase
     static final Components APP_ASM_OPT_OUT = Components.get(APP_ASM_OPT_OUT_PACKAGE);
 
     static final List<Components> ALL_APPS =
-            List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33);
+            List.of(APP_A, APP_A_33, APP_B, APP_B_33, APP_C, APP_C_33, APP_ASM_OPT_OUT);
 
     static final String SHELL_PACKAGE = "com.android.shell";
     // This can be long as the activity should start
