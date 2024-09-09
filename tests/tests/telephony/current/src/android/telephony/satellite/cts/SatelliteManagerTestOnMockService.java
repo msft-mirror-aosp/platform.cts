@@ -19,6 +19,7 @@ package android.telephony.satellite.cts;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_DISABLE_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ENABLE_IN_PROGRESS;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NO_RESOURCES;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_REQUEST_ABORTED;
@@ -1334,7 +1335,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertTrue(isSatelliteEnabled());
 
         requestSatelliteEnabled(true, true, SatelliteManager.SATELLITE_RESULT_SUCCESS);
-        requestSatelliteEnabled(true, false, SatelliteManager.SATELLITE_RESULT_SUCCESS);
+        if (Flags.carrierRoamingNbIotNtn()) {
+            requestSatelliteEnabled(
+                    true, false, SatelliteManager.SATELLITE_RESULT_SUCCESS);
+        } else {
+            requestSatelliteEnabled(
+                    true, false, SatelliteManager.SATELLITE_RESULT_INVALID_ARGUMENTS);
+        }
 
         callback.clearModemStates();
         turnRadioOff();
@@ -3896,7 +3903,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_EnableDisable_NoResponseForEnable() {
         /*
         * Test scenario:
@@ -3976,7 +3983,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_EnableDisable_SuccessfulResponseForEnable() {
         /*
          * Test scenario:
@@ -4066,7 +4073,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_EnableDisable_LateResponseForEnable() {
         /*
          * Test scenario:
@@ -4160,7 +4167,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_EnableDisable_FailureResponseForEnable() {
         /*
          * Test scenario:
@@ -4254,7 +4261,90 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRequestSatelliteEnabled_EnableDisable_FeatureDisabled() {
+        /*
+         * Test scenario:
+         * 1) Enable request
+         * 2) Satellite should move to ENABLING state
+         * 3) Disable request
+         * 4) Telephony should return SATELLITE_RESULT_ENABLE_IN_PROGRESS since the feature flag
+         *    is not enabled.
+         * 5) Successful response from modem for the enable request
+         * 6) Satellite should move to NOT_CONNECTED state
+         */
+        if (!shouldTestSatelliteWithMockService() || Flags.carrierRoamingNbIotNtn()) return;
+
+        beforeSatelliteForOemTest();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.NB_IOT_NTN}, true);
+        grantSatellitePermission();
+        assertTrue(isSatelliteProvisioned());
+
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: starting...");
+        SatelliteModemStateCallbackTest callback = new SatelliteModemStateCallbackTest();
+        long registerResult = sSatelliteManager.registerForModemStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
+        assertTrue(callback.waitUntilResult(1));
+        if (isSatelliteEnabled()) {
+            logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: disabling"
+                    + " satellite... (1)");
+            requestSatelliteEnabled(false);
+            assertTrue(callback.waitUntilModemOff());
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback.modemState);
+            assertFalse(isSatelliteEnabled());
+            callback.clearModemStates();
+        }
+
+        sMockSatelliteServiceManager.setShouldRespondTelephony(false);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, WAIT_FOREVER_TIMEOUT_MILLIS));
+
+        // Move to enabling state
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: enabling"
+                + " satellite... (2)");
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> enableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(true, false, false);
+        assertTrue(sMockSatelliteServiceManager.waitForEventOnRequestSatelliteEnabled(1));
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(1, callback.getTotalCountOfModemStates());
+        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_ENABLING_SATELLITE,
+                callback.getModemState(0));
+        assertFalse(isSatelliteEnabled());
+
+        // Disable satellite while enabling is in progress
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: disabling"
+                + " satellite... (3)");
+        callback.clearModemStates();
+        sMockSatelliteServiceManager.clearRequestSatelliteEnabledPermits();
+        LinkedBlockingQueue<Integer> disableResult =
+                requestSatelliteEnabledWithoutWaitingForResult(false, false, false);
+        assertResult(disableResult, SATELLITE_RESULT_ENABLE_IN_PROGRESS);
+
+        // Send a successful response for the enable request
+        logd("testRequestSatelliteEnabled_EnableDisable_FeatureDisabled: responding to"
+                + " the enable request... (4)");
+        callback.clearModemStates();
+        assertTrue(sMockSatelliteServiceManager.respondToRequestSatelliteEnabled(true,
+                SatelliteModemState.SATELLITE_MODEM_STATE_OUT_OF_SERVICE));
+        assertResult(enableResult, SATELLITE_RESULT_SUCCESS);
+        assertTrue(callback.waitUntilResult(1));
+        assertEquals(
+                SatelliteManager.SATELLITE_MODEM_STATE_NOT_CONNECTED, callback.getModemState(0));
+
+        // Restore the original states
+        sSatelliteManager.unregisterForModemStateChanged(callback);
+        sMockSatelliteServiceManager.setShouldRespondTelephony(true);
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE, 0));
+        sMockSatelliteServiceManager.clearSatelliteEnableRequestQueues();
+        updateSupportedRadioTechnologies(new int[]{NTRadioTechnology.PROPRIETARY}, false);
+        afterSatelliteForOemTest();
+        revokeSatellitePermission();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2p_SuccessfulResponse() {
         /*
          * Test scenario:
@@ -4352,7 +4442,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2p_FailureResponse() {
         /*
          * Test scenario:
@@ -4433,7 +4523,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToP2pToEmergency_SuccessfulResponse() {
         /*
          * Test scenario:
@@ -4531,7 +4621,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToP2pToEmergency_FailureResponse() {
         /*
          * Test scenario:
@@ -4632,7 +4722,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_DemoToP2p_SuccessfulResponse() {
         /*
          * Test scenario:
@@ -4703,7 +4793,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_P2pToEmergency_SuccessfulResponse() {
         /*
          * Test scenario:
@@ -4776,7 +4866,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_SuccessfulResponseForEnable() {
         /*
          * Test scenario:
@@ -4882,7 +4972,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_NoResponseForEnable() {
         /*
          * Test scenario:
@@ -4977,7 +5067,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_FailureResponseForDisable() {
         /*
          * Test scenario:
@@ -5106,7 +5196,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_OffToDemoToP2pToOff_ModemOff_FailureResponseForDisable() {
         /*
          * Test scenario:
@@ -5395,7 +5485,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
     public void testRequestSatelliteEnabled_ModemCrashDuringEnableEnableDisable() {
         /*
          * Test scenario:
