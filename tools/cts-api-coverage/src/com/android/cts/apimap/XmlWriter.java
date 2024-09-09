@@ -271,7 +271,7 @@ public class XmlWriter {
     }
 
     private Element createXtsAnnotationElement(String name, Set<String> values) {
-        Element element = mDoc.createElement("cts-annotation");
+        Element element = mDoc.createElement("annotation");
         element.setAttribute("name", name);
         element.setAttribute("values", String.join(";", values));
         return element;
