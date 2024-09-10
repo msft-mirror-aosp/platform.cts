@@ -24,6 +24,7 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HI
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
@@ -173,7 +174,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             TestUtils.unlockScreen();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
                             && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
-            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            clickOnViewCenter(editText);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {

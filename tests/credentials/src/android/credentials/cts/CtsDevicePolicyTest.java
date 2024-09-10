@@ -102,8 +102,7 @@ public class CtsDevicePolicyTest {
                                                             "android.service.credentials.CredentialProviderService")))
                     .whereMetadata()
                     .key("android.credentials.testsystemprovider")
-                    .stringValue()
-                    .isNotEqualTo("true")
+                    .doesNotExist()
                     .get();
 
     @RequireNotHeadlessSystemUserMode(reason = "don't test for headless user.")

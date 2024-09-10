@@ -22,6 +22,7 @@ java_library {
         "bouncycastle-unbundled",
         "bouncycastle-bcpkix-unbundled",
         "cbor-java",
+        "compatibility-device-util-axt",
         "guava",
         "truth",
         "testng",

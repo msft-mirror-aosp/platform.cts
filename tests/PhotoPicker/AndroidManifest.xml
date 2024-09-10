@@ -18,6 +18,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="android.photopicker.cts">
     <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
+
+    <queries>
+        <intent>
+            <action android:name="com.android.photopicker.core.embedded.EmbeddedService.BIND" />
+        </intent>
+    </queries>
+
 <application android:label="Photo Picker Device Tests">
     <uses-library android:name="android.test.runner" />
     <activity android:name="android.photopicker.cts.GetResultActivity"
@@ -35,6 +42,9 @@
         </intent-filter>
     </activity>
 
+    <activity android:name="android.photopicker.cts.EmbeddedTestActivity"
+        android:exported="true">
+    </activity>
 
     <provider android:name="android.photopicker.cts.cloudproviders.CloudProviderPrimary"
               android:authorities="android.photopicker.cts.cloudproviders.cloud_primary"

@@ -30,6 +30,7 @@ import com.android.bedstead.nene.display.DisplayProperties
 )
 @Retention(AnnotationRetention.RUNTIME)
 @RequireRunOnSystemUser
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 annotation class EnsureUsingScreenOrientation(
     val orientation: DisplayProperties.ScreenOrientation,
 

@@ -167,6 +167,10 @@ public class EabBulkCapabilityUpdaterTest {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
+        if (!ImsUtils.shouldTestImsService()) {
+            return;
+        }
+
         // Restore all ImsService configurations that existed before the test.
         if (sServiceConnector != null) {
             sServiceConnector.disconnectCarrierImsService();

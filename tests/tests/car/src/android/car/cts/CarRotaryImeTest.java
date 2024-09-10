@@ -24,6 +24,7 @@ import static org.junit.Assume.assumeTrue;
 import android.app.UiAutomation;
 import android.content.ComponentName;
 import android.content.Context;
+import android.util.Log;
 import android.view.accessibility.AccessibilityManager;
 import android.view.inputmethod.InputMethodManager;
 
@@ -42,14 +43,15 @@ import java.io.IOException;
 // Note: this test must not extend AbstractCarTestCase. See b/328536639.
 public final class CarRotaryImeTest {
 
-    private static final long POLLING_CHECK_TIMEOUT_MILLIS = 3000L;
+    private static final String TAG = CarRotaryImeTest.class.getSimpleName();
+    private static final long POLLING_CHECK_TIMEOUT_MILLIS = 10000L;
 
     private static final ComponentName ROTARY_SERVICE_COMPONENT_NAME =
             ComponentName.unflattenFromString("com.android.car.rotary/.RotaryService");
 
     private static final UiAutomation sUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation(
-            UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
+                    UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES);
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final AccessibilityManager mAccessibilityManager =
@@ -67,6 +69,12 @@ public final class CarRotaryImeTest {
                 userHelper.isVisibleBackgroundUser());
 
         assumeHasRotaryService();
+
+        // Wait for RotaryService to be recreated in case it was killed by other tests using
+        // UiAutomation.
+        PollingCheck.waitFor(POLLING_CHECK_TIMEOUT_MILLIS,
+                () -> dumpRotaryService().contains("pid"),
+                "RotaryService is not started yet");
     }
 
     /**
@@ -159,23 +167,29 @@ public final class CarRotaryImeTest {
 
     // TODO(b/327507413): switch to proto-based dumpsys.
     private static String getStringValueFromDumpsys(String key) {
+        String dumpsysOutput = dumpRotaryService();
+        // dumpsys output contains string like:
+        // SERVICE com.android.car.rotary/.RotaryService a4d5db3 pid=20152 user=10
+        //  Client:
+        //    {
+        //      rotationAcceleration2xMs=40
+        //      rotaryInputMethod=com.android.car.rotaryime/.RotaryIme
+        //      defaultTouchInputMethod=com.google.android.apps.automotive.inputmethod/
+        //      .InputMethodService"
+        int startIndex = dumpsysOutput.indexOf(key) + key.length() + 1;
+        int endIndex = dumpsysOutput.indexOf('\n', startIndex);
+        String value = dumpsysOutput.substring(startIndex, endIndex);
+        if (!"null".equals(value)) {
+            return value;
+        }
+        Log.e(TAG, "dumpsysOutput: " + dumpsysOutput);
+        return "";
+    }
+
+    private static String dumpRotaryService() {
         try {
-            String dumpsysOutput = SystemUtil.runShellCommand(sUiAutomation,
-                    "dumpsys activity service "
-                            + ROTARY_SERVICE_COMPONENT_NAME.flattenToShortString());
-            // dumpsys output contains string like:
-            // lastTouchedNode=null
-            // rotaryInputMethod=com.android.car.rotaryime/.RotaryIme
-            // defaultTouchInputMethod=com.google.android.apps.automotive.inputmethod/
-            // .InputMethodService"
-            // hunNudgeDirection=FOCUS_UP
-            int startIndex = dumpsysOutput.indexOf(key) + key.length() + 1;
-            int endIndex = dumpsysOutput.indexOf('\n', startIndex);
-            String value = dumpsysOutput.substring(startIndex, endIndex);
-            if (!"null".equals(value)) {
-                return value;
-            }
-            return "";
+            return SystemUtil.runShellCommand(sUiAutomation, "dumpsys activity service "
+                    + ROTARY_SERVICE_COMPONENT_NAME.flattenToShortString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

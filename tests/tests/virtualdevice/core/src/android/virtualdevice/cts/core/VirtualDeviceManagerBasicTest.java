@@ -20,7 +20,7 @@ import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_AUDIO;
-import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_BLOCKED_ACTIVITY;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CLIPBOARD;
 import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_RECENTS;
@@ -62,6 +62,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
+import android.view.Display;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import com.android.compatibility.common.util.SystemUtil;
@@ -537,6 +538,25 @@ public class VirtualDeviceManagerBasicTest {
                 .isEqualTo(DEVICE_POLICY_DEFAULT);
     }
 
+    @Parameters(method = "allDynamicDisplayPolicies")
+    @Test
+    @RequiresFlagsEnabled(android.companion.virtualdevice.flags.Flags.FLAG_ACTIVITY_CONTROL_API)
+    public void dynamicDisplayPolicyType_unsupportedDisplay_throws(int policyType) {
+        assertThrows(SecurityException.class,
+                () -> mVirtualDevice.setDevicePolicy(
+                        policyType, DEVICE_POLICY_CUSTOM, Display.DEFAULT_DISPLAY));
+
+        assertThrows(SecurityException.class,
+                () -> mVirtualDevice.setDevicePolicy(
+                        policyType, DEVICE_POLICY_CUSTOM, Display.INVALID_DISPLAY));
+
+        int unownedDisplayId =
+                mRule.createManagedUnownedVirtualDisplay().getDisplay().getDisplayId();
+        assertThrows(SecurityException.class,
+                () -> mVirtualDevice.setDevicePolicy(
+                        policyType, DEVICE_POLICY_CUSTOM, unownedDisplayId));
+    }
+
     @Test
     public void getDevicePolicy_virtualDeviceClosed_shouldReturnDefault() {
         VirtualDeviceManager.VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
@@ -722,8 +742,16 @@ public class VirtualDeviceManagerBasicTest {
             dynamicPolicies.add(POLICY_TYPE_CLIPBOARD);
         }
         if (android.companion.virtualdevice.flags.Flags.activityControlApi()) {
-            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY_BEHAVIOR);
+            dynamicPolicies.add(POLICY_TYPE_BLOCKED_ACTIVITY);
         }
         return dynamicPolicies;
+    }
+
+    private List<Integer> allDynamicDisplayPolicies() {
+        List<Integer> dynamicDisplayPolicies = new ArrayList<>(Arrays.asList(
+                POLICY_TYPE_RECENTS,
+                POLICY_TYPE_ACTIVITY
+        ));
+        return dynamicDisplayPolicies;
     }
 }

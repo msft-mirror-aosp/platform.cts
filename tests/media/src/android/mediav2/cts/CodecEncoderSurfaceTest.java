@@ -16,18 +16,10 @@
 
 package android.mediav2.cts;
 
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible;
-import static android.media.MediaCodecInfo.CodecCapabilities.COLOR_FormatYUVP010;
 import static android.mediav2.common.cts.CodecEncoderTestBase.ACCEPTABLE_WIRELESS_TX_QUALITY;
-import static android.mediav2.common.cts.CodecEncoderTestBase.colorFormatToString;
 import static android.mediav2.common.cts.CodecEncoderTestBase.getTempFilePath;
-import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_BEFORE_U;
-import static android.mediav2.common.cts.CodecTestBase.PROFILE_HLG_MAP;
-import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
-import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_BEFORE_U;
-import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
-import static android.mediav2.common.cts.CodecTestBase.isVendorCodec;
+import static android.mediav2.common.cts.CodecTestBase.BOARD_SDK_IS_AT_LEAST_T;
+import static android.mediav2.common.cts.CodecTestBase.FIRST_SDK_IS_AT_LEAST_T;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -57,7 +49,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Test mediacodec api, video encoders and their interactions in surface mode.
@@ -103,20 +94,6 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         mFrameLimit = Math.max(encCfgParams.mFrameRate, 30);
     }
 
-    private static EncoderConfigParams getVideoEncoderCfgParams(String mediaType, int bitRate,
-            int frameRate, int bitDepth, int maxBFrames) {
-        EncoderConfigParams.Builder foreman = new EncoderConfigParams.Builder(mediaType)
-                .setBitRate(bitRate)
-                .setFrameRate(frameRate)
-                .setColorFormat(COLOR_FormatSurface)
-                .setInputBitDepth(bitDepth)
-                .setMaxBFrames(maxBFrames);
-        if (bitDepth == 10) {
-            foreman.setProfile(Objects.requireNonNull(PROFILE_HLG_MAP.get(mediaType))[0]);
-        }
-        return foreman.build();
-    }
-
     @After
     public void tearDown() {
         for (String tmpFile : mTmpFiles) {
@@ -128,10 +105,6 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
 
     @Parameterized.Parameters(name = "{index}_{0}_{1}_{2}_{3}_{9}")
     public static Collection<Object[]> input() throws IOException {
-        final boolean isEncoder = true;
-        final boolean needAudio = false;
-        final boolean needVideo = true;
-        final List<Object[]> exhaustiveArgsList = new ArrayList<>();
         final List<Object[]> args = new ArrayList<>(Arrays.asList(new Object[][]{
                 // mediaType, testFileMediaType, testFile, bitRate, frameRate, toneMap
                 {MediaFormat.MIMETYPE_VIDEO_H263, MediaFormat.MIMETYPE_VIDEO_H263,
@@ -169,125 +142,9 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                         "cosmat_520x390_24fps_768kbps_av1_10bit.mkv", 512000, 30, true},
         }));
 
-        int[] colorFormats = {COLOR_FormatSurface, COLOR_FormatYUV420Flexible};
         int[] maxBFrames = {0, 2};
-        boolean[] boolStates = {true, false};
-        for (Object[] arg : args) {
-            final String mediaType = (String) arg[0];
-            final int br = (int) arg[3];
-            final int fps = (int) arg[4];
-            for (int colorFormat : colorFormats) {
-                for (boolean usePersistentSurface : boolStates) {
-                    for (int maxBFrame : maxBFrames) {
-                        if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                                && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                                && maxBFrame != 0) {
-                            continue;
-                        }
-                        Object[] testArgs = new Object[8];
-                        testArgs[0] = arg[0];   // encoder mediaType
-                        testArgs[1] = arg[1];   // test file mediaType
-                        testArgs[2] = arg[2];   // test file
-                        testArgs[3] = getVideoEncoderCfgParams(mediaType, br, fps, 8, maxBFrame);
-                        testArgs[4] = colorFormat;  // color format
-                        testArgs[5] = arg[5];   // tone map
-                        testArgs[6] = usePersistentSurface;
-                        testArgs[7] = String.format("%dkbps_%dfps_%s_%s", br / 1000, fps,
-                                colorFormatToString(colorFormat, 8),
-                                usePersistentSurface ? "persistentsurface" : "surface");
-                        exhaustiveArgsList.add(testArgs);
-                    }
-                }
-            }
-        }
-        // P010 support was added in Android T and on some devices with vendor
-        // partition older than T these tests are failing hence limit the
-        // following tests to vndk Android T and above
-        if (CodecTestBase.VNDK_IS_AT_LEAST_T) {
-            int[] colorFormatsHbd = {COLOR_FormatSurface, COLOR_FormatYUVP010};
-            for (Object[] arg : argsHighBitDepth) {
-                final String mediaType = (String) arg[0];
-                final int br = (int) arg[3];
-                final int fps = (int) arg[4];
-                final boolean toneMap = (boolean) arg[5];
-                for (int colorFormat : colorFormatsHbd) {
-                    for (boolean usePersistentSurface : boolStates) {
-                        for (int maxBFrame : maxBFrames) {
-                            if (!mediaType.equals(MediaFormat.MIMETYPE_VIDEO_AVC)
-                                    && !mediaType.equals(MediaFormat.MIMETYPE_VIDEO_HEVC)
-                                    && maxBFrame != 0) {
-                                continue;
-                            }
-                            Object[] testArgs = new Object[8];
-                            testArgs[0] = arg[0];   // encoder mediaType
-                            testArgs[1] = arg[1];   // test file mediaType
-                            testArgs[2] = arg[2];   // test file
-                            testArgs[3] =
-                                    getVideoEncoderCfgParams(mediaType, br, fps, toneMap ? 8 : 10,
-                                            maxBFrame);
-                            if (toneMap && (colorFormat == COLOR_FormatYUVP010)) {
-                                colorFormat = COLOR_FormatYUV420Flexible;
-                            }
-                            testArgs[4] = colorFormat;  // color format
-                            testArgs[5] = arg[5];   // tone map
-                            testArgs[6] = usePersistentSurface;
-                            testArgs[7] = String.format("%dkbps_%dfps_%s_%s_%s", br / 1000, fps,
-                                    colorFormatToString(colorFormat, toneMap ? 8 : 10),
-                                    toneMap ? "tonemapyes" : "tonemapno",
-                                    usePersistentSurface ? "persistentsurface" : "surface");
-                            exhaustiveArgsList.add(testArgs);
-                        }
-                    }
-                }
-            }
-        }
-        final List<Object[]> argsList = new ArrayList<>();
-        for (Object[] arg : exhaustiveArgsList) {
-            ArrayList<String> decoderList =
-                    CodecTestBase.selectCodecs((String) arg[1], null, null, false);
-            if (decoderList.size() == 0) {
-                decoderList.add(CodecTestBase.INVALID_CODEC + arg[1]);
-            }
-            for (String decoderName : decoderList) {
-                int argLength = exhaustiveArgsList.get(0).length;
-                Object[] testArg = new Object[argLength + 1];
-                testArg[0] = arg[0];  // encoder mediaType
-                testArg[1] = decoderName;  // decoder name
-                System.arraycopy(arg, 1, testArg, 2, argLength - 1);
-                argsList.add(testArg);
-            }
-        }
-
-        final List<Object[]> expandedArgsList =
-                CodecTestBase.prepareParamList(argsList, isEncoder, needAudio, needVideo, true);
-
-        // Prior to Android U, this test was not testing persistent surface. While this has
-        // been expected behavior for a long time, we only started testing it in Android U, so
-        // some older devices might not pass this test in persistent surface mode for some
-        // combination of codecs. These may show up as failures when running MTS tests for s/w
-        // encoders with h/w decoders in such cases.
-
-        // Prior to Android U, this test was using the first decoder for a given mediaType.
-        // In Android U, this was updated to test the encoders with all decoders for the
-        // given mediaType. There are some vendor encoders in older versions of Android
-        // and few OMX encoders which do not work as expected with the surface from s/w decoder.
-        // If the device is has vendor partition older than Android U or if the encoder is
-        // an OMX encoder, then limit the tests to first decoder like it was being done prior
-        // to Androd U
-        final List<Object[]> finalArgsList = new ArrayList<>();
-        for (Object[] arg : expandedArgsList) {
-            String encoderName = (String) arg[0];
-            String decoderName = (String) arg[2];
-            String decoderMediaType = (String) arg[3];
-            if ((BOARD_SDK_IS_BEFORE_U || VNDK_IS_BEFORE_U || encoderName.toUpperCase().startsWith("OMX"))
-                    && isVendorCodec(encoderName)) {
-                if (!isDefaultCodec(decoderName, decoderMediaType, /* isEncoder */false)) {
-                    continue;
-                }
-            }
-            finalArgsList.add(arg);
-        }
-        return finalArgsList;
+        boolean[] usePersistentSurfaceStates = {true, false};
+        return prepareParamsList(args, argsHighBitDepth, maxBFrames, usePersistentSurfaceStates);
     }
 
     /**
@@ -335,7 +192,11 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
         }
         // Skip stream validation as there is no reference for tone mapped input
         if (muxOutput && !mIsOutputToneMapped) {
-            if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;
+            // HDR support introduced with T, with pieces in both system+vendor
+            if (mEncCfgParams.mInputBitDepth > 8) {
+                if (!FIRST_SDK_IS_AT_LEAST_T) return;
+                if (!BOARD_SDK_IS_AT_LEAST_T) return;
+            }
             CodecEncoderTestBase.validateEncodedPSNR(mTestFileMediaType, mTestFile, mEncMediaType,
                     tmpPath, false, false, ACCEPTABLE_WIRELESS_TX_QUALITY);
         }
@@ -370,7 +231,11 @@ public class CodecEncoderSurfaceTest extends CodecEncoderSurfaceTestBase {
                 EncoderConfigParams.TOKEN_SEPARATOR, mTestConfig, mFrameLimit);
         assertTrue(mTestConfig.toString(), isPass);
         if (tmpPath != null) {
-            if (mEncCfgParams.mInputBitDepth > 8 && !VNDK_IS_AT_LEAST_T) return;
+            // HDR support introduced with T, with pieces in both system+vendor
+            if (mEncCfgParams.mInputBitDepth > 8) {
+                if (!FIRST_SDK_IS_AT_LEAST_T) return;
+                if (!BOARD_SDK_IS_AT_LEAST_T) return;
+            }
             CodecEncoderTestBase.validateEncodedPSNR(mTestFileMediaType, mTestFile, mEncMediaType,
                     tmpPath, false, false, ACCEPTABLE_WIRELESS_TX_QUALITY);
         }

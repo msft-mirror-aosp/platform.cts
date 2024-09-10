@@ -43,14 +43,25 @@ _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
 _FIG_SIZE = (10, 6)
 
-# pylint: disable=line-too-long
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
+    'nabu',  # Xiaomi Pad 5
 )
+
+# Tablet brightness mapping strings for (rear, front) facing camera tests
+# List entries must be entered in lowercase
+TABLET_BRIGHTNESS = {
+    'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
+    'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
+    'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+
+    'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
+    'nabu': ('8', '14'),  # Xiaomi Pad 5
+}
 
 
 def _crop(img):

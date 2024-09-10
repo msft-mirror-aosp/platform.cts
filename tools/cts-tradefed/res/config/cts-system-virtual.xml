@@ -461,6 +461,32 @@
   <option name="compatibility:include-filter" value="CtsPdfModuleTestCases"/>
   <option name="compatibility:include-filter" value="CtsCredentialManagerHostSideTestCases"/>
   <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesHistoricAccessLimitWithPermission"/>
+  <option name="compatibility:include-filter" value="CtsContactsProviderTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHibernationTestCases"/>
+  <option name="compatibility:include-filter" value="CtsTextClassifierTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSharesheetTestCases"/>
+  <option name="compatibility:include-filter" value="CtsSandboxedFledgeManagerTests"/>
+  <option name="compatibility:include-filter" value="CtsUiAutomationTestCases"/>
+  <option name="compatibility:include-filter" value="CtsProtoTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAppSetIdEndToEndTest"/>
+  <option name="compatibility:include-filter" value="CtsSettingsTestCases"/>
+  <option name="compatibility:include-filter" value="CtsAdServicesPermissionsNoPermEndToEndTests"/>
+  <option name="compatibility:include-filter" value="CtsNetSecConfigPrePCleartextTrafficTestCases"/>
+  <option name="compatibility:include-filter" value="CtsInstantAppTests"/>
+  <option name="compatibility:include-filter" value="ResourceObserverNativeTest"/>
+  <option name="compatibility:include-filter" value="CtsInputHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsNotificationExtendersTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeIndependentGroupRebootHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsExerciseRouteTestCases"/>
+  <option name="compatibility:include-filter" value="CtsInstantAppsHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeChangedGroupAppUpdateHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsUseEmbeddedDexHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsDynamicMimeSingleAppRebootHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesNotAllPermissionsAreGranted"/>
+  <option name="compatibility:include-filter" value="CtsCrashDetailHostTestCases"/>
+  <option name="compatibility:include-filter" value="CtsFgsBootCompletedTestCases"/>
+  <option name="compatibility:include-filter" value="CtsFgsTimeoutTestCases"/>
+  <option name="compatibility:include-filter" value="CtsHealthFitnessDeviceTestCasesRateLimiter"/>
 
     <!--Exclude Filters -->
   <option name="compatibility:exclude-filter" value="CtsAppExitTestCases android.app.cts.ActivityManagerAppExitInfoTest#testAnr"/>
@@ -747,9 +773,110 @@
   <option name="compatibility:exclude-filter" value="CtsOnDeviceIntelligenceServiceTestCases android.ondeviceintelligence.cts.OnDeviceIntelligenceManagerTest#serviceUnbindsWhenCallbackIsNotPopulatedAfterIdleTimeout"/>
   <option name="compatibility:exclude-filter" value="CtsAppTestCases android.app.cts.ActivityManagerProcessStateTest#testFgsSticky1"/>
   <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSecurityLoggingWithSingleUser"/>
-  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />
-  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.wsi.*" />
-  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES2.functional.prerequisite#*" />
-  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-GLES3.functional.prerequisite#*" />
-  <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-VK.api.smoke#*" />
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testShowNextPrevious"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testInitialState"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnCheckedChangePendingIntent"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetOnClickPendingIntent"/>
+  <option name="compatibility:exclude-filter" value="CtsAppFgsTestCases android.app.cts.fgstest.ActivityManagerForegroundServiceTypeTest#testForegroundServiceTypeSystemExemptedPermission"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.CollectionAppWidgetTest#testSetDisplayedChild"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testSetAppStandbyBuckets"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testSetAppStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsAppUsageHostTestCases android.app.usage.cts.AppIdleHostTest#testOutOfBoundsStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsMediaCUJSmallTest android.media.cujsmalltest.cts.CtsMediaShortFormFullModePlaybackTest#testVideoPlayback[0_Hevc_720p_15sec_CallNotificationTest]"/>
+  <option name="compatibility:exclude-filter" value="CtsUsageStatsTestCases android.app.usage.cts.UsageStatsTest#testGetAppStandbyBucket"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission31_GrantNearby_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingInMiddleOfChainNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_Default_Upgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermissionNeverForLocation31_GrantNearby"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_GrantLocation_Upgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission_Downgrade"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission30_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanWithoutRenouncingNotesBluetoothAndLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermission31_OnBehalfOfDisavowingApp"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionTest30WithBluetooth#testGivenBluetoothIsDeniedWhenScanIsAttemptedThenThenGetEmptyScanResult"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesPermissionTest#testRequestBluetoothPermissionNeverForLocation31_GrantNearby_GrantLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testAlwaysOnVpnAcrossReboot"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetMeteredDataDisabledPackages"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetPermissionPolicyLogged"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.PermissionReviewTapjackingTest#testOverlaysAreHidden"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingLocationNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPasswordQualityWithoutSecureLockScreen"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanRenouncingLocationNotesBluetoothButNotLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NearbyDevicesRenouncePermissionTest#scanWithoutRenouncingNotesBluetoothAndLocation"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testPermissionPolicy"/>
+  <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapTouchExploring_performsClick"/>
+  <option name="compatibility:exclude-filter" value="CtsAppOpsTestCases android.app.appops.cts.DiscreteAppopsTest#testDeduplicationUidState"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.AppWidgetTest#testCollectionWidgets"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_dark"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.DarkTextThemeTest#testCollection_light"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.OneTimePermissionTest#testStickyServiceMaintainsPermissionOnRestart"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms"/>
+  <option name="compatibility:exclude-filter" value="CtsDeviceStateManagerTestCases android.hardware.devicestate.cts.DeviceStateManagerTests#testCancelOverrideRequestWithoutPermission"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_nonPreferredIndex"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms"/>
+  <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlBackPressureTest#testSurfaceTransaction_setEnableBackPressure"/>
+  <option name="compatibility:exclude-filter" value="CtsDreamsTestCases android.service.dreams.cts.DreamServiceTest#testKeyHandling_SecureKeyguardConfirmKeyPromptsBouncer"/>
+  <option name="compatibility:exclude-filter" value="CtsDreamsTestCases android.service.dreams.cts.DreamServiceTest#testKeyHandling_InteractiveDreamDoesNotConsumeConfirmPromptsBouncer"/>
+  <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceActivity android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests#testResumedWhenRecreatedFromInNonFocusedTask"/>
+  <option name="compatibility:exclude-filter" value="CtsWindowManagerDeviceKeyguard android.server.wm.keyguard.KeyguardLockedTests#testDismissKeyguardAttrActivity_method_turnScreenOn_withSecureKeyguard"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.ProvisioningTest#isProvisioningAllowed_hasDeviceOwner_returnsFalse"/>
+  <option name="compatibility:exclude-filter" value="CtsWidgetTestCases android.widget.cts.AutoCompleteTextViewTest#refreshAutoCompleteResults_dropDownAlwaysVisible"/>
+  <option name="compatibility:exclude-filter" value="CtsVirtualDevicesAudioTestCases android.virtualdevice.cts.audio.VirtualAudioPermissionTest#audioInjection_virtualDeviceWithManualAudioPolicy_permissionGrantedOnlyOnDefaultDevice"/>
+  <option name="compatibility:exclude-filter" value="CtsRoleTestCases android.app.role.cts.RoleManagerTest#openDefaultAppListAndSetDefaultAppThenIsDefaultAppForPrivateSpace"/>
+  <option name="compatibility:exclude-filter" value="CtsInstallHostTestCases android.cts.install.host.InstallTest#testAbandonStagedSessionAfterReboot[MULTIPLE_MIX_Rollbacktrue]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.ManagedProfilePasswordTest#testCreateSeparateChallengeChangedLogged"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.SessionLifecycleTest#testDatasetAuthResponseWhileAutofilledAppIsLifecycled"/>
+  <option name="compatibility:exclude-filter" value="CtsAccessibilityServiceTestCases android.accessibilityservice.cts.TouchExplorerTest#testSecondFingerDoubleTapNotTouchExploring_performsClick"/>
+  <option name="compatibility:exclude-filter" value="CtsAppWidgetTestCases android.appwidget.cts.WidgetTransitionTest#testCollection_sendBroadcast"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setBitmap_allowed_canSet"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setBitmap_viaDpc_disallowed_canSet[IncludeRunOnSystemDeviceOwnerUser]"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.WallpaperTest#setStream_allowed_canSet"/>
+  <option name="compatibility:exclude-filter" value="CtsDirectBootHostTestCases android.appsecurity.cts.DirectBootHostTest#testDirectBoot"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.CategoriesFragmentTest#categoriesFragment_openAllCategories"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.JobThrottlingTest#testExpeditedJobDeferredAfterTimeoutInDoze"/>
+  <option name="compatibility:exclude-filter" value="CtsScopedStorageDeviceOnlyTest android.scopedstorage.cts.device.StorageOtherFilesTest#other_accessLocationMetadata"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testValidServiceContexts"/>
+  <option name="compatibility:exclude-filter" value="CtsSecurityHostTestCases android.security.cts.SELinuxHostTest#testValidFileContexts"/>
+  <option name="compatibility:exclude-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndIntentFilterTarget        "/>
+  <option name="compatibility:exclude-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndActivityTarget"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testJobWithSafetyCenterDisabledDoesNotSendNotification"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.AccessibilityPrivacySourceTest#testJobWithSafetyCenterDisabledDoesNotSendIssueToSafetyCenter"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionTestCases android.permission.cts.NotificationListenerCheckTest#noNotificationIfSafetyCenterDisabled"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.CameraMicIndicatorsPermissionTest#testChainUsageWithOtherUsage"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.CameraMicIndicatorsPermissionTest#testMicIndicator"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.CameraMicIndicatorsPermissionTest#testHotwordIndicatorBehavior"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionUiTestCases android.permissionui.cts.CameraMicIndicatorsPermissionTest#testCameraIndicator"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedProfileOwnerTest#testSetSystemSetting"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetSystemSetting"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.HomeFragmentTest#homeFragment_openDataManagement"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_seeAllEntries_flagEnabled_showsMindfulness"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.MindfulnessTest#dataAndAccess_deleteMindfulnessData"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_showsDeleteCategoryData"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.PermissionTypesFragmentTest#permissionTypes_filterByApp"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeDate_updatesSelectedDate"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_navigateToYesterday"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_changeUnit_showsUpdatedUnit"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_deletesData"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataEntriesFragmentTest#dataEntries_showsInsertedEntry"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectHostTestCases android.healthconnect.cts.logging.HealthConnectUiLogsTests#testImpressionsAndInteractionsSent"/>
+  <option name="compatibility:exclude-filter" value="CtsSharesheetTestCases android.sharesheet.cts.CtsNfcResolverDeviceTest#testNfcCustomizations_withAppAndIntentFilterTarget"/>
+  <option name="compatibility:exclude-filter" value="CtsAutoFillServiceTestCases android.autofillservice.cts.dialog.LoginActivityTest#testTextView_withoutFillDialog_clickTwice_showIme"/>
+  <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testSetMeteredDataDisabledPackages"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.DataAccessFragmentTest#dataAccess_deleteCategoryData_showsDeleteDataRanges"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testReadMedicalResources_byRequest_filtersByMedicalResourceTypeAndOneDataSource"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testReadMedicalResources_byRequest_filtersByMedicalResourceType"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testReadMedicalResources_byRequest_filtersByMedicalResourceTypeAndBothDataSources"/>
+  <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.ReadMedicalResourcesRequestTest#testRequestBuilder_addInvalidDataSourceId_throws"/>
+  <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateEstimatedNetworkBytes"/>
+
+  //Module Args
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-VK.wsi.*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-GLES2.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-GLES3.functional.prerequisite#*" />
+  <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-VK.api.smoke#*" />
+  <option name="compatibility:module-arg" value="CtsKeystoreTestCases:include-filter:*.KeyStoreTest.*" />
 </configuration>

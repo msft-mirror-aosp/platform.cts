@@ -21,6 +21,8 @@ import static android.telecom.cts.TestUtils.PACKAGE;
 import static android.telecom.cts.TestUtils.TAG;
 import static android.telecom.cts.TestUtils.WAIT_FOR_STATE_CHANGE_TIMEOUT_MS;
 
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
+
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
@@ -331,8 +333,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mTestCallStateListener = new TestCallStateListener();
         CountDownLatch latch = mTestCallStateListener.getCountDownLatch();
         mTelephonyManager.registerTelephonyCallback(r -> r.run(), mTestCallStateListener);
-        latch.await(
-                TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            // Without telephony, we shouldn't expect any callback to fire, but we should still try
+            // registering telephony callback to at least make sure it doesn't crash.
+            latch.await(
+                    TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        }
         // Create a new thread for the telephony callback.
         mTelephonyCallbackThread = new HandlerThread("PhoneStateListenerThread");
         mTelephonyCallbackThread.start();
@@ -423,8 +429,9 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
                 mPreviousDefaultOutgoingAccount =
                         mTelecomManager.getUserSelectedOutgoingPhoneAccount();
                 mShouldRestoreDefaultOutgoingAccount = true;
-                TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                        TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
+                runWithShellPermissionIdentity(() ->
+                        mTelecomManager.setUserSelectedOutgoingPhoneAccount(
+                                TestUtils.TEST_PHONE_ACCOUNT_HANDLE));
                 // Wait till the adb commands have executed and the default has changed.
                 assertPhoneAccountIsDefault(TestUtils.TEST_PHONE_ACCOUNT_HANDLE);
             }
@@ -447,8 +454,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         CtsConnectionService.tearDown();
         assertCtsConnectionServiceUnbound();
         if (mShouldRestoreDefaultOutgoingAccount) {
-            TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(),
-                    mPreviousDefaultOutgoingAccount);
+            runWithShellPermissionIdentity(() -> mTelecomManager
+                    .setUserSelectedOutgoingPhoneAccount(mPreviousDefaultOutgoingAccount));
         }
         this.connectionService = null;
         mPreviousDefaultOutgoingAccount = null;
@@ -686,7 +693,8 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
     void setDefaultOutgoingPhoneAccountAndVerify(PhoneAccountHandle handle)
             throws Exception {
         // set the default outgoing as a self-managed account
-        TestUtils.setDefaultOutgoingPhoneAccount(getInstrumentation(), handle);
+        runWithShellPermissionIdentity(() ->
+                mTelecomManager.setUserSelectedOutgoingPhoneAccount(handle));
 
         // assert the self-managed is returned
         assertEquals(handle, mTelecomManager.getUserSelectedOutgoingPhoneAccount());

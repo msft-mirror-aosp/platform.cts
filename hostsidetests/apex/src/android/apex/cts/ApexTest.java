@@ -33,7 +33,7 @@ public class ApexTest extends BaseHostJUnit4Test {
     @Test
     public void testApexType() throws Exception {
         String[] builtinDirs = {
-            "/system/apex", "/system_ext/apex", "/product/apex", "/vendor/apex"
+            "/system/apex", "/system_ext/apex", "/product/apex", "/vendor/apex", "/odm/apex"
         };
 
         int numFlattenedApexes = 0;

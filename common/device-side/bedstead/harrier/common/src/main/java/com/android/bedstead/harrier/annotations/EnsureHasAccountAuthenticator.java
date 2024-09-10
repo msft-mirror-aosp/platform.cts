@@ -33,6 +33,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureHasAccountAuthenticatorGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsureHasAccountAuthenticator {
 
     int ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY = LATE;

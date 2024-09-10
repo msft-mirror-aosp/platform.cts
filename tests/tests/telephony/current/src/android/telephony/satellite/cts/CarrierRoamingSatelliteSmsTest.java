@@ -66,19 +66,26 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     private static final String TEST_DEST_ADDR = "1234567890";
     private static final String EXPECTED_RECEIVED_MESSAGE = "foo5";
     private static final String RECEIVED_MESSAGE = "B5EhYBMDIPgEC5FhBWKFkPEAAEGQQlGDUooE5ve7Bg==";
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    private static AssertionError sInitError = null;
 
     /**
      * Setup before all tests.
      * @throws Exception
      */
     @BeforeClass
+    @SuppressWarnings("StaticAssignmentOfThrowable")
     public static void beforeAllTests() throws Exception {
         logd(TAG, "beforeAllTests");
 
         if (!shouldTestSatelliteWithMockService()) return;
 
-        beforeAllTestsBase();
-        insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+        try {
+            beforeAllTestsBase();
+            insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+        } catch (AssertionError e) {
+            sInitError = e;
+        }
     }
 
     /**
@@ -99,6 +106,7 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
 
+        if (sInitError != null) throw sInitError;
         assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));

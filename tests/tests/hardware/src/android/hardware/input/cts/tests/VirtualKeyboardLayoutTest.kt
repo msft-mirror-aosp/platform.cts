@@ -139,7 +139,7 @@ class VirtualKeyboardLayoutTest {
             intArrayOf(
                 KeyEvent.KEYCODE_APOSTROPHE,
                 KeyEvent.KEYCODE_COMMA,
-                KeyEvent.KEYCODE_E,
+                KeyEvent.KEYCODE_PERIOD,
                 KeyEvent.KEYCODE_P,
                 KeyEvent.KEYCODE_Y,
                 KeyEvent.KEYCODE_F,

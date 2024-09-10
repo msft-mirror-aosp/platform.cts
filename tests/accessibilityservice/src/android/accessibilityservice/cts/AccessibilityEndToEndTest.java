@@ -118,6 +118,7 @@ import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.view.accessibility.AccessibilityNodeProvider;
 import android.view.accessibility.AccessibilityWindowInfo;
 import android.view.accessibility.Flags;
 import android.widget.Button;
@@ -126,6 +127,8 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
@@ -149,6 +152,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
@@ -1261,6 +1265,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         } catch (TimeoutException e) {
             fail("Accessibility events should be received as expected " + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1305,6 +1310,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             fail("TYPE_VIEW_HOVER_ENTER from buttonTarget should be received as expected "
                     + e.getMessage());
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1336,6 +1342,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
                             filterForEventTypeWithResource(AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
                                     buttonResourceName), DEFAULT_TIMEOUT_MS));
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), hoverLeft, hoverY);
             enableTouchExploration(false);
         }
     }
@@ -1424,14 +1431,13 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     @ApiTest(apis = {"android.view.View#isAccessibilityDataSensitive"})
     public void testAccessibilityDataSensitive_canObserveHoverEvent() {
         final StubEventCapturingAccessibilityService service = getServiceForA11yToolTests(true);
+        final long time = SystemClock.uptimeMillis();
+        final View view = mActivity.findViewById(R.id.innerView);
+        final int[] viewLocation = new int[2];
+        view.getLocationOnScreen(viewLocation);
+        final int x = viewLocation[0] + view.getWidth() / 2;
+        final int y = viewLocation[1] + view.getHeight() / 2;
         try {
-            final long time = SystemClock.uptimeMillis();
-            final View view = mActivity.findViewById(R.id.innerView);
-            final int[] viewLocation = new int[2];
-            view.getLocationOnScreen(viewLocation);
-            final int x = viewLocation[0] + view.getWidth() / 2;
-            final int y = viewLocation[1] + view.getHeight() / 2;
-
             service.setEventFilter(
                     filterForEventTypeWithResource(
                             AccessibilityEvent.TYPE_VIEW_HOVER_ENTER,
@@ -1440,6 +1446,7 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             injectHoverEvent(time, true, x, y);
             service.waitOnEvent(DEFAULT_TIMEOUT_MS, "Expected TYPE_VIEW_HOVER_ENTER event");
         } finally {
+            injectHoverExit(SystemClock.uptimeMillis(), x, y);
             service.disableSelfAndRemove();
         }
     }
@@ -2368,6 +2375,309 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
         }
     }
 
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_addZeroTimes_getLabeledByListGetsEmptyArray() {
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(editText).isNotNull();
+
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+
+        assertThat(labels).hasSize(0);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#addLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_addTwoTimes_getLabeledByListGetsTwo_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.addLabeledBy(labelOne);
+                info.addLabeledBy(labelTwo);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(2);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelOne));
+        assertThat(labels.get(1).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#addLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_addTwoTimes_getLabeledByListGetsTwo_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.addLabeledBy(root, LABEL_ONE_ID);
+                            node.addLabeledBy(root, LABEL_TWO_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(2);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_ONE);
+        assertThat(labels.get(1).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#setLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_setTwoTimes_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.setLabeledBy(labelOne);
+                info.setLabeledBy(labelTwo);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#setLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_setTwoTimes_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.setLabeledBy(root, LABEL_ONE_ID);
+                            node.setLabeledBy(root, LABEL_TWO_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#removeLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_removeFirst_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View labelOne = mActivity.findViewById(R.id.labelOne);
+        final View labelTwo = mActivity.findViewById(R.id.labelTwo);
+        final View editText = mActivity.findViewById(R.id.edittext);
+        assertThat(labelOne).isNotNull();
+        assertThat(labelTwo).isNotNull();
+        assertThat(editText).isNotNull();
+
+        editText.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Override
+            public void onInitializeAccessibilityNodeInfo(View host, AccessibilityNodeInfo info) {
+                super.onInitializeAccessibilityNodeInfo(host, info);
+                info.addLabeledBy(labelOne);
+                info.addLabeledBy(labelTwo);
+                info.removeLabeledBy(labelOne);
+            }
+        });
+        final AccessibilityNodeInfo editTextInfo =
+                sUiAutomation.getRootInActiveWindow().findAccessibilityNodeInfosByViewId(
+                        mActivity.getResources().getResourceName(R.id.edittext)).get(0);
+        assertThat(editTextInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = editTextInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = editTextInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+        assertThat(label).isNotNull();
+        assertThat(label.getViewIdResourceName()).isEqualTo(
+                mActivity.getResources().getResourceName(R.id.labelTwo));
+    }
+
+    @Test
+    @ApiTest(apis = {
+            "android.view.accessibility.AccessibilityNodeInfo#removeLabeledBy",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledByList",
+            "android.view.accessibility.AccessibilityNodeInfo#getLabeledBy"
+    })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_SUPPORT_MULTIPLE_LABELEDBY)
+    public void testLabeledBy_provider_removeFirst_getLabeledByListGetsLast_getLabeledByGetsLast() {
+        final View root = mActivity.findViewById(R.id.autoImportantLinearLayout);
+        assertThat(root).isNotNull();
+
+        root.setAccessibilityDelegate(new View.AccessibilityDelegate() {
+            @Nullable
+            @Override
+            public AccessibilityNodeProvider getAccessibilityNodeProvider(@NonNull View host) {
+                return new LabelNodeProviderTest(root) {
+                    @Nullable
+                    @Override
+                    public List<AccessibilityNodeInfo> findAccessibilityNodeInfosByText(String text,
+                            int virtualViewId) {
+                        List<AccessibilityNodeInfo> result = new ArrayList<>();
+                        if (text.equals(LABELED)) {
+                            AccessibilityNodeInfo node =
+                                    new AccessibilityNodeInfo(root, LABELED_ID);
+                            node.setText(LABELED);
+                            node.addLabeledBy(root, LABEL_ONE_ID);
+                            node.addLabeledBy(root, LABEL_TWO_ID);
+                            node.removeLabeledBy(root, LABEL_ONE_ID);
+                            result.add(node);
+                        }
+                        return result;
+                    }
+                };
+            }
+        });
+        final AccessibilityNodeInfo labeledNodeInfo = sUiAutomation.getRootInActiveWindow()
+                .findAccessibilityNodeInfosByText(LabelNodeProviderTest.LABELED).get(0);
+        assertThat(labeledNodeInfo).isNotNull();
+        final List<AccessibilityNodeInfo> labels = labeledNodeInfo.getLabeledByList();
+        final AccessibilityNodeInfo label = labeledNodeInfo.getLabeledBy();
+
+        assertThat(labels).hasSize(1);
+        assertThat(labels.get(0).getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+        assertThat(label).isNotNull();
+        assertThat(label.getText().toString()).isEqualTo(LabelNodeProviderTest.LABEL_TWO);
+    }
+
+    private static class LabelNodeProviderTest extends AccessibilityNodeProvider {
+        static final int LABELED_ID = 1;
+        static final int LABEL_ONE_ID = 2;
+        static final int LABEL_TWO_ID = 3;
+        static final String LABELED = "labeled";
+        static final String LABEL_ONE = "labelOne";
+        static final String LABEL_TWO = "labelTwo";
+
+        private final View mRoot;
+
+        LabelNodeProviderTest(View root) {
+            this.mRoot = root;
+        }
+
+        @Nullable
+        @Override
+        public AccessibilityNodeInfo createAccessibilityNodeInfo(int virtualViewId) {
+            final AccessibilityNodeInfo node = new AccessibilityNodeInfo(mRoot, virtualViewId);
+            // This function is only used to get labels, so the below is sufficient.
+            if (virtualViewId == LABEL_ONE_ID) {
+                node.setText(LABEL_ONE);
+            } else if (virtualViewId == LABEL_TWO_ID) {
+                node.setText(LABEL_TWO);
+            }
+            return node;
+        }
+    }
+
     private List<AccessibilityServiceInfo> getEnabledServices() {
         return ((AccessibilityManager) sInstrumentation.getContext().getSystemService(
                 Context.ACCESSIBILITY_SERVICE)).getEnabledAccessibilityServiceList(
@@ -2473,6 +2783,14 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             int xOnScreen, int yOnScreen) {
         final long eventTime = isFirstHoverEvent ? SystemClock.uptimeMillis() : downTime;
         MotionEvent event = MotionEvent.obtain(downTime, eventTime, MotionEvent.ACTION_HOVER_MOVE,
+                xOnScreen, yOnScreen, 0);
+        event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+        sInstrumentation.sendPointerSync(event);
+        event.recycle();
+    }
+
+    private static void injectHoverExit(long eventTime, int xOnScreen, int yOnScreen) {
+        MotionEvent event = MotionEvent.obtain(eventTime, eventTime, MotionEvent.ACTION_HOVER_EXIT,
                 xOnScreen, yOnScreen, 0);
         event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
         sInstrumentation.sendPointerSync(event);

@@ -31,11 +31,13 @@ import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
+import android.mediapc.cts.common.Requirements.MediaDrmSecurityLevelHardwareSecureAllRequirement;
 import android.mediapc.cts.common.Requirements.MemoryRequirement;
 import android.mediapc.cts.common.Requirements.ScreenDensityRRequirement;
 import android.mediapc.cts.common.Requirements.ScreenDensityRequirement;
 import android.mediapc.cts.common.Requirements.ScreenResolutionRRequirement;
 import android.mediapc.cts.common.Requirements.ScreenResolutionRequirement;
+import android.mediapc.cts.common.Requirements.SecureHardwareDecodersRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Log;
 
@@ -120,8 +122,8 @@ public class PerformanceClassTest {
         boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMediaTypes.isEmpty();
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.SecureCodecRequirement r5_1__H_1_11 = pce.addR5_1__H_1_11();
-        r5_1__H_1_11.setSecureReqSatisfied(secureDecodeSupportIfHwDecoderPresent);
+        SecureHardwareDecodersRequirement r5_1__H_1_11 = Requirements.addR5_1__H_1_11().to(pce);
+        r5_1__H_1_11.setSecureRequirementSatisfiedBoolean(secureDecodeSupportIfHwDecoderPresent);
 
         pce.submitAndCheck();
     }
@@ -146,9 +148,10 @@ public class PerformanceClassTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.SecureCodecRequirement r5_7__H_1_2 = pce.addR5_7__H_1_2();
+        MediaDrmSecurityLevelHardwareSecureAllRequirement r5_7__H_1_2 =
+                Requirements.addR5_7__H_1_2().to(pce);
 
-        r5_7__H_1_2.setNumCryptoHwSecureAllDec(supportedHwSecureAllSchemes.size());
+        r5_7__H_1_2.setNumberCryptoHwSecureAllSupport(supportedHwSecureAllSchemes.size());
 
         pce.submitAndCheck();
     }

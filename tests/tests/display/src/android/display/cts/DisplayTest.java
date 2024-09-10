@@ -105,6 +105,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Scanner;
@@ -116,6 +118,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
@@ -167,9 +170,10 @@ public class DisplayTest extends TestBase {
         public final int[] mSupportedHdrTypes;
 
         DisplayModeState(Display display) {
-            mHeight = display.getMode().getPhysicalHeight();
-            mWidth = display.getMode().getPhysicalWidth();
-            mSupportedHdrTypes = display.getMode().getSupportedHdrTypes();
+            Display.Mode currentMode = display.getMode();
+            mHeight = currentMode.getPhysicalHeight();
+            mWidth = currentMode.getPhysicalWidth();
+            mSupportedHdrTypes = currentMode.getSupportedHdrTypes();
 
             // Starting Android S the, the platform might throttle down
             // applications frame rate to a divisor of the refresh rate instead if changing the
@@ -180,6 +184,13 @@ public class DisplayTest extends TestBase {
             // {@link com.android.server.display.DisplayManagerService.DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE}
             // for more details.
             mRefreshRate = display.getRefreshRate();
+        }
+
+        DisplayModeState(Display.Mode mode) {
+            mHeight = mode.getPhysicalHeight();
+            mWidth = mode.getPhysicalWidth();
+            mSupportedHdrTypes = mode.getSupportedHdrTypes();
+            mRefreshRate = mode.getRefreshRate();
         }
 
         @Override
@@ -193,6 +204,11 @@ public class DisplayTest extends TestBase {
                 && mWidth == other.mWidth
                 && mRefreshRate == other.mRefreshRate
                 && Arrays.equals(mSupportedHdrTypes, other.mSupportedHdrTypes);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(mHeight, mWidth, mRefreshRate, Arrays.hashCode(mSupportedHdrTypes));
         }
 
         @Override
@@ -676,8 +692,18 @@ public class DisplayTest extends TestBase {
      */
     @Test
     public void testModeSwitchOnPrimaryDisplay() throws Exception {
-        Display.Mode[] modes = mDefaultDisplay.getSupportedModes();
-        assumeTrue("Need two or more display modes to exercise switching.", modes.length > 1);
+        // For VRR displays we might have multiple modes differ only by VSYNC - switching between
+        // them will be transparent for applications (VSYNC is hidden API)
+        // Also for VRR displays we itroduced synthetic modes - that only limit render rate
+        Map<DisplayModeState, Display.Mode> modes = Arrays
+                .stream(mDefaultDisplay.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                // filter modes that differ only by VSYNC
+                .collect(Collectors.<Display.Mode, DisplayModeState, Display.Mode>toMap(
+                                DisplayModeState::new,
+                                mode -> mode,
+                                (first, second) -> first));
+        assumeTrue("Need two or more display modes to exercise switching.", modes.size() > 1);
 
         try {
             mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
@@ -692,10 +718,12 @@ public class DisplayTest extends TestBase {
             // current active mode. We'll switch to the modes in this order. The active mode is last
             // so we don't need an extra mode switch in case the test completes successfully.
             Display.Mode activeMode = mDefaultDisplay.getMode();
-            List<Display.Mode> modesList = new ArrayList<>(modes.length);
-            for (Display.Mode mode : modes) {
-                if (mode.getModeId() != activeMode.getModeId()) {
-                    modesList.add(mode);
+
+            DisplayModeState activeModeState = new DisplayModeState(activeMode);
+            List<Display.Mode> modesList = new ArrayList<>(modes.size());
+            for (Map.Entry<DisplayModeState, Display.Mode> mode : modes.entrySet()) {
+                if (!activeModeState.equals(mode.getKey())) {
+                    modesList.add(mode.getValue());
                 }
             }
             Random random = new Random(42);

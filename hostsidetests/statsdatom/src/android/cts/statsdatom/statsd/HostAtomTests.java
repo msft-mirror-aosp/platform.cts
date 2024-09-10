@@ -37,7 +37,6 @@ import com.android.os.AtomsProto.ConnectivityStateChanged;
 import com.android.os.StatsLog.ConfigMetricsReportList;
 import com.android.os.StatsLog.EventMetricData;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
 import com.android.tradefed.testtype.DeviceTestCase;
 import com.android.tradefed.testtype.IBuildReceiver;
@@ -637,13 +636,7 @@ public class HostAtomTests extends DeviceTestCase implements IBuildReceiver {
                 }
         );
 
-        try {
-            DeviceUtils.rebootDeviceAndWaitUntilReady(getDevice());
-        } catch (DeviceNotAvailableException e) {
-            // Ignore test if reboot fails.
-            return;
-        }
-
+        DeviceUtils.rebootDeviceAndWaitUntilReady(getDevice());
         RunUtil.getDefault().sleep(10_000);
 
         // Get events from the report after boot.

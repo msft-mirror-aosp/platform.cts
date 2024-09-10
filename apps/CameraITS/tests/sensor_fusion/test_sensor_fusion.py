@@ -22,8 +22,7 @@ import sys
 import threading
 import time
 
-from matplotlib import pylab
-import matplotlib.pyplot
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 import scipy.spatial
@@ -232,17 +231,16 @@ def _plot_best_shift(best, coeff, x, y, name_with_log_path, degree):
   polynomial = sensor_fusion_utils.polynomial_from_coefficients(coeff)
   yfit = [polynomial(x) for x in xfit]
   logging.debug('Degree %s best x: %s, y: %s', degree, best, min(yfit))
-  pylab.figure()
-  pylab.title(f'{_NAME} Degree: {degree} Gyro/Camera Time Correlation')
-  pylab.plot(x, y, 'ro', label='data', alpha=0.7)
-  pylab.plot(xfit, yfit, 'b', label='fit', alpha=0.7)
-  pylab.plot(best, min(yfit), 'g*', label='best', markersize=10)
-  pylab.ticklabel_format(axis='y', style='sci', scilimits=(-3, -3))
-  pylab.xlabel('Relative horizontal shift between curves (ms)')
-  pylab.ylabel('Correlation distance')
-  pylab.legend()
-  matplotlib.pyplot.savefig(
-      f'{name_with_log_path}_plot_shifts_degree{degree}.png')
+  plt.figure()
+  plt.title(f'{_NAME} Degree: {degree} Gyro/Camera Time Correlation')
+  plt.plot(x, y, 'ro', label='data', alpha=0.7)
+  plt.plot(xfit, yfit, 'b', label='fit', alpha=0.7)
+  plt.plot(best, min(yfit), 'g*', label='best', markersize=10)
+  plt.ticklabel_format(axis='y', style='sci', scilimits=(-3, -3))
+  plt.xlabel('Relative horizontal shift between curves (ms)')
+  plt.ylabel('Correlation distance')
+  plt.legend()
+  plt.savefig(f'{name_with_log_path}_plot_shifts_degree{degree}.png')
 
 
 def _plot_rotations(cam_rots, gyro_rots, name_with_log_path):
@@ -254,17 +252,17 @@ def _plot_rotations(cam_rots, gyro_rots, name_with_log_path):
     name_with_log_path: File name with location to store data.
   """
   # For plot, scale rotations to degrees.
-  pylab.figure()
-  pylab.title(f'{_NAME} Gyro/Camera Rotations')
-  pylab.plot(range(len(cam_rots)), cam_rots*_RADS_TO_DEGS, '-r.',
-             label='camera', alpha=0.7)
-  pylab.plot(range(len(gyro_rots)), gyro_rots*_RADS_TO_DEGS, '-b.',
-             label='gyro', alpha=0.7)
-  pylab.xlabel('Camera frame number')
-  pylab.ylabel('Angular displacement between adjacent camera frames (degrees)')
-  pylab.xlim([0, len(cam_rots)])
-  pylab.legend()
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_rotations.png')
+  plt.figure()
+  plt.title(f'{_NAME} Gyro/Camera Rotations')
+  plt.plot(range(len(cam_rots)), cam_rots*_RADS_TO_DEGS, '-r.',
+           label='camera', alpha=0.7)
+  plt.plot(range(len(gyro_rots)), gyro_rots*_RADS_TO_DEGS, '-b.',
+           label='gyro', alpha=0.7)
+  plt.xlabel('Camera frame number')
+  plt.ylabel('Angular displacement between adjacent camera frames (degrees)')
+  plt.xlim([0, len(cam_rots)])
+  plt.legend()
+  plt.savefig(f'{name_with_log_path}_plot_rotations.png')
 
 
 def load_data():

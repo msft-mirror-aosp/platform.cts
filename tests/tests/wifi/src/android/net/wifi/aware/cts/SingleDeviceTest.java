@@ -633,6 +633,10 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(true));
 
+        // Disable autojoin to reduce the flakiness
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.allowAutojoinGlobal(false));
+
         // Turn on Wi-Fi
         mWifiLock = mWifiManager.createWifiLock(TAG);
         mWifiLock.acquire();
@@ -672,6 +676,8 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
 
         ShellIdentityUtils.invokeWithShellPermissions(
                 () -> mWifiManager.setVerboseLoggingEnabled(mWasVerboseLoggingEnabled));
+        ShellIdentityUtils.invokeWithShellPermissions(
+                () -> mWifiManager.allowAutojoinGlobal(true));
 
         super.tearDown();
         Thread.sleep(INTERVAL_BETWEEN_TESTS_SECS * 1000);
@@ -1785,16 +1791,23 @@ public class SingleDeviceTest extends WifiJUnit3TestBase {
             return;
         }
         boolean pairingSupported = mWifiAwareManager.getCharacteristics().isAwarePairingSupported();
-        AwarePairingConfig config = new AwarePairingConfig.Builder()
+        AwarePairingConfig.Builder builder = new AwarePairingConfig.Builder()
                 .setPairingCacheEnabled(true)
                 .setPairingSetupEnabled(true)
                 .setPairingVerificationEnabled(true)
-                .setBootstrappingMethods(PAIRING_BOOTSTRAPPING_OPPORTUNISTIC)
-                .build();
+                .setBootstrappingMethods(PAIRING_BOOTSTRAPPING_OPPORTUNISTIC);
+        if (Flags.awarePairing()) {
+            builder.setSupportedCipherSuites(WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256);
+        }
+        AwarePairingConfig config = builder.build();
         assertTrue(config.isPairingCacheEnabled());
         assertTrue(config.isPairingSetupEnabled());
         assertTrue(config.isPairingVerificationEnabled());
         assertEquals(PAIRING_BOOTSTRAPPING_OPPORTUNISTIC, config.getBootstrappingMethods());
+        if (Flags.awarePairing()) {
+            assertEquals(config.getSupportedCipherSuites(),
+                    WIFI_AWARE_CIPHER_SUITE_NCS_PK_PASN_256);
+        }
 
         if (!ApiLevelUtil.isAfter(Build.VERSION_CODES.TIRAMISU)) {
             return;

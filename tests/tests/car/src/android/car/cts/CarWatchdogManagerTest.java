@@ -29,6 +29,7 @@ import android.app.UiAutomation;
 import android.car.Car;
 import android.car.cts.utils.watchdog.IoOveruseConfigurationSubject;
 import android.car.cts.utils.watchdog.ResourceOveruseConfigurationSubject;
+import android.car.test.util.DiskUtils;
 import android.car.watchdog.CarWatchdogManager;
 import android.car.watchdog.IoOveruseAlertThreshold;
 import android.car.watchdog.IoOveruseConfiguration;
@@ -60,10 +61,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -122,7 +119,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     private String mPackageName;
     private UserHandle mUserHandle;
     private CarWatchdogManager mCarWatchdogManager;
-    private File mFile;
+    private File mDir;
 
     @Before
     public void setUp() throws Exception {
@@ -132,7 +129,7 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         mContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
         mPackageName = mContext.getPackageName();
         mUserHandle = UserHandle.getUserHandleForUid(Process.myUid());
-        mFile = mContext.getFilesDir();
+        mDir = mContext.getFilesDir();
         mCarWatchdogManager = (CarWatchdogManager) getCar().getCarManager(Car.CAR_WATCHDOG_SERVICE);
     }
 
@@ -247,9 +244,11 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
 
         startCustomCollection();
 
-        long writtenBytes = writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
+        File file = new File(mDir, Long.toString(System.nanoTime()));
+        file.createNewFile();
+        long writtenBytes = DiskUtils.writeToDisk(file, FIVE_HUNDRED_KILOBYTES);
 
-        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
+        assertWithMessage("Failed to write data to dir '" + mDir.getAbsolutePath() + "'").that(
                 writtenBytes).isGreaterThan(0L);
 
         mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(writtenBytes);
@@ -293,8 +292,10 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        long writtenBytes = writeToDisk(mFile, ONE_MEGABYTE);
-        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'")
+        File file = new File(mDir, Long.toString(System.nanoTime()));
+        file.createNewFile();
+        long writtenBytes = DiskUtils.writeToDisk(file, ONE_MEGABYTE);
+        assertWithMessage("Failed to write data to dir '" + mDir.getAbsolutePath() + "'")
                 .that(writtenBytes).isGreaterThan(0L);
         AtomicReference<List<ResourceOveruseStats>> statsList = new AtomicReference<>();
         PollingCheck.check(
@@ -337,9 +338,11 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        long writtenBytes = writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
+        File file = new File(mDir, Long.toString(System.nanoTime()));
+        file.createNewFile();
+        long writtenBytes = DiskUtils.writeToDisk(file, FIVE_HUNDRED_KILOBYTES);
 
-        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
+        assertWithMessage("Failed to write data to dir '" + mDir.getAbsolutePath() + "'").that(
                 writtenBytes).isGreaterThan((long) (FIVE_HUNDRED_KILOBYTES * 0.8));
 
         mResourceOveruseStatsForUserPackagePollingCheckCondition.setRequest(mPackageName,
@@ -864,52 +867,6 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         return TextUtils.isEmpty(settingsString) ? new ArraySet<>()
                 : new ArraySet<>(Arrays.asList(settingsString.split(
                         PACKAGES_DISABLED_ON_RESOURCE_OVERUSE_SEPARATOR)));
-    }
-
-    // TODO(b/335920274): Move this logic to a utils class, which can be used by all
-    // host and device side CTS tests. Once done, refactor all the files which contain
-    // the duplicate logic.
-    private static long writeToDisk(File dir, long size) throws Exception {
-        if (!dir.exists()) {
-            throw new FileNotFoundException(
-                    "directory '" + dir.getAbsolutePath() + "' doesn't exist");
-        }
-        File uniqueFile = new File(dir, Long.toString(System.nanoTime()));
-        long writtenBytes = 0;
-        try (FileOutputStream fos = new FileOutputStream(uniqueFile)) {
-            Log.d(TAG, "Attempting to write " + size + " bytes");
-            writtenBytes = writeToFos(fos, size);
-            fos.getFD().sync();
-        }
-        return writtenBytes;
-    }
-
-    private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
-        Runtime runtime = Runtime.getRuntime();
-        long writtenBytes = 0;
-        while (maxSize != 0) {
-            // The total available free memory can be calculated by adding the currently allocated
-            // memory that is free plus the total memory available to the process which hasn't been
-            // allocated yet.
-            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
-                    + runtime.freeMemory();
-            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
-            Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
-            if (writeSize == 0) {
-                Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
-                        + writtenBytes);
-                return writtenBytes;
-            }
-            try {
-                fos.write(new byte[writeSize]);
-            } catch (InterruptedIOException e) {
-                Thread.currentThread().interrupt();
-                continue;
-            }
-            maxSize -= writeSize;
-            writtenBytes += writeSize;
-        }
-        return writtenBytes;
     }
 
     private static boolean containsPackage(String packageName,

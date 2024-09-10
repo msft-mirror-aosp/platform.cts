@@ -16,7 +16,7 @@
 <configuration description="Config for CTS Media test cases">
     <option name="test-suite-tag" value="cts" />
     <option name="config-descriptor:metadata" key="component" value="media" />
-    <option name="config-descriptor:metadata" key="parameter" value="instant_app" />
+    <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
@@ -41,7 +41,7 @@
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.MediaPreparer">
         <option name="push-all" value="true" />
-        <option name="media-folder-name" value="CtsMediaDecoderTestCases-2.2" />
+        <option name="media-folder-name" value="CtsMediaDecoderTestCases-2.3" />
         <option name="dynamic-config-module" value="CtsMediaDecoderTestCases" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

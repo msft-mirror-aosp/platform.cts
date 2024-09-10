@@ -23,6 +23,7 @@ import android.app.admin.EnforcingAdmin
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Intent
+import android.cts.testapisreflection.*
 import android.os.Build
 import android.os.PersistableBundle
 import android.os.UserHandle
@@ -32,7 +33,6 @@ import com.android.bedstead.nene.annotations.Experimental
 import com.android.bedstead.nene.exceptions.AdbException
 import com.android.bedstead.nene.exceptions.AdbParseException
 import com.android.bedstead.nene.exceptions.NeneException
-import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.packages.Package
 import com.android.bedstead.nene.roles.RoleContext
 import com.android.bedstead.nene.users.UserReference
@@ -564,7 +564,7 @@ object DevicePolicy {
     @Experimental
     fun isNewUserDisclaimerAcknowledged(user: UserReference = TestApis.users().instrumented()): Boolean =
             TestApis.permissions().withPermission(CommonPermissions.INTERACT_ACROSS_USERS).use {
-                devicePolicyManager(user).isNewUserDisclaimerAcknowledged
+                devicePolicyManager(user).newUserDisclaimerAcknowledged
             }
 
     /**
@@ -576,20 +576,43 @@ object DevicePolicy {
         return DevicePolicyResources.sInstance
     }
 
+    @JvmOverloads
+    fun setActiveAdmin(user: UserReference = TestApis.users().instrumented(),
+                       componentName: ComponentName): DeviceAdmin {
+        TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                CommonPermissions.MANAGE_DEVICE_ADMINS)
+                .use {
+                    devicePolicyManager(user).setActiveAdmin(componentName,
+                            /* refreshing= */ true, user.id())
+                }
+
+        Poll.forValue("Active admins") { getActiveAdmins(user) }
+                .toMeet { i: Set<DeviceAdmin> ->
+                    i.contains(
+                            DeviceAdmin.of(componentName.packageName, componentName))
+                }
+                .errorOnFail()
+                .await()
+
+        return DeviceAdmin(user, TestApis.packages().find(componentName.packageName), componentName)
+    }
+
     /**
      * Get active admins on the given user.
      */
     @JvmOverloads
-    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<ComponentReference> {
+    fun getActiveAdmins(user: UserReference = TestApis.users().instrumented()): Set<DeviceAdmin> {
         TestApis.permissions().withPermission(Manifest.permission.INTERACT_ACROSS_USERS_FULL)
-                .use {
-                    val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
-                    return activeAdmins.stream()
-                            .map { component: ComponentName? -> ComponentReference(component) }
-                            .collect(
-                                    Collectors.toSet()
-                            )
-                }
+            .use {
+                val activeAdmins = devicePolicyManager(user).activeAdmins ?: return setOf()
+                return activeAdmins.stream()
+                    .map { component: ComponentName ->
+                        DeviceAdmin.of(component.packageName, component)
+                    }
+                    .collect(
+                        Collectors.toSet()
+                    )
+            }
     }
 
     /**
@@ -777,7 +800,7 @@ object DevicePolicy {
 
     /** See [DevicePolicyManager.isFactoryResetProtectionPolicySupported]  */
     fun isFactoryResetProtectionPolicySupported(): Boolean =
-            devicePolicyManager.isFactoryResetProtectionPolicySupported
+            devicePolicyManager.factoryResetProtectionPolicySupported
 
     @Experimental
     fun notifyPendingSystemUpdate(updateReceivedTime: Long, isSecurityPatch: Boolean? = null) {
@@ -801,7 +824,7 @@ object DevicePolicy {
     @JvmOverloads
     fun isCurrentInputMethodSetByOwner(user: UserReference = TestApis.users().instrumented()) =
             TestApis.permissions().withPermission(QUERY_ADMIN_POLICY).use {
-                devicePolicyManager(user).isCurrentInputMethodSetByOwner
+                devicePolicyManager(user).currentInputMethodSetByOwner
             }
 
     /** See [DevicePolicyManager#getOwnerInstalledCaCerts]. */
@@ -850,6 +873,10 @@ object DevicePolicy {
         return devicePolicyManager.canUsbDataSignalingBeDisabled()
     }
 
+    /** See [DevicePolicyManager#getLastBugReportRequestTime] */
+    @Experimental
+    fun getLastBugReportRequestTime() = devicePolicyManager.lastBugReportRequestTime
+
     enum class NearbyNotificationStreamingPolicy(val intDef: Int) {
         NotManaged(0),
         Disabled(1),
@@ -865,7 +892,7 @@ object DevicePolicy {
     }
 
     private fun ShellCommand.Builder.addProvisioningContext(): ShellCommand.Builder {
-        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.V)) {
+        if (!Versions.meetsMinimumSdkVersionRequirement(Versions.B)) {
             return this
         }
         val testName = FailureDumper.getCurrentTestName()

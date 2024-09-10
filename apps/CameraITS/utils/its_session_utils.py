@@ -72,6 +72,7 @@ TABLET_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
     'dpd2221',  # Vivo Pad2
     'nabu',  # Xiaomi Pad 5
     'xun',  # Xiaomi Redmi Pad SE
@@ -91,6 +92,7 @@ TABLET_BRIGHTNESS_ERROR_MSG = ('Tablet brightness not set as per '
 TABLET_NOT_ALLOWED_ERROR_MSG = ('Tablet model or tablet Android version is '
                                 'not on our allowlist, please refer to '
                                 f'{TABLET_REQUIREMENTS_URL}')
+TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 USE_CASE_CROPPED_RAW = 6
 VIDEO_SCENES = ('scene_video',)
 NOT_YET_MANDATED_MESSAGE = 'Not yet mandated test'
@@ -368,9 +370,9 @@ class ItsSession(object):
     time.sleep(1)
 
     its_device_utils.run(
-        f'{self.adb} shell am force-stop --user 0 {self.PACKAGE}')
+        f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
     its_device_utils.run(
-        f'{self.adb} shell am start-foreground-service --user 0 '
+        f'{self.adb} shell am start-foreground-service --user cur '
         f'-t text/plain -a {self.INTENT_START}'
     )
 
@@ -835,7 +837,7 @@ class ItsSession(object):
   def do_basic_recording(self, profile_id, quality, duration,
                          video_stabilization_mode=0, hlg10_enabled=False,
                          zoom_ratio=None, ae_target_fps_min=None,
-                         ae_target_fps_max=None):
+                         ae_target_fps_max=None, antibanding_mode=None):
     """Issue a recording request and read back the video recording object.
 
     The recording will be done with the format specified in quality. These
@@ -855,6 +857,7 @@ class ItsSession(object):
       zoom_ratio: float; zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService which
       contains path at which the recording is saved on the device, quality of
@@ -886,6 +889,9 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
+    if antibanding_mode:
+      cmd['aeAntibandingMode'] = antibanding_mode
+    else: cmd['aeAntibandingMode'] = 0
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
@@ -931,7 +937,8 @@ class ItsSession(object):
 
   def do_preview_recording_multiple_surfaces(
       self, output_surfaces, duration, stabilize, ois=False,
-      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None):
+      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
+      antibanding_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -949,6 +956,7 @@ class ItsSession(object):
       zoom_ratio: float; static zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -971,11 +979,14 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
+    if antibanding_mode is not None:
+      cmd['aeAntibandingMode'] = antibanding_mode
     return self._execute_preview_recording(cmd)
 
-  def do_preview_recording(self, video_size, duration, stabilize, ois=False,
-                           zoom_ratio=None, ae_target_fps_min=None,
-                           ae_target_fps_max=None, hlg10_enabled=False):
+  def do_preview_recording(
+      self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
+      ae_target_fps_min=None, ae_target_fps_max=None, hlg10_enabled=False,
+      antibanding_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -993,13 +1004,14 @@ class ItsSession(object):
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       hlg10_enabled: boolean; True Eanable 10-bit HLG video recording, False
                               record using the regular SDK profile.
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
     return self.do_preview_recording_multiple_surfaces(
         output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max)
+        ae_target_fps_min, ae_target_fps_max, antibanding_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
@@ -1631,8 +1643,9 @@ class ItsSession(object):
     cmd['previewRequestIdle'] = [preview_request_idle]
     cmd['stillCaptureRequest'] = [still_capture_req]
     cmd['outputSurfaces'] = [out_surface]
-
-    logging.debug('Capturing image with ON_AUTO_FLASH.')
+    if 'android.control.aeMode' in still_capture_req:
+      logging.debug('Capturing image with aeMode: %d',
+                    still_capture_req['android.control.aeMode'])
     return self.do_simple_capture(cmd, out_surface)
 
   def do_capture_with_extensions(self,
@@ -2706,6 +2719,9 @@ def load_scene(cam, props, scene, tablet, chart_distance, lighting_check=True,
       f'am start -a android.intent.action.VIEW -t {view_file_type} '
       f'-d {uri_prefix}/sdcard/Download/{file_name}')
   time.sleep(LOAD_SCENE_DELAY_SEC)
+  # Tap tablet to remove gallery buttons
+  tablet.adb.shell(
+      f'input tap {TAP_COORDINATES[0]} {TAP_COORDINATES[1]}')
   rfov_camera_in_rfov_box = (
       math.isclose(
           chart_distance,

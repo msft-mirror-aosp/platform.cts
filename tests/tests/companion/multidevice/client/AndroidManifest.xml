@@ -29,6 +29,7 @@
   <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
   <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
   <uses-permission android:name="android.permission.DELIVER_COMPANION_MESSAGES" />
+  <uses-permission android:name="android.permission.USE_ATTESTATION_VERIFICATION_SERVICE" />
 
   <uses-feature android:name="android.hardware.bluetooth" android:required="true"/>
   <uses-feature android:name="android.software.companion_device_setup" />
@@ -41,6 +42,7 @@
         android:name="mobly-snippets"
         tools:replace="android:value"
         android:value="com.google.android.mobly.snippet.bundled.bluetooth.BluetoothAdapterSnippet,
+                       android.companion.cts.multidevice.AttestationVerificationManagerSnippet,
                        android.companion.cts.multidevice.CompanionDeviceManagerSnippet" />
   </application>
 

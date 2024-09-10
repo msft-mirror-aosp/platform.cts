@@ -34,6 +34,14 @@ import org.junit.Test;
 public class AddWindowAsUserTest extends ActivityManagerTestBase  {
     @Test
     public void testAddWindowSecondaryUser() {
+        // Context#getDisplayId() always returns the main display ID, even if it is called from an
+        // app running as a passenger user on secondary display (b/356478691). To work around it,
+        // let's set the correct display ID manually.
+        final int myDisplayId = getMainDisplayId();
+        if (mContext.getDisplayId() != myDisplayId) {
+            mContext.updateDisplay(myDisplayId);
+        }
+
         // Get original userId from context first, not every platform use SYSTEM as default user.
         final int myUserId = mContext.getUserId();
         testAddWindowWithUser(UserHandle.of(myUserId), false /* shouldCatchException */);

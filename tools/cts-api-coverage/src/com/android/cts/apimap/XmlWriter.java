@@ -22,6 +22,7 @@ import com.android.cts.apicommon.ApiCoverage;
 import com.android.cts.apicommon.ApiMethod;
 import com.android.cts.apicommon.ApiPackage;
 import com.android.cts.apicommon.CoverageComparator;
+import com.android.cts.apicommon.TestMethodInfo;
 import com.android.cts.ctsprofiles.ClassProfile;
 import com.android.cts.ctsprofiles.MethodProfile;
 import com.android.cts.ctsprofiles.ModuleProfile;
@@ -110,7 +111,7 @@ public class XmlWriter {
     /** Generates the data for xTS annotations. */
     public void generateXtsAnnotationMapData(ModuleProfile module) {
         Element moduleElement = mDoc.createElement("test-module");
-        moduleElement.setAttribute("module", module.getModuleName());
+        moduleElement.setAttribute("name", module.getModuleName());
         for (ClassProfile classProfile : module.getClasses()) {
             if (!classProfile.isNonAbstractTestClass()) {
                 continue;
@@ -146,7 +147,7 @@ public class XmlWriter {
             paramElement.setAttribute("type", parameterType);
             element.appendChild(paramElement);
         }
-        for (String test: constructor.getCoveredTests()) {
+        for (TestMethodInfo test : constructor.getCoveredTests()) {
             element.appendChild(createCoveredByElement(test));
         }
         return element;
@@ -177,15 +178,18 @@ public class XmlWriter {
             paramElement.setAttribute("type", parameterType);
             element.appendChild(paramElement);
         }
-        for (String test: method.getCoveredTests()) {
+        for (TestMethodInfo test : method.getCoveredTests()) {
             element.appendChild(createCoveredByElement(test));
         }
         return element;
     }
 
-    private Element createCoveredByElement(String test) {
+    private Element createCoveredByElement(TestMethodInfo test) {
         Element element = mDoc.createElement("covered-by");
-        element.setAttribute("name", test);
+        element.setAttribute("module", test.moduleName());
+        element.setAttribute("package", test.packageName());
+        element.setAttribute("class", test.className());
+        element.setAttribute("test", test.testName());
         return element;
     }
 
@@ -267,7 +271,7 @@ public class XmlWriter {
     }
 
     private Element createXtsAnnotationElement(String name, Set<String> values) {
-        Element element = mDoc.createElement("cts-annotation");
+        Element element = mDoc.createElement("annotation");
         element.setAttribute("name", name);
         element.setAttribute("values", String.join(";", values));
         return element;

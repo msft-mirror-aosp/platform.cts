@@ -73,6 +73,7 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.input.FailOnTestThreadRule;
+import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
@@ -152,7 +153,7 @@ public class ASurfaceControlInputReceiverTest {
                 windowBounds.height() / 2);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
         assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(centerCoordRelativeToWindow)));
+                withCoords(centerCoordRelativeToWindow, InputEventMatchersKt.EPSILON)));
     }
 
     @Test

@@ -29,7 +29,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                style="?android:attr/buttonBarStyle">
+                style="?android:attr/buttonBarStyle"
+                android:id="@+id/audio_loopback_utilities_layout">
                 <Button
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"

@@ -22,6 +22,7 @@ import static android.app.AppOpsManager.OPSTR_READ_PHONE_STATE;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_OVERRIDE_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_NAME_STRING;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT;
+import static android.telephony.CarrierConfigManager.KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_CARRIER_VOLTE_PROVISIONED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY;
@@ -31,7 +32,11 @@ import static android.telephony.CarrierConfigManager.KEY_OVERRIDE_WFC_ROAMING_MO
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_CONNECTION_HYSTERESIS_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_EMERGENCY_MESSAGING_SUPPORTED_BOOL;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ENTITLEMENT_STATUS_REFRESH_DAYS_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL;
+import static android.telephony.CarrierConfigManager.KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT;
 import static android.telephony.ServiceState.STATE_IN_SERVICE;
 
 import static androidx.test.InstrumentationRegistry.getContext;
@@ -58,6 +63,7 @@ import android.content.pm.PackageManager;
 import android.net.NetworkCapabilities;
 import android.os.Looper;
 import android.os.PersistableBundle;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -68,6 +74,7 @@ import android.telephony.SubscriptionManager;
 import android.telephony.SubscriptionManager.OnSubscriptionsChangedListener;
 import android.telephony.TelephonyManager;
 import android.telephony.TelephonyRegistryManager;
+import android.telephony.satellite.SatelliteManager;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.ShellIdentityUtils;
@@ -253,13 +260,30 @@ public class CarrierConfigManagerTest {
                     TimeUnit.SECONDS.toMillis(30));
             assertFalse("KEY_SATELLITE_ESOS_SUPPORTED_BOOL doesn't match static default.",
                     config.getBoolean(KEY_SATELLITE_ESOS_SUPPORTED_BOOL));
+            assertFalse("KEY_SATELLITE_P2P_SMS_SUPPORTED_BOOL "
+                            + "doesn't match static default.",
+                    config.getBoolean(KEY_SATELLITE_ROAMING_P2P_SMS_SUPPORTED_BOOL));
             assertEquals("KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT doesn't match static default.",
                     config.getInt(KEY_CARRIER_ROAMING_NTN_CONNECT_TYPE_INT),
                     CarrierConfigManager.CARRIER_ROAMING_NTN_CONNECT_AUTOMATIC);
+            assertEquals("KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT "
+                    + "doesn't match static default.",
+                    config.getInt(
+                            KEY_CARRIER_ROAMING_NTN_EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_INT),
+                    SatelliteManager.EMERGENCY_CALL_TO_SATELLITE_HANDOVER_TYPE_T911);
             assertEquals("KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT "
                             + "doesn't match static default.",
                     config.getInt(KEY_CARRIER_SUPPORTED_SATELLITE_NOTIFICATION_HYSTERESIS_SEC_INT),
                     180);
+            assertEquals("KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT "
+                    + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ROAMING_SCREEN_OFF_INACTIVITY_TIMEOUT_SEC_INT), 30);
+            assertEquals("KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ROAMING_P2P_SMS_INACTIVITY_TIMEOUT_SEC_INT), 180);
+            assertEquals("KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT "
+                            + "doesn't match static default.",
+                    config.getInt(KEY_SATELLITE_ROAMING_ESOS_INACTIVITY_TIMEOUT_SEC_INT), 600);
 
             assertArrayEquals("KEY_CAPABILITIES_EXEMPT_FROM_SINGLE_DC_CHECK_INT_ARRAY"
                             + " doesn't match static default.",
@@ -376,6 +400,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig() {
         PersistableBundle config = mConfigManager.getConfig();
         checkConfig(config);
@@ -398,6 +423,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig_withValidKeys() {
         PersistableBundle allConfigs = mConfigManager.getConfig();
         Set<String> allKeys = allConfigs.keySet();
@@ -410,6 +436,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfig_keyWithoutDefaultValue() {
         String keyWithDefaultValue = CarrierConfigManager.KEY_CARRIER_SUPPORTS_TETHERING_BOOL;
         String keyWithoutDefaultValue = "random_key_for_testing";
@@ -426,6 +453,7 @@ public class CarrierConfigManagerTest {
 
     @Test
     @AsbSecurityTest(cveBugId = 73136824)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testRevokePermission() {
         PersistableBundle config;
 
@@ -449,6 +477,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId() {
         PersistableBundle config =
                 mConfigManager.getConfigForSubId(SubscriptionManager.getDefaultSubscriptionId());
@@ -473,6 +502,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId_withValidSingleKey() {
         final int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
         PersistableBundle allConfigs = mConfigManager.getConfigForSubId(defaultSubId);
@@ -486,6 +516,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigForSubId_withValidMultipleKeys() {
         final int defaultSubId = SubscriptionManager.getDefaultSubscriptionId();
         PersistableBundle allConfigs = mConfigManager.getConfigForSubId(defaultSubId);
@@ -546,6 +577,7 @@ public class CarrierConfigManagerTest {
      * correctly overrides the Carrier Name (SPN) string.
      */
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testCarrierConfigNameOverride() throws Exception {
         if (!isSimCardPresent()
                 || mTelephonyManager.getServiceState().getState() != STATE_IN_SERVICE) {
@@ -639,6 +671,7 @@ public class CarrierConfigManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetConfigByComponentForSubId() {
         PersistableBundle config =
                 mConfigManager.getConfigByComponentForSubId(
@@ -724,6 +757,7 @@ public class CarrierConfigManagerTest {
     @ApiTest(apis = {"android.telephony"
             + ".CarrierConfigManager#KEY_CELLULAR_SERVICE_CAPABILITIES_INT_ARRAY",
             "android.telephony.SubscriptionInfo#getServiceCapabilities"})
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testCellularServiceCapabilitiesOverride() throws Exception {
         if (!isSimCardPresent()
                 || mTelephonyManager.getServiceState().getState() != STATE_IN_SERVICE) {

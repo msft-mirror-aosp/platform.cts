@@ -26,6 +26,9 @@ import org.junit.Assert.assertNotNull
 const val TMP_APK_PATH = "/data/local/tmp/cts/uidmigration"
 
 val FLAG_ZERO = PackageManager.PackageInfoFlags.of(0)
+val FLAG_MATCH_UNINSTALLED_PACKAGES = PackageManager.PackageInfoFlags.of(
+    PackageManager.MATCH_UNINSTALLED_PACKAGES.toLong()
+)
 
 // What each APK meant
 // APK : pkg , with sharedUserId
@@ -59,6 +62,10 @@ fun installPackage(apkPath: String): Boolean {
 
 fun uninstallPackage(packageName: String) {
     runShellCommand("pm uninstall $packageName")
+}
+
+fun uninstallPackageWithKeepData(packageName: String) {
+    runShellCommand("pm uninstall -k $packageName")
 }
 
 @SharedUidMigration.Strategy
