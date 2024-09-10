@@ -20,6 +20,7 @@ import android.widget.TextView;
 
 import androidx.test.uiautomator.UiScrollable;
 import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.interactive.Automation;
@@ -30,7 +31,7 @@ import com.android.interactive.annotations.AutomationFor;
 public class NavigateToDeviceAdminAppsSectionStepAutomation implements Automation<Nothing> {
     @Override
     public Nothing automate() throws Exception {
-        TestApis.ui().device(); // Initialise UiAutomation
+        UiDevice unused = TestApis.ui().device(); // Initialise UiAutomation
 
         // Move to "Advanced Settings"
         UiScrollable settingsItem = new UiScrollable(new UiSelector()
