@@ -119,11 +119,10 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     @BeforeClass
     public static void setUpInstallationClass() throws Exception {
-        setUpClass();
         copyTestFiles();
 
         sInstallerResponseReceiver = new InstallerResponseReceiver();
-        sContext.registerReceiver(sInstallerResponseReceiver,
+        getContext().registerReceiver(sInstallerResponseReceiver,
                 new IntentFilter(ACTION_RESPONSE_INSTALLER), Context.RECEIVER_EXPORTED);
     }
 
@@ -157,9 +156,8 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     @AfterClass
     public static void tearDownInstallationClass() throws Exception {
-        sInstallerResponseReceiver.unregisterReceiver(sContext);
+        sInstallerResponseReceiver.unregisterReceiver(getContext());
         sInstallerResponseReceiver = null;
-        tearDownClass();
     }
 
     /**
@@ -179,7 +177,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void copyTestFile(@NonNull String testApkName) throws Exception {
-        final File dstFile = new File(sContext.getFilesDir(), testApkName);
+        final File dstFile = new File(getContext().getFilesDir(), testApkName);
         if (!dstFile.exists()) {
             final File apkFile = new File(TEST_APK_LOCATION, testApkName);
             copyFile(apkFile, dstFile);
@@ -198,13 +196,14 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
     private static void getFileUriAndUpdateIntent(@NonNull String testApkName,
             @NonNull String extraKey, @NonNull Intent intent) {
-        final File apkFile = new File(sContext.getFilesDir(), testApkName);
-        final String contentAuthority = sContext.getPackageName() + AUTHORITY_NAME;
-        final Uri testApkUri = FileProvider.getUriForFile(sContext, contentAuthority, apkFile);
+        final Context context = getContext();
+        final File apkFile = new File(context.getFilesDir(), testApkName);
+        final String contentAuthority = context.getPackageName() + AUTHORITY_NAME;
+        final Uri testApkUri = FileProvider.getUriForFile(context, contentAuthority, apkFile);
         intent.putExtra(extraKey, testApkUri.toString());
 
         // grant read uri permission to the installer
-        sContext.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkUri,
+        context.grantUriPermission(INSTALLER_PACKAGE_NAME, testApkUri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
     }
 
@@ -213,7 +212,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         intent.setPackage(INSTALLER_PACKAGE_NAME);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
         intent.setAction(ACTION_LAUNCH_INSTALLER);
-        intent.putExtra(EXTRA_TEST_PACKAGE_NAME, sContext.getPackageName());
+        intent.putExtra(EXTRA_TEST_PACKAGE_NAME, getContext().getPackageName());
 
         getFileUriAndUpdateIntent(TEST_APK_NAME, EXTRA_TEST_APK_URI, intent);
         getFileUriAndUpdateIntent(TEST_APK_V2_NAME, EXTRA_TEST_APK_V2_URI, intent);
@@ -223,7 +222,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         getFileUriAndUpdateIntent(TEST_NO_LAUNCHER_ACTIVITY_APK_V2_NAME,
                 EXTRA_TEST_NO_LAUNCHER_ACTIVITY_APK_V2_URI, intent);
 
-        sContext.startActivity(intent);
+        getContext().startActivity(intent);
     }
 
     private static void requestInstallerCleanUp() throws Exception {
@@ -235,10 +234,10 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         final PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL);
         params.setAppPackageName(TEST_APP_PACKAGE_NAME);
-        final PackageInstaller packageInstaller = sPackageManager.getPackageInstaller();
+        final PackageInstaller packageInstaller = getPackageManager().getPackageInstaller();
 
         try {
-            sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(INSTALL_PACKAGES);
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(INSTALL_PACKAGES);
             final int sessionId = packageInstaller.createSession(params);
             final PackageInstaller.Session session = packageInstaller.openSession(sessionId);
             final File apkFile = new File(TEST_APK_LOCATION, apkName);
@@ -249,13 +248,13 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
 
             final InstallResultReceiver installResultReceiver = new InstallResultReceiver();
             try {
-                session.commit(installResultReceiver.getIntentSender(sContext));
+                session.commit(installResultReceiver.getIntentSender(getContext()));
                 assertThat(installResultReceiver.getInstallResult()).isEqualTo(STATUS_SUCCESS);
             } finally {
-                installResultReceiver.unregisterReceiver(sContext);
+                installResultReceiver.unregisterReceiver(getContext());
             }
         } finally {
-            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
     }
 
@@ -436,7 +435,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         intent.putExtra(EXTRA_USE_TEST_APP, useTestApp);
         intent.putExtra(EXTRA_IS_UPDATE, update);
         intent.putExtra(EXTRA_NO_LAUNCHER_ACTIVITY_TEST_APP, isNoLauncherActivityTestApp);
-        sContext.sendBroadcast(intent);
+        getContext().sendBroadcast(intent);
     }
 
     private static int getInstallerResponseResult() throws Exception {
@@ -505,7 +504,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static void allowInstallIfGPPDialogExists() throws Exception {
         final Pattern morePattern = Pattern.compile(BUTTON_GPP_MORE_DETAILS_LABEL,
                 Pattern.CASE_INSENSITIVE);
-        UiObject2 more = sUiDevice.findObject(By.text(morePattern));
+        UiObject2 more = getUiDevice().findObject(By.text(morePattern));
         if (more != null) {
             more.click();
             waitForUiIdle();
@@ -516,7 +515,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
                     /* checkNull= */ false);
             if (installAnyway != null) {
                 Rect rect = installAnyway.getVisibleBounds();
-                sUiDevice.click(rect.left, rect.bottom - 10);
+                getUiDevice().click(rect.left, rect.bottom - 10);
                 // wait for the dialog disappear
                 waitUntilObjectGone(installWithoutScanningSelector);
             }
@@ -619,7 +618,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         findPackageInstallerObject(BUTTON_DONE_LABEL);
 
         final Pattern namePattern = Pattern.compile(BUTTON_OPEN_LABEL, Pattern.CASE_INSENSITIVE);
-        UiObject2 openButton = sUiDevice.findObject(
+        UiObject2 openButton = getUiDevice().findObject(
                 getPackageInstallerBySelector(By.text(namePattern)));
 
         assertThat(openButton).isNull();
@@ -771,7 +770,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
         }
 
         // Start to find the objects, find the checkable items first
-        final List<UiObject2> uiObjects = sUiDevice.wait(
+        final List<UiObject2> uiObjects = getUiDevice().wait(
                 Until.findObjects(By.checkable(true).checked(false)), FIND_OBJECT_TIMEOUT_MS);
 
         if (uiObjects == null || uiObjects.isEmpty()) {
@@ -827,7 +826,7 @@ public class InstallationTestBase extends PackageInstallerCujTestBase {
     private static void waitForInstallingDialogGone() throws Exception {
         BySelector installingSelector =
                 getPackageInstallerBySelector(By.textContains(INSTALLING_LABEL));
-        UiObject2 installing = sUiDevice.findObject(installingSelector);
+        UiObject2 installing = getUiDevice().findObject(installingSelector);
         if (installing != null) {
             waitUntilObjectGone(installingSelector);
         }

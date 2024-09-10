@@ -18,8 +18,6 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
-import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
-import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
 import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 
@@ -86,7 +84,6 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1350,31 +1347,6 @@ public class TextViewTest {
         mult = Float.MAX_VALUE;
         setLineSpacing(add, mult);
         assertEquals(0, mTextView.getLineHeight());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_DEPRECATE_UI_FONTS)
-    public void testSetElegantLineHeight() throws Throwable {
-        mTextView = findTextView(R.id.textview_text);
-        assertFalse(mTextView.getPaint().isElegantTextHeight());
-        mActivityRule.runOnUiThread(() -> {
-            mTextView.setWidth(mTextView.getWidth() / 3);
-            mTextView.setPadding(1, 2, 3, 4);
-            mTextView.setGravity(Gravity.BOTTOM);
-        });
-        mInstrumentation.waitForIdleSync();
-
-        int oldHeight = mTextView.getHeight();
-        mActivityRule.runOnUiThread(() -> mTextView.setElegantTextHeight(true));
-        mInstrumentation.waitForIdleSync();
-
-        assertTrue(mTextView.getPaint().isElegantTextHeight());
-        assertTrue(mTextView.getHeight() > oldHeight);
-
-        mActivityRule.runOnUiThread(() -> mTextView.setElegantTextHeight(false));
-        mInstrumentation.waitForIdleSync();
-        assertFalse(mTextView.getPaint().isElegantTextHeight());
-        assertTrue(mTextView.getHeight() == oldHeight);
     }
 
     @Test
@@ -7029,7 +7001,6 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_WORD, interWordTv.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_LETTER_SPACING_JUSTIFICATION)
     @Test
     public void testJustificationByStyle_InterCharacter() {
         TextView textView = findTextView(R.id.textview_justification_inter_character);
