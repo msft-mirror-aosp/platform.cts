@@ -5366,7 +5366,7 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_routingnotification_usbheadsetcolon">USB Headset: </string>
     <string name="audio_routingnotification_usbdevicecolon">USB Device: </string>
     <string name="audio_routingnotification_connected">Connected</string>
-    <string name="audio_routingnotification_passmessage">Test PASSES - Routing notification received</string>
+    <string name="audio_routingnotification_passmessage">Test PASSES</string>
 
     <!-- USB Audio Peripheral Tests -->
     <string name="profileLabel">Profile</string>
