@@ -18,7 +18,6 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
-import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
 import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 
@@ -7002,7 +7001,6 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_WORD, interWordTv.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_LETTER_SPACING_JUSTIFICATION)
     @Test
     public void testJustificationByStyle_InterCharacter() {
         TextView textView = findTextView(R.id.textview_justification_inter_character);
