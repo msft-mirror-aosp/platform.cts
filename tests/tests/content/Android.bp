@@ -73,9 +73,9 @@ java_defaults {
         "libnativehelper_compat_libc++",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "apache-commons-compress",
@@ -121,6 +121,7 @@ android_test {
         "mcts-documentsui",
     ],
     static_libs: [
+        "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
         "TestParameterInjector",

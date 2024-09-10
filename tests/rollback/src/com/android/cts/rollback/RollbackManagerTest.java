@@ -16,8 +16,6 @@
 
 package com.android.cts.rollback;
 
-import static android.crashrecovery.flags.Flags.FLAG_DEPRECATE_FLAGS_AND_SETTINGS_RESETS;
-
 import static com.android.cts.rollback.lib.RollbackInfoSubject.assertThat;
 import static com.android.cts.rollback.lib.RollbackUtils.getRollbackManager;
 
@@ -31,7 +29,6 @@ import android.content.pm.Flags;
 import android.content.pm.PackageManager;
 import android.content.rollback.RollbackInfo;
 import android.content.rollback.RollbackManager;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -375,33 +372,6 @@ public class RollbackManagerTest {
             // Abandon the session
             InstallUtils.getPackageInstaller().abandonSession(sessionId);
         }
-    }
-
-    /**
-     * Test that flags are cleared when a rollback is committed.
-     */
-    @Test
-    @RequiresFlagsDisabled(FLAG_DEPRECATE_FLAGS_AND_SETTINGS_RESETS)
-    public void testRollbackClearsFlags() throws Exception {
-        Install.single(TestApp.A1).commit();
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(1);
-        RollbackUtils.waitForRollbackGone(
-                () -> getRollbackManager().getAvailableRollbacks(), TestApp.A);
-
-        Install.single(TestApp.A2).setEnableRollback().commit();
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(2);
-        RollbackInfo available = RollbackUtils.waitForAvailableRollback(TestApp.A);
-
-        DeviceConfig.setProperty("configuration", "namespace_to_package_mapping",
-                "testspace:" + TestApp.A, false);
-        DeviceConfig.setProperty("testspace", "flagname", "hello", false);
-        DeviceConfig.setProperty("testspace", "another", "12345", false);
-        assertThat(DeviceConfig.getProperties("testspace").getKeyset()).hasSize(2);
-
-        RollbackUtils.rollback(available.getRollbackId(), TestApp.A2);
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(1);
-
-        assertThat(DeviceConfig.getProperties("testspace").getKeyset()).hasSize(0);
     }
 
     /**

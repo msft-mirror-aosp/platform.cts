@@ -164,6 +164,45 @@ func TestConfigVariantsValid(t *testing.T) {
 	}
 }
 
+func TestProtoFieldNumbersAreUniqueAndValid(t *testing.T) {
+	reqList := mustUnmarshalRequirementList(t)
+
+	usedReqNumbers := make(map[int32]bool)
+	for _, req := range reqList.GetRequirements() {
+		for testConfigID, testConfig := range req.GetTestConfigs() {
+			if !testConfig.HasProtoFieldNumber() {
+				continue
+			}
+
+			if usedReqNumbers[testConfig.GetProtoFieldNumber()] {
+				t.Errorf("Test config [%s] has the same proto field number [%d] as another test config", testConfigID, testConfig.GetProtoFieldNumber())
+			} else if testConfig.GetProtoFieldNumber() <= 0 {
+				t.Errorf("Test config [%s] has an invalid proto field number [%d]", testConfigID, testConfig.GetProtoFieldNumber())
+			} else {
+				usedReqNumbers[testConfig.GetProtoFieldNumber()] = true
+			}
+		}
+
+		t.Run(req.GetId(), func(t *testing.T) {
+			usedMeasurementNumbers := make(map[int32]bool)
+
+			for _, measurement := range req.GetMeasurements() {
+				if !measurement.HasProtoFieldNumber() {
+					continue
+				}
+
+				if usedMeasurementNumbers[measurement.GetProtoFieldNumber()] {
+					t.Errorf("Measurement [%s] has the same proto field number [%d] as another measurement", measurement.GetId(), measurement.GetProtoFieldNumber())
+				} else if measurement.GetProtoFieldNumber() <= 2 {
+					t.Errorf("Measurement [%s] has an invalid proto field number [%d]", measurement.GetId(), measurement.GetProtoFieldNumber())
+				} else {
+					usedMeasurementNumbers[measurement.GetProtoFieldNumber()] = true
+				}
+			}
+		})
+	}
+}
+
 func mustUnmarshalRequirementList(t *testing.T) *pb.RequirementList {
 	t.Helper()
 	reqList, err := requirements.UnmarshalRequirementList(reqBinary)
