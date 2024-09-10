@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -37,6 +38,7 @@ import android.media.LoudnessCodecController;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -47,6 +49,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -99,8 +102,7 @@ public class LoudnessCodecControllerTest {
     @Before
     public void setUp() {
         final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        final AudioManager audioManager = (AudioManager) context.getSystemService(
-                AudioManager.class);
+        final AudioManager audioManager = context.getSystemService(AudioManager.class);
         mSessionId = 0;
         if (audioManager != null) {
             mSessionId = audioManager.generateAudioSessionId();
@@ -259,20 +261,23 @@ public class LoudnessCodecControllerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_LOUDNESS_CONFIGURATOR_API)
     public void audioTrackStart_afterAddMediaCodec_checkUpdateNumber() throws Exception {
+        assumeTrue("Skipping audioTrackStart_afterAddMediaCodec_checkUpdateNumber on API <= 35",
+                ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM));
         final MediaCodec mediaCodec1 = createMediaCodec(/*configure*/true);
         final MediaCodec mediaCodec2 = createMediaCodec(/*configure*/true);
 
         try {
+            // Initially we receive 2 updates with the estimated AudioDeviceAttributes
+            // properties in the Bundle
             mLcc.addMediaCodec(mediaCodec1);
             mLcc.addMediaCodec(mediaCodec2);
             Thread.sleep(TEST_LOUDNESS_CALLBACK_TIMEOUT.toMillis());
 
-            // Device id for AudioAttributes should not change to send more updates
-            // after creating the AudioTrack
+            // We get another 2 updates after we have a device ID assigned
             mAt = createAndStartAudioTrack();
             Thread.sleep(TEST_LOUDNESS_CALLBACK_TIMEOUT.toMillis());
 
-            assertEquals(2, mCodecUpdateCallNumber.get());
+            assertEquals(4, mCodecUpdateCallNumber.get());
         } finally {
             mediaCodec1.release();
             mediaCodec2.release();

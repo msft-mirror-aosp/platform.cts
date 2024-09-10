@@ -16,6 +16,8 @@
 
 package android.video.cts;
 
+import static android.video.cts.CodecPerformanceTestBase.ScalingFactor.Mode;
+
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -74,6 +76,7 @@ class CodecPerformanceTestBase {
     final String mTestFile;
     final int mKeyPriority;
     final float mMaxOpRateScalingFactor;
+    final Mode mMaxOpRateScalingFactorMode;
 
     String mDecoderMime;
     int mWidth;
@@ -91,7 +94,34 @@ class CodecPerformanceTestBase {
     Surface mSurface;
     double mOperatingRateExpected;
 
-    static final float[] SCALING_FACTORS_LIST = new float[]{2.5f, 1.25f, 1.0f, 0.75f, 0.0f, -1.0f};
+    static class ScalingFactor{
+        public enum Mode {ORDINARY, NEGATIVE, VERY_LARGE};
+
+        private Mode mMode;
+        private float mValue;
+
+        public ScalingFactor(Mode mode, float value) {
+            mMode = mode;
+            mValue = value;
+        }
+
+        public float getValue() {
+            return mValue;
+        }
+
+        public Mode getMode() {
+            return mMode;
+        }
+    }
+
+    static final ScalingFactor[] SCALING_FACTORS_LIST = {
+            new ScalingFactor(Mode.ORDINARY, 2.5f),
+            new ScalingFactor(Mode.ORDINARY, 1.25f),
+            new ScalingFactor(Mode.ORDINARY, 1.0f),
+            new ScalingFactor(Mode.ORDINARY, 0.75f),
+            new ScalingFactor(Mode.ORDINARY, 0.0f),
+            new ScalingFactor(Mode.NEGATIVE, -1.0f),
+            new ScalingFactor(Mode.VERY_LARGE, 0.0f)};
     static final int[] KEY_PRIORITIES_LIST = new int[]{1, 0};
 
     static {
@@ -134,11 +164,12 @@ class CodecPerformanceTestBase {
     }
 
     public CodecPerformanceTestBase(String decoderName, String testFile, int keyPriority,
-            float maxOpRateScalingFactor) {
+            float maxOpRateScalingFactor, Mode maxOpRateScalingFactorMode) {
         mDecoderName = decoderName;
         mTestFile = testFile;
         mKeyPriority = keyPriority;
         mMaxOpRateScalingFactor = maxOpRateScalingFactor;
+        mMaxOpRateScalingFactorMode = maxOpRateScalingFactorMode;
         mBufferInfos = new ArrayList<>();
     }
 

@@ -73,9 +73,9 @@ _PROPERTIES_TO_MATCH = (
 #   scene*_1/2/... are same scene split to load balance run times for scenes
 #   scene*_a/b/... are similar scenes that share one or more tests
 _TABLET_SCENES = (
-    'scene0', 'scene1_1', 'scene1_2', 'scene2_a', 'scene2_b', 'scene2_c',
-    'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4', 'scene6', 'scene7',
-    'scene8', 'scene9',
+    'scene0', 'scene1_1', 'scene1_2', 'scene1_3', 'scene2_a', 'scene2_b',
+    'scene2_c', 'scene2_d', 'scene2_e', 'scene2_f', 'scene3', 'scene4',
+    'scene6', 'scene7', 'scene8', 'scene9',
     os.path.join('scene_extensions', 'scene_hdr'),
     os.path.join('scene_extensions', 'scene_low_light'),
     'scene_video',
@@ -113,6 +113,8 @@ _SCENE_REQ = types.MappingProxyType({
     'scene0': None,
     'scene1_1': 'A grey card covering at least the middle 30% of the scene',
     'scene1_2': 'A grey card covering at least the middle 30% of the scene',
+    'scene1_3': 'A grey card covering at least the middle 30% of the scene, '
+                'without a white border like scene1_1 or scene1_2',
     'scene2_a': 'The picture with 3 faces in tests/scene2_a/scene2_a.png',
     'scene2_b': 'The picture with 3 faces in tests/scene2_b/scene2_b.png',
     'scene2_c': 'The picture with 3 faces in tests/scene2_c/scene2_c.png',
@@ -170,12 +172,14 @@ SUB_CAMERA_TESTS = {
     'scene1_1': (
         'test_burst_capture',
         'test_burst_sameness_manual',
-        'test_dng_noise_model',
         'test_exposure_x_iso',
         'test_linearity',
     ),
     'scene1_2': (
         'test_raw_exposure',
+    ),
+    'scene1_3': (
+        'test_dng_noise_model',
         'test_raw_sensitivity',
         'test_yuv_plus_raw',
     ),
@@ -356,7 +360,7 @@ def check_manual_scenes(device_id, camera_id, scene, out_path):
       logging.info('Capturing an image to check the test scene')
       cap = cam.do_capture(req, fmt)
       img = image_processing_utils.convert_capture_to_rgb_image(cap)
-      img_name = os.path.join(out_path, f'test_{scene}.jpg')
+      img_name = os.path.join(out_path, f'test_{scene.replace("/", "_")}.jpg')
       logging.info('Please check scene setup in %s', img_name)
       image_processing_utils.write_image(img, img_name)
       choice = input(f'Is the image okay for ITS {scene}? (Y/N)').lower()
@@ -879,16 +883,19 @@ def main():
           ]
         return_string = ''
         for num_try in range(NUM_TRIES):
-          # Handle manual lighting control redirected stdout in test
-          if (test in _LIGHTING_CONTROL_TESTS and
-              not testing_flash_with_controller):
-            print('Turn lights OFF in rig and press <ENTER> to continue.')
-
-          # pylint: disable=subprocess-run-check
-          with open(
-              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'w') as fp:
-            output = subprocess.run(cmd, stdout=fp)
-          # pylint: enable=subprocess-run-check
+          # Saves to mobly test summary file
+          # print only messages for manual lighting control testing
+          output = subprocess.Popen(
+              cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+          )
+          with output.stdout, open(
+              os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE), 'wb'
+          ) as file:
+            for line in iter(output.stdout.readline, b''):
+              out = line.decode('utf-8').strip()
+              if '<ENTER>' in out: print(out)
+              file.write(line)
+          output.wait()
 
           # Parse mobly logs to determine PASS/FAIL(*)/SKIP & socket FAILs
           with open(

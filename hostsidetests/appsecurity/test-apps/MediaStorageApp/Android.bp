@@ -28,7 +28,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     test_suites: [
@@ -47,7 +47,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     test_suites: [
@@ -67,7 +67,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     test_suites: [
@@ -87,7 +87,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "ub-uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     asset_dirs: ["assets"],
     test_suites: [

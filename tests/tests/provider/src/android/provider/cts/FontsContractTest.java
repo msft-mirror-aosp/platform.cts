@@ -31,6 +31,7 @@ import android.content.pm.Signature;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.FontRequest;
 import android.provider.FontsContract;
 import android.provider.FontsContract.Columns;
@@ -51,6 +52,7 @@ import java.util.List;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have access to font providers")
 public class FontsContractTest {
     private static final String AUTHORITY = "android.provider.fonts.cts.font";
     private static final String PACKAGE = "android.provider.cts";

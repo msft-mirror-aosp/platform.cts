@@ -27,6 +27,7 @@ import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.FileUtil;
 import com.android.tradefed.util.RunUtil;
+import com.android.tradefed.util.TarUtil;
 import com.android.tradefed.util.ZipUtil;
 import com.android.tradefed.util.ZipUtil2;
 
@@ -34,7 +35,6 @@ import org.junit.Before;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A device info collector that collects partition digests from software builds.
@@ -64,11 +64,14 @@ public class VbmetaDeviceInfo extends DeviceInfo {
     protected void collectDeviceInfo(HostInfoStore store) throws Exception {
         File decompressedDir = null;
         try {
-            if (ZipUtil.isZipFileValid(mCurrentBuildPath, false)) {
+            if (TarUtil.isGzip(mCurrentBuildPath)) {
+                decompressedDir =
+                        TarUtil.extractTarGzipToTemp(mCurrentBuildPath, DECOMPRESSED_DIR_NAME);
+            } else if (ZipUtil.isZipFileValid(mCurrentBuildPath, false)) {
                 decompressedDir = FileUtil.createTempDir(DECOMPRESSED_DIR_NAME);
                 ZipUtil2.extractZip(mCurrentBuildPath, decompressedDir);
             } else {
-                // TODO(b/308712140): Adds support for .rar and .tgz build packages.
+                // TODO(b/308712140): Adds support for .rar build packages.
                 CLog.w("Cannot extract %s.", mCurrentBuildPath);
                 return;
             }
@@ -90,7 +93,7 @@ public class VbmetaDeviceInfo extends DeviceInfo {
                             + "%s.", result.getStatus(), result.getStdout(), result.getStderr());
                 } else {
                     store.startArray(PARTITIONS_ATTRIBUTE);
-                    List<String> lines = result.getStdout().lines().collect(Collectors.toList());
+                    List<String> lines = result.getStdout().lines().toList();
                     for (String line : lines) {
                         final String[] nameDigest = line.strip().split(": ", 2);
                         if (nameDigest.length == 2) {
@@ -102,6 +105,8 @@ public class VbmetaDeviceInfo extends DeviceInfo {
                     }
                     store.endArray();
                 }
+            } else {
+                CLog.w("Cannot find the VBMeta image in %s.", mCurrentBuildPath);
             }
         } finally {
             if (decompressedDir != null) {

@@ -65,7 +65,6 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.server.wm.DisplayMetricsSession;
-import android.support.test.uiautomator.UiObject2;
 import android.text.TextUtils;
 import android.view.Display;
 import android.view.KeyCharacterMap;
@@ -91,11 +90,12 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ServiceTestRule;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.uiautomator.UiObject2;
 import androidx.window.extensions.layout.DisplayFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 

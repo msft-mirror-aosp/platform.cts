@@ -16,7 +16,8 @@
 
 package android.cts.statsdatom.cpu;
 
-import com.android.tradefed.util.RunUtil;
+import static com.android.server.power.optimization.Flags.FLAG_DISABLE_SYSTEM_SERVICE_POWER_ATTR;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -24,20 +25,35 @@ import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.os.AtomsProto;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+import com.android.tradefed.util.RunUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
-public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class CpuStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
+
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -45,12 +61,11 @@ public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -58,6 +73,7 @@ public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
         mCtsBuild = buildInfo;
     }
 
+    @Test
     public void testCpuTimePerUid() throws Exception {
         if (DeviceUtils.hasFeature(getDevice(), DeviceUtils.FEATURE_WATCH)) return;
 
@@ -84,6 +100,7 @@ public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
         assertWithMessage("Found no CpuTimePerUid atoms from uid " + appUid).that(found).isTrue();
     }
 
+    @Test
     public void testCpuTimePerClusterFreq() throws Exception {
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.CPU_TIME_PER_CLUSTER_FREQ_FIELD_NUMBER);
@@ -105,6 +122,7 @@ public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
         }
     }
 
+    @Test
     public void testCpuCyclesPerUidCluster() throws Exception {
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.CPU_CYCLES_PER_UID_CLUSTER_FIELD_NUMBER);
@@ -128,6 +146,8 @@ public class CpuStatsTests extends DeviceTestCase implements IBuildReceiver {
         }
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_DISABLE_SYSTEM_SERVICE_POWER_ATTR)
     public void testCpuCyclesPerThreadGroupCluster() throws Exception {
         ConfigUtils.uploadConfigForPulledAtom(getDevice(), DeviceUtils.STATSD_ATOM_TEST_PKG,
                 AtomsProto.Atom.CPU_CYCLES_PER_THREAD_GROUP_CLUSTER_FIELD_NUMBER);

@@ -29,6 +29,7 @@ java_library_static {
     static_libs: [
         "androidx.test.rules",
         "compatibility-device-util-axt",
+        "CtsVirtualDeviceCommonLib",
         "cts-wm-util",
         "com.android.input.flags-aconfig-java",
     ],

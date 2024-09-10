@@ -19,7 +19,6 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
-    <target_preparer class="com.android.compatibility.common.tradefed.targetprep.LocationCheck" />
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="force-install-mode" value="FULL"/>
@@ -50,5 +49,15 @@
         <option name="runtime-hint" value="14s" />
         <!-- test-timeout unit is ms, value = 60 min -->
         <option name="test-timeout" value="3600000" />
+        <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <!-- DefaultUITraceListener args -->
+        <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
+        <option name="instrumentation-arg" key="per_class" value="true"/>
     </test>
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="pull-pattern-keys" value="input_.*" />
+        <!-- Pull perfetto traces from DefaultUITraceListener -->
+        <option name="pull-pattern-keys" value="perfetto_file_path*" />
+        <option name="collect-on-run-ended-only" value="true" />
+    </metrics_collector>
 </configuration>

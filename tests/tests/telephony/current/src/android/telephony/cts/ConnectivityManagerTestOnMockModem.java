@@ -21,7 +21,6 @@ import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.net.ConnectivityManager;
@@ -72,6 +71,8 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private static final String RESOURCE_PACKAGE_NAME = "android";
+    @SuppressWarnings("StaticAssignmentOfThrowable")
+    private static AssertionError sInitError = null;
 
     private static class CMNetworkCallback extends NetworkCallback {
         final CountDownLatch mNetworkLatch = new CountDownLatch(1);
@@ -137,9 +138,10 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     }
 
     @BeforeClass
+    @SuppressWarnings("StaticAssignmentOfThrowable")
     public static void beforeAllTests() throws Exception {
         TimeUnit.SECONDS.sleep(10);
-        MockModemTestBase.beforeAllTestsCheck();
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
 
         sConnectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
@@ -153,25 +155,29 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
         Network activeNetwork = sConnectivityManager.getActiveNetwork();
         NetworkCapabilities nc;
         if (activeNetwork == null) {
-            fail("This test requires there is an active network. But the active network is null.");
+            sInitError = new AssertionError("This test requires there is an active network. "
+                    + "But the active network is null.");
+            return;
         }
 
         nc = sConnectivityManager.getNetworkCapabilities(activeNetwork);
 
         if (!nc.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-            fail("This test requires there is a transport type with TRANSPORT_CELLULAR.");
+            sInitError = new AssertionError(
+                    "This test requires there is a transport type with TRANSPORT_CELLULAR.");
+            return;
         }
 
         if (!nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
-            fail(
-                    "This test requires there is a network capabilities with"
-                            + " NET_CAPABILITY_INTERNET.");
+            sInitError = new AssertionError("This test requires there is a network capabilities"
+                    + " with NET_CAPABILITY_INTERNET.");
+            return;
         }
 
         if (!nc.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)) {
-            fail(
-                    "This test requires there is a network capabilities with"
-                            + " NET_CAPABILITY_VALIDATED.");
+            sInitError = new AssertionError("This test requires there is a network capabilities"
+                            + " with NET_CAPABILITY_VALIDATED.");
+            return;
         }
 
         unregisterNetworkCallback();
@@ -181,12 +187,13 @@ public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        MockModemTestBase.afterAllTests();
+        MockModemTestBase.afterAllTestsBase();
     }
 
     @Before
     public void beforeTest() {
         super.beforeTest();
+        if (sInitError != null) throw sInitError;
         registerNetworkCallback();
     }
 

@@ -104,7 +104,9 @@ public final class ConcurrentUserActivityUtils {
         Intent intent = new Intent(Intent.ACTION_MAIN)
                 .setClassName(activityName.getPackageName(), activityName.getClassName())
                 .putExtra(KEY_CALLBACK, callback)
-                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK
+                        // Remove activity animation to avoid flakiness.
+                        | Intent.FLAG_ACTIVITY_NO_ANIMATION);
         runWithShellPermissionIdentity(
                 () -> context.startActivityAsUser(intent, userHandle),
                 // INTERNAL_SYSTEM_WINDOW is needed to launch the activity on secondary display.

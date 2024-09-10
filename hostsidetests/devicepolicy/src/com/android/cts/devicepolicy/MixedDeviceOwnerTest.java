@@ -20,10 +20,8 @@ import static com.android.cts.devicepolicy.metrics.DevicePolicyEventLogVerifier.
 
 import static org.junit.Assert.fail;
 
-import android.app.admin.flags.Flags;
 import android.platform.test.annotations.FlakyTest;
 import android.platform.test.annotations.LargeTest;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 import android.stats.devicepolicy.EventId;
@@ -280,7 +278,6 @@ public final class MixedDeviceOwnerTest extends DeviceAndProfileOwnerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_DELEGATE_SECURITY_LOGGING_BUG_FIX)
     public void testSecurityLoggingDelegate() throws Exception {
         installAppAsUser(DELEGATE_APP_APK, mDeviceOwnerUserId);
         try {

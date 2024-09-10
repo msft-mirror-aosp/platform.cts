@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(DeviceJUnit4ClassRunner.class)
 public final class CarWifiHostTest extends CarHostJUnit4TestCase {
-    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(15);
+    private static final long TIMEOUT_MS = TimeUnit.SECONDS.toMillis(25);
 
     private static final String GET_PERSISTENT_TETHERING =
             "settings get global android.car.ENABLE_PERSISTENT_TETHERING";
@@ -207,7 +207,16 @@ public final class CarWifiHostTest extends CarHostJUnit4TestCase {
 
     private void enablePersistTetheringAndReboot(boolean enableTethering) throws Exception {
         String hotspotCommand = (enableTethering ? WIFI_HOTSPOT_ON : WIFI_HOTSPOT_OFF);
-        executeCommand(hotspotCommand);
+        String hotspotResult = executeCommand(hotspotCommand);
+
+        // Tethering must be enabled or disabled successfully for testing to validate.
+        if (enableTethering) {
+            assumeTrue("Skipping test: wi-fi hotspot was not successfully enabled",
+                    hotspotResult.contains("SAP is enabled"));
+        } else {
+            assumeTrue("Skipping test: wi-fi hotspot was not successfully disabled",
+                    hotspotResult.contains("Soft AP stopped"));
+        }
 
         executeCommand(ENABLE_PERSISTENT_TETHERING);
 

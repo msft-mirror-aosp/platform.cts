@@ -30,6 +30,9 @@ import static com.android.compatibility.common.util.UiccUtil.UiccCertificate.CTS
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -191,6 +194,11 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private static final String EXPECTED_EAP_SIM_RESULT = "0400000000080000000000000000";
 
     private static final int DSDS_PHONE_COUNT = 2;
+    private static final String PLMN_A = "123456";
+    private static final String PLMN_B = "78901";
+    private static final List<String> FPLMN_TEST = Arrays.asList(PLMN_A, PLMN_B);
+    private static final int MAX_FPLMN_NUM = 1000;
+    private static final int MIN_FPLMN_NUM = 3;
 
     @Before
     public void setUp() throws Exception {
@@ -1199,6 +1207,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
      */
     @Test
     public void testAddSubscriptionToExistingGroupForEsim() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_EUICC)
+            && hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION));
         // Set subscription group with current sub Id.
         int subId = SubscriptionManager.getDefaultSubscriptionId();
         if (subId == SubscriptionManager.INVALID_SUBSCRIPTION_ID) return;
@@ -1504,5 +1514,120 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     /** Checks whether the telephony feature is supported. */
     private boolean hasFeature(String feature) {
         return mPackageManager == null ? false : mPackageManager.hasSystemFeature(feature);
+    }
+
+    /**
+     * Tests that the device properly sets and pads the contents of EF_FPLMN
+     */
+    @Test
+    public void testSetForbiddenPlmns() {
+        assumeTrue(supportSetFplmn());
+
+        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
+        try {
+            int numFplmnsSet = mTelephonyManager.setForbiddenPlmns(FPLMN_TEST);
+            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
+            assertEquals("Wrong return value for setFplmns with less than required fplmns: "
+                    + numFplmnsSet, FPLMN_TEST.size(), numFplmnsSet);
+            assertEquals("Wrong Fplmns content written", FPLMN_TEST, Arrays.asList(writtenFplmns));
+        } finally {
+            // Restore
+            mTelephonyManager.setForbiddenPlmns(Arrays.asList(originalFplmns));
+        }
+    }
+
+    /**
+     * Tests that the device properly truncates the contents of EF_FPLMN when provided size
+     * is too big.
+     */
+    @Test
+    public void testSetForbiddenPlmnsTruncate() {
+        assumeTrue(supportSetFplmn());
+
+        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
+        try {
+            List<String> targetFplmns = new ArrayList<>();
+            for (int i = 0; i < MIN_FPLMN_NUM; i++) {
+                targetFplmns.add(PLMN_A);
+            }
+            for (int i = MIN_FPLMN_NUM; i < MAX_FPLMN_NUM; i++) {
+                targetFplmns.add(PLMN_B);
+            }
+            int numFplmnsSet = mTelephonyManager.setForbiddenPlmns(targetFplmns);
+            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
+            assertTrue("Wrong return value for setFplmns with overflowing fplmns: " + numFplmnsSet,
+                    numFplmnsSet < MAX_FPLMN_NUM);
+            assertEquals("Number of Fplmns set does not equal number of Fplmns available",
+                    numFplmnsSet, writtenFplmns.length);
+            assertEquals("Wrong Fplmns content written", targetFplmns.subList(0, numFplmnsSet),
+                    Arrays.asList(writtenFplmns));
+        } finally {
+            // Restore
+            mTelephonyManager.setForbiddenPlmns(Arrays.asList(originalFplmns));
+        }
+    }
+
+    /**
+     * Tests that the device properly deletes the contents of EF_FPLMN
+     */
+    @Test
+    public void testSetForbiddenPlmnsDelete() {
+        assumeTrue(supportSetFplmn());
+
+        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
+        try {
+            // Support test for empty SIM
+            List<String> targetDummyFplmns = new ArrayList<>();
+            for (int i = 0; i < MIN_FPLMN_NUM; i++) {
+                targetDummyFplmns.add(PLMN_A);
+            }
+            mTelephonyManager.setForbiddenPlmns(targetDummyFplmns);
+            String[] writtenDummyFplmns = mTelephonyManager.getForbiddenPlmns();
+            assertEquals(targetDummyFplmns, Arrays.asList(writtenDummyFplmns));
+
+            List<String> targetFplmns = new ArrayList<>();
+            int numFplmnsSet = mTelephonyManager.setForbiddenPlmns(targetFplmns);
+            String[] writtenFplmns = mTelephonyManager.getForbiddenPlmns();
+            assertEquals("Wrong return value for setFplmns with empty list", 0, numFplmnsSet);
+            assertEquals("Wrong number of Fplmns written", 0, writtenFplmns.length);
+            // TODO wait for 10 minutes or so for the FPLMNS list to grow back
+        } finally {
+            // Restore
+            mTelephonyManager.setForbiddenPlmns(Arrays.asList(originalFplmns));
+        }
+    }
+
+    /**
+     * Tests that setForbiddenPlmns properly handles null input
+     */
+    @Test
+    public void testSetForbiddenPlmnsVoid() {
+        assumeTrue(supportSetFplmn());
+
+        String[] originalFplmns = mTelephonyManager.getForbiddenPlmns();
+        assertNotNull(originalFplmns);
+        try {
+            mTelephonyManager.setForbiddenPlmns(null);
+            fail("Expected IllegalArgumentException. Null input is not allowed");
+        } catch (IllegalArgumentException expected) {
+        } finally {
+            mTelephonyManager.setForbiddenPlmns(Arrays.asList(originalFplmns));
+        }
+    }
+
+
+    /**
+     * Verify that the phone is supporting the action of setForbiddenPlmn.
+     *
+     * @return whether to proceed the test
+     */
+    private boolean supportSetFplmn() {
+        if (!hasFeature(PackageManager.FEATURE_TELEPHONY_SUBSCRIPTION)) {
+            return false;
+        }
+        return mTelephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_GSM;
     }
 }

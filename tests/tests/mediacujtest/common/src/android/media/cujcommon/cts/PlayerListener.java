@@ -345,6 +345,13 @@ public abstract class PlayerListener implements Player.Listener {
   }
 
   /**
+   * This method is triggered after the test completes, that is there are no more
+   * actions left to be performed in the test. This can be used to free resources, assert
+   * conditions and or anything else that is required to be done post completion of the test.
+   */
+  public void onTestCompletion() { /* Default empty/Noop implementation. */ }
+
+  /**
    * Get all audio/subtitle tracks group from the player's Tracks.
    */
   protected final List<Tracks.Group> getTrackGroups() {

@@ -48,8 +48,8 @@ import android.view.inputmethod.InputContentInfo;
 import android.view.inputmethod.SurroundingText;
 import android.view.inputmethod.TextSnapshot;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 

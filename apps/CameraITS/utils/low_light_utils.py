@@ -17,13 +17,14 @@ import logging
 import os.path
 
 import cv2
+import image_processing_utils
 import matplotlib.pyplot as plt
 import numpy as np
 
 _LOW_LIGHT_BOOST_AVG_DELTA_LUMINANCE_THRESH = 18
 _LOW_LIGHT_BOOST_AVG_LUMINANCE_THRESH = 90
 _BOUNDING_BOX_COLOR = (0, 255, 0)
-_BOX_MIN_SIZE = 20
+_BOX_MIN_SIZE_RATIO = 0.08  # 8% of the cropped image width
 _BOX_MAX_SIZE_RATIO = 0.5  # 50% of the cropped image width
 _BOX_PADDING_RATIO = 0.2
 _CROP_PADDING = 10
@@ -40,15 +41,27 @@ _NUM_CLUSTERS = 8
 _K_MEANS_ITERATIONS = 10
 _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
+_FIG_SIZE = (10, 6)
 
-# pylint: disable=line-too-long
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
+    'nabu',  # Xiaomi Pad 5
 )
+
+# Tablet brightness mapping strings for (rear, front) facing camera tests
+# List entries must be entered in lowercase
+TABLET_BRIGHTNESS = {
+    'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
+    'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
+    'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+
+    'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
+    'nabu': ('8', '14'),  # Xiaomi Pad 5
+}
 
 
 def _crop(img):
@@ -143,11 +156,15 @@ def _find_boxes(image):
   # Filter out boxes that are too small or too large
   # and boxes that are not square
   img_hw_size_max = max(image.shape[0], image.shape[1])
+  box_min_size = int(round(img_hw_size_max * _BOX_MIN_SIZE_RATIO, 0))
+  if box_min_size == 0:
+    raise AssertionError('Minimum box size calculated was 0. Check cropped '
+                         'image size.')
   box_max_size = int(img_hw_size_max * _BOX_MAX_SIZE_RATIO)
   for c in contours:
     x, y, w, h = cv2.boundingRect(c)
     aspect_ratio = w / h
-    if (w > _BOX_MIN_SIZE and h > _BOX_MIN_SIZE and
+    if (w > box_min_size and h > box_min_size and
         w < box_max_size and h < box_max_size and
         _MIN_ASPECT_RATIO < aspect_ratio < _MAX_ASPECT_RATIO):
       boxes.append((x, y, w, h))
@@ -259,22 +276,34 @@ def _compute_luminance_regions(image, boxes):
 
 
 def _draw_luminance(image, intensities):
-  """Draws the luminance for each box in scene_low_light. Useful for debugging.
+  """Draws the luma and noise for each box in scene_low_light for debugging.
 
   Args:
     image: numpy array; captured image.
     intensities: array; array of tuples (box, luminance intensity).
   """
-  for (b, intensity) in intensities:
+  for b, intensity in intensities:
     x, y, w, h = b
     padding = min(w, h) * _BOX_PADDING_RATIO
     left = int(x + padding)
     top = int(y + padding)
     right = int(x + w - padding)
     bottom = int(y + h - padding)
+    noise_stats = image_processing_utils.compute_patch_noise(
+        image, (left, top, (right - left), (bottom - top)))
     cv2.rectangle(image, (left, top), (right, bottom), _BOUNDING_BOX_COLOR, 2)
-    cv2.putText(image, f'{intensity}', (x, y - 10),
-                cv2.FONT_HERSHEY_PLAIN, 1, _TEXT_COLOR, 1, 2)
+    # place the luma value above the box offset by 10 pixels
+    cv2.putText(img=image, text=f'{intensity}', org=(x, y - 10),
+                fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1,
+                color=_TEXT_COLOR)
+    luma = str(round(noise_stats['luma'], 1))
+    cu = str(round(noise_stats['chroma_u'], 1))
+    cv = str(round(noise_stats['chroma_v'], 1))
+    # place the noise (luma, chroma u, chroma v) values above the luma value
+    # offset by 30 pixels
+    cv2.putText(img=image, text=f'{luma}, {cu}, {cv}', org=(x, y - 30),
+                fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1,
+                color=_TEXT_COLOR)
 
 
 def _compute_avg(results):
@@ -319,7 +348,7 @@ def _plot_results(results, file_stem):
   luminance_values = [luminance for _, luminance in results]
   box_labels = [f'Box {i + 1}' for i in range(len(results))]
 
-  plt.figure(figsize=(10, 6))
+  plt.figure(figsize=_FIG_SIZE)
   plt.plot(box_labels, luminance_values, marker='o', linestyle='-', color='b')
   plt.scatter(box_labels, luminance_values, color='r')
 
@@ -346,7 +375,7 @@ def _plot_successive_difference(results, file_stem):
            for i in range(1, len(luminance_values))]
   box_labels = [f'Box {i} to Box {i + 1}' for i in range(1, len(results))]
 
-  plt.figure(figsize=(10, 6))
+  plt.figure(figsize=_FIG_SIZE)
   plt.plot(box_labels, delta, marker='o', linestyle='-', color='b')
   plt.scatter(box_labels, delta, color='r')
 
@@ -355,9 +384,62 @@ def _plot_successive_difference(results, file_stem):
   plt.ylabel('Luminance Difference')
   plt.grid('True')
   plt.xticks(rotation=45)
-  file = f'{file_stem}_luminance_difference_between_successive_boxes_plot.png'
-  plt.savefig(file, dpi=300)
+  plt.savefig(
+      f'{file_stem}_luminance_difference_between_successive_boxes_plot.png',
+      dpi=300)
   plt.close()
+
+
+def _plot_noise(results, file_stem, img, test_name):
+  """Plots the noise in the image.
+
+  The boxes are part of scene_low_light.
+
+  Args:
+    results: A list of tuples where each tuple is (box, luminance).
+    file_stem: The output file where the plot is saved.
+    img: The captured image used to measure patch noise.
+    test_name: Name of the test being plotted.
+  """
+  luma_noise_values = []
+  chroma_u_noise_values = []
+  chroma_v_noise_values = []
+  for region, _ in results:
+    x, y, w, h = region
+    padding = min(w, h) * _BOX_PADDING_RATIO
+    left = int(x + padding)
+    top = int(y + padding)
+    width = int(w - 2 * padding) - left
+    height = int(y + h - padding) - top
+    noise = image_processing_utils.compute_patch_noise(
+        img, (left, top, width, height))
+    luma_noise_values.append(noise['luma'])
+    chroma_u_noise_values.append(noise['chroma_u'])
+    chroma_v_noise_values.append(noise['chroma_v'])
+
+  box_labels = [f'Box {i + 1}' for i in range(len(results))]
+
+  plt.figure(figsize=_FIG_SIZE)
+  plt.plot(box_labels, luma_noise_values, marker='o', linestyle='-',
+           color='b', label='luma')
+  plt.plot(box_labels, chroma_u_noise_values, marker='o', linestyle='-',
+           color='r', label='chroma u')
+  plt.plot(box_labels, chroma_v_noise_values, marker='o', linestyle='-',
+           color='g', label='chroma v')
+  plt.legend()
+
+  plt.title('Luma, Chroma U, and Chroma V Noise per Box')
+  plt.xlabel('Box')
+  plt.ylabel('Noise (std dev)')
+  plt.grid('True')
+  plt.xticks(rotation=45)
+  plt.savefig(f'{file_stem}_noise_per_box_plot.png', dpi=300)
+  plt.close()
+  # print the chart luma values for telemetry purposes
+  # do not convert to logging.debug
+  print(f'{test_name}_noise_luma: {luma_noise_values}')
+  print(f'{test_name}_noise_chroma_u: {chroma_u_noise_values}')
+  print(f'{test_name}_noise_chroma_v: {chroma_v_noise_values}')
 
 
 def _sort_by_columns(regions):
@@ -437,9 +519,6 @@ def analyze_low_light_scene_capture(
   regions = _compute_luminance_regions(img, boxes)
   sorted_regions = _sort_by_columns(regions)
 
-  _draw_luminance(img, regions)
-  cv2.imwrite(f'{file_stem}_result.jpg', img)
-
   # Reorder this so the regions are increasing in luminance according to the
   # Hilbert curve arrangement pattern of the grid
   # See scene_low_light_reference.png which indicates the order of each
@@ -462,11 +541,18 @@ def analyze_low_light_scene_capture(
       sorted_regions[9],
       sorted_regions[5],
   ]
+
+  test_name = os.path.basename(file_stem)
+
   _plot_results(hilbert_ordered, file_stem)
   _plot_successive_difference(hilbert_ordered, file_stem)
+  _plot_noise(hilbert_ordered, file_stem, img, test_name)
+
+  _draw_luminance(img, regions)
+  cv2.imwrite(f'{file_stem}_result.jpg', img)
+
   avg = _compute_avg(hilbert_ordered)
   delta_avg = _compute_avg_delta_of_successive_boxes(hilbert_ordered)
-  test_name = os.path.basename(file_stem)
 
   # the following print statements are necessary for telemetry
   # do not convert to logging.debug

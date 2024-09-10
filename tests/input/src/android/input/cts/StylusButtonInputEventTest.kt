@@ -30,6 +30,7 @@ import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.VirtualDisplayActivityScenarioRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

@@ -31,7 +31,7 @@
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
       android:orientation="vertical"
-      android:background="?android:attr/windowBackground"
+      android:background="@android:color/black"
       android:layout_gravity="center">
     <TextView
         android:id="@+id/text"
@@ -40,14 +40,14 @@
         android:paddingBottom="10dp"
         android:text=""
         android:textAlignment="center"
-        android:textColor="?android:textColorPrimary" />
+        android:textColor="@android:color/white" />
     <GridLayout
         android:id="@+id/buttons"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:useDefaultMargins="true"
         android:paddingBottom="10dp"
-        android:columnCount="3">
+        android:columnCount="5">
     </GridLayout>
   </LinearLayout>
 </LinearLayout>

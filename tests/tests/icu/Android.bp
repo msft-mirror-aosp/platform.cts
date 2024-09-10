@@ -37,6 +37,18 @@ android_test {
     sdk_version: "test_current",
 }
 
+android_ravenwood_test {
+    name: "CtsIcuTestCasesRavenwood",
+    java_resource_dirs: ["resources"],
+    static_libs: [
+        // Note: on Ravenwood, we only run the "core" part of CtsIcuTestCases for now.
+        // See external/icu/README-ravenwood.md for details.
+        "android-icu4j-tests-core-only",
+    ],
+    platform_apis: true,
+    auto_gen_config: true,
+}
+
 java_test_host {
     name: "CtsIcu4cTestCases",
     defaults: ["cts_support_defaults"],
@@ -55,4 +67,11 @@ java_test_host {
         "cts",
         "general-tests",
     ],
+}
+
+test_module_config {
+    name: "CtsIcuTestCases_android_i18n",
+    base: "CtsIcuTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.i18n"],
 }

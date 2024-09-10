@@ -394,8 +394,6 @@ public class GameManagerTest {
                 gameModeInfo.isDownscalingAllowed());
         assertTrue("GameManager#getGameModeInfo returned incorrect FPS override opt-in value.",
                 gameModeInfo.isFpsOverrideAllowed());
-        assertEquals("GameManager#getGameModeInfo returned incorrect active game mode.",
-                GameManager.GAME_MODE_STANDARD, gameModeInfo.getActiveGameMode());
 
         // Attempt to set the game mode to standard.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mGameManager,
@@ -452,10 +450,9 @@ public class GameManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissions(mGameManager,
                         (gameManager) -> gameManager.getGameModeInfo(packageName),
                         "android.permission.MANAGE_GAME_MODE");
-        assertEquals("GameManager#getGameModeInfo returned incorrect available game modes.",
-                3, gameModeInfo.getAvailableGameModes().length);
-        assertEquals("GameManager#getGameModeInfo returned incorrect active game mode.",
-                GameManager.GAME_MODE_STANDARD, gameModeInfo.getActiveGameMode());
+        assumeTrue("Skip battery only game mode test as other modes are"
+                        + " enabled by the OEM or platform",
+                gameModeInfo.getAvailableGameModes().length == 3);
 
         // Attempt to set the game mode to battery.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mGameManager,

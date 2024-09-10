@@ -899,12 +899,14 @@ public class AudioManagerTest {
     }
 
     /**
-     * Test that in RINGER_MODE_SILENT we observe:
+     * Test that:
+     *   - in RINGER_MODE_SILENT
+     *   - when volume policy volumeUpToExitSilent is false
+     *   - when STREAM_NOTIFICATION is not aliased to STREAM_RING
+     * we observe:
      * ADJUST_UNMUTE NOTIFICATION -> no change (no mode change, NOTIF still muted)
      *
-     * Note that in SILENT we cannot test ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODES
-     * because it depends on VolumePolicy.volumeUpToExitSilent.
-     * TODO add test API to query VolumePolicy, expected in MODE_SILENT:
+     * TODO add more tests for different VolumePolicy configurations in MODE_SILENT:
      * ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODE ->
      *                            no change if VolumePolicy.volumeUpToExitSilent false (default?)
      * ADJUST_UNMUTE NOTIFICATION + FLAG_ALLOW_RINGER_MODE ->
@@ -914,6 +916,13 @@ public class AudioManagerTest {
     @Test
     public void testAdjustUnmuteNotificationInSilent() throws Exception {
         assumeFalse(mSkipRingerTests);
+
+        android.media.VolumePolicy vp = mAudioManager.getVolumePolicy();
+        assumeFalse(vp.volumeUpToExitSilent);
+        getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        assumeTrue(mAudioManager.getStreamTypeAlias(STREAM_NOTIFICATION) == STREAM_NOTIFICATION);
+        getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
 
         Map<Integer, MuteStateTransition> expectedTransitionsSilentMode = Map.of(
                 STREAM_MUSIC, new MuteStateTransition(false, false),
@@ -925,6 +934,13 @@ public class AudioManagerTest {
         // set mode to SILENT
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
         assertStreamMuteStateChange(() -> mAudioManager.setRingerMode(RINGER_MODE_SILENT),
                 expectedTransitionsSilentMode,
                 "RING/NOTIF should mute in SILENT");
@@ -1104,6 +1120,12 @@ public class AudioManagerTest {
                     () -> mAudioManager.adjustStreamVolume(stream, ADJUST_RAISE, 0),
                     stream,
                     "No change expected at max volume");
+
+            if (stream == STREAM_VOICE_CALL) {
+                // TODO(b/362836517): add API to check the adjust volume delta for voice call based
+                // on ratio between index UI steps and voice call range
+                continue;
+            }
 
             volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(stream));
             assertCallChangesStreamVolume(
@@ -1693,6 +1715,14 @@ public class AudioManagerTest {
 
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
+
         Map<Integer, MuteStateTransition> expectedSilentTransition = Map.of(
                 STREAM_MUSIC, new MuteStateTransition(false, false),
                 STREAM_SYSTEM, new MuteStateTransition(false, true),

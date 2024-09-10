@@ -20,6 +20,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.android.bedstead.nene.TestApis;
 
@@ -32,17 +33,23 @@ import org.junit.runners.model.Statement;
  */
 public class TestNameSaver implements TestRule {
 
+    private static final String LOG_TAG = "Interactive.TestNameSaver";
+
     public static final String INTERACTIVE_TEST_NAME = "INTERACTIVE_TEST_NAME";
 
     // packageName + className of a test class.
     private final String mPackageClass;
 
+    // Whether clearing the test name from the context after the execution.
+    private final boolean mClearTestName;
+
     public TestNameSaver(Object testInstance) {
-        this(testInstance.getClass());
+        this(testInstance.getClass(), /* clearTestName= */ true);
     }
 
-    public TestNameSaver(Class<?> testClass) {
+    public TestNameSaver(Class<?> testClass, boolean clearTestName) {
         mPackageClass = testClass.getCanonicalName();
+        mClearTestName = clearTestName;
     }
 
     @Override
@@ -52,22 +59,43 @@ public class TestNameSaver implements TestRule {
 
             @Override
             public void evaluate() throws Throwable {
-                String testName = description.getMethodName();
-                SharedPreferences sharedPref =
-                        TestApis.context()
-                                .instrumentedContext()
-                                .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE);
-                boolean testNameUpdated =
-                        sharedPref
-                                .edit()
-                                .putString(INTERACTIVE_TEST_NAME, mPackageClass + "#" + testName)
-                                .commit();
+                SharedPreferences sharedPref = getSharedPreferences();
+                String testName = mPackageClass + "#" + description.getMethodName();
+
+                boolean testNameUpdated = setTestName(sharedPref, testName);
 
                 assertTrue(
                         "Failed to save the test name into the testing context.", testNameUpdated);
 
-                base.evaluate();
+                try {
+                    base.evaluate();
+                } finally {
+                    if (mClearTestName) {
+                        boolean testNameCleared = clearTestName(sharedPref);
+                        Log.i(
+                                LOG_TAG,
+                                "Cleard test name: " + testName + ", result: " + testNameCleared);
+                    } else {
+                        Log.i(LOG_TAG, "Skip clearing the test name: " + testName);
+                    }
+                }
             }
         };
+    }
+
+    private static SharedPreferences getSharedPreferences() {
+        return TestApis.context()
+                .instrumentedContext()
+                .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE);
+    }
+
+    /** Sets the test name within the context, returns true if success. */
+    private static boolean setTestName(SharedPreferences sharedPref, String testName) {
+        return sharedPref.edit().putString(INTERACTIVE_TEST_NAME, testName).commit();
+    }
+
+    /** Clears the test name within the context, returns true if success. */
+    private static boolean clearTestName(SharedPreferences sharedPref) {
+        return sharedPref.edit().remove(INTERACTIVE_TEST_NAME).commit();
     }
 }

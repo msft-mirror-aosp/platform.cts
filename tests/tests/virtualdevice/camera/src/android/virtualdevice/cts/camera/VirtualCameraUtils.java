@@ -46,10 +46,14 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import static java.lang.Byte.toUnsignedInt;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.Math.round;
 
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
@@ -64,11 +68,14 @@ import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.cts.rs.BitmapUtils;
 import android.media.Image;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
@@ -93,8 +100,7 @@ public final class VirtualCameraUtils {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
-    // Difference between two bitmaps using average of per-pixel differences.
-    private static final double BITMAP_MAX_DIFF = 2;
+    private static final int TEST_VIDEO_SEEK_TIME_MS = 2000;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
@@ -135,12 +141,13 @@ public final class VirtualCameraUtils {
 
     // Converts YUV to ARGB int representation,
     // using BT601 full-range matrix.
-    // See https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion
+    // See https://www.itu.int/rec/T-REC-T.871-201105-I/en
     private static int yuv2rgb(int y, int u, int v) {
-        int r = (int) (y + 1.402f * (v - 128f));
-        int g = (int) (y - 0.344136f * (u - 128f) - 0.714136 * (v - 128f));
-        int b = (int) (y + 1.772 * (u - 128f));
-        return 0xff000000 | (r << 16) | (g << 8) | b;
+        int r = (int) max(0f, min(255f, round((y + 1.402f * (v - 128f)))));
+        int g = (int) max(0f,
+                min(255f, round(y - 0.344136f * (u - 128f) - 0.714136f * (v - 128f))));
+        int b = (int) max(0f, min(255f, round(y + 1.772f * (u - 128f))));
+        return Color.rgb(r, g, b);
     }
 
     // Compares two ARGB colors and returns true if they are approximately
@@ -252,15 +259,6 @@ public final class VirtualCameraUtils {
      * @param golden    Golden bitmap to compare to.
      * @param prefix    Prefix for the image file generated in case of error.
      */
-    static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix) {
-        assertImagesSimilar(generated, golden, prefix, BITMAP_MAX_DIFF);
-    }
-
-    /**
-     * @param generated Bitmap generated from the test.
-     * @param golden    Golden bitmap to compare to.
-     * @param prefix    Prefix for the image file generated in case of error.
-     */
     static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix,
             double maxDiff) {
         boolean assertionPassed = false;
@@ -280,11 +278,13 @@ public final class VirtualCameraUtils {
     static class VideoRenderer implements Consumer<Surface> {
         private final MediaPlayer mPlayer;
         private final CountDownLatch mLatch;
+        private final Uri mUri;
 
         VideoRenderer(int resId) {
             String path =
                     "android.resource://" + getApplicationContext().getPackageName() + "/" + resId;
-            mPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(path));
+            mUri = Uri.parse(path);
+            mPlayer = MediaPlayer.create(getApplicationContext(), mUri);
             mLatch = new CountDownLatch(1);
 
             mPlayer.setOnInfoListener((mp, what, extra) -> {
@@ -299,7 +299,7 @@ public final class VirtualCameraUtils {
         @Override
         public void accept(Surface surface) {
             mPlayer.setSurface(surface);
-            mPlayer.seekTo(1000);
+            mPlayer.seekTo(TEST_VIDEO_SEEK_TIME_MS);
             mPlayer.start();
             try {
                 // Block until media player has drawn the first video frame
@@ -307,6 +307,20 @@ public final class VirtualCameraUtils {
                         .that(mLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
                         .isTrue();
             } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        Bitmap getGoldenBitmap() {
+            // Get the frame at a specific time (in microseconds) or the first frame 🐶
+            try (MediaMetadataRetriever goldenRetriever = new MediaMetadataRetriever()) {
+                goldenRetriever.setDataSource(getApplicationContext(), mUri);
+                Bitmap frame =
+                        goldenRetriever.getFrameAtTime(
+                                TEST_VIDEO_SEEK_TIME_MS, MediaMetadataRetriever.OPTION_CLOSEST);
+                assertNotNull("Can't extract golden frame for test video.", frame);
+                return frame;
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -367,6 +381,15 @@ public final class VirtualCameraUtils {
         eglDestroyContext(eglDisplay, eglContext);
 
         return maxSize[0];
+    }
+
+    /**
+     * Creates a new Handler with a thread named with the provided suffix.
+     */
+    public static Handler createHandler(String threadSuffix) {
+        HandlerThread handlerThread = new HandlerThread("VirtualCameraTestHandler_" + threadSuffix);
+        handlerThread.start();
+        return new Handler(handlerThread.getLooper());
     }
 
     private VirtualCameraUtils() {}

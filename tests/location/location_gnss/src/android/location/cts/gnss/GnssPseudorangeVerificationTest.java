@@ -370,8 +370,8 @@ public class GnssPseudorangeVerificationTest extends GnssTestCase {
                 // This 2D velocity uncertainty is conservatively larger than speed uncertainty
                 // as it also contains the effect of bearing uncertainty at a constant speed
                 double horizontalVelocityUncertaintyMps =
-                        Math.sqrt(posVelUncertainties[4] * posVelUncertainties[4]
-                                + posVelUncertainties[5] * posVelUncertainties[5]);
+                        Math.sqrt(posVelUncertainties[3] * posVelUncertainties[3]
+                                + posVelUncertainties[4] * posVelUncertainties[4]);
                 if (horizontalVelocityUncertaintyMps < LOW_ENOUGH_VELOCITY_UNCERTAINTY_MPS) {
                     someLocationsHaveLowVelUnc = true;
                 }

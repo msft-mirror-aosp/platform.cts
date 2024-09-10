@@ -33,6 +33,7 @@ import static junit.framework.Assert.assertEquals;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
@@ -50,8 +51,9 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.media.Image;
 import android.media.ImageReader;
-import android.mediapc.cts.common.CameraRequirement;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.CameraVideoPreviewStabilizationRequirement;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -106,7 +108,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
      * resolutions smaller than 1080P.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testIsSessionConfigurationSupported() throws Exception {
         for (String id : getCameraIdsUnderTest()) {
             StaticMetadata staticInfo = mAllStaticInfo.get(id);
@@ -472,13 +474,15 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
     @Test
     @AppModeFull(reason = "Media Performance class test not applicable to instant apps")
     @CddTest(requirements = {"2.2.7.2/7.5/H-1-19"})
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testVPerfClassRequirements() throws Exception {
         assumeFalse("Media performance class tests not applicable if shell permission is adopted",
                 mAdoptShellPerm);
+        assumeTrue("Media performance class tests not applicable when test is restricted "
+                + "to single camera by specifying camera id override.", mOverrideCameraId == null);
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        CameraRequirement.HLGCombinationRequirement hlgCombinationRequirement =
-                pce.addR7_5__H_1_19();
+        CameraVideoPreviewStabilizationRequirement hlgCombinationRequirement =
+                Requirements.addR7_5__H_1_19().to(pce);
         // Note: This must match the required stream combinations defined in [7.5/H-1-19]
         final int[][] hlg10Combinations = {
                 // HLG10 preview + JPEG Snapshot
@@ -489,7 +493,7 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
                 getCameraIdsUnderTest());
         if (rearId == null) {
             Log.e(TAG, "Primary rear camera not available");
-            hlgCombinationRequirement.setHLGCombinationSupported(false);
+            hlgCombinationRequirement.setPrimaryCameraHlgCombinationSupported(false);
             pce.submitAndCheck();
             return;
         }
@@ -525,7 +529,8 @@ public final class FeatureCombinationTest extends Camera2AndroidTestCase {
         } finally {
             closeDevice(rearId);
         }
-        hlgCombinationRequirement.setHLGCombinationSupported(mCollector.getMPCStatus());
+        hlgCombinationRequirement.setPrimaryCameraHlgCombinationSupported(
+                mCollector.getMPCStatus());
         pce.submitAndCheck();
     }
 

@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import android.app.UiAutomation;
 import android.car.Car;
+import android.car.test.util.DiskUtils;
 import android.car.watchdog.CarWatchdogManager;
 import android.car.watchdog.IoOveruseAlertThreshold;
 import android.car.watchdog.IoOveruseConfiguration;
@@ -49,10 +50,7 @@ import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -219,7 +217,7 @@ public final class CarWatchdogDeviceAppTest {
 
     @Test
     public void testVerifyInitialResourceOveruseStats() throws Exception {
-        long writtenBytes = writeToDisk(TEN_MEGABYTES);
+        long writtenBytes = DiskUtils.writeToDisk(mTestFile, TEN_MEGABYTES);
 
         assertWithMessage("Failed to write data to file '" + mTestFile.getAbsolutePath() + "'")
             .that(writtenBytes).isGreaterThan(WRITTEN_BYTES_THRESHOLD);
@@ -237,7 +235,7 @@ public final class CarWatchdogDeviceAppTest {
         // Verify that the stats before the reboot have being captured.
         verifyResourceOveruseStats(WRITTEN_BYTES_THRESHOLD);
 
-        long writtenBytes = writeToDisk(TEN_MEGABYTES);
+        long writtenBytes = DiskUtils.writeToDisk(mTestFile, TEN_MEGABYTES);
 
         assertWithMessage("Failed to write data to file '" + mTestFile.getAbsolutePath() + "'")
             .that(writtenBytes).isGreaterThan(WRITTEN_BYTES_THRESHOLD);
@@ -322,48 +320,6 @@ public final class CarWatchdogDeviceAppTest {
         } finally {
             p.recycle();
         }
-    }
-
-    private long writeToDisk(long size) throws Exception {
-        if (!mTestFile.exists()) {
-            throw new FileNotFoundException(
-                    "file '" + mTestFile.getAbsolutePath() + "' doesn't exist");
-        }
-        long writtenBytes = 0;
-        try (FileOutputStream fos = new FileOutputStream(mTestFile)) {
-            Log.d(TAG, "Attempting to write " + size + " bytes");
-            writtenBytes = writeToFos(fos, size);
-            fos.getFD().sync();
-        }
-        return writtenBytes;
-    }
-
-    private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
-        Runtime runtime = Runtime.getRuntime();
-        long writtenBytes = 0;
-        while (maxSize != 0) {
-            // The total available free memory can be calculated by adding the currently allocated
-            // memory that is free plus the total memory available to the process which hasn't been
-            // allocated yet.
-            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
-                    + runtime.freeMemory();
-            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
-            Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
-            if (writeSize == 0) {
-                Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
-                        + writtenBytes);
-                return writtenBytes;
-            }
-            try {
-                fos.write(new byte[writeSize]);
-            } catch (InterruptedIOException e) {
-                Thread.currentThread().interrupt();
-                continue;
-            }
-            maxSize -= writeSize;
-            writtenBytes += writeSize;
-        }
-        return writtenBytes;
     }
 
     private List<ResourceOveruseConfiguration> readConfigsFromDisk() throws Exception {

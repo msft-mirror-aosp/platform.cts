@@ -61,5 +61,8 @@
         <option name="hidden-api-checks" value="false" />
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
+        <!-- CtsXXX  skips the module tests ... -->
+        <option name="exclude-annotation" value="com.android.compatibility.common.util.ModuleSpecificTest" />
+        <option name="instrumentation-arg" key="media-testing-mode" value="cts" />
     </test>
 </configuration>

@@ -296,7 +296,7 @@ def get_aruco_corners(image):
   return corners, ideal_points
 
 
-def get_preview_frame(dut, cam, preview_size, zoom, log_path):
+def get_preview_frame(dut, cam, preview_size, zoom, z_range, log_path):
   """Captures preview frame at given zoom ratio.
 
   Args:
@@ -304,15 +304,21 @@ def get_preview_frame(dut, cam, preview_size, zoom, log_path):
     cam: camera object
     preview_size: str; preview resolution. ex. '1920x1080'
     zoom: zoom ratio
+    z_range: zoom range
     log_path: str; path for video file directory
 
   Returns:
     img_name: the filename of the first captured image
     capture_result: total capture results of the preview frame
   """
-  # Define zoom fields such that preview recording is at only one zoom level
+  logging.debug('zoom: %s', zoom)
+  if not (z_range[0] <= zoom <= z_range[1]):
+    raise ValueError(f'Zoom {zoom} is outside the allowed range {z_range}')
+
   z_min = zoom
   z_max = z_min + _ZOOM_STEP - _ZOOM_STEP_REDUCTION
+  if(z_max > z_range[1]):
+    z_max = z_range[1]
 
   # Capture preview images over zoom range
   # TODO: b/343200676 - use do_preview_recording instead of
@@ -478,12 +484,12 @@ class PreviewDistortionTest(its_base_test.ItsBaseTest):
       )
       preview_frames = []
       z_levels = [z_range[0]]  # Min zoom
-      if z_range[0] < _WIDE_ZOOM:
+      if (z_range[0] < _WIDE_ZOOM <= z_range[1]):
         z_levels.append(_WIDE_ZOOM)
 
       for z in z_levels:
         img_name, capture_result = get_preview_frame(
-            self.dut, cam, preview_size, z, log_path
+            self.dut, cam, preview_size, z, z_range, log_path
         )
         if img_name:
           frame_data = PreviewFrameData(img_name, capture_result, z)

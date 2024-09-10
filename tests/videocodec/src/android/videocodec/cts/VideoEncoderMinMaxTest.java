@@ -227,6 +227,9 @@ public class VideoEncoderMinMaxTest extends VideoEncoderValidationTestBase {
                 System.arraycopy(arg, 0, argUpdate, 0, arg.length);
                 argUpdate[2] = obj;
                 EncoderConfigParams cfgVar = (EncoderConfigParams) obj;
+                if (cfgVar.mMaxBFrames > cfgVar.mKeyFrameInterval * cfgVar.mFrameRate) {
+                    continue;
+                }
                 String label = String.format("%.2fmbps_%dx%d_%dfps_maxb-%d_%s_i-dist-%d",
                         cfgVar.mBitRate / 1000000., cfgVar.mWidth, cfgVar.mHeight,
                         cfgVar.mFrameRate, cfgVar.mMaxBFrames,

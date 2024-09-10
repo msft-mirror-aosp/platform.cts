@@ -17,6 +17,7 @@
 package com.android.cts.apicommon;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
     // A list of CTS test methods that call this API constructor.
-    private final Map<String, Boolean> mCoveredTests = new ConcurrentHashMap<>();
+    private final Map<String, TestMethodInfo> mCoveredTests = new ConcurrentHashMap<>();
 
     public ApiConstructor(String name, List<String> parameterTypes, boolean deprecated) {
         mName = name;
@@ -73,15 +74,15 @@ public class ApiConstructor implements Comparable<ApiConstructor> {
     }
 
     /** Adds a test method that is calling this API. */
-    public void setCoveredTest(String testMethod) {
-        mCoveredTests.put(testMethod, true);
+    public void setCoveredTest(TestMethodInfo testMethodInfo) {
+        mCoveredTests.put(testMethodInfo.signature(), testMethodInfo);
     }
 
     public Set<String> getCoveredWith() {
         return mCoveredWith.keySet();
     }
 
-    public Set<String> getCoveredTests() {
-        return mCoveredTests.keySet();
+    public Collection<TestMethodInfo> getCoveredTests() {
+        return mCoveredTests.values();
     }
 }

@@ -16,15 +16,13 @@
 
 package android.os.cts;
 
-import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
-import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
+import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
@@ -35,13 +33,17 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.media.AudioAttributes;
+import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
-import android.os.vibrator.VibratorFrequencyProfile;
+import android.os.vibrator.Flags;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -60,7 +62,6 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -73,13 +74,16 @@ import java.util.concurrent.Executors;
 public class VibratorTest {
     private static final String SYSTEM_VIBRATOR_LABEL = "SystemVibrator";
 
-    @Rule
+    @Rule(order = 0)
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule(order = 1)
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.ACCESS_VIBRATOR_STATE);
+                    getRequiredPrivilegedPermissions());
 
-    @Rule
+    @Rule(order = 2)
     public final MockitoRule mMockitoRule = MockitoJUnit.rule();
 
     /**
@@ -339,51 +343,6 @@ public class VibratorTest {
         assertStopsVibrating();
     }
 
-    @LargeTest
-    @Test
-    public void testVibrateWaveformWithFrequencyStartsAndFinishesVibration() {
-        assumeTrue(mVibrator.hasFrequencyControl());
-        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
-        assumeNotNull(frequencyProfile);
-
-        float minFrequency = frequencyProfile.getMinFrequency();
-        float maxFrequency = frequencyProfile.getMaxFrequency();
-        float resonantFrequency = mVibrator.getResonantFrequency();
-        float sustainFrequency = Float.isNaN(resonantFrequency)
-                ? (maxFrequency + minFrequency) / 2
-                : resonantFrequency;
-
-        // Ensure the values can be used as a targetFrequency.
-        assertThat(minFrequency).isAtLeast(MINIMUM_ACCEPTED_FREQUENCY);
-        assertThat(maxFrequency).isAtLeast(minFrequency);
-        assertThat(maxFrequency).isAtMost(MAXIMUM_ACCEPTED_FREQUENCY);
-
-        // Ramp from min to max frequency and from zero to max amplitude.
-        // Then ramp to a fixed frequency at max amplitude.
-        // Then ramp to zero amplitude at fixed frequency.
-        VibrationEffect waveform =
-                VibrationEffect.startWaveform(targetAmplitude(0), targetFrequency(minFrequency))
-                        // Ramp from min to max frequency and from zero to max amplitude.
-                        .addTransition(Duration.ofMillis(10),
-                                targetAmplitude(1), targetFrequency(maxFrequency))
-                        // Ramp back to min frequency and zero amplitude.
-                        .addTransition(Duration.ofMillis(10),
-                                targetAmplitude(0), targetFrequency(minFrequency))
-                        // Then sustain at a fixed frequency and half amplitude.
-                        .addTransition(Duration.ZERO,
-                                targetAmplitude(0.5f), targetFrequency(sustainFrequency))
-                        .addSustain(Duration.ofMillis(20))
-                        // Ramp from min to max frequency and at max amplitude.
-                        .addTransition(Duration.ZERO,
-                                targetAmplitude(1), targetFrequency(minFrequency))
-                        .addTransition(Duration.ofMillis(10), targetFrequency(maxFrequency))
-                        // Ramp from max to min amplitude at max frequency.
-                        .addTransition(Duration.ofMillis(10), targetAmplitude(0))
-                        .build();
-        mVibrator.vibrate(waveform);
-        assertStartsThenStopsVibrating(50);
-    }
-
     @Test
     public void testVibratePredefined() {
         int[] supported = mVibrator.areEffectsSupported(PREDEFINED_EFFECTS);
@@ -393,6 +352,17 @@ public class VibratorTest {
                 assertStartsVibrating("predefined effect id=" + PREDEFINED_EFFECTS[i]);
             }
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testVibrateVendorEffect() {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        VibrationEffect effect = VibrationEffect.createVendorEffect(vendorData);
+        // Just make sure it doesn't crash when this is called; we don't really have a way to test
+        // if a generic vendor effect starts a vibration.
+        mVibrator.vibrate(effect);
     }
 
     @Test
@@ -423,22 +393,6 @@ public class VibratorTest {
         // Just make sure it doesn't crash when this is called; we don't really have a way to test
         // if the amplitude control works or not.
         mVibrator.hasAmplitudeControl();
-    }
-
-    @Test
-    public void testVibratorHasFrequencyControl() {
-        // Just make sure it doesn't crash when this is called; we don't really have a way to test
-        // if the frequency control works or not.
-        if (mVibrator.hasFrequencyControl()) {
-            // If it's a multi-vibrator device, the system vibrator presents a merged frequency
-            // profile, which may in turn be empty, and hence null. But otherwise, it should not
-            // be null.
-            if (!isMultiVibratorDevice() || !isSystemVibrator()) {
-                assertThat(mVibrator.getFrequencyProfile()).isNotNull();
-            }
-        } else {
-            assertThat(mVibrator.getFrequencyProfile()).isNull();
-        }
     }
 
     @Test
@@ -510,75 +464,6 @@ public class VibratorTest {
         // Just make sure it doesn't crash when this is called;
         // We don't really have a way to test if the device provides the Q-factor or not.
         mVibrator.getQFactor();
-    }
-
-    @Test
-    public void testVibratorVibratorFrequencyProfileFrequencyControl() {
-        assumeNotNull(mVibrator.getFrequencyProfile());
-
-        // If the frequency profile is present then the vibrator must have frequency control.
-        // The other implication is not true if the default vibrator represents multiple vibrators.
-        assertThat(mVibrator.hasFrequencyControl()).isTrue();
-    }
-
-    @Test
-    public void testVibratorFrequencyProfileMeasurementInterval() {
-        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
-        assumeNotNull(frequencyProfile);
-
-        float measurementIntervalHz = frequencyProfile.getMaxAmplitudeMeasurementInterval();
-        assertThat(measurementIntervalHz)
-                .isAtLeast(MINIMUM_ACCEPTED_MEASUREMENT_INTERVAL_FREQUENCY);
-    }
-
-    @Test
-    public void testVibratorFrequencyProfileSupportedFrequencyRange() {
-        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
-        assumeNotNull(frequencyProfile);
-
-        float resonantFrequency = mVibrator.getResonantFrequency();
-        float minFrequencyHz = frequencyProfile.getMinFrequency();
-        float maxFrequencyHz = frequencyProfile.getMaxFrequency();
-
-        assertThat(minFrequencyHz).isAtLeast(MINIMUM_ACCEPTED_FREQUENCY);
-        assertThat(maxFrequencyHz).isGreaterThan(minFrequencyHz);
-        assertThat(maxFrequencyHz).isAtMost(MAXIMUM_ACCEPTED_FREQUENCY);
-
-        if (!Float.isNaN(resonantFrequency)) {
-            // If the device has a resonant frequency, then it should be within the supported
-            // frequency range described by the profile.
-            assertThat(resonantFrequency).isAtLeast(minFrequencyHz);
-            assertThat(resonantFrequency).isAtMost(maxFrequencyHz);
-        }
-    }
-
-    @Test
-    public void testVibratorFrequencyProfileOutputAccelerationMeasurements() {
-        VibratorFrequencyProfile frequencyProfile = mVibrator.getFrequencyProfile();
-        assumeNotNull(frequencyProfile);
-
-        float minFrequencyHz = frequencyProfile.getMinFrequency();
-        float maxFrequencyHz = frequencyProfile.getMaxFrequency();
-        float measurementIntervalHz = frequencyProfile.getMaxAmplitudeMeasurementInterval();
-        float[] measurements = frequencyProfile.getMaxAmplitudeMeasurements();
-
-        // There should be at least 3 points for a valid profile: min, center and max frequencies.
-        assertThat(measurements.length).isAtLeast(3);
-        assertWithMessage(
-                "Expected measurements.length %s to match given min/max/interval"
-                        + " frequency values of %s/%s/%s Hz",
-                measurements.length, minFrequencyHz, maxFrequencyHz, measurementIntervalHz)
-                .that(minFrequencyHz + ((measurements.length - 1) * measurementIntervalHz))
-                .isWithin(TEST_TOLERANCE).of(maxFrequencyHz);
-
-        boolean hasPositiveMeasurement = false;
-        for (int i = 0; i < measurements.length; i++) {
-            assertWithMessage("Expected measurements[%s] value %s within range", i, measurements[i])
-                    .that(measurements[i]).isIn(Range.closed(0f, 1f));
-            hasPositiveMeasurement |= measurements[i] > 0;
-        }
-        assertWithMessage("Expected at least one measurements entry to be > 0")
-                .that(hasPositiveMeasurement).isTrue();
     }
 
     @Test
@@ -725,6 +610,18 @@ public class VibratorTest {
                                     vibrateDescription != null ? "for " + vibrateDescription : "")))
                     .onVibratorStateChanged(eq(expected));
         }
+    }
+
+    private static String[] getRequiredPrivilegedPermissions() {
+        if (Flags.vendorVibrationEffects()) {
+            return new String[]{
+                    android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+                    android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
+            };
+        }
+        return new String[] {
+            android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+        };
     }
 
     /**

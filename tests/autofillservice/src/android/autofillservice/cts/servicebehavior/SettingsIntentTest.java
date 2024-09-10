@@ -74,6 +74,7 @@ public class SettingsIntentTest
 
     @Test
     public void testMultipleServicesShown() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         disableService();
 
         // Launches Settings.
@@ -95,6 +96,7 @@ public class SettingsIntentTest
 
     @Test
     public void testWarningShown_userRejectsByTappingBack() throws Exception {
+        mUiBot.assumeMinimumResolution(500);
         disableService();
 
         // Launches Settings.

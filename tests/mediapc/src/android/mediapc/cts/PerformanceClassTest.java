@@ -31,7 +31,13 @@ import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.Android11MemoryRequirement;
 import android.mediapc.cts.common.Requirements.HDRDisplayRequirement;
+import android.mediapc.cts.common.Requirements.MediaDrmSecurityLevelHardwareSecureAllRequirement;
 import android.mediapc.cts.common.Requirements.MemoryRequirement;
+import android.mediapc.cts.common.Requirements.ScreenDensityRRequirement;
+import android.mediapc.cts.common.Requirements.ScreenDensityRequirement;
+import android.mediapc.cts.common.Requirements.ScreenResolutionRRequirement;
+import android.mediapc.cts.common.Requirements.ScreenResolutionRequirement;
+import android.mediapc.cts.common.Requirements.SecureHardwareDecodersRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Log;
 
@@ -116,8 +122,8 @@ public class PerformanceClassTest {
         boolean secureDecodeSupportIfHwDecoderPresent = noSecureHwDecoderForMediaTypes.isEmpty();
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.SecureCodecRequirement r5_1__H_1_11 = pce.addR5_1__H_1_11();
-        r5_1__H_1_11.setSecureReqSatisfied(secureDecodeSupportIfHwDecoderPresent);
+        SecureHardwareDecodersRequirement r5_1__H_1_11 = Requirements.addR5_1__H_1_11().to(pce);
+        r5_1__H_1_11.setSecureRequirementSatisfiedBoolean(secureDecodeSupportIfHwDecoderPresent);
 
         pce.submitAndCheck();
     }
@@ -142,9 +148,10 @@ public class PerformanceClassTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.SecureCodecRequirement r5_7__H_1_2 = pce.addR5_7__H_1_2();
+        MediaDrmSecurityLevelHardwareSecureAllRequirement r5_7__H_1_2 =
+                Requirements.addR5_7__H_1_2().to(pce);
 
-        r5_7__H_1_2.setNumCryptoHwSecureAllDec(supportedHwSecureAllSchemes.size());
+        r5_7__H_1_2.setNumberCryptoHwSecureAllSupport(supportedHwSecureAllSchemes.size());
 
         pce.submitAndCheck();
     }
@@ -174,19 +181,19 @@ public class PerformanceClassTest {
         Log.i(TAG, String.format("dpi=%d size=%dx%dpix", density, longPix, shortPix));
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.ResolutionRequirement r7_1_1_1__h_1_1 = pce.addR7_1_1_1__H_1_1();
-        PerformanceClassEvaluator.DensityRequirement r7_1_1_3__h_1_1 = pce.addR7_1_1_3__H_1_1();
-        PerformanceClassEvaluator.ResolutionRequirement r7_1_1_1__h_2_1 = pce.addR7_1_1_1__H_2_1();
-        PerformanceClassEvaluator.DensityRequirement r7_1_1_3__h_2_1 = pce.addR7_1_1_3__H_2_1();
+        ScreenResolutionRRequirement r7_1_1_1__h_1_1 = Requirements.addR7_1_1_1__H_1_1().to(pce);
+        ScreenResolutionRequirement r7_1_1_1__h_2_1 = Requirements.addR7_1_1_1__H_2_1().to(pce);
+        ScreenDensityRRequirement r7_1_1_3__h_1_1 = Requirements.addR7_1_1_3__H_1_1().to(pce);
+        ScreenDensityRequirement r7_1_1_3__h_2_1 = Requirements.addR7_1_1_3__H_2_1().to(pce);
 
-        r7_1_1_1__h_1_1.setLongResolution(longPix);
-        r7_1_1_1__h_2_1.setLongResolution(longPix);
+        r7_1_1_1__h_1_1.setLongResolutionPixels(longPix);
+        r7_1_1_1__h_2_1.setLongResolutionPixels(longPix);
 
-        r7_1_1_1__h_1_1.setShortResolution(shortPix);
-        r7_1_1_1__h_2_1.setShortResolution(shortPix);
+        r7_1_1_1__h_1_1.setShortResolutionPixels(shortPix);
+        r7_1_1_1__h_2_1.setShortResolutionPixels(shortPix);
 
-        r7_1_1_3__h_1_1.setDisplayDensity(density);
-        r7_1_1_3__h_2_1.setDisplayDensity(density);
+        r7_1_1_3__h_1_1.setDisplayDensityDpi(density);
+        r7_1_1_3__h_2_1.setDisplayDensityDpi(density);
 
         pce.submitAndCheck();
     }
@@ -201,8 +208,8 @@ public class PerformanceClassTest {
         Log.i(TAG, String.format("Total device memory = %,d MB", totalMemoryMb));
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        Android11MemoryRequirement r7_6_1_h_1_1 = Requirements.addR7_6_1__H_1_1(pce);
-        MemoryRequirement r7_6_1_h_2_1 = Requirements.addR7_6_1__H_2_1(pce);
+        Android11MemoryRequirement r7_6_1_h_1_1 = Requirements.addR7_6_1__H_1_1().to(pce);
+        MemoryRequirement r7_6_1_h_2_1 = Requirements.addR7_6_1__H_2_1().to(pce);
 
         r7_6_1_h_1_1.setPhysicalMemoryMb(totalMemoryMb);
         r7_6_1_h_2_1.setPhysicalMemoryMb(totalMemoryMb);
@@ -214,7 +221,7 @@ public class PerformanceClassTest {
     @CddTest(requirements = {"2.2.7.3/7.1.1.3/H-3-1"})
     public void testDisplayHdr() {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1(pce);
+        HDRDisplayRequirement req = Requirements.addR7_1_1_3__H_3_1().to(pce);
 
         req.setIsHdr(Utils.IS_HDR);
         req.setDisplayLuminanceNits(Utils.HDR_DISPLAY_AVERAGE_LUMINANCE);

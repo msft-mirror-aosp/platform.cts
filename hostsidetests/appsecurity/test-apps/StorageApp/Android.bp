@@ -9,7 +9,7 @@ java_library {
     defaults: ["cts_support_defaults"],
     sdk_version: "test_current",
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
         "androidx.test.uiautomator_uiautomator",
     ],
 }
@@ -22,7 +22,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     test_suites: [
         "cts",
@@ -39,7 +39,7 @@ android_test_helper_app {
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     test_suites: [
         "cts",

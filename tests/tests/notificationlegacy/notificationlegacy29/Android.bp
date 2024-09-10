@@ -21,18 +21,20 @@ android_test {
     name: "CtsLegacyNotification29TestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "Harrier",
         "androidx.test.rules",
         "ctstestrunner-axt",
         "androidx.test.rules",
         "junit",
         "permission-test-util-lib",
         "compatibility-device-util-axt",
+        "compatibility-device-preconditions",
         "CtsAppTestStubsShared",
         "android.service.notification.flags-aconfig-java",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

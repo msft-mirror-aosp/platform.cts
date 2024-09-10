@@ -27,6 +27,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(EnsureGlobalSettingSetGroup.class)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MAIN)
 public @interface EnsureGlobalSettingSet {
     String key();
 

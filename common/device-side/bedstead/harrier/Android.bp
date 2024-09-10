@@ -99,6 +99,7 @@ android_library {
         "androidx.test.ext.junit",
         "auto_value_annotations",
         "bedstead-root-annotations",
+        "bedstead-performance-analyzer",
     ],
 
     manifest: "src/main/AndroidManifest.xml",

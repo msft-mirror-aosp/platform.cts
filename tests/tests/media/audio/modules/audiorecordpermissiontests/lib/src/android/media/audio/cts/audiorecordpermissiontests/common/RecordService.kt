@@ -20,53 +20,138 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.AttributionSource
+import android.content.AttributionSource.myAttributionSource
 import android.content.Context
 import android.content.Intent
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.os.Bundle
 import android.os.IBinder
+import android.permission.PermissionManager
 import android.util.Log
 
-import kotlin.math.abs
-
-import java.util.concurrent.Future
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.Future
+import java.util.concurrent.atomic.AtomicReference
+
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
+import kotlin.math.abs
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
- * Service which can records and sends response intents when recording moves between silenced
- * and unsilenced state.
+ * Service which can records and sends response intents when recording moves between silenced and
+ * unsilenced state.
  */
 open class RecordService : Service() {
     val TAG = getAppName() + "RecordService"
     val PREFIX = "android.media.audio.cts." + getAppName()
 
-    val mIsRecording = AtomicBoolean(false)
-    val mExecutor = Executors.newFixedThreadPool(2)
+    private val mJob =
+        SupervisorJob().apply {
+            // Completer on the parent job for all coroutines, so test app is informed that teardown
+            // completes
+            invokeOnCompletion {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                respond(ACTION_TEARDOWN_FINISHED)
+            }
+        }
 
-    var mFuture : Future<Any>? = null
+    private val handler = object : AbstractCoroutineContextElement(CoroutineExceptionHandler),
+            CoroutineExceptionHandler {
+        override fun handleException(context: CoroutineContext, exception: Throwable) =
+                Log.wtf(TAG, "Uncaught exception", exception).let{}
+    }
+
+    // Parent scope executes on the main thread
+    private val mScope = CoroutineScope(mJob + Dispatchers.Main.immediate + handler)
+
+    // Keyed by record ID provided by the client. Channel is used to communicate with the launched
+    // record coroutine. true/false to start/stop recording, close to end recording.
+    // Main thread (mScope) only for thread safety!
+    private val mRecordings = HashMap<Int, Channel<Boolean>>()
+
+    lateinit var mPermissionManager: PermissionManager
+    val mAttributionSource: AtomicReference<AttributionSource> = AtomicReference();
+
+    override fun onCreate() {
+        mPermissionManager = getSystemService(PermissionManager::class.java)
+        mAttributionSource.set(mPermissionManager.registerAttributionSource(myAttributionSource()))
+    }
 
     override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val shouldFg = intent.getBooleanExtra(EXTRA_IS_FOREGROUND, false)
-        Log.i(TAG, "Receive onStartCommand action: ${intent.getAction()}, fg: ${shouldFg}" + intent)
-        when (intent.getAction()) {
-            PREFIX + ACTION_START_RECORD -> {
-                if (mIsRecording.compareAndSet(false, true)) {
-                    try {
-                        if (shouldFg) {
-                            Log.i(TAG, "Going foreground with capabilities " + getCapabilities())
-                            startForeground(1, buildNotification(), getCapabilities())
+        mScope.launch {
+            val recordId = intent.getIntExtra(EXTRA_RECORD_ID, 0)
+            Log.i(TAG, "Receive onStartCommand action: ${intent.getAction()}, id: $recordId")
+            when (intent.getAction()) {
+                PREFIX + ACTION_START_RECORD -> {
+                    intent.getExtras()
+                        ?.getBinder(EXTRA_ATTRIBUTION)
+                        ?.let(IAttrProvider.Stub::asInterface)
+                        ?.let { getAttribution(it) }
+                        ?.let { next ->
+                            mAttributionSource.get().let { old ->
+                                    mPermissionManager.registerAttributionSource(
+                                        AttributionSource.Builder(old.getUid())
+                                                .setPackageName(old.getPackageName())
+                                                .setNext(next)
+                                                .build())
+                            }
                         }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "exception", e)
-                        throw e
-                    }
-                    mFuture = mExecutor.submit(::record, Object())
+                        ?.let { mAttributionSource.set(it) }
+                    mRecordings
+                        .getOrPut(recordId) {
+                            // Create the channel, kick off the record  and insert into map
+                            Channel<Boolean>(Channel.UNLIMITED).also {
+                                // IO for unbounded thread-pool, thread per record
+                                launch(CoroutineName("Record $recordId") + Dispatchers.IO) {
+                                    record(recordId, it)
+                                }
+                            }
+                        }
+                        .send(true)
                 }
-            }
-            PREFIX + ACTION_CLEANUP -> {
-                cleanup()
+                PREFIX + ACTION_STOP_RECORD ->
+                    mRecordings.get(intent.getIntExtra(EXTRA_RECORD_ID, 0))?.send(false)
+                PREFIX + ACTION_FINISH_RECORD ->
+                    mRecordings.get(intent.getIntExtra(EXTRA_RECORD_ID, 0))?.close()
+                PREFIX + ACTION_START_FOREGROUND ->
+                    getCapabilities().let {
+                        Log.i(TAG, "Going foreground with capabilities $it")
+                        startForeground(1, buildNotification(), it)
+                    }
+                PREFIX + ACTION_STOP_FOREGROUND -> stopForeground(STOP_FOREGROUND_REMOVE)
+                PREFIX + ACTION_TEARDOWN -> {
+                    // Finish ongoing records
+                    mRecordings.values.forEach { it.close() }
+                    mRecordings.clear()
+                    // Mark supervisor complete, completer will fire when all children complete.
+                    mJob.complete()
+                }
+                PREFIX + ACTION_REQUEST_ATTRIBUTION ->
+                    sendBroadcast(
+                        Intent(PREFIX + ACTION_SEND_ATTRIBUTION).apply {
+                            setPackage(TARGET_PACKAGE)
+                            putExtras(Bundle().apply {
+                                putBinder(EXTRA_ATTRIBUTION, object: IAttrProvider.Stub() {
+                                    override fun inject(x: IAttrConsumer) = x.provideAttribution(
+                                            mAttributionSource.get())
+                                })
+                            })
+                        })
             }
         }
         return START_NOT_STICKY
@@ -74,104 +159,158 @@ open class RecordService : Service() {
 
     override fun onDestroy() {
         Log.i(TAG, "onDestroy")
-        cleanup()
-        mExecutor.shutdown()
+        mJob.cancel()
     }
 
     // Binding cannot be used since that affects the proc state
-    override fun onBind(intent: Intent): IBinder? { return null }
+    override fun onBind(intent: Intent): IBinder? = null
 
-    /**
-     * For subclasses to return the package name for receiving intents.
-     */
-    open fun getAppName(): String { return "Base" }
+    override fun getAttributionSource(): AttributionSource = mAttributionSource.get()
 
-    /**
-     * For subclasses to return the capabilities to start the service with.
-     */
-    open fun getCapabilities(): Int { return 0 }
+    /** For subclasses to return the package name for receiving intents. */
+    open fun getAppName(): String = "Base"
 
-    /**
-     * If recording, stop recording, send response intent, and stop the service
-     */
-    private fun cleanup() {
-        if (mIsRecording.compareAndSet(true, false)) {
-            mFuture!!.get()
-            mFuture = null
-            Log.i(TAG, "FINISH_TEARDOWN")
-            sendBroadcast(Intent(PREFIX + ACTION_FINISH_TEARDOWN).setPackage(TARGET_PACKAGE))
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-        }
+    /** For subclasses to return the capabilities to start the service with. */
+    open fun getCapabilities(): Int = 0
+
+    private fun respond(action: String, recordId: Int? = null) {
+        Log.i(TAG, "Sending $action for id: $recordId")
+        sendBroadcast(
+            Intent(PREFIX + action).apply {
+                setPackage(TARGET_PACKAGE)
+                recordId?.let { putExtra(EXTRA_RECORD_ID, it) }
+            })
     }
 
     /**
-     * Continuously record while {@link mIsRecording} is true. Returns when false.
-     * Send intents as stream moves in and out of being silenced.
+     * Continuously record while {@link mIsRecording} is true. Returns when false. Send intents as
+     * stream moves in and out of being silenced.
      */
-    private fun record() {
+    suspend fun record(recordId: Int, channel: ReceiveChannel<Boolean>) {
         val channelConfig = AudioFormat.CHANNEL_IN_MONO
         val sampleRate = 32000
+        val RECORD_WARMUP = 800 // 25ms
         val format = AudioFormat.ENCODING_PCM_16BIT
-        val bufferSizeInBytes = 2 * AudioRecord.getMinBufferSize(sampleRate, channelConfig,
-                format)
-        val audioRecord = AudioRecord.Builder()
-                        .setAudioFormat(
-                                AudioFormat.Builder()
-                                        .setEncoding(format)
-                                        .setSampleRate(sampleRate)
-                                        .setChannelMask(channelConfig)
-                                        .build())
-                        .setBufferSizeInBytes(bufferSizeInBytes)
-                        .build()
+        val bufferSizeInBytes = 2 * AudioRecord.getMinBufferSize(sampleRate, channelConfig, format)
+        val audioRecord =
+            AudioRecord.Builder()
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(format)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(channelConfig)
+                        .build())
+                .setBufferSizeInBytes(bufferSizeInBytes)
+                .setContext(this)
+                .build()
 
-        audioRecord.startRecording()
-        var isSilenced = true
+        var isSilenced: Boolean? = null
+        var isRecording = false
         val data = ShortArray(bufferSizeInBytes / 2)
-
-        while (mIsRecording.get()) {
-            val result = audioRecord.read(data, 0, data.size)
-            if (result < 0) {
-                throw IllegalStateException("AudioRecord read invalid result: " + result)
-            } else if (result == 0) {
-                continue
-            }
-            val power = data.take(result).map {abs(it.toInt())}.sum()
-            if (isSilenced && power != 0) {
-                mExecutor.execute {
-                    Log.i(TAG, "BEGAN_RECEIVE_AUDIO")
-                    sendBroadcast(Intent(PREFIX + ACTION_BEGAN_RECEIVE_AUDIO)
-                            .setPackage(TARGET_PACKAGE))
+        try {
+            while (coroutineContext.isActive) {
+                val newIsRecording = computeNextRecording(channel, isRecording) ?: break
+                if (!isRecording && newIsRecording) {
+                    audioRecord.startRecording()
+                    var warmupFrames = 0
+                    while (warmupFrames < RECORD_WARMUP) {
+                        warmupFrames += audioRecord.read(data, 0, data.size).also {
+                            if (it < 0) throw IllegalStateException("AudioRecord read invalid $it")
+                        }
+                    }
+                    mScope.launch { respond(ACTION_RECORD_STARTED, recordId) }
+                } else if (isRecording && !newIsRecording) {
+                    audioRecord.stop()
+                    mScope.launch { respond(ACTION_RECORD_STOPPED, recordId) }
+                    isSilenced = null
                 }
-                isSilenced = false
-            } else if (!isSilenced && power == 0) {
-                mExecutor.execute {
-                    Log.i(TAG, "BEGAN_RECEIVE_SILENCE")
-                    sendBroadcast(Intent(PREFIX + ACTION_BEGAN_RECEIVE_SILENCE)
-                            .setPackage(TARGET_PACKAGE))
+                isRecording = newIsRecording
+                if (isRecording) {
+                    isAudioRecordSilenced(audioRecord, data)?.let { newIsSilenced ->
+                        if (isSilenced != newIsSilenced) {
+                            mScope.launch {
+                                respond(
+                                    if (newIsSilenced) ACTION_BEGAN_RECEIVE_SILENCE
+                                    else ACTION_BEGAN_RECEIVE_AUDIO,
+                                    recordId)
+                            }
+                        }
+                        isSilenced = newIsSilenced
+                    }
                 }
-                isSilenced = true
             }
+        } finally {
+            if (isRecording) {
+                audioRecord.stop()
+                mScope.launch { respond(ACTION_RECORD_STOPPED, recordId) }
+            }
+            audioRecord.release()
+            mScope.launch { respond(ACTION_RECORD_FINISHED, recordId) }
         }
-        audioRecord.stop()
-        audioRecord.release()
+    }
+
+    private fun getAttribution(prov: IAttrProvider) : AttributionSource {
+        val res = CompletableFuture<AttributionSource>()
+        prov.inject(object : IAttrConsumer.Stub() {
+            override fun provideAttribution(attr: AttributionSource) = res.complete(attr).let {}
+        })
+        return res.get().also {
+            Log.i(TAG, "Received attr source ${it}")
+        }
     }
 
     /**
-     * Create a notification which is required to start a foreground service
+     * Consume the data in the channel, and based on the current recording state return the next
+     * state. Returns null to represent ending the task. If not isRecording, block until new data is
+     * available in the channel
      */
-    private fun buildNotification() : Notification {
+    private suspend fun computeNextRecording(
+        channel: ReceiveChannel<Boolean>,
+        isRecording: Boolean
+    ): Boolean? =
+        channel.tryReceive().run {
+            when {
+                isClosed -> null
+                // no update: only wait for state update if we are NOT recording
+                isFailure ->
+                    isRecording ||
+                        try {
+                            channel.receive()
+                        } catch (e: ClosedReceiveChannelException) {
+                            return null
+                        }
+                // This shouldn't throw now. Non-blocking read of the record state
+                else -> getOrThrow()
+            }
+        }
+
+    /**
+     * Determine if the audiorecord is silenced.
+     *
+     * @param audioRecord the recording to evaluate
+     * @param data temp data buffer to use
+     * @return true if silenced, false if not silenced, null if no data
+     */
+    private fun isAudioRecordSilenced(audioRecord: AudioRecord, data: ShortArray): Boolean? =
+        audioRecord.read(data, 0, data.size).let {
+            when {
+                it == 0 -> null
+                it < 0 -> throw IllegalStateException("AudioRecord read invalid result: $it")
+                else -> (data.take(it).map { abs(it.toInt()) }.sum() == 0)
+            }
+        }
+
+    /** Create a notification which is required to start a foreground service */
+    private fun buildNotification(): Notification {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        manager.createNotificationChannel(NotificationChannel(
-                        "all",
-                        "All Notifications",
-                        NotificationManager.IMPORTANCE_NONE))
+        manager.createNotificationChannel(
+            NotificationChannel("all", "All Notifications", NotificationManager.IMPORTANCE_NONE))
 
         return Notification.Builder(this, "all")
-                .setContentTitle("Recording audio")
-                .setContentText("recording...")
-                .setSmallIcon(R.drawable.ic_fg)
-                .build()
+            .setContentTitle("Recording audio")
+            .setContentText("recording...")
+            .setSmallIcon(R.drawable.ic_fg)
+            .build()
     }
 }

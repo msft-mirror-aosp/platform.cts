@@ -92,6 +92,8 @@ public class KeyguardTests extends KeyguardTestBase {
         super.setUp();
         assumeTrue(supportsInsecureLock());
         assertFalse(isUiModeLockedToVrHeadset());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test
@@ -679,6 +681,41 @@ public class KeyguardTests extends KeyguardTestBase {
 
         lockScreenSession.gotoKeyguard();
         assertFalse(mWmState.getKeyguardControllerState().isKeyguardGoingAway());
+    }
+
+    @Test
+    public void testDismissKeyguard_fromActivityOption_translucentDialog_dismissesKeyguard() {
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.gotoKeyguard();
+
+        launchActivity(SHOW_WHEN_LOCKED_ACTIVITY);
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
+        mWmState.assertKeyguardShowingAndOccluded();
+
+        launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY);
+
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.waitAndAssertKeyguardGone();
+
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_DIALOG_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
+        mWmState.assertVisibility(SHOW_WHEN_LOCKED_ACTIVITY, true);
+    }
+
+    @Test
+    public void testDismissKeyguard_fromActivityOption_translucentActivity_dismissesKeyguard() {
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.gotoKeyguard();
+
+        launchActivityWithDismissKeyguardIfInsecure(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY);
+
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
+        mWmState.computeState();
+        mWmState.assertKeyguardGone();
+
+        waitAndAssertTopResumedActivity(SHOW_WHEN_LOCKED_TRANSLUCENT_ACTIVITY, DEFAULT_DISPLAY,
+                  "Activity with showWhenLocked attribute should be resumed.");
     }
 
     @Test

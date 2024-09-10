@@ -17,7 +17,6 @@
 package android.server.biometrics;
 
 import static com.android.server.biometrics.nano.BiometricServiceStateProto.STATE_AUTH_IDLE;
-import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -67,7 +66,7 @@ import java.util.concurrent.TimeUnit;
 public class BiometricPromptContentViewTest extends BiometricTestBase {
     private static final String TAG = "BiometricTests/PromptContentView";
     private static final String VERTICAL_LIST_LAST_ITEM_TEXT = "last item";
-    private static final String MORE_OPTIONS_TEXT = "More Options";
+    private static final String MORE_OPTIONS_BUTTON_VIEW = "customized_view_more_options_button";
 
     /**
      * Tests that the values specified through the public APIs are shown on the BiometricPrompt UI
@@ -100,16 +99,16 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptContentViewWithMoreOptionsButton.Builder#setDescription",
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
-    public void testMoreOptionsButton_simpleBiometricAuth_nonConvenience() throws Exception {
+    public void testMoreOptionsButton_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties props : mSensorProperties) {
             if (props.getSensorStrength() == SensorProperties.STRENGTH_CONVENIENCE) {
                 continue;
             }
 
-            Log.d(TAG, "testMoreOptionsButton_simpleBiometricAuth_nonConvenience, sensor: "
+            Log.d(TAG, "testMoreOptionsButton_simpleBiometricAuth, sensor: "
                     + props.getSensorId());
 
             try (BiometricTestSession session =
@@ -156,7 +155,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -165,7 +164,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 continue;
             }
 
-            Log.d(TAG, "testMoreOptionsButton_simpleBiometricAuth_nonConvenience, sensor: "
+            Log.d(TAG, "testMoreOptionsButton_clickButton, sensor: "
                     + props.getSensorId());
 
             try (BiometricTestSession session =
@@ -195,7 +194,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutPermissionException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -209,7 +208,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 continue;
             }
 
-            Log.d(TAG, "testMoreOptionsButton_withoutPermissionFailed, sensor: "
+            Log.d(TAG, "testMoreOptionsButton_withoutPermissionException, sensor: "
                     + props.getSensorId());
 
             try (BiometricTestSession session =
@@ -243,7 +242,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_withoutSettingListenerException() throws Exception {
         mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
@@ -257,7 +256,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                 continue;
             }
 
-            Log.d(TAG, "testMoreOptionsButton_withoutSettingListenerFailed, sensor: "
+            Log.d(TAG, "testMoreOptionsButton_withoutSettingListenerException, sensor: "
                     + props.getSensorId());
 
             try (BiometricTestSession session =
@@ -280,7 +279,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     @ApiTest(apis = {
             "android.hardware.biometrics.PromptContentViewWithMoreOptionsButton"
                     + ".Builder#setMoreOptionsButtonListener"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testMoreOptionsButton_onlyCredential_clickButton() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -355,16 +354,16 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#addListItem",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setDescription"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
-    public void testVerticalList_simpleBiometricAuth_nonConvenience() throws Exception {
+    public void testVerticalList_simpleBiometricAuth() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
         for (SensorProperties props : mSensorProperties) {
             if (props.getSensorStrength() == SensorProperties.STRENGTH_CONVENIENCE) {
                 continue;
             }
 
-            Log.d(TAG, "testVerticalList_simpleBiometricAuth_nonConvenience, sensor: "
+            Log.d(TAG, "testVerticalList_simpleBiometricAuth, sensor: "
                     + props.getSensorId());
 
             try (BiometricTestSession session =
@@ -427,7 +426,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
                     + "BiometricPrompt.Builder#setContentView",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#addListItem"})
-    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT})
     @Test
     public void testVerticalList_onlyCredential_showsTwoStep() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -522,11 +521,20 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
         return itemList;
     }
 
-    private UiObject2 scrollBpBodyContentTo(String viewText) {
+    private UiObject2 scrollBpBodyContentToText(String viewText) {
         UiObject2 view = findViewByText(viewText);
         while (view == null) {
             findView(SCROLL_PARENT_VIEW).scroll(Direction.DOWN, .4f, 1000);
             view = findViewByText(viewText);
+        }
+        return view;
+    }
+
+    private UiObject2 scrollBpBodyContentToView(String viewId) {
+        UiObject2 view = findView(viewId);
+        while (view == null) {
+            findView(SCROLL_PARENT_VIEW).scroll(Direction.DOWN, .4f, 1000);
+            view = findView(viewId);
         }
         return view;
     }
@@ -562,7 +570,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * @param expectedDescription Expected description shown on custom content view.
      */
     private void checkDescriptionViewInContentView(String expectedDescription) {
-        final UiObject2 actualContentViewDescription = scrollBpBodyContentTo(expectedDescription);
+        final UiObject2 actualContentViewDescription = scrollBpBodyContentToText(
+                expectedDescription);
         assertWithMessage("Description on content view should be shown.").that(
                 actualContentViewDescription).isNotNull();
     }
@@ -573,7 +582,8 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
      * @param checkClickEvent Whether to check click event.
      */
     private void checkMoreOptionsButton(boolean checkClickEvent) throws Exception {
-        final UiObject2 actualMoreOptionsButton = scrollBpBodyContentTo(MORE_OPTIONS_TEXT);
+        final UiObject2 actualMoreOptionsButton = scrollBpBodyContentToView(
+                MORE_OPTIONS_BUTTON_VIEW);
         assertWithMessage("More options button should be clickable.").that(
                 actualMoreOptionsButton.isClickable()).isTrue();
 
@@ -593,7 +603,7 @@ public class BiometricPromptContentViewTest extends BiometricTestBase {
     private void checkVerticalListContentViewItems(
             List<String> expectedContentItemTexts) {
         for (String itemText : expectedContentItemTexts) {
-            final UiObject2 actualContentViewItem = scrollBpBodyContentTo(itemText);
+            final UiObject2 actualContentViewItem = scrollBpBodyContentToText(itemText);
             assertWithMessage("Item " + itemText + "should be shown").that(
                     actualContentViewItem).isNotNull();
         }

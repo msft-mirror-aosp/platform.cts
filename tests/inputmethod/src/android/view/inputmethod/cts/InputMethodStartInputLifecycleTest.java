@@ -24,6 +24,7 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HI
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_UNSPECIFIED;
 import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE;
 
+import static com.android.cts.input.injectinputinprocess.InjectInputInProcessKt.clickOnViewCenter;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.editorMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectBindInput;
@@ -51,7 +52,6 @@ import android.text.Editable;
 import android.text.InputType;
 import android.text.Selection;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.BaseInputConnection;
@@ -71,9 +71,9 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
@@ -174,7 +174,7 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
             TestUtils.unlockScreen();
             TestUtils.waitOnMainUntil(() -> screenStateCallbackRef.get() == SCREEN_STATE_ON
                             && editText.getWindowVisibility() == VISIBLE, TIMEOUT);
-            mCtsTouchUtils.emulateTapOnViewCenter(instrumentation, null, editText);
+            clickOnViewCenter(editText);
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
             if (imeSession.isFinishInputNoFallbackConnectionEnabled()) {

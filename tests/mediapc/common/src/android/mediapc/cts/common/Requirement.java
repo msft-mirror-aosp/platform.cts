@@ -104,20 +104,20 @@ public abstract class Requirement {
 
     protected <T> void setMeasuredValue(String measurement, T measuredValue) {
         RequiredMeasurement<T> rm =
-            (RequiredMeasurement<T>)this.mRequiredMeasurements.get(measurement);
+                (RequiredMeasurement<T>) this.mRequiredMeasurements.get(measurement);
         rm.setMeasuredValue(measuredValue);
+    }
+
+    protected <T> T getMeasuredValue(String measurement, Class<T> clazz) {
+        RequiredMeasurement<T> rm =
+                (RequiredMeasurement<T>) this.mRequiredMeasurements.get(measurement);
+        return clazz.cast(rm.getMeasuredValue());
     }
 
     /**
      * @return whether or not the requirement meets the device's specified performance class
      */
     public boolean writeLogAndCheck(ReportLog log, String testName) {
-        if (this.id == RequirementConstants.RTBD) {
-            // skip upload on any requirement without a specified id
-            Log.i(this.TAG, testName + "has requirement without set requirement id and test " +
-                "results were not uploaded");
-            return this.checkPerformanceClass(Utils.getPerfClass());
-        }
 
         int perfClass = this.computePerformanceClass();
 

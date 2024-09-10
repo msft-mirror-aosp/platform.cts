@@ -21,6 +21,7 @@ import static android.media.MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR;
 import static android.mediav2.common.cts.CodecTestBase.ComponentClass.HARDWARE;
 import static android.mediav2.common.cts.CodecTestBase.areFormatsSupported;
 import static android.mediav2.common.cts.CodecTestBase.prepareParamList;
+import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_U;
 import static android.videocodec.cts.VideoEncoderInput.BIRTHDAY_FULLHD_LANDSCAPE;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 
@@ -112,7 +113,7 @@ public class VideoEncoderQualityRegressionBFrameTest extends VideoEncoderQuality
         }
         Predicate<Double> predicate = bdRate -> bdRate < 0.000001d;
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, null, true, predicate);
+                FRAME_RATE, null, true, predicate, false);
     }
 
     @ApiTest(apis = {"android.media.MediaFormat#KEY_BITRATE",
@@ -120,6 +121,7 @@ public class VideoEncoderQualityRegressionBFrameTest extends VideoEncoderQuality
             "android.media.MediaFormat#KEY_MAX_B_FRAMES"})
     @Test
     public void testQualityRegressionOverBFrames() throws IOException, InterruptedException {
+        Assume.assumeTrue("The device should be on at least VNDK U", VNDK_IS_AT_LEAST_U);
         qualityRegressionOverBFrames();
     }
 }

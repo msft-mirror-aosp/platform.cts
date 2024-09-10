@@ -90,29 +90,25 @@ class JpegHighEntropyTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet,
           its_session_utils.CHART_DISTANCE_NO_SCALING)
 
-      # Check skip conditions
-      camera_properties_utils.skip_unless(
-          camera_properties_utils.zoom_ratio_range(props))
-
       # Determine test zoom range
       zoom_range = props['android.control.zoomRatioRange']
       zoom_min, zoom_max = float(zoom_range[0]), float(zoom_range[1])
       logging.debug('Zoom max value: %.2f', zoom_max)
-      if zoom_max < _ZOOM_RATIO_THRESH:
-        raise AssertionError(f'Maximum zoom ratio < {_ZOOM_RATIO_THRESH}x')
-      zoom_max = min(zoom_max, _ZOOM_RATIO_MAX)
-      zoom_ratios = np.arange(
-          _ZOOM_RATIO_MIN, zoom_max,
-          (zoom_max - _ZOOM_RATIO_MIN) / (_NUM_STEPS - 1))
-      zoom_ratios = np.append(zoom_ratios, zoom_max)
+      if zoom_min == zoom_max:
+        zoom_ratios = [zoom_min]
+      else:
+        zoom_max = min(zoom_max, _ZOOM_RATIO_MAX)
+        zoom_ratios = np.arange(
+            _ZOOM_RATIO_MIN, zoom_max,
+            (zoom_max - _ZOOM_RATIO_MIN) / (_NUM_STEPS - 1)
+        )
+        zoom_ratios = np.append(zoom_ratios, zoom_max)
       logging.debug('Testing zoom range: %s', zoom_ratios)
-      camera_properties_utils.skip_unless(
-          zoom_max >= zoom_min * _ZOOM_RATIO_THRESH)
 
       # Do captures over zoom range
       req = capture_request_utils.auto_capture_request()
       req['android.jpeg.quality'] = _JPEG_QUALITY_SETTING
-      out_surface = capture_request_utils.get_largest_jpeg_format(props)
+      out_surface = capture_request_utils.get_largest_format('jpeg', props)
       logging.debug('req W: %d, H: %d',
                     out_surface['width'], out_surface['height'])
 

@@ -25,6 +25,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.VirtualDisplayActivityScenarioRule
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.hardware.input.Flags
 import org.junit.After

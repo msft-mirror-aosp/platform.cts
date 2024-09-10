@@ -29,6 +29,9 @@ import com.android.compatibility.common.util.SystemUtil;
 public class NestedShellPermission {
     private static NestedShellPermission sInstance;
 
+    /** @see SystemUtil#runWithShellPermissionIdentity */
+    private static final String[] ALL_PERMISSIONS = null;
+
     private int mPermissionDepth = 0;
 
     private NestedShellPermission() {}
@@ -45,10 +48,14 @@ public class NestedShellPermission {
      * this with anything that interacts with TestTaskOrganizer since async operations are common.
      */
     public static void run(Runnable action) {
-        run(action, null /* permissions */);
+        run(action, ALL_PERMISSIONS);
     }
 
-    /** Similar to {@link #run(Runnable)}, but allow to specify {@code permissions} to hold. */
+    /**
+     * Similar to {@link #run(Runnable)}, but allow to specify {@code permissions} to hold.
+     *
+     * When {@code permissions} is null, it will hold all the permissions.
+     */
     public static void run(Runnable action, @Nullable String... permissions) {
         final NestedShellPermission self = getInstance();
         final UiAutomation automan =

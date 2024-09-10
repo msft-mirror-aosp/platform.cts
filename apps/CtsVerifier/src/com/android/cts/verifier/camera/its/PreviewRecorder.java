@@ -234,6 +234,7 @@ class PreviewRecorder implements AutoCloseable {
                     // Capture results are not collected for padded green frames
                     if (mIsPaintGreen) {
                         Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
+                                + " timestamp = " + surfaceTexture.getTimestamp()
                                 + " with color. mIsPaintGreen = " + mIsPaintGreen);
                     } else {
                         mFrameTimeStamps.add(surfaceTexture.getTimestamp());
@@ -613,13 +614,14 @@ class PreviewRecorder implements AutoCloseable {
     }
 
     /**
-     * Record Green frames as buffer to workaround MediaRecorder
-     * issue of missing frames at the end
+     * Override camera frames with green frames, if recordGreenFrames
+     * parameter is true. Record Green frames as buffer to workaround
+     * MediaRecorder issue of missing frames at the end of recording.
      */
-    void recordGreenFrames() throws ItsException {
-        Logt.i(TAG, "Recording Green frames.");
+    void overrideCameraFrames(boolean recordGreenFrames) throws ItsException {
+        Logt.i(TAG, "Recording Camera frames. recordGreenFrames = " + recordGreenFrames);
         synchronized (mRecordLock) {
-            mIsPaintGreen = true;
+            mIsPaintGreen = recordGreenFrames;
         }
     }
 

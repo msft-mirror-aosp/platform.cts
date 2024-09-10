@@ -21,9 +21,13 @@ import android.companion.CompanionDeviceManager
 import android.companion.CompanionException
 import android.content.IntentSender
 import android.os.OutcomeReceiver
+import android.security.attestationverification.AttestationVerificationManager
+import android.security.attestationverification.VerificationToken
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit.SECONDS
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.BiConsumer
 
 /** Blocking callbacks for CDM callbacks. */
 object CallbackUtils {
@@ -101,6 +105,24 @@ object CallbackUtils {
             error?.let {
                 throw it
             }
+        }
+    }
+
+    class AttestationVerificationCallback : BiConsumer<Int, VerificationToken?> {
+        private val completed = CountDownLatch(1)
+        private val result = AtomicBoolean(false)
+
+        override fun accept(resultCode: Int, token: VerificationToken?) {
+            result.set(resultCode == AttestationVerificationManager.RESULT_SUCCESS)
+            completed.countDown()
+        }
+
+        fun waitForResult(): Boolean {
+            if (!completed.await(CALLBACK_TIMEOUT_SEC, SECONDS)) {
+                throw TimeoutException("Attestation verification timed out.")
+            }
+
+            return result.get()
         }
     }
 }

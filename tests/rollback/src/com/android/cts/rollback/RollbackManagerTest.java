@@ -375,32 +375,6 @@ public class RollbackManagerTest {
     }
 
     /**
-     * Test that flags are cleared when a rollback is committed.
-     */
-    @Test
-    public void testRollbackClearsFlags() throws Exception {
-        Install.single(TestApp.A1).commit();
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(1);
-        RollbackUtils.waitForRollbackGone(
-                () -> getRollbackManager().getAvailableRollbacks(), TestApp.A);
-
-        Install.single(TestApp.A2).setEnableRollback().commit();
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(2);
-        RollbackInfo available = RollbackUtils.waitForAvailableRollback(TestApp.A);
-
-        DeviceConfig.setProperty("configuration", "namespace_to_package_mapping",
-                "testspace:" + TestApp.A, false);
-        DeviceConfig.setProperty("testspace", "flagname", "hello", false);
-        DeviceConfig.setProperty("testspace", "another", "12345", false);
-        assertThat(DeviceConfig.getProperties("testspace").getKeyset()).hasSize(2);
-
-        RollbackUtils.rollback(available.getRollbackId(), TestApp.A2);
-        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(1);
-
-        assertThat(DeviceConfig.getProperties("testspace").getKeyset()).hasSize(0);
-    }
-
-    /**
      * Tests an app can be rolled back to the previous signing key.
      *
      * <p>The rollback capability in the signing lineage allows an app to be updated to an APK

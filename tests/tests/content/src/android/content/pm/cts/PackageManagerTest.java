@@ -168,6 +168,8 @@ import com.android.internal.security.VerityUtils;
 
 import com.google.common.truth.Expect;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import junit.framework.AssertionFailedError;
 
 import org.junit.After;
@@ -297,6 +299,10 @@ public class PackageManagerTest {
             SAMPLE_APK_BASE + "HelloWorldLotsOfFlags.apk";
     private static final String HELLO_WORLD_NON_UPDATABLE_SYSTEM_APK = SAMPLE_APK_BASE
             + "HelloWorldNonUpdatableSystem.apk";
+    private static final String HELLO_WORLD_V1_APK = SAMPLE_APK_BASE
+            + "HelloWorldAppV1.apk";
+    private static final String HELLO_WORLD_V2_APK = SAMPLE_APK_BASE
+            + "HelloWorldAppV2.apk";
 
     private static final String HELLO_WORLD_SHARED_UID_APK = SAMPLE_APK_BASE
             + "HelloWorldSharedUid.apk";
@@ -315,6 +321,7 @@ public class PackageManagerTest {
     private static final String MOCK_LAUNCHER_APK = SAMPLE_APK_BASE
             + "CtsContentMockLauncherTestApp.apk";
     private static final String NON_EXISTENT_PACKAGE_NAME = "android.content.cts.nonexistent.pkg";
+    private static final String INVALID_PACKAGE_NAME = "@null_invalid#name";
     private static final String STUB_PACKAGE_APK = SAMPLE_APK_BASE
             + "CtsSyncAccountAccessStubs.apk";
     private static final String STUB_PACKAGE_SPLIT =
@@ -1965,6 +1972,30 @@ public class PackageManagerTest {
         assertThat(installPackageWithResult(appInfo.getBaseCodePath())).isEqualTo("Success\n");
     }
 
+    @Test
+    public void testInstall_invalidInstallerName_installerNameRejected() {
+        installPackageWithInstallerPkgName(HELLO_WORLD_APK, INVALID_PACKAGE_NAME);
+        String dumpsys = SystemUtil.runShellCommand("dumpsys package " + HELLO_WORLD_PACKAGE_NAME);
+
+        String initiatingPackageName = parseDumpsysAndGet(dumpsys, "initiatingPackageName");
+        assertEquals(SHELL_PACKAGE_NAME, initiatingPackageName);
+
+        String installerPackageName = parseDumpsysAndGet(dumpsys, "installerPackageName");
+        assertNull(installerPackageName);
+    }
+
+    @Test
+    public void testInstall_nonExistentInstallerName_installerNameNull() {
+        installPackageWithInstallerPkgName(HELLO_WORLD_APK, NON_EXISTENT_PACKAGE_NAME);
+        String dumpsys = SystemUtil.runShellCommand("dumpsys package " + HELLO_WORLD_PACKAGE_NAME);
+
+        String initiatingPackageName = parseDumpsysAndGet(dumpsys, "initiatingPackageName");
+        assertEquals(SHELL_PACKAGE_NAME, initiatingPackageName);
+
+        String installerPackageName = parseDumpsysAndGet(dumpsys, "installerPackageName");
+        assertNull(installerPackageName);
+    }
+
     private String installPackageWithResult(String apkPath) {
         return SystemUtil.runShellCommand("pm install -t " + apkPath);
     }
@@ -1986,11 +2017,26 @@ public class PackageManagerTest {
                 "Success\n");
     }
 
-    private void installPackageWithInstallerPkgName(String apkPath, String installerName)
-            throws IOException {
+    private void installPackageWithInstallerPkgName(String apkPath, String installerName) {
         File file = new File(apkPath);
         assertEquals("Success\n", SystemUtil.runShellCommand(
                 "pm install -i " + installerName + " -t -g " + file.getPath()));
+    }
+
+    private String parseDumpsysAndGet(String dumpsys, String key) {
+        if (dumpsys == null) {
+            Log.e(TAG, "Dumpsys is null");
+            return null;
+        }
+
+        Pattern pattern = Pattern.compile(key + "=(.*)");
+        Matcher matcher = pattern.matcher(dumpsys);
+        if (matcher.find()) {
+            String match = matcher.group(1);
+            return match.equals("null") ? null : match;
+        }
+        Log.e(TAG, "No match found for " + key);
+        return null;
     }
 
     private void uninstallPackage(String packageName) {
@@ -2893,9 +2939,56 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
                         PackageManager.PackageInfoFlags.of(MATCH_UNINSTALLED_PACKAGES)));
     }
 
+    @Test
+    public void testUninstallViaApiWithNoPermissionThrowSecurityException() throws Exception {
+        installPackage(HELLO_WORLD_APK);
+        assertThrows(SecurityException.class, () -> {
+            mPackageManager.getPackageInstaller().uninstall(HELLO_WORLD_PACKAGE_NAME,
+                    /* statusReceiver= */ null);
+        });
+    }
+
     private void assertDataAppExists(String packageName) throws Exception {
         var packageInfo = mPackageManager.getPackageInfo(packageName, MATCH_KNOWN_PACKAGES);
         assertThat(packageInfo.applicationInfo.dataDir).isNotNull();
+    }
+
+    @Test
+    public void testUpdateDowngradeVersionForUninstallWithKeepDataApp_fail() throws Exception {
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        installPackage(HELLO_WORLD_V2_APK);
+        uninstallPackageKeepData(HELLO_WORLD_PACKAGE_NAME);
+
+        // The test app is not installed
+        assertThat(isAppInstalled(HELLO_WORLD_PACKAGE_NAME)).isFalse();
+
+        // Install older version failed
+        installPackage(HELLO_WORLD_V1_APK,
+                "Failure [INSTALL_FAILED_VERSION_DOWNGRADE: Downgrade detected on app uninstalled"
+                + " with DELETE_KEEP_DATA:");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_ARCHIVING)
+    public void testUpdateDowngradeVersionFromArchived_fail() throws Exception {
+        uninstallPackage(HELLO_WORLD_PACKAGE_NAME);
+
+        assertEquals("Success\n", SystemUtil.runShellCommand(
+                String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
+                        HELLO_WORLD_V2_APK)));
+        assertThat(SystemUtil.runShellCommand(String.format(
+                "pm archive %s", HELLO_WORLD_PACKAGE_NAME))).isEqualTo("Success\n");
+        // Check "installed" flag.
+        var applicationInfo = mPackageManager.getPackageInfo(HELLO_WORLD_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo;
+        assertEquals(applicationInfo.flags & ApplicationInfo.FLAG_INSTALLED, 0);
+        // Check archive state.
+        assertTrue(applicationInfo.isArchived);
+
+        installPackage(HELLO_WORLD_V1_APK,
+                "Failure [INSTALL_FAILED_VERSION_DOWNGRADE: Downgrade detected on app uninstalled"
+                        + " with DELETE_KEEP_DATA:");
     }
 
     @Test
@@ -3841,9 +3934,10 @@ victim $UID 1 /data/user/0 default:targetSdkVersion=28 none 0 0 1 @null
 
     private void sendIntent(IntentSender intentSender) throws IntentSender.SendIntentException {
         intentSender.sendIntent(mContext, 0 /* code */, null /* intent */,
-                null /* onFinished */, null /* handler */, null /* requiredPermission */,
+                null /* requiredPermission */,
                 ActivityOptions.makeBasic().setPendingIntentBackgroundActivityStartMode(
-                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle());
+                        ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle(),
+                null /* handler */, null /* onFinished */);
     }
 
     static String getInstalledState(String packageName, int userId) {

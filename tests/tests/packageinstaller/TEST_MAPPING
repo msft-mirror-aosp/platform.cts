@@ -13,7 +13,51 @@
       "name": "CtsContentProviderTestsWithVisibility"
     },
     {
-      "name": "CtsPackageInstallerCUJTestCases"
+      "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateOwnerShipTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
     }
   ],
   "presubmit": [
@@ -43,6 +87,39 @@
     },
     {
       "name": "CtsUserRestrictionTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJInstallationTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUninstallationTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
+    },
+    {
+      "name": "CtsPackageInstallerCUJUpdateSelfTestCases",
+      "options":[
+          {
+              "exclude-annotation":"androidx.test.filters.FlakyTest"
+          },
+          {
+              "exclude-annotation":"org.junit.Ignore"
+          }
+      ]
     }
   ],
   "imports": [

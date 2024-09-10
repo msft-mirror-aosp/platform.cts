@@ -14,12 +14,12 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
-    default_team: "trendy_team_android_media_solutions",
+    default_team: "trendy_team_android_media_solutions_playback",
 }
 
 android_test {
     name: "CtsMediaParserTestCases",
-    team: "trendy_team_android_media_solutions",
+    team: "trendy_team_android_media_solutions_playback",
     defaults: [
         "CtsMediaParserTestCasesDefaults",
         "cts_defaults",
@@ -64,8 +64,8 @@ java_defaults {
         "exoplayer-cts_media-test_utils",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     sdk_version: "test_current",
 }

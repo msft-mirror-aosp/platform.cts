@@ -83,11 +83,13 @@ java_test_host {
     static_libs: [
         "android.hardware.usb.flags-aconfig-java-host",
         "android.os.flags-aconfig-java-host",
+        "backstage_power_flags_lib-host",
         "power_hint_flags_lib_host",
         "cts-statsd-atom-host-test-utils",
         "flag-junit-host",
         "perfetto_config-full",
         "cts_adpf_atom_common-host",
+        "cts_adpf_atom_common-host2",
     ],
 
     data: [
@@ -95,6 +97,7 @@ java_test_host {
         ":CtsStatsdApp", //TODO(b/163546661): Remove once migration to new lib is complete.
         ":CtsAppExitTestCases",
         ":CtsStatsdAdpfApp",
+        ":CtsStatsdAdpfApp2",
         ":CtsExternalServiceService",
         ":CtsMediaProjectionTestCases",
         ":CtsSimpleApp",
@@ -120,4 +123,40 @@ java_library_host {
         "tradefed",
         "truth",
     ],
+}
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_voiceinteraction",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.voiceinteraction"],
+}
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_jobscheduler",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.jobscheduler"],
+}
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_appexit_appexithosttest",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.appexit.AppExitHostTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_gamemanager",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.gamemanager"],
+}
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_powermanager",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.powermanager"],
 }

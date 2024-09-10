@@ -189,4 +189,12 @@
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualIntentFilterChanges" />
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualGroupChanges" />
 
+    <!-- b/349776686 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_StrongBox" />
+
+    <!-- b/349072303 -->
+    <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
 </configuration>

@@ -64,7 +64,10 @@
         <option name="cleanup" value="true" />
         <option name="push" value="CtsSelfUninstallingTestApp.apk->/data/local/tmp/cts/uninstall/CtsSelfUninstallingTestApp.apk" />
         <option name="push" value="CtsEmptyTestApp.apk->/data/local/tmp/cts/uninstall/CtsEmptyTestApp.apk" />
+        <option name="push" value="CtsArchiveInstallerApp.apk->/data/local/tmp/cts/uninstall/CtsArchiveInstallerApp.apk" />
         <option name="push" value="CtsArchiveTestApp.apk->/data/local/tmp/cts/uninstall/CtsArchiveTestApp.apk" />
+        <option name="push" value="HelloWorldAppV1.apk->/data/local/tmp/cts/uninstall/HelloWorldAppV1.apk" />
+        <option name="push" value="HelloWorldAppV2.apk->/data/local/tmp/cts/uninstall/HelloWorldAppV2.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RootTargetPreparer">

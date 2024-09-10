@@ -54,13 +54,14 @@ class AttributionTest {
     private val appUid by lazy { context.packageManager.getPackageUid(APP_PKG, 0) }
 
     private fun installApk(apk: String) {
-        val result = runCommand("pm install -r --force-queryable $APK_PATH$apk")
+        val result = runCommand(
+            "pm install --user ${context.userId} -r --force-queryable $APK_PATH$apk")
         assertThat(result.trim()).isEqualTo("Success")
     }
 
     @Before
     fun resetTestApp() {
-        runCommand("pm uninstall $APP_PKG")
+        runCommand("pm uninstall --user ${context.userId} $APP_PKG")
         installApk("CtsAppToBlame1.apk")
     }
 
@@ -113,7 +114,7 @@ class AttributionTest {
                     .isEqualTo(before.attributedOpEntries[ATTRIBUTION_3]!!
                             .getLastAccessTime(OP_FLAGS_ALL))
         }
-        runCommand("pm uninstall $PKG")
+        runCommand("pm uninstall --user ${context.userId} $PKG")
     }
 
     @Test

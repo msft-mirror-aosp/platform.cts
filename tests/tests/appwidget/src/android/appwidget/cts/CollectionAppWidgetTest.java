@@ -218,6 +218,7 @@ public class CollectionAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
+    @Ignore("b/355284003")
     public void testInitialState() {
         if (!mHasAppWidgets) {
             return;
@@ -257,6 +258,7 @@ public class CollectionAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
+    @Ignore("b/355284003")
     public void testSetDisplayedChild() {
         if (!mHasAppWidgets) {
             return;
@@ -295,6 +297,7 @@ public class CollectionAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
+    @Ignore("b/355284003")
     public void testShowNextPrevious() {
         if (!mHasAppWidgets) {
             return;
@@ -330,6 +333,7 @@ public class CollectionAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
+    @Ignore("b/355284003")
     public void testSetOnClickPendingIntent() throws Throwable {
         if (!mHasAppWidgets) {
             return;
@@ -382,6 +386,7 @@ public class CollectionAppWidgetTest extends AppWidgetTestCase {
     }
 
     @Test
+    @Ignore("b/355284003")
     public void testSetOnCheckedChangePendingIntent() throws Throwable {
         if (!mHasAppWidgets) {
             return;

@@ -22,6 +22,8 @@ public class ADPFAtomTestConstants {
             "action.create_dead_tids";
     public static final String ACTION_CREATE_REGULAR_HINT_SESSIONS =
             "action.create_regular_hint_sessions";
+    public static final String ACTION_CREATE_REGULAR_HINT_SESSIONS_MULTIPLE =
+            "action.create_regular_hint_sessions_multiple";
     public static final String CONTENT_KEY_RESULT_TIDS = "result_tids";
     public static final String CONTENT_KEY_UID = "result_uid";
     public static final String CONTENT_COLUMN_KEY = "key";

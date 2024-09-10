@@ -54,11 +54,4 @@
     <option
         name="device-listeners"
         value="com.android.modules.utils.testing.NativeCoverageHackInstrumentationListener"/>
-
-    <!-- Collect the files generated on error -->
-    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
-        <option name="directory-keys" value="/sdcard/PdfRendererScreenshotTest" />
-        <option name="collect-on-run-ended-only" value="true" />
-        <option name="clean-up" value="false" />
-    </metrics_collector>
 </configuration>

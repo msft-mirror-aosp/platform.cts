@@ -73,12 +73,14 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.cts.input.FailOnTestThreadRule;
+import com.android.cts.input.inputeventmatchers.InputEventMatchersKt;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -151,7 +153,7 @@ public class ASurfaceControlInputReceiverTest {
                 windowBounds.height() / 2);
         assertAndDumpWindowState(TAG, "Failed to receive touch", motionEvent != null);
         assertThat(motionEvent, allOf(withMotionAction(MotionEvent.ACTION_DOWN),
-                withCoords(centerCoordRelativeToWindow)));
+                withCoords(centerCoordRelativeToWindow, InputEventMatchersKt.EPSILON)));
     }
 
     @Test
@@ -362,7 +364,7 @@ public class ASurfaceControlInputReceiverTest {
                         }
                     }
                     return false;
-                }, WAIT_TIME_S, TimeUnit.SECONDS);
+                }, Duration.ofSeconds(WAIT_TIME_S));
         assertAndDumpWindowState(TAG, "Failed to find embedded SC on top", success);
     }
 
@@ -450,7 +452,7 @@ public class ASurfaceControlInputReceiverTest {
             assertTrue("Failed to wait for child SC to draw",
                     drawCompleteLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             surfaceView.setOnTouchListener(hostTouchListener);
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
     }
 
@@ -538,7 +540,7 @@ public class ASurfaceControlInputReceiverTest {
             assertTrue("Failed to attach ASurfaceControl",
                     surfaceViewCreatedLatch.await(WAIT_TIME_S, TimeUnit.SECONDS));
             surfaceView.setOnTouchListener(hostTouchListener);
-            waitForStableWindowGeometry(WAIT_TIME_S, TimeUnit.SECONDS);
+            waitForStableWindowGeometry(Duration.ofSeconds(WAIT_TIME_S));
         }
     }
 

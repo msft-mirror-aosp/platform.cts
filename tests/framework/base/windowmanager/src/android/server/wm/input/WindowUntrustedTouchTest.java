@@ -45,7 +45,6 @@ import android.app.Instrumentation;
 import android.app.NotificationManager;
 import android.app.WindowConfiguration;
 import android.content.ComponentName;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -77,7 +76,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
-import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 import android.widget.Toast;
 
@@ -97,9 +95,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Presubmit
@@ -148,11 +146,9 @@ public class WindowUntrustedTouchTest {
     private Instrumentation mInstrumentation;
     private Context mContext;
     private Resources mResources;
-    private ContentResolver mContentResolver;
     private TouchHelper mTouchHelper;
     private Handler mMainHandler;
     private InputManager mInputManager;
-    private WindowManager mWindowManager;
     private ActivityManager mActivityManager;
     private NotificationManager mNotificationManager;
     private TestActivity mActivity;
@@ -188,11 +184,9 @@ public class WindowUntrustedTouchTest {
         mInstrumentation = getInstrumentation();
         mContext = mInstrumentation.getContext();
         mResources = mContext.getResources();
-        mContentResolver = mContext.getContentResolver();
         mTouchHelper = new TouchHelper(mInstrumentation, mWmState);
         mMainHandler = new Handler(Looper.getMainLooper());
         mInputManager = mContext.getSystemService(InputManager.class);
-        mWindowManager = mContext.getSystemService(WindowManager.class);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
 
@@ -969,7 +963,8 @@ public class WindowUntrustedTouchTest {
         WindowManagerState.WindowState focusedWindowState = mWmState.getWindowState(component);
         Rect expectedBounds = mWmState.getActivity(component).getBounds();
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            if (!CtsWindowInfoUtils.waitForWindowOnTop(5 * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
+            if (!CtsWindowInfoUtils.waitForWindowOnTop(
+                    Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER),
                     window -> window.name.contains(focusedWindowState.getToken())
                             && window.name.contains(focusedWindowState.getName()))) {
                 fail("Window " + focusedWindowState.getName() + " did not appear in InputFlinger "

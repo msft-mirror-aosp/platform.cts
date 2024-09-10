@@ -1058,7 +1058,7 @@ bool VkImageRenderer::renderImageAndReadback(VkImage image, VkSampler sampler,
   addImageTransitionBarrier(
       mCmdBuffer, image, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, VK_ACCESS_SHADER_READ_BIT,
-      VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+      VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
       VK_QUEUE_FAMILY_FOREIGN_EXT, mInit->queueFamilyIndex());
 
   // Transition the destination texture for use as a framebuffer.

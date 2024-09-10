@@ -38,9 +38,10 @@ java_library {
     srcs: ["src/android/keystore/cts/util/**/*.java"],
 
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
         "androidx.test.rules",
+        "compatibility-device-util-axt",
         "junit",
         "truth",
     ],
@@ -59,8 +60,8 @@ android_test {
     ],
     libs: [
         "bouncycastle-unbundled",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "DeviceAdminApp",
@@ -80,6 +81,7 @@ android_test {
         "guava",
         "hamcrest-library",
         "junit",
+        "junit-params",
         "platformprotosnano",
         "testng",
     ],
@@ -107,8 +109,8 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -139,8 +141,8 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "bouncycastle-bcpkix-unbundled",

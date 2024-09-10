@@ -44,7 +44,7 @@ public class MediaProjectionTests {
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
     private static final String SPINNER_RESOURCE_ID =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_spinner";
+            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final UiDevice mDevice =

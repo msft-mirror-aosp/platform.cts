@@ -16,6 +16,9 @@
 
 package com.android.bedstead.nene.users;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.setStopUserOnSwitch;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersSupported;
+import static android.cts.testapisreflection.TestApisReflectionKt.getVisibleBackgroundUsersOnDefaultDisplaySupported;
 import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
@@ -119,6 +122,35 @@ public final class Users {
     public Collection<UserReference> profileGroup(UserReference user) {
         return users().filter(ui -> ui.getProfileGroupId() == user.id())
                 .map(ui -> find(ui.getId())).collect(Collectors.toSet());
+    }
+
+    /**
+     * Gets a {@link UserReference} of the first human user on the device.
+     *
+     * @deprecated Use {@link #initial()} to ensure compatibility with Headless System User
+     * Mode devices.
+     */
+    @Deprecated
+    public UserReference primary() {
+        return all()
+                .stream()
+                .filter(UserReference::isPrimary)
+                .findFirst()
+                .orElseThrow(IllegalStateException::new);
+    }
+
+    /**
+     * Gets a {@link UserReference} of the first admin user on the device.
+     *
+     * @throws IllegalStateException when there's no admin
+     */
+    public UserReference admin() {
+        return all()
+                .stream()
+                .sorted(Comparator.comparing(UserReference::id))
+                .filter(UserReference::isAdmin)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No admin user on device"));
     }
 
     /**
@@ -537,7 +569,7 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersSupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return TestApisReflectionKt.isVisibleBackgroundUsersSupported(sUserManager);
+            return getVisibleBackgroundUsersSupported(sUserManager);
         }
 
         return false;
@@ -547,8 +579,7 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersOnDefaultDisplaySupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return TestApisReflectionKt.isVisibleBackgroundUsersOnDefaultDisplaySupported(
-                    sUserManager);
+            return getVisibleBackgroundUsersOnDefaultDisplaySupported(sUserManager);
         }
 
         return false;
@@ -572,8 +603,7 @@ public final class Users {
         Context context = TestApis.context().instrumentedContext();
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS)) {
-            TestApisReflectionKt.setStopUserOnSwitch(
-                    context.getSystemService(ActivityManager.class), intValue);
+            setStopUserOnSwitch(context.getSystemService(ActivityManager.class), intValue);
         }
     }
 

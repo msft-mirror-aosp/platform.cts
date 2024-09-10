@@ -30,8 +30,6 @@ import low_light_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
-_TABLET_BRIGHTNESS = '6'  # Highest minimum brightness on a supported tablet
-_TAP_COORDINATES = (500, 500)  # Location to tap tablet screen via adb
 _TEST_REQUIRED_MPC = 34
 
 _AVG_DELTA_LUMINANCE_THRESH = 17
@@ -94,9 +92,10 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
       test_name = os.path.join(self.log_path, _NAME)
+      camera_id = self.camera_id
 
       # Determine camera supported extensions
-      supported_extensions = cam.get_supported_extensions(self.camera_id)
+      supported_extensions = cam.get_supported_extensions(camera_id)
       logging.debug('Supported extensions: %s', supported_extensions)
 
       # Check media performance class
@@ -157,17 +156,12 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
           cam, props, self.scene, self.tablet, self.chart_distance,
           lighting_check=False, log_path=self.log_path)
 
-      # Tap tablet to remove gallery buttons
-      if self.tablet:
-        self.tablet.adb.shell(
-            f'input tap {_TAP_COORDINATES[0]} {_TAP_COORDINATES[1]}')
-
       # Determine capture width, height, and format
       for format_name, format_constant in _IMAGE_FORMATS_TO_CONSTANTS:
         capture_sizes = capture_request_utils.get_available_output_sizes(
             format_name, props)
         extension_capture_sizes_str = cam.get_supported_extension_sizes(
-            self.camera_id, _EXTENSION_NIGHT, format_constant
+            camera_id, _EXTENSION_NIGHT, format_constant
         )
         if not extension_capture_sizes_str:
           continue
@@ -187,9 +181,10 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         raise AssertionError('No supported sizes/formats found!')
 
       # Set tablet brightness to darken scene
-      self.set_screen_brightness(_TABLET_BRIGHTNESS)
+      self.set_screen_brightness(
+          low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()][0])
 
-      file_stem = f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
+      file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
           'format': accepted_format, 'width': width, 'height': height}
       req = capture_request_utils.auto_capture_request()

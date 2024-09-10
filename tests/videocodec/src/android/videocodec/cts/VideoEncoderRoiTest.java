@@ -26,8 +26,10 @@ import static android.mediav2.common.cts.CodecTestBase.prepareParamList;
 import static android.videocodec.cts.VideoEncoderInput.SELFIEGROUP_FULLHD_PORTRAIT;
 import static android.videocodec.cts.VideoEncoderInput.getRawResource;
 import static android.videocodec.cts.VideoEncoderInput.CompressedResource;
+import static android.videocodec.cts.VideoEncoderRoiTest.ErrorType.*;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.graphics.Rect;
@@ -35,6 +37,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.mediav2.common.cts.EncoderConfigParams;
+import android.mediav2.common.cts.OutputManager;
 import android.mediav2.common.cts.RawResource;
 import android.os.Build;
 import android.os.Bundle;
@@ -91,7 +94,44 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         ROI_TYPE_MAP
     }
 
+    public enum ErrorType {
+        ROI_RECT_CORRECT,
+        ROI_RECT_INCORRECT,
+        ROI_MAP_CORRECT,
+        ROI_MAP_TOO_SMALL,
+        ROI_MAP_TOO_LARGE
+    }
+
     private final RoiType mRoiType;
+    private final ErrorType mErrorType;
+
+    private static void addParams(CompressedResource cRes, RoiType roiType, ErrorType errorType) {
+        final String[] mediaTypes =
+                new String[]{MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                        MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
+        RESOURCES.add(cRes);
+        for (String mediaType : mediaTypes) {
+            // mediaType, resource, roiType, errorType
+            exhaustiveArgsList.add(new Object[]{mediaType, cRes, roiType, errorType});
+        }
+    }
+
+    @Parameterized.Parameters(name = "{index}_{0}_{1}_{4}")
+    public static Collection<Object[]> input() {
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS, ROI_RECT_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS, ROI_RECT_INCORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_CORRECT);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_TOO_SMALL);
+        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP, ROI_MAP_TOO_LARGE);
+        return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
+    }
+
+    public VideoEncoderRoiTest(String encoder, String mediaType, CompressedResource cRes,
+            RoiType roiType, ErrorType errorType, String allTestParams) {
+        super(encoder, mediaType, cRes, allTestParams);
+        mRoiType = roiType;
+        mErrorType = errorType;
+    }
 
     /**
      * Helper class for {@link VideoEncoderRoiTest}
@@ -99,12 +139,16 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
     public static class VideoEncoderRoiHelper extends VideoEncoderValidationTestBase {
         private final Map<Long, List<QpOffsetRect>> mRoiMetadata;
         private final RoiType mRoiType;
+        private final ErrorType mErrorType;
+
 
         VideoEncoderRoiHelper(String encoder, String mediaType, EncoderConfigParams encCfgParams,
-                Map<Long, List<QpOffsetRect>> roiMetadata, RoiType roiType, String allTestParams) {
+                Map<Long, List<QpOffsetRect>> roiMetadata, RoiType roiType, ErrorType errorType,
+                String allTestParams) {
             super(encoder, mediaType, encCfgParams, allTestParams);
             mRoiMetadata = roiMetadata;
             mRoiType = roiType;
+            mErrorType = errorType;
         }
 
         private List<QpOffsetRect> getRoiMetadataForPts(Long pts) {
@@ -166,36 +210,25 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
                             throw new RuntimeException(e);
                         }
                     }
+
+                    if (mErrorType == ROI_MAP_TOO_LARGE) {
+                        int newSize = arraySize + arrayStride;
+                        byte[] newArray = new byte[newSize];
+                        System.arraycopy(qpOffsetArray, 0, newArray, 0, qpOffsetArray.length);
+                        qpOffsetArray = newArray;
+                    }
+                    if (mErrorType == ROI_MAP_TOO_SMALL) {
+                        int newSize = arraySize - arrayStride;
+                        byte[] newArray = new byte[newSize];
+                        System.arraycopy(qpOffsetArray, 0, newArray, 0, newSize);
+                        qpOffsetArray = newArray;
+                    }
                     param.putByteArray(MediaCodec.PARAMETER_KEY_QP_OFFSET_MAP, qpOffsetArray);
                 }
                 mCodec.setParameters(param);
             }
             super.enqueueInput(bufferIndex);
         }
-    }
-
-    private static void addParams(CompressedResource cRes, RoiType roiType) {
-        final String[] mediaTypes =
-                new String[]{MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
-                        MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1};
-        RESOURCES.add(cRes);
-        for (String mediaType : mediaTypes) {
-            // mediaType, cfg
-            exhaustiveArgsList.add(new Object[]{mediaType, cRes, roiType});
-        }
-    }
-
-    @Parameterized.Parameters(name = "{index}_{0}_{1}_{3}")
-    public static Collection<Object[]> input() {
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_RECTS);
-        addParams(SELFIEGROUP_FULLHD_PORTRAIT, RoiType.ROI_TYPE_MAP);
-        return prepareParamList(exhaustiveArgsList, true, false, true, false, HARDWARE);
-    }
-
-    public VideoEncoderRoiTest(String encoder, String mediaType, CompressedResource cRes,
-            RoiType roiType, String allTestParams) {
-        super(encoder, mediaType, cRes, allTestParams);
-        mRoiType = roiType;
     }
 
     public Map<Long, List<Rect>> getPtsRectMap(Map<Long, List<QpOffsetRect>> roiMetadata)
@@ -220,24 +253,15 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         return ptsRectMap;
     }
 
-    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_Roi",
-            "android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_MAP",
-            "android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_RECTS",
-            "android.media.MediaFormat#QpOffsetRect"})
-    @LargeTest
-    @Test
-    public void testRoiSupport()
+    private void testValidConfig()
             throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
-        assumeTrue(mCodecName + " does not support FEATURE_Roi",
-                isFeatureSupported(mCodecName, mMediaType,
-                        MediaCodecInfo.CodecCapabilities.FEATURE_Roi));
         RawResource res = getRawResource(mCRes);
         Map<Long, List<QpOffsetRect>> roiMetadata = GenerateRoiMetadata.ROI_INFO.get(mCRes);
         assertNotNull("no roi metadata found for resource " + mCRes.uniqueLabel(), roiMetadata);
         VideoEncoderValidationTestBase[] testInstances =
                 {new VideoEncoderValidationTestBase(null, mMediaType, null,
                         mAllTestParams), new VideoEncoderRoiHelper(null, mMediaType, null,
-                        roiMetadata, mRoiType, mAllTestParams)};
+                        roiMetadata, mRoiType, mErrorType, mAllTestParams)};
         String[] encoderNames = new String[FEATURES.length];
         List<EncoderConfigParams[]> cfgsUnion = new ArrayList<>();
         for (int i = 0; i < FEATURES.length; i++) {
@@ -258,7 +282,61 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         Predicate<Double> predicate = bdRate -> bdRate <= EXPECTED_BD_RATE;
         Map<Long, List<Rect>> frameCropRects = getPtsRectMap(roiMetadata);
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, frameCropRects, false, predicate);
+                FRAME_RATE, frameCropRects, false, predicate, true);
+    }
+
+    private void testInvalidConfig() throws IOException, InterruptedException {
+        RawResource res = getRawResource(mCRes);
+        Map<Long, List<QpOffsetRect>> roiMetadata = GenerateRoiMetadata.ROI_INVALID_INFO.get(mCRes);
+        assertNotNull("no roi metadata found for resource " + mCRes.uniqueLabel(), roiMetadata);
+
+        EncoderConfigParams refCfg = getVideoEncoderCfgParams(mMediaType, res.mWidth, res.mHeight,
+                BIT_RATES[0], BITRATE_MODE_VBR, KEY_FRAME_INTERVAL, FRAME_RATE,
+                MAX_B_FRAMES, null);
+        Pair<String, Boolean> feature =
+                new Pair<>(MediaCodecInfo.CodecCapabilities.FEATURE_Roi, true);
+        EncoderConfigParams testCfg = getVideoEncoderCfgParams(mMediaType, res.mWidth, res.mHeight,
+                BIT_RATES[0], BITRATE_MODE_VBR, KEY_FRAME_INTERVAL, FRAME_RATE,
+                MAX_B_FRAMES, feature);
+        ArrayList<MediaFormat> fmts = new ArrayList<>();
+        fmts.add(refCfg.getFormat());
+        fmts.add(testCfg.getFormat());
+        assumeTrue("Encoder: " + mCodecName + " doesn't support formats.",
+                areFormatsSupported(mCodecName, mMediaType, fmts));
+
+        VideoEncoderValidationTestBase refInstance =
+                new VideoEncoderValidationTestBase(null, mMediaType, null, mAllTestParams);
+        refInstance.encodeToMemory(mCodecName, refCfg, res, FRAME_LIMIT, true, false);
+        OutputManager ref = refInstance.getOutputManager();
+
+        VideoEncoderValidationTestBase testInstance =
+                new VideoEncoderRoiHelper(null, mMediaType, null, roiMetadata, mRoiType,
+                        mErrorType, mAllTestParams);
+        testInstance.encodeToMemory(mCodecName, testCfg, res, FRAME_LIMIT, true, false);
+        OutputManager test = testInstance.getOutputManager();
+        if (!ref.equals(test)) {
+            fail("Encoder output is not consistent for ref and test \n");
+        }
+    }
+
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_Roi",
+            "android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_MAP",
+            "android.media.MediaCodec#PARAMETER_KEY_QP_OFFSET_RECTS",
+            "android.media.MediaFormat#QpOffsetRect"})
+    @LargeTest
+    @Test
+    public void testRoiSupport()
+            throws IOException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+        assumeTrue(mCodecName + " does not support FEATURE_Roi",
+                isFeatureSupported(mCodecName, mMediaType,
+                        MediaCodecInfo.CodecCapabilities.FEATURE_Roi));
+
+        if (mErrorType == ROI_RECT_CORRECT || mErrorType == ROI_MAP_CORRECT
+                || mErrorType == ROI_MAP_TOO_LARGE) {
+            testValidConfig();
+        } else {
+            testInvalidConfig();
+        }
     }
 }
 
@@ -267,6 +345,8 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
  */
 class GenerateRoiMetadata {
     static final Map<CompressedResource, Map<Long, List<QpOffsetRect>>> ROI_INFO =
+            new HashMap<>();
+    static final Map<CompressedResource, Map<Long, List<QpOffsetRect>>> ROI_INVALID_INFO =
             new HashMap<>();
 
     static {
@@ -312,5 +392,12 @@ class GenerateRoiMetadata {
                         new QpOffsetRect(new Rect(18, 644, 758, 1946), -5),
                         new QpOffsetRect(new Rect(0, 0, 1080, 600), 5))));
         ROI_INFO.put(SELFIEGROUP_FULLHD_PORTRAIT, roiMetadata);
+
+        Map<Long, List<QpOffsetRect>> roiInvalidMetadata = new HashMap<>();
+        roiInvalidMetadata.put(0L, new ArrayList<>(
+                Arrays.asList(new QpOffsetRect(new Rect(-694, -668, -991, -1487), -5))));
+        roiInvalidMetadata.put(100000L, new ArrayList<>(
+                Arrays.asList(new QpOffsetRect(new Rect(2264, 2265, 2783, 2807), -5))));
+        ROI_INVALID_INFO.put(SELFIEGROUP_FULLHD_PORTRAIT, roiInvalidMetadata);
     }
 }

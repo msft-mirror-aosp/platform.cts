@@ -16,11 +16,14 @@
 
 package android.preference.cts;
 
+import android.Manifest;
 import android.content.Intent;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.test.ActivityInstrumentationTestCase2;
+
+import com.android.compatibility.common.util.SystemUtil;
 
 public class PreferenceActivityTest
         extends ActivityInstrumentationTestCase2<PreferenceCtsActivity> {
@@ -34,7 +37,8 @@ public class PreferenceActivityTest
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        mActivity = getActivity();
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                this::getActivity, Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
     }
 
     public void testAddPreferencesFromIntent() {

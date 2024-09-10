@@ -20,7 +20,6 @@ import static android.server.wm.second.Components.TEST_ACTIVITY_WITH_SAME_AFFINI
 import static android.server.wm.shareuid.a.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY;
 import static android.server.wm.shareuid.a.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY_SAME_APP;
 import static android.server.wm.shareuid.b.Components.TEST_ACTIVITY_WITH_SAME_AFFINITY_SHARE_UID;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -30,6 +29,7 @@ import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.annotation.Group3;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -41,6 +41,17 @@ import org.junit.Test;
 @Presubmit
 @Group3
 public class ActivityTaskAffinityTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_SHARE_UID_A =
+            TEST_ACTIVITY_WITH_SAME_AFFINITY.getPackageName();
+    private static final String TEST_PACKAGE_SHARE_UID_B =
+            TEST_ACTIVITY_WITH_SAME_AFFINITY_SHARE_UID.getPackageName();
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SHARE_UID_A);
+        stopTestPackage(TEST_PACKAGE_SHARE_UID_B);
+    }
+
     @Test
     public void testActivitiesWithSameAffinityDifferentAppDifferentUidDifferentTask() {
         testActivitiesShouldBeInTheSameTask(
@@ -71,12 +82,12 @@ public class ActivityTaskAffinityTests extends ActivityManagerTestBase {
     private void testActivitiesShouldBeInTheSameTask(ComponentName activityA,
             ComponentName activityB, boolean sameTask) {
         launchActivity(activityA);
-        waitAndAssertTopResumedActivity(activityA, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(activityA, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int firstAppTaskId = mWmState.getTaskByActivity(activityA).getTaskId();
 
         launchActivity(activityB);
-        waitAndAssertTopResumedActivity(activityB, DEFAULT_DISPLAY,
+        waitAndAssertTopResumedActivity(activityB, getMainDisplayId(),
                 "Launched activity must be top-resumed.");
         final int secondAppTaskId = mWmState.getTaskByActivity(activityB).getTaskId();
 

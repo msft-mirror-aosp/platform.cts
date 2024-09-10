@@ -20,9 +20,7 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERNAL_SYSTEM
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
-import static com.android.interactive.testrules.TestNameSaver.INTERACTIVE_TEST_NAME;
 
-import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -112,12 +110,17 @@ public abstract class Step<E> {
         try {
             step = stepClass.newInstance();
         } catch (InstantiationException | IllegalAccessException e) {
-            throw new AssertionError("Error preparing step", e);
+            throw new AssertionError("Error preparing " + stepClass, e);
         }
 
         // Check if is cached...
         if (sStepCache.containsKey(stepClass)) {
             return (E) sStepCache.get(stepClass);
+        }
+
+        if (step.getValue().isPresent()) {
+            // If the step already has an answer - no need to show it to the user or run automations
+            return step.getValue().get();
         }
 
         if (!sForceManual.get()
@@ -188,8 +191,7 @@ public abstract class Step<E> {
         }
 
         if (TestApis.instrumentation().arguments().getBoolean("ENABLE_MANUAL", false)) {
-            if (!step.getValue().isPresent() && !step.hasFailed()) {
-                // If the step already has an answer - no need to show it to the user
+            if (!step.hasFailed()) {
                 step.interact();
             }
 
@@ -228,10 +230,20 @@ public abstract class Step<E> {
 
                 return returnValue;
             } finally {
-                step.close();
+                if (step.shouldTakeScreenshot()) {
+                    step.takeScreenshotAndClose();
+                } else {
+                    step.close();
+                }
             }
         }
-        throw new AssertionError("Could not automatically or manually pass test");
+        throw new AssertionError("Could not automatically or manually pass test. "
+                + "Failed at step: " + step);
+    }
+
+    /** Gets the boolean value of an instrumentation argument with a default value. */
+    private static boolean getBooleanArg(String argName, boolean defaultValue) {
+        return TestApis.instrumentation().arguments().getBoolean(argName, defaultValue);
     }
 
     protected final void pass() {
@@ -246,12 +258,18 @@ public abstract class Step<E> {
 
     protected final void pass(E value) {
         mValue = Optional.of(value);
-        close();
+        // Let the main thread take the screenshot and close the step.
+        if (!shouldTakeScreenshot()) {
+            close();
+        }
     }
 
     protected final void fail(String reason) {
         mFailed = true; // TODO: Use reason
-        close();
+        // Let the main thread take the screenshot and close the step.
+        if (!shouldTakeScreenshot()) {
+            close();
+        }
     }
 
     /** Returns present if the manual step has concluded successfully. */
@@ -415,39 +433,9 @@ public abstract class Step<E> {
         sWindowManager.updateViewLayout(mInstructionView, params);
     }
 
-    /**
-     * Closes the step, takes a screenshot of the device if the feature is enabled, and removes the
-     * instruction view if it's still there.
-     */
+    /** Closes the step by removing the instruction view (if shown). */
     protected void close() {
-        if (!mHasTakenScreenshot
-                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
-            mHasTakenScreenshot = true;
-            String testName =
-                    TestApis.context()
-                            .instrumentedContext()
-                            .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
-                            .getString(INTERACTIVE_TEST_NAME, "");
-            ScreenshotUtil.captureScreenshot(
-                    testName.isEmpty()
-                            ? getClass().getCanonicalName()
-                            : testName + "__" + getClass().getSimpleName());
-        }
-        if (mInstructionView != null) {
-            TestApis.context()
-                    .instrumentationContext()
-                    .getMainExecutor()
-                    .execute(
-                            () -> {
-                                try {
-                                    sWindowManager.removeViewImmediate(mInstructionView);
-                                    mInstructionView = null;
-                                } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
-                                    Log.i(LOG_TAG, "Error removing instruction view", e);
-                                }
-                            });
-        }
+        removeInstructionView();
     }
 
     /** Executes the manual step. */
@@ -461,5 +449,61 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /**
+     * Takes a screenshot of the device before or after closing the step, depending on the
+     * instrumentation argument.
+     */
+    private void takeScreenshotAndClose() {
+        mHasTakenScreenshot = true;
+        String screenshotName = getClass().getSimpleName();
+        if (getBooleanArg("HIDE_INSTRUCTION", false)) {
+            // Remove the instruction view before taking the screenshot.
+            removeInstructionView();
+            Poll.forValue("instructionRemoved", () -> mInstructionView)
+                    .toBeNull()
+                    .timeout(MAX_STEP_DURATION)
+                    .await();
+            ScreenshotUtil.captureScreenshot(screenshotName);
+        } else {
+            // Otherwise take a screenshot then remove the instruction view.
+            ScreenshotUtil.captureScreenshot(screenshotName);
+            removeInstructionView();
+        }
+    }
+
+    /** Checks whether a screenshot should be taken for the step. */
+    private boolean shouldTakeScreenshot() {
+        // 1. The argument TAKE_SCREENSHOT should be set as true.
+        // 2. The step needs a manual interact.
+        // 3. The step hasn't been taken a screenshot before.
+        return mInstructionView != null
+                && getBooleanArg("TAKE_SCREENSHOT", false)
+                && !mHasTakenScreenshot;
+    }
+
+    /** Removes the instruction view in the main executor if it's still there. */
+    private void removeInstructionView() {
+        if (mInstructionView != null) {
+            TestApis.context()
+                    .instrumentationContext()
+                    .getMainExecutor()
+                    .execute(
+                            () -> {
+                                try {
+                                    mInstructionView.setVisibility(View.INVISIBLE);
+                                    sWindowManager.removeViewImmediate(mInstructionView);
+                                    mInstructionView = null;
+                                } catch (IllegalArgumentException e) {
+                                    // This can happen if the view is no longer attached.
+                                    Log.i(LOG_TAG, "Error removing instruction view", e);
+                                } catch (NullPointerException e) {
+                                    // This can happen if another {@link #close()} has removed the
+                                    // view.
+                                    Log.i(LOG_TAG, "Instruction view has been removed", e);
+                                }
+                            });
+        }
     }
 }
