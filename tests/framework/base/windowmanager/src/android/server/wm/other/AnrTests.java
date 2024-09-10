@@ -212,7 +212,7 @@ public class AnrTests extends ActivityManagerTestBase {
         return infos[0];
     }
     private void waitForNewExitReasonAfter(long timestamp, String packageName) {
-        PollingCheck.waitFor(() -> {
+        PollingCheck.waitFor(3_000 * BuildUtils.HW_TIMEOUT_MULTIPLIER, () -> {
             List<ApplicationExitInfo> reasons = getExitReasons(packageName);
             return !reasons.isEmpty() && reasons.get(0).getTimestamp() >= timestamp;
         });
