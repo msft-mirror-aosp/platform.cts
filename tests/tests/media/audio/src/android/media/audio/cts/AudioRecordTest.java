@@ -16,6 +16,8 @@
 
 package android.media.audio.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +65,8 @@ import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
 import com.android.compatibility.common.util.SystemUtil;
+
+import com.google.common.collect.Range;
 
 import org.junit.After;
 import org.junit.Before;
@@ -749,7 +753,9 @@ public class AudioRecordTest {
                     final int amount = samplesRead == 0 ? numChannels :
                             Math.min(BUFFER_SAMPLES, targetSamples - samplesRead);
                     final int ret = record.read(shortData, 0, amount);
-                    assertEquals("read incorrect amount", amount, ret);
+                    assertWithMessage("read incorrect amount")
+                            .that(ret)
+                            .isEqualTo(amount);
                     // timestamps follow a different path than data, so it is conceivable
                     // that first data arrives before the first timestamp is ready.
 
@@ -768,15 +774,26 @@ public class AudioRecordTest {
                 AudioTimestamp stopTs = new AudioTimestamp();
                 AudioTimestamp stopTsBoot = new AudioTimestamp();
 
-                assertEquals(AudioRecord.SUCCESS,
-                        record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC));
-                assertEquals(AudioRecord.SUCCESS,
-                        record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME));
+                assertWithMessage("timestamp monotonic returns success")
+                        .that(record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC))
+                        .isEqualTo(AudioRecord.SUCCESS);
+                assertWithMessage("timestamp boottime returns success")
+                        .that(record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
+                        .isEqualTo(AudioRecord.SUCCESS);
 
-                assertEquals(stopTs.framePosition, stopTsBoot.framePosition);
-                assertTrue(stopTs.framePosition >= targetFrames);
-                assertTrue(stopTs.nanoTime - trackStartTimeNs > RECORD_TIME_NS);
-                assertTrue(stopTsBoot.nanoTime - trackStartTimeBootNs > RECORD_TIME_NS);
+                assertWithMessage("timestamp monotonic and boottime have same frame position")
+                        .that(stopTs.framePosition)
+                        .isEqualTo(stopTsBoot.framePosition);
+
+                assertWithMessage("timestamp monotonic frame position is at least target frames")
+                        .that(stopTs.framePosition)
+                        .isAtLeast(targetFrames);
+                assertWithMessage("timestamp monotonic elapsed time is at least record time")
+                        .that(stopTs.nanoTime - trackStartTimeNs)
+                        .isAtLeast(RECORD_TIME_NS);
+                assertWithMessage("timestamp boottime elapsed time is at least record time")
+                         .that(stopTsBoot.nanoTime - trackStartTimeBootNs)
+                         .isAtLeast(RECORD_TIME_NS);
 
                 tsVerifier.verifyAndLog(trackStartTimeNs, "test_timestamp" /* logName */);
             }
@@ -790,73 +807,7 @@ public class AudioRecordTest {
 
     @Test
     public void testRecordNoDataForIdleUids() throws Exception {
-        if (!hasMicrophone()) {
-            return;
-        }
-
-        AudioRecord recorder = null;
-        String packageName = InstrumentationRegistry.getTargetContext().getPackageName();
-        int currentUserId = Process.myUserHandle().getIdentifier();
-
-        // We will record audio for 20 sec from active and idle state expecting
-        // the recording from active state to have data while from idle silence.
-        try {
-            // Ensure no race and UID active
-            makeMyUidStateActive(packageName, currentUserId);
-
-            // Setup a recorder
-            final AudioRecord candidateRecorder = new AudioRecord.Builder()
-                    .setAudioSource(MediaRecorder.AudioSource.MIC)
-                    .setBufferSizeInBytes(1024)
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setSampleRate(8000)
-                            .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .build())
-                    .build();
-
-            // Unleash it :P
-            candidateRecorder.startRecording();
-            recorder = candidateRecorder;
-
-            final int sampleCount = AudioHelper.frameCountFromMsec(6000,
-                    candidateRecorder.getFormat()) * candidateRecorder.getFormat()
-                    .getChannelCount();
-            final ShortBuffer buffer = ShortBuffer.allocate(sampleCount);
-
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read non-empty bytes. Some systems only
-            // emulate audio devices and do not provide any actual audio data.
-            if (isAudioSilent(buffer)) {
-                Log.w(TAG, "Recording does not produce audio data");
-                return;
-            }
-
-            // Start clean
-            buffer.clear();
-            // Force idle the package
-            makeMyUidStateIdle(packageName, currentUserId);
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read empty bytes
-            assertTrue("Recording was not silenced while UID idle", isAudioSilent(buffer));
-
-            // Start clean
-            buffer.clear();
-            // Reset to active
-            makeMyUidStateActive(packageName, currentUserId);
-            // Read five seconds of data
-            readDataTimed(recorder, 5000, buffer);
-            // Ensure we read non-empty bytes
-            assertFalse("Recording was silenced while UID active", isAudioSilent(buffer));
-        } finally {
-            if (recorder != null) {
-                recorder.stop();
-                recorder.release();
-            }
-            resetMyUidState(packageName, currentUserId);
-        }
+        // Removed in favor of audiorecordpermissiontests
     }
 
     @Test
@@ -1143,7 +1094,9 @@ public class AudioRecordTest {
                 (AudioFormat.getBytesPerSample(TEST_FORMAT)
                         * AudioFormat.channelCountFromInChannelMask(TEST_CONF)) :
                 AudioRecord.getMinBufferSize(TEST_SR, TEST_CONF, TEST_FORMAT);
-        assertTrue(bufferSizeInBytes > 0);
+        assertWithMessage("getMinBufferSize() reports nonzero value")
+                .that(bufferSizeInBytes)
+                .isGreaterThan(0);
 
         final AudioRecord record;
         final AudioHelper
@@ -1170,7 +1123,9 @@ public class AudioRecordTest {
         }
 
         // AudioRecord creation may have silently failed, check state now
-        assertEquals(AudioRecord.STATE_INITIALIZED, record.getState());
+        assertWithMessage("getState() reports STATE_INITIALIZED")
+                .that(record.getState())
+                .isEqualTo(AudioRecord.STATE_INITIALIZED);
 
         final MockOnRecordPositionUpdateListener listener;
         if (customHandler) {
@@ -1196,8 +1151,9 @@ public class AudioRecordTest {
             if (markerPeriodsPerSecond != 0) {
                 mMarkerPeriodInFrames = TEST_SR / markerPeriodsPerSecond;
                 mMarkerPosition = mMarkerPeriodInFrames;
-                assertEquals(AudioRecord.SUCCESS,
-                        record.setNotificationMarkerPosition(mMarkerPosition));
+                assertWithMessage("setNotificationMarkerPosition() should succeed")
+                        .that(record.setNotificationMarkerPosition(mMarkerPosition))
+                        .isEqualTo(AudioRecord.SUCCESS);
             } else {
                 mMarkerPeriodInFrames = 0;
             }
@@ -1207,13 +1163,18 @@ public class AudioRecordTest {
 
             // at the start, there is no timestamp.
             AudioTimestamp startTs = new AudioTimestamp();
-            assertEquals(AudioRecord.ERROR_INVALID_OPERATION,
-                    record.getTimestamp(startTs, AudioTimestamp.TIMEBASE_MONOTONIC));
-            assertEquals("invalid getTimestamp doesn't affect nanoTime", 0, startTs.nanoTime);
+            assertWithMessage("getTimestamp without startRecording() is ERROR_INVALID_OPERATION")
+                    .that(record.getTimestamp(startTs, AudioTimestamp.TIMEBASE_MONOTONIC))
+                    .isEqualTo(AudioRecord.ERROR_INVALID_OPERATION);
+            assertWithMessage("invalid getTimestamp doesn't affect nanoTime")
+                    .that(startTs.nanoTime)
+                    .isEqualTo(0);
 
             listener.start(TEST_SR);
             record.startRecording();
-            assertEquals(AudioRecord.RECORDSTATE_RECORDING, record.getRecordingState());
+            assertWithMessage("getRecordingState() should report RECORDSTATE_RECORDING")
+                    .that(record.getRecordingState())
+                    .isEqualTo(AudioRecord.RECORDSTATE_RECORDING);
             startTime = System.currentTimeMillis();
 
             // For our tests, we could set test duration by timed sleep or by # frames received.
@@ -1228,6 +1189,14 @@ public class AudioRecordTest {
             final int BUFFER_FRAMES = 512;
             final int BUFFER_SAMPLES = BUFFER_FRAMES * numChannels;
             // TODO: verify behavior when buffer size is not a multiple of frame size.
+
+            // For fine accuracy timestamp checks, we sample the timestamps
+            // 1/6 and 5/6 of the way through recording to avoid the effects
+            // of AudioRecord start and stop.
+            final int runningTimestampStart = targetSamples * 1 / 6;
+            final int runningTimestampStop = targetSamples * 5 / 6;
+            AudioTimestamp running1Ts = new AudioTimestamp();
+            AudioTimestamp running2Ts = new AudioTimestamp();
 
             int samplesRead = 0;
             // abstract out the buffer type used with lambda.
@@ -1286,11 +1255,13 @@ public class AudioRecordTest {
                     Math.min(BUFFER_SAMPLES, targetSamples - samplesRead);
                 final int ret = reader.apply(amount, blocking);
                 if (blocking) {
-                    assertEquals("blocking reads should return amount requested", amount, ret);
+                    assertWithMessage("blocking reads should return amount requested")
+                            .that(amount).isEqualTo(ret);
                 } else {
-                    assertTrue("non-blocking reads should return amount in range: " +
-                            "0 <= " + ret + " <= " + amount,
-                            0 <= ret && ret <= amount);
+                    assertWithMessage("non-blocking reads should return amount in range: "
+                            + "0 <= " + ret + " <= " + amount)
+                            .that(ret)
+                            .isIn(Range.closed(0, amount));
                 }
                 if (samplesRead == 0 && ret > 0) {
                     firstSampleTime = System.currentTimeMillis();
@@ -1299,8 +1270,17 @@ public class AudioRecordTest {
                 if (startTs.nanoTime == 0 && ret > 0 &&
                         record.getTimestamp(startTs, AudioTimestamp.TIMEBASE_MONOTONIC)
                                 == AudioRecord.SUCCESS) {
-                    assertTrue("expecting valid timestamp with nonzero nanoTime",
-                            startTs.nanoTime > 0);
+                    assertWithMessage("expecting valid timestamp with nonzero nanoTime")
+                            .that(startTs.nanoTime)
+                            .isGreaterThan(0);
+                }
+                if (samplesRead > runningTimestampStart
+                        && running1Ts.nanoTime == 0 && ret > 0) {
+                    record.getTimestamp(running1Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
+                }
+                if (samplesRead > runningTimestampStop
+                        && running2Ts.nanoTime == 0 && ret > 0) {
+                    record.getTimestamp(running2Ts, AudioTimestamp.TIMEBASE_MONOTONIC);
                 }
             }
 
@@ -1320,15 +1300,19 @@ public class AudioRecordTest {
             }
 
             final int COLD_INPUT_START_TIME_LIMIT_MS = 5000;
-            assertTrue("track must start within " + COLD_INPUT_START_TIME_LIMIT_MS + " millis",
-                    coldInputStartTime < COLD_INPUT_START_TIME_LIMIT_MS);
+            assertWithMessage("track must start within " + COLD_INPUT_START_TIME_LIMIT_MS
+                    + " millis")
+                    .that(coldInputStartTime)
+                    .isLessThan(COLD_INPUT_START_TIME_LIMIT_MS);
 
             // Verify recording completes within 50 ms of expected test time (typical 20ms)
             final int RECORDING_TIME_TOLERANCE_MS = auditRecording ?
                 (isLowLatencyDevice() ? 1000 : 2000) : (isLowLatencyDevice() ? 50 : 400);
-            assertEquals("recording must complete within " + RECORDING_TIME_TOLERANCE_MS
-                    + " of expected test time",
-                    TEST_TIME_MS, endTime - firstSampleTime, RECORDING_TIME_TOLERANCE_MS);
+            assertWithMessage("recording must complete within " + RECORDING_TIME_TOLERANCE_MS
+                    + " of expected test time")
+                    .that((double) (endTime - firstSampleTime))
+                    .isWithin(RECORDING_TIME_TOLERANCE_MS)
+                    .of(TEST_TIME_MS);
 
             // Even though we've read all the frames we want, the events may not be sent to
             // the listeners (events are handled through a separate internal callback thread).
@@ -1337,8 +1321,9 @@ public class AudioRecordTest {
 
             stopRequestTime = System.currentTimeMillis();
             record.stop();
-            assertEquals("state should be RECORDSTATE_STOPPED after stop()",
-                    AudioRecord.RECORDSTATE_STOPPED, record.getRecordingState());
+            assertWithMessage("state should be RECORDSTATE_STOPPED after stop()")
+                    .that(record.getRecordingState())
+                    .isEqualTo(AudioRecord.RECORDSTATE_STOPPED);
 
             stopTime = System.currentTimeMillis();
 
@@ -1355,14 +1340,15 @@ public class AudioRecordTest {
             listener.stop();
 
             // get stop timestamp
+            // Note: the stop timestamp is collected *after* stop is called.
             AudioTimestamp stopTs = new AudioTimestamp();
-            assertEquals("should successfully get timestamp after stop",
-                    AudioRecord.SUCCESS,
-                    record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC));
+            assertWithMessage("should successfully get timestamp after stop")
+                    .that(record.getTimestamp(stopTs, AudioTimestamp.TIMEBASE_MONOTONIC))
+                    .isEqualTo(AudioRecord.SUCCESS);
             AudioTimestamp stopTsBoot = new AudioTimestamp();
-            assertEquals("should successfully get boottime timestamp after stop",
-                    AudioRecord.SUCCESS,
-                    record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME));
+            assertWithMessage("should successfully get boottime timestamp after stop")
+                    .that(record.getTimestamp(stopTsBoot, AudioTimestamp.TIMEBASE_BOOTTIME))
+                    .isEqualTo(AudioRecord.SUCCESS);
 
             // printTimestamp("startTs", startTs);
             // printTimestamp("stopTs", stopTs);
@@ -1371,18 +1357,29 @@ public class AudioRecordTest {
             // Log.d(TAG, "time Boottime " + SystemClock.elapsedRealtimeNanos());
 
             // stop should not reset timestamps
-            assertTrue("stop timestamp position should be no less than frames read",
-                    stopTs.framePosition >= targetFrames);
-            assertEquals("stop timestamp position should be same "
-                    + "between monotonic and boot timestamps",
-                    stopTs.framePosition, stopTsBoot.framePosition);
-            assertTrue("stop timestamp nanoTime must be set", stopTs.nanoTime > 0);
+            assertWithMessage("stop timestamp position should be no less than frames read")
+                    .that(stopTs.framePosition)
+                    .isAtLeast(targetFrames);
+            assertWithMessage("stop timestamp position should be same "
+                    + "between monotonic and boot timestamps")
+                    .that(stopTs.framePosition)
+                    .isEqualTo(stopTsBoot.framePosition);
+            assertWithMessage("stop timestamp nanoTime must be greater than 0")
+                    .that(stopTs.nanoTime)
+                    .isGreaterThan(0);
 
             // timestamps follow a different path than data, so it is conceivable
             // that first data arrives before the first timestamp is ready.
-            assertTrue("no start timestamp read", startTs.nanoTime > 0);
+            assertWithMessage("start timestamp must have positive time")
+                    .that(startTs.nanoTime)
+                    .isGreaterThan(0);
 
-            verifyContinuousTimestamps(startTs, stopTs, TEST_SR);
+            // we allow more timestamp inaccuacy for the entire recording run,
+            // including start and stop.
+            verifyContinuousTimestamps(startTs, stopTs, TEST_SR, true /* coarse */);
+
+            // during the middle 2/3 of the run, we expect stable timestamps.
+            verifyContinuousTimestamps(running1Ts, running2Ts, TEST_SR, false /* coarse */);
 
             // clean up
             if (makeSomething != null) {
@@ -1414,16 +1411,23 @@ public class AudioRecordTest {
         //Log.d(TAG, "updatePeriods " + updatePeriods +
         //        " updatePeriodsReceived " + periodicList.size());
         if (isLowLatencyDevice()) {
-            assertTrue(TAG + ": markerPeriods " + markerPeriods +
-                    " <= markerPeriodsReceived " + markerList.size() +
-                    " <= markerPeriodsMax " + markerPeriodsMax,
-                    markerPeriods <= markerList.size()
-                    && markerList.size() <= markerPeriodsMax);
-            assertTrue(TAG + ": updatePeriods " + updatePeriods +
-                   " <= updatePeriodsReceived " + periodicList.size() +
-                   " <= updatePeriodsMax " + updatePeriodsMax,
-                    updatePeriods <= periodicList.size()
-                    && periodicList.size() <= updatePeriodsMax);
+            assertWithMessage(TAG + ": markerPeriods " + markerPeriods
+                    + " <= markerPeriodsReceived " + markerList.size())
+                    .that(markerPeriods)
+                    .isAtMost(markerList.size());
+            assertWithMessage(TAG + ": markerPeriodsReceived " + markerList.size()
+                    + " <= markerPeriodsMax " + markerPeriodsMax)
+                    .that(markerList.size())
+                    .isAtMost(markerPeriodsMax);
+
+            assertWithMessage(TAG + ": updatePeriods " + updatePeriods
+                    + " <= updatePeriodsReceived " + periodicList.size())
+                    .that(updatePeriods)
+                    .isAtMost(periodicList.size());
+            assertWithMessage(TAG + ": updatePeriodsReceived " + periodicList.size()
+                    + " <= updatePeriodsMax " + updatePeriodsMax)
+                    .that(periodicList.size())
+                    .isAtMost(updatePeriodsMax);
         }
 
         // Since we don't have accurate positioning of the start time of the recorder,
@@ -1443,7 +1447,10 @@ public class AudioRecordTest {
             //        + ")  diff(" + (actual - expected) + ")"
             //        + " tolerance " + toleranceInFrames);
             if (isLowLatencyDevice()) {
-                assertEquals(expected, actual, toleranceInFrames);
+                assertWithMessage("marker period should match frame count")
+                        .that((double) actual)
+                        .isWithin(toleranceInFrames)
+                        .of(expected);
             }
             markerStat.add((double)(actual - expected) * 1000 / TEST_SR);
         }
@@ -1459,7 +1466,10 @@ public class AudioRecordTest {
             //        + ")  diff(" + (actual - expected) + ")"
             //        + " tolerance " + toleranceInFrames);
             if (isLowLatencyDevice()) {
-                assertEquals(expected, actual, toleranceInFrames);
+                assertWithMessage("position period check should match frame count")
+                        .that((double) actual)
+                        .isWithin(toleranceInFrames)
+                        .of(expected);
             }
             periodicStat.add((double)(actual - expected) * 1000 / TEST_SR);
         }
@@ -1513,8 +1523,9 @@ public class AudioRecordTest {
                 int position = getPosition();
                 mOnMarkerReachedCalled.add(position);
                 mMarkerPosition += mMarkerPeriodInFrames;
-                assertEquals(AudioRecord.SUCCESS,
-                        mAudioRecord.setNotificationMarkerPosition(mMarkerPosition));
+                assertWithMessage("setNotificationMarkerPosition() returns SUCCESS")
+                        .that(mAudioRecord.setNotificationMarkerPosition(mMarkerPosition))
+                        .isEqualTo(AudioRecord.SUCCESS);
             } else {
                 // see comment on stop()
                 final long delta = System.currentTimeMillis() - mStopTime;
@@ -1599,18 +1610,22 @@ public class AudioRecordTest {
     }
 
     private void verifyContinuousTimestamps(
-            AudioTimestamp startTs, AudioTimestamp stopTs, int sampleRate)
+            AudioTimestamp startTs, AudioTimestamp stopTs, int sampleRate, boolean coarse)
             throws Exception {
         final long timeDiff = stopTs.nanoTime - startTs.nanoTime;
         final long frameDiff = stopTs.framePosition - startTs.framePosition;
         final long NANOS_PER_SECOND = 1000000000;
         final long timeByFrames = frameDiff * NANOS_PER_SECOND / sampleRate;
         final double ratio = (double)timeDiff / timeByFrames;
+        final double tolerance = (isLowLatencyDevice() ? 0.01 : 0.5) * (coarse ? 3. : 1.);
 
         // Usually the ratio is accurate to one part per thousand or better.
         // Log.d(TAG, "ratio=" + ratio + ", timeDiff=" + timeDiff + ", frameDiff=" + frameDiff +
         //        ", timeByFrames=" + timeByFrames + ", sampleRate=" + sampleRate);
-        assertEquals(1.0 /* expected */, ratio, isLowLatencyDevice() ? 0.01 : 0.5 /* delta */);
+        assertWithMessage("Timestamp rate must match sample rate by ratio")
+                .that(ratio)
+                .isWithin(tolerance)
+                .of(1.);
     }
 
     // remove if AudioTimestamp has a better toString().
@@ -1634,7 +1649,9 @@ public class AudioRecordTest {
 
     private static boolean isAudioSilent(ShortBuffer buffer) {
         // Always need some bytes read
-        assertTrue("Buffer should have some data", buffer.position() > 0);
+        assertWithMessage("Buffer should have some data")
+                .that(buffer.position())
+                .isGreaterThan(0);
 
         // It is possible that the transition from empty to non empty bytes
         // happened in the middle of the read data due to the async nature of
@@ -1649,24 +1666,6 @@ public class AudioRecordTest {
             }
         }
         return totalSilenceCount > valueCount / 2;
-    }
-
-    private static void makeMyUidStateActive(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy set-uid-state %s active --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
-    }
-
-    private static void makeMyUidStateIdle(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy set-uid-state %s idle --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
-    }
-
-    private static void resetMyUidState(String packageName, int userId) throws IOException {
-        final String command = String.format(
-                "cmd media.audio_policy reset-uid-state %s --user %d", packageName, userId);
-        SystemUtil.runShellCommand(InstrumentationRegistry.getInstrumentation(), command);
     }
 
     private static Context getContext() {
@@ -1692,7 +1691,7 @@ public class AudioRecordTest {
             // assertTrue(success);
         } catch (Exception ex) {
             Log.e(TAG, "testSetPreferredMicrophoneDirection() exception:" + ex);
-            assertTrue(false);
+            throw(ex);
         }
         return;
     }
@@ -1711,7 +1710,7 @@ public class AudioRecordTest {
             // assertTrue(success);
         } catch (Exception ex) {
             Log.e(TAG, "testSetPreferredMicrophoneFieldDimension() exception:" + ex);
-            assertTrue(false);
+            throw(ex);
         }
         return;
     }
@@ -1854,7 +1853,9 @@ public class AudioRecordTest {
                     .build())
             .setPrivacySensitive(privacyOn)
             .build();
-            assertEquals(privacyOn, record.isPrivacySensitive());
+            assertWithMessage("Builder with privacyOn " + privacyOn + " is set correctly")
+                    .that(record.isPrivacySensitive())
+                    .isEqualTo(privacyOn);
             record.release();
         }
     }
@@ -1873,7 +1874,8 @@ public class AudioRecordTest {
                  .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
                  .build())
             .build();
-        assertFalse(record.isPrivacySensitive());
+        assertWithMessage("AudioSource.MIC should not be privacy sensitive")
+                .that(record.isPrivacySensitive()).isFalse();
         record.release();
 
         record = new AudioRecord.Builder()
@@ -1884,7 +1886,8 @@ public class AudioRecordTest {
                  .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
                  .build())
             .build();
-        assertTrue(record.isPrivacySensitive());
+        assertWithMessage("AudioSource.VOICE_COMMUNICATION should be privacy sensitive")
+                .that(record.isPrivacySensitive()).isTrue();
         record.release();
     }
 
@@ -1902,14 +1905,18 @@ public class AudioRecordTest {
                             .build())
                     .build();
             audioRecord.setLogSessionId(LogSessionId.LOG_SESSION_ID_NONE); // should not throw.
-            assertEquals(LogSessionId.LOG_SESSION_ID_NONE, audioRecord.getLogSessionId());
+            assertWithMessage("Can set LogSessionId.LOG_SESSION_ID_NONE")
+                    .that(audioRecord.getLogSessionId())
+                    .isEqualTo(LogSessionId.LOG_SESSION_ID_NONE);
 
             final MediaMetricsManager mediaMetricsManager =
                     getContext().getSystemService(MediaMetricsManager.class);
             final RecordingSession recordingSession =
                     mediaMetricsManager.createRecordingSession();
             audioRecord.setLogSessionId(recordingSession.getSessionId());
-            assertEquals(recordingSession.getSessionId(), audioRecord.getLogSessionId());
+            assertWithMessage("Can set recordingSession sessionId")
+                    .that(audioRecord.getLogSessionId())
+                    .isEqualTo(recordingSession.getSessionId());
 
             // record some data to generate a log entry.
             short data[] = new short[audioRecord.getSampleRate() / 2];

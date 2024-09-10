@@ -33,6 +33,8 @@ import com.android.queryable.queries.IntentQueryHelper;
 import com.android.queryable.queries.LongQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onNetworkLogsAvailable(Context, Intent, long, int)}
  * is called.
@@ -149,6 +151,7 @@ public final class DeviceAdminNetworkLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminNetworkLogsAvailableEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -163,6 +166,7 @@ public final class DeviceAdminNetworkLogsAvailableEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminNetworkLogsAvailableEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);

@@ -21,6 +21,7 @@ import static org.junit.Assert.assertThrows;
 
 import android.os.Flags;
 import android.os.WorkDuration;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -32,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class WorkDurationTest {
     private static final String TAG = "WorkDurationTest";
 

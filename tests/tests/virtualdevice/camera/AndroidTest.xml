@@ -16,6 +16,10 @@
 <configuration description="Configuration for Virtual Device Manager Camera Tests">
     <!-- Only run tests if the device under test is SDK version 34 (Android 14) or above. -->
     <object type="module_controller" class="com.android.tradefed.testtype.suite.module.Sdk34ModuleController" />
+    <object type="module_controller" class="com.android.tradefed.testtype.suite.module.CommandSuccessModuleController" >
+        <!-- Skip the test on low ram devices. -->
+        <option name="run-command" value="getprop ro.config.low_ram | grep -v true" />
+    </object>
 
     <option name="config-descriptor:metadata" key="component" value="framework" />
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
@@ -49,4 +53,10 @@
         <option name="package" value="android.virtualdevice.cts.camera" />
         <option name="runtime-hint" value="30s" />
     </test>
+
+    <!-- Collect the files generated on error -->
+    <metrics_collector class="com.android.tradefed.device.metric.FilePullerLogCollector">
+        <option name="directory-keys" value="/data/user/0/android.virtualdevice.cts.camera/files/" />
+        <option name="collect-on-run-ended-only" value="true" />
+    </metrics_collector>
 </configuration>

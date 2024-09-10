@@ -46,6 +46,14 @@ public final class ShellCommandUtils {
         return "ime reset --user all";
     }
 
+
+    /** Command to install an existing package for another user. */
+    public static String installExistingPackageAsUser(String packageName, int userId,
+            boolean instant) {
+        return "pm install-existing --wait --user " + userId + (instant ? " --instant "
+                : " --full ") + packageName;
+    }
+
     /** Command to turn on the display (if it's sleeping). */
     public static String wakeUp() {
         return "input keyevent KEYCODE_WAKEUP";
@@ -66,4 +74,19 @@ public final class ShellCommandUtils {
         return "am wait-for-broadcast-barrier";
     }
 
+    /** Command to clear package data. */
+    public static String clearPackageData(String packageName, int userId) {
+        return String.format("pm clear --user %d %s", userId, packageName);
+    }
+
+    /** Command to install existing app to another user. */
+    public static String installExisting(String packageName, int userId, boolean instant) {
+        final StringBuilder sb = new StringBuilder("cmd package install-existing");
+        sb.append(" --user ").append(userId);
+        if (instant) {
+            sb.append(" --instant");
+        }
+        sb.append(" ").append(packageName);
+        return sb.toString();
+    }
 }

@@ -65,7 +65,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
@@ -113,7 +113,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.compatibility.common.util.CddTest;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -123,12 +124,13 @@ import com.google.common.collect.Iterables;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -137,9 +139,16 @@ import java.util.Objects;
  * Tests zen/dnd related logic in NotificationManager.
  */
 @RunWith(AndroidJUnit4.class)
+// TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "zen/dnd does not support visible"
+        + " background users at the moment")
 public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     private static final String TAG = NotificationManagerZenTest.class.getSimpleName();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
     private static final String NOTIFICATION_CHANNEL_ID_NOISY = TAG + "/noisy";
@@ -1136,6 +1145,9 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testTotalSilenceOnlyMuteStreams() throws Exception {
+        assumeFalse("Skipping test on automotive platform",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
 
@@ -1176,6 +1188,9 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     @Test
     public void testAlarmsOnlyMuteStreams() throws Exception {
+        assumeFalse("Skipping test on automotive platform",
+                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE));
+
         toggleNotificationPolicyAccess(mContext.getPackageName(),
                 InstrumentationRegistry.getInstrumentation(), true);
 
@@ -2056,6 +2071,7 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         }
         assertFalse(isBobIntercepted);
 
+
         boolean isCharlieIntercepted = true;
         for (int i = 0; i < 6; i++) {
             isCharlieIntercepted = mListener.mIntercepted.get(charlie.getKey());
@@ -2064,7 +2080,12 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
             }
             sleep();
         }
-        assertFalse(isCharlieIntercepted);
+        if (android.app.Flags.restrictAudioAttributesMedia()) {
+            // media notifications are moved to notification stream, so they should be intercepted
+            assertTrue(isCharlieIntercepted);
+        } else {
+            assertFalse(isCharlieIntercepted);
+        }
 
         assertTrue(mListener.mIntercepted.get(alice.getKey()));
     }

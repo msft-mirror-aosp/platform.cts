@@ -20,22 +20,24 @@ import static android.Manifest.permission.CREATE_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.Manifest.permission.QUERY_USERS;
-import static android.app.ActivityManager.STOP_USER_ON_SWITCH_DEFAULT;
-import static android.app.ActivityManager.STOP_USER_ON_SWITCH_FALSE;
-import static android.app.ActivityManager.STOP_USER_ON_SWITCH_TRUE;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.S;
 import static android.os.Build.VERSION_CODES.S_V2;
 import static android.os.Build.VERSION_CODES.TIRAMISU;
 import static android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+import static android.os.Build.VERSION_CODES.VANILLA_ICE_CREAM;
 import static android.os.Process.myUserHandle;
 import static com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME;
 import static com.android.bedstead.nene.users.UserType.SYSTEM_USER_TYPE_NAME;
+import static com.android.bedstead.testapisreflection.TestApisConstants.STOP_USER_ON_SWITCH_DEFAULT;
+import static com.android.bedstead.testapisreflection.TestApisConstants.STOP_USER_ON_SWITCH_FALSE;
+import static com.android.bedstead.testapisreflection.TestApisConstants.STOP_USER_ON_SWITCH_TRUE;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.UserInfo;
+import android.cts.testapisreflection.TestApisReflectionKt;
 import android.os.Build;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -49,8 +51,8 @@ import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.AdbParseException;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.bedstead.nene.permissions.PermissionContext;
-import com.android.bedstead.nene.permissions.Permissions;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.Permissions;
 import com.android.bedstead.nene.types.OptionalBoolean;
 import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
@@ -102,7 +104,7 @@ public final class Users {
         }
 
         return users().map(
-                ui -> find(ui.id)
+                ui -> find(ui.getId())
         ).collect(Collectors.toSet());
     }
 
@@ -115,8 +117,8 @@ public final class Users {
     /** Get all {@link UserReference}s in the given profile group. */
     @Experimental
     public Collection<UserReference> profileGroup(UserReference user) {
-        return users().filter(ui -> ui.profileGroupId == user.id()).map(ui -> find(ui.id)).collect(
-                Collectors.toSet());
+        return users().filter(ui -> ui.getProfileGroupId() == user.id())
+                .map(ui -> find(ui.getId())).collect(Collectors.toSet());
     }
 
     /**
@@ -193,6 +195,7 @@ public final class Users {
 
     /** Get a {@link UserReference} for the main user, if one exists. Null otherwise. */
     @Nullable
+    @SuppressLint("NewApi")
     public UserReference main() {
         UserHandle mainUser;
         try (PermissionContext p =
@@ -394,7 +397,7 @@ public final class Users {
     public UserReference nonExisting() {
         Set<Integer> userIds;
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
-            userIds = users().map(ui -> ui.id).collect(Collectors.toSet());
+            userIds = users().map(ui -> ui.getId()).collect(Collectors.toSet());
         } else {
             fillCache();
             userIds = mCachedUsers.keySet();
@@ -507,20 +510,14 @@ public final class Users {
         }
     }
 
-    /** Checks if a profile of type {@code userType} can be created. */
-    @Experimental
-    public boolean canCreateProfile(UserType userType) {
-        // UserManager#getRemainingCreatableProfileCount is added in T, so we need a version guard.
-        if (Versions.meetsMinimumSdkVersionRequirement(TIRAMISU)) {
+    /** Checks if private profile usertupe is supported on the device */
+    public boolean canAddPrivateProfile() {
+        if (Versions.meetsMinimumSdkVersionRequirement(VANILLA_ICE_CREAM)) {
             try (PermissionContext p = TestApis.permissions().withPermission(CREATE_USERS)) {
-                return sUserManager.getRemainingCreatableProfileCount(userType.name()) > 0;
+                return TestApisReflectionKt.canAddPrivateProfile(sUserManager);
             }
         }
-
-        // For S and older versions, we need to keep the previous behavior by returning true here
-        // so that the check can pass.
-        Log.d(LOG_TAG, "canCreateProfile pre-T: true");
-        return true;
+        return false;
     }
 
     /** See {@link UserManager#isHeadlessSystemUserMode()}. */
@@ -540,7 +537,7 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersSupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return sUserManager.isVisibleBackgroundUsersSupported();
+            return TestApisReflectionKt.isVisibleBackgroundUsersSupported(sUserManager);
         }
 
         return false;
@@ -550,7 +547,8 @@ public final class Users {
     @SuppressWarnings("NewApi")
     public boolean isVisibleBackgroundUsersOnDefaultDisplaySupported() {
         if (Versions.meetsMinimumSdkVersionRequirement(UPSIDE_DOWN_CAKE)) {
-            return sUserManager.isVisibleBackgroundUsersOnDefaultDisplaySupported();
+            return TestApisReflectionKt.isVisibleBackgroundUsersOnDefaultDisplaySupported(
+                    sUserManager);
         }
 
         return false;
@@ -574,7 +572,8 @@ public final class Users {
         Context context = TestApis.context().instrumentedContext();
         try (PermissionContext p = TestApis.permissions()
                 .withPermission(INTERACT_ACROSS_USERS)) {
-            context.getSystemService(ActivityManager.class).setStopUserOnSwitch(intValue);
+            TestApisReflectionKt.setStopUserOnSwitch(
+                    context.getSystemService(ActivityManager.class), intValue);
         }
     }
 
@@ -596,19 +595,21 @@ public final class Users {
         Versions.requireMinimumVersion(S);
 
         if (Permissions.sIgnorePermissions.get()) {
-            return sUserManager.getUsers(
-                    /* excludePartial= */ false,
-                    /* excludeDying= */ true,
-                    /* excludePreCreated= */ false).stream();
+            return getUsers();
         }
 
         try (PermissionContext p =
                      TestApis.permissions().withPermission(CREATE_USERS)
                              .withPermissionOnVersionAtLeast(Versions.U, QUERY_USERS)) {
-            return sUserManager.getUsers(
-                    /* excludePartial= */ false,
-                    /* excludeDying= */ true,
-                    /* excludePreCreated= */ false).stream();
+            return getUsers();
         }
+    }
+
+    private static Stream<UserInfo> getUsers() {
+        return TestApisReflectionKt.getUsers(sUserManager,
+                /* excludePartial= */ false,
+                /* excludeDying= */ true,
+                /* excludePreCreated= */ false).stream()
+                .map(ui -> new UserInfo(ui));
     }
 }

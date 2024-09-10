@@ -134,26 +134,27 @@ public class CarTest extends AbstractCarTestCase {
     public void testApiVersion() throws Exception {
         int ApiVersionTooHigh = 1000000;
         int MinorApiVersionTooHigh = 1000000;
-        assertThat(Car.isApiVersionAtLeast(Car.API_VERSION_MAJOR_INT)).isTrue();
+        int apiVersionMajorInt = Car.getCarVersion().getMajorVersion();
+        int apiVersionMinorInt = Car.getCarVersion().getMinorVersion();
+
+        assertThat(Car.isApiVersionAtLeast(apiVersionMajorInt)).isTrue();
         assertThat(Car.isApiVersionAtLeast(ApiVersionTooHigh)).isFalse();
 
-        assertThat(Car.isApiVersionAtLeast(Car.API_VERSION_MAJOR_INT -1 ,
-                MinorApiVersionTooHigh)).isTrue();
-        assertThat(Car.isApiVersionAtLeast(Car.API_VERSION_MAJOR_INT,
-                Car.API_VERSION_MINOR_INT)).isTrue();
-        assertThat(Car.isApiVersionAtLeast(Car.API_VERSION_MAJOR_INT,
-                MinorApiVersionTooHigh)).isFalse();
+        assertThat(Car.isApiVersionAtLeast(apiVersionMajorInt - 1, MinorApiVersionTooHigh))
+                .isTrue();
+        assertThat(Car.isApiVersionAtLeast(apiVersionMajorInt, apiVersionMinorInt)).isTrue();
+        assertThat(Car.isApiVersionAtLeast(apiVersionMajorInt, MinorApiVersionTooHigh)).isFalse();
         assertThat(Car.isApiVersionAtLeast(ApiVersionTooHigh, 0)).isFalse();
 
-        assertThat(Car.isApiAndPlatformVersionAtLeast(Car.API_VERSION_MAJOR_INT,
+        assertThat(Car.isApiAndPlatformVersionAtLeast(apiVersionMajorInt, Build.VERSION.SDK_INT))
+                .isTrue();
+        assertThat(Car.isApiAndPlatformVersionAtLeast(apiVersionMajorInt, apiVersionMinorInt,
                 Build.VERSION.SDK_INT)).isTrue();
-        assertThat(Car.isApiAndPlatformVersionAtLeast(Car.API_VERSION_MAJOR_INT,
-                Car.API_VERSION_MINOR_INT, Build.VERSION.SDK_INT)).isTrue();
         if ("REL".equals(Build.VERSION.CODENAME)) { // SDK + 1 only works for released platform.
-            assertThat(Car.isApiAndPlatformVersionAtLeast(Car.API_VERSION_MAJOR_INT,
+            assertThat(Car.isApiAndPlatformVersionAtLeast(apiVersionMajorInt,
                     Build.VERSION.SDK_INT + 1)).isFalse();
-            assertThat(Car.isApiAndPlatformVersionAtLeast(Car.API_VERSION_MAJOR_INT,
-                    Car.API_VERSION_MINOR_INT, Build.VERSION.SDK_INT + 1)).isFalse();
+            assertThat(Car.isApiAndPlatformVersionAtLeast(apiVersionMajorInt,
+                    apiVersionMinorInt, Build.VERSION.SDK_INT + 1)).isFalse();
         }
     }
 

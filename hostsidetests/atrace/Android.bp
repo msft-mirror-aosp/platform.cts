@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsAtraceHostTestCases",
+    team: "trendy_team_android_core_graphics_stack",
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     // Must match the package name in CtsTestCaseList.mk

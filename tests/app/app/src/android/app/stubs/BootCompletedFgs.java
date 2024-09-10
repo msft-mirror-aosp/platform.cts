@@ -16,8 +16,7 @@
 
 package android.app.stubs;
 
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA;
-import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE;
+import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -26,18 +25,26 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.IBinder;
-
-import java.util.concurrent.CountDownLatch;
+import android.util.Log;
 
 public class BootCompletedFgs extends Service {
+    private static final String TAG = "BootCompletedFgs";
+
+    public static final String ACTION_FAKE_BOOT_COMPLETED =
+            "android.intent.action.PSEUDO_BOOT_COMPLETED";
+    public static final String EXTRA_FGS_TYPES = "extra_fgs_types";
+    public static final String ACTION_BOOT_COMPLETED_FGS_RESULT =
+            "android.intent.action.ACTION_BOOT_COMPLETED_FGS_RESULT";
+    public static final int RESULT_CODE_UNKNOWN = 0;
+    public static final int RESULT_CODE_SUCCESS = 1;
+    public static final int RESULT_CODE_FAILURE = 2;
 
     private static final int FGS_NOTIFICATION_ID = 1;
     private static final String NOTIFICATION_CHANNEL_ID =
             BootCompletedFgs.class.getSimpleName();
 
-    public static int types = FOREGROUND_SERVICE_TYPE_CAMERA | FOREGROUND_SERVICE_TYPE_MICROPHONE;
+    private static final int DEFAULT_TYPES = FOREGROUND_SERVICE_TYPE_DATA_SYNC;
 
-    public static CountDownLatch latch = new CountDownLatch(1);
     @Override
     public void onCreate() {
         createNotificationChannelId(this, NOTIFICATION_CHANNEL_ID);
@@ -45,6 +52,7 @@ public class BootCompletedFgs extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        final int types = intent.getIntExtra(EXTRA_FGS_TYPES, DEFAULT_TYPES);
         // When this service is started, make it a foreground service
         final Notification.Builder builder =
                 new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
@@ -53,11 +61,19 @@ public class BootCompletedFgs extends Service {
                         .setContentText(BootCompletedFgs.class.getName());
         try {
             startForeground(FGS_NOTIFICATION_ID, builder.build(), types);
-            latch.countDown();
+            sendResult(true);
         } catch (Exception e) {
-            // we will rely on the latch to track if the FGS start was successful
+            Log.w(TAG, "Got exception", e);
+            sendResult(false);
         }
         return Service.START_NOT_STICKY;
+    }
+
+    private void sendResult(boolean success) {
+        final Intent intent = new Intent(ACTION_BOOT_COMPLETED_FGS_RESULT);
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT,
+                success ? RESULT_CODE_SUCCESS : RESULT_CODE_FAILURE);
+        sendBroadcast(intent);
     }
 
     @Override

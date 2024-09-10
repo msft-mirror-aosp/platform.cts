@@ -63,6 +63,7 @@ import android.widget.TextView;
 
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
+import com.android.wm.shell.Flags;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -180,7 +181,9 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
             //
             // Behavior around the bubble overflow
             //
-            mTests.add(new CheckOverflowExists());
+            if (!Flags.enableOptionalBubbleOverflow()) {
+                mTests.add(new CheckOverflowExists());
+            }
             mTests.add(new DismissBubbleShowsInOverflow());
             mTests.add(new PromoteBubbleFromOverflow());
             mTests.add(new CancelRemovesBubblesInOverflow());
@@ -778,7 +781,9 @@ public class BubblesVerifierActivity extends PassFailButtons.Activity {
 
         @Override
         public int getTestDescription() {
-            return R.string.bubbles_test_cancel_overflow_verify;
+            return Flags.enableOptionalBubbleOverflow()
+                    ? R.string.bubbles_test_cancel_overflow_verify2
+                    : R.string.bubbles_test_cancel_overflow_verify;
         }
 
         @Override

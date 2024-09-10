@@ -20,19 +20,6 @@
 
     <uses-permission android:name="android.permission.VIBRATE"/>
 
-    <application>
-        <activity android:name="android.os.vibrator.cts.VibratorTestActivity"
-             android:exported="false">
-            <intent-filter>
-                <action android:name="android.os.cts.BROWSABLE_INTENT_LAUNCH" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-            </intent-filter>
-        </activity>
-
-        <uses-library android:name="android.test.runner"/>
-    </application>
-
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
          android:targetPackage="android.os.vibrator.cts"
          android:label="CTS tests for Vibrator">

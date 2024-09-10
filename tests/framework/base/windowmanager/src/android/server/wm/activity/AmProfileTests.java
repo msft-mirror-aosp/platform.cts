@@ -41,7 +41,7 @@ import org.junit.Test;
 
 /**
  * Build/Install/Run:
- *     atest CtsWindowManagerDeviceAm:AmProfileTests
+ *     atest CtsWindowManagerDeviceActivity:AmProfileTests
  *
  * Please talk to Android Studio team first if you want to modify or delete these tests.
  */
@@ -158,7 +158,8 @@ public class AmProfileTests extends ActivityManagerTestBase {
             public void execute() {
                 final StringBuilder builder = new StringBuilder();
                 builder.append(String.format("am start -n %s -W -S --start-profiler %s",
-                        getActivityName(activityName), OUTPUT_FILE_PATH));
+                        getActivityName(activityName), OUTPUT_FILE_PATH) + " --user "
+                        + android.os.Process.myUserHandle().getIdentifier());
                 appendProfileParameters(builder, sampling, streaming);
                 mLaunchInjector.setupShellCommand(builder);
                 executeShellCommand(builder.toString());

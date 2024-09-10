@@ -56,6 +56,7 @@ import android.view.MotionEvent.PointerCoords;
 import android.view.MotionEvent.PointerProperties;
 import android.view.cts.MotionEventUtils.PointerCoordsBuilder;
 import android.view.cts.MotionEventUtils.PointerPropertiesBuilder;
+import android.view.cts.util.NativeHeapLeakDetector;
 
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
@@ -96,7 +97,14 @@ public class MotionEventTest {
     private static final float DELTA               = 0.01f;
     private static final float RAW_COORD_TOLERANCE = 0.001f;
 
+    // Underestimated from ~528 B to breach threshold when leaked
+    private static final int APPROX_MOTION_EVENT_SIZE_BYTES = 500;
+    private static final int NUM_MOTION_EVENT_ALLOCATIONS =
+            NativeHeapLeakDetector.MEMORY_LEAK_THRESHOLD_KB * 1024 / APPROX_MOTION_EVENT_SIZE_BYTES;
+
     private static native void nativeMotionEventTest(MotionEvent event);
+
+    private static native void obtainNativeMotionEventCopyFromJava(MotionEvent event);
 
     private static native MotionEvent obtainMotionEventCopyFromNative(MotionEvent event);
 
@@ -1124,5 +1132,104 @@ public class MotionEventTest {
                 javaMotionEvent.getEventTimeNanos(),
                 motionEventFromNative.getEventTimeNanos()
         );
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeak() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent);
+            }
+        }
+    }
+
+    @Test
+    public void testNativeToJavaConverterMemoryLeakRecylingObjects() {
+        final MotionEvent javaMotionEvent =
+                MotionEvent.obtain(
+                        mDownTime, mEventTime, MotionEvent.ACTION_DOWN, X_3F, Y_4F, META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainMotionEventCopyFromNative(javaMotionEvent).recycle();
+            }
+        }
+    }
+
+    @Test
+    public void testJavaToNativeConverterMemoryLeak() {
+        final MotionEvent event =
+                MotionEvent.obtain(
+                        mDownTime,
+                        mEventTime,
+                        MotionEvent.ACTION_BUTTON_PRESS,
+                        X_3F,
+                        Y_4F,
+                        META_STATE);
+
+        try (NativeHeapLeakDetector d = new NativeHeapLeakDetector()) {
+            for (int iteration = 0; iteration < NUM_MOTION_EVENT_ALLOCATIONS; ++iteration) {
+                obtainNativeMotionEventCopyFromJava(event);
+            }
+        }
+    }
+
+    @Test
+    public void testAddBatchWithTransform() {
+        PointerCoordsBuilder coordsBuilder0 =
+                withCoords(10.0f, 20.0f).withPressure(1.2f).withSize(2.0f).withTool(1.2f,
+                        1.4f).withGenericAxis1(4.4f).withOrientation(1.0f);
+        PointerCoordsBuilder coordsBuilder1 =
+                withCoords(30.0f, 40.0f).withPressure(1.4f).withSize(3.0f).withTouch(2.2f,
+                        0.6f).withGenericAxis1(6.6f).withOrientation(-1.0f);
+
+        PointerPropertiesBuilder propertiesBuilder0 =
+                withProperties(0, MotionEvent.TOOL_TYPE_FINGER);
+        PointerPropertiesBuilder propertiesBuilder1 =
+                withProperties(1, MotionEvent.TOOL_TYPE_FINGER);
+
+        mMotionEventDynamic = MotionEvent.obtain(mDownTime, mEventTime,
+                MotionEvent.ACTION_MOVE, 2,
+                new PointerProperties[]{propertiesBuilder0.build(), propertiesBuilder1.build()},
+                new PointerCoords[]{coordsBuilder0.build(), coordsBuilder1.build()},
+                0, 0, 1.0f, 1.0f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+
+        // Apply an arbitrary transform to the event.
+        Matrix matrix = new Matrix();
+        matrix.setRotate(90);
+        mMotionEventDynamic.transform(matrix);
+
+        // Add a new batch to our event.
+        PointerCoordsBuilder coordsBuilderNext0 = withCoords(15.0f, 25.0f).withPressure(1.6f)
+                .withSize(2.2f).withTool(1.2f, 1.4f).withTouch(1.0f, 0.9f)
+                .withOrientation(2.2f).withGenericAxis1(7.4f);
+        PointerCoordsBuilder coordsBuilderNext1 = withCoords(35.0f, 45.0f).withPressure(1.8f)
+                .withSize(3.2f).withTool(1.2f, 1.4f).withTouch(0.7f, 0.6f)
+                .withOrientation(2.9f).withGenericAxis1(8.4f);
+
+        mMotionEventDynamic.addBatch(mEventTime + 20,
+                new PointerCoords[]{coordsBuilderNext0.build(), coordsBuilderNext1.build()}, 0);
+
+        assertEquals(1, mMotionEventDynamic.getHistorySize());
+        assertEquals(2, mMotionEventDynamic.getPointerCount());
+
+        // The added batch should be our "new" values for our event, because the batch was added
+        // after the event was transformed.
+        verifyCurrentPointerData(mMotionEventDynamic,
+                new PointerPropertiesBuilder[]{propertiesBuilder0, propertiesBuilder1},
+                new PointerCoordsBuilder[]{coordsBuilderNext0, coordsBuilderNext1});
+
+        // Undo the transformation.
+        Matrix inverseMatrix = new Matrix();
+        assertTrue(matrix.invert(inverseMatrix));
+        mMotionEventDynamic.transform(inverseMatrix);
+
+        // Now, the "old" values should match what they were initially set to.
+        verifyHistoricalPointerData(mMotionEventDynamic,
+                new PointerCoordsBuilder[]{coordsBuilder0, coordsBuilder1}, 0);
     }
 }

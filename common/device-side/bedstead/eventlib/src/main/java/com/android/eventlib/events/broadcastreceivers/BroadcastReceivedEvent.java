@@ -34,6 +34,8 @@ import com.android.queryable.queries.IntentQuery;
 import com.android.queryable.queries.IntentQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link BroadcastReceiver#onReceive(Context, Intent)} is called.
  */
@@ -127,6 +129,7 @@ public final class BroadcastReceivedEvent extends Event {
         }
 
         /** Sets the {@link BroadcastReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public BroadcastReceivedEventLogger setBroadcastReceiver(
                 BroadcastReceiver broadcastReceiver) {
             mEvent.mBroadcastReceiver = new BroadcastReceiverInfo(broadcastReceiver);
@@ -141,6 +144,7 @@ public final class BroadcastReceivedEvent extends Event {
         }
 
         /** Sets the {@link BroadcastReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public BroadcastReceivedEventLogger setBroadcastReceiver(
                 String broadcastReceiverClassName) {
             mEvent.mBroadcastReceiver = new BroadcastReceiverInfo(broadcastReceiverClassName);
@@ -148,6 +152,7 @@ public final class BroadcastReceivedEvent extends Event {
         }
 
         /** Sets the {@link Intent} which was received. */
+        @CanIgnoreReturnValue
         public BroadcastReceivedEventLogger setIntent(Intent intent) {
             mEvent.mIntent = new SerializableParcelWrapper<>(intent);
             return this;

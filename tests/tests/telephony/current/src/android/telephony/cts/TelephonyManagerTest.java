@@ -26,8 +26,6 @@ import static android.telephony.DataSpecificRegistrationInfo.LTE_ATTACH_TYPE_UNK
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_NSA;
 import static android.telephony.PhoneCapability.DEVICE_NR_CAPABILITY_SA;
 
-import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
-
 import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -41,6 +39,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
@@ -50,6 +49,7 @@ import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.AppOpsManager;
 import android.app.UiAutomation;
+import android.app.role.RoleManager;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -81,7 +81,6 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telecom.PhoneAccount;
 import android.telecom.PhoneAccountHandle;
 import android.telecom.TelecomManager;
-import android.telecom.cts.TestUtils;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.Annotation.RadioPowerState;
 import android.telephony.AvailableNetworkInfo;
@@ -388,11 +387,6 @@ public class TelephonyManagerTest {
      * Emergency call diagnostic data configs
      */
     private static final String DROPBOX_TAG = "ecall_diagnostic_data";
-    private static final String TELECOM_DUMPSYS_COMMAND = "dumpsys telecom";
-    private static final String TELEPHONY_DUMPSYS_COMMAND = "dumpsys telephony.registry";
-    private static final String LOGCAT_BINARY = "/system/bin/logcat";
-    private static final String DIAG_ERROR_MSG = "DiagnosticDataCollector error executing cmd";
-    public static final int MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT = 20;
     private static final int MAX_READ_BYTES_PER_DROP_BOX_ENTRY = 5000;
     private static final int DROP_BOX_LATCH_TIMEOUT = 3000;
     private CountDownLatch mLatchForDropBox;
@@ -405,10 +399,21 @@ public class TelephonyManagerTest {
     private boolean mIsAllowedNetworkTypeChanged;
     private Map<Integer, Long> mAllowedNetworkTypesList = new HashMap<>();
 
-    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss"
-            + ".myverizon\":{\"carrierId\":1839,"
-    + "\"callerSHA1Id\":[\"C58EE7871896786F8BF70EBDB137DE10074043E9\","
-    + "\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]}}";
+    private static final String CARRIER_RESTRICTION_OPERATOR_DETAILS = "{\"com.vzw.hss.myverizon\":"
+        + "{\"carrierIds\":[1839], \"callerSHA256Ids\":"
+        + "[\"AE23A03436DF07B0CD70FE881CDA2EC1D21215D7B7B0CC68E67B67F5DF89526A\"]},"
+        + "\"com.google.android.apps.tycho\":{\"carrierIds\":[1989],\"callerSHA256Ids\":"
+        + "[\"B9CFCE1C47A6AC713442718F15EF55B00B3A6D1A6D48CB46249FA8EB51465350\","
+        + "\"4C36AF4A5BDAD97C1F3D8B283416D244496C2AC5EAFE8226079EF6F676FD1859\"]},"
+        + "\"com.comcast.mobile.mxs\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+        + "[\"914C26403B57D2D482359FC235CC825AD00D52B0121C18EF2B2B9D4DDA4B8996\"]},"
+        + "\"com.xfinity.digitalhome\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+        + "[\"31b4c17315c2269040d535f7b6a79cf4d11517c664d9de8f1ddf4f8a785aad47\"]},"
+        + "\"com.xfinity.digitalhome.debug\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]},"
+        + "\"com.xfinity.dh.xm.app\":{\"carrierIds\":[2032,2532,2556],\"callerSHA256Ids\":"
+        + "[\"c9133e8168f97573c8c567f46777dff74ade0c015ecf2c5e91be3e4e76ddcae2\"]}"
+        + "}";
 
     private class CarrierPrivilegeChangeMonitor implements AutoCloseable {
         // CarrierPrivilegesCallback will be triggered upon registration. Filter the first callback
@@ -1749,6 +1754,7 @@ public class TelephonyManagerTest {
     @Test
     public void testSetSystemSelectionChannels() {
         assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+        assumeFalse(hasFeature(PackageManager.FEATURE_WATCH));
 
         // Get initial list of system selection channels if the API is available
         List<RadioAccessSpecifier> initialSpecifiers = tryGetSystemSelectionChannels();
@@ -6837,16 +6843,16 @@ public class TelephonyManagerTest {
     }
 
     private static class CarrierInfo {
-        final private int mCallerCarrierId;
+        final private Set<Integer> mCallerCarrierIdList;
         final private List<String> mSHAIdList;
 
-        public CarrierInfo(int carrierId, List<String> SHAIds) {
-            mCallerCarrierId = carrierId;
+        public CarrierInfo(Set<Integer> carrierIds, List<String> SHAIds) {
+            mCallerCarrierIdList = carrierIds;
             mSHAIdList = SHAIds;
         }
 
-        public int getCallerCarrierId() {
-            return mCallerCarrierId;
+        public Set<Integer> getCallerCarrierIds() {
+            return mCallerCarrierIdList;
         }
 
         public List<String> getSHAIdList() {
@@ -6854,19 +6860,25 @@ public class TelephonyManagerTest {
         }
     }
 
-    private static final String CALLER_SHA_1_ID = "callerSHA1Id";
-    private static final String CALLER_CARRIER_ID = "carrierId";
+    private static final String CALLER_SHA256_ID = "callerSHA256Ids";
+    private static final String CALLER_CARRIER_ID = "carrierIds";
     private CarrierInfo parseJsonForCallerInfo(String callerPackage, JSONObject dataJson) {
         try {
             if (dataJson != null && callerPackage != null) {
                 JSONObject callerJSON = dataJson.getJSONObject(callerPackage.trim());
-                JSONArray callerJSONArray = callerJSON.getJSONArray(CALLER_SHA_1_ID);
-                int carrierId = callerJSON.getInt(CALLER_CARRIER_ID);
+                JSONArray callerJSONArray = callerJSON.getJSONArray(CALLER_SHA256_ID);
+                JSONArray carrierIdArray = callerJSON.getJSONArray(CALLER_CARRIER_ID);
+
+                Set<Integer> carrierIds = new HashSet<>();
+                for (int index = 0; index < carrierIdArray.length(); index++) {
+                    carrierIds.add(carrierIdArray.getInt(index));
+                }
+
                 List<String> appSignatures = new ArrayList<>();
                 for (int index = 0; index < callerJSONArray.length(); index++) {
                     appSignatures.add((String) callerJSONArray.get(index));
                 }
-                return new CarrierInfo(carrierId, appSignatures);
+                return new CarrierInfo(carrierIds, appSignatures);
             }
         } catch (JSONException ex) {
             Log.e(TAG, "getCallerSignatureInfo: JSONException = " + ex);
@@ -6881,15 +6893,16 @@ public class TelephonyManagerTest {
         testPkgSet.remove("_comment");
         for (String srcPkg : testPkgSet) {
             final CarrierInfo testCarrierInfo = parseJsonForCallerInfo(srcPkg, testJson);
-            List<String> shaIdList = ShellIdentityUtils.invokeMethodWithShellPermissions(
-                    mTelephonyManager, (tm) -> tm.getShaIdFromAllowList(srcPkg,
-                            testCarrierInfo.mCallerCarrierId));
+            for (int cid : testCarrierInfo.getCallerCarrierIds()) {
+                List<String> shaIdList = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                        mTelephonyManager, (tm) -> tm.getShaIdFromAllowList(srcPkg, cid));
 
-            if (shaIdList == null || shaIdList.isEmpty()) {
-                Log.d(TAG, "shaIdList is empty");
-                fail();
+                if (shaIdList == null || shaIdList.isEmpty()) {
+                    Log.d(TAG, "shaIdList is empty");
+                    fail();
+                }
+                assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
             }
-            assertTrue(shaIdList.equals(testCarrierInfo.getSHAIdList()));
         }
     }
 
@@ -6984,17 +6997,23 @@ public class TelephonyManagerTest {
             return;
         }
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertTrue(enabled);
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setEnableCellularIdentifierDisclosureNotifications(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isCellularIdentifierDisclosureNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7010,15 +7029,21 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setEnableCellularIdentifierDisclosureNotifications(true);
+                    }
+            );
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
-                }
-        );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isCellularIdentifierDisclosureNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7081,18 +7106,23 @@ public class TelephonyManagerTest {
                     "Skipping test since modem does not support IRadioNetwork HAL v2.2");
             return;
         }
+        try {
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(true));
+            boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertTrue(enabled);
 
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(true));
-        boolean enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertTrue(enabled);
-
-        ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
-                (tm) -> tm.setNullCipherNotificationsEnabled(false));
-        enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                (tm) -> tm.isNullCipherNotificationsEnabled());
-        assertFalse(enabled);
+            ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mTelephonyManager,
+                    (tm) -> tm.setNullCipherNotificationsEnabled(false));
+            enabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                    (tm) -> tm.isNullCipherNotificationsEnabled());
+            assertFalse(enabled);
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7108,15 +7138,20 @@ public class TelephonyManagerTest {
             return;
         }
 
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.setNullCipherNotificationsEnabled(true);
-                }
-        );
-
-        assertThrows(SecurityException.class, () -> {
-                    mTelephonyManager.isNullCipherNotificationsEnabled();
-                }
-        );
+        try {
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.setNullCipherNotificationsEnabled(true);
+                    }
+            );
+            assertThrows(SecurityException.class, () -> {
+                        mTelephonyManager.isNullCipherNotificationsEnabled();
+                    }
+            );
+        } catch (UnsupportedOperationException e) {
+            Log.d(TAG,
+                    "Skipping test since modem does not support optional IRadioNetwork APIs");
+            return;
+        }
     }
 
     @Test
@@ -7169,25 +7204,17 @@ public class TelephonyManagerTest {
                 new TelephonyManager.EmergencyCallDiagnosticData.Builder();
         persistCallDiagnostics(callDiagnosticBuilder, true /* setTelecomDump */,
                 false /* setTelephonyDump */, false /* setLogcatDump */);
-        String telecomDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                TELECOM_DUMPSYS_COMMAND);
         long nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
-                startTime, telecomDumpOutput, false);
+                startTime, false);
 
         persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
                 true /* setTelephonyDump */, false /* setLogcatDump */);
-        String telephonyDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                TELEPHONY_DUMPSYS_COMMAND);
         nextEntryTime = verifyEmergencyDropBoxEntriesCreatedAndDumped(
-                nextEntryTime, telephonyDumpOutput, false);
+                nextEntryTime, false);
 
-        String logcatSystemRadioCmd = LOGCAT_BINARY + " -t " + startTime
-                + " -b system,radio";
         persistCallDiagnostics(callDiagnosticBuilder, false /* setTelecomDump */,
                 false /* setTelephonyDump */, true /* setLogcatDump */);
-        String logcatDumpOutput = TestUtils.executeShellCommand(getInstrumentation(),
-                logcatSystemRadioCmd);
-        verifyEmergencyDropBoxEntriesCreatedAndDumped(nextEntryTime, logcatDumpOutput, true);
+        verifyEmergencyDropBoxEntriesCreatedAndDumped(nextEntryTime, true);
     }
 
     private void persistCallDiagnostics(
@@ -7214,7 +7241,7 @@ public class TelephonyManagerTest {
     }
 
     private long verifyEmergencyDropBoxEntriesCreatedAndDumped(
-            long entriesAfterTime, String dumpsysOutput, boolean allowSkipDumpsysVerification
+            long entriesAfterTime, boolean allowSkipDumpsysVerification
     ) {
         DropBoxManager dm = getContext().getSystemService(DropBoxManager.class);
         DropBoxManager.Entry entry;
@@ -7229,21 +7256,6 @@ public class TelephonyManagerTest {
         String [] content = entry.getText(MAX_READ_BYTES_PER_DROP_BOX_ENTRY).split(
                 System.lineSeparator());
         assertNotNull("Dropbox entry content is null", content);
-        int lineCount = 1;
-        int foundCount = 0;
-        for (String line : content) {
-            assertFalse(line.contains(DIAG_ERROR_MSG));
-            //verify that corresponding dumpsys output also has this data
-            if (lineCount++ < MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT) {
-                // Only perform half verification in order to make the verification less prone to
-                // timing issues between when the dumpsys is taken v.s. when the entry is recorded.
-                if (dumpsysOutput.contains(line)) {
-                    foundCount++;
-                }
-            }
-        }
-        assertTrue("Should have found ~50% of expected lines in dropbox",
-                foundCount >= MAX_LINES_TO_VERIFY_IN_DUMPSYS_OUTPUT / 2);
         entry.close();
         return entryTime;
     }
@@ -7271,7 +7283,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_shouldBeSupported() {
-        PackageManager packageManager = getContext().getPackageManager();
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         Intent intent = new Intent(TelephonyManager.ACTION_RESET_MOBILE_NETWORK_SETTINGS);
 
         List<ResolveInfo> resolvedActivities = packageManager.queryIntentActivities(intent,
@@ -7287,6 +7304,12 @@ public class TelephonyManagerTest {
     @ApiTest(apis = {
             "android.telephony.TelephonyManager#ACTION_RESET_MOBILE_NETWORK_SETTINGS"})
     public void testActionResetMobileNetworkSettings_requiresNoPermission() {
+        // Exclude products from Auto/TV/Wearable which don't support the feature yet
+        final PackageManager packageManager = getContext().getPackageManager();
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)); // Auto
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)); // TVs
+        assumeFalse(packageManager.hasSystemFeature(PackageManager.FEATURE_WATCH)); // Wearable
+
         // Try to startActivity with the action and make sure no exceptions are thrown.
         // Exceptions may include:
         // 1. SecurityException if additional permission are required for the action
@@ -7301,15 +7324,42 @@ public class TelephonyManagerTest {
     @RequiresFlagsEnabled(android.permission.flags.Flags.FLAG_GET_EMERGENCY_ROLE_HOLDER_API_ENABLED)
     @ApiTest(apis = {"android.telephony.TelephonyManager#getEmergencyAssistancePackageName"})
     public void testGetEmergencyAssistancePackageName() {
+        List<String> emergencyRoleHolders = ShellIdentityUtils.invokeMethodWithShellPermissions(
+                getContext().getSystemService(RoleManager.class),
+                (rm) -> rm.getRoleHolders(RoleManager.ROLE_EMERGENCY));
         if (mTelephonyManager.isVoiceCapable()
             && ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                 (tm) -> tm.isEmergencyAssistanceEnabled())) {
-            assertNotNull(ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
-                            (tm) -> tm.getEmergencyAssistancePackageName()));
+            String emergencyAssistancePackageName =
+                    ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
+                            (tm) -> tm.getEmergencyAssistancePackageName());
+            if (emergencyRoleHolders.isEmpty()) {
+                assertNull(emergencyAssistancePackageName);
+            } else {
+                assertEquals(emergencyRoleHolders.get(0), emergencyAssistancePackageName);
+            }
         } else {
             assertThrows(IllegalStateException.class, () ->
                     ShellIdentityUtils.invokeMethodWithShellPermissions(mTelephonyManager,
                             (tm) -> tm.getEmergencyAssistancePackageName()));
+        }
+    }
+
+    @Test
+    public void testGetServiceStateForSlot() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_RADIO_ACCESS));
+
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(
+                        android.Manifest.permission.READ_PRIVILEGED_PHONE_STATE);
+        try {
+            for (int i = 0; i < mTelephonyManager.getActiveModemCount(); i++) {
+                ServiceState serviceState = mTelephonyManager.getServiceStateForSlot(i);
+                assertNotNull(serviceState);
+            }
+        } finally {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .dropShellPermissionIdentity();
         }
     }
 

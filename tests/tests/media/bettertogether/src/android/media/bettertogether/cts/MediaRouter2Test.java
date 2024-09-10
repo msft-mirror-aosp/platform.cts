@@ -31,11 +31,14 @@ import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.RO
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID7_STATIC_GROUP;
+import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID8_SYSTEM_TYPE;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.STATIC_GROUP_SELECTED_ROUTES_IDS;
 
 import static androidx.test.ext.truth.os.BundleSubject.assertThat;
 
+import static com.android.media.flags.Flags.FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES;
 import static com.android.media.flags.Flags.FLAG_ENABLE_GET_TRANSFERABLE_ROUTES;
+import static com.android.media.flags.Flags.FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -44,13 +47,13 @@ import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.annotation.NonNull;
+import android.app.AppOpsManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
-import android.media.MediaRoute2ProviderService;
 import android.media.MediaRouter2;
 import android.media.MediaRouter2.ControllerCallback;
 import android.media.MediaRouter2.OnGetControllerHintsListener;
@@ -65,7 +68,6 @@ import android.media.session.MediaSession;
 import android.media.session.MediaSessionManager;
 import android.media.session.PlaybackState;
 import android.os.Bundle;
-import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.UserManager;
@@ -107,6 +109,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -120,6 +123,8 @@ public class MediaRouter2Test {
     private static final String DEFAULT_ROUTE_ID = "DEFAULT_ROUTE";
     private static final int SAMPLE_CURRENT_VOLUME = 10;
     private static final int SAMPLE_MAX_VOLUME = 12;
+
+    @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
 
     // Required by Bedstead.
     @ClassRule @Rule public static final DeviceState sDeviceState = new DeviceState();
@@ -152,6 +157,12 @@ public class MediaRouter2Test {
 
         mRouter2 = MediaRouter2.getInstance(mContext);
         MediaRouter2TestActivity.startActivity(mContext);
+
+        if (isAutomotive()) {
+            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                    .adoptShellPermissionIdentity(
+                            Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        }
     }
 
     private void setUpStubProvider() {
@@ -181,6 +192,16 @@ public class MediaRouter2Test {
 
     @After
     public void tearDown() {
+        // We enqueue dropShellPermissionIdentity in the resource releaser to ensure it runs after
+        // other enqueued runnables, in case they need a shell permission such as
+        // MANAGER_APP_OPS_MODES.
+        // TODO: b/344895905 - When changing the resource releaser to use a stack, move this line
+        // into setUp, to keep this executing last.
+        mResourceReleaser.add(
+                () ->
+                        InstrumentationRegistry.getInstrumentation()
+                                .getUiAutomation()
+                                .dropShellPermissionIdentity());
         mRouter2.unregisterRouteCallback(mRouterDummyCallback);
         // Clearing RouteListingPreference.
         mRouter2.setRouteListingPreference(null);
@@ -236,6 +257,15 @@ public class MediaRouter2Test {
     }
 
     @Test
+    public void getType_forSystemRouteFromNonSystemProvider_returnsTypeUnknown() throws Exception {
+        setUpStubProvider();
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SAMPLE));
+        MediaRoute2Info route = routes.get(ROUTE_ID8_SYSTEM_TYPE);
+        assertThat(route).isNotNull();
+        assertThat(route.getType()).isEqualTo(MediaRoute2Info.TYPE_UNKNOWN);
+    }
+
+    @Test
     public void testRegisterTransferCallbackWithInvalidArguments() {
         Executor executor = mExecutor;
         TransferCallback callback = new TransferCallback() {};
@@ -254,30 +284,6 @@ public class MediaRouter2Test {
         // Tests null callback
         assertThrows(NullPointerException.class,
                 () -> mRouter2.unregisterTransferCallback(null));
-    }
-
-    @Test
-    public void activeScanRouteDiscoveryPreference_scansOnSelfScanProvider() {
-        RouteDiscoveryPreference activeScanRouteDiscoveryPreference =
-                new RouteDiscoveryPreference.Builder(
-                                List.of("placeholder_feature"), /* activeScan= */ true)
-                        .build();
-        RouteCallback routeCallback = new RouteCallback() {};
-        ConditionVariable conditionVariable = new ConditionVariable();
-        PlaceholderService.setOnBindCallback(
-                action -> {
-                    if (MediaRoute2ProviderService.SERVICE_INTERFACE.equals(action)) {
-                        conditionVariable.open();
-                    }
-                });
-        try {
-            mRouter2.registerRouteCallback(
-                    Runnable::run, routeCallback, activeScanRouteDiscoveryPreference);
-            assertThat(conditionVariable.block(WAIT_MS)).isTrue();
-        } finally {
-            PlaceholderService.setOnBindCallback(action -> {});
-            mRouter2.unregisterRouteCallback(routeCallback);
-        }
     }
 
     @Test
@@ -1645,7 +1651,7 @@ public class MediaRouter2Test {
                 IllegalArgumentException.class,
                 () ->
                         setRouteListingPreferenceWithComponentName(
-                                new ComponentName(mContext, PlaceholderService.class)));
+                                new ComponentName(mContext, SimpleMediaBrowserService.class)));
     }
 
     @Test
@@ -1685,6 +1691,117 @@ public class MediaRouter2Test {
         assertThat(mRouter2.getRouteListingPreference()).isNull();
     }
 
+    @RequiresFlagsEnabled({
+        FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES,
+        FLAG_ENABLE_PRIVILEGED_ROUTING_FOR_MEDIA_ROUTING_CONTROL
+    })
+    @Test
+    public void transferMethods_setTheCorrectTransferInitData() throws Exception {
+        setUpStubProvider();
+
+        List<String> sampleRouteFeature = new ArrayList<>();
+        sampleRouteFeature.add(FEATURE_SAMPLE);
+        // We don't need callbacks from  MediaRouter2, but we need to be registered to the
+        // system_server in order to make transfers.
+        RouteCallback routeCallback = new RouteCallback() {};
+        mRouter2.registerRouteCallback(
+                mExecutor,
+                routeCallback,
+                new RouteDiscoveryPreference.Builder(sampleRouteFeature, /* activeScan= */ true)
+                        .build());
+        mResourceReleaser.add(() -> mRouter2.unregisterRouteCallback(routeCallback));
+
+        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(sampleRouteFeature);
+        MediaRoute2Info route = routes.get(ROUTE_ID1);
+        assertThat(route).isNotNull();
+
+        List<RoutingController> controllers = new ArrayList<>();
+        mResourceReleaser.add(mRouter2::stop);
+        CountDownLatch successLatch = new CountDownLatch(1);
+        AtomicBoolean transferFailed = new AtomicBoolean(false);
+        TransferCallback transferCallback =
+                new TransferCallback() {
+                    @Override
+                    public void onTransfer(
+                            @NonNull RoutingController oldController,
+                            @NonNull RoutingController newController) {
+                        controllers.add(newController);
+                        successLatch.countDown();
+                    }
+
+                    @Override
+                    public void onTransferFailure(MediaRoute2Info requestedRoute) {
+                        transferFailed.set(true);
+                    }
+                };
+        mRouter2.registerTransferCallback(mExecutor, transferCallback);
+        mResourceReleaser.add(() -> mRouter2.unregisterTransferCallback(transferCallback));
+
+        mRouter2.transferTo(route);
+        assertThat(successLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(transferFailed.get()).isFalse();
+
+        RoutingController remoteController = controllers.get(controllers.size() - 1);
+        assertThat(remoteController.getSelectedRoutes().get(0).getId()).isEqualTo(route.getId());
+        assertThat(remoteController.wasTransferInitiatedBySelf()).isTrue();
+        assertThat(remoteController.getRoutingSessionInfo().getTransferReason())
+                .isEqualTo(RoutingSessionInfo.TRANSFER_REASON_APP);
+
+        int myUid = mContext.getApplicationInfo().uid;
+        String myPackageName = mContext.getPackageName();
+        InstrumentationRegistry.getInstrumentation()
+                .getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.MANAGE_APP_OPS_MODES);
+        AppOpsManager appOpsManager = mContext.getSystemService(AppOpsManager.class);
+        // We need MEDIA_ROUTING_CONTROL to create a proxy router, to make the transfer reason be
+        // SYSTEM.
+        appOpsManager.setMode(
+                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                myUid,
+                myPackageName,
+                AppOpsManager.MODE_ALLOWED);
+        mResourceReleaser.add(
+                () ->
+                        appOpsManager.setMode(
+                                AppOpsManager.OP_MEDIA_ROUTING_CONTROL,
+                                myUid,
+                                mContext.getPackageName(),
+                                AppOpsManager.MODE_DEFAULT));
+        MediaRouter2 proxyRouter =
+                MediaRouter2.getInstance(
+                        mContext,
+                        myPackageName,
+                        mExecutor,
+                        /* onInstanceInvalidatedListener= */ () -> {});
+        CountDownLatch proxyControllerUpdateLatch = new CountDownLatch(1);
+        ControllerCallback proxyControllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        if (controller.getId().equals(remoteController.getId())
+                                && controller.getRoutingSessionInfo().getTransferReason()
+                                        == RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST) {
+                            proxyControllerUpdateLatch.countDown();
+                        }
+                    }
+                };
+        proxyRouter.registerControllerCallback(mExecutor, proxyControllerCallback);
+        mResourceReleaser.add(
+                () -> proxyRouter.unregisterControllerCallback(proxyControllerCallback));
+        while (!createRouteMap(proxyRouter.getRoutes()).containsKey(ROUTE_ID5_TO_TRANSFER_TO)) {
+            // TODO b/339583417 - Remove this busy wait once we fix the underlying bug in proxy
+            // routers.
+            Thread.sleep(500);
+        }
+        proxyRouter.transferTo(
+                createRouteMap(proxyRouter.getRoutes()).get(ROUTE_ID5_TO_TRANSFER_TO));
+        assertThat(proxyControllerUpdateLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
+        RoutingController controller = proxyRouter.getControllers().get(1);
+        assertThat(controller.getRoutingSessionInfo().getTransferReason())
+                .isEqualTo(RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST);
+        assertThat(controller.wasTransferInitiatedBySelf()).isTrue();
+    }
+
     private void setRouteListingPreferenceWithComponentName(ComponentName componentName) {
         mRouter2.setRouteListingPreference(
                 new RouteListingPreference.Builder()
@@ -1710,16 +1827,17 @@ public class MediaRouter2Test {
             throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
 
-        RouteCallback routeCallback = new RouteCallback() {
-            @Override
-            public void onRoutesAdded(List<MediaRoute2Info> routes) {
-                for (MediaRoute2Info route : routes) {
-                    if (!route.isSystemRoute()) {
-                        latch.countDown();
+        RouteCallback routeCallback =
+                new RouteCallback() {
+                    @Override
+                    public void onRoutesUpdated(List<MediaRoute2Info> routes) {
+                        for (MediaRoute2Info route : routes) {
+                            if (!route.isSystemRoute()) {
+                                latch.countDown();
+                            }
+                        }
                     }
-                }
-            }
-        };
+                };
 
         mRouter2.registerRouteCallback(mExecutor, routeCallback, preference);
         try {
@@ -1745,5 +1863,9 @@ public class MediaRouter2Test {
             result.add(route.getOriginalId());
         }
         return result;
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

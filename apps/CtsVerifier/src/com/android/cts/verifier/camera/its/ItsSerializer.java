@@ -27,6 +27,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.BlackLevelPattern;
 import android.hardware.camera2.params.ColorSpaceTransform;
 import android.hardware.camera2.params.Face;
+import android.hardware.camera2.params.LensIntrinsicsSample;
 import android.hardware.camera2.params.LensShadingMap;
 import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.RggbChannelVector;
@@ -58,6 +59,7 @@ import java.util.Set;
  */
 public class ItsSerializer {
     public static final String TAG = ItsSerializer.class.getSimpleName();
+    private static final int CAPTURE_INTENT_TEMPLATE_PREVIEW = 1;
 
     private static class MetadataEntry {
         public MetadataEntry(String k, Object v) {
@@ -277,6 +279,22 @@ public class ItsSerializer {
         return mapObj;
     }
 
+    @SuppressWarnings("unchecked")
+    private static Object serializeIntrinsicsSamples(LensIntrinsicsSample [] samples)
+            throws org.json.JSONException {
+        JSONArray top = new JSONArray();
+        for (LensIntrinsicsSample sample : samples) {
+            JSONObject jSample = new JSONObject();
+            jSample.put("timestamp", sample.getTimestampNanos());
+            JSONArray lensIntrinsics = new JSONArray();
+            for (float intrinsic : sample.getLensIntrinsics()) {
+                lensIntrinsics.put(intrinsic);
+            }
+            jSample.put("lensIntrinsics", lensIntrinsics);
+            top.put(jSample);
+        }
+        return top;
+    }
     private static String getKeyName(Object keyObj) throws ItsException {
         if (keyObj.getClass() == CaptureResult.Key.class
                 || keyObj.getClass() == TotalCaptureResult.class) {
@@ -363,6 +381,9 @@ public class ItsSerializer {
             } else if (keyType == LensShadingMap.class) {
                 return new MetadataEntry(keyName,
                         serializeLensShadingMap((LensShadingMap)keyValue));
+            } else if (keyValue instanceof LensIntrinsicsSample[]) {
+                return new MetadataEntry(keyName,
+                        serializeIntrinsicsSamples((LensIntrinsicsSample []) keyValue));
             } else if (keyValue instanceof float[]) {
                 return new MetadataEntry(keyName, new JSONArray(keyValue));
             } else {
@@ -810,8 +831,16 @@ public class ItsSerializer {
             JSONArray jsonReqs = jsonObjTop.getJSONArray(requestKey);
             requests = new LinkedList<CaptureRequest.Builder>();
             for (int i = 0; i < jsonReqs.length(); i++) {
-                CaptureRequest.Builder templateReq = device.createCaptureRequest(
-                        CameraDevice.TEMPLATE_STILL_CAPTURE);
+                CaptureRequest.Builder templateReq = null;
+                int templateType = CameraDevice.TEMPLATE_STILL_CAPTURE; // Default template
+                JSONObject obj = jsonReqs.getJSONObject(i);
+                if (obj.has("android.control.captureIntent")) {
+                    int captureIntentValue = obj.getInt("android.control.captureIntent");
+                    if (captureIntentValue == CAPTURE_INTENT_TEMPLATE_PREVIEW) {
+                        templateType = CameraDevice.TEMPLATE_PREVIEW;
+                    }
+                }
+                templateReq = device.createCaptureRequest(templateType);
                 requests.add(
                     deserialize(templateReq, jsonReqs.getJSONObject(i)));
             }

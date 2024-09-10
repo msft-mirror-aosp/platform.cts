@@ -51,6 +51,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateManager.DeviceStateCallback;
 import android.icu.util.Calendar;
@@ -1914,9 +1915,10 @@ public final class Helper {
             }
         }
 
-        public void onStateChanged(int state) {
+        @Override
+        public void onDeviceStateChanged(DeviceState state) {
             synchronized (this) {
-                mCurrentState = state;
+                mCurrentState = state.getIdentifier();
                 this.notify();
             }
         }

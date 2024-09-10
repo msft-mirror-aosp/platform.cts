@@ -18,11 +18,9 @@ package android.server.wm.jetpack.utils;
 
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeExtensionSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getActivityBounds;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.getResumedActivityById;
 import static android.server.wm.jetpack.utils.WindowManagerJetpackTestBase.isActivityResumed;
@@ -33,7 +31,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeNotNull;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,7 +42,6 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.server.wm.WindowManagerStateHelper;
-import android.server.wm.jetpack.extensions.util.ExtensionsUtil;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.util.Log;
 import android.util.Pair;
@@ -64,6 +61,7 @@ import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.window.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -134,16 +132,12 @@ public class ActivityEmbeddingUtil {
     /**
      * A wrapper to create {@link SplitPairRule} builder with extensions core functional interface
      * to prevent ambiguous issue when using lambda expressions.
-     * <p>
-     * It requires the vendor API version at least {@link ExtensionsUtil#EXTENSION_VERSION_2}.
      */
     @NonNull
     public static SplitPairRule.Builder createSplitPairRuleBuilder(
             @NonNull Predicate<Pair<Activity, Activity>> activitiesPairPredicate,
             @NonNull Predicate<Pair<Activity, Intent>> activityIntentPairPredicate,
             @NonNull Predicate<WindowMetrics> windowMetricsPredicate) {
-        assertTrue("This method requires vendor API version at least 2",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
         return new SplitPairRule.Builder(activitiesPairPredicate, activityIntentPairPredicate,
                 windowMetricsPredicate);
     }
@@ -362,17 +356,16 @@ public class ActivityEmbeddingUtil {
                 .getActivityEmbeddingComponent();
 
         // Verify that both activities are embedded and that the bounds are correct
-        assertEquals(!shouldExpandContainers,
-                activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
-        // If the split pair is stacked, ignore to check the bounds because the primary activity
-        // may have been occluded and the latest configuration may not be received.
         if (!shouldExpandContainers) {
+            // If the split pair is stacked, ignore to check the bounds because the primary activity
+            // may have been occluded and the latest configuration may not be received.
             waitForActivityBoundsEquals(primaryActivity, expectedBoundsPair.first);
+            assertTrue(activityEmbeddingComponent.isActivityEmbedded(primaryActivity));
         }
         if (secondaryActivity != null) {
+            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
             assertEquals(!shouldExpandContainers,
                     activityEmbeddingComponent.isActivityEmbedded(secondaryActivity));
-            waitForActivityBoundsEquals(secondaryActivity, expectedBoundsPair.second);
         }
     }
 
@@ -410,7 +403,8 @@ public class ActivityEmbeddingUtil {
         return wmState.getTaskByActivity(activityName).getBounds();
     }
 
-    private static void waitForActivityBoundsEquals(@NonNull Activity activity,
+    /** Waits until the bounds of the activity matches the given bounds. */
+    public static void waitForActivityBoundsEquals(@NonNull Activity activity,
             @NonNull Rect bounds) {
         PollingCheck.waitFor(WAIT_FOR_LIFECYCLE_TIMEOUT_MS,
                 () -> getActivityBounds(activity).equals(bounds),
@@ -692,11 +686,21 @@ public class ActivityEmbeddingUtil {
         return (hingeArea.width() > hingeArea.height())
                 == ActivityEmbeddingUtil.isHorizontal(splitAttributes.getLayoutDirection());
     }
+
+    /**
+     * Assumes that WM Extensions - Activity Embedding feature is enabled on the device.
+     */
     public static void assumeActivityEmbeddingSupportedDevice() {
         assumeExtensionSupportedDevice();
-        assumeTrue("Device does not support ActivityEmbedding",
-                requireNonNull(getWindowExtensions())
-                        .getActivityEmbeddingComponent() != null);
+        if (!Flags.enableWmExtensionsForAllFlag()) {
+            assumeNotNull("Device does not support ActivityEmbedding",
+                    getWindowExtensions().getActivityEmbeddingComponent());
+        } else {
+            // Devices are required to enable Activity Embedding with WM Extensions, unless the
+            // app's targetSDK is smaller than Android 15.
+            assertNotNull("Device with WM Extensions must support ActivityEmbedding",
+                    getWindowExtensions().getActivityEmbeddingComponent());
+        }
     }
 
     private static void assertSplitInfoTopSplitIsCorrect(@NonNull List<SplitInfo> splitInfoList,

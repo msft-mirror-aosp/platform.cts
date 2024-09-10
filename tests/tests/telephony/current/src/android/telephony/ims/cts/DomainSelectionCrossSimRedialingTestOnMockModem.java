@@ -38,6 +38,7 @@ import static android.telephony.NetworkRegistrationInfo.REGISTRATION_STATE_HOME;
 import static android.telephony.mockmodem.IRadioVoiceImpl.LATCH_EMERGENCY_DIAL;
 import static android.telephony.mockmodem.IRadioVoiceImpl.LATCH_GET_LAST_CALL_FAIL_CAUSE;
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
+import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_FET;
 
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
@@ -82,7 +83,6 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -90,7 +90,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * CTS tests for Cross SIM redialing.
+ * CTS tests for cross SIM redialing of AOSP DomainSelectionService.
  */
 @RunWith(AndroidJUnit4.class)
 public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingBase {
@@ -142,7 +142,7 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         sSupportDomainSelection =
                 ShellIdentityUtils.invokeMethodWithShellPermissions(telephonyManager,
-                        (tm) -> tm.isDomainSelectionSupported());
+                        (tm) -> tm.isAospDomainSelectionService());
 
         if (!sSupportDomainSelection) {
             return;
@@ -169,6 +169,15 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
 
         sTestSub = ImsUtils.getPreferredActiveSubId();
 
+        // Insert a SIM
+        assertTrue(sMockModemManager.insertSimCard(sOtherSlot, MOCK_SIM_PROFILE_ID_TWN_FET));
+
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+
+        // Check SIM state ready
+        simCardState = telephonyManager.getSimState(sOtherSlot);
+        assertEquals(TelephonyManager.SIM_STATE_READY, simCardState);
+
         int sub = SubscriptionManager.getSubscriptionId(sTestSlot);
         if (SubscriptionManager.isValidSubscriptionId(sub)) {
             sTestSub = sub;
@@ -185,8 +194,10 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         sVoLteEnabled = ShellIdentityUtils.invokeMethodWithShellPermissions(mmTelManager,
                 ImsMmTelManager::isAdvancedCallingSettingEnabled);
 
-        sMockModemManager.notifyEmergencyNumberList(sTestSlot,
-                new String[] { TEST_EMERGENCY_NUMBER });
+        TimeUnit.MILLISECONDS.sleep(WAIT_UPDATE_TIMEOUT_MS);
+
+        sMockModemManager.notifyEmergencyNumberList(0, new String[] { TEST_EMERGENCY_NUMBER });
+        sMockModemManager.notifyEmergencyNumberList(1, new String[] { TEST_EMERGENCY_NUMBER });
     }
 
     @AfterClass
@@ -264,7 +275,6 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
             unsolBarringInfoChanged(sOtherSlot, false, true);
             waitForVoiceLatchCountdown(sOtherSlot,
                     LATCH_GET_LAST_CALL_FAIL_CAUSE, WAIT_REQUEST_TIMEOUT_MS);
-            sMockModemManager.removeSimCard(sOtherSlot);
         }
 
         if (mServiceCallBack != null && mServiceCallBack.getService() != null) {
@@ -286,7 +296,6 @@ public class DomainSelectionCrossSimRedialingTestOnMockModem extends ImsCallingB
         TelephonyUtils.endBlockSuppression(InstrumentationRegistry.getInstrumentation());
     }
 
-    @Ignore("For internal test only.")
     @Test
     public void testCrossStackSlot0ThenSlot1() throws Exception {
         // Setup pre-condition

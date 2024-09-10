@@ -23,6 +23,7 @@ import static android.server.wm.app.Components.HideOverlayWindowsActivity.PONG;
 import static android.server.wm.app.Components.HideOverlayWindowsActivity.REPORT_TOUCH;
 import static android.view.Gravity.LEFT;
 import static android.view.Gravity.TOP;
+import static android.view.WindowManager.LayoutParams.FIRST_SUB_WINDOW;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -36,14 +37,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CliIntentExtra;
 import android.server.wm.app.Components;
-import android.view.Display;
 import android.view.MotionEvent;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.widget.TextView;
 
@@ -62,8 +64,9 @@ import org.junit.Test;
 @Presubmit
 public class HideOverlayWindowsTest extends ActivityManagerTestBase {
 
-    private final static String WINDOW_NAME_EXTRA = "window_name";
-    private final static String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
+    private static final String POP_UP_WINDOW = "POP_UP_WINDOW";
+    private static final String WINDOW_NAME_EXTRA = "window_name";
+    private static final String SYSTEM_APPLICATION_OVERLAY_EXTRA = "system_application_overlay";
     private PongReceiver mPongReceiver;
     private TouchReceiver mTouchReceiver;
 
@@ -190,12 +193,13 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
                     CliIntentExtra.extraBool(SYSTEM_APPLICATION_OVERLAY_EXTRA, true));
             mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
         }, Manifest.permission.SYSTEM_APPLICATION_OVERLAY);
+        Rect appOverlayActivityFrame = mWmState.getWindowState(componentName).getFrame();
 
         launchActivity(HIDE_OVERLAY_WINDOWS_ACTIVITY);
         setHideOverlayWindowsAndWaitForPong(true);
         mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
 
-        MotionEvent motionEvent = touchCenterOfDisplayAndWaitForMotionEvent();
+        MotionEvent motionEvent = touchCenterOfBoundsAndWaitForMotionEvent(appOverlayActivityFrame);
 
         assertThat(
                 motionEvent.getFlags() & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED).isEqualTo(
@@ -213,19 +217,51 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
                     CliIntentExtra.extraBool(SYSTEM_APPLICATION_OVERLAY_EXTRA, true));
             mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
         }, Manifest.permission.SYSTEM_ALERT_WINDOW);
+        Rect appOverlayActivityFrame = mWmState.getWindowState(componentName).getFrame();
 
         launchActivityInFullscreen(HIDE_OVERLAY_WINDOWS_ACTIVITY);
         setHideOverlayWindowsAndWaitForPong(false);
         mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
 
-        MotionEvent motionEvent = touchCenterOfDisplayAndWaitForMotionEvent();
+        MotionEvent motionEvent = touchCenterOfBoundsAndWaitForMotionEvent(appOverlayActivityFrame);
         assertThat(
                 motionEvent.getFlags() & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED).isEqualTo(
                 MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED);
     }
 
-    private MotionEvent touchCenterOfDisplayAndWaitForMotionEvent() {
-        mTouchHelper.tapOnDisplayCenter(Display.DEFAULT_DISPLAY);
+    @Test
+    public void testApplicationOverlayWithPopUpHiddenWhenRequested() {
+        String windowName = "SYSTEM_ALERT_WINDOW";
+        ComponentName componentName = new ComponentName(
+                mContext, SystemWindowActivity.class);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            launchActivity(componentName,
+                    CliIntentExtra.extraString(WINDOW_NAME_EXTRA, windowName));
+            mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+        }, Manifest.permission.SYSTEM_ALERT_WINDOW);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            launchActivity(componentName,
+                    CliIntentExtra.extraString(WINDOW_NAME_EXTRA, POP_UP_WINDOW));
+            mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+        }, Manifest.permission.SYSTEM_ALERT_WINDOW);
+
+        launchActivity(HIDE_OVERLAY_WINDOWS_ACTIVITY);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+
+        setHideOverlayWindowsAndWaitForPong(true);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, false);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, false);
+
+        setHideOverlayWindowsAndWaitForPong(false);
+        mWmState.waitAndAssertWindowSurfaceShown(windowName, true);
+        mWmState.waitAndAssertWindowSurfaceShown(POP_UP_WINDOW, true);
+    }
+
+    private MotionEvent touchCenterOfBoundsAndWaitForMotionEvent(Rect bounds) {
+        mTouchHelper.tapOnCenter(bounds, getMainDisplayId());
         return mTouchReceiver.getMotionEvent();
     }
 
@@ -239,35 +275,75 @@ public class HideOverlayWindowsTest extends ActivityManagerTestBase {
     public static class BaseSystemWindowActivity extends Activity {
 
         TextView mTextView;
+        TextView mSubWindow;
 
         @Override
         protected void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             String windowName = getIntent().getStringExtra(WINDOW_NAME_EXTRA);
 
-            final Point size = new Point();
-            getDisplay().getRealSize(size);
+            Rect activityBounds = new Rect();
+            getWindow().getDecorView().getViewTreeObserver().addOnGlobalLayoutListener(
+                    new ViewTreeObserver.OnGlobalLayoutListener() {
+                        @Override
+                        public void onGlobalLayout() {
+                            // Remove the listener to avoid multiple calls
+                            getWindow().getDecorView().getViewTreeObserver()
+                                    .removeOnGlobalLayoutListener(this);
+                            getWindow().getDecorView().getBoundsOnScreen(activityBounds, true);
 
-            WindowManager.LayoutParams params =
-                    new WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY,
-                            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
-            params.width = size.x / 3;
-            params.height = size.y / 3;
-            params.gravity = TOP | LEFT;
-            params.setTitle(windowName);
-            params.setSystemApplicationOverlay(
-                    getIntent().getBooleanExtra(SYSTEM_APPLICATION_OVERLAY_EXTRA, false));
+                            WindowManager.LayoutParams params =
+                                    new WindowManager.LayoutParams(TYPE_APPLICATION_OVERLAY,
+                                            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                            params.x = activityBounds.left;
+                            params.y = activityBounds.top;
+                            params.width = (activityBounds.right - activityBounds.left) / 3;
+                            params.height = (activityBounds.bottom - activityBounds.top) / 3;
+                            params.gravity = TOP | LEFT;
+                            params.setTitle(windowName);
+                            params.setSystemApplicationOverlay(
+                                    getIntent().getBooleanExtra(SYSTEM_APPLICATION_OVERLAY_EXTRA,
+                                            false));
 
-            mTextView = new TextView(this);
-            mTextView.setText(windowName + "   type=" + TYPE_APPLICATION_OVERLAY);
-            mTextView.setBackgroundColor(Color.GREEN);
+                            mTextView = new TextView(BaseSystemWindowActivity.this);
+                            mTextView.setText(windowName + "   type=" + TYPE_APPLICATION_OVERLAY);
+                            mTextView.setBackgroundColor(Color.GREEN);
 
-            getWindowManager().addView(mTextView, params);
+                            getWindowManager().addView(mTextView, params);
+                        }
+                    });
+        }
+
+        @Override
+        protected void onNewIntent(Intent intent) {
+            super.onNewIntent(intent);
+            if (POP_UP_WINDOW.equals(intent.getStringExtra(WINDOW_NAME_EXTRA))) {
+                final Point size = new Point();
+                getDisplay().getRealSize(size);
+
+                WindowManager.LayoutParams params =
+                        new WindowManager.LayoutParams(FIRST_SUB_WINDOW,
+                                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL);
+                params.width = size.x / 3;
+                params.height = size.y / 6;
+                params.gravity = TOP | LEFT;
+                params.setTitle(POP_UP_WINDOW);
+                params.token = mTextView.getWindowToken();
+
+                mSubWindow = new TextView(this);
+                mSubWindow.setText(POP_UP_WINDOW + "   type=" + FIRST_SUB_WINDOW);
+                mSubWindow.setBackgroundColor(Color.RED);
+
+                getWindowManager().addView(mSubWindow, params);
+            }
         }
 
         @Override
         protected void onDestroy() {
             super.onDestroy();
+            if (mSubWindow != null) {
+                getWindowManager().removeView(mSubWindow);
+            }
             getWindowManager().removeView(mTextView);
         }
     }

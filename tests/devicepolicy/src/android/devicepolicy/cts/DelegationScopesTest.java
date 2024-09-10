@@ -37,10 +37,10 @@ import android.util.Log;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.harrier.annotations.enterprise.CanSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.CannotSetPolicyTest;
-import com.android.bedstead.harrier.annotations.enterprise.EnsureHasNoDelegate;
-import com.android.bedstead.harrier.annotations.enterprise.PolicyAppliesTest;
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.Delegation;
 import com.android.bedstead.harrier.policies.NetworkLoggingDelegation;
 import com.android.bedstead.harrier.policies.SecurityLoggingDelegation;
@@ -75,10 +75,7 @@ public final class DelegationScopesTest {
 
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
-
-    private static final TestApis sTestApis = new TestApis();
-    private static final UserReference sUser = sTestApis.users().instrumented();
-
+    private static final UserReference sUser = TestApis.users().instrumented();
     private static final TestApp sTestApp = sDeviceState.testApps()
             .query().whereActivities().isNotEmpty().get();
     private static final TestApp sTestApp2 = sDeviceState.testApps().any();

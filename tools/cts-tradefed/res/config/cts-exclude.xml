@@ -33,11 +33,4 @@
     <!-- Exclude @SecurityTest tests from CTS. These are tested in STS. b/180417031-->
     <option name="compatibility:test-arg" value="com.android.tradefed.testtype.AndroidJUnitTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
     <option name="compatibility:test-arg" value="com.android.compatibility.common.tradefed.testtype.JarHostTest:exclude-annotation:android.platform.test.annotations.AsbSecurityTest" />
-
-    <!-- Exclude CtsJvmtiRunTest912HostTestCases as it depends on implementation details of the ART
-         module. b/287732826 -->
-    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest912HostTestCases" />
-    <!-- Exclude CtsJvmtiRunTest911HostTestCases as it depends on line numbers which were changed
-         due to openjdk 17 upgrade. b/338607812 -->
-    <option name="compatibility:exclude-filter" value="CtsJvmtiRunTest911HostTestCases" />
 </configuration>

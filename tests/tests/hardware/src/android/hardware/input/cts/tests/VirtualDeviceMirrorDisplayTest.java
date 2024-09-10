@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.flags.Flags;
-import android.content.Context;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -40,15 +40,14 @@ import android.hardware.input.cts.virtualcreators.VirtualInputDeviceCreator;
 import android.hardware.input.cts.virtualcreators.VirtualInputEventCreator;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.WindowManagerStateHelper;
+import android.util.DisplayMetrics;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.input.DefaultPointerSpeedRule;
@@ -61,7 +60,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR, Flags.FLAG_CONSISTENT_DISPLAY_FLAGS})
 @SmallTest
 @RunWith(AndroidJUnit4.class)
 public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
@@ -78,24 +76,37 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
     private int mDisplayWidth;
     private int mDisplayHeight;
 
+    // Used to get the absolute location of the test activity based on the decor window location.
+    // This location is used to ensure that axis x and axis y are valid on any surface,
+    // regardless of the position of the window on the display.
+    private Point mWindowLocationOnScreen;
+
     @Override
     void onSetUp() {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-        WindowManager windowManager = context.getSystemService(WindowManager.class);
-        mDisplayWidth = windowManager.getCurrentWindowMetrics().getBounds().width();
-        mDisplayHeight = windowManager.getCurrentWindowMetrics().getBounds().height();
+        // We expect the VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR flag to mirror the entirety of the current
+        // display. Use the same size for the virtual display to avoid scaling the mirrored content.
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        // Using Display#getRealMetrics to fetch the logical display size
+        //noinspection deprecation
+        mTestActivity.getDisplay().getRealMetrics(displayMetrics);
+        mDisplayWidth = displayMetrics.widthPixels;
+        mDisplayHeight = displayMetrics.heightPixels;
         mVirtualDevice = mRule.createManagedVirtualDevice();
         mVirtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
                 VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder(
                         mDisplayWidth, mDisplayHeight)
                         .setFlags(DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
                                 | DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR)
-                       .build());
+                        .build());
         mRule.assumeActivityLaunchSupported(mVirtualDisplay.getDisplay().getDisplayId());
         // Wait for any pending transitions
         WindowManagerStateHelper windowManagerStateHelper = new WindowManagerStateHelper();
         windowManagerStateHelper.waitForAppTransitionIdleOnDisplay(mTestActivity.getDisplayId());
         mInstrumentation.getUiAutomation().syncInputTransactions();
+        // Get the decor view screen location
+        final int[] location = new int[2];
+        mTestActivity.getWindow().getDecorView().getLocationOnScreen(location);
+        mWindowLocationOnScreen = new Point(location[0], location[1]);
     }
 
     @Override
@@ -115,10 +126,10 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
         // Verify that events have been received on the activity running on default display.
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
-                        startPosition.x, startPosition.y, 0 /* buttonState */,
+                        toWindowX(startPosition.x), toWindowY(startPosition.y), 0 /* buttonState */,
                         0f /* pressure */),
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_SCROLL,
-                        startPosition.x, startPosition.y, 0 /* buttonState */,
+                        toWindowX(startPosition.x), toWindowY(startPosition.y), 0 /* buttonState */,
                         0f /* pressure */, 0f /* relativeX */, 0f /* relativeY */,
                         1f /* vScroll */)));
     }
@@ -138,8 +149,8 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
         final float firstStopPositionY = startPosition.y + relativeChangeY;
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
-                        firstStopPositionX, firstStopPositionY, 0 /* buttonState */,
-                        0f /* pressure */, relativeChangeX, relativeChangeY,
+                        toWindowX(firstStopPositionX), toWindowY(firstStopPositionY),
+                        0 /* buttonState */, 0f /* pressure */, relativeChangeX, relativeChangeY,
                         0f /* vScroll */)));
         final PointF cursorPosition1 = mouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
@@ -155,8 +166,8 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .build());
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_MOVE,
-                        secondStopPositionX, secondStopPositionY, 0 /* buttonState */,
-                        0f /* pressure */, -relativeChangeX, -relativeChangeY,
+                        toWindowX(secondStopPositionX), toWindowY(secondStopPositionY),
+                        0 /* buttonState */, 0f /* pressure */, -relativeChangeX, -relativeChangeY,
                         0f /* vScroll */)));
         final PointF cursorPosition2 = mouse.getCursorPosition();
         assertEquals("getCursorPosition() should return the updated x position",
@@ -179,25 +190,27 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .setButtonCode(VirtualMouseButtonEvent.BUTTON_PRIMARY)
                 .build());
         final MotionEvent buttonPressEvent = VirtualInputEventCreator.createMouseEvent(
-                MotionEvent.ACTION_BUTTON_PRESS, startPosition.x, startPosition.y,
+                MotionEvent.ACTION_BUTTON_PRESS,
+                toWindowX(startPosition.x), toWindowY(startPosition.y),
                 MotionEvent.BUTTON_PRIMARY, 1f /* pressure */);
         buttonPressEvent.setActionButton(MotionEvent.BUTTON_PRIMARY);
         final MotionEvent buttonReleaseEvent = VirtualInputEventCreator.createMouseEvent(
-                MotionEvent.ACTION_BUTTON_RELEASE, startPosition.x, startPosition.y,
+                MotionEvent.ACTION_BUTTON_RELEASE,
+                toWindowX(startPosition.x), toWindowY(startPosition.y),
                 0 /* buttonState */, 0f /* pressure */);
         buttonReleaseEvent.setActionButton(MotionEvent.BUTTON_PRIMARY);
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_DOWN,
-                        startPosition.x, startPosition.y, MotionEvent.BUTTON_PRIMARY,
-                        1f /* pressure */),
+                        toWindowX(startPosition.x), toWindowY(startPosition.y),
+                        MotionEvent.BUTTON_PRIMARY, 1f /* pressure */),
                 buttonPressEvent,
                 buttonReleaseEvent,
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_UP,
-                        startPosition.x, startPosition.y, 0 /* buttonState */,
-                        0f /* pressure */),
+                        toWindowX(startPosition.x), toWindowY(startPosition.y),
+                        0 /* buttonState */, 0f /* pressure */),
                 VirtualInputEventCreator.createMouseEvent(MotionEvent.ACTION_HOVER_ENTER,
-                        startPosition.x, startPosition.y, 0 /* buttonState */,
-                        0f /* pressure */)));
+                        toWindowX(startPosition.x), toWindowY(startPosition.y),
+                        0 /* buttonState */, 0f /* pressure */)));
     }
 
     @Test
@@ -207,9 +220,9 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
         final float inputSize = 1f;
         // Convert the input axis size to its equivalent fraction of the total screen.
         final float computedSize = inputSize / (mDisplayWidth - 1f);
-        final float x = mDisplayWidth / 2f;
-        final float y = mDisplayHeight / 2f;
-
+        // TODO(b/343960635): Use test activity to calculate the center position.
+        final int x = mDisplayWidth / 2;
+        final int y = mDisplayHeight / 2;
         // The number of move events that are sent between the down and up event.
         final int moveEventCount = 5;
         List<InputEvent> expectedEvents = new ArrayList<>(moveEventCount + 2);
@@ -228,8 +241,8 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .setPressure(255f)
                 .build());
         expectedEvents.add(
-                VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_DOWN, x, y,
-                        1f /* pressure */, computedSize, inputSize));
+                VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_DOWN,
+                        toWindowX(x), toWindowY(y), 1f /* pressure */, computedSize, inputSize));
 
         // We expect to get the exact coordinates in the view that were injected into the
         // touchscreen. Touch resampling could result in the generation of additional "fake"
@@ -249,7 +262,8 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
             touchscreen.sendTouchEvent(builder.build());
             expectedEvents.add(
                     VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_MOVE,
-                            x + i, y + i, 1f /* pressure */, computedSize, inputSize));
+                            toWindowX(x + i), toWindowY(y + i),
+                            1f /* pressure */, computedSize, inputSize));
         }
 
         touchscreen.sendTouchEvent(builder
@@ -259,8 +273,7 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .build());
         expectedEvents.add(
                 VirtualInputEventCreator.createTouchscreenEvent(MotionEvent.ACTION_UP,
-                        x + moveEventCount,
-                        y + moveEventCount,
+                        toWindowX(x + moveEventCount), toWindowY(y + moveEventCount),
                         1f /* pressure */, computedSize, inputSize));
 
         verifyEvents(expectedEvents);
@@ -353,17 +366,19 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .build());
         // Convert the input axis size to its equivalent fraction of the total touchpad size.
         final float computedSize = inputSize / (touchPadWidth - 1f);
+
         verifyEvents(Arrays.asList(
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_DOWN, x, y, computedSize /* size */,
+                        MotionEvent.ACTION_DOWN, x, y,
+                        computedSize /* size */,
                         inputSize /* axisSize */),
                 VirtualInputEventCreator.createNavigationTouchpadMotionEvent(
-                        MotionEvent.ACTION_UP, x, y, computedSize /* size */,
+                        MotionEvent.ACTION_UP, x, y,
+                        computedSize /* size */,
                         inputSize /* axisSize */)));
     }
 
-    @RequiresFlagsEnabled({Flags.FLAG_INTERACTIVE_SCREEN_MIRROR,
-            Flags.FLAG_CONSISTENT_DISPLAY_FLAGS, Flags.FLAG_VIRTUAL_STYLUS})
+    @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_STYLUS)
     @Test
     public void virtualStylus_touchEvent() {
         VirtualStylus stylus = VirtualInputDeviceCreator.createAndPrepareStylus(mVirtualDevice,
@@ -393,8 +408,8 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .setPressure(255)
                 .build());
         expectedEvents.add(
-                VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_DOWN,
-                        toolType, x, y, 1f /* pressure */, 0 /* buttonState */));
+                VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_DOWN, toolType,
+                        toWindowX(x), toWindowY(y), 1f /* pressure */, 0 /* buttonState */));
 
         // Next we send a bunch of ACTION_MOVE events. Each one with a different x and y
         // coordinate.
@@ -405,9 +420,9 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                     .setPressure(255);
             stylus.sendMotionEvent(builder.build());
             expectedEvents.add(
-                    VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_MOVE,
-                            toolType, x + i, y + i, 1f /* pressure */,
-                            0 /* buttonState */));
+                    VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_MOVE, toolType,
+                            toWindowX(x + i), toWindowY(y + i),
+                            1f /* pressure */, 0 /* buttonState */));
         }
 
         // Up event
@@ -417,10 +432,18 @@ public class VirtualDeviceMirrorDisplayTest extends InputTestCase {
                 .setY(y + moveEventCount)
                 .build());
         expectedEvents.add(
-                VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_UP,
-                        toolType, x + moveEventCount, y + moveEventCount, 1f /* pressure */,
-                        0 /* buttonState */));
+                VirtualInputEventCreator.createStylusEvent(MotionEvent.ACTION_UP, toolType,
+                        toWindowX(x + moveEventCount), toWindowY(y + moveEventCount),
+                        1f /* pressure */, 0 /* buttonState */));
 
         verifyEvents(expectedEvents);
+    }
+
+    private float toWindowX(float posX) {
+        return posX - mWindowLocationOnScreen.x;
+    }
+
+    private float toWindowY(float posY) {
+        return posY - mWindowLocationOnScreen.y;
     }
 }

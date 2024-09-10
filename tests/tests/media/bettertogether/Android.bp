@@ -15,6 +15,7 @@
 package {
     // See: http://go/android-license-faq
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_media_better_together",
 }
 
 android_test {
@@ -73,6 +74,7 @@ android_test {
     test_config: "AndroidTest-mcts.xml",
     // Tag this module as a cts test artifact
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",

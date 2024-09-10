@@ -16,19 +16,21 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIES_GLOBALLY;
-import static com.android.bedstead.nene.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIES_GLOBALLY;
+import static com.android.bedstead.permissions.CommonPermissions.MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy for SetUsbDataSignaling
  */
 @EnterprisePolicy(dpc =
         APPLIED_BY_DEVICE_OWNER | APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE
-                | APPLIES_GLOBALLY,  permissions = @EnterprisePolicy.Permission(
-        appliedWith = MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING, appliesTo = APPLIES_GLOBALLY))
+                | APPLIES_GLOBALLY)
+// permission holders don't get sent broadcasts
+//        permissions = @EnterprisePolicy.Permission(
+//        appliedWith = MANAGE_DEVICE_POLICY_USB_DATA_SIGNALLING, appliesTo = APPLIES_GLOBALLY))
 public final class SetUsbDataSignaling {
 }

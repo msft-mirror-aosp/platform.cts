@@ -84,4 +84,5 @@ public final class TextViewFontVariationTest {
         assertEquals("'wdth' 50, 'wght' 200",
                 getTextViewFontVariationSettings(R.id.textAppearance_fontVariation_wdth50_wght200));
     }
+
 }

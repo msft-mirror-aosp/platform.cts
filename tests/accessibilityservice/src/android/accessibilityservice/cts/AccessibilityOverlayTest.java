@@ -72,6 +72,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -412,8 +413,7 @@ public class AccessibilityOverlayTest {
                     .that(
                             CtsWindowInfoUtils.waitForWindowInfos(
                                     windowPredicate,
-                                    AsyncUtils.DEFAULT_TIMEOUT_MS,
-                                    TimeUnit.MILLISECONDS,
+                                    Duration.ofMillis(AsyncUtils.DEFAULT_TIMEOUT_MS),
                                     sUiAutomation))
                     .isTrue();
         } finally {

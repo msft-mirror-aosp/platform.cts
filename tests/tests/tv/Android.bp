@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_tv_os",
 }
 
 android_library {
@@ -39,7 +40,9 @@ android_library {
 
     // sdk_version: "test_current",
     platform_apis: true,
-    resource_dirs: ["res"],
+    resource_dirs: [
+        "res",
+    ],
 }
 
 android_test {

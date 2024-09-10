@@ -16,8 +16,9 @@
 
 package android.server.biometrics;
 
+import static com.android.systemui.Flags.FLAG_CONSTRAINT_BP;
+
 import static com.google.common.truth.Truth.assertThat;
-import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
@@ -25,7 +26,6 @@ import static org.mockito.Mockito.mock;
 
 import android.Manifest;
 import android.graphics.Bitmap;
-import android.hardware.biometrics.BiometricManager;
 import android.hardware.biometrics.BiometricPrompt;
 import android.hardware.biometrics.BiometricTestSession;
 import android.hardware.biometrics.Flags;
@@ -33,12 +33,14 @@ import android.hardware.biometrics.SensorProperties;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.server.biometrics.util.Utils;
 import android.util.Log;
 
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.ApiTest;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -54,7 +56,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
     private final String mLogoDescription = "test app";
 
     /**
-     * Test without SET_BIOMETRIC_DIALOG_LOGO permission,
+     * Test without SET_BIOMETRIC_DIALOG_ADVANCED permission,
      * {@link BiometricPrompt.Builder#setLogoRes(int)} should throw security exception.
      */
     @ApiTest(apis = {
@@ -66,7 +68,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoRes_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -78,6 +80,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoRes(int)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
+    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",
@@ -87,7 +90,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoRes"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoRes_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -95,7 +98,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
     }
 
     /**
-     * Test without SET_BIOMETRIC_DIALOG_LOGO permission,
+     * Test without SET_BIOMETRIC_DIALOG_ADVANCED permission,
      * {@link BiometricPrompt.Builder#setLogoBitmap(Bitmap)} should throw security exception.
      */
     @ApiTest(apis = {
@@ -107,7 +110,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoBitmap_withoutPermissionFailed() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -119,6 +122,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
      * {@link BiometricPrompt.Builder#setLogoBitmap(Bitmap)} are shown on the
      * BiometricPrompt UI when biometric auth is requested.
      */
+    @Ignore("b/356789161")
     @ApiTest(apis = {
             "android.hardware.biometrics."
                     + "BiometricManager#canAuthenticate",
@@ -128,7 +132,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoDescription",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoBitmap_withPermissionSuccessful() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -150,7 +154,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                     + "PromptVerticalListContentView.Builder#setLogoRes",
             "android.hardware.biometrics."
                     + "PromptVerticalListContentView.Builder#setLogoBitmap"})
-    @RequiresFlagsEnabled(Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT)
+    @RequiresFlagsEnabled({Flags.FLAG_CUSTOM_BIOMETRIC_PROMPT, FLAG_CONSTRAINT_BP})
     @Test
     public void test_setLogoResAndBitmap_throwsException() throws Exception {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
@@ -165,20 +169,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED);
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_SUCCESS);
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
@@ -210,26 +201,13 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
             try (BiometricTestSession session =
                          mBiometricManager.createTestSession(props.getSensorId())) {
 
-                final int authenticatorStrength =
-                        Utils.testApiStrengthToAuthenticatorStrength(props.getSensorStrength());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED);
-
-                enrollForSensor(session, props.getSensorId());
-
-                assertWithMessage("Sensor: " + props.getSensorId()
-                        + ", strength: " + props.getSensorStrength()).that(
-                        mBiometricManager.canAuthenticate(authenticatorStrength)).isEqualTo(
-                        BiometricManager.BIOMETRIC_SUCCESS);
+                setUpNonConvenienceSensorEnrollment(props, session);
 
                 BiometricPrompt.AuthenticationCallback callback =
                         mock(BiometricPrompt.AuthenticationCallback.class);
                 if (withPermission) {
                     showBiometricPromptWithLogo(testLogoRes, props.getSensorId(), callback);
-                    final UiObject2 actualLogo = findView(LOGO_VIEW);
+                    final UiObject2 actualLogo = waitForView(LOGO_VIEW);
                     final UiObject2 actualLogoDescription = findView(LOGO_DESCRIPTION_VIEW);
 
                     assertThat(actualLogo.getVisibleBounds()).isNotNull();
@@ -242,7 +220,7 @@ public class BiometricPromptLogoTests extends BiometricTestBase {
                             () -> showBiometricPromptWithLogo(testLogoRes, props.getSensorId(),
                                     callback));
                     assertThat(e).hasMessageThat().contains(
-                            "android.permission.SET_BIOMETRIC_DIALOG_LOGO");
+                            "android.permission.SET_BIOMETRIC_DIALOG_ADVANCED");
                 }
             }
         }

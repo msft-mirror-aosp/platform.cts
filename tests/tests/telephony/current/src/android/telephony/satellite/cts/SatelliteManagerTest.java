@@ -512,62 +512,68 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE, callback1.modemState);
         sSatelliteManager.unregisterForModemStateChanged(callback);
 
+        int[] sosDatagramTypes = {SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                SatelliteManager.DATAGRAM_TYPE_LAST_SOS_MESSAGE_STILL_NEED_HELP,
+                SatelliteManager.DATAGRAM_TYPE_LAST_SOS_MESSAGE_NO_HELP_NEEDED};
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         String mText = "This is a test datagram message";
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
-        callback1.clearModemStates();
-        sSatelliteManager.sendDatagram(
-                SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
-                getContext().getMainExecutor(), resultListener::offer);
+        for (int datagramType : sosDatagramTypes) {
+            callback1.clearModemStates();
+            sSatelliteManager.sendDatagram(
+                    datagramType, datagram, true,
+                    getContext().getMainExecutor(), resultListener::offer);
 
-        Integer errorCode;
-        try {
-            errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ex) {
-            fail("testSatelliteModemStateChanged: Got InterruptedException in waiting"
-                    + " for the sendDatagram result code");
-            return;
-        }
-        assertNotNull(errorCode);
-        Log.d(TAG, "testSatelliteModemStateChanged: sendDatagram errorCode="
-                + errorCode);
-
-        assertFalse(callback.waitUntilResult(1));
-        assertTrue(callback1.waitUntilResult(2));
-        assertTrue(callback1.getTotalCountOfModemStates() >= 2);
-        assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING,
-                callback1.getModemState(0));
-        if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
-            /**
-             * Modem state should have the following transitions:
-             * 1) IDLE to TRANSFERRING.
-             * 2) TRANSFERRING to LISTENING.
-             * 3) LISTENING to IDLE
-             */
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_LISTENING,
-                    callback1.getModemState(1));
-            /**
-             * Satellite will stay at LISTENING mode for 3 minutes by default. Thus, we will skip
-             * checking the last state transition.
-             */
-        } else {
-            /**
-             * Modem state should have the following transitions:
-             * 1) IDLE to TRANSFERRING.
-             * 2) TRANSFERRING to IDLE.
-             */
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
-                    callback1.getModemState(1));
-        }
-
-        if (!originalEnabledState) {
-            // Restore original modem enabled state.
-            requestSatelliteEnabled(false);
+            Integer errorCode;
+            try {
+                errorCode = resultListener.poll(TIMEOUT, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException ex) {
+                fail("testSatelliteModemStateChanged: Got InterruptedException in waiting"
+                        + " for the sendDatagram result code");
+                return;
+            }
+            assertNotNull(errorCode);
+            Log.d(TAG, "testSatelliteModemStateChanged: sendDatagram errorCode="
+                    + errorCode);
 
             assertFalse(callback.waitUntilResult(1));
-            assertTrue(callback1.waitUntilResult(1));
-            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback1.modemState);
-            assertFalse(isSatelliteEnabled());
+            assertTrue(callback1.waitUntilResult(2));
+            assertTrue(callback1.getTotalCountOfModemStates() >= 2);
+            assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_DATAGRAM_TRANSFERRING,
+                    callback1.getModemState(0));
+            if (errorCode == SatelliteManager.SATELLITE_RESULT_SUCCESS) {
+                /**
+                 * Modem state should have the following transitions:
+                 * 1) IDLE to TRANSFERRING.
+                 * 2) TRANSFERRING to LISTENING.
+                 * 3) LISTENING to IDLE
+                 */
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_LISTENING,
+                        callback1.getModemState(1));
+                /**
+                 * Satellite will stay at LISTENING mode for 3 minutes by default. Thus, we will
+                 * skip
+                 * checking the last state transition.
+                 */
+            } else {
+                /**
+                 * Modem state should have the following transitions:
+                 * 1) IDLE to TRANSFERRING.
+                 * 2) TRANSFERRING to IDLE.
+                 */
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_IDLE,
+                        callback1.getModemState(1));
+            }
+
+            if (!originalEnabledState) {
+                // Restore original modem enabled state.
+                requestSatelliteEnabled(false);
+
+                assertFalse(callback.waitUntilResult(1));
+                assertTrue(callback1.waitUntilResult(1));
+                assertEquals(SatelliteManager.SATELLITE_MODEM_STATE_OFF, callback1.modemState);
+                assertFalse(isSatelliteEnabled());
+            }
         }
         sSatelliteManager.unregisterForModemStateChanged(callback1);
 
@@ -811,8 +817,13 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
                         getContext().getMainExecutor(), callback));
-        assertThrows(SecurityException.class,
-                () -> sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback));
+        try {
+            sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback);
+            fail("Expected IllegalArgumentException or SecurityException");
+        } catch (IllegalArgumentException | SecurityException ex) {
+            assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
+            logd(ex.toString());
+        }
     }
 
     @Test
@@ -854,5 +865,34 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.getSatellitePlmnsForCarrier(
                         getActiveSubIDForCarrierSatelliteTest()));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForSatelliteSupportedStateChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteSupportedStateCallbackTest satelliteSupportedStateCallback =
+                new SatelliteSupportedStateCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForSupportedStateChanged(
+                        getContext().getMainExecutor(), satelliteSupportedStateCallback));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_OEM_ENABLED_SATELLITE_FLAG)
+    public void testRegisterForCommunicationAllowedStateChanged() {
+        if (!shouldTestSatellite()) return;
+
+        SatelliteCommunicationAllowedStateCallbackTest satelliteCommunicationAllowedStateCallback =
+                new SatelliteCommunicationAllowedStateCallbackTest();
+
+        // Throws SecurityException as we do not have SATELLITE_COMMUNICATION permission.
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.registerForCommunicationAllowedStateChanged(
+                        getContext().getMainExecutor(),
+                        satelliteCommunicationAllowedStateCallback));
     }
 }

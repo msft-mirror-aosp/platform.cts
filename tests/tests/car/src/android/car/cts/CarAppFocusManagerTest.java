@@ -33,9 +33,9 @@ import android.content.Context;
 import android.os.Process;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Log;
 
+import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 

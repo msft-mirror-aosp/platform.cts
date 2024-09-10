@@ -17,44 +17,51 @@
 package com.android.cts.input
 
 import android.app.Instrumentation
-import android.content.Context
 import android.graphics.Point
 import android.hardware.input.InputManager
 import android.os.Handler
 import android.os.Looper
 import android.server.wm.WindowManagerStateHelper
-import android.util.Size
 import android.view.Display
+import android.view.Surface
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
 import java.util.concurrent.TimeUnit
-import org.json.JSONArray
-import org.json.JSONObject
+
+private fun rotateFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
+    return when (display.rotation) {
+        Surface.ROTATION_0 -> Point(x, y)
+        Surface.ROTATION_90 -> Point(display.mode.physicalWidth - 1 - y, x)
+        Surface.ROTATION_180 -> Point(
+            display.mode.physicalWidth - 1 - x,
+            display.mode.physicalHeight - 1 - y
+        )
+        Surface.ROTATION_270 -> Point(y, display.mode.physicalHeight - 1 - x)
+        else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
+    }
+}
 
 /**
  * Helper class for configuring and interacting with a [UinputDevice] that uses the evdev
  * multitouch protocol.
  */
-class UinputTouchDevice(
+open class UinputTouchDevice(
     instrumentation: Instrumentation,
-    display: Display,
-    private val rawResource: Int,
-    private val source: Int,
-    useDisplaySize: Boolean = false,
-) :
-    AutoCloseable {
+    private val display: Display,
+    private val registerCommand: UinputRegisterCommand,
+    source: Int,
+) : AutoCloseable {
 
     private val DISPLAY_ASSOCIATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5)
-
-    private val uinputDevice: UinputDevice
-    private lateinit var port: String
+    private val uinputDevice = UinputDevice(instrumentation, source, registerCommand)
     private val inputManager: InputManager
 
     init {
-        val size = Size(display.getMode().getPhysicalWidth(), display.getMode().getPhysicalHeight())
-        uinputDevice = createDevice(instrumentation, if (useDisplaySize) size else null)
         inputManager = instrumentation.targetContext.getSystemService(InputManager::class.java)!!
         associateWith(display)
+
+        // Wait for display transitions to idle as associating an input device with a display could
+        // trigger one because of a display configuration change
         WindowManagerStateHelper().waitForAppTransitionIdleOnDisplay(display.displayId)
         instrumentation.uiAutomation.syncInputTransactions()
     }
@@ -111,54 +118,16 @@ class UinputTouchDevice(
     }
 
     fun getDeviceId(): Int {
-        return uinputDevice.getDeviceId()
-    }
-
-    private fun readRawResource(context: Context): String {
-        return context.resources
-            .openRawResource(rawResource)
-            .bufferedReader().use { it.readText() }
-    }
-
-    private fun createDevice(instrumentation: Instrumentation, sizeOverride: Size?): UinputDevice {
-        val json = JSONObject(readRawResource(instrumentation.targetContext))
-        val resourceDeviceId: Int = json.getInt("id")
-        val vendorId = json.getInt("vid")
-        val productId = json.getInt("pid")
-        port = json.getString("port")
-
-        if (sizeOverride != null) {
-            // Use the given size to set the maximum values of relevant axes.
-            val absInfo: JSONArray = json.getJSONArray("abs_info")
-            for (i in 0 until absInfo.length()) {
-                val item = absInfo.getJSONObject(i)
-                val code: Any = item.get("code")
-                if (code == ABS_MT_POSITION_X || code == "ABS_MT_POSITION_X") {
-                    item.getJSONObject("info")
-                        .put("maximum", sizeOverride.width - 1)
-                }
-                if (code == ABS_MT_POSITION_Y || code == "ABS_MT_POSITION_Y") {
-                    item.getJSONObject("info")
-                        .put("maximum", sizeOverride.height - 1)
-                }
-            }
-        }
-
-        // Create the uinput device.
-        val registerCommand = json.toString()
-        return UinputDevice(
-            instrumentation,
-            resourceDeviceId,
-            vendorId,
-            productId,
-            source,
-            registerCommand
-        )
+        return uinputDevice.deviceId
     }
 
     private fun associateWith(display: Display) {
         runWithShellPermissionIdentity(
-                { inputManager.addUniqueIdAssociation(port, display.uniqueId!!) },
+                { inputManager.addUniqueIdAssociationByPort(
+                      registerCommand.port,
+                      display.uniqueId!!
+                  )
+                },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         waitForDeviceUpdatesUntil {
@@ -207,10 +176,94 @@ class UinputTouchDevice(
 
     override fun close() {
         runWithShellPermissionIdentity(
-                { inputManager.removeUniqueIdAssociation(port) },
+                { inputManager.removeUniqueIdAssociationByPort(registerCommand.port) },
                 "android.permission.ASSOCIATE_INPUT_DEVICE_TO_DISPLAY"
         )
         uinputDevice.close()
+    }
+
+    private val pointerIds = mutableSetOf<Int>()
+
+    /**
+     * Send a new pointer to the screen, generating an ACTION_DOWN if there aren't any other
+     * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
+     */
+    fun touchDown(x: Int, y: Int): Pointer {
+        val pointerId = firstUnusedPointerId()
+        pointerIds.add(pointerId)
+        return Pointer(pointerId, x, y)
+    }
+
+    private fun firstUnusedPointerId(): Int {
+        var id = 0
+        while (pointerIds.contains(id)) {
+            id++
+        }
+        return id
+    }
+
+    private fun removePointer(id: Int) {
+        pointerIds.remove(id)
+    }
+
+    private val pointerCount get() = pointerIds.size
+
+    /**
+     * A single pointer interacting with the screen. This class simplifies the interactions by
+     * removing the need to separately manage the pointer id.
+     * Works in the screen coordinate space.
+     */
+    inner class Pointer(
+        private val id: Int,
+        x: Int,
+        y: Int,
+    ) : AutoCloseable {
+        private var active = true
+        init {
+            // Send ACTION_DOWN or ACTION_POINTER_DOWN
+            sendBtnTouch(true)
+            sendDown(id, rotateFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sync()
+        }
+
+        /**
+         * Send ACTION_MOVE
+         * The coordinates provided here should be relative to the screen edge, rather than the
+         * window corner. That is, the location should be in the same coordinate space as that
+         * returned by View::getLocationOnScreen API rather than View::getLocationInWindow.
+         */
+        fun moveTo(x: Int, y: Int) {
+            if (!active) {
+                throw IllegalStateException("Pointer $id is not active, can't move to ($x, $y)")
+            }
+            sendMove(id, rotateFromScreenToTouchDeviceSpace(x, y, display))
+            sync()
+        }
+
+        fun lift() {
+            if (!active) {
+                throw IllegalStateException("Pointer $id is not active, already lifted?")
+            }
+            if (pointerCount == 1) {
+                sendBtnTouch(false)
+            }
+            sendUp(id)
+            sync()
+            active = false
+            removePointer(id)
+        }
+
+        /**
+         * Send a cancel if this pointer hasn't yet been lifted
+         */
+        override fun close() {
+            if (!active) {
+                return
+            }
+            sendToolType(id, MT_TOOL_PALM)
+            sync()
+            lift()
+        }
     }
 
     companion object {
@@ -224,6 +277,7 @@ class UinputTouchDevice(
         const val ABS_MT_TRACKING_ID = 0x39
         const val ABS_MT_PRESSURE = 0x3a
         const val BTN_TOUCH = 0x14a
+        const val BTN_TOOL_PEN = 0x140
         const val BTN_TOOL_FINGER = 0x145
         const val BTN_TOOL_DOUBLETAP = 0x14d
         const val BTN_TOOL_TRIPLETAP = 0x14e

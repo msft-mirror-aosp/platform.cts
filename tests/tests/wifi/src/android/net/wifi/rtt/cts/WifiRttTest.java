@@ -49,6 +49,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.DeviceReportLog;
 import com.android.compatibility.common.util.ResultType;
 import com.android.compatibility.common.util.ResultUnit;
@@ -126,7 +127,7 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        rangeApRequest(request, testAp);
+        range11mcApRequest(request, testAp);
     }
 
     /**
@@ -186,7 +187,7 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        rangeApRequest(request, testAp);
+        range11mcApRequest(request, testAp);
     }
 
     /**
@@ -224,16 +225,16 @@ public class WifiRttTest extends TestBase {
         if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
             assertEquals(1, request.getRttResponders().size());
         }
-        rangeApRequest(request, testAp);
+        range11mcApRequest(request, testAp);
     }
 
     /**
-     * Utility method for validating a ranging request.
+     * Utility method for validating 11mc ranging request.
      *
      * @param request the ranging request that is being tested
      * @param testAp the original test scan result to provide feedback on failure conditions
      */
-    private void rangeApRequest(RangingRequest request, ScanResult testAp)
+    private void range11mcApRequest(RangingRequest request, ScanResult testAp)
             throws InterruptedException {
         Thread.sleep(5000);
         List<RangingResult> allResults = new ArrayList<>();
@@ -274,14 +275,14 @@ public class WifiRttTest extends TestBase {
             statuses[i] = status;
             if (status == RangingResult.STATUS_SUCCESS) {
                 if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
-                    if (result.is80211mcMeasurement()) {
-                        assertEquals(
-                                "Wi-Fi RTT results: invalid result (wrong rttBurstSize) entry on "
-                                        + "iteration " + i, result.getNumAttemptedMeasurements(),
-                                RangingRequest.getMaxRttBurstSize());
-                    }
-                    assertTrue("Wi-Fi RTT results: should be a 802.11mc or 802.11az measurement",
-                            result.is80211mcMeasurement() || result.is80211azNtbMeasurement());
+                    assertEquals(
+                            "Wi-Fi RTT results: invalid result (wrong rttBurstSize) entry on "
+                                    + "iteration "
+                                    + i,
+                            result.getNumAttemptedMeasurements(),
+                            RangingRequest.getMaxRttBurstSize());
+                    assertTrue("Wi-Fi RTT results: should be a 802.11MC measurement",
+                            result.is80211mcMeasurement());
                 }
                 distanceSum += result.getDistanceMm();
                 if (i == 0) {
@@ -342,6 +343,168 @@ public class WifiRttTest extends TestBase {
         reportLog.addValues("frequencies", Arrays.copyOf(frequencies, numGoodResults),
                 ResultType.NEUTRAL, ResultUnit.NONE);
         reportLog.addValues("packetBws", Arrays.copyOf(packetBws, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.submit();
+
+        // Analyze results
+        assertTrue("Wi-Fi RTT failure rate exceeds threshold: FAIL=" + numFailures + ", ITERATIONS="
+                        + NUM_OF_RTT_ITERATIONS + ", AP=" + testAp,
+                numFailures <= NUM_OF_RTT_ITERATIONS * MAX_FAILURE_RATE_PERCENT / 100);
+        if (numFailures != NUM_OF_RTT_ITERATIONS) {
+            double distanceAvg = (double) distanceSum / (NUM_OF_RTT_ITERATIONS - numFailures);
+            assertTrue("Wi-Fi RTT: Variation (max direction) exceeds threshold, Variation ="
+                            + (distanceMax - distanceAvg),
+                    (distanceMax - distanceAvg) <= MAX_VARIATION_FROM_AVERAGE_DISTANCE_MM);
+            assertTrue("Wi-Fi RTT: Variation (min direction) exceeds threshold, Variation ="
+                            + (distanceAvg - distanceMin),
+                    (distanceAvg - distanceMin) <= MAX_VARIATION_FROM_AVERAGE_DISTANCE_MM);
+            for (int i = 0; i < numGoodResults; ++i) {
+                assertNotEquals("Number of attempted measurements is 0", 0, numAttempted[i]);
+                assertNotEquals("Number of successful measurements is 0", 0, numSuccessful[i]);
+            }
+        }
+    }
+
+    /**
+     * Utility method for validating 11az ranging request.
+     *
+     * @param request the ranging request that is being tested
+     * @param testAp the original test scan result to provide feedback on failure conditions
+     */
+    private void range11azApRequest(RangingRequest request, ScanResult testAp)
+            throws InterruptedException {
+        Thread.sleep(5000);
+        List<RangingResult> allResults = new ArrayList<>();
+        int numFailures = 0;
+        int distanceSum = 0;
+        int distanceMin = 0;
+        int distanceMax = 0;
+        int[] statuses = new int[NUM_OF_RTT_ITERATIONS];
+        int[] distanceMms = new int[NUM_OF_RTT_ITERATIONS];
+        int[] distanceStdDevMms = new int[NUM_OF_RTT_ITERATIONS];
+        int[] rssis = new int[NUM_OF_RTT_ITERATIONS];
+        int[] numAttempted = new int[NUM_OF_RTT_ITERATIONS];
+        int[] numSuccessful = new int[NUM_OF_RTT_ITERATIONS];
+        int[] frequencies = new int[NUM_OF_RTT_ITERATIONS];
+        int[] packetBws = new int[NUM_OF_RTT_ITERATIONS];
+        long[] timestampsMs = new long[NUM_OF_RTT_ITERATIONS];
+        int[] i2rTxLtfRepetitions = new int[NUM_OF_RTT_ITERATIONS];
+        int[] r2iTxLtfRepetitions = new int[NUM_OF_RTT_ITERATIONS];
+        int[] numRxSts = new int[NUM_OF_RTT_ITERATIONS];
+        int[] numTxSts = new int[NUM_OF_RTT_ITERATIONS];
+        long[] maxNtbMeasurementTime = new long[NUM_OF_RTT_ITERATIONS];
+        long[] minNtbMeasurementTime = new long[NUM_OF_RTT_ITERATIONS];
+
+        byte[] lastLci = null;
+        byte[] lastLcr = null;
+        for (int i = 0; i < NUM_OF_RTT_ITERATIONS; ++i) {
+            ResultCallback callback = new ResultCallback();
+            mWifiRttManager.startRanging(request, mExecutor, callback);
+            assertTrue("Wi-Fi RTT results: no callback on iteration " + i,
+                    callback.waitForCallback());
+
+            List<RangingResult> currentResults = callback.getResults();
+            assertNotNull("Wi-Fi RTT results: null results (onRangingFailure) on iteration " + i,
+                    currentResults);
+            assertEquals("Wi-Fi RTT results: unexpected # of results (expect 1) on iteration " + i,
+                    1, currentResults.size());
+            RangingResult result = currentResults.get(0);
+            assertEquals("Wi-Fi RTT results: invalid result (wrong BSSID) entry on iteration " + i,
+                    result.getMacAddress().toString(), testAp.BSSID);
+            assertNull("Wi-Fi RTT results: invalid result (non-null PeerHandle) entry on iteration "
+                    + i, result.getPeerHandle());
+
+            allResults.add(result);
+            int status = result.getStatus();
+            statuses[i] = status;
+            if (status == RangingResult.STATUS_SUCCESS) {
+                assertTrue("Wi-Fi RTT results: should be a 802.11az measurement",
+                        result.is80211azNtbMeasurement());
+                distanceSum += result.getDistanceMm();
+                if (i == 0) {
+                    distanceMin = result.getDistanceMm();
+                    distanceMax = result.getDistanceMm();
+                } else {
+                    distanceMin = Math.min(distanceMin, result.getDistanceMm());
+                    distanceMax = Math.max(distanceMax, result.getDistanceMm());
+                }
+
+                assertTrue("Wi-Fi RTT results: invalid RSSI on iteration " + i,
+                        result.getRssi() >= MIN_VALID_RSSI);
+
+                distanceMms[i - numFailures] = result.getDistanceMm();
+                distanceStdDevMms[i - numFailures] = result.getDistanceStdDevMm();
+                rssis[i - numFailures] = result.getRssi();
+                numAttempted[i - numFailures] = result.getNumAttemptedMeasurements();
+                numSuccessful[i - numFailures] = result.getNumSuccessfulMeasurements();
+                timestampsMs[i - numFailures] = result.getRangingTimestampMillis();
+                frequencies[i - numFailures] = result.getMeasurementChannelFrequencyMHz();
+                packetBws[i - numFailures] = result.getMeasurementBandwidth();
+                i2rTxLtfRepetitions[i - numFailures] =
+                        result.get80211azInitiatorTxLtfRepetitionsCount();
+                r2iTxLtfRepetitions[i - numFailures] =
+                        result.get80211azResponderTxLtfRepetitionsCount();
+                numRxSts[i - numFailures] = result.get80211azNumberOfRxSpatialStreams();
+                numTxSts[i - numFailures] = result.get80211azNumberOfTxSpatialStreams();
+                maxNtbMeasurementTime[i - numFailures] =
+                        result.getMaxTimeBetweenNtbMeasurementsMicros();
+                minNtbMeasurementTime[i - numFailures] =
+                        result.getMinTimeBetweenNtbMeasurementsMicros();
+
+                byte[] currentLci = result.getLci();
+                byte[] currentLcr = result.getLcr();
+                if (i - numFailures > 0) {
+                    assertArrayEquals(
+                            "Wi-Fi RTT results: invalid result (LCI mismatch) on iteration " + i,
+                            currentLci, lastLci);
+                    assertArrayEquals(
+                            "Wi-Fi RTT results: invalid result (LCR mismatch) on iteration " + i,
+                            currentLcr, lastLcr);
+                }
+                lastLci = currentLci;
+                lastLcr = currentLcr;
+            } else {
+                numFailures++;
+            }
+            // Wait for the minimum measurement time
+            Thread.sleep(result.getMinTimeBetweenNtbMeasurementsMicros() * 1000);
+        }
+
+        // Save results to log
+        int numGoodResults = NUM_OF_RTT_ITERATIONS - numFailures;
+        DeviceReportLog reportLog = new DeviceReportLog(TAG, "testRangingToTestAp");
+        reportLog.addValues("status_codes", statuses, ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("distance_mm", Arrays.copyOf(distanceMms, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("distance_stddev_mm", Arrays.copyOf(distanceStdDevMms, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("rssi_dbm", Arrays.copyOf(rssis, numGoodResults), ResultType.NEUTRAL,
+                ResultUnit.NONE);
+        reportLog.addValues("num_attempted", Arrays.copyOf(numAttempted, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("num_successful", Arrays.copyOf(numSuccessful, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("timestamps", Arrays.copyOf(timestampsMs, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("frequencies", Arrays.copyOf(frequencies, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("packetBws", Arrays.copyOf(packetBws, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("i2rTxLtfRepetitions",
+                Arrays.copyOf(i2rTxLtfRepetitions, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("r2iTxLtfRepetitions",
+                Arrays.copyOf(r2iTxLtfRepetitions, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("numRxSts", Arrays.copyOf(numRxSts, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("numTxSts", Arrays.copyOf(numRxSts, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("maxNtbMeasurementTime",
+                Arrays.copyOf(maxNtbMeasurementTime, numGoodResults),
+                ResultType.NEUTRAL, ResultUnit.NONE);
+        reportLog.addValues("minNtbMeasurementTime",
+                Arrays.copyOf(minNtbMeasurementTime, numGoodResults),
                 ResultType.NEUTRAL, ResultUnit.NONE);
         reportLog.submit();
 
@@ -826,13 +989,35 @@ public class WifiRttTest extends TestBase {
      */
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @Test
+    @ApiTest(apis = { "android.net.wifi.rtt.RangingResult.Builder#setMacAddress",
+            "android.net.wifi.rtt.RangingResult.Builder#setPeerHandle",
+            "android.net.wifi.rtt.RangingResult.Builder#setStatus",
+            "android.net.wifi.rtt.RangingResult.Builder#setDistanceMm",
+            "android.net.wifi.rtt.RangingResult.Builder#setDistanceStdDevMm",
+            "android.net.wifi.rtt.RangingResult.Builder#setLci",
+            "android.net.wifi.rtt.RangingResult.Builder#setLcr",
+            "android.net.wifi.rtt.RangingResult.Builder#setNumAttemptedMeasurements",
+            "android.net.wifi.rtt.RangingResult.Builder#setNumSuccessfulMeasurements",
+            "android.net.wifi.rtt.RangingResult.Builder#setRangingTimestampMillis",
+            "android.net.wifi.rtt.RangingResult.Builder#setRssi",
+            "android.net.wifi.rtt.RangingResult.Builder#setMeasurementChannelFrequencyMHz",
+            "android.net.wifi.rtt.RangingResult.Builder#setMeasurementBandwidth",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211azNtbMeasurement",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211mcMeasurement",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211azInitiatorTxLtfRepetitionsCount",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211azResponderTxLtfRepetitionsCount",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211azNumberOfRxSpatialStreams",
+            "android.net.wifi.rtt.RangingResult.Builder#set80211azNumberOfTxSpatialStreams",
+            "android.net.wifi.rtt.RangingResult.Builder#setMinTimeBetweenNtbMeasurementsMicros",
+            "android.net.wifi.rtt.RangingResult.Builder#setMaxTimeBetweenNtbMeasurementsMicros",
+            "android.net.wifi.rtt.RangingResult.Builder#setUnverifiedResponderLocation",
+            "android.net.wifi.rtt.RangingResult#Builder"})
     public void testRangingResultBuilder() {
-
         byte[] lci = {1, 2, 3, 4};
         byte[] lcr = {10, 20, 30, 40};
-
         RangingResult rangingResult = new RangingResult.Builder()
                 .setMacAddress(MacAddress.fromString("00:11:22:33:44:55"))
+                .setPeerHandle(null)
                 .setStatus(RangingResult.STATUS_SUCCESS)
                 .setDistanceMm(100)
                 .setDistanceStdDevMm(33)
@@ -842,9 +1027,21 @@ public class WifiRttTest extends TestBase {
                 .setNumSuccessfulMeasurements(5)
                 .setRangingTimestampMillis(12345)
                 .setRssi(-77)
+                .setMeasurementChannelFrequencyMHz(5180)
+                .setMeasurementBandwidth(ScanResult.CHANNEL_WIDTH_40MHZ)
+                .set80211azNtbMeasurement(true)
+                .set80211mcMeasurement(false)
+                .set80211azInitiatorTxLtfRepetitionsCount(2)
+                .set80211azResponderTxLtfRepetitionsCount(1)
+                .set80211azNumberOfRxSpatialStreams(2)
+                .set80211azNumberOfTxSpatialStreams(1)
+                .setMinTimeBetweenNtbMeasurementsMicros(1000)
+                .setMaxTimeBetweenNtbMeasurementsMicros(10000)
+                .setUnverifiedResponderLocation(null)
                 .build();
 
         assertEquals(MacAddress.fromString("00:11:22:33:44:55"), rangingResult.getMacAddress());
+        assertEquals(null, rangingResult.getPeerHandle());
         assertEquals(RangingResult.STATUS_SUCCESS, rangingResult.getStatus());
         assertEquals(100, rangingResult.getDistanceMm());
         assertEquals(33, rangingResult.getDistanceStdDevMm());
@@ -854,7 +1051,17 @@ public class WifiRttTest extends TestBase {
         assertEquals(5, rangingResult.getNumSuccessfulMeasurements());
         assertEquals(12345, rangingResult.getRangingTimestampMillis());
         assertEquals(-77, rangingResult.getRssi());
-
+        assertEquals(5180, rangingResult.getMeasurementChannelFrequencyMHz());
+        assertEquals(ScanResult.CHANNEL_WIDTH_40MHZ, rangingResult.getMeasurementBandwidth());
+        assertTrue(rangingResult.is80211azNtbMeasurement());
+        assertFalse(rangingResult.is80211mcMeasurement());
+        assertEquals(2, rangingResult.get80211azInitiatorTxLtfRepetitionsCount());
+        assertEquals(1, rangingResult.get80211azResponderTxLtfRepetitionsCount());
+        assertEquals(2, rangingResult.get80211azNumberOfRxSpatialStreams());
+        assertEquals(1, rangingResult.get80211azNumberOfTxSpatialStreams());
+        assertEquals(1000, rangingResult.getMinTimeBetweenNtbMeasurementsMicros());
+        assertEquals(10000, rangingResult.getMaxTimeBetweenNtbMeasurementsMicros());
+        assertEquals(null, rangingResult.getUnverifiedResponderLocation());
         try {
             rangingResult = new RangingResult.Builder()
                     .setStatus(RangingResult.STATUS_SUCCESS)
@@ -887,7 +1094,7 @@ public class WifiRttTest extends TestBase {
         RangingRequest.Builder builder = new RangingRequest.Builder();
         builder.addAccessPoint(testAp);
         RangingRequest request = builder.build();
-        rangeApRequest(request, testAp);
+        range11azApRequest(request, testAp);
     }
 
     /*
@@ -922,5 +1129,62 @@ public class WifiRttTest extends TestBase {
                 .setVendorData(vendorData)
                 .build();
         assertTrue(vendorData.equals(resultWithData.getVendorData()));
+    }
+
+    /**
+     * Test Wi-Fi RTT ranging using ResponderConfig in the single responder RangingRequest API.
+     * - Scan for visible APs for the test AP (which is validated to support IEEE 802.11az)
+     * - Perform N (constant) RTT operations
+     * - Validate:
+     *   - Failure ratio < threshold (constant)
+     *   - Result margin < threshold (constant)
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @ApiTest(apis = {"android.net.wifi.rtt.ResponderConfig.Builder#set80211azNtbSupported",
+            "android.net.wifi.rtt.ResponderConfig#is80211azNtbSupported"})
+    public void testRangingToTest11azApUsingResponderConfig() throws InterruptedException {
+        assumeTrue(mCharacteristics != null && mCharacteristics.getBoolean(
+                WifiRttManager.CHARACTERISTICS_KEY_BOOLEAN_NTB_INITIATOR));
+        // Scan for IEEE 802.11az supporting APs
+        ScanResult testAp = getS11AzScanResult();
+        assertNotNull(
+                "Cannot find any test APs which support RTT / IEEE 802.11az - please verify that "
+                        + "your test setup includes them!", testAp);
+        int preamble = ResponderConfig.fromScanResult(testAp).getPreamble();
+
+        // Create a ResponderConfig from the builder API.
+        ResponderConfig.Builder responderBuilder = new ResponderConfig.Builder();
+        ResponderConfig responder = responderBuilder
+                .setMacAddress(MacAddress.fromString(testAp.BSSID))
+                .set80211azNtbSupported(testAp.is80211azNtbResponder())
+                .setChannelWidth(testAp.channelWidth)
+                .setFrequencyMhz(testAp.frequency)
+                .setCenterFreq0Mhz(testAp.centerFreq0)
+                .setCenterFreq1Mhz(testAp.centerFreq1)
+                .setPreamble(preamble)
+                .setResponderType(RESPONDER_AP)
+                .build();
+
+        // Validate ResponderConfig.Builder set method arguments match getter methods.
+        assertTrue(responder.getMacAddress().toString().equalsIgnoreCase(testAp.BSSID)
+                && responder.is80211azNtbSupported() == testAp.is80211azNtbResponder()
+                && responder.getChannelWidth() == testAp.channelWidth
+                && responder.getFrequencyMhz() == testAp.frequency
+                && responder.getCenterFreq0Mhz() == testAp.centerFreq0
+                && responder.getCenterFreq1Mhz() == testAp.centerFreq1
+                && responder.getPreamble() == preamble
+                && responder.getResponderType() == RESPONDER_AP);
+
+        // Perform RTT operations
+        RangingRequest.Builder builder = new RangingRequest.Builder();
+        builder.addResponder(responder);
+
+        RangingRequest request = builder.build();
+
+        if (WifiBuildCompat.isPlatformOrWifiModuleAtLeastS(getContext())) {
+            assertEquals(1, request.getRttResponders().size());
+        }
+        range11azApRequest(request, testAp);
     }
 }

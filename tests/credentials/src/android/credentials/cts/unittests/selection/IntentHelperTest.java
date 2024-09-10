@@ -97,8 +97,8 @@ public class IntentHelperTest {
     @RequiresFlagsEnabled(FLAG_CONFIGURABLE_SELECTOR_UI_ENABLED)
     public void testExtractCancelUiRequest() {
         boolean shouldShowCancellationUi = true;
-        Intent intent = IntentFactory.createCancelUiIntent(TOKEN, shouldShowCancellationUi,
-                PACKAGE_NAME);
+        Intent intent = IntentFactory.createCancelUiIntent(mContext, TOKEN,
+                shouldShowCancellationUi, PACKAGE_NAME);
 
         CancelSelectionRequest cancelUiRequestExtracted = IntentHelper.extractCancelUiRequest(
                 intent);

@@ -246,6 +246,13 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
+     * Gets the ID of the property.
+     */
+    public int getPropertyId() {
+        return mPropertyId;
+    }
+
+    /**
      * Gets the name for the property.
      */
     public String getPropertyName() {
@@ -564,6 +571,20 @@ public class VehiclePropertyVerifier<T> {
         return false;
     }
 
+    private void assertGetPropertyThrowsException(String msg,
+            Class<? extends Throwable> exceptionClass, int propertyId, int areaId) {
+        assertThrows(msg, exceptionClass,
+                () -> mCarPropertyManager.getProperty(mPropertyId, areaId));
+        assertThrows(msg, exceptionClass,
+                () -> mCarPropertyManager.getBooleanProperty(mPropertyId, areaId));
+        assertThrows(msg, exceptionClass,
+                () -> mCarPropertyManager.getIntProperty(mPropertyId, areaId));
+        assertThrows(msg, exceptionClass,
+                () -> mCarPropertyManager.getFloatProperty(mPropertyId, areaId));
+        assertThrows(msg, exceptionClass,
+                () -> mCarPropertyManager.getIntArrayProperty(mPropertyId, areaId));
+    }
+
     private void verifyWritePermissionsCannotRead(ImmutableSet<String> writePermissions,
             ImmutableSet<String> allReadPermissions, int areaId) {
         // If there is any write permission that is also a read permission we skip the permissions.
@@ -578,14 +599,13 @@ public class VehiclePropertyVerifier<T> {
         }
         runWithShellPermissionIdentity(
                 () -> {
-                    assertThrows(
+                    assertGetPropertyThrowsException(
                             mPropertyName
                                     + " - property ID: "
                                     + mPropertyId
                                     + " should not be able to be read without read"
                                     + " permissions.",
-                            SecurityException.class,
-                            () -> mCarPropertyManager.getProperty(mPropertyId, areaId));
+                            SecurityException.class, mPropertyId, areaId);
                     assertThrows(
                             mPropertyName
                                     + " - property ID: "
@@ -919,7 +939,7 @@ public class VehiclePropertyVerifier<T> {
         } else if (Integer.class.equals(carPropertyConfig.getPropertyType())) {
             return (List<T>) getPossibleIntegerValues(areaId);
         } else if (Float.class.equals(carPropertyConfig.getPropertyType())) {
-            return getPossibleFloatValues();
+            return getPossibleFloatValues(areaId);
         }
         return null;
     }
@@ -979,26 +999,54 @@ public class VehiclePropertyVerifier<T> {
     }
 
     /**
-     * Gets the possible values for an float property.
+     * Gets the possible values for a float property.
      */
-    private Collection<T> getPossibleFloatValues() {
-        if (mPropertyId != VehiclePropertyIds.HVAC_TEMPERATURE_SET) {
-            return new ArrayList<>();
+    private Collection<T> getPossibleFloatValues(int areaId) {
+        ImmutableSet.Builder<Float> possibleValuesBuilder = ImmutableSet.builder();
+        if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_SET) {
+            List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
+            if (!hvacTempSetConfigArray.isEmpty()) {
+                // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature
+                // values for the property. configArray[0] is the lower bound of the supported
+                // temperatures in Celsius. configArray[1] is the upper bound of the supported
+                // temperatures in Celsius. configArray[2] is the supported temperature increment
+                // between the two bounds. All configArray values are Celsius*10 since the
+                // configArray is List<Integer> but HVAC_TEMPERATURE_SET is a Float type property.
+                for (int possibleHvacTempSetValue = hvacTempSetConfigArray.get(0);
+                        possibleHvacTempSetValue <= hvacTempSetConfigArray.get(1);
+                        possibleHvacTempSetValue += hvacTempSetConfigArray.get(2)) {
+                    possibleValuesBuilder.add((float) possibleHvacTempSetValue / 10.0f);
+                }
+            }  else {
+                // If the configArray is not specified, then use min/max values.
+                Float minValueFloat =
+                        (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMinValue();
+                Float maxValueFloat =
+                        (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMaxValue();
+                possibleValuesBuilder.add(minValueFloat);
+                possibleValuesBuilder.add(maxValueFloat);
+            }
+        }  else if (mPropertyId == VehiclePropertyIds.EV_CHARGE_PERCENT_LIMIT) {
+            List<Integer> evChargePercentLimitConfigArray = getCarPropertyConfig().getConfigArray();
+            if (!evChargePercentLimitConfigArray.isEmpty()) {
+                for (Integer possibleEvChargePercentLimit : evChargePercentLimitConfigArray) {
+                    possibleValuesBuilder.add(possibleEvChargePercentLimit.floatValue());
+                }
+            } else {
+                // If the configArray is not specified, then values between 0 and 100 percent must
+                // be supported.
+                possibleValuesBuilder.add(0f);
+                possibleValuesBuilder.add(100f);
+            }
+        } else if (mPropertyId == VehiclePropertyIds.EV_CHARGE_CURRENT_DRAW_LIMIT) {
+            // First value in the configArray specifies the max current draw allowed by the vehicle.
+            Integer vehicleMaxCurrentDrawLimit = getCarPropertyConfig().getConfigArray().get(0);
+            possibleValuesBuilder.add(vehicleMaxCurrentDrawLimit.floatValue());
+        } else if (mPropertyId == VehiclePropertyIds.RANGE_REMAINING) {
+            // Test when no range is remaining
+            possibleValuesBuilder.add(0f);
         }
-        List<Integer> hvacTempSetConfigArray = getCarPropertyConfig().getConfigArray();
-        ImmutableSet.Builder<Float> possibleHvacTempSetValuesBuilder = ImmutableSet.builder();
-        // For HVAC_TEMPERATURE_SET, the configArray specifies the supported temperature values
-        // for the property. configArray[0] is the lower bound of the supported temperatures in
-        // Celsius. configArray[1] is the upper bound of the supported temperatures in Celsius.
-        // configArray[2] is the supported temperature increment between the two bounds. All
-        // configArray values are Celsius*10 since the configArray is List<Integer> but
-        // HVAC_TEMPERATURE_SET is a Float type property.
-        for (int possibleHvacTempSetValue = hvacTempSetConfigArray.get(0);
-                possibleHvacTempSetValue <= hvacTempSetConfigArray.get(1);
-                possibleHvacTempSetValue += hvacTempSetConfigArray.get(2)) {
-            possibleHvacTempSetValuesBuilder.add((float) possibleHvacTempSetValue / 10.0f);
-        }
-        return (Collection<T>) possibleHvacTempSetValuesBuilder.build();
+        return (Collection<T>) possibleValuesBuilder.build();
     }
 
     private void verifyCarPropertyValueSetter() {
@@ -1093,12 +1141,9 @@ public class VehiclePropertyVerifier<T> {
     }
 
     private void verifyFloatPropertySetter() {
-        Collection<T> possibleValues = getPossibleFloatValues();
-        if (!possibleValues.isEmpty()) {
-            for (T valueToSet : possibleValues) {
-                for (int areaId : getCarPropertyConfig().getAreaIds()) {
-                    verifySetProperty(areaId, valueToSet);
-                }
+        for (int areaId : getCarPropertyConfig().getAreaIds()) {
+            for (T valueToSet : getPossibleFloatValues(areaId)) {
+                verifySetProperty(areaId, valueToSet);
             }
         }
     }
@@ -1597,6 +1642,42 @@ public class VehiclePropertyVerifier<T> {
                 .isEqualTo(0);
     }
 
+    private void handleGetPropertyExceptions(Exception e) {
+        if (e instanceof PropertyNotAvailableException) {
+            verifyPropertyNotAvailableException((PropertyNotAvailableException) e);
+        } else if (e instanceof CarInternalErrorException) {
+            verifyInternalErrorException((CarInternalErrorException) e);
+        }
+        sExceptionClassOnGet = e.getClass();
+    }
+
+    private void handleClassSpecificGetPropertyExceptions(Exception e, Class<?> expectedClass,
+            int areaId) {
+        if (e instanceof IllegalArgumentException) {
+            if (mPropertyType.equals(expectedClass)) {
+                assertWithMessage("getProperty for " + expectedClass + " class should not throw"
+                        + " IllegalArgumentException for valid propertyId: " + mPropertyId
+                        + " areaId: " + areaId + " of  type: " + mPropertyType + " if property is"
+                        + " readable").fail();
+            }
+        } else {
+            handleGetPropertyExceptions(e);
+        }
+    }
+
+    private void verifyClassSpecificGetPropertyResults(T value, Class<?> expectedClass,
+            int areaId) {
+        if (!mPropertyType.equals(expectedClass)) {
+            assertWithMessage("getProperty for " + expectedClass + " class should throw"
+                    + " IllegalArgumentException for valid propertyId: " + mPropertyId + " areaId: "
+                    + areaId + " of" + " type: " + mPropertyType + " if property is readable")
+                    .fail();
+        }
+        verifyCarPropertyValue(mPropertyId, areaId, CarPropertyValue.STATUS_AVAILABLE,
+                SystemClock.elapsedRealtimeNanos(), value, areaId,
+                CAR_PROPERTY_VALUE_SOURCE_GETTER);
+    }
+
     private void verifyCarPropertyValueGetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
         if (!Flags.areaIdConfigAccess() && carPropertyConfig.getAccess()
@@ -1611,35 +1692,60 @@ public class VehiclePropertyVerifier<T> {
                 verifyGetPropertyFails(areaId);
                 continue;
             }
+
             CarPropertyValue<?> carPropertyValue = null;
             try {
                 carPropertyValue = mCarPropertyManager.getProperty(mPropertyId, areaId);
-            } catch (PropertyNotAvailableException e) {
-                verifyPropertyNotAvailableException(e);
-                sExceptionClassOnGet = e.getClass();
-                // If the property is not available for getting, continue.
-                continue;
-            } catch (CarInternalErrorException e) {
-                verifyInternalErrorException(e);
-                sExceptionClassOnGet = e.getClass();
-                continue;
+                verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
+                if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
+                    verifyHvacTemperatureValueSuggestionResponse(
+                            (Float[]) carPropertyValue.getValue());
+                }
+            } catch (PropertyNotAvailableException | CarInternalErrorException e) {
+                handleGetPropertyExceptions(e);
             }
 
-            verifyCarPropertyValue(carPropertyValue, areaId, CAR_PROPERTY_VALUE_SOURCE_GETTER);
-            if (mPropertyId == VehiclePropertyIds.HVAC_TEMPERATURE_VALUE_SUGGESTION) {
-                verifyHvacTemperatureValueSuggestionResponse((Float[]) carPropertyValue.getValue());
+            try {
+                Boolean value = mCarPropertyManager.getBooleanProperty(mPropertyId, areaId);
+                verifyClassSpecificGetPropertyResults((T) value, Boolean.class, areaId);
+            } catch (IllegalArgumentException | PropertyNotAvailableException
+                     | CarInternalErrorException e) {
+                handleClassSpecificGetPropertyExceptions(e, Boolean.class, areaId);
+            }
+            try {
+                Integer value = mCarPropertyManager.getIntProperty(mPropertyId, areaId);
+                verifyClassSpecificGetPropertyResults((T) value, Integer.class, areaId);
+            } catch (IllegalArgumentException | PropertyNotAvailableException
+                     | CarInternalErrorException e) {
+                handleClassSpecificGetPropertyExceptions(e, Integer.class, areaId);
+            }
+            try {
+                Float value = mCarPropertyManager.getFloatProperty(mPropertyId, areaId);
+                verifyClassSpecificGetPropertyResults((T) value, Float.class, areaId);
+            } catch (IllegalArgumentException | PropertyNotAvailableException
+                     | CarInternalErrorException e) {
+                handleClassSpecificGetPropertyExceptions(e, Float.class, areaId);
+            }
+            try {
+                int[] primitiveArray = mCarPropertyManager.getIntArrayProperty(mPropertyId, areaId);
+                Integer[] value = new Integer[primitiveArray.length];
+                for (int i = 0; i < primitiveArray.length; i++) {
+                    value[i] = (Integer) primitiveArray[i];
+                }
+                verifyClassSpecificGetPropertyResults((T) value, Integer[].class, areaId);
+            } catch (IllegalArgumentException | PropertyNotAvailableException
+                     | CarInternalErrorException e) {
+                handleClassSpecificGetPropertyExceptions(e, Integer[].class, areaId);
             }
         }
     }
 
     private void verifyGetPropertyFails(int areaId) {
-        CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        assertThrows(
+        assertGetPropertyThrowsException(
                 mPropertyName
                         + " is a write_only property so getProperty should throw an"
                         + " IllegalArgumentException.",
-                IllegalArgumentException.class,
-                () -> mCarPropertyManager.getProperty(mPropertyId, areaId));
+                IllegalArgumentException.class, mPropertyId, areaId);
     }
 
     private static void verifyPropertyNotAvailableException(PropertyNotAvailableException e) {
@@ -1877,15 +1983,14 @@ public class VehiclePropertyVerifier<T> {
             int areaId = areaIdConfig.getAreaId();
             if (access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
                     || access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
-                assertThrows(
+                assertGetPropertyThrowsException(
                         mPropertyName
                                 + " - property ID: "
                                 + mPropertyId
                                 + " - area ID: "
                                 + areaId
                                 + " should not be able to be read without permissions.",
-                        SecurityException.class,
-                        () -> mCarPropertyManager.getProperty(mPropertyId, areaId));
+                        SecurityException.class, mPropertyId, areaId);
             }
             if (access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE
                     || access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
@@ -2426,13 +2531,13 @@ public class VehiclePropertyVerifier<T> {
         public void onChangeEvent(CarPropertyValue carPropertyValue) {
             if (mUpdatedCarPropertyValue != null || carPropertyValue.getPropertyId() != mPropertyId
                     || carPropertyValue.getAreaId() != mAreaId
-                    || carPropertyValue.getStatus() != CarPropertyValue.STATUS_AVAILABLE
                     || carPropertyValue.getTimestamp() <= mCreationTimeNanos
                     || carPropertyValue.getTimestamp() >= SystemClock.elapsedRealtimeNanos()) {
                 return;
             }
             mReceivedValue = (T) carPropertyValue.getValue();
-            if (!valueEquals(mExpectedSetValue, mReceivedValue)) {
+            if (carPropertyValue.getStatus() == CarPropertyValue.STATUS_AVAILABLE
+                    && !valueEquals(mExpectedSetValue, mReceivedValue)) {
                 return;
             }
             mUpdatedCarPropertyValue = carPropertyValue;

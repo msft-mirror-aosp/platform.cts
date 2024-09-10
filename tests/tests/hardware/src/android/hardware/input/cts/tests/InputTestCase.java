@@ -69,7 +69,7 @@ public abstract class InputTestCase {
     protected final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
 
     private final InputListener mInputListener;
-    private View mDecorView;
+    View mDecorView;
 
     // Stores the name of the currently running test
     protected String mCurrentTestCase;
@@ -175,7 +175,8 @@ public abstract class InputTestCase {
         if (event.getHistorySize() > 0) {
             failWithMessage("expected each MotionEvent to only have a single entry");
         }
-        assertEquals(mCurrentTestCase + " (action)",
+        assertEquals(mCurrentTestCase + " (action) expected: "
+                + MotionEvent.actionToString(expectedEvent.getAction()) + " received: " + event,
                 expectedEvent.getAction(), event.getAction());
         assertSource(mCurrentTestCase, expectedEvent, event);
         assertEquals(mCurrentTestCase + " (button state)",
@@ -204,7 +205,7 @@ public abstract class InputTestCase {
             for (int axis = MotionEvent.AXIS_X; axis <= MotionEvent.AXIS_GENERIC_16; axis++) {
                 if (IGNORE_AXES.contains(axis)) continue;
                 assertEquals(testCase + " pointer " + i
-                        + " (" + MotionEvent.axisToString(axis) + ")",
+                                + " (" + MotionEvent.axisToString(axis) + ")",
                         expectedEvent.getAxisValue(axis, i), actualEvent.getAxisValue(axis, i),
                         TOLERANCE);
             }
@@ -227,7 +228,7 @@ public abstract class InputTestCase {
      */
     private void assertSource(String testCase, InputEvent expected, InputEvent actual) {
         assertNotEquals(testCase + " (source)", InputDevice.SOURCE_CLASS_NONE, actual.getSource());
-        assertTrue(testCase + " (source)", expected.isFromSource(actual.getSource()));
+        assertTrue(testCase + " (source)", actual.isFromSource(expected.getSource()));
     }
 
     /**

@@ -51,7 +51,6 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
 
     @Test
     public void testFgBroadcastDeliveryToFrozenApp_withDeferUntilActive() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);
@@ -119,7 +118,6 @@ public class BroadcastDeferralTest extends BaseBroadcastTest {
 
     @Test
     public void testFgBroadcastDeliveryToFrozenApp() throws Exception {
-        assumeTrue(isModernBroadcastQueueEnabled());
         assumeTrue(isAppFreezerEnabled());
 
         final TestServiceConnection connection1 = bindToHelperService(HELPER_PKG1);

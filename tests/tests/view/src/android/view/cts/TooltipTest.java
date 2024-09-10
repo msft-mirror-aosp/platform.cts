@@ -225,11 +225,11 @@ public class TooltipTest {
         waitOut(ViewConfiguration.getHoverTooltipShowTimeout());
     }
 
-    private static MotionEvent obtainMouseEvent(View target, int action, int offsetX, int offsetY) {
+    private MotionEvent obtainMouseEvent(View target, int action, int offsetX, int offsetY) {
         return obtainMotionEvent(InputDevice.SOURCE_MOUSE, target, action, offsetX, offsetY);
     }
 
-    private static MotionEvent obtainMotionEvent(
+    private MotionEvent obtainMotionEvent(
                 int source, View target, int action, int offsetX, int offsetY) {
         final long eventTime = SystemClock.uptimeMillis();
         final int[] xy = new int[2];
@@ -238,6 +238,7 @@ public class TooltipTest {
                 xy[0] + target.getWidth() / 2 + offsetX, xy[1] + target.getHeight() / 2 + offsetY,
                 0);
         event.setSource(source);
+        event.setDisplayId(mActivity.getDisplayId());
         return event;
     }
 

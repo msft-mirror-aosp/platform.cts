@@ -64,6 +64,8 @@
         <option name="push" value="CtsContentLongSharedUserIdTestApp.apk->/data/local/tmp/cts/content/CtsContentLongSharedUserIdTestApp.apk" />
         <option name="push" value="CtsContentMaxPackageNameTestApp.apk->/data/local/tmp/cts/content/CtsContentMaxPackageNameTestApp.apk" />
         <option name="push" value="CtsContentMaxSharedUserIdTestApp.apk->/data/local/tmp/cts/content/CtsContentMaxSharedUserIdTestApp.apk" />
+        <option name="push" value="CtsTargetSdk23TestApp.apk->/data/local/tmp/cts/content/CtsTargetSdk23TestApp.apk" />
+        <option name="push" value="CtsTargetSdk24TestApp.apk->/data/local/tmp/cts/content/CtsTargetSdk24TestApp.apk" />
         <option name="push" value="CtsContentMockLauncherTestApp.apk->/data/local/tmp/cts/content/CtsContentMockLauncherTestApp.apk" />
         <option name="push" value="CtsContentMockLauncherActivityLabelTestApp.apk->/data/local/tmp/cts/content/CtsContentMockLauncherActivityLabelTestApp.apk" />
         <option name="push" value="CtsContentMockLauncherApplicationLabelTestApp.apk->/data/local/tmp/cts/content/CtsContentMockLauncherApplicationLabelTestApp.apk" />
@@ -108,6 +110,7 @@
         <option name="push-file" key="HelloWorld7_xxhdpi-v4.apk.idsig" value="/data/local/tmp/cts/content/HelloWorld7_xxhdpi-v4.apk.idsig" />
         <option name="push-file" key="HelloWorld7_xxxhdpi-v4.apk" value="/data/local/tmp/cts/content/HelloWorld7_xxxhdpi-v4.apk" />
         <option name="push-file" key="HelloWorld7_xxxhdpi-v4.apk.idsig" value="/data/local/tmp/cts/content/HelloWorld7_xxxhdpi-v4.apk.idsig" />
+        <option name="push-file" key="HelloWorldMimeGroup.apk" value="/data/local/tmp/cts/content/HelloWorldMimeGroup.apk" />
         <option name="push-file" key="HelloWorldSystem.apk" value="/data/local/tmp/cts/content/HelloWorldSystem.apk" />
         <option name="push-file" key="HelloWorldSystem.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSystem.apk.idsig" />
         <option name="push-file" key="HelloWorldSharedUid.apk" value="/data/local/tmp/cts/content/HelloWorldSharedUid.apk" />
@@ -153,7 +156,6 @@
         <option name="push-file" key="HelloWorldSdk1MajorVersion2.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2.apk" />
         <option name="push-file" key="HelloWorldSdk1MajorVersion2.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1MajorVersion2.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk1DifferentSigner.apk" value="/data/local/tmp/cts/content/HelloWorldSdk1DifferentSigner.apk" />
-        <option name="push-file" key="HelloWorldSdk1DifferentSigner.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk1DifferentSigner.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk2.apk" value="/data/local/tmp/cts/content/HelloWorldSdk2.apk" />
         <option name="push-file" key="HelloWorldSdk2.apk.idsig" value="/data/local/tmp/cts/content/HelloWorldSdk2.apk.idsig" />
         <option name="push-file" key="HelloWorldSdk2Updated.apk" value="/data/local/tmp/cts/content/HelloWorldSdk2Updated.apk" />
@@ -203,6 +205,10 @@
         <option name="push-file" key="CtsMultiArchApp64_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchApp64_targetSdk33_x86.apk" />
         <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_arm.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_arm.apk" />
         <option name="push-file" key="CtsMultiArchAppBoth_targetSdk33_x86.apk" value="/data/local/tmp/cts/content/CtsMultiArchAppBoth_targetSdk33_x86.apk" />
+        <option name="push-file" key="HelloInstallerApp.apk" value="/data/local/tmp/cts/content/HelloInstallerApp.apk" />
+        <option name="push-file" key="HelloInstallerAppUpdated.apk" value="/data/local/tmp/cts/content/HelloInstallerAppUpdated.apk"/>
+        <option name="push-file" key="HelloInstallerAppAbsent.apk" value="/data/local/tmp/cts/content/HelloInstallerAppAbsent.apk" />
+        <option name="push-file" key="HelloInstallerAppAbsentUpdated.apk" value="/data/local/tmp/cts/content/HelloInstallerAppAbsentUpdated.apk"/>
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">

@@ -46,8 +46,10 @@ android_test {
         "cts_window-extensions",
         "statsdprotonano",
         "android.view.inputmethod.flags-aconfig-java",
+        "com.android.text.flags-aconfig-java",
         "flag-junit",
         "ravenwood-junit",
+        "Harrier",
     ],
     srcs: [
         "src/**/*.java",
@@ -69,6 +71,7 @@ android_test {
         ":CtsMockLargeResourceInputMethod",
         ":CtsMockInputMethodWithSubtypes",
         ":CtsInputMethodTestLauncher",
+        ":TestIme",
     ],
     per_testcase_directory: true,
 }

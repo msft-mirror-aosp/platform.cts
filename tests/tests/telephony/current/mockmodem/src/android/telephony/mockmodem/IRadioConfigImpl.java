@@ -26,6 +26,7 @@ import android.hardware.radio.config.PhoneCapability;
 import android.hardware.radio.config.SimSlotStatus;
 import android.hardware.radio.config.SlotPortMapping;
 import android.os.AsyncResult;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.os.RemoteException;
@@ -38,7 +39,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     private IRadioConfigResponse mRadioConfigResponse;
     private IRadioConfigIndication mRadioConfigIndication;
     private MockModemConfigInterface mMockModemConfigInterface;
-    private Object mCacheUpdateMutex;
+    private final Object mCacheUpdateMutex;
     private final Handler mHandler;
     private int mSubId;
     private String mTag;
@@ -47,6 +48,7 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
     static final int EVENT_NUM_OF_LIVE_MODEM_CHANGED = 1;
     static final int EVENT_PHONE_CAPABILITY_CHANGED = 2;
     static final int EVENT_SIM_SLOT_STATUS_CHANGED = 3;
+    static final int EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED = 4;
 
     // ***** Cache of modem attributes/status
     private int mSlotNum = 1;
@@ -79,6 +81,10 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
                 mSubId, mHandler, EVENT_PHONE_CAPABILITY_CHANGED, null);
         mMockModemConfigInterface.registerForSimSlotStatusChanged(
                 mSubId, mHandler, EVENT_SIM_SLOT_STATUS_CHANGED, null);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            mMockModemConfigInterface.registerForSimultaneousCallingSupportStatusChanged(
+                    mSubId, mHandler, EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED, null);
+        }
     }
 
     /** Handler class to handle callbacks */
@@ -117,6 +123,24 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
                                 Log.i(mTag, "Sim slot status: " + mSimSlotStatus[i]);
                             }
                             unsolSimSlotsStatusChanged();
+                        } else {
+                            Log.e(mTag, msg.what + " failure. Exception: " + ar.exception);
+                        }
+                        break;
+                    case EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED:
+                        Log.i(mTag, "Received EVENT_SIMULTANEOUS_CALLING_SUPPORT_CHANGED");
+                        ar = (AsyncResult) msg.obj;
+                        if (ar != null && ar.exception == null) {
+                            mEnabledLogicalSlots = (int[]) ar.result;
+                            if (mEnabledLogicalSlots != null) {
+                                for (int enabledLogicalSlot : mEnabledLogicalSlots) {
+                                    Log.i(mTag, "Enabled logical slot = "
+                                            + enabledLogicalSlot);
+                                }
+                            } else {
+                                Log.i(mTag, "mEnabledLogicalSlots is null");
+                            }
+                            unsolSimultaneousCallingSupportChanged();
                         } else {
                             Log.e(mTag, msg.what + " failure. Exception: " + ar.exception);
                         }
@@ -286,6 +310,31 @@ public class IRadioConfigImpl extends IRadioConfig.Stub {
                         RadioIndicationType.UNSOLICITED, slotStatus);
             } catch (RemoteException ex) {
                 Log.e(mTag, "Failed to invoke simSlotsStatusChanged from AIDL. Exception" + ex);
+            }
+        } else {
+            Log.e(mTag, "null mRadioConfigIndication");
+        }
+    }
+
+    public void unsolSimultaneousCallingSupportChanged() {
+        Log.d(mTag, "unsolSimultaneousCallingSupportChanged");
+        int[] enabledLogicalSlots;
+
+        if (mRadioConfigIndication != null) {
+            synchronized (mCacheUpdateMutex) {
+                if (mSlotNum < 1) {
+                    Log.d(mTag, "No slot information is retured.");
+                    enabledLogicalSlots = null;
+                } else {
+                    enabledLogicalSlots = mEnabledLogicalSlots;
+                }
+            }
+
+            try {
+                mRadioConfigIndication.onSimultaneousCallingSupportChanged(enabledLogicalSlots);
+            } catch (RemoteException ex) {
+                Log.e(mTag, "Failed to invoke onSimultaneousCallingSupportChanged from AIDL."
+                        + " Exception" + ex);
             }
         } else {
             Log.e(mTag, "null mRadioConfigIndication");

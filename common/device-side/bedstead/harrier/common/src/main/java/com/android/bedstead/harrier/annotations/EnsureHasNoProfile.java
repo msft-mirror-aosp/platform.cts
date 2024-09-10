@@ -18,6 +18,8 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

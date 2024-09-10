@@ -15,52 +15,44 @@
 
 import logging
 import os.path
+import subprocess
 
+import cv2
 from mobly import test_runner
 
 import its_base_test
 import camera_properties_utils
-import image_processing_utils
 import its_session_utils
+import preview_processing_utils
 import video_processing_utils
 import zoom_capture_utils
 
 
-_CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
-_IMG_FORMAT = 'png'
-_MAX_ZOOM_TOL = 0.1   # add Zoom tolarance to enable capture at max zoom
+_CIRCLISH_RTOL = 0.1  # contour area vs ideal circle area pi*((w+h)/4)**2
+_CRF = 23
+_CV2_RED = (0, 0, 255)  # color (B, G, R) in cv2 to draw lines
+_FPS = 30
+_MP4V = 'mp4v'
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NUM_STEPS = 10
-_SKIP_INITIAL_FRAMES = 15
-_VIDEO_DURATION = 400  # milliseconds
-_ZOOM_MIN_THRESH = 2.0
+_NUM_STEPS = 50
 
 
-def _collect_data(cam, preview_size, zoom_start, zoom_end, step_size):
-  """Capture a preview video from the device.
+def compress_video(input_filename, output_filename, crf=_CRF):
+  """Compresses the given video using ffmpeg."""
 
-  Captures camera preview frames from the passed device.
+  ffmpeg_cmd = [
+      'ffmpeg',
+      '-i', input_filename,   # Input file
+      '-c:v', 'libx264',      # Use H.264 codec
+      '-crf', str(crf),       # Set Constant Rate Factor (adjust for quality)
+      '-preset', 'medium',    # Encoding speed/compression balance
+      '-c:a', 'copy',         # Copy audio stream without re-encoding
+      output_filename         # Output file
+  ]
 
-  Args:
-    cam: camera object
-    preview_size: str; preview resolution. ex. '1920x1080'
-    zoom_start: (float) is the starting zoom ratio during recording
-    zoom_end: (float) is the ending zoom ratio during recording
-    step_size: (float) is the step for zoom ratio during recording
-
-  Returns:
-    recording object as described by cam.do_preview_recording_with_dynamic_zoom
-  """
-
-  recording_obj = cam.do_preview_recording_with_dynamic_zoom(
-      preview_size,
-      stabilize=False,
-      sweep_zoom=(zoom_start, zoom_end, step_size, _VIDEO_DURATION)
-  )
-  logging.debug('Recorded output path: %s', recording_obj['recordedOutputPath'])
-  logging.debug('Tested quality: %s', recording_obj['quality'])
-
-  return recording_obj
+  with open(os.devnull, 'w') as devnull:
+    subprocess.run(ffmpeg_cmd, stdout=devnull,
+                   stderr=subprocess.STDOUT, check=False)
 
 
 class PreviewZoomTest(its_base_test.ItsBaseTest):
@@ -82,30 +74,12 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
       camera_properties_utils.skip_unless(
           camera_properties_utils.zoom_ratio_range(props))
 
-      # Load scene
-      its_session_utils.load_scene(cam, props, self.scene, self.tablet,
-                                   its_session_utils.CHART_DISTANCE_NO_SCALING)
+      # Load chart for scene
+      its_session_utils.load_scene(
+          cam, props, self.scene, self.tablet, self.chart_distance)
 
       # Raise error if not FRONT or REAR facing camera
       camera_properties_utils.check_front_or_rear_camera(props)
-
-      # List of preview resolutions to test
-      supported_preview_sizes = cam.get_supported_preview_sizes(self.camera_id)
-      for size in video_processing_utils.LOW_RESOLUTION_SIZES:
-        if size in supported_preview_sizes:
-          supported_preview_sizes.remove(size)
-      logging.debug('Supported preview resolutions: %s',
-                    supported_preview_sizes)
-
-      # Determine test zoom range
-      z_range = props['android.control.zoomRatioRange']
-      logging.debug('z_range = %s', str(z_range))
-      z_min, z_max = float(z_range[0]), float(z_range[1])
-      camera_properties_utils.skip_unless(z_max >= z_min * _ZOOM_MIN_THRESH)
-      z_max = min(z_max, zoom_capture_utils.ZOOM_MAX_THRESH * z_min)
-      z_step_size = (z_max-z_min) / (_NUM_STEPS-1)
-      logging.debug('zoomRatioRange = %s z_min = %f z_max = %f z_stepSize = %f',
-                    str(z_range), z_min, z_max, z_step_size)
 
       # set TOLs based on camera and test rig params
       if camera_properties_utils.logical_multi_camera(props):
@@ -117,60 +91,50 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
         for fl in fls:
           test_tols[fl] = (zoom_capture_utils.RADIUS_RTOL,
                            zoom_capture_utils.OFFSET_RTOL)
-
-      # Converge 3A
-      cam.do_3a()
+      logging.debug('Threshold levels to be used for testing: %s', test_tols)
 
       # get max preview size
-      preview_size = supported_preview_sizes[-1]
+      preview_size = preview_processing_utils.get_max_preview_test_size(
+          cam, self.camera_id)
       size = [int(x) for x in preview_size.split('x')]
-      logging.debug('preview_size = %s', str(preview_size))
-      logging.debug('size = %s', str(size))
+      logging.debug('preview_size = %s', preview_size)
+      logging.debug('size = %s', size)
+
+      # Determine test zoom range and step size
+      z_range = props['android.control.zoomRatioRange']
+      logging.debug('z_range = %s', str(z_range))
+      z_min, z_max, z_step_size = zoom_capture_utils.get_preview_zoom_params(
+          z_range, _NUM_STEPS)
+      camera_properties_utils.skip_unless(
+          z_max >= z_min * zoom_capture_utils.ZOOM_MIN_THRESH)
 
       # recording preview
-      preview_rec_obj = _collect_data(cam, preview_size,
-                                      z_min, z_max + _MAX_ZOOM_TOL, z_step_size)
-
-      # Grab the recording from DUT
-      self.dut.adb.pull([preview_rec_obj['recordedOutputPath'], log_path])
-      preview_file_name = (
-          preview_rec_obj['recordedOutputPath'].split('/')[-1])
-      logging.debug('preview_file_name: %s', preview_file_name)
-      logging.debug('recorded video size : %s',
-                    str(preview_rec_obj['videoSize']))
-
-      # Extract frames as png from mp4 preview recording
-      file_list = video_processing_utils.extract_all_frames_from_video(
-          log_path, preview_file_name, _IMG_FORMAT
+      capture_results, file_list = (
+          preview_processing_utils.preview_over_zoom_range(
+              self.dut, cam, preview_size, z_min, z_max, z_step_size, log_path)
       )
 
-      # Raise error if capture result and frame count doesn't match.
-      capture_results = preview_rec_obj['captureMetadata']
-      extra_capture_result_count = len(capture_results) - len(file_list)
-      logging.debug('Number of frames %d', len(file_list))
-      if extra_capture_result_count != 0:
-        e_msg = (f'Number of CaptureResult ({len(capture_results)}) '
-                 f'vs number of Frames ({len(file_list)}) count mismatch.'
-                 ' Retry Test.')
-        raise AssertionError(e_msg)
-
-      # skip frames which might not have 3A converged
-      capture_results = capture_results[_SKIP_INITIAL_FRAMES:]
-      file_list = file_list[_SKIP_INITIAL_FRAMES:]
-
-      test_data = {}
+      test_data = []
       test_data_index = 0
+      # Initialize video writer
+      fourcc = cv2.VideoWriter_fourcc(*_MP4V)
+      uncompressed_video = os.path.join(log_path,
+                                        'output_frames_uncompressed.mp4')
+      out = cv2.VideoWriter(uncompressed_video, fourcc, _FPS,
+                            (size[0], size[1]))
 
       for capture_result, img_name in zip(capture_results, file_list):
         z = float(capture_result['android.control.zoomRatio'])
+        if camera_properties_utils.logical_multi_camera(props):
+          phy_id = capture_result['android.logicalMultiCamera.activePhysicalId']
+        else:
+          phy_id = None
 
         # read image
-        img = image_processing_utils.convert_image_to_numpy_array(
-            os.path.join(log_path, img_name)
-            )
+        img_bgr = cv2.imread(os.path.join(log_path, img_name))
 
         # add path to image name
-        img_name = f'{os.path.join(self.log_path, img_name)}'
+        img_path = f'{os.path.join(self.log_path, img_name)}'
 
         # determine radius tolerance of capture
         cap_fl = capture_result['android.lens.focalLength']
@@ -187,24 +151,44 @@ class PreviewZoomTest(its_base_test.ItsBaseTest):
 
         # Find the center circle in img and check if it's cropped
         circle = zoom_capture_utils.find_center_circle(
-            img, img_name, size, z, z_min, circlish_rtol=circlish_rtol,
-            debug=debug)
+            img_bgr, img_path, size, z, z_min, circlish_rtol=circlish_rtol,
+            debug=debug, draw_color=_CV2_RED, write_img=False)
 
         # Zoom is too large to find center circle
         if circle is None:
-          logging.error('Unable to detect circle in %s', img_name)
+          logging.error('Unable to detect circle in %s', img_path)
           break
 
-        test_data[test_data_index] = {'z': z, 'circle': circle,
-                                      'r_tol': radius_tol, 'o_tol': offset_tol,
-                                      'fl': cap_fl}
+        out.write(img_bgr)
+        # Remove png file
+        its_session_utils.remove_file(img_path)
+
+        test_data.append(
+            zoom_capture_utils.ZoomTestData(
+                result_zoom=z,
+                circle=circle,
+                radius_tol=radius_tol,
+                offset_tol=offset_tol,
+                focal_length=cap_fl,
+                physical_id=phy_id
+            )
+        )
 
         logging.debug('test_data[%d] = %s', test_data_index,
-                      str(test_data[test_data_index]))
+                      test_data[test_data_index])
         test_data_index = test_data_index + 1
 
-      if not zoom_capture_utils.verify_zoom_results(
-          test_data, size, z_max, z_min):
+      out.release()
+
+      # --- Compress Video ---
+      compressed_video = os.path.join(log_path, 'output_frames.mp4')
+      compress_video(uncompressed_video, compressed_video)
+
+      os.remove(uncompressed_video)
+
+      plot_name_stem = f'{os.path.join(log_path, _NAME)}'
+      if not zoom_capture_utils.verify_preview_zoom_results(
+          test_data, size, z_max, z_min, z_step_size, plot_name_stem):
         raise AssertionError(f'{_NAME} failed! Check test_log.DEBUG for errors')
 
 if __name__ == '__main__':

@@ -19,9 +19,10 @@ package com.android.cts.verifier.camera.its;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
-import android.media.CamcorderProfile;
-import android.media.EncoderProfiles;
 import android.media.MediaCodec;
+import android.media.MediaCodecList;
+import android.media.MediaFormat;
+import android.media.MediaMuxer;
 import android.media.MediaRecorder;
 import android.opengl.EGL14;
 import android.opengl.EGLConfig;
@@ -33,7 +34,6 @@ import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.os.ConditionVariable;
 import android.os.Handler;
-import android.util.Pair;
 import android.util.Size;
 import android.view.Surface;
 
@@ -44,21 +44,20 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
  * Class to record a preview like stream. It sets up a SurfaceTexture that the camera can write to,
- * and copies over the camera frames to a MediaRecorder surface.
+ * and copies over the camera frames to a MediaRecorder or MediaCodec surface.
  */
 class PreviewRecorder implements AutoCloseable {
     private static final String TAG = PreviewRecorder.class.getSimpleName();
 
-    // Default bitrate to use for recordings when querying CamcorderProfile fails.
-    private static final int DEFAULT_RECORDING_BITRATE = 25_000_000; // 25 Mbps
-
     // Frame capture timeout duration in milliseconds.
     private static final int FRAME_CAPTURE_TIMEOUT_MS = 2000; // 2 seconds
+
+    private static final int GREEN_PAINT = 1;
+    private static final int NO_PAINT = 0;
 
     // Simple Vertex Shader that rotates the texture before passing it to Fragment shader.
     private static final String VERTEX_SHADER = String.join(
@@ -88,8 +87,13 @@ class PreviewRecorder implements AutoCloseable {
             "precision mediump float;",
             "varying vec2 vTextureCoord;",
             "uniform samplerExternalOES sTexture;", // implicitly populated by SurfaceTexture
+            "uniform int paintIt;",
             "void main() {",
-            "    gl_FragColor = texture2D(sTexture, vTextureCoord);",
+            "    if (paintIt == 1) {",
+            "        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);",     // green frame
+            "    } else {",
+            "        gl_FragColor = texture2D(sTexture, vTextureCoord);",   // copy frame
+            "    }",
             "}",
             ""
     );
@@ -102,38 +106,27 @@ class PreviewRecorder implements AutoCloseable {
             1,  1, // top right
     };
 
-    // used to find a good-enough recording bitrate for a given resolution. "Good enough" for the
-    // ITS test to run its calculations and still be supported by the HAL.
-    // NOTE: Keep sorted for convenience
-    private final List<Pair<Integer, Integer>> mResolutionToCamcorderProfile = List.of(
-            Pair.create(176  * 144,  CamcorderProfile.QUALITY_QCIF),
-            Pair.create(320  * 240,  CamcorderProfile.QUALITY_QVGA),
-            Pair.create(352  * 288,  CamcorderProfile.QUALITY_CIF),
-            Pair.create(640  * 480,  CamcorderProfile.QUALITY_VGA),
-            Pair.create(720  * 480,  CamcorderProfile.QUALITY_480P),
-            Pair.create(1280 * 720,  CamcorderProfile.QUALITY_720P),
-            Pair.create(1920 * 1080, CamcorderProfile.QUALITY_1080P),
-            Pair.create(2048 * 1080, CamcorderProfile.QUALITY_2K),
-            Pair.create(2560 * 1440, CamcorderProfile.QUALITY_QHD),
-            Pair.create(3840 * 2160, CamcorderProfile.QUALITY_2160P),
-            Pair.create(4096 * 2160, CamcorderProfile.QUALITY_4KDCI)
-            // should be safe to assume that we don't have previews over 4k
-    );
 
-    private boolean mMediaRecorderConsumed = false; // tracks if the MediaRecorder instance was
-                                                    // already used to record a video.
+    private boolean mRecordingStarted = false; // tracks if the MediaRecorder/MediaCodec instance
+                                               // was already used to record a video.
 
     // Lock to protect reads/writes to the various Surfaces below.
-    private final Object mRecorderLock = new Object();
-    // Tracks if the mMediaRecorder is currently recording. Protected by mRecorderLock.
+    private final Object mRecordLock = new Object();
+    // Tracks if the mMediaRecorder/mMediaCodec is currently recording. Protected by mRecordLock.
     private volatile boolean mIsRecording = false;
+    private boolean mIsPaintGreen = false;
 
     private final Size mPreviewSize;
     private final int mMaxFps;
     private final Handler mHandler;
 
-    private Surface mRecorderSurface; // MediaRecorder source. EGL writes to this surface
+    private Surface mRecordSurface; // MediaRecorder/MediaCodec source. EGL writes to this surface
+
     private MediaRecorder mMediaRecorder;
+
+    private MediaCodec mMediaCodec;
+    private MediaMuxer mMediaMuxer;
+    private Object mMediaCodecCondition;
 
     private SurfaceTexture mCameraTexture; // Handles writing frames from camera as texture to
                                            // the GLSL program.
@@ -143,25 +136,27 @@ class PreviewRecorder implements AutoCloseable {
     private int mGLShaderProgram = 0;
     private EGLDisplay mEGLDisplay = EGL14.EGL_NO_DISPLAY;
     private EGLContext mEGLContext = EGL14.EGL_NO_CONTEXT;
-    private EGLSurface mEGLRecorderSurface; // EGL Surface corresponding to mRecorderSurface
+    private EGLSurface mEGLRecorderSurface; // EGL Surface corresponding to mRecordSurface
 
     private int mVPositionLoc;
     private int mTexMatrixLoc;
     private int mTexRotMatrixLoc;
+    private int mPaintItLoc;
+
 
     private final float[] mTexRotMatrix; // length = 4
     private final float[] mTransformMatrix = new float[16];
 
-    private int mNumFrames = 0;
-
+    private List<Long> mFrameTimeStamps = new ArrayList();
     /**
-     * Initializes MediaRecorder and EGL context. The result of recorded video will be stored in
-     * {@code outputFile}.
+     * Initializes MediaRecorder/MediaCodec and EGL context. The result of recorded video will
+     * be stored in {@code outputFile}.
      */
     PreviewRecorder(int cameraId, Size previewSize, int maxFps, int sensorOrientation,
-            String outputFile, Handler handler, Context context) throws ItsException {
+            String outputFile, Handler handler, boolean hlg10Enabled, Context context)
+            throws ItsException {
         // Ensure that we can record the given size
-        int maxSupportedResolution = mResolutionToCamcorderProfile
+        int maxSupportedResolution = ItsUtils.RESOLUTION_TO_CAMCORDER_PROFILE
                                         .stream()
                                         .map(p -> p.first)
                                         .max(Integer::compareTo)
@@ -180,10 +175,11 @@ class PreviewRecorder implements AutoCloseable {
 
         ConditionVariable cv = new ConditionVariable();
         cv.close();
+
         // Init fields in the passed handler to bind egl context to the handler thread.
         mHandler.post(() -> {
             try {
-                initPreviewRecorder(cameraId, outputFile, context);
+                initPreviewRecorder(cameraId, outputFile, hlg10Enabled, context);
             } catch (ItsException e) {
                 Logt.e(TAG, "Failed to init preview recorder", e);
                 throw new ItsRuntimeException("Failed to init preview recorder", e);
@@ -199,18 +195,26 @@ class PreviewRecorder implements AutoCloseable {
     }
 
     private void initPreviewRecorder(int cameraId, String outputFile,
-            Context context) throws ItsException {
+            boolean hlg10Enabled, Context context) throws ItsException {
+
         // order of initialization is important
-        setupMediaRecorder(cameraId, outputFile, context);
-        initEGL(); // requires MediaRecorder surfaces to be set up
+        if (hlg10Enabled) {
+            Logt.i(TAG, "HLG10 Enabled, using MediaCodec");
+            setupMediaCodec(cameraId, outputFile, context);
+        } else {
+            Logt.i(TAG, "HLG10 Disabled, using MediaRecorder");
+            setupMediaRecorder(cameraId, outputFile, context);
+        }
+
+        initEGL(); // requires recording surfaces to be set up
         compileShaders(); // requires EGL context to be set up
         setupCameraTexture(); // requires EGL context to be set up
 
 
         mCameraTexture.setOnFrameAvailableListener(surfaceTexture -> {
-            // Synchronized on mRecorderLock to ensure that all surface are valid while encoding
+            // Synchronized on mRecordLock to ensure that all surface are valid while encoding
             // frames. All surfaces should be valid for as long as mIsRecording is true.
-            synchronized (mRecorderLock) {
+            synchronized (mRecordLock) {
                 if (surfaceTexture.isReleased()) {
                     return; // surface texture already cleaned up, do nothing.
                 }
@@ -226,10 +230,17 @@ class PreviewRecorder implements AutoCloseable {
                     return;
                 }
                 try {
-                    Logt.i(TAG, "Recorded frame# " + mNumFrames + " timestamp = "
-                            + surfaceTexture.getTimestamp());
-                    copyFrameToRecorder();
-                    mNumFrames++;
+                    copyFrameToRecordSurface();
+                    // Capture results are not collected for padded green frames
+                    if (mIsPaintGreen) {
+                        Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
+                                + " timestamp = " + surfaceTexture.getTimestamp()
+                                + " with color. mIsPaintGreen = " + mIsPaintGreen);
+                    } else {
+                        mFrameTimeStamps.add(surfaceTexture.getTimestamp());
+                        Logt.v(TAG, "Recorded frame# " + mFrameTimeStamps.size()
+                                + " timestamp = " + surfaceTexture.getTimestamp());
+                    }
                 } catch (ItsException e) {
                     Logt.e(TAG, "Failed to copy texture to recorder.", e);
                     throw new ItsRuntimeException("Failed to copy texture to recorder.", e);
@@ -240,7 +251,7 @@ class PreviewRecorder implements AutoCloseable {
 
     private void setupMediaRecorder(int cameraId, String outputFile, Context context)
             throws ItsException {
-        mRecorderSurface = MediaCodec.createPersistentInputSurface();
+        mRecordSurface = MediaCodec.createPersistentInputSurface();
 
         mMediaRecorder = new MediaRecorder(context);
         mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
@@ -250,8 +261,9 @@ class PreviewRecorder implements AutoCloseable {
         mMediaRecorder.setVideoSize(mPreviewSize.getWidth(), mPreviewSize.getHeight());
         mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
         mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
-        mMediaRecorder.setVideoEncodingBitRate(calculateBitrate(cameraId));
-        mMediaRecorder.setInputSurface(mRecorderSurface);
+        mMediaRecorder.setVideoEncodingBitRate(
+                ItsUtils.calculateBitrate(cameraId, mPreviewSize, mMaxFps));
+        mMediaRecorder.setInputSurface(mRecordSurface);
         mMediaRecorder.setVideoFrameRate(mMaxFps);
         mMediaRecorder.setOutputFile(outputFile);
 
@@ -260,6 +272,36 @@ class PreviewRecorder implements AutoCloseable {
         } catch (IOException e) {
             throw new ItsException("Error preparing MediaRecorder", e);
         }
+    }
+
+    private void setupMediaCodec(int cameraId, String outputFilePath, Context context)
+            throws ItsException {
+        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        int videoBitRate = ItsUtils.calculateBitrate(cameraId, mPreviewSize, mMaxFps);
+        MediaFormat format = ItsUtils.initializeHLG10Format(mPreviewSize, videoBitRate, mMaxFps);
+        String codecName = list.findEncoderForFormat(format);
+        assert (codecName != null);
+
+        try {
+            mMediaMuxer = new MediaMuxer(outputFilePath,
+                    MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+        } catch (IOException e) {
+            throw new ItsException("Error preparing the MediaMuxer.");
+        }
+
+        try {
+            mMediaCodec = MediaCodec.createByCodecName(codecName);
+        } catch (IOException e) {
+            throw new ItsException("Error preparing the MediaCodec.");
+        }
+
+        mMediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+        mMediaCodecCondition = new Object();
+        mMediaCodec.setCallback(
+                new ItsUtils.MediaCodecListener(mMediaMuxer, mMediaCodecCondition), mHandler);
+
+        mRecordSurface = mMediaCodec.createInputSurface();
+        assert (mRecordSurface != null);
     }
 
     private void initEGL() throws ItsException {
@@ -312,9 +354,9 @@ class PreviewRecorder implements AutoCloseable {
                 clientVersion, /* offset= */0);
         Logt.i(TAG, "EGLContext created, client version " + clientVersion[0]);
 
-        // Create EGL Surface to write to the MediaRecorder Surface.
+        // Create EGL Surface to write to the recording Surface.
         int[] surfaceAttribs = {EGL14.EGL_NONE};
-        mEGLRecorderSurface = EGL14.eglCreateWindowSurface(mEGLDisplay, EGLConfig, mRecorderSurface,
+        mEGLRecorderSurface = EGL14.eglCreateWindowSurface(mEGLDisplay, EGLConfig, mRecordSurface,
                 surfaceAttribs, /* offset= */0);
         if (mEGLRecorderSurface == EGL14.EGL_NO_SURFACE) {
             throw new ItsException("Failed to create EGL recorder surface");
@@ -354,6 +396,8 @@ class PreviewRecorder implements AutoCloseable {
         mVPositionLoc = GLES20.glGetAttribLocation(mGLShaderProgram, "vPosition");
         mTexMatrixLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "texMatrix");
         mTexRotMatrixLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "texRotMatrix");
+        mPaintItLoc = GLES20.glGetUniformLocation(mGLShaderProgram, "paintIt");
+
         GLES20.glUseProgram(mGLShaderProgram);
         assertNoGLError("glUseProgram");
     }
@@ -419,77 +463,14 @@ class PreviewRecorder implements AutoCloseable {
         }
     }
 
-    /**
-     * Looks up a reasonable recording bitrate from {@link CamcorderProfile} for the given
-     * {@code mPreviewSize}. This is not the most optimal bitrate, but should be good enough for ITS
-     * tests to run their analyses.
-     */
-    private int calculateBitrate(int cameraId) throws ItsException {
-        int previewResolution = mPreviewSize.getHeight() * mPreviewSize.getWidth();
 
-        List<Pair<Integer, Integer>> resToProfile = new ArrayList<>(mResolutionToCamcorderProfile);
-        // ensure that the list is sorted in ascending order of resolution
-        resToProfile.sort(Comparator.comparingInt(a -> a.first));
-
-        // Choose the first available resolution that is >= the requested preview size.
-        for (Pair<Integer, Integer> entry : resToProfile) {
-            if (previewResolution > entry.first) continue;
-            if (!CamcorderProfile.hasProfile(cameraId, entry.second)) continue;
-
-            EncoderProfiles profiles = CamcorderProfile.getAll(
-                    String.valueOf(cameraId), entry.second);
-            if (profiles == null) continue;
-
-            List<EncoderProfiles.VideoProfile> videoProfiles = profiles.getVideoProfiles();
-            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
-                if (profile == null) continue;
-            }
-
-            // Find a profile which can achieve the requested max frame rate
-            for (EncoderProfiles.VideoProfile profile : videoProfiles) {
-                if (profile == null) continue;
-                if (profile.getFrameRate() >= mMaxFps) {
-                    Logt.i(TAG, "Recording bitrate: " + profile.getBitrate()
-                            + ", fps " + profile.getFrameRate());
-                    return  profile.getBitrate();
-                }
-            }
-        }
-
-        // TODO(b/223439995): There is a bug where some devices might populate result of
-        //                    CamcorderProfile.getAll with nulls even when a given quality is
-        //                    supported. Until this bug is fixed, fall back to the "deprecated"
-        //                    CamcorderProfile.get call to get the video bitrate. This logic can be
-        //                    removed once the bug is fixed.
-        Logt.i(TAG, "No matching EncoderProfile found. Falling back to CamcorderProfiles");
-        // Mimic logic from above, but use CamcorderProfiles instead
-        for (Pair<Integer, Integer> entry : resToProfile) {
-            if (previewResolution > entry.first) continue;
-            if (!CamcorderProfile.hasProfile(cameraId, entry.second)) continue;
-
-            CamcorderProfile profile = CamcorderProfile.get(cameraId, entry.second);
-            if (profile == null) continue;
-
-            int profileFrameRate = profile.videoFrameRate;
-            float bitRateScale = (profileFrameRate < mMaxFps) ?
-                    1.0f * mMaxFps / profileFrameRate : 1.0f;
-            Logt.i(TAG, "Recording bitrate: " + profile.videoBitRate + " * " + bitRateScale);
-            return (int)(profile.videoBitRate * bitRateScale);
-        }
-
-        // Ideally, we should always find a Camcorder/Encoder Profile corresponding
-        // to the preview size.
-        Logt.w(TAG, "Could not find bitrate for any resolution >= " + mPreviewSize
-                + " for cameraId " + cameraId + ". Using default bitrate");
-        return DEFAULT_RECORDING_BITRATE;
-    }
 
     /**
      * Copies a frame encoded as a texture by {@code mCameraTexture} to
-     * {@code mRecorderSurface} by running our simple shader program for one frame that draws
+     * {@code mRecordSurface} by running our simple shader program for one frame that draws
      * to {@code mEGLRecorderSurface}.
      */
-    private void copyFrameToRecorder() throws ItsException {
+    private void copyFrameToRecordSurface() throws ItsException {
         // Clear color buffer
         GLES20.glClearColor(0f, 0f, 0f, 1f);
         assertNoGLError("glClearColor");
@@ -506,6 +487,9 @@ class PreviewRecorder implements AutoCloseable {
         GLES20.glUniformMatrix2fv(mTexRotMatrixLoc, /* count= */1, /* transpose= */false,
                 mTexRotMatrix, /* offset= */0);
         assertNoGLError("glUniformMatrix2fv");
+
+        GLES20.glUniform1i(mPaintItLoc, mIsPaintGreen ? GREEN_PAINT : NO_PAINT);
+        assertNoGLError("glUniform1i");
 
         // write vertices of the full-screen rectangle to the GLSL program
         ByteBuffer nativeBuffer = ByteBuffer.allocateDirect(
@@ -530,7 +514,9 @@ class PreviewRecorder implements AutoCloseable {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first= */0, /* count= */4);
         assertNoGLError("glDrawArrays");
 
-        EGL14.eglSwapBuffers(mEGLDisplay, mEGLRecorderSurface); // flush surface
+        if (!EGL14.eglSwapBuffers(mEGLDisplay, mEGLRecorderSurface)) {
+            throw new ItsException("EglSwapBuffers failed to copy buffer to recording surface");
+        }
     }
 
     /**
@@ -550,12 +536,6 @@ class PreviewRecorder implements AutoCloseable {
         return mCameraSurface;
     }
 
-    int getNumFrames() {
-        synchronized(mRecorderLock) {
-            return mNumFrames;
-        }
-    }
-
     /**
      * Copies a frame encoded as a texture by {@code mCameraTexture} to a Bitmap by running our
      * simple shader program for one frame and then convert the frame to a JPEG and write to
@@ -566,7 +546,7 @@ class PreviewRecorder implements AutoCloseable {
      * @param outputStream The stream to which the captured JPEG image bytes are written to
      */
     void getFrame(OutputStream outputStream) throws ItsException {
-        synchronized (mRecorderLock) {
+        synchronized (mRecordLock) {
             if (mIsRecording) {
                 throw new ItsException("Attempting to get frame while recording is active is an "
                         + "invalid combination.");
@@ -577,7 +557,7 @@ class PreviewRecorder implements AutoCloseable {
             // GL copy texture to JPEG should happen on the thread EGL Context was bound to
             mHandler.post(() -> {
                 try {
-                    copyFrameToRecorder();
+                    copyFrameToRecordSurface();
 
                     ByteBuffer frameBuffer = ByteBuffer.allocateDirect(
                             mPreviewSize.getWidth() * mPreviewSize.getHeight() * 4);
@@ -617,42 +597,84 @@ class PreviewRecorder implements AutoCloseable {
      * only be called once. Throws {@link ItsException} on subsequent calls.
      */
     void startRecording() throws ItsException {
-        if (mMediaRecorderConsumed) {
+        if (mRecordingStarted) {
             throw new ItsException("Attempting to record on a stale PreviewRecorder. "
                     + "Create a new instance instead.");
         }
-        mMediaRecorderConsumed = true;
+        mRecordingStarted = true;
         Logt.i(TAG, "Starting Preview Recording.");
-        synchronized (mRecorderLock) {
+        synchronized (mRecordLock) {
             mIsRecording = true;
-            mMediaRecorder.start();
+            if (mMediaRecorder != null) {
+                mMediaRecorder.start();
+            } else {
+                mMediaCodec.start();
+            }
+        }
+    }
+
+    /**
+     * Override camera frames with green frames, if recordGreenFrames
+     * parameter is true. Record Green frames as buffer to workaround
+     * MediaRecorder issue of missing frames at the end of recording.
+     */
+    void overrideCameraFrames(boolean recordGreenFrames) throws ItsException {
+        Logt.i(TAG, "Recording Camera frames. recordGreenFrames = " + recordGreenFrames);
+        synchronized (mRecordLock) {
+            mIsPaintGreen = recordGreenFrames;
         }
     }
 
     /**
      * Stops recording frames.
      */
-    void stopRecording() {
+    void stopRecording() throws ItsException {
         Logt.i(TAG, "Stopping Preview Recording.");
-        synchronized (mRecorderLock) {
-            mIsRecording = false;
+        synchronized (mRecordLock) {
+            stopRecordingLocked();
+        }
+    }
+
+    private void stopRecordingLocked() throws ItsException {
+        mIsRecording = false;
+        if (mMediaRecorder != null) {
             mMediaRecorder.stop();
+        } else {
+            mMediaCodec.signalEndOfInputStream();
+
+            synchronized (mMediaCodecCondition) {
+                try {
+                    mMediaCodecCondition.wait(ItsUtils.SESSION_CLOSE_TIMEOUT_MS);
+                } catch (InterruptedException e) {
+                    throw new ItsException("Unexpected InterruptedException: ", e);
+                }
+            }
+
+            mMediaMuxer.stop();
+            mMediaCodec.stop();
         }
     }
 
     @Override
-    public void close() {
+    public void close() throws ItsException {
         // synchronized to prevent reads and writes to surfaces while they are being released.
-        synchronized (mRecorderLock) {
+        synchronized (mRecordLock) {
             if (mIsRecording) {
                 Logt.e(TAG, "Preview recording was not stopped before closing.");
-                mIsRecording = false;
-                mMediaRecorder.stop();
+                stopRecordingLocked();
             }
             mCameraSurface.release();
             mCameraTexture.release();
-            mMediaRecorder.release();
-            mRecorderSurface.release();
+            if (mMediaRecorder != null) {
+                mMediaRecorder.release();
+            }
+            if (mMediaCodec != null) {
+                mMediaCodec.release();
+            }
+            if (mMediaMuxer != null) {
+                mMediaMuxer.release();
+            }
+            mRecordSurface.release();
 
             ConditionVariable cv = new ConditionVariable();
             cv.close();
@@ -686,5 +708,17 @@ class PreviewRecorder implements AutoCloseable {
         EGL14.eglDestroyContext(mEGLDisplay, mEGLContext);
 
         EGL14.eglTerminate(mEGLDisplay);
+    }
+
+    /**
+     * Returns Camera frame's timestamps only after recording completes.
+     */
+    public List<Long> getFrameTimeStamps() throws IllegalStateException {
+        synchronized (mRecordLock) {
+            if (mIsRecording) {
+                throw new IllegalStateException("Can't return timestamps during recording.");
+            }
+            return mFrameTimeStamps;
+        }
     }
 }

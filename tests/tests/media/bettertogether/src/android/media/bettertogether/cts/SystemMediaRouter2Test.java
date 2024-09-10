@@ -17,6 +17,8 @@
 package android.media.bettertogether.cts;
 
 import static android.content.Context.AUDIO_SERVICE;
+import static android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS;
+import static android.content.Intent.FLAG_RECEIVER_FOREGROUND;
 import static android.media.MediaRoute2Info.FEATURE_LIVE_AUDIO;
 import static android.media.MediaRoute2Info.PLAYBACK_VOLUME_VARIABLE;
 import static android.media.MediaRoute2ProviderService.REASON_REJECTED;
@@ -42,6 +44,8 @@ import static org.junit.Assert.assertThrows;
 import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.media.AudioManager;
 import android.media.MediaRoute2Info;
@@ -100,10 +104,13 @@ import java.util.function.Consumer;
 @NonMainlineTest
 public class SystemMediaRouter2Test {
     private static final String TAG = "SystemMR2Test";
+    private static final String SYSTEM_SERVER_PACKAGE_NAME = "android";
 
     @Rule public final Expect expect = Expect.create();
     @Rule public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @Rule public final ResourceReleaser mResourceReleaser = new ResourceReleaser();
 
     UiAutomation mUiAutomation;
     Context mContext;
@@ -144,9 +151,22 @@ public class SystemMediaRouter2Test {
     public void setUp() throws Exception {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-        mUiAutomation.adoptShellPermissionIdentity(Manifest.permission.MEDIA_CONTENT_CONTROL,
-                Manifest.permission.MODIFY_AUDIO_ROUTING,
-                Manifest.permission.QUERY_AUDIO_STATE);
+        // INTERACT_ACROSS_USERS_FULL is necessary for the proxy router in
+        // clearTransferReasonAndInitiator.
+        if (isAutomotive()) {
+            mUiAutomation.adoptShellPermissionIdentity(
+                    Manifest.permission.MEDIA_CONTENT_CONTROL,
+                    Manifest.permission.MODIFY_AUDIO_ROUTING,
+                    Manifest.permission.QUERY_AUDIO_STATE,
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL,
+                    Manifest.permission.MODIFY_AUDIO_SETTINGS_PRIVILEGED);
+        } else {
+            mUiAutomation.adoptShellPermissionIdentity(
+                    Manifest.permission.MEDIA_CONTENT_CONTROL,
+                    Manifest.permission.MODIFY_AUDIO_ROUTING,
+                    Manifest.permission.QUERY_AUDIO_STATE,
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+        }
 
         mExecutor = Executors.newSingleThreadExecutor();
         mAudioManager = (AudioManager) mContext.getSystemService(AUDIO_SERVICE);
@@ -222,6 +242,19 @@ public class SystemMediaRouter2Test {
                                 mContext,
                                 mContext.getPackageName(),
                                 mContext.getUser()));
+    }
+
+    @Test
+    public void showMediaOutputSwitcher_showsOutputSwitcher() throws InterruptedException {
+        assertThat(mSystemRouter2ForCts.showSystemOutputSwitcher()).isTrue();
+
+        // Wait for the dialog to show before dismissing it.
+        Thread.sleep(WAIT_MS);
+
+        // Dismiss the system output switcher dialog in order to clean up, leaving the device in
+        // the same state as it was when the test started.
+        mContext.sendBroadcast(
+                new Intent(ACTION_CLOSE_SYSTEM_DIALOGS).setFlags(FLAG_RECEIVER_FOREGROUND));
     }
 
     @Test
@@ -403,13 +436,6 @@ public class SystemMediaRouter2Test {
         assertThrows(
                 UnsupportedOperationException.class,
                 () -> mSystemRouter2ForCts.setRouteListingPreference(rlp));
-    }
-
-    @Test
-    public void showSystemOutputSwitcher_onPrivilegedInstance_throws() {
-        assertThrows(
-                UnsupportedOperationException.class,
-                () -> mSystemRouter2ForCts.showSystemOutputSwitcher());
     }
 
     @Test
@@ -1386,7 +1412,7 @@ public class SystemMediaRouter2Test {
     @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testLocalRouterTransferChangesTransferReasonToTransferredFromApp()
             throws InterruptedException {
-        clearPossibleTransferReason();
+        clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         ControllerCallback controllerCallback = new ControllerCallback() {
@@ -1420,7 +1446,7 @@ public class SystemMediaRouter2Test {
     @RequiresFlagsEnabled(FLAG_ENABLE_BUILT_IN_SPEAKER_ROUTE_SUITABILITY_STATUSES)
     public void testProxyRouterTransferChangesTransferReasonToTransferredAsSystemRequest()
             throws InterruptedException {
-        clearPossibleTransferReason();
+        clearTransferReasonAndInitiator();
 
         CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
         ControllerCallback controllerCallback = new ControllerCallback() {
@@ -1451,40 +1477,47 @@ public class SystemMediaRouter2Test {
     }
 
     /**
-     * To be able to receive {@link ControllerCallback#onControllerUpdated(RoutingController)} call
-     * we need to leave the system in some random state in which we, unlikely, end up in the tests.
-     * For this reason, we need to transfer the system in a random state.
+     * Makes a transfer to the currently selected route using placeholder initiation data.
+     *
+     * <p>This enables tests to expect {@link ControllerCallback} calls when they perform transfers
+     * that affect the routing session state (specifically {@link
+     * RoutingController#wasTransferInitiatedBySelf()}).
      */
-    private void clearPossibleTransferReason() throws InterruptedException {
+    private void clearTransferReasonAndInitiator() throws InterruptedException {
         final CountDownLatch onControllerUpdatedLatch = new CountDownLatch(1);
-        ControllerCallback controllerCallback = new ControllerCallback() {
-            @Override
-            public void onControllerUpdated(RoutingController controller) {
-                super.onControllerUpdated(controller);
-                onControllerUpdatedLatch.countDown();
-            }
-        };
+        ControllerCallback controllerCallback =
+                new ControllerCallback() {
+                    @Override
+                    public void onControllerUpdated(@NonNull RoutingController controller) {
+                        if (controller.wasTransferInitiatedBySelf()) {
+                            onControllerUpdatedLatch.countDown();
+                        }
+                    }
+                };
+        // We make a transfer to the selected system route (typically the built-in speaker) so as to
+        // ensure that the tests can later change the transfer initiator, using the package name
+        // that corresponds to this test. For this router we use the system_server package, which
+        // is a placeholder real package name that's guaranteed to be present.
+        MediaRouter2 systemServerProxyRouter =
+                MediaRouter2.getInstance(mContext, SYSTEM_SERVER_PACKAGE_NAME, UserHandle.SYSTEM);
+        RoutingController systemController = systemServerProxyRouter.getSystemController();
+        systemServerProxyRouter.registerControllerCallback(mExecutor, controllerCallback);
+        mResourceReleaser.add(
+                () -> systemServerProxyRouter.unregisterControllerCallback(controllerCallback));
+        while (systemController.getSelectedRoutes().isEmpty()) {
+            // TODO b/339583417 - Remove this busy wait once we fix the underlying bug in proxy
+            // routers.
+            Thread.sleep(/* millis= */ 500);
+        }
+        systemServerProxyRouter.transfer(
+                systemController, systemController.getSelectedRoutes().get(0));
 
-        mAppRouter2.registerControllerCallback(mExecutor, controllerCallback);
-
-        RoutingController controller = mAppRouter2.getSystemController();
-        List<MediaRoute2Info> selectedRoutes = controller.getSelectedRoutes();
-        assertThat(selectedRoutes).isNotEmpty();
-        MediaRoute2Info deviceRoute = selectedRoutes.get(0);
-
-        mSystemRouter2ForCts.transfer(controller, deviceRoute, UserHandle.SYSTEM,
-                "some_random_package_name");
-
-        assertThat(onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS)).isTrue();
-
-        RoutingController routingController = mAppRouter2.getSystemController();
-        RoutingSessionInfo sessionInfo = routingController.getRoutingSessionInfo();
-
-        assertThat(sessionInfo.getTransferReason()).isEqualTo(
-                RoutingSessionInfo.TRANSFER_REASON_SYSTEM_REQUEST);
-        assertThat(routingController.wasTransferInitiatedBySelf()).isFalse();
-
-        mAppRouter2.unregisterControllerCallback(controllerCallback);
+        // We wait for the callback to run as a result of the transfer above. But that call could be
+        // discarded upstream (because the routing session didn't change as a result of said
+        // transfer), so we don't assert that the latch was opened. We just assert later that the
+        // transfer reason / initiation data is what we expect.
+        onControllerUpdatedLatch.await(TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertThat(systemController.wasTransferInitiatedBySelf()).isTrue();
     }
 
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
@@ -1627,5 +1660,9 @@ public class SystemMediaRouter2Test {
         for (RoutingController controller : controllers) {
             controller.release();
         }
+    }
+
+    private boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
     }
 }

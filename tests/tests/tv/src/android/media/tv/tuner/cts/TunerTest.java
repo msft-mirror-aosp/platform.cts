@@ -125,6 +125,7 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.RequiredFeatureRule;
 
 import org.junit.After;
@@ -152,6 +153,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@CddTest(requirements = {"2.3.3/3/T-1-1"})
 public class TunerTest {
     private static final String TAG = "MediaTunerTest";
 

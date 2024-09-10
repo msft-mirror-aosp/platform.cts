@@ -91,6 +91,8 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.bluetooth.BluetoothAdapter android.bluetooth.BluetoothProfile.getAdapter()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceConnected(android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.bluetooth.BluetoothProfile.onServiceDisconnected()");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.telephony.satellite.SatelliteTransmissionUpdateCallback.onSendDatagramStateChanged(int,int,int,int)");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.view.KeyboardShortcutGroup android.view.WindowManager.getApplicationLaunchKeyboardShortcuts(int)");
     }
 
     private final ResultObserver resultObserver;

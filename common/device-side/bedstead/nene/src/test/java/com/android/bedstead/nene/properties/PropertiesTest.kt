@@ -37,7 +37,7 @@ class PropertiesTest {
         @Rule
         val deviceState = DeviceState()
 
-        val KEY = "test123"
+        val KEY = "dumpstate.testkey"
 
         val VALUE = "value123"
 

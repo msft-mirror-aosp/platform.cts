@@ -44,6 +44,7 @@ import android.media.session.MediaSessionManager.RemoteUserInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Process;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -76,6 +77,7 @@ import java.util.concurrent.TimeUnit;
 @FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
+@AppModeNonSdkSandbox(reason = "SDK sandbox does not need MediaBrowser.")
 public class MediaBrowserServiceTest {
 
     @Rule

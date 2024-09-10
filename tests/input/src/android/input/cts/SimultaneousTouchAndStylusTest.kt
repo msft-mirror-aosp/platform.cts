@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.cts.input.EventVerifier
 import android.graphics.Point
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -31,7 +32,9 @@ import android.view.MotionEvent.TOOL_TYPE_STYLUS
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
+import com.android.cts.input.UinputTouchScreen
 import com.android.cts.input.inputeventmatchers.withDeviceId
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withRawCoords
@@ -74,20 +77,8 @@ class SimultaneousTouchAndStylusTest {
 
     @Before
     fun setUp() {
-        touchScreen = UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_touchscreen_register,
-                InputDevice.SOURCE_TOUCHSCREEN,
-                useDisplaySize = true,
-        )
-        stylus = UinputTouchDevice(
-                instrumentation,
-                virtualDisplayRule.virtualDisplay.display,
-                R.raw.test_capacitive_stylus_register,
-                InputDevice.SOURCE_STYLUS,
-                useDisplaySize = true,
-        )
+        touchScreen = UinputTouchScreen(instrumentation, virtualDisplayRule.virtualDisplay.display)
+        stylus = UinputStylus(instrumentation, virtualDisplayRule.virtualDisplay.display)
         virtualDisplayRule.activity.launchTwoWindows()
         leftWindowVerifier = EventVerifier(virtualDisplayRule.activity::getLeftWindowInputEvent)
         rightWindowVerifier = EventVerifier(virtualDisplayRule.activity::getRightWindowInputEvent)

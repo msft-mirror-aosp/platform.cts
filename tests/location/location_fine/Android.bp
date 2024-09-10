@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsLocationFineTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",

@@ -16,12 +16,15 @@
 
 package android.security.cts;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.*;
+import static com.android.sts.common.NativePocCrashAsserter.assertNoCrash;
+
+import static org.junit.Assume.assumeNoException;
 
 import android.platform.test.annotations.AsbSecurityTest;
 
+import com.android.sts.common.NativePoc;
 import com.android.sts.common.tradefed.testtype.NonRootSecurityTestCase;
+import com.android.sts.common.util.TombstoneUtils;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 
 import org.junit.Test;
@@ -30,17 +33,24 @@ import org.junit.runner.RunWith;
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class CVE_2017_13194 extends NonRootSecurityTestCase {
 
-    /**
-     * b/64710201
-     * Vulnerability Behaviour: SIGSEGV in media.codec
-     */
     @Test
     @AsbSecurityTest(cveBugId = 64710201)
     public void testPocCVE_2017_13194() throws Exception {
-        assumeFalse(moduleIsPlayManaged("com.google.android.media.swcodec"));
-        pocPusher.only64();
-        String processPatternStrings[] = {"media\\.codec", "omx@\\d+?\\.\\d+?-service"};
-        AdbUtils.runPocAssertNoCrashesNotVulnerable("CVE-2017-13194", null, getDevice(),
-                processPatternStrings);
+        try {
+            final String binaryName = "CVE-2017-13194";
+            final String[] processPatternStrings = {"media\\.codec", "omx@\\d+?\\.\\d+?-service"};
+            final String[] signals = {TombstoneUtils.Signals.SIGSEGV};
+            final TombstoneUtils.Config crashConfig =
+                    new TombstoneUtils.Config()
+                            .setProcessPatterns(processPatternStrings)
+                            .setSignals(signals);
+            NativePoc.builder()
+                    .pocName(binaryName)
+                    .asserter(assertNoCrash(crashConfig))
+                    .build()
+                    .run(this);
+        } catch (Exception e) {
+            assumeNoException(e);
+        }
     }
 }

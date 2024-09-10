@@ -31,16 +31,19 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.AfterClass;
+import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
@@ -49,16 +52,16 @@ import java.util.List;
 
 public class EndToEndImeTestBase {
 
+    // Required for Bedstead annotations to take effect.
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule
     public TestName mTestName = new TestName();
 
     protected final CtsTouchUtils mCtsTouchUtils = new CtsTouchUtils(
             InstrumentationRegistry.getInstrumentation().getTargetContext());
-
-    /** Returns a unique marker based on the concrete class name and elapsed time. */
-    protected String createUniqueMarker() {
-        return getClass().getName() + "/" + SystemClock.elapsedRealtimeNanos();
-    }
 
     /** Command to get verbose ImeTracker logging state. */
     private static final String GET_VERBOSE_IME_TRACKER_LOGGING_CMD =
@@ -73,6 +76,17 @@ public class EndToEndImeTestBase {
      * used to handle reverting the state when the test run ends.
      */
     private static boolean sWasVerboseImeTrackerLoggingEnabled;
+
+    /** Tag for the single EditText in the test case. */
+    protected static final String EDIT_TEXT_TAG = "EditText";
+    /** Tag for the initially focused EditText. */
+    protected static final String FOCUSED_EDIT_TEXT_TAG = "focused-EditText";
+    /** Tag for the initially unfocused EditText. */
+    protected static final String NON_FOCUSED_EDIT_TEXT_TAG = "non-focused-EditText";
+    /** Tag for the first EditText. */
+    protected static final String FIRST_EDIT_TEXT_TAG = "first-EditText";
+    /** Tag for the second EditText. */
+    protected static final String SECOND_EDIT_TEXT_TAG = "second-EditText";
 
     /**
      * Skip test executions for know broken platforms.
@@ -205,6 +219,21 @@ public class EndToEndImeTestBase {
         if (!sWasVerboseImeTrackerLoggingEnabled) {
             setVerboseImeTrackerLogging(false);
         }
+    }
+
+    /**
+     * Returns a unique test marker based on the concrete class name, given tag and elapsed time.
+     *
+     * @param tag a tag describing the marker (e.g. EditText, Fence).
+     */
+    @NonNull
+    protected String getTestMarker(@NonNull String tag) {
+        return getClass().getName() + "/" + tag + "/" + SystemClock.elapsedRealtimeNanos();
+    }
+
+    /** Returns a unique test marker for an EditText. */
+    protected String getTestMarker() {
+        return getTestMarker(EDIT_TEXT_TAG);
     }
 
     /**
