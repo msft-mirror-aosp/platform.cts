@@ -41,9 +41,8 @@ import android.util.Log;
 
 import androidx.test.uiautomator.By;
 
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -59,27 +58,23 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     private static CompletableFuture<Intent> sUninstallResult;
     private static UninstallResultReceiver sUninstallResultReceiver;
 
-    @BeforeClass
-    public static void setupUninstallationClass() throws Exception {
-        setUpClass();
-        sUninstallResultReceiver = new UninstallResultReceiver();
-        sContext.registerReceiver(sUninstallResultReceiver,
-                new IntentFilter(ACTION_UNINSTALL_RESULT), Context.RECEIVER_EXPORTED);
-    }
-
     @Before
     @Override
     public void setup() throws Exception {
         super.setup();
         resetUninstallResult();
         installTestPackage();
+        sUninstallResultReceiver = new UninstallResultReceiver();
+        getContext().registerReceiver(sUninstallResultReceiver,
+                new IntentFilter(ACTION_UNINSTALL_RESULT), Context.RECEIVER_EXPORTED);
     }
 
-    @AfterClass
-    public static void tearDownUninstallationClass() throws Exception {
-        sContext.unregisterReceiver(sUninstallResultReceiver);
+    @After
+    @Override
+    public void tearDown() throws Exception {
+        getContext().unregisterReceiver(sUninstallResultReceiver);
         sUninstallResultReceiver = null;
-        tearDownClass();
+        super.tearDown();
     }
 
     private static Intent getUninstallResult() throws Exception {
@@ -95,9 +90,9 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static IntentSender getIntentSender() {
-        Intent intent = new Intent(ACTION_UNINSTALL_RESULT).setPackage(sContext.getPackageName())
-                .addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        PendingIntent pending = PendingIntent.getBroadcast(sContext, 0, intent,
+        Intent intent = new Intent(ACTION_UNINSTALL_RESULT).setPackage(
+                getContext().getPackageName()).addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        PendingIntent pending = PendingIntent.getBroadcast(getContext(), 0, intent,
                 FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
         return pending.getIntentSender();
     }
@@ -109,11 +104,11 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     public static void startUninstallationViaPackageInstallerApiWithDeletePackages(
             boolean isSameInstaller) throws Exception {
         try {
-            sInstrumentation.getUiAutomation().adoptShellPermissionIdentity(DELETE_PACKAGES);
-            sPackageManager.getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(DELETE_PACKAGES);
+            getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
                     getIntentSender());
         } finally {
-            sInstrumentation.getUiAutomation().dropShellPermissionIdentity();
+            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
 
         if (isSameInstaller) {
@@ -129,7 +124,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      * Start the uninstallation via PackageInstaller#uninstall api
      */
     public static void startUninstallationViaPackageInstallerApi() throws Exception {
-        sPackageManager.getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
+        getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
                 getIntentSender());
 
         assertThat(getUninstallStatus()).isEqualTo(STATUS_PENDING_USER_ACTION);
@@ -141,7 +136,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
         final Intent result = getUninstallResult();
         Intent extraIntent = result.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
-        sContext.startActivity(extraIntent);
+        getContext().startActivity(extraIntent);
         resetUninstallResult();
     }
 
@@ -164,7 +159,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
         intent.setData(Uri.fromParts("package", TEST_APP_PACKAGE_NAME, null));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
-        sContext.startActivity(intent);
+        getContext().startActivity(intent);
     }
 
     /**

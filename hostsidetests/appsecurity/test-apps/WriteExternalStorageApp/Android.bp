@@ -47,7 +47,7 @@ java_library {
     srcs: ["src/com/android/cts/writeexternalstorageapp/WriteGiftTest.java"],
     static_libs: ["CtsExternalStorageTestLib"],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
     ],
 }

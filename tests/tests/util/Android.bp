@@ -19,7 +19,7 @@ package {
 java_defaults {
     name: "CtsUtilTestCasesDefaults",
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",

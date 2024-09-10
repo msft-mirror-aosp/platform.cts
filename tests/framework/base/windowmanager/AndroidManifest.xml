@@ -125,6 +125,8 @@
 
         <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleClientTestBase$TrampolineActivity"/>
 
+        <activity android:name="android.server.wm.activity.lifecycle.ActivityLifecycleLegacySplitScreenTests$ShowImeActivity"/>
+
         <activity android:name="android.server.wm.multidisplay.MultiDisplayActivityLaunchTests$ImmediateLaunchTestActivity"
              android:allowEmbedded="true"/>
 

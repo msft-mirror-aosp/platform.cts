@@ -33,6 +33,7 @@ import static org.junit.Assume.assumeFalse;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Process;
 import android.util.Log;
 
 import com.android.bedstead.enterprise.DeviceAdminComponent;
@@ -460,11 +461,15 @@ public final class DeviceState extends HarrierRule {
                 Tags.clearTags();
                 Tags.addTag(Tags.USES_DEVICESTATE);
                 boolean isInstantApp = TestApis.packages().instrumented().isInstantApp();
+                boolean isSdkSandbox = false;
+                if (SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    isSdkSandbox = Process.isSdkSandbox();
+                }
 
                 try {
                     TestApis.device().keepScreenOn(true);
 
-                    if (!isInstantApp) {
+                    if (!isInstantApp && !isSdkSandbox) {
                         TestApis.device().setKeyguardEnabled(false);
                     }
                     TestApis.users().setStopBgUsersOnSwitch(OptionalBoolean.FALSE);
@@ -499,7 +504,7 @@ public final class DeviceState extends HarrierRule {
                         teardownShareableState();
                     }
 
-                    if (!isInstantApp) {
+                    if (!isInstantApp && !isSdkSandbox) {
                         TestApis.device().setKeyguardEnabled(true);
                     }
                     // TODO(b/249710985): Reset to the default for the device or the previous value
