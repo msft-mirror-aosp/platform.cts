@@ -333,8 +333,12 @@ public class BaseTelecomTestWithMockServices extends InstrumentationTestCase {
         mTestCallStateListener = new TestCallStateListener();
         CountDownLatch latch = mTestCallStateListener.getCountDownLatch();
         mTelephonyManager.registerTelephonyCallback(r -> r.run(), mTestCallStateListener);
-        latch.await(
-                TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
+            // Without telephony, we shouldn't expect any callback to fire, but we should still try
+            // registering telephony callback to at least make sure it doesn't crash.
+            latch.await(
+                    TestUtils.WAIT_FOR_PHONE_STATE_LISTENER_REGISTERED_TIMEOUT_S, TimeUnit.SECONDS);
+        }
         // Create a new thread for the telephony callback.
         mTelephonyCallbackThread = new HandlerThread("PhoneStateListenerThread");
         mTelephonyCallbackThread.start();
