@@ -5458,8 +5458,9 @@ public class WifiManagerTest extends WifiJUnit3TestBase {
         boolean isPasspointSupported = packageManager.hasSystemFeature(PackageManager.FEATURE_WIFI_PASSPOINT);
 
         int currentSdkVersion = Build.VERSION.SDK_INT;
-        if ((currentSdkVersion == Build.VERSION_CODES.S || currentSdkVersion == Build.VERSION_CODES.S_V2) && !isPasspointSupported) {
-            // If the Android version is S or S_V2, and Passpoint is not supported,
+        if ((currentSdkVersion == Build.VERSION_CODES.S || currentSdkVersion == Build.VERSION_CODES.S_V2 || currentSdkVersion == Build.VERSION_CODES.TIRAMISU)
+                && !isPasspointSupported) {
+            // If the Android version is S or S_V2 or TIRAMISU, and Passpoint is not supported,
             // we will consider the test as passed.
             return;
         }
