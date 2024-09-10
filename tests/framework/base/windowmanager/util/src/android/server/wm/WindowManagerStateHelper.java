@@ -41,17 +41,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.app.Instrumentation;
 import android.content.ComponentName;
 import android.graphics.Rect;
-import android.server.wm.WindowManagerTestBase.FocusableActivity;
 import android.util.SparseArray;
 import android.view.InputEvent;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -176,6 +174,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
     public void waitForDreamGone() {
         assertTrue("Dream must be gone",
                 waitForWithAmState(state -> state.getDreamTask() == null, "DreamActivity gone"));
+    }
+
+    public static boolean isKeyguardOccluded(WindowManagerState state) {
+        return state.getKeyguardControllerState().isKeyguardOccluded(DEFAULT_DISPLAY);
     }
 
     public static boolean isKeyguardShowingAndNotOccluded(WindowManagerState state) {
@@ -324,16 +326,20 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitAndAssertNavBarShownOnDisplay(int displayId) {
-        waitAndAssertNavBarShownOnDisplay(displayId, 1 /* expectedNavBarCount */);
+        assertTrue(waitForWithAmState(state -> {
+            // There should be at least one nav bar exist.
+            List<WindowState> navWindows = state.getNavBarWindowsOnDisplay(displayId);
+
+            return !navWindows.isEmpty();
+        }, "navigation bar to show on display #" + displayId));
     }
 
     public void waitAndAssertNavBarShownOnDisplay(int displayId, int expectedNavBarCount) {
         assertTrue(waitForWithAmState(state -> {
-            List<WindowState> navWindows = state
-                    .getAndAssertNavBarWindowsOnDisplay(displayId, expectedNavBarCount);
+            List<WindowState> navWindows = state.getNavBarWindowsOnDisplay(displayId);
 
-            return navWindows != null;
-        }, "navigation bar #" + displayId + " show"));
+            return navWindows.size() == expectedNavBarCount;
+        }, expectedNavBarCount + " navigation bar(s) to show on display #" + displayId));
     }
 
     public void waitAndAssertKeyguardShownOnSecondaryDisplay(int displayId) {
@@ -464,7 +470,7 @@ public class WindowManagerStateHelper extends WindowManagerState {
         // If we requested an orientation change, just waiting for the window to be visible is not
         // sufficient. We should first wait for the transitions to stop, and the for app's UI thread
         // to process them before making sure the window is visible.
-        CtsWindowInfoUtils.waitForStableWindowGeometry(5, TimeUnit.SECONDS);
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
         if (activity.getWindow() != null
                 && !CtsWindowInfoUtils.waitForWindowOnTop(activity.getWindow())) {
             CtsWindowInfoUtils.dumpWindowsOnScreen(tag, windowDumpErrMsg);
@@ -625,8 +631,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }
     }
 
+    /** Asserts the front stack activity type for the given display id. */
+    public void assertFrontStackActivityTypeOnDisplay(String msg, int activityType, int displayId) {
+        assertEquals(msg, activityType, getFrontRootTaskActivityType(displayId));
+    }
+
     public void assertFrontStackActivityType(String msg, int activityType) {
-        assertEquals(msg, activityType, getFrontRootTaskActivityType(DEFAULT_DISPLAY));
+        assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
     public void assertFocusedRootTask(String msg, int taskId) {
@@ -734,10 +745,39 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 visible, isWindowSurfaceShown(windowName));
     }
 
+    /**
+     * Assert visibility on a {@code displayId} since an activity can be present on more than one
+     * displays.
+     */
+    public void assertVisibility(final ComponentName activityName, final boolean visible,
+            int displayId) {
+        final String windowName = getWindowName(activityName);
+        // Check existence of activity and window.
+        assertTrue("Activity=" + getActivityName(activityName) + " must exist.",
+                containsActivity(activityName));
+        assertTrue("Window=" + windowName + " must exist.", containsWindow(windowName));
+
+        // Check visibility of activity and window.
+        assertEquals("Activity=" + getActivityName(activityName) + " must" + (visible ? "" : " NOT")
+                + " be visible.", visible, isActivityVisible(activityName));
+        assertEquals("Window=" + windowName + " must" + (visible ? "" : " NOT")
+                        + " have shown surface on display=" + displayId,
+                visible, isWindowSurfaceShownOnDisplay(windowName, displayId));
+    }
+
     public void assertHomeActivityVisible(boolean visible) {
         final ComponentName homeActivity = getHomeActivityName();
         assertNotNull(homeActivity);
         assertVisibility(homeActivity, visible);
+    }
+
+    /**
+     * Note: This is required since home can be present on more than one displays.
+     */
+    public void assertHomeActivityVisible(boolean visible, int displayId) {
+        final ComponentName homeActivity = getHomeActivityName();
+        assertNotNull(homeActivity);
+        assertVisibility(homeActivity, visible, displayId);
     }
 
     /**

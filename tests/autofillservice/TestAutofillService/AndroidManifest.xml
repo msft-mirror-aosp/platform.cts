@@ -19,7 +19,7 @@
           package="android.autofill.cts2"
           android:targetSandboxVersion="2">
 
-    <application>
+    <application android:label="TestAutofillServiceApp">
         <uses-library android:name="android.test.runner"/>
 
         <activity android:name=".QueryAutofillStatusActivity"

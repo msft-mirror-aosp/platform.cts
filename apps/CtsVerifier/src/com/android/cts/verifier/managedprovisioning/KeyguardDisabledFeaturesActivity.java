@@ -121,11 +121,13 @@ public class KeyguardDisabledFeaturesActivity extends DialogTestListActivity {
     protected void setupFingerprintTests(ArrayTestListAdapter adapter) {
         FingerprintManager fpm = (FingerprintManager) getSystemService(Context.FINGERPRINT_SERVICE);
         if (fpm != null && fpm.isHardwareDetected()) {
+            /* Disabled due to b/343883369
             adapter.add(new DialogTestListItem(this,
                     R.string.provisioning_byod_fingerprint_disabled_in_settings,
                     getTestIdPrefix() + "FingerprintDisabledInSettings",
                     R.string.provisioning_byod_fingerprint_disabled_in_settings_instruction,
                     new Intent(Settings.ACTION_SECURITY_SETTINGS)));
+            */
             adapter.add(new DialogTestListItem(this, R.string.provisioning_byod_disable_fingerprint,
                     getTestIdPrefix() + "DisableFingerprint",
                     R.string.provisioning_byod_disable_fingerprint_instruction,

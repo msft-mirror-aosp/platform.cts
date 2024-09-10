@@ -4,6 +4,7 @@ package {
 
 android_test {
     name: "CtsProviderTestCases",
+    team: "trendy_team_fwk_telecom",
     defaults: ["cts_defaults"],
 
     compile_multilib: "both",
@@ -12,6 +13,7 @@ android_test {
         "cts",
         "general-tests",
         "sts",
+        "mts-documentsui",
     ],
 
     libs: [
@@ -40,7 +42,6 @@ android_test {
 
     srcs: [
         "src/**/*.java",
-        "app/GalleryTestApp/src/**/*.java",
         "app/MultiAuthorityApp/src/**/*.java",
     ],
 
@@ -52,18 +53,14 @@ android_test {
     platform_apis: true,
 
     data: [
-        ":CtsProviderGalleryTestApp",
         ":CtsProviderMultiAuthorityApp",
     ],
-
-    host_required: ["compatibility-host-provider-preconditions"],
 }
 
 filegroup {
     name: "CtsProviderTestUtils",
     srcs: [
         "src/android/provider/cts/ProviderTestUtils.java",
-        "src/android/provider/cts/media/MediaStoreUtils.java",
     ],
 }
 

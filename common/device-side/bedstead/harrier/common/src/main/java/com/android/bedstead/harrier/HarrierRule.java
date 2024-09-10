@@ -34,4 +34,12 @@ public abstract class HarrierRule implements TestRule {
     abstract void setUsingBedsteadJUnit4(boolean usingBedsteadJUnit4);
     /** Queries if the current device is using headless system user mode. */
     abstract boolean isHeadlessSystemUserMode();
+
+    /**
+     * Release resources.
+     * <br><br>
+     * Since this is a ClassRule and thereby static, we explicitly release all expensive resources
+     * it holds after the test class is executed.
+     */
+    protected abstract void releaseResources();
 }

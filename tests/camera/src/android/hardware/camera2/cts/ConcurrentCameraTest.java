@@ -254,7 +254,7 @@ public class ConcurrentCameraTest extends Camera2ConcurrentAndroidTestCase {
             try {
                 checkSessionConfigurationSupported(info.mCamera, mHandler, testSample.outputConfigs,
                         /*inputConfig*/ null, SessionConfiguration.SESSION_REGULAR,
-                        true/*defaultSupport*/, String.format(
+                        mCameraManager, true/*defaultSupport*/, String.format(
                         "Session configuration query from combination: %s failed",
                         testSample.combination.getDescription()));
                 testSessionMap.put(testSample.cameraId, new SessionConfiguration(

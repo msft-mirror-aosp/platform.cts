@@ -19,6 +19,7 @@ package {
 
 android_test {
     name: "CtsGrammaticalInflectionTestCases",
+    team: "trendy_team_pixel_global",
     defaults: ["cts_defaults"],
 
     test_suites: [

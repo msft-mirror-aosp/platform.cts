@@ -17,6 +17,7 @@
 package android.view.surfacecontrol.cts;
 
 import static android.server.wm.ActivityManagerTestBase.createFullscreenActivityScenarioRule;
+import static android.view.cts.surfacevalidator.ASurfaceControlTestActivity.WAIT_TIMEOUT_S;
 import static android.view.cts.util.ASurfaceControlTestUtils.getBufferId;
 import static android.view.cts.util.ASurfaceControlTestUtils.getQuadrantBuffer;
 import static android.view.cts.util.ASurfaceControlTestUtils.getSolidBuffer;
@@ -67,6 +68,7 @@ import com.android.window.flags.Flags;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -81,6 +83,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -1994,7 +1997,7 @@ public class SurfaceControlTest {
         try {
             do {
                 ratio = incomingRatio;
-                TimeUnit.MILLISECONDS.sleep(100);
+                TimeUnit.MILLISECONDS.sleep(500);
                 incomingRatio = display.getHdrSdrRatio();
                 // Bail if the ratio settled or if it's been way too long.
             } while (Math.abs(ratio - incomingRatio) > 0.01
@@ -2017,85 +2020,64 @@ public class SurfaceControlTest {
         final HardwareBuffer buffer = getSolidBuffer(DEFAULT_LAYOUT_WIDTH,
                 DEFAULT_LAYOUT_HEIGHT, Color.WHITE);
 
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        SurfaceControl surfaceControl = createFromWindow(holder);
-                        SurfaceControl.Transaction txn = new SurfaceControl.Transaction()
-                                .setBuffer(surfaceControl, buffer)
-                                .setDataSpace(surfaceControl, dataspace);
-                        assertThrows(IllegalArgumentException.class,
-                                () -> txn.setDesiredHdrHeadroom(surfaceControl, 0.5f));
-                        assertThrows(IllegalArgumentException.class,
-                                () -> txn.setDesiredHdrHeadroom(surfaceControl, -1f));
-                        assertThrows(IllegalArgumentException.class,
-                                () -> txn.setDesiredHdrHeadroom(surfaceControl, Float.NaN));
-                        txn.apply();
-                    }
-                },
-                // Don't attempt to check pixels
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        return true;
-                    }
-                });
+        AtomicReference<SurfaceControl> surfaceControlContainer = new AtomicReference<>();
 
+        final CountDownLatch readyFence = new CountDownLatch(1);
+        ASurfaceControlTestActivity.SurfaceHolderCallback surfaceHolderCallback =
+                new ASurfaceControlTestActivity.SurfaceHolderCallback(
+                        new BasicSurfaceHolderCallback() {
+                            @Override
+                            public void surfaceCreated(SurfaceHolder holder) {
+                                SurfaceControl surfaceControl = createFromWindow(holder);
+                                surfaceControlContainer.set(surfaceControl);
+                                SurfaceControl.Transaction txn = new SurfaceControl.Transaction()
+                                        .setBuffer(surfaceControl, buffer)
+                                        .setDataSpace(surfaceControl, dataspace);
+                                assertThrows(IllegalArgumentException.class,
+                                        () -> txn.setDesiredHdrHeadroom(surfaceControl, 0.5f));
+                                assertThrows(IllegalArgumentException.class,
+                                        () -> txn.setDesiredHdrHeadroom(surfaceControl, -1f));
+                                assertThrows(IllegalArgumentException.class,
+                                        () -> txn.setDesiredHdrHeadroom(surfaceControl, Float.NaN));
+                                txn.apply();
+                            }
+                        },
+                        readyFence,
+                        mActivity.getParentFrameLayout().getRootSurfaceControl());
+        mActivity.createSurface(surfaceHolderCallback);
+        try {
+            assertTrue("timeout", readyFence.await(WAIT_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (InterruptedException e) {
+            Assert.fail("interrupted");
+        }
+
+        // Unlike in the NDK tests, wait until now to check for an HDR/SDR ratio, since the SDK is
+        // allowed to throw exceptions.
         if (!display.isHdrSdrRatioAvailable()) {
             return;
         }
 
         float headroom = getStableHdrSdrRatio(display);
-        if (headroom < 1.02f) {
-            return;
-        }
+        assumeTrue(headroom > 1.02f);
         float targetHeadroom = 1.f + (headroom - 1.f) / 2;
 
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        SurfaceControl surfaceControl = createFromWindow(holder);
-                        new SurfaceControl.Transaction()
-                                .setBuffer(surfaceControl, buffer)
-                                .setDataSpace(surfaceControl, dataspace)
-                                .setDesiredHdrHeadroom(surfaceControl, targetHeadroom)
-                                .apply();
-                    }
-                },
-                // Don't attempt to check pixels
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        boolean achievedHeadroom =
-                                getStableHdrSdrRatio(display) <= (targetHeadroom + 1.01);
-                        assertTrue("Headroom restriction is not respected", achievedHeadroom);
-                        return achievedHeadroom;
-                    }
-                });
-        verifyTest(
-                new BasicSurfaceHolderCallback() {
-                    @Override
-                    public void surfaceCreated(SurfaceHolder holder) {
-                        SurfaceControl surfaceControl = createFromWindow(holder);
-                        new SurfaceControl.Transaction()
-                                .setBuffer(surfaceControl, buffer)
-                                .setDataSpace(surfaceControl, dataspace)
-                                .setDesiredHdrHeadroom(surfaceControl, 0.f)
-                                .apply();
-                    }
-                },
-                // Don't attempt to check pixels
-                new PixelChecker(Color.WHITE) { //10000
-                    @Override
-                    public boolean checkPixels(int pixelCount, int width, int height) {
-                        boolean achievedHeadroom = getStableHdrSdrRatio(display) > targetHeadroom;
-                        assertTrue("Removed headroom restriction is not respected",
-                                achievedHeadroom);
-                        return achievedHeadroom;
-                    }
-                });
+        mActivity.runOnUiThread(() -> {
+            new SurfaceControl.Transaction()
+                    .setDesiredHdrHeadroom(surfaceControlContainer.get(), targetHeadroom)
+                    .apply();
+        });
+
+        assertTrue("Headroom restriction is not respected",
+                getStableHdrSdrRatio(display) <= (targetHeadroom + 0.01));
+
+        mActivity.runOnUiThread(() -> {
+            new SurfaceControl.Transaction()
+                    .setDesiredHdrHeadroom(surfaceControlContainer.get(), 0.f)
+                    .apply();
+        });
+
+        assertTrue("Removed headroom restriction is not respected",
+                getStableHdrSdrRatio(display) > targetHeadroom);
     }
 
     private static final class DefaultDataSpaceParameters {

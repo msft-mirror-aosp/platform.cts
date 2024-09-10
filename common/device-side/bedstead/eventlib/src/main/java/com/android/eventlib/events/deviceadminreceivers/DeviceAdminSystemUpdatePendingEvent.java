@@ -34,6 +34,8 @@ import com.android.queryable.queries.LongQuery;
 import com.android.queryable.queries.LongQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /** Event logged when {@link DeviceAdminReceiver#onSystemUpdatePending} is called. */
 public class DeviceAdminSystemUpdatePendingEvent extends Event {
 
@@ -136,6 +138,7 @@ public class DeviceAdminSystemUpdatePendingEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminSystemUpdatePendingEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -150,6 +153,7 @@ public class DeviceAdminSystemUpdatePendingEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminSystemUpdatePendingEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);
@@ -163,6 +167,7 @@ public class DeviceAdminSystemUpdatePendingEvent extends Event {
         }
 
         /** Sets the received time. */
+        @CanIgnoreReturnValue
         public DeviceAdminSystemUpdatePendingEventLogger setReceivedTime(long receivedTime) {
             mEvent.mReceivedTime = receivedTime;
             return this;

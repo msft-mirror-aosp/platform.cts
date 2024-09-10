@@ -27,8 +27,9 @@
 # Lint as: python3
 """CTS Tests that verify NFC HCE features.
 
-These tests require two phones, one acting as a card emulator and the other
-acting as an NFC reader. The two phones should be placed back to back.
+These tests require one phone and one PN532 board (or two phones), one acting as
+a card emulator and the other acting as an NFC reader. The devices should be
+placed back to back.
 """
 
 import sys
@@ -166,74 +167,94 @@ class CtsNfcHceMultiDeviceTestCases(base_test.BaseTestClass):
         """
         self.pn532 = None
 
+        # This tracks the error message for a setup failure.
+        # It is set to None only if the entire setup_class runs successfully.
+        self._setup_failure_reason = 'Failed to find Android device(s).'
+
+        # Indicates if the setup failure should block (FAIL) or not block (SKIP) test cases.
+        # Blocking failures indicate that something unexpectedly went wrong during test setup,
+        # and the user should have it fixed.
+        # Non-blocking failures indicate that the device(s) did not meet the test requirements,
+        # and the test does not need to be run.
+        self._setup_failure_should_block_tests = True
+
         try:
             devices = self.register_controller(android_device)[:2]
-        except android_device_lib.errors.Error:
-            _LOG.warning("Could not register Android device.")
-            return
-        if len(devices) == 1:
-            self.emulator = devices[0]
-        else:
-            self.emulator, self.reader = devices
+            if len(devices) == 1:
+                self.emulator = devices[0]
+            else:
+                self.emulator, self.reader = devices
 
-        try:
-            self.emulator.load_snippet('nfc_emulator',
-                                   'com.android.nfc.emulator')
-        except errors.Error:
-            _LOG.warning("Cannot load emulator snippet.")
-        self.emulator.adb.shell(['svc', 'nfc', 'enable'])
-        self.emulator.debug_tag = 'emulator'
+            self._setup_failure_reason = (
+                'Cannot load emulator snippet. Is NfcEmulatorTestApp.apk '
+                'installed on the emulator?'
+            )
+            self.emulator.load_snippet(
+                'nfc_emulator', 'com.android.nfc.emulator'
+            )
+            self.emulator.adb.shell(['svc', 'nfc', 'enable'])
+            self.emulator.debug_tag = 'emulator'
+            if (
+                not self.emulator.nfc_emulator.isNfcSupported() or
+                not self.emulator.nfc_emulator.isNfcHceSupported()
+            ):
+                self._setup_failure_reason = f'NFC is not supported on {self.emulator}'
+                self._setup_failure_should_block_tests = False
+                return
 
-        if (
-            hasattr(self.emulator, 'dimensions')
-            and 'pn532_serial_path' in self.emulator.dimensions
-        ):
-            pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
-        else:
-            pn532_serial_path = self.user_params.get("pn532_serial_path", "")
+            if (
+                hasattr(self.emulator, 'dimensions')
+                and 'pn532_serial_path' in self.emulator.dimensions
+            ):
+                pn532_serial_path = self.emulator.dimensions["pn532_serial_path"]
+            else:
+                pn532_serial_path = self.user_params.get("pn532_serial_path", "")
 
-        if len(pn532_serial_path) > 0:
-            self.pn532 = pn532.PN532(pn532_serial_path)
-            self.pn532.mute()
-        else:
-            _LOG.info("No value provided for pn532_serial_path. Defaulting to two-device " +
-                      "configuration.")
-            if len(devices) < 2:
-                raise Exception("Two devices are not present.")
-            try:
+            if len(pn532_serial_path) > 0:
+                self._setup_failure_reason = 'Failed to connect to PN532 board.'
+                self.pn532 = pn532.PN532(pn532_serial_path)
+                self.pn532.mute()
+            else:
+                self._setup_failure_reason = 'Two devices are not present.'
+                _LOG.info("No value provided for pn532_serial_path. Defaulting to two-device " +
+                          "configuration.")
+                if len(devices) < 2:
+                    return
+                self._setup_failure_reason = (
+                    'Cannot load reader snippet. Is NfcReaderTestApp.apk '
+                    'installed on the reader?'
+                )
                 self.reader.load_snippet('nfc_reader', 'com.android.nfc.reader')
-            except errors.Error:
-                _LOG.warning("Cannot load reader snippet.")
-            self.reader.adb.shell(['svc', 'nfc', 'enable'])
-            self.reader.debug_tag = 'reader'
+                self.reader.adb.shell(['svc', 'nfc', 'enable'])
+                self.reader.debug_tag = 'reader'
+                if not self.reader.nfc_reader.isNfcSupported():
+                    self._setup_failure_reason = f'NFC is not supported on {self.reader}'
+                    self._setup_failure_should_block_tests = False
+                    return
+        except Exception as e:
+            _LOG.warning('setup_class failed with error %s', e)
+            return
+        self._setup_failure_reason = None
 
     def setup_test(self):
         """
         Turns emulator/reader screen on and unlocks between tests as some tests will
         turn the screen off.
         """
-        asserts.assert_true(hasattr(self, 'emulator'), "Emulator device is not set.")
-        asserts.assert_true(hasattr(self, 'reader') or self.pn532 is not None,
-                        "Reader device or PN532 is not set.")
-        asserts.assert_true(hasattr(self.emulator, 'nfc_emulator'),
-                                   "NFC emulator snippet is not installed.")
+        if self._setup_failure_should_block_tests:
+            asserts.assert_true(
+                self._setup_failure_reason is None, self._setup_failure_reason
+            )
+        else:
+            asserts.skip_if(
+                self._setup_failure_reason is not None, self._setup_failure_reason
+            )
 
         self.emulator.nfc_emulator.logInfo("*** TEST START: " + self.current_test_info.name +
                                            " ***")
-        asserts.skip_if(
-            not self.emulator.nfc_emulator.isNfcSupported() or
-            not self.emulator.nfc_emulator.isNfcHceSupported(),
-            f"NFC is not supported on {self.emulator}",
-        )
         self.emulator.nfc_emulator.turnScreenOn()
         self.emulator.nfc_emulator.pressMenu()
         if not self.pn532:
-            asserts.assert_true(hasattr(self.reader, 'nfc_reader'),
-                                       "NFC reader snippet is not installed.")
-            asserts.skip_if(
-                not self.reader.nfc_reader.isNfcSupported(),
-                f"NFC is not supported on {self.reader}"
-            )
             self.reader.nfc_reader.turnScreenOn()
             self.reader.nfc_reader.pressMenu()
 

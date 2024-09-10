@@ -47,6 +47,7 @@ public class SelfManagedConnection extends Connection {
     CountDownLatch mInCallServiceTrackingLatch = new CountDownLatch(1);
     boolean mIsTracked = false;
     boolean mIsAlternativeUiShowing = false;
+    boolean mSuppressHoldResponse = false;
 
     public static abstract class Listener {
         void onDestroyed(SelfManagedConnection connection) { };
@@ -113,7 +114,9 @@ public class SelfManagedConnection extends Connection {
 
     @Override
     public void onHold() {
-        this.setOnHold();
+        if (!mSuppressHoldResponse) {
+            this.setOnHold();
+        }
         mOnHoldLatch.countDown();
     }
 
@@ -200,5 +203,9 @@ public class SelfManagedConnection extends Connection {
 
     public InvokeCounter getAvailableEndpointsChangedInvokeCounter() {
         return mAvailableEndpointsInvokeCounter;
+    }
+
+    public void setSuppressHoldResponse(boolean suppressHoldResponse) {
+        mSuppressHoldResponse = suppressHoldResponse;
     }
 }

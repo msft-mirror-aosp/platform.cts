@@ -16,7 +16,7 @@
 
 package android.scopedstorage.cts.device;
 
-import static android.scopedstorage.cts.device.FileCreationUtils.createContentFromResource;
+import static android.scopedstorage.cts.device.DeviceTestUtils.createContentFromResource;
 import static android.scopedstorage.cts.lib.TestUtils.createFileAs;
 import static android.scopedstorage.cts.lib.TestUtils.deleteFileAsNoThrow;
 import static android.scopedstorage.cts.lib.TestUtils.getContentResolver;

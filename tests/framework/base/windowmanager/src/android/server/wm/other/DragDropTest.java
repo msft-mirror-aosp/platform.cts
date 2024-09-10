@@ -39,8 +39,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.server.wm.CtsWindowInfoUtils;
-import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
 import android.util.Size;
@@ -80,6 +78,8 @@ public class DragDropTest extends WindowManagerTestBase {
 
     // inverse scaling factor no smaller than 1, also see DragDropCompatTest
     protected float mInvCompatScale = 1.0f;
+    // The allowed margin between the expected and actual x,y coordinates - see DragDropCompatTest
+    protected float mAllowedMargin = 0;
 
     private DragDropActivity mActivity;
 
@@ -152,7 +152,8 @@ public class DragDropTest extends WindowManagerTestBase {
             }
             final LogEntry other = (LogEntry) obj;
             return view == other.view && action == other.action
-                    && x == other.x && y == other.y
+                    && Math.abs(x - other.x) <= mAllowedMargin
+                    && Math.abs(y - other.y) <= mAllowedMargin
                     && compareParcelables(clipData, other.clipData)
                     && compareParcelables(clipDescription, other.clipDescription)
                     && localState == other.localState
@@ -268,6 +269,7 @@ public class DragDropTest extends WindowManagerTestBase {
             MotionEvent event = MotionEvent.obtain(downTime, downTime, action,
                     destLoc[0] * mInvCompatScale + offset, destLoc[1] * mInvCompatScale + offset,
                     1);
+            event.setDisplayId(mActivity.getDisplay().getDisplayId());
             event.setSource(InputDevice.SOURCE_MOUSE);
             mAutomation.injectInputEvent(event, false);
         });

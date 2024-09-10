@@ -23,12 +23,15 @@ import static junit.framework.Assert.assertTrue;
 import static junit.framework.Assert.fail;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.ActivityOptions;
 import android.app.Instrumentation;
 import android.app.NotificationManager;
 import android.app.cts.android.app.cts.tools.WatchUidRunner;
 import android.app.stubs.CommandReceiver;
 import android.app.stubs.LocalForegroundService;
+import android.app.stubs.ScreenOnActivity;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.ComponentName;
 import android.content.Context;
@@ -86,7 +89,8 @@ public class ActivityManagerFgsDelegateTest {
     private Context mContext;
     private Instrumentation mInstrumentation;
     private Context mTargetContext;
-    ActivityManager mActivityManager;
+    private ActivityManager mActivityManager;
+    private Activity mScreenOnActivity;
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -102,20 +106,27 @@ public class ActivityManagerFgsDelegateTest {
         // Press home key to ensure stopAppSwitches is called so the grace period of
         // the background start will be ignored if there's any.
         UiDevice.getInstance(mInstrumentation).pressHome();
+
+        // Allow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, true);
     }
 
     @After
     public void tearDown() throws Exception {
         cleanupResiduals();
+        if (mScreenOnActivity != null) {
+            mScreenOnActivity.finish();
+        }
     }
 
-    private void cleanupResiduals() {
+    private void cleanupResiduals() throws Exception {
         // Stop all the packages to avoid residual impact
-        for (int i = 0; i < PACKAGE_NAMES.length; i++) {
-            final String pkgName = PACKAGE_NAMES[i];
+        for (final String pkgName : PACKAGE_NAMES) {
             SystemUtil.runWithShellPermissionIdentity(() -> {
                 mActivityManager.forceStopPackage(pkgName);
             });
+            PermissionUtils.grantPermission(
+                    pkgName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
         }
         // Make sure we are in Home screen
         mInstrumentation.getUiAutomation().performGlobalAction(
@@ -144,6 +155,7 @@ public class ActivityManagerFgsDelegateTest {
         try {
             prepareProcess(uidWatcher);
 
+            allowBgFgsStart(PACKAGE_NAME_APP1, true);
             setForegroundServiceDelegate(PACKAGE_NAME_APP1, true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             dumpLines = CtsAppTestUtils.executeShellCmd(
@@ -180,6 +192,7 @@ public class ActivityManagerFgsDelegateTest {
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_CACHED_EMPTY);
         } finally {
             uidWatcher.finish();
+            allowBgFgsStart(PACKAGE_NAME_APP1, false);
         }
     }
 
@@ -228,35 +241,220 @@ public class ActivityManagerFgsDelegateTest {
         }
     }
 
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionAndNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testFgsDelegateFromActiveMediaSession() throws Exception {
+    public void testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToFgs()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
         WatchUidRunner uidWatcher = createUiWatcher();
         // Grant notification listener access in order to get MediaController for session
         toggleNotificationListenerAccess(true);
         try {
             prepareProcess(uidWatcher);
-            createActiveMediaSession();
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
             MediaController controller = getMediaControllerForActiveSession();
-
-            // Send "play" command and verify that the app moves to FGS state because
-            // MediaSessionService starts a foreground service delegate for this app.
             controller.getTransportControls().play();
+
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
-            controller.getTransportControls().pause();
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
 
-            // The foreground service delegate is stopped, go back to background service state.
-            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActiveStoppedMediaSessionAndNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_STOPPED);
 
-            // Start foreground service delegate again, the app goes to FGS state.
-            controller.getTransportControls().play();
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
 
-            // Stop foreground service delegate again, the app goes to background service state.
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithNonActivePlayingMediaSessionAndNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(
+                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionAndNoNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActiveStoppedMediaSessionWithMediaControllerAndNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
+            MediaController controller = getMediaControllerForActiveSession();
             controller.getTransportControls().stop();
-            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
         } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            sendCommandReceiverCommand(
+                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            controller.getTransportControls().play();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionWithMediaControllerAndNoNotificationIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            controller.getTransportControls().play();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActivePlayingMediaSessionAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
             cleanupResources(uidWatcher);
         }
     }
@@ -264,48 +462,221 @@ public class ActivityManagerFgsDelegateTest {
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testFgsDelegateFromInactiveMediaSession() throws Exception {
+    public void testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToBgGoesToFgs()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
         WatchUidRunner uidWatcher = createUiWatcher();
         // Grant notification listener access in order to get MediaController for session
         toggleNotificationListenerAccess(true);
         try {
             prepareProcess(uidWatcher);
-            createActiveMediaSession();
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
 
             MediaController controller = getMediaControllerForActiveSession();
-
-            // Send "play" command and verify that the app moves to FGS state because
-            // MediaSessionService starts a foreground service delegate for this app.
             controller.getTransportControls().play();
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActiveStoppedMediaSessionAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_STOPPED);
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithNonActivePlayingMediaSessionAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(
+                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActivePlayingMediaSessionAndNoNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_SET_MEDIA_SESSION_TO_PLAYING);
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActiveStoppedMediaSessionWithMediaControllerAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            controller.getTransportControls().stop();
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithNonActivePlayingMediaSessionWithMediaControllerAndNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            sendCommandReceiverCommand(
+                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            controller.getTransportControls().play();
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInFgWithActivePlayingMediaSessionWithMediaControllerAndNoNotificationGoesToBgIsStillInBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        startSubActivity(ScreenOnActivity.class);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            controller.getTransportControls().play();
+
+            UiDevice.getInstance(mInstrumentation).pressHome();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+        } finally {
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
+            cleanupResources(uidWatcher);
+        }
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @RequiresFlagsEnabled(
+            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
+    public void testAppInBgWithActivePlayingMediaSessionAndNoNotificationPausesItsSessionIsStillInFg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
+        WatchUidRunner uidWatcher = createUiWatcher();
+        // Grant notification listener access in order to get MediaController for session
+        toggleNotificationListenerAccess(true);
+        try {
+            prepareProcess(uidWatcher);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
+
+            MediaController controller = getMediaControllerForActiveSession();
+            controller.getTransportControls().play();
+
+            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
+
             controller.getTransportControls().pause();
 
-            Bundle bundle = new Bundle();
-            CountDownLatch deactivateMediaSessionLatch = new CountDownLatch(1);
-            bundle.putParcelable(
-                    Intent.EXTRA_REMOTE_CALLBACK,
-                    new RemoteCallback(result -> deactivateMediaSessionLatch.countDown()));
-
-            // Deactivate the media session
-            CommandReceiver.sendCommand(
-                    mContext,
-                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE,
-                    PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1,
-                    0 /* flags */,
-                    bundle);
-
-            assertTrue(
-                    "Timed out waiting for the test app to receive the "
-                            + "deactivate_media_session cmd",
-                    deactivateMediaSessionLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
-
-            // Send "play" command and verify that the app is still in the background state because
-            // the media session is not active.
-            controller.getTransportControls().play();
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         } finally {
-            // Release the media session
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
             cleanupResources(uidWatcher);
         }
     }
@@ -313,89 +684,32 @@ public class ActivityManagerFgsDelegateTest {
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testFgsDelegateFromInactiveMediaSessionInPlayingState() throws Exception {
+    public void testAppInBgWithActivePlayingMediaSessionAndNotificationPausesItsSessionAfterTimeoutGoesToBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
         WatchUidRunner uidWatcher = createUiWatcher();
         // Grant notification listener access in order to get MediaController for session
         toggleNotificationListenerAccess(true);
         try {
             prepareProcess(uidWatcher);
-            createActiveMediaSession();
-            MediaController controller = getMediaControllerForActiveSession();
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
 
-            // Send "play" command and verify that the app is still in the background state because
-            // the media session is not active.
+            MediaController controller = getMediaControllerForActiveSession();
             controller.getTransportControls().play();
+
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
 
-            Bundle bundle = new Bundle();
-            CountDownLatch deactivateMediaSessionLatch = new CountDownLatch(1);
-            bundle.putParcelable(
-                    Intent.EXTRA_REMOTE_CALLBACK,
-                    new RemoteCallback(result -> deactivateMediaSessionLatch.countDown()));
-
-            // Deactivate the media session
-            CommandReceiver.sendCommand(
-                    mContext,
-                    CommandReceiver.COMMAND_DEACTIVATE_MEDIA_SESSION_FGS_DELEGATE,
-                    PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1,
-                    0 /* flags */,
-                    bundle);
-
-            assertTrue(
-                    "Timed out waiting for the test app to receive the "
-                            + "deactivate_media_session cmd",
-                    deactivateMediaSessionLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
-
-            // The media session is deactivated, move to the background service state.
-            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
-        } finally {
-            // Release the media session
-            cleanupResources(uidWatcher);
-        }
-    }
-
-    @Test
-    @RequiresFlagsEnabled(
-            Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testFgsDelegateFromPausedMediaSession() throws Exception {
-        WatchUidRunner uidWatcher = createUiWatcher();
-        // Grant notification listener access in order to get MediaController for session
-        toggleNotificationListenerAccess(true);
-        try {
-            prepareProcess(uidWatcher);
-            createActiveMediaSession();
-            MediaController controller = getMediaControllerForActiveSession();
-
-            // Send "play" command and verify that the app is still in the background state because
-            // the media session is not active.
-            controller.getTransportControls().play();
-            uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
             controller.getTransportControls().pause();
 
-            Bundle bundle = new Bundle();
-            CountDownLatch activateMediaSessionLatch = new CountDownLatch(1);
-            bundle.putParcelable(
-                    Intent.EXTRA_REMOTE_CALLBACK,
-                    new RemoteCallback(result -> activateMediaSessionLatch.countDown()));
+            UiDevice.getInstance(mInstrumentation)
+                    .executeShellCommand("cmd media_session expire-temp-engaged-sessions");
 
-            // Activate the media session
-            CommandReceiver.sendCommand(
-                    mContext,
-                    CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE,
-                    PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1,
-                    0 /* flags */,
-                    bundle);
-
-            assertTrue(
-                    "Timed out waiting for the test app to receive the activate_media_session cmd",
-                    activateMediaSessionLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
-
-            // The media session is paused, move to the background service state.
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         } finally {
-            // Release the media session
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
             cleanupResources(uidWatcher);
         }
     }
@@ -403,43 +717,28 @@ public class ActivityManagerFgsDelegateTest {
     @Test
     @RequiresFlagsEnabled(
             Flags.FLAG_ENABLE_NOTIFYING_ACTIVITY_MANAGER_WITH_MEDIA_SESSION_STATUS_CHANGE)
-    public void testFgsDelegateReleaseActiveMediaSession() throws Exception {
+    public void testAppInBgWithActivePlayingMediaSessionAndNotificationReleaseItsSessionGoesToBg()
+            throws Exception {
+        // Disallow app1 to start FGS.
+        allowBgFgsStart(PACKAGE_NAME_APP1, false);
         WatchUidRunner uidWatcher = createUiWatcher();
         // Grant notification listener access in order to get MediaController for session
         toggleNotificationListenerAccess(true);
         try {
             prepareProcess(uidWatcher);
-            createActiveMediaSession();
-            MediaController controller = getMediaControllerForActiveSession();
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_ACTIVATE_MEDIA_SESSION_FGS_DELEGATE);
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_CREATE_MEDIA_NOTIFICATION);
 
-            // Send "play" command and verify that the app moves to FGS state because
-            // MediaSessionService starts a foreground service delegate for this app.
+            MediaController controller = getMediaControllerForActiveSession();
             controller.getTransportControls().play();
+
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
 
-            Bundle bundle = new Bundle();
-            CountDownLatch releaseMediaSessionLatch = new CountDownLatch(1);
-            bundle.putParcelable(
-                    Intent.EXTRA_REMOTE_CALLBACK,
-                    new RemoteCallback(result -> releaseMediaSessionLatch.countDown()));
+            sendCommandReceiverCommand(CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE);
 
-            // Release the media session
-            CommandReceiver.sendCommand(
-                    mContext,
-                    CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE,
-                    PACKAGE_NAME_APP1,
-                    PACKAGE_NAME_APP1,
-                    0 /* flags */,
-                    bundle);
-
-            assertTrue(
-                    "Timed out waiting for the test app to receive the release_media_session cmd",
-                    releaseMediaSessionLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
-
-            // The media session is released, move to the background service state.
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_SERVICE);
         } finally {
-            // Release the media session
             cleanupResources(uidWatcher);
         }
     }
@@ -453,19 +752,21 @@ public class ActivityManagerFgsDelegateTest {
         return uidWatcher;
     }
 
-    private void createActiveMediaSession() throws InterruptedException {
+    private void sendCommandReceiverCommand(int command) throws InterruptedException {
         Bundle bundle = new Bundle();
-        CountDownLatch startMediaPlaybackLatch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(1);
         bundle.putParcelable(
                 Intent.EXTRA_REMOTE_CALLBACK,
-                new RemoteCallback(result -> startMediaPlaybackLatch.countDown()));
-        CommandReceiver.sendCommand(mContext,
-                CommandReceiver.COMMAND_CREATE_ACTIVE_MEDIA_SESSION_FGS_DELEGATE,
-                PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0 /* flags */, bundle);
+                new RemoteCallback(
+                        result -> {
+                            latch.countDown();
+                        }));
+        CommandReceiver.sendCommand(
+                mContext, command, PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0 /* flags */, bundle);
 
         assertTrue(
-                "Timed out waiting for the test app to receive the start_media_playback cmd",
-                startMediaPlaybackLatch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
+                "Timed out waiting for the test app to receive the " + command + " cmd",
+                latch.await(WAITFOR_MSEC, TimeUnit.MILLISECONDS));
     }
 
     @Nullable
@@ -509,14 +810,6 @@ public class ActivityManagerFgsDelegateTest {
     }
 
     private void cleanupResources(WatchUidRunner uidWatcher) throws Exception {
-        // Release the media session
-        CommandReceiver.sendCommand(
-                mContext,
-                CommandReceiver.COMMAND_RELEASE_MEDIA_SESSION_FGS_DELEGATE,
-                PACKAGE_NAME_APP1,
-                PACKAGE_NAME_APP1,
-                0,
-                null);
         // Stop the background service
         CommandReceiver.sendCommand(mContext, CommandReceiver.COMMAND_STOP_SERVICE,
                 PACKAGE_NAME_APP1, PACKAGE_NAME_APP1, 0, null);
@@ -526,6 +819,40 @@ public class ActivityManagerFgsDelegateTest {
         SystemClock.sleep(10000);
     }
 
+    private <T extends Activity> void startSubActivity(Class<T> activityClass) {
+        startSubActivity(activityClass, null);
+    }
+
+    private <T extends Activity> void startSubActivity(
+            Class<T> activityClass,
+            ActivityOptions activityOptions) {
+        final Instrumentation.ActivityResult result = new Instrumentation.ActivityResult(0, new Intent());
+        final Instrumentation.ActivityMonitor monitor = new Instrumentation.ActivityMonitor(activityClass.getName(), result, false);
+        mInstrumentation.addMonitor(monitor);
+        mScreenOnActivity = launchActivity(STUB_PACKAGE_NAME, activityClass, activityOptions);
+    }
+
+    private <T extends Activity> T launchActivity(
+            String pkg,
+            Class<T> activityCls,
+            ActivityOptions activityOptions) {
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        return launchActivityWithIntent(pkg, activityCls, intent, activityOptions);
+    }
+
+    private <T extends Activity> T launchActivityWithIntent(
+            String pkg,
+            Class<T> activityCls,
+            Intent intent,
+            ActivityOptions activityOptions) {
+        intent.setClassName(pkg, activityCls.getName());
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        T activity = (T) mInstrumentation.startActivitySync(
+                intent, activityOptions == null ? null : activityOptions.toBundle());
+        mInstrumentation.waitForIdleSync();
+        return activity;
+    }
+
     @Test
     public void testFgsDelegateAfterForceStopPackage() throws Exception {
         WatchUidRunner uidWatcher = createUiWatcher();
@@ -533,6 +860,7 @@ public class ActivityManagerFgsDelegateTest {
         String[] dumpLines;
         try {
             prepareProcess(uidWatcher);
+            allowBgFgsStart(PACKAGE_NAME_APP1, true);
 
             setForegroundServiceDelegate(PACKAGE_NAME_APP1, true);
             uidWatcher.waitFor(WatchUidRunner.CMD_PROCSTATE, WatchUidRunner.STATE_FG_SERVICE);
@@ -551,6 +879,7 @@ public class ActivityManagerFgsDelegateTest {
             assertNull(CtsAppTestUtils.findLine(dumpLines, "isFgsDelegate=true"));
         } finally {
             uidWatcher.finish();
+            allowBgFgsStart(PACKAGE_NAME_APP1, false);
         }
     }
 
@@ -574,9 +903,13 @@ public class ActivityManagerFgsDelegateTest {
         if (allow) {
             PermissionUtils.grantPermission(
                     packageName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "cmd deviceidle whitelist +" + packageName);
         } else {
             PermissionUtils.revokePermission(
                     packageName, android.Manifest.permission.SYSTEM_ALERT_WINDOW);
+            CtsAppTestUtils.executeShellCmd(mInstrumentation,
+                    "cmd deviceidle whitelist -" + packageName);
         }
     }
 }

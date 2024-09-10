@@ -16,12 +16,17 @@
 
 package android.app.stubs;
 
+import android.app.ActivityManager;
+import android.app.ApplicationStartInfo;
+import android.app.Flags;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.Process;
 
-public class StubRemoteService extends Service{
+import java.util.List;
+
+public class StubRemoteService extends Service {
 
     @Override
     public void onCreate() {
@@ -41,14 +46,34 @@ public class StubRemoteService extends Service{
         public String getTimeZoneID() {
             return java.util.TimeZone.getDefault().getID();
         }
+
+        /**
+         * Checks the ApplicationStartInfo to see if the app had been force-stopped earlier
+         * and returns the start reason. Returns -1 if the app was not in a stopped state.
+         * @return the start reason, if previously stopped, -1 otherwise.
+         */
+        public int getWasForceStoppedReason() {
+            if (Flags.appStartInfo()) {
+                List<ApplicationStartInfo> startReasons =
+                        getSystemService(ActivityManager.class).getHistoricalProcessStartReasons(1);
+                if (startReasons != null && !startReasons.isEmpty()) {
+                    ApplicationStartInfo asi = startReasons.get(0);
+                    if (asi.wasForceStopped()) {
+                        return asi.getReason();
+                    }
+                }
+            }
+            return -1; // Wasn't force-stopped or don't have ApplicationStartInfo
+        }
     };
 
     @Override
     public IBinder onBind(Intent intent) {
-        if (ISecondary.class.getName().equals(intent.getAction())) {
+        final String action = intent.getAction();
+        if (action != null
+                && action.startsWith(ISecondary.class.getName())) {
             return mSecondaryBinder;
         }
         return null;
     }
-
 }

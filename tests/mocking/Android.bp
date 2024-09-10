@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsMockingTestCases",
+    team: "trendy_team_adte",
     defaults: ["cts_defaults"],
     libs: ["android.test.runner.stubs"],
     static_libs: [

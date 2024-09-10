@@ -16,9 +16,11 @@
 
 package android.os.cts;
 
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.AndroidTestCase;
 import android.os.cts.HardwareName;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class HardwareNameTest extends AndroidTestCase {
 
     @Override

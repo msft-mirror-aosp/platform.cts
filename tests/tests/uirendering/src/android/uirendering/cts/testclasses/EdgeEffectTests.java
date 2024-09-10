@@ -674,8 +674,7 @@ public class EdgeEffectTests extends ActivityTestBase {
     }
 
     /**
-     * This sleeps until the {@link AnimationUtils#currentAnimationTimeMillis()} and
-     * {@link AnimationUtils#getExpectedPresentationTimeNanos()} changes
+     * This sleeps until the {@link AnimationUtils#currentAnimationTimeMillis()} changes
      * by at least <code>durationMillis</code> milliseconds. This is useful for EdgeEffect because
      * it uses that mechanism to determine the animation duration.
      *
@@ -685,9 +684,7 @@ public class EdgeEffectTests extends ActivityTestBase {
      */
     private void sleepAnimationTime(long durationMillis) {
         AnimationUtils.lockAnimationClock(
-                AnimationUtils.currentAnimationTimeMillis() + durationMillis,
-                AnimationUtils.getExpectedPresentationTimeNanos()
-                    + (long) ((int) durationMillis * 1e6));
+                AnimationUtils.currentAnimationTimeMillis() + durationMillis);
     }
 
     private interface StretchVerifier {

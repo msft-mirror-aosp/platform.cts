@@ -25,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.ComponentName;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.SystemClock;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.text.TextUtils;
@@ -61,26 +61,20 @@ import java.util.concurrent.atomic.AtomicReference;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InProcessImeTest extends EndToEndImeTestBase {
-    private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
-
-    private static final String TEST_MARKER_PREFIX =
-            "android.view.inputmethod.cts.InProcessImeTest";
-
-    private static String getTestMarker() {
-        return TEST_MARKER_PREFIX + "/"  + SystemClock.elapsedRealtimeNanos();
-    }
+    private static final long TIMEOUT = TimeUnit.MINUTES.toMillis(1);
 
     private void enableInProcIme() {
+        final int userId = UserHandle.myUserId();
         final String inProcImeId = new ComponentName(
                 InstrumentationRegistry.getInstrumentation().getContext().getPackageName(),
                 InProcIme.class.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable " + inProcImeId);
-        SystemUtil.runShellCommandOrThrow("ime set " + inProcImeId);
+        SystemUtil.runShellCommandOrThrow("ime enable --user " + userId + " " + inProcImeId);
+        SystemUtil.runShellCommandOrThrow("ime set --user " + userId + " " + inProcImeId);
     }
 
     @After
     public final void resetIme() {
-        SystemUtil.runShellCommandOrThrow("ime reset");
+        SystemUtil.runShellCommandOrThrow("ime reset --user " + UserHandle.myUserId());
     }
 
     /**

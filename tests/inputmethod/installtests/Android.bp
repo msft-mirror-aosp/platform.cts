@@ -29,6 +29,7 @@ android_test {
     libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "CtsInputMethodServiceCommon",
+        "CtsMockInputMethodLib",
         "Harrier",
         "Nene",
         "TestApp",
@@ -56,6 +57,7 @@ android_test {
         ":CtsInputMethod1",
         ":CtsInputMethod2",
         ":CtsInputMethodStandaloneTestApp",
+        ":CtsMockInputMethod",
     ],
     per_testcase_directory: true,
 }

@@ -40,6 +40,7 @@ import android.platform.test.ravenwood.RavenwoodRule;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -74,6 +75,13 @@ public class CursorWrapperTest {
         if (mRavenwood.isUnderRavenwood()) return;
 
         setupDatabase();
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (mRavenwood.isUnderRavenwood()) return;
+
+        closeDatabase();
     }
 
     private Context getContext() {

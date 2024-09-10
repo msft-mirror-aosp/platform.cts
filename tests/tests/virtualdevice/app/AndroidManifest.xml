@@ -22,7 +22,7 @@
     * This permission is only used to trigger a permission request dialog in some test cases of
     * VirtualDevicePermissionTest. This app otherwise does not use this permission.
     -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <application>
         <activity android:name=".HomeActivity"

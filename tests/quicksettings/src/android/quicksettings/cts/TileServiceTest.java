@@ -156,10 +156,6 @@ public class TileServiceTest extends BaseTileServiceTest {
         assertEquals(subtitle,  tileState.getSecondaryLabel());
     }
 
-    private void clickTile(String componentName) throws Exception {
-        executeShellCommand(" cmd statusbar click-tile " + componentName);
-    }
-
     /**
      * Waits for the TileService to receive the clicked event. If it times out it fails the test.
      * @throws InterruptedException

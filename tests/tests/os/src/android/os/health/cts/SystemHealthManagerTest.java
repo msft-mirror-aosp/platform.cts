@@ -40,7 +40,20 @@ public class SystemHealthManagerTest extends InstrumentationTestCase {
         final Context context = getInstrumentation().getTargetContext();
         final SystemHealthManager healthy = context.getSystemService(SystemHealthManager.class);
 
-        Assert.assertNotNull(healthy.takeMyUidSnapshot());
+        // SystemHealthManager attempts to avoid making simultaneous calls to the backend, so the
+        // number of backend calls below is expected to be fewer than 10.
+        Thread[] threads = new Thread[10];
+        HealthStats[] results = new HealthStats[threads.length];
+        for (int i = 0; i < threads.length; i++) {
+            int index = i;
+            threads[index] = new Thread(() -> results[index] = healthy.takeMyUidSnapshot());
+            threads[index].start();
+        }
+
+        for (int i = 0; i < threads.length; i++) {
+            threads[i].join();
+            Assert.assertNotNull(results[i]);
+        }
     }
 
     /**
@@ -122,4 +135,3 @@ public class SystemHealthManagerTest extends InstrumentationTestCase {
         Assert.assertTrue(threw);
     }
 }
-

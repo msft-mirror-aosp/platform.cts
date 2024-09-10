@@ -4,6 +4,7 @@ package {
 
 cc_test {
     name: "ResourceObserverNativeTest",
+    team: "trendy_team_android_media_codec_framework",
 
     compile_multilib: "both",
     multilib: {

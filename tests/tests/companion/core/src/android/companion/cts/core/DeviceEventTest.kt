@@ -7,6 +7,7 @@ import android.companion.DevicePresenceEvent.EVENT_BT_DISCONNECTED
 import android.companion.Flags.FLAG_DEVICE_PRESENCE
 import android.companion.cts.common.MAC_ADDRESS_A
 import android.companion.cts.common.PrimaryCompanionService
+import android.companion.cts.common.assertDevicePresenceEvent
 import android.companion.cts.common.toUpperCaseString
 import android.os.SystemClock
 import android.platform.test.annotations.AppModeFull
@@ -32,6 +33,7 @@ import org.junit.runner.RunWith
 class DeviceEventTest : CoreTestBase() {
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
     @Test
     fun test_ble_device_event() {
         targetApp.associate(MAC_ADDRESS_A)
@@ -103,31 +105,23 @@ class DeviceEventTest : CoreTestBase() {
 
         simulateDeviceEvent(associationId, EVENT_BLE_APPEARED)
         PrimaryCompanionService.waitAssociationToAppear(associationId)
-        assertEquals(
-                expected = EVENT_BLE_APPEARED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BLE_APPEARED, it) }
 
         simulateDeviceEvent(associationId, EVENT_BT_CONNECTED)
         PrimaryCompanionService.waitAssociationToBtConnect(associationId)
-        assertEquals(
-                expected = EVENT_BT_CONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_CONNECTED, it) }
 
         simulateDeviceEvent(associationId, EVENT_BT_DISCONNECTED)
         PrimaryCompanionService.waitAssociationToBtDisconnect(associationId)
-        assertEquals(
-                expected = EVENT_BT_DISCONNECTED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BT_DISCONNECTED, it) }
 
         simulateDeviceEvent(associationId, EVENT_BLE_DISAPPEARED)
         PrimaryCompanionService.waitAssociationToDisappear(associationId)
-        assertEquals(
-                expected = EVENT_BLE_DISAPPEARED,
-                actual = PrimaryCompanionService.getCurrentEvent()
-        )
+        PrimaryCompanionService.getCurrentEvent()
+                ?.let { assertDevicePresenceEvent(EVENT_BLE_DISAPPEARED, it) }
 
         PrimaryCompanionService.forgetDevicePresence(associationId)
         withShellPermissionIdentity(Manifest.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE) {

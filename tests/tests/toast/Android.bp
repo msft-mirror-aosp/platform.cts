@@ -16,6 +16,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_notifications",
 }
 
 android_test {
@@ -28,6 +29,7 @@ android_test {
     static_libs: [
         "androidx.test.rules",
         "ctstestrunner-axt",
+        "compatibility-device-util-axt",
     ],
     srcs: ["src/**/*.java"],
     sdk_version: "current",

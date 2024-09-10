@@ -621,6 +621,24 @@ public class StaticMetadataTest extends Camera2AndroidTestCase {
         }
     }
 
+    /**
+     * Verifies that the output of {@link CameraCharacteristics#getKeys()} does not contain
+     * duplicates.
+     */
+    @Test
+    public void testCameraCharacteristicKeysAreUnique() throws Exception {
+        String[] cameraIds = getCameraIdsUnderTest();
+        for (String cameraId : cameraIds) {
+            StaticMetadata metadata = mAllStaticInfo.get(cameraId);
+            List<Key<?>> keys = metadata.getCharacteristics().getKeys();
+            Set<Key<?>> uniqueKeys = new HashSet<>(keys);
+            mCollector.expectEquals(
+                    "The list returned by CameraCharacteristics#getKeys() must only have unique "
+                            + "keys.",
+                    keys.size(), uniqueKeys.size());
+        }
+    }
+
     private float getFpsForMaxSize(String cameraId) throws Exception {
         HashMap<Size, Long> minFrameDurationMap =
                 mStaticInfo.getAvailableMinFrameDurationsForFormatChecked(ImageFormat.YUV_420_888);

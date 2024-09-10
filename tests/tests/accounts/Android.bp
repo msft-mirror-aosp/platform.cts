@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsAccountManagerTestCases",
+    team: "trendy_team_authentication",
     defaults: ["cts_defaults"],
     static_libs: [
         "CtsAccountTestsCommon",

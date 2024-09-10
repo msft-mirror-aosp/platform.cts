@@ -88,7 +88,8 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
     private static final Set<Activity> sVisibleActivities = new HashSet<>();
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         mInstrumentation = getInstrumentation();
         assertNotNull(mInstrumentation);
         mContext = getApplicationContext();
@@ -340,7 +341,7 @@ public class WindowManagerJetpackTestBase extends ActivityManagerTestBase {
         }
     }
 
-    private void resizeActivityTaskToSwitchOrientation(TestActivity activity) {
+    public void resizeActivityTaskToSwitchOrientation(TestActivity activity) {
         ComponentName activityName = activity.getComponentName();
         mWmState.computeState(activityName);
         final Rect boundsBeforeResize = mWmState.getTaskByActivity(activityName).getBounds();

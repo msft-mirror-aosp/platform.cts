@@ -67,6 +67,9 @@ android_test_helper_app {
         "androidx.legacy_legacy-support-v4",
         "androidx.test.rules",
         "cts-net-utils",
+        "collector-device-lib",
+        "cts_adpf_atom_common",
+        "flag-junit",
     ],
     jni_libs: [
         "liblmkhelper_statsdatom",

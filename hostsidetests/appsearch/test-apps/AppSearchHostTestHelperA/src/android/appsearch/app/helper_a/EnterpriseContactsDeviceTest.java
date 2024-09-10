@@ -78,8 +78,9 @@ public class EnterpriseContactsDeviceTest {
             ApplicationProvider.getApplicationContext().getPackageName();
     private static final String DATABASE_NAME = "contacts";
 
-    // This constant is hidden in SetSchemaRequest
+    // These constants are hidden in SetSchemaRequest
     private static final int ENTERPRISE_ACCESS = 7;
+    private static final int MANAGED_PROFILE_CONTACTS_ACCESS = 8;
 
     private EnterpriseGlobalSearchSessionShim mEnterpriseSession;
 
@@ -151,13 +152,27 @@ public class EnterpriseContactsDeviceTest {
 
     @Test
     public void setUpEnterpriseContacts() throws Exception {
-        setUpEnterpriseContactsWithPermissions(ImmutableSet.of(SetSchemaRequest.READ_CONTACTS,
-                ENTERPRISE_ACCESS));
+        // In production, contacts are guarded by READ_CONTACTS permission; however, not only is
+        // that unnecessary to include in a test scenario, but the permission-granting infra in
+        // these tests is unreliable, so we omit that here.
+        setUpEnterpriseContactsWithPermissions(ImmutableSet.of(ENTERPRISE_ACCESS));
     }
 
     @Test
     public void setUpEnterpriseContactsWithoutEnterprisePermissions() throws Exception {
-        setUpEnterpriseContactsWithPermissions(ImmutableSet.of(SetSchemaRequest.READ_CONTACTS));
+        // In production, contacts are guarded by READ_CONTACTS permission; however, not only is
+        // that unnecessary to include in a test scenario, but the permission-granting infra in
+        // these tests is unreliable, so we omit that here.
+        setUpEnterpriseContactsWithPermissions(ImmutableSet.of());
+    }
+
+    @Test
+    public void setUpEnterpriseContactsWithManagedPermission() throws Exception {
+        // In production, contacts are guarded by READ_CONTACTS permission; however, not only is
+        // that unnecessary to include in a test scenario, but the permission-granting infra in
+        // these tests is unreliable, so we omit that here.
+        setUpEnterpriseContactsWithPermissions(ImmutableSet.of(ENTERPRISE_ACCESS,
+                MANAGED_PROFILE_CONTACTS_ACCESS));
     }
 
     @Test
@@ -205,6 +220,7 @@ public class EnterpriseContactsDeviceTest {
                 mEnterpriseSession.getByDocumentIdAsync(
                         ApplicationProvider.getApplicationContext().getPackageName(),
                         DATABASE_NAME, getDocumentRequest).get();
+        //
         assertThat(getResult.isSuccess()).isTrue();
         GenericDocument document = getResult.getSuccesses().get("123");
         assertThat(document.getPropertyNames()).containsAtLeast(PERSON_PROPERTY_NAME,

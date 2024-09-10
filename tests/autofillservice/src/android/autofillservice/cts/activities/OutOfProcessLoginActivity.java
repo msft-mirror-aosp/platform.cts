@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Simple activity showing R.layout.login_activity. Started outside of the test process.
  */
-public class OutOfProcessLoginActivity extends Activity {
+public class OutOfProcessLoginActivity extends AbstractAutoFillActivity {
     private static final String TAG = "OutOfProcessLoginActivity";
 
     private static OutOfProcessLoginActivity sInstance;

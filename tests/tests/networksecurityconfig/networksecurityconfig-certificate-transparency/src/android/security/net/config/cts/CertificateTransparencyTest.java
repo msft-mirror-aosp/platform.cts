@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @RequiresFlagsEnabled(Flags.FLAG_CERTIFICATE_TRANSPARENCY_CONFIGURATION)
-public class CertificateTransparencyTest extends BaseTestCase {
+public class CertificateTransparencyTest {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();

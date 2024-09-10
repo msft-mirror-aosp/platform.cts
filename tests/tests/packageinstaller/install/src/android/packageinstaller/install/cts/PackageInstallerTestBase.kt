@@ -37,7 +37,9 @@ import android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION
 import android.content.pm.PackageInstaller.Session
 import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
+import android.platform.test.rule.ScreenRecordRule
 import android.provider.DeviceConfig
+import android.provider.Settings
 import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.test.InstrumentationRegistry
@@ -46,6 +48,8 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiObject2
+import androidx.test.uiautomator.UiScrollable
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import com.android.compatibility.common.util.DisableAnimationRule
 import com.android.compatibility.common.util.FutureResultActivity
@@ -85,7 +89,8 @@ open class PackageInstallerTestBase {
         const val PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE =
                 "is_update_ownership_enforcement_available"
 
-        const val TIMEOUT = 60000L
+        const val GLOBAL_TIMEOUT = 60000L
+        const val FIND_OBJECT_TIMEOUT = 1000L
         const val INSTALL_INSTANT_APP = 0x00000800
         const val INSTALL_REQUEST_UPDATE_OWNERSHIP = 0x02000000
 
@@ -99,10 +104,16 @@ open class PackageInstallerTestBase {
     @get:Rule
     val installDialogStarter = ActivityTestRule(FutureResultActivity::class.java)
 
+    @get:Rule
+    val screenRecordRule = ScreenRecordRule(
+        keepTestLevelRecordingOnSuccess = false,
+        waitExtraAfterEnd = false
+    )
+
     protected val pm: PackageManager = context.packageManager
     protected val pi = pm.packageInstaller
-    protected val uiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    private val apkFile = File(context.filesDir, TEST_APK_NAME)
+    protected val instrumentation = InstrumentationRegistry.getInstrumentation()
+    protected val uiDevice = UiDevice.getInstance(instrumentation)
 
     data class SessionResult(val status: Int?, val preapproval: Boolean?, val message: String?)
 
@@ -112,7 +123,7 @@ open class PackageInstallerTestBase {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val status = intent.getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID)
-            val preapproval = intent.getBooleanExtra(EXTRA_PRE_APPROVAL, false /* defaultValue */)
+            val preapproval = intent.getBooleanExtra(EXTRA_PRE_APPROVAL, false)
             val msg = intent.getStringExtra(EXTRA_STATUS_MESSAGE)
             Log.d(TAG, "status: $status, msg: $msg")
 
@@ -125,11 +136,6 @@ open class PackageInstallerTestBase {
 
             installSessionResult.offer(SessionResult(status, preapproval, msg))
         }
-    }
-
-    @Before
-    fun copyTestApk() {
-        File(TEST_APK_LOCATION, TEST_APK_NAME).copyTo(target = apkFile, overwrite = true)
     }
 
     @Before
@@ -151,8 +157,11 @@ open class PackageInstallerTestBase {
 
     @Before
     fun registerInstallResultReceiver() {
-        context.registerReceiver(receiver, IntentFilter(INSTALL_ACTION_CB),
-            Context.RECEIVER_EXPORTED)
+        context.registerReceiver(
+            receiver,
+            IntentFilter(INSTALL_ACTION_CB),
+            Context.RECEIVER_EXPORTED
+        )
     }
 
     @Before
@@ -168,29 +177,24 @@ open class PackageInstallerTestBase {
     /**
      * Wait for session's install result and return it
      */
-    protected fun getInstallSessionResult(timeout: Long = TIMEOUT): SessionResult {
+    protected fun getInstallSessionResult(timeout: Long = GLOBAL_TIMEOUT): SessionResult {
         return getInstallSessionResult(installSessionResult, timeout)
     }
 
     protected fun getInstallSessionResult(
         installResult: LinkedBlockingQueue<SessionResult>,
-        timeout: Long = TIMEOUT
+        timeout: Long = GLOBAL_TIMEOUT,
     ): SessionResult {
         return installResult.poll(timeout, TimeUnit.MILLISECONDS)
-            ?: SessionResult(null /* status */, null /* preapproval */, "Fail to poll result")
+            ?: SessionResult(null, null, "Fail to poll result")
     }
 
     protected fun startInstallationViaSessionNoPrompt() {
-        startInstallationViaSession(
-                0 /* installFlags */,
-                TEST_APK_NAME,
-                null /* packageSource */,
-                false /* expectedPrompt */
-        )
+        startInstallationViaSession(0, TEST_APK_NAME, null, false)
     }
 
     protected fun startInstallationViaSessionWithPackageSource(packageSource: Int?) {
-        startInstallationViaSession(0 /* installFlags */, TEST_APK_NAME, packageSource)
+        startInstallationViaSession(0, TEST_APK_NAME, packageSource)
     }
 
     protected fun createSession(
@@ -224,9 +228,8 @@ open class PackageInstallerTestBase {
     }
 
     protected fun writeSession(session: Session, apkName: String) {
-        val apkFile = File(context.filesDir, apkName)
         // Write data to session
-        apkFile.inputStream().use { fileOnDisk ->
+        File(TEST_APK_LOCATION, apkName).inputStream().use { fileOnDisk ->
             session.openWrite(apkName, 0, -1).use { sessionFile ->
                 fileOnDisk.copyTo(sessionFile)
             }
@@ -234,15 +237,19 @@ open class PackageInstallerTestBase {
     }
 
     protected fun commitSession(
-            session: Session,
-            expectedPrompt: Boolean = true,
-            needFuture: Boolean = false
+        session: Session,
+        expectedPrompt: Boolean = true,
+        needFuture: Boolean = false,
     ): CompletableFuture<Int>? {
         var intent = Intent(INSTALL_ACTION_CB)
                 .setPackage(context.getPackageName())
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         val pendingIntent = PendingIntent.getBroadcast(
-                context, 0 /* requestCode */, intent, FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
+            context,
+            0,
+            intent,
+            FLAG_UPDATE_CURRENT or FLAG_MUTABLE
+        )
 
         var dialog: CompletableFuture<Int>? = null
 
@@ -271,7 +278,7 @@ open class PackageInstallerTestBase {
     protected fun startRequestUserPreapproval(
         session: Session,
         details: PreapprovalDetails,
-        expectedPrompt: Boolean = true
+        expectedPrompt: Boolean = true,
     ) {
         // In some abnormal cases, passing expectedPrompt as false to return immediately without
         // waiting for timeout (60 secs).
@@ -288,9 +295,12 @@ open class PackageInstallerTestBase {
     }
 
     private fun requestSession(session: Session, details: PreapprovalDetails) {
-        val pendingIntent = PendingIntent.getBroadcast(context, 0 /* requestCode */,
-                Intent(INSTALL_ACTION_CB).setPackage(context.packageName),
-                FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(INSTALL_ACTION_CB).setPackage(context.packageName),
+            FLAG_UPDATE_CURRENT or FLAG_MUTABLE
+        )
         session.requestUserPreapproval(details, pendingIntent.intentSender)
     }
 
@@ -300,7 +310,7 @@ open class PackageInstallerTestBase {
         packageSource: Int? = null,
         expectedPrompt: Boolean = true,
         needFuture: Boolean = false,
-        paramsBlock: (PackageInstaller.SessionParams) -> Unit = {}
+        paramsBlock: (PackageInstaller.SessionParams) -> Unit = {},
     ): CompletableFuture<Int>? {
         val (_, session) = createSession(installFlags, false, packageSource, paramsBlock)
         writeSession(session, apkName)
@@ -308,9 +318,9 @@ open class PackageInstallerTestBase {
     }
 
     protected fun writeAndCommitSession(
-            apkName: String,
-            session: Session,
-            expectedPrompt: Boolean = true
+        apkName: String,
+        session: Session,
+        expectedPrompt: Boolean = true,
     ) {
         writeSession(session, apkName)
         commitSession(session, expectedPrompt)
@@ -319,7 +329,7 @@ open class PackageInstallerTestBase {
     protected fun startInstallationViaMultiPackageSession(
         installFlags: Int,
         vararg apkNames: String,
-        needFuture: Boolean = false
+        needFuture: Boolean = false,
     ): CompletableFuture<Int>? {
         val (sessionId, session) = createSession(installFlags, true, null)
         for (apkName in apkNames) {
@@ -331,15 +341,20 @@ open class PackageInstallerTestBase {
     }
 
     /**
-     * Start an installation via an Intent
+     * Start an installation via an Intent. By default, it uses an intent to install
+     * the `CtsEmptyTestApp`
      */
     protected fun startInstallationViaIntent(
-            intent: Intent = getInstallationIntent()
+        intent: Intent = getInstallationIntent(),
     ): CompletableFuture<Int> {
         return installDialogStarter.activity.startActivityForResult(intent)
     }
 
-    protected fun getInstallationIntent(): Intent {
+    protected fun getInstallationIntent(apkName: String = TEST_APK_NAME): Intent {
+        val apkFile = File(context.filesDir, apkName)
+        if (!apkFile.exists()) {
+            File(TEST_APK_LOCATION, apkName).copyTo(target = apkFile, overwrite = true)
+        }
         val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
         intent.data = FileProvider.getUriForFile(context, CONTENT_AUTHORITY, apkFile)
         intent.flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
@@ -349,29 +364,36 @@ open class PackageInstallerTestBase {
     }
 
     protected fun startInstallationViaPreapprovalSession(session: Session) {
-        val pendingIntent = PendingIntent.getBroadcast(context, 0 /* requestCode */,
-                Intent(INSTALL_ACTION_CB).setPackage(context.packageName),
-                FLAG_UPDATE_CURRENT or FLAG_MUTABLE)
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            0,
+            Intent(INSTALL_ACTION_CB).setPackage(context.packageName),
+            FLAG_UPDATE_CURRENT or FLAG_MUTABLE
+        )
         session.commit(pendingIntent.intentSender)
     }
 
     fun assertInstalled(
-        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0)
+        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
     ): PackageInfo {
         // Throws exception if package is not installed.
         return pm.getPackageInfo(TEST_APK_PACKAGE_NAME, flags)
     }
 
-    fun assertInstalled(packageName: String,
+    fun assertInstalled(
+        packageName: String,
         flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
     ): PackageInfo {
         // Throws exception if package is not installed.
         return pm.getPackageInfo(packageName, flags)
     }
 
-    fun assertNotInstalled() {
+    fun assertNotInstalled(
+        packageName: String = TEST_APK_PACKAGE_NAME,
+        flags: PackageManager.PackageInfoFlags = PackageManager.PackageInfoFlags.of(0),
+    ) {
         try {
-            pm.getPackageInfo(TEST_APK_PACKAGE_NAME, PackageManager.PackageInfoFlags.of(0))
+            pm.getPackageInfo(packageName, flags)
             Assert.fail("Package should not be installed")
         } catch (expected: PackageManager.NameNotFoundException) {
         }
@@ -386,13 +408,21 @@ open class PackageInstallerTestBase {
         clickInstallerUIButton(getBySelector(resId))
     }
 
-    private fun getBySelector(id: String): BySelector {
+    fun getBySelector(id: String): BySelector {
         // Normally, we wouldn't need to look for buttons from 2 different packages.
         // However, to fix b/297132020, AlertController was replaced with AlertDialog and shared
         // to selective partners, leading to fragmentation in which button surfaces in an OEM's
         // installer app.
-        return By.res(Pattern.compile(String.format(
-                    "(?:^%s|^%s):id/%s", PACKAGE_INSTALLER_PACKAGE_NAME, SYSTEM_PACKAGE_NAME, id)))
+        return By.res(
+            Pattern.compile(
+                String.format(
+                    "(?:^%s|^%s):id/%s",
+                    PACKAGE_INSTALLER_PACKAGE_NAME,
+                    SYSTEM_PACKAGE_NAME,
+                    id
+                )
+            )
+        )
     }
 
     /**
@@ -401,20 +431,29 @@ open class PackageInstallerTestBase {
      * @param bySelector The bySelector of the button to click
      */
     fun clickInstallerUIButton(bySelector: BySelector) {
+        // Wait for a minimum 2000ms and maximum 10000ms for the UI to become idle.
+        instrumentation.uiAutomation.waitForIdle(
+            (2 * FIND_OBJECT_TIMEOUT),
+            (10 * FIND_OBJECT_TIMEOUT)
+        )
+
         var button: UiObject2? = null
         val startTime = System.currentTimeMillis()
-        while (startTime + TIMEOUT > System.currentTimeMillis()) {
+        while (startTime + GLOBAL_TIMEOUT > System.currentTimeMillis()) {
             try {
-                button = uiDevice.wait(Until.findObject(bySelector), 1000)
+                button = uiDevice.wait(Until.findObject(bySelector), FIND_OBJECT_TIMEOUT)
                 if (button != null) {
-                    Log.d(TAG, "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
+                    Log.d(
+                        TAG,
+                        "Found bounds: ${button.getVisibleBounds()} of button $bySelector," +
                             " text: ${button.getText()}," +
-                            " package: ${button.getApplicationPackage()}")
+                            " package: ${button.getApplicationPackage()}"
+                    )
                     button.click()
                     return
                 } else {
-                    // Maybe the screen is small. Swipe down and attempt to click
-                    swipeDown()
+                    // Maybe the screen is small. Scroll forward and attempt to click
+                    scroll()
                 }
             } catch (ignore: Throwable) {
             }
@@ -422,12 +461,8 @@ open class PackageInstallerTestBase {
         Assert.fail("Failed to click the button: $bySelector")
     }
 
-    private fun swipeDown() {
-        // Perform a swipe from the center of the screen to the top of the screen.
-        // Higher the "steps" value, slower is the swipe
-        val centerX = uiDevice.displayWidth / 2
-        val centerY = uiDevice.displayHeight / 2
-        uiDevice.swipe(centerX, centerY, centerX, 0, 10)
+    private fun scroll() {
+        UiScrollable(UiSelector().scrollable(true)).scrollForward()
     }
 
     /**
@@ -438,8 +473,14 @@ open class PackageInstallerTestBase {
     }
 
     fun setSecureFrp(secureFrp: Boolean) {
-        uiDevice.executeShellCommand("settings " +
-                "put global secure_frp_mode ${if (secureFrp) 1 else 0}")
+        uiDevice.executeShellCommand(
+            "settings " +
+                "put global secure_frp_mode ${if (secureFrp) 1 else 0}"
+        )
+        Assert.assertEquals(
+            if (secureFrp) 1 else 0,
+            Settings.Global.getInt(context.contentResolver, Settings.Global.SECURE_FRP_MODE)
+        )
     }
 
     @After
@@ -466,8 +507,10 @@ open class PackageInstallerTestBase {
 
     fun installPackage(apkName: String, extraArgs: String = "") {
         Log.d(TAG, "installPackage(): apkName=$apkName, extraArgs='$extraArgs'")
-        uiDevice.executeShellCommand("pm install $extraArgs " +
-                File(TEST_APK_LOCATION, apkName).canonicalPath)
+        uiDevice.executeShellCommand(
+            "pm install $extraArgs " +
+                File(TEST_APK_LOCATION, apkName).canonicalPath
+        )
     }
 
     fun getDeviceProperty(name: String): String? {
@@ -478,8 +521,12 @@ open class PackageInstallerTestBase {
 
     fun setDeviceProperty(name: String, value: String?) {
         SystemUtil.callWithShellPermissionIdentity {
-            DeviceConfig.setProperty(DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE, name, value,
-                    false /* makeDefault */)
+            DeviceConfig.setProperty(
+                DeviceConfig.NAMESPACE_PACKAGE_MANAGER_SERVICE,
+                name,
+                value,
+                false
+            )
         }
     }
 }

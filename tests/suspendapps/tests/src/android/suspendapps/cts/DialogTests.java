@@ -87,13 +87,7 @@ public class DialogTests {
     @Test
     @ScreenRecordRule.ScreenRecord
     public void testInterceptorActivity_unsuspend() throws Exception {
-        final SuspendDialogInfo dialogInfo = new SuspendDialogInfo.Builder()
-                .setIcon(R.drawable.ic_settings)
-                .setTitle(R.string.dialog_title)
-                .setMessage(R.string.dialog_message)
-                .setNeutralButtonText(R.string.unsuspend_button_text)
-                .setNeutralButtonAction(BUTTON_ACTION_UNSUSPEND)
-                .build();
+        final SuspendDialogInfo dialogInfo = makeDialogInfoWithUnsuspendButton();
         SuspendTestUtils.suspend(null, null, dialogInfo);
         // Ensure test app's activity is stopped before proceeding.
         assertTrue(mTestAppInterface.awaitTestActivityStop());
@@ -104,25 +98,7 @@ public class DialogTests {
         assertNull("Test activity started while suspended",
                 mTestAppInterface.awaitTestActivityStart(5_000));
 
-        final String expectedTitle = mContext.getResources().getString(R.string.dialog_title);
-        final String expectedButtonText = mContext.getResources().getString(
-                R.string.unsuspend_button_text);
-
-        assertNotNull("Given dialog title \"" + expectedTitle + "\" not shown",
-                mUiDevice.wait(Until.findObject(By.text(expectedTitle)), UI_TIMEOUT_MS));
-
-        // Sometimes, button texts can have styles that override case (e.g. b/134033532)
-        final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
-                Pattern.CASE_INSENSITIVE);
-        final UiObject2 unsuspendButton = mUiDevice.findObject(
-                By.clickable(true).text(buttonTextIgnoreCase));
-        assertNotNull("\"" + expectedButtonText + "\" button not shown", unsuspendButton);
-
-        // Tapping on the neutral button should:
-        // 1. Tell the suspending package that the test app was unsuspended
-        // 2. Launch the previously intercepted intent
-        // 3. Unsuspend the test app
-        unsuspendButton.click();
+        verifyDialogAndPressUnsuspend(mContext, mUiDevice);
 
         final Intent incomingIntent = sIncomingIntent.poll(30, TimeUnit.SECONDS);
         assertNotNull(incomingIntent);
@@ -134,6 +110,38 @@ public class DialogTests {
         assertNotNull("Test activity did not start on neutral button tap", activityIntent);
         // TODO(b/237707107): Verify that activityIntent has the expected extras.
         assertFalse("Test package still suspended", mTestAppInterface.isTestAppSuspended());
+    }
+
+    public static SuspendDialogInfo makeDialogInfoWithUnsuspendButton() {
+        return new SuspendDialogInfo.Builder()
+                .setIcon(R.drawable.ic_settings)
+                .setTitle(R.string.dialog_title)
+                .setMessage(R.string.dialog_message)
+                .setNeutralButtonText(R.string.unsuspend_button_text)
+                .setNeutralButtonAction(BUTTON_ACTION_UNSUSPEND)
+                .build();
+    }
+
+    public static void verifyDialogAndPressUnsuspend(Context context, UiDevice uiDevice) {
+        final String expectedTitle = context.getResources().getString(R.string.dialog_title);
+        final String expectedButtonText = context.getResources().getString(
+                R.string.unsuspend_button_text);
+
+        assertNotNull("Given dialog title \"" + expectedTitle + "\" not shown",
+                uiDevice.wait(Until.findObject(By.text(expectedTitle)), UI_TIMEOUT_MS));
+
+        // Sometimes, button texts can have styles that override case (e.g. b/134033532)
+        final Pattern buttonTextIgnoreCase = Pattern.compile(Pattern.quote(expectedButtonText),
+                Pattern.CASE_INSENSITIVE);
+        final UiObject2 unsuspendButton = uiDevice.findObject(
+                By.clickable(true).text(buttonTextIgnoreCase));
+        assertNotNull("\"" + expectedButtonText + "\" button not shown", unsuspendButton);
+
+        // Tapping on the neutral button should:
+        // 1. Tell the suspending package that the test app was unsuspended
+        // 2. Launch the previously intercepted intent
+        // 3. Unsuspend the test app
+        unsuspendButton.click();
     }
 
     @Test

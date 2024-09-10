@@ -38,11 +38,11 @@ import android.view.SurfaceControlViewHost.SurfacePackage;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.cts.surfacevalidator.BitmapPixelChecker;
-import android.view.cts.surfacevalidator.IAttachEmbeddedWindow;
+import android.view.cts.util.aidl.IAttachEmbeddedWindow;
 import android.window.SurfaceSyncGroup;
 
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.SystemUtil;
 
@@ -59,8 +59,8 @@ public class SurfaceSyncGroupTests {
     private static final String TAG = "SurfaceSyncGroupTests";
 
     @Rule
-    public ActivityTestRule<SurfaceSyncGroupActivity> mActivityRule = new ActivityTestRule<>(
-            SurfaceSyncGroupActivity.class);
+    public ActivityScenarioRule<SurfaceSyncGroupActivity> mActivityRule =
+            new ActivityScenarioRule<>(SurfaceSyncGroupActivity.class);
 
     private SurfaceSyncGroupActivity mActivity;
 
@@ -70,7 +70,7 @@ public class SurfaceSyncGroupTests {
 
     @Before
     public void setup() {
-        mActivity = mActivityRule.getActivity();
+        mActivityRule.getScenario().onActivity(activity -> mActivity = activity);
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         // One of the tests purposely crashes so disable showing the crash dialog to avoid breaking
         // tests later on.

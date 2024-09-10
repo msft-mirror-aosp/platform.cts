@@ -28,11 +28,6 @@
         <activity android:name=".ApplyOverrideConfigurationActivity"
                   android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout" />
 
-        <activity android:name=".PictureInPictureActivity"
-                  android:resizeableActivity="false"
-                  android:supportsPictureInPicture="true"
-                  android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout" />
-
         <activity android:name=".ShareIdentityTest$ShareIdentityTestActivity"
                   android:exported="true" />
 

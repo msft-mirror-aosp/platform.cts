@@ -39,6 +39,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @EnsureHasUserAnnotation("android.os.usertype.full.SECONDARY")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasSecondaryUser {
     /** Whether the instrumented test app should be installed in the secondary user. */
     OptionalBoolean installInstrumentedApp() default ANY;

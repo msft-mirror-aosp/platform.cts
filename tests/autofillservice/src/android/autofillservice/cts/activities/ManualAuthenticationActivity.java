@@ -16,7 +16,6 @@
 
 package android.autofillservice.cts.activities;
 
-import android.app.Activity;
 import android.app.assist.AssistStructure;
 import android.autofillservice.cts.R;
 import android.autofillservice.cts.testcore.CannedFillResponse;
@@ -29,7 +28,7 @@ import android.view.autofill.AutofillManager;
 /**
  * An activity that authenticates on button press
  */
-public class ManualAuthenticationActivity extends Activity {
+public class ManualAuthenticationActivity extends AbstractAutoFillActivity {
     private static CannedFillResponse sResponse;
     private static CannedFillResponse.CannedDataset sDataset;
 

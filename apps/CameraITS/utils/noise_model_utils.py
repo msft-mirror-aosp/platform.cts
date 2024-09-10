@@ -33,6 +33,7 @@ _OUTLIER_MEDIAN_ABS_DEVS_DEFAULT = (
     noise_model_constants.OUTLIER_MEDIAN_ABS_DEVS_DEFAULT
 )
 
+
 def _check_auto_exposure_targets(
     auto_exposure_ns: float,
     sens_min: int,

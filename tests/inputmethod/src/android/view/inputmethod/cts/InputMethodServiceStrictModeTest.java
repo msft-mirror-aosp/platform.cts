@@ -20,6 +20,7 @@ import static android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VI
 
 import static com.android.cts.mockime.ImeEventStreamTestUtils.EventFilterMode.CHECK_ALL;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.clearAllEvents;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.eventMatcher;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectCommand;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
@@ -123,7 +124,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
 
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
 
             final ImeEventStream forkedStream = clearAllEvents(stream, "onStrictModeViolated");
             switch (mode) {
@@ -141,7 +142,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
                     // do nothing here.
                     break;
             }
-            notExpectEvent(stream, event -> "onStrictModeViolated".equals(event.getEventName()),
+            notExpectEvent(stream, eventMatcher("onStrictModeViolated"),
                     EXPECTED_TIMEOUT);
         }
     }
@@ -159,7 +160,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
 
             createTestActivity(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-            expectEvent(stream, event -> "onStartInput".equals(event.getEventName()), TIMEOUT);
+            expectEvent(stream, eventMatcher("onStartInput"), TIMEOUT);
 
             // Verify if obtaining a WindowManager on an InputMethodService derived display context
             // throws a strict mode violation.
@@ -167,7 +168,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
             expectCommand(forkedStream, imeSession.callVerifyGetWindowManagerOnDisplayContext(),
                     TIMEOUT);
 
-            expectEvent(stream, event -> "onStrictModeViolated".equals(event.getEventName()),
+            expectEvent(stream, eventMatcher("onStrictModeViolated"),
                     CHECK_ALL, TIMEOUT);
 
             // Verify if obtaining a ViewConfiguration on an InputMethodService derived display
@@ -176,7 +177,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
             expectCommand(forkedStream, imeSession.callVerifyGetViewConfigurationOnDisplayContext(),
                     TIMEOUT);
 
-            expectEvent(stream, event -> "onStrictModeViolated".equals(event.getEventName()),
+            expectEvent(stream, eventMatcher("onStrictModeViolated"),
                     CHECK_ALL, TIMEOUT);
 
             // Verify if obtaining a GestureDetector on an InputMethodService derived display
@@ -185,7 +186,7 @@ public class InputMethodServiceStrictModeTest extends EndToEndImeTestBase {
             expectCommand(forkedStream, imeSession.callVerifyGetGestureDetectorOnDisplayContext(),
                     TIMEOUT);
 
-            expectEvent(stream, event -> "onStrictModeViolated".equals(event.getEventName()),
+            expectEvent(stream, eventMatcher("onStrictModeViolated"),
                     CHECK_ALL, TIMEOUT);
         }
     }

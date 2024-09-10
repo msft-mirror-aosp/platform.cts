@@ -19,8 +19,10 @@ package com.android.cts.verifier.audio;
 import android.media.AudioDeviceInfo;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.TextView;
 
 import com.android.cts.verifier.R;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
 
 // MegaAudio
 import org.hyphonate.megaaudio.player.AudioSourceProvider;
@@ -31,6 +33,8 @@ import org.hyphonate.megaaudio.recorder.sinks.AppCallbackAudioSinkProvider;
 public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
     private static final String TAG = "AudioDataPathsAnalogActivity";
 
+    private boolean mHeadsetSupport;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setContentView(R.layout.audio_datapaths_analog);
@@ -39,11 +43,12 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
         setInfoResources(
                 R.string.audio_datapaths_analog_test, R.string.audio_datapaths_analog_info, -1);
 
-        // Make sure there are devices to test (as in a device without an analog port),
-        // or else enable pass button.
-        if (mTestManager.countValidTestModules() == 0) {
-            getPassButton().setEnabled(true);
-        }
+        boolean canRunTest =
+                AudioDeviceUtils.supportsAnalogHeadset(this) != AudioDeviceUtils.SUPPORTSDEVICE_NO;
+
+        enableTestButtons(canRunTest);
+
+        getPassButton().setEnabled(passBtnEnabled());
     }
 
     void gatherTestModules(TestManager testManager) {
@@ -74,15 +79,35 @@ public class AudioDataPathsAnalogActivity extends AudioDataPathsBaseActivity {
     }
 
     void postValidateTestDevices(int numValidTestModules) {
-        View promptView = findViewById(R.id.audio_datapaths_deviceprompt);
+        TextView promptView = (TextView) findViewById(R.id.audio_datapaths_deviceprompt);
         if (mIsHandheld) {
-            if (mTestManager.calculatePass()) {
-                promptView.setVisibility(View.GONE);
+            int headsetSupport = AudioDeviceUtils.supportsAnalogHeadset(this);
+            if (headsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_YES) {
+                if (mTestManager.calculatePass()) {
+                    promptView.setVisibility(View.GONE);
+                } else {
+                    promptView.setVisibility(numValidTestModules == 0 ? View.VISIBLE : View.GONE);
+                }
+                mHeadsetSupport = true;
+            } else if (headsetSupport == AudioDeviceUtils.SUPPORTSDEVICE_NO) {
+                promptView.setText(
+                        getResources().getString(R.string.audio_datapaths_analog_noanalogjack));
+                mHeadsetSupport = false;
             } else {
-                promptView.setVisibility(numValidTestModules == 0 ? View.VISIBLE : View.GONE);
+                // AudioDeviceUtils.SUPPORTSDEVICE_UNDETERMINED
+                promptView.setText(getResources().getString(
+                        R.string.audio_datapaths_analog_headsetundetermined));
+                mHeadsetSupport = false; // until proven otherwise
             }
+
         } else {
-            promptView.setVisibility(View.GONE);
+            promptView.setText(getResources().getString(R.string.audio_datapaths_analog_autopass));
         }
+
+        enableTestButtons(numValidTestModules != 0);
+    }
+
+    protected boolean hasPeripheralSupport() {
+        return mHeadsetSupport;
     }
 }

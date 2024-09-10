@@ -18,6 +18,8 @@ package android.assist.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
 import android.graphics.Color;
@@ -58,6 +60,10 @@ public class ScreenshotTest extends AssistTestBase {
             return;
         }
 
+        //TODO(b/340333294): auto devices might not provide 60% of the screen to the apps. Need
+        //to check the requirements and update in cdd.
+        assumeIsNotAutomotive();
+
         startTest(TEST_CASE_TYPE);
         waitForAssistantToBeReady();
 
@@ -81,5 +87,9 @@ public class ScreenshotTest extends AssistTestBase {
         extras.putInt(Utils.SCREENSHOT_COLOR_KEY, color);
         final AutoResetLatch latch = startSession(TEST_CASE_TYPE, extras);
         waitForContext(latch);
+    }
+
+    private void assumeIsNotAutomotive() {
+        assumeFalse("Test not supported in automotive", Utils.isAutomotive(mContext));
     }
 }

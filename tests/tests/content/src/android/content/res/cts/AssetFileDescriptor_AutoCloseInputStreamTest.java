@@ -18,26 +18,46 @@ package android.content.res.cts;
 
 import static android.system.OsConstants.S_ISFIFO;
 
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.assertTrue;
+import static junit.framework.TestCase.fail;
+
+import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.os.ParcelFileDescriptor;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.system.Os;
 import android.system.StructStat;
-import android.test.AndroidTestCase;
 import android.test.MoreAsserts;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
-public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCase {
+@RunWith(AndroidJUnit4.class)
+public class AssetFileDescriptor_AutoCloseInputStreamTest {
+    private Context getContext() {
+        return InstrumentationRegistry.getInstrumentation().getTargetContext();
+    }
+
     private static final int FILE_END = -1;
     private static final String FILE_NAME = "testAssertFileDescriptorAutoCloseInputStream";
     private static final byte[] FILE_DATA = new byte[]{
@@ -50,18 +70,16 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
     private AssetFileDescriptor mFd;
     private AssetFileDescriptor.AutoCloseInputStream mInput;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         mFile = new File(getContext().getFilesDir(), FILE_NAME);
         FileOutputStream outputStream = new FileOutputStream(mFile);
         outputStream.write(FILE_DATA);
         outputStream.close();
     }
 
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
+    @After
+    public void tearDown() throws Exception {
         if (mFd != null) {
             mFd.close();
             mFd = null;
@@ -69,6 +87,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         mFile.delete();
     }
 
+    @Test
     public void testSkip() throws IOException {
         openInput(0, FILE_LENGTH);
         assertEquals(FILE_DATA[0], mInput.read());
@@ -80,6 +99,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read());
     }
 
+    @Test
     public void testRead() throws IOException {
         openInput(0, FILE_LENGTH);
         for (int i = 0; i < FILE_LENGTH; i++) {
@@ -88,6 +108,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read());
     }
 
+    @Test
     public void testReadPartial() throws IOException {
         long len = 6;
         openInput(0, len);
@@ -97,6 +118,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read());
     }
 
+    @Test
     public void testReadBufferLen() throws IOException {
         openInput(0, FILE_LENGTH);
         byte[] buf = new byte[FILE_LENGTH];
@@ -107,6 +129,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read(buf, 0, 4));
     }
 
+    @Test
     public void testReadBuffer() throws IOException {
         openInput(0, FILE_LENGTH);
         byte[] buf = new byte[6];
@@ -117,6 +140,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read(buf));
     }
 
+    @Test
     public void testReadBufferPartial() throws IOException {
         long len = 8;
         openInput(0, len);
@@ -128,6 +152,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read(buf));
     }
 
+    @Test
     public void testAvailableRead() throws IOException {
         openInput(0, FILE_LENGTH);
         assertEquals(FILE_LENGTH, mInput.available());
@@ -135,6 +160,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_LENGTH - 1, mInput.available());
     }
 
+    @Test
     public void testAvailableReadBuffer() throws IOException {
         openInput(0, FILE_LENGTH);
         byte[] buf = new byte[3];
@@ -143,6 +169,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_LENGTH - buf.length, mInput.available());
     }
 
+    @Test
     public void testAvailableReadBufferLen() throws IOException {
         openInput(0, FILE_LENGTH);
         byte[] buf = new byte[3];
@@ -154,6 +181,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
     /*
      * Tests that AutoInputStream doesn't support mark().
      */
+    @Test
     public void testMark() throws IOException {
         openInput(0, FILE_LENGTH);
         assertFalse(mInput.markSupported());
@@ -164,6 +192,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_DATA[2], mInput.read());
     }
 
+    @Test
     public void testTwoFileDescriptorsWorkIndependently() throws IOException {
         openInput(0, FILE_LENGTH);
 
@@ -182,6 +211,32 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(FILE_END, mInput.read());
     }
 
+    @Test
+    public void testReadZeroByte() throws IOException {
+        openInput(0, FILE_LENGTH);
+        byte[] buf = new byte[1];
+        assertEquals(FILE_LENGTH, mInput.available());
+        assertEquals(0, mInput.read(buf, 0, 0));
+        assertEquals(FILE_LENGTH, mInput.available());
+    }
+
+    @Test
+    public void testReadLargeBytes() throws IOException {
+        final int writeSize = 1_000_000;
+        mFile = new File(getContext().getFilesDir(), FILE_NAME);
+        try (OutputStream out =
+                     new BufferedOutputStream(new FileOutputStream(mFile))) {
+            for (int i = 0; i < writeSize; i++) {
+                out.write(i % 256);
+            }
+        }
+
+        openInput(0, writeSize);
+
+        assertEquals(writeSize, mFd.getLength());
+        assertEquals(writeSize, mInput.readAllBytes().length);
+    }
+
     private void openInput(long startOffset, long length)
             throws IOException {
         if (mFd != null) {
@@ -198,6 +253,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
      * Tests that AutoInputStream is returning customized File Channel of getChannel(),
      * which could help update the channel position.
      */
+    @Test
     public void testGetChannel() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         input.skip(2);
@@ -206,12 +262,14 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(3, fc.position());
     }
 
+    @Test
     public void testOffsetCorrectFileChannelSize() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
         assertEquals(fc.size(), FILE_LENGTH);
     }
 
+    @Test
     public void testOffsetCorrectFileChannelReadBuffer() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -230,6 +288,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(startPosition + bufferSize, fc.position());
     }
 
+    @Test
     public void testOffsetCorrectFileChannelReadBuffers() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -247,6 +306,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(startPosition + bufferSize, fc.position());
     }
 
+    @Test
     public void testOffsetCorrectFileChannelReadBufferFromPosition() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -263,6 +323,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(startPosition, fc.position());
     }
 
+    @Test
     public void testOffsetCorrectFileChannelTransferTo() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -292,6 +353,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         output.close();
     }
 
+    @Test
     public void testOffsetCorrectFileChannelMap() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -307,6 +369,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         assertEquals(startPosition, fc.position());
     }
 
+    @Test
     public void testOffsetCorrectFileChannelWriteBuffer() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -320,6 +383,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelWriteBuffers() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -335,6 +399,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelWriteBufferFromPosition() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -349,6 +414,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelTransferFrom() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -365,6 +431,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         input2.close();
     }
 
+    @Test
     public void testOffsetCorrectFileChannelTruncate() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -377,6 +444,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelForce() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -389,6 +457,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelLock() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -401,6 +470,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         }
     }
 
+    @Test
     public void testOffsetCorrectFileChannelTryLock() throws IOException {
         AssetFileDescriptor.AutoCloseInputStream input = getInputStream();
         FileChannel fc = input.getChannel();
@@ -423,6 +493,7 @@ public class AssetFileDescriptor_AutoCloseInputStreamTest extends AndroidTestCas
         return input;
     }
 
+    @Test
     public void testNonSeekableInputStream() throws Exception {
         final FileDescriptor[] fds = Os.pipe();
         AssetFileDescriptor readAFd = new AssetFileDescriptor(

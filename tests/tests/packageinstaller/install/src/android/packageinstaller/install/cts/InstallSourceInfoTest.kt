@@ -22,6 +22,7 @@ import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
 import android.net.Uri
 import android.platform.test.annotations.AppModeFull
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
@@ -31,6 +32,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @AppModeFull(reason = "Instant apps cannot install packages")
+@ScreenRecord
 class InstallSourceInfoTest : PackageInstallerTestBase() {
     companion object {
         const val SHELL_PACKAGE_NAME = "com.android.shell"
@@ -60,7 +62,7 @@ class InstallSourceInfoTest : PackageInstallerTestBase() {
         clickInstallerUIButton(INSTALL_BUTTON_ID)
 
         // Install should have succeeded
-        assertThat(installation.get(TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+        assertThat(installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
 
         val info = pm.getInstallSourceInfo(TEST_APK_PACKAGE_NAME)
         assertThat(info.installingPackageName).isEqualTo(packageInstallerPackageName)

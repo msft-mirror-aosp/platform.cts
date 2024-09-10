@@ -20,13 +20,13 @@ package {
 
 android_test {
     name: "CtsTextClassifierTestCases",
+    team: "trendy_team_android_platform_communications",
     defaults: ["cts_defaults"],
     // Tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
         "mts-extservices",
-        "mcts-extservices",
     ],
     libs: ["android.test.base.stubs.test"],
     static_libs: [
@@ -45,6 +45,40 @@ android_test {
     resource_dirs: ["res"],
     sdk_version: "test_current",
     min_sdk_version: "30",
+    data: [
+        ":CtsQueryTextClassifierServiceActivity",
+    ],
+    per_testcase_directory: true,
+}
+
+android_test {
+    name: "MctsTextClassifierTestCases",
+    team: "trendy_team_android_platform_communications",
+    defaults: ["cts_defaults"],
+    // Tag this module as a cts test artifact
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mcts-extservices",
+    ],
+    libs: ["android.test.base"],
+    static_libs: [
+        "androidx.appcompat_appcompat",
+        "androidx.test.core",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "ctstestrunner-axt",
+        "truth",
+        "androidx.test.ext.junit",
+        "androidx.test.uiautomator_uiautomator",
+    ],
+    srcs: [
+        "src/**/*.java",
+    ],
+    resource_dirs: ["res"],
+    sdk_version: "test_current",
+    min_sdk_version: "30",
+    test_config: "AndroidTestMcts.xml",
     data: [
         ":CtsQueryTextClassifierServiceActivity",
     ],

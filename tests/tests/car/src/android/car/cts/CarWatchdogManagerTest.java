@@ -72,6 +72,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -110,6 +112,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     private final ResourceOveruseStatsPollingCheckCondition
             mResourceOveruseStatsPollingCheckCondition =
             new ResourceOveruseStatsPollingCheckCondition();
+    private final ResourceOveruseStatsForUserPackagePollingCheckCondition
+            mResourceOveruseStatsForUserPackagePollingCheckCondition =
+            new ResourceOveruseStatsForUserPackagePollingCheckCondition();
     private final UiAutomation mUiAutomation =
             InstrumentationRegistry.getInstrumentation().getUiAutomation();
 
@@ -134,6 +139,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
     @After
     public void tearDown() {
         mUiAutomation.dropShellPermissionIdentity();
+        // Clean up any previous custom collections. If some tests do not start any custom
+        // collections, then this is effectively a no-op.
+        runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
     }
 
     @Test
@@ -152,13 +160,19 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         fail("Unexpected call to onPrepareProcessTermination");
                     }
                 };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.registerClient(mContext.getMainExecutor(), client,
-                CarWatchdogManager.TIMEOUT_CRITICAL);
-        boolean called = callSignal.await(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
-        mCarWatchdogManager.unregisterClient(client);
+        try {
+            mCarWatchdogManager.registerClient(callbackExecutor, client,
+                    CarWatchdogManager.TIMEOUT_CRITICAL);
+            boolean called = callSignal.await(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
+            mCarWatchdogManager.unregisterClient(client);
 
-        assertWithMessage("onCheckHealthStatus called").that(called).isTrue();
+            assertWithMessage("onCheckHealthStatus called").that(called).isTrue();
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -203,16 +217,22 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         fail("Unexpected call to onPrepareProcessTermination");
                     }
                 };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.registerClient(mContext.getMainExecutor(), client,
-                CarWatchdogManager.TIMEOUT_CRITICAL);
-        synchronized (actualSessionId) {
-            actualSessionId.wait(ANR_WAIT_MS);
-            mCarWatchdogManager.tellClientAlive(client, actualSessionId.get());
-            // Check if onPrepareProcessTermination is called.
-            actualSessionId.wait(HEALTH_CHECK_CRITICAL_TIMEOUT_MS);
+        try {
+            mCarWatchdogManager.registerClient(callbackExecutor, client,
+                    CarWatchdogManager.TIMEOUT_CRITICAL);
+            synchronized (actualSessionId) {
+                actualSessionId.wait(ANR_WAIT_MS);
+                mCarWatchdogManager.tellClientAlive(client, actualSessionId.get());
+                // Check if onPrepareProcessTermination is called.
+                actualSessionId.wait(HEALTH_CHECK_CRITICAL_TIMEOUT_MS);
+            }
+            mCarWatchdogManager.unregisterClient(client);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
         }
-        mCarWatchdogManager.unregisterClient(client);
     }
 
     @Test
@@ -232,9 +252,10 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
                 writtenBytes).isGreaterThan(0L);
 
-        mResourceOveruseStatsPollingCheckCondition.setWrittenBytes(writtenBytes);
+        mResourceOveruseStatsPollingCheckCondition.setMinWrittenBytes(writtenBytes);
 
-        PollingCheck.waitFor(STATS_SYNC_WAIT_MS, mResourceOveruseStatsPollingCheckCondition);
+        PollingCheck.waitFor(STATS_SYNC_WAIT_MS, mResourceOveruseStatsPollingCheckCondition,
+                mResourceOveruseStatsPollingCheckCondition::getErrorMessage);
 
         // Stop the custom performance collection. This resets watchdog's I/O stat collection to
         // the default interval.
@@ -272,7 +293,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        writeToDisk(mFile, ONE_MEGABYTE);
+        long writtenBytes = writeToDisk(mFile, ONE_MEGABYTE);
+        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'")
+                .that(writtenBytes).isGreaterThan(0L);
         AtomicReference<List<ResourceOveruseStats>> statsList = new AtomicReference<>();
         PollingCheck.check(
                 "Either" + mPackageName + " stats not found or less than 2 stats found.",
@@ -314,26 +337,28 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         runShellCommand(RESET_RESOURCE_OVERUSE_CMD);
 
         startCustomCollection();
-        writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
-        AtomicReference<ResourceOveruseStats> stats = new AtomicReference<>();
-        PollingCheck.check(
-                "IoOveruseStats for " + mUserHandle + " : " + mPackageName + " not found.",
-                STATS_SYNC_WAIT_MS, () -> {
-                    stats.set(mCarWatchdogManager.getResourceOveruseStatsForUserPackage(
-                            mPackageName, mUserHandle,
-                            CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO,
-                            CarWatchdogManager.STATS_PERIOD_CURRENT_DAY));
-                    return stats.get().getIoOveruseStats() != null;
-                });
+        long writtenBytes = writeToDisk(mFile, FIVE_HUNDRED_KILOBYTES);
+
+        assertWithMessage("Failed to write data to dir '" + mFile.getAbsolutePath() + "'").that(
+                writtenBytes).isGreaterThan((long) (FIVE_HUNDRED_KILOBYTES * 0.8));
+
+        mResourceOveruseStatsForUserPackagePollingCheckCondition.setRequest(mPackageName,
+                mUserHandle, writtenBytes);
+
+        PollingCheck.waitFor(STATS_SYNC_WAIT_MS,
+                mResourceOveruseStatsForUserPackagePollingCheckCondition,
+                mResourceOveruseStatsForUserPackagePollingCheckCondition::getErrorMessage);
+
         runShellCommand(STOP_CUSTOM_PERF_COLLECTION_CMD);
 
-        ResourceOveruseStats actualStats = stats.get();
+        ResourceOveruseStats actualStats =
+                mResourceOveruseStatsForUserPackagePollingCheckCondition.getResourceOveruseStats();
         IoOveruseStats ioOveruseStats = actualStats.getIoOveruseStats();
         assertWithMessage("Package name").that(
                 actualStats.getPackageName()).isEqualTo(mPackageName);
         assertWithMessage("User handle").that(actualStats.getUserHandle()).isEqualTo(mUserHandle);
         assertWithMessage("Total bytes written to disk").that(
-                ioOveruseStats.getTotalBytesWritten()).isAtLeast(FIVE_HUNDRED_KILOBYTES);
+                ioOveruseStats.getTotalBytesWritten()).isAtLeast(writtenBytes);
     }
 
     @Test
@@ -378,10 +403,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         CarWatchdogManager.ResourceOveruseListener listener = resourceOveruseStats -> {
             // Do nothing
         };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.addResourceOveruseListenerForSystem(mContext.getMainExecutor(),
-                CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
-        mCarWatchdogManager.removeResourceOveruseListenerForSystem(listener);
+        try {
+            mCarWatchdogManager.addResourceOveruseListenerForSystem(callbackExecutor,
+                    CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
+            mCarWatchdogManager.removeResourceOveruseListenerForSystem(listener);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -779,10 +810,16 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
         CarWatchdogManager.ResourceOveruseListener listener = resourceOveruseStats -> {
             // Do nothing
         };
+        ExecutorService callbackExecutor = Executors.newSingleThreadExecutor();
 
-        mCarWatchdogManager.addResourceOveruseListener(
-                mContext.getMainExecutor(), CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
-        mCarWatchdogManager.removeResourceOveruseListener(listener);
+        try {
+            mCarWatchdogManager.addResourceOveruseListener(
+                    callbackExecutor, CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO, listener);
+            mCarWatchdogManager.removeResourceOveruseListener(listener);
+        } finally {
+            assertWithMessage("callbackExecutor is shutdown").that(
+                    shutdownNowAndAwaitTermination(callbackExecutor)).isTrue();
+        }
     }
 
     @Test
@@ -829,25 +866,40 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         PACKAGES_DISABLED_ON_RESOURCE_OVERUSE_SEPARATOR)));
     }
 
+    // TODO(b/335920274): Move this logic to a utils class, which can be used by all
+    // host and device side CTS tests. Once done, refactor all the files which contain
+    // the duplicate logic.
     private static long writeToDisk(File dir, long size) throws Exception {
         if (!dir.exists()) {
             throw new FileNotFoundException(
                     "directory '" + dir.getAbsolutePath() + "' doesn't exist");
         }
         File uniqueFile = new File(dir, Long.toString(System.nanoTime()));
+        long writtenBytes = 0;
         try (FileOutputStream fos = new FileOutputStream(uniqueFile)) {
             Log.d(TAG, "Attempting to write " + size + " bytes");
-            writeToFos(fos, size);
+            writtenBytes = writeToFos(fos, size);
             fos.getFD().sync();
         }
-        return size;
+        return writtenBytes;
     }
 
-    private static void writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+    private static long writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
+        long writtenBytes = 0;
         while (maxSize != 0) {
-            int writeSize = (int) Math.min(Integer.MAX_VALUE,
-                    Math.min(Runtime.getRuntime().freeMemory(), maxSize));
-            Log.i(TAG, "writeSize:" + writeSize);
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
+            Log.i(TAG, "writeSize:" + writeSize + ", writtenBytes:" + writtenBytes);
+            if (writeSize == 0) {
+                Log.d(TAG, "Ran out of memory while writing, exiting early with writtenBytes: "
+                        + writtenBytes);
+                return writtenBytes;
+            }
             try {
                 fos.write(new byte[writeSize]);
             } catch (InterruptedIOException e) {
@@ -855,7 +907,9 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                 continue;
             }
             maxSize -= writeSize;
+            writtenBytes += writeSize;
         }
+        return writtenBytes;
     }
 
     private static boolean containsPackage(String packageName,
@@ -871,10 +925,21 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
                         && stats.getIoOveruseStats() != null);
     }
 
+    private static boolean shutdownNowAndAwaitTermination(ExecutorService callbackExecutor) {
+        try {
+            callbackExecutor.shutdownNow();
+            return callbackExecutor.awaitTermination(ANR_WAIT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Interrupted waiting for callbackExecutor to terminate");
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
     private final class ResourceOveruseStatsPollingCheckCondition
             implements PollingCheck.PollingCheckCondition {
         private ResourceOveruseStats mResourceOveruseStats;
-        private long mWrittenBytes;
+        private long mMinWrittenBytes;
 
         @Override
         public boolean canProceed() {
@@ -886,15 +951,66 @@ public final class CarWatchdogManagerTest extends AbstractCarTestCase {
             // so wait until the reported stats cover the entire write size.
             IoOveruseStats ioOveruseStats = mResourceOveruseStats.getIoOveruseStats();
             return ioOveruseStats != null
-                    && ioOveruseStats.getTotalBytesWritten() >= mWrittenBytes;
+                    && ioOveruseStats.getTotalBytesWritten() >= mMinWrittenBytes;
         }
 
         public ResourceOveruseStats getResourceOveruseStats() {
             return mResourceOveruseStats;
         }
 
-        public void setWrittenBytes(long writtenBytes) {
-            mWrittenBytes = writtenBytes;
+        public void setMinWrittenBytes(long minWrittenBytes) {
+            mMinWrittenBytes = minWrittenBytes;
+        }
+
+        public String getErrorMessage() {
+            IoOveruseStats ioOveruseStats = getResourceOveruseStats().getIoOveruseStats();
+            if (ioOveruseStats == null) {
+                return "PollingCheckTimeout: Expected " + mMinWrittenBytes
+                        + " bytes, but retrieved IoOveruseStats are null.";
+            }
+            return "PollingCheckTimeout: Expected " + mMinWrittenBytes + ", but retrieved "
+                    + ioOveruseStats.getTotalBytesWritten() + " bytes.";
+        }
+    };
+
+    private final class ResourceOveruseStatsForUserPackagePollingCheckCondition
+            implements PollingCheck.PollingCheckCondition {
+        private ResourceOveruseStats mResourceOveruseStats;
+        private String mPackageName;
+        private UserHandle mUserHandle;
+        private long mMinWrittenBytes;
+
+        @Override
+        public boolean canProceed() {
+            mResourceOveruseStats = mCarWatchdogManager.getResourceOveruseStatsForUserPackage(
+                    mPackageName, mUserHandle, CarWatchdogManager.FLAG_RESOURCE_OVERUSE_IO,
+                    CarWatchdogManager.STATS_PERIOD_CURRENT_DAY);
+            // Flash memory usage stats are polled once every one second. The syncing of stats
+            // from proc fs -> watchdog daemon -> CarService can happen across multiple polling,
+            // so wait until the reported stats cover the entire write size.
+            IoOveruseStats ioOveruseStats = mResourceOveruseStats.getIoOveruseStats();
+            return ioOveruseStats != null
+                    && ioOveruseStats.getTotalBytesWritten() >= mMinWrittenBytes;
+        }
+
+        public ResourceOveruseStats getResourceOveruseStats() {
+            return mResourceOveruseStats;
+        }
+
+        public void setRequest(String packageName, UserHandle userHandle, long minWrittenBytes) {
+            mPackageName = packageName;
+            mUserHandle = userHandle;
+            mMinWrittenBytes = minWrittenBytes;
+        }
+
+        public String getErrorMessage() {
+            IoOveruseStats ioOveruseStats = getResourceOveruseStats().getIoOveruseStats();
+            if (ioOveruseStats == null) {
+                return "PollingCheckTimeout: Expected " + mMinWrittenBytes
+                        + " bytes, but retrieved IoOveruseStats are null.";
+            }
+            return "PollingCheckTimeout: Expected " + mMinWrittenBytes + ", but retrieved "
+                    + ioOveruseStats.getTotalBytesWritten() + " bytes.";
         }
     };
 

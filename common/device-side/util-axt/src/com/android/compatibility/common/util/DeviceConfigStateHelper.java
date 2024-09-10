@@ -64,6 +64,21 @@ public class DeviceConfigStateHelper implements AutoCloseable {
     }
 
     /**
+     * Resets the value of the given key if was ever modified and returns {@code true} on success.
+     */
+    public boolean reset(@NonNull String key) {
+        final String ogValue;
+        synchronized (mOriginalValues) {
+            ogValue = mOriginalValues.get(key);
+            if (ogValue == null) {
+                return false;
+            }
+        }
+        set(key, ogValue);
+        return true;
+    }
+
+    /**
      * Run a Runnable, with DeviceConfig.setSyncDisabledMode(SYNC_DISABLED_MODE_NONE),
      * with all the shell permissions.
      */
