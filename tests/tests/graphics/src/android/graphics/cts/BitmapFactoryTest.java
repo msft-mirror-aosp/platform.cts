@@ -53,7 +53,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.MediaUtils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
