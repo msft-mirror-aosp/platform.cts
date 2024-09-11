@@ -33,6 +33,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.content.Context;
 import android.media.AudioAttributes;
 import android.os.PersistableBundle;
 import android.os.SystemClock;
@@ -45,6 +46,7 @@ import android.os.vibrator.Flags;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.provider.Settings;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -196,6 +198,9 @@ public class VibratorTest {
 
     @Before
     public void setUp() {
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
+
         mVibrator.addVibratorStateListener(mStateListener);
         // Adding a listener to the Vibrator should trigger the callback once with the current
         // vibrator state, so reset mocks to clear it for tests.
@@ -725,10 +730,12 @@ public class VibratorTest {
             return new String[]{
                     android.Manifest.permission.ACCESS_VIBRATOR_STATE,
                     android.Manifest.permission.VIBRATE_VENDOR_EFFECTS,
+                    android.Manifest.permission.WRITE_SETTINGS,
             };
         }
         return new String[] {
             android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+            android.Manifest.permission.WRITE_SETTINGS,
         };
     }
 
