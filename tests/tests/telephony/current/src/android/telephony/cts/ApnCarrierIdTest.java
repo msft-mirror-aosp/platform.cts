@@ -139,7 +139,9 @@ public class ApnCarrierIdTest {
         PreciseDataConnectionStateListener preciseDataConnectionStateCallback =
                 new PreciseDataConnectionStateListener(
                         mTelephonyManager, /* desiredDataState= */ TelephonyManager.DATA_CONNECTED);
-        preciseDataConnectionStateCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        if (!preciseDataConnectionStateCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for active data connection.");
+        }
 
         // The initial data state should be DATA_CONNECTED.
         if (mPreciseDataConnectionState == null
@@ -209,7 +211,9 @@ public class ApnCarrierIdTest {
                 mContentResolver.bulkInsert(
                         CARRIER_TABLE_URI, new ContentValues[] {apnWithCarrierId});
         assertThat(rowsInserted).isEqualTo(1);
-        pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        if (!pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for data connected");
+        }
         // Generate selection arguments for the APN and store it so we can delete it in cleanup.
         mInsertedApnSelectionArgs = generateSelectionArgs(currentApn, String.valueOf(carrierId));
 
@@ -246,7 +250,9 @@ public class ApnCarrierIdTest {
         assertThat(deletedRowCount).isEqualTo(1);
         // Store the APN so we can re-insert it once the test is complete.
         mExistingApn = currentApn.toContentValues();
-        pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS);
+        if (!pdcsCallback.awaitDataStateChanged(WAIT_TIME_MILLIS)) {
+            fail("Timed out waiting for data disconnected");
+        }
 
         // Data should disconnect without any identifying fields in the default APN.
         assertThat(mPreciseDataConnectionState.getState())
@@ -331,9 +337,9 @@ public class ApnCarrierIdTest {
             telephonyManager.registerTelephonyCallback(mSimpleExecutor, this);
         }
 
-        void awaitDataStateChanged(long timeoutMillis) throws InterruptedException {
+        boolean awaitDataStateChanged(long timeoutMillis) throws InterruptedException {
             try {
-                mCountDownLatch.await(timeoutMillis, MILLISECONDS);
+                return mCountDownLatch.await(timeoutMillis, MILLISECONDS);
             } finally {
                 mTelephonyManager.unregisterTelephonyCallback(this);
             }
