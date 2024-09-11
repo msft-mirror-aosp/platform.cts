@@ -585,13 +585,17 @@ public class SearchSpecCtsTest {
                                 "TypeA", ImmutableList.of("field1", "field2.subfield2"))
                         .addFilterProperties("TypeB", ImmutableList.of("field7"))
                         .addFilterProperties("TypeC", ImmutableList.of())
+                        .addFilterPropertyPaths(
+                                "TypeD", ImmutableList.of(new PropertyPath("field8")))
                         .build();
 
         Map<String, List<String>> typePropertyPathMap = searchSpec.getFilterProperties();
-        assertThat(typePropertyPathMap.keySet()).containsExactly("TypeA", "TypeB", "TypeC");
+        assertThat(typePropertyPathMap.keySet())
+                .containsExactly("TypeA", "TypeB", "TypeC", "TypeD");
         assertThat(typePropertyPathMap.get("TypeA")).containsExactly("field1", "field2.subfield2");
         assertThat(typePropertyPathMap.get("TypeB")).containsExactly("field7");
         assertThat(typePropertyPathMap.get("TypeC")).isEmpty();
+        assertThat(typePropertyPathMap.get("TypeD")).containsExactly("field8");
     }
 
     @Test
