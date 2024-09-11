@@ -18,8 +18,6 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
-import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
-import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -7002,7 +7000,6 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_WORD, interWordTv.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_LETTER_SPACING_JUSTIFICATION)
     @Test
     public void testJustificationByStyle_InterCharacter() {
         TextView textView = findTextView(R.id.textview_justification_inter_character);
@@ -7033,7 +7030,6 @@ public class TextViewTest {
         assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumDefaultTextView() {
         TextView textView = findTextView(
@@ -7041,7 +7037,6 @@ public class TextViewTest {
         assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumTrueTextView() {
         TextView textView = findTextView(
@@ -7049,7 +7044,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumFalseTextView() {
         TextView textView = findTextView(
@@ -7057,7 +7051,6 @@ public class TextViewTest {
         assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumDefaultEditText() {
         TextView textView = findTextView(
@@ -7065,7 +7058,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumTrueEditText() {
         TextView textView = findTextView(
@@ -7073,7 +7065,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumFalseEditText() {
         TextView textView = findTextView(

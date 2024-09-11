@@ -51,6 +51,9 @@ import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
 import static java.lang.Byte.toUnsignedInt;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.Math.round;
 
 import android.companion.virtual.camera.VirtualCameraCallback;
 import android.companion.virtual.camera.VirtualCameraConfig;
@@ -71,6 +74,8 @@ import android.net.Uri;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.UserHandle;
 import android.util.Log;
 import android.view.Surface;
@@ -136,12 +141,13 @@ public final class VirtualCameraUtils {
 
     // Converts YUV to ARGB int representation,
     // using BT601 full-range matrix.
-    // See https://en.wikipedia.org/wiki/YCbCr#JPEG_conversion
+    // See https://www.itu.int/rec/T-REC-T.871-201105-I/en
     private static int yuv2rgb(int y, int u, int v) {
-        int r = (int) (y + 1.402f * (v - 128f));
-        int g = (int) (y - 0.344136f * (u - 128f) - 0.714136 * (v - 128f));
-        int b = (int) (y + 1.772 * (u - 128f));
-        return 0xff000000 | (r << 16) | (g << 8) | b;
+        int r = (int) max(0f, min(255f, round((y + 1.402f * (v - 128f)))));
+        int g = (int) max(0f,
+                min(255f, round(y - 0.344136f * (u - 128f) - 0.714136f * (v - 128f))));
+        int b = (int) max(0f, min(255f, round(y + 1.772f * (u - 128f))));
+        return Color.rgb(r, g, b);
     }
 
     // Compares two ARGB colors and returns true if they are approximately
@@ -375,6 +381,15 @@ public final class VirtualCameraUtils {
         eglDestroyContext(eglDisplay, eglContext);
 
         return maxSize[0];
+    }
+
+    /**
+     * Creates a new Handler with a thread named with the provided suffix.
+     */
+    public static Handler createHandler(String threadSuffix) {
+        HandlerThread handlerThread = new HandlerThread("VirtualCameraTestHandler_" + threadSuffix);
+        handlerThread.start();
+        return new Handler(handlerThread.getLooper());
     }
 
     private VirtualCameraUtils() {}
