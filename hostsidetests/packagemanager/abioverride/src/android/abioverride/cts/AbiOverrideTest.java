@@ -16,11 +16,22 @@
 
 package android.abioverride.cts;
 
+import static com.google.common.truth.Truth.assertWithMessage;
+
+import static junit.framework.Assert.fail;
+
+import static org.junit.Assume.assumeFalse;
+
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.ITestDevice;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.util.Scanner;
@@ -33,7 +44,8 @@ import java.util.Scanner;
  * a message to Logcat and then gets uninstalled. The test verifies that logcat has the right
  * string.
  */
-public class AbiOverrideTest extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class AbiOverrideTest extends BaseHostJUnit4Test implements IBuildReceiver {
 
     /**
      * The package name of the APK.
@@ -67,15 +79,20 @@ public class AbiOverrideTest extends DeviceTestCase implements IBuildReceiver {
         mBuild = buildInfo;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         ITestDevice device = getDevice();
         device.uninstallPackage(PACKAGE);
         CompatibilityBuildHelper buildHelper = new CompatibilityBuildHelper(mBuild);
         File app = buildHelper.getTestFile(APK_NAME);
         String[] options = {};
-        device.installPackage(app, false, options);
+        final String result = device.installPackage(app, false, options);
+        if (result != null) {
+            assumeFalse("The test APK does not include the matched ABI library",
+                    result.contains("don't support all the natively supported ABIs of the device"));
+            // The test app can't be installed with the other errors
+            fail("The test APK can not be installed on the device: " + result);
+        }
     }
 
     /**
@@ -83,13 +100,14 @@ public class AbiOverrideTest extends DeviceTestCase implements IBuildReceiver {
      *
      * @throws Exception
      */
+    @Test
     public void testAbiIs32bit() throws Exception {
         ITestDevice device = getDevice();
         //skip this test for 64bit only system
         String prop32bit = device.getProperty("ro.product.cpu.abilist32");
-        if (prop32bit == null || prop32bit.trim().isEmpty()) {
-            return;
-        }
+        boolean is64bitOnlyDevice = prop32bit == null || prop32bit.trim().isEmpty();
+        assumeFalse("This test is skipped for 64bit only system", is64bitOnlyDevice);
+
         // Clear logcat.
         device.executeAdbCommand("logcat", "-c");
         // Start the APK and wait for it to complete.
@@ -107,8 +125,10 @@ public class AbiOverrideTest extends DeviceTestCase implements IBuildReceiver {
         }
         in.close();
         // Verify that TEST_STRING is actually found in logs.
-        assertTrue("No result found in logs", testString.startsWith(TEST_STRING));
+        assertWithMessage("No result found in logs")
+                .that(testString.startsWith(TEST_STRING)).isTrue();
         // Assert that the result is false
-        assertEquals("Incorrect abi", TEST_STRING + "false", testString);
+        assertWithMessage("Incorrect abi")
+                .that(testString).isEqualTo(TEST_STRING + "false");
     }
 }
