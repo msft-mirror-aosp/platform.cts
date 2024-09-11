@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.content.Context;
 import android.os.CombinedVibration;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
@@ -33,6 +34,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
+import android.provider.Settings;
 import android.util.SparseArray;
 
 import androidx.test.filters.LargeTest;
@@ -58,7 +60,8 @@ public class VibratorManagerTest {
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.ACCESS_VIBRATOR_STATE);
+                    android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+                    android.Manifest.permission.WRITE_SETTINGS);
     
     @Rule
     public final MockitoRule mMockitoRule = MockitoJUnit.rule();
@@ -79,10 +82,10 @@ public class VibratorManagerTest {
 
     @Before
     public void setUp() {
-        mVibratorManager =
-                InstrumentationRegistry.getInstrumentation().getContext().getSystemService(
-                        VibratorManager.class);
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
 
+        mVibratorManager = context.getSystemService(VibratorManager.class);
         for (int vibratorId : mVibratorManager.getVibratorIds()) {
             OnVibratorStateChangedListener listener = mock(OnVibratorStateChangedListener.class);
             mVibratorManager.getVibrator(vibratorId).addVibratorStateListener(listener);

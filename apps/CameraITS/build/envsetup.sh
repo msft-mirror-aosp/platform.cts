@@ -76,6 +76,10 @@ do
         echo ">> Unit test for $M failed" >&2
 done
 
+export PYTHONPATH="$PWD/feature_verification_utils:$PYTHONPATH"
+python -c "import feature_combination_info_pb2" >/dev/null 2>&1 || \
+  echo ">> Require Python feature_combination_info_pb2 module. ('source feature_verification_utils/update.sh')" >&2
+
 for M in run_all_unit_tests
 do
     python "tools/$M.py" 2>&1 | grep -q "OK" || \
