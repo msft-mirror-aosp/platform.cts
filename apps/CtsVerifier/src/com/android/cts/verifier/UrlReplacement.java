@@ -98,7 +98,7 @@ public class UrlReplacement {
     public static String getFinalUri(String originalUrl) {
         String url = originalUrl;
         for (Map.Entry<String, String> entry : REPLACEMENT_MAP.entrySet()) {
-            url.replace(entry.getKey(), entry.getValue());
+            url = url.replace(entry.getKey(), entry.getValue());
         }
         return url;
     }

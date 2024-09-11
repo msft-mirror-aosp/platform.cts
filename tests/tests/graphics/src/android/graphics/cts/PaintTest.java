@@ -1385,7 +1385,7 @@ public class PaintTest {
         new Paint().getTextPath("HIJKLMN", 3, 9, 0, 0, new Path());
     }
 
-    @CddTest(requirement="3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasGlyph() {
         Paint p = new Paint();
@@ -1408,7 +1408,7 @@ public class PaintTest {
         // Note: U+FE0F is variation selection, unofficially reserved for emoji
     }
 
-    @CddTest(requirement = "3.8.13/C-1-2")
+    @CddTest(requirements = {"3.8.13/C-1-2"})
     @Test
     public void testHasEmojiGlyph() {
         Paint p = new Paint();

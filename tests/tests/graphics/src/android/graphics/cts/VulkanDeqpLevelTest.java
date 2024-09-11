@@ -68,7 +68,7 @@ public class VulkanDeqpLevelTest {
         }
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-8,C-1-9")
+    @CddTest(requirements = {"7.1.4.2/C-1-8,C-1-9"})
     @Test
     public void testVulkanDeqpLevel() {
         assumeTrue(
