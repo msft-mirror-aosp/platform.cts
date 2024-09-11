@@ -179,31 +179,31 @@ public class MultiCodecPerfTestBase {
         return selectHardwareCodecs(mediaType, formatsList, null, isEncoder, allCodecs);
     }
 
-    static boolean isRCodec(String mimeType) {
-        return isRCodec(mimeType, mimeType);
+    static boolean isRCodec(String mediaType) {
+        return isRCodec(mediaType, mediaType);
     }
 
-    static boolean isRCodec(String mimeType1, String mimeType2) {
-        return MEDIAPC_CONCURRENT_CODECS_R.contains(mimeType1)
-                && MEDIAPC_CONCURRENT_CODECS_R.contains(mimeType2);
+    static boolean isRCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType2);
     }
 
-    static boolean isMPCCodec(String mimeType) {
-        return isMPCCodec(mimeType, mimeType);
+    static boolean isMPCCodec(String mediaType) {
+        return isMPCCodec(mediaType, mediaType);
     }
 
-    static boolean isMPCCodec(String mimeType1, String mimeType2) {
-        return MEDIAPC_CONCURRENT_CODECS.contains(mimeType1)
-                && MEDIAPC_CONCURRENT_CODECS.contains(mimeType2);
+    static boolean isMPCCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS.contains(mediaType2);
     }
 
-    static boolean isVP9Codec(String mimeType) {
-        return isVP9Codec(mimeType, mimeType);
+    static boolean isVP9Codec(String mediaType) {
+        return isVP9Codec(mediaType, mediaType);
     }
 
-    static boolean isVP9Codec(String mimeType1, String mimeType2) {
-        return MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType1)
-                || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mimeType2);
+    static boolean isVP9Codec(String mediaType1, String mediaType2) {
+        return MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType1)
+                || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType2);
     }
 
     protected CodecMetrics invokeWithThread(int maxInstances, Collection<? extends
