@@ -21,6 +21,7 @@ python_defaults {
     name: "CtsNfcMultiDevicePythonDefaults",
     libs: [
         "mobly",
+        "pn532-python",
     ],
     test_suites: [
         // Added this test suite to CTS-V
