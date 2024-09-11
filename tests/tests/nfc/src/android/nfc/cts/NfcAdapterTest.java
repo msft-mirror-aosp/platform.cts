@@ -493,11 +493,13 @@ public class NfcAdapterTest {
     @Test
     @RequiresFlagsEnabled(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void testDefaultObserveModeForeground() {
-        Activity activity = createAndResumeActivity();
         NfcAdapter adapter = getDefaultAdapter();
+        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
+        cardEmulation.setShouldDefaultToObserveModeForService(
+            new ComponentName(mContext, CtsMyHostApduService.class), false);
+        Activity activity = createAndResumeActivity();
         adapter.notifyHceDeactivated();
         assumeTrue(adapter.isObserveModeSupported());
-        CardEmulation cardEmulation = CardEmulation.getInstance(adapter);
         Assert.assertTrue(cardEmulation.setPreferredService(activity,
                 new ComponentName(mContext, BackgroundHostApduService.class)));
         CardEmulationTest.ensurePreferredService(BackgroundHostApduService.class, mContext);
