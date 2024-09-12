@@ -18,13 +18,19 @@ package android.display.cts;
 
 import android.app.Activity;
 import android.app.Instrumentation;
+import android.app.UiAutomation;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import org.junit.After;
+
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.util.Scanner;
 
 public class TestBase {
 
@@ -54,6 +60,19 @@ public class TestBase {
         final T activity = activityRule.launchActivity(null);
         InstrumentationRegistry.getInstrumentation().waitForIdleSync();
         return activity;
+    }
+
+    protected String runShellCommand(String cmd) {
+        UiAutomation automation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        ParcelFileDescriptor output = automation.executeShellCommand(cmd);
+        String result = convertFileDescriptorToString(output.getFileDescriptor());
+        return result.trim();
+    }
+
+    protected String convertFileDescriptorToString(FileDescriptor desc) {
+        try (Scanner s = new Scanner(new FileInputStream(desc)).useDelimiter("\\Z")) {
+            return s.hasNext() ? s.next() : "";
+        }
     }
 
     /**
