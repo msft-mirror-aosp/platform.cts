@@ -38,13 +38,20 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MediaProjectionTests {
+import java.util.regex.Pattern;
 
+public class MediaProjectionTests {
+    private static final String TAG = "MediaProjectionTests";
+
+    private static final Long TIMEOUT = 5000L;
     private static final String SYSTEM_UI_PACKAGE = "com.android.systemui";
     private static final String ACCEPT_RESOURCE_ID = "android:id/button1";
     private static final String CANCEL_RESOURCE_ID = "android:id/button2";
-    private static final String SPINNER_RESOURCE_ID =
-            SYSTEM_UI_PACKAGE + ":id/screen_share_mode_options";
+
+    // Builds from 24Q3 and earlier will have screen_share_mode_spinner, while builds from
+    // 24Q4 onwards will have screen_share_mode_options, so need to check both options here
+    private static final Pattern SCREEN_SHARE_OPTIONS_RES_PATTERN =
+            Pattern.compile(SYSTEM_UI_PACKAGE + ":id/screen_share_mode_(options|spinner)");
 
     private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
     private final UiDevice mDevice =
@@ -94,7 +101,7 @@ public class MediaProjectionTests {
         mDevice.waitForIdle();
 
         UiObject2 cancelButton =
-                mDevice.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), 5000L);
+                mDevice.wait(Until.findObject(By.res(CANCEL_RESOURCE_ID)), TIMEOUT);
         cancelButton.click();
     }
 
@@ -107,29 +114,29 @@ public class MediaProjectionTests {
 
         // OEMs aren't guaranteed to support partial screenshare, so we only attempt
         // to reach the app selector if possible, and end the test prematurely if it isn't
-        boolean hasModeSpinner = mDevice.hasObject(By.res(SPINNER_RESOURCE_ID));
+        boolean hasModeSpinner = mDevice.hasObject(By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN));
         if (!hasModeSpinner) {
-            Log.i("MediaProjectionTests", "Unable to find a screen share mode spinner");
+            Log.i(TAG, "Unable to find a screen share mode spinner");
             return;
         }
 
         UiObject2 modeSpinner =
-                mDevice.wait(Until.findObject(By.res(SPINNER_RESOURCE_ID)), 5000L);
+                mDevice.wait(Until.findObject(By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN)), TIMEOUT);
         modeSpinner.click();
 
         boolean hasSingleAppOption = mDevice.hasObject(By.text(sSingleAppString));
         if (!hasSingleAppOption) {
-            Log.i("MediaProjectionTests", "Unable to find single app option in spinner");
+            Log.i(TAG, "Unable to find single app option in spinner");
             return;
         }
 
         UiObject2 singleAppOption =
-                mDevice.wait(Until.findObject(By.text(sSingleAppString)), 5000L);
+                mDevice.wait(Until.findObject(By.text(sSingleAppString)), TIMEOUT);
         singleAppOption.click();
 
         // Go to app selector page
         UiObject2 startRecordingButton =
-                mDevice.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), 5000L);
+                mDevice.wait(Until.findObject(By.res(ACCEPT_RESOURCE_ID)), TIMEOUT);
         startRecordingButton.click();
     }
 }
