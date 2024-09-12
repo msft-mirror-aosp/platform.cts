@@ -92,6 +92,8 @@ public class KeyguardTests extends KeyguardTestBase {
         super.setUp();
         assumeTrue(supportsInsecureLock());
         assertFalse(isUiModeLockedToVrHeadset());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test

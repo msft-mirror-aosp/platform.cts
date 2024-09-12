@@ -20,6 +20,8 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.util.DisplayMetrics;
 
+// TODO(b/191301111): Rename this class to AudioSystemFeatures
+
 public class AudioSystemFlags {
     static final String TAG = AudioSystemFlags.class.getName();
 
@@ -78,6 +80,14 @@ public class AudioSystemFlags {
      */
     public static boolean isWatch(Context context) {
         return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
+    }
+
+    /**
+     * @param context The Context of the application.
+     * @return true if the platform supports the WebView control.
+     */
+    public static boolean supportsWebView(Context context) {
+        return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WEBVIEW);
     }
 
     /**

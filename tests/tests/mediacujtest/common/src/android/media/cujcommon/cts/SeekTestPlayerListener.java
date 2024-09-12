@@ -87,7 +87,7 @@ public class SeekTestPlayerListener extends PlayerListener {
       if (mSeekDone) {
         mExpectedTotalTime += (mSendMessagePosition - player.getCurrentPosition());
         mSeekDone = false;
-      } else {
+      } else if (mExpectedTotalTime == 0) {
         // At the first media transition player is not ready. So, add duration of
         // first clip when player is ready
         mExpectedTotalTime += player.getDuration();

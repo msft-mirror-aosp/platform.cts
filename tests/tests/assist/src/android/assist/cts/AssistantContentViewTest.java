@@ -27,7 +27,6 @@ import android.os.Bundle;
 import android.util.Log;
 
 import org.junit.Test;
-import org.junit.Ignore;
 
 import java.util.concurrent.TimeUnit;
 
@@ -56,7 +55,6 @@ public class AssistantContentViewTest extends AssistTestBase {
     }
 
     @Test
-    @Ignore("b/349497368")
     public void testAssistantContentViewDimens() throws Exception {
         if (mActivityManager.isLowRamDevice()) {
           Log.d(TAG, "Not running assist tests on low-RAM device.");

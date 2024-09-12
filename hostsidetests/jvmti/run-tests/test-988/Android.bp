@@ -23,6 +23,8 @@ java_test_host {
     test_suites: [
         "cts",
         "general-tests",
+        "mcts-art",
+        "mts-art",
     ],
     data: [":CtsJvmtiRunTest988DeviceApp"],
     test_options: {

@@ -67,9 +67,6 @@ cc_library_shared {
         "libandroid",
         "libbase",
     ],
-
-    // This define controls the behavior of OSFeatures.needsSeccompSupport().
-    cflags: ["-DARCH_SUPPORTS_SECCOMP"],
 }
 
 cc_library_static {

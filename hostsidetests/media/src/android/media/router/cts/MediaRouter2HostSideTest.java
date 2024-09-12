@@ -33,6 +33,8 @@ import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_PACKA
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_APK;
 import static android.media.cts.MediaRouterTestConstants.MEDIA_ROUTER_TEST_WITH_MODIFY_AUDIO_ROUTING_PACKAGE;
 
+import static com.android.tradefed.targetprep.UserHelper.getRunTestsAsUser;
+
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -84,6 +86,8 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     public final CheckFlagsRule mCheckFlagsRule =
             HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
+    private int mUserId;
+
     @BeforeClassWithInfo
     public static void installApps(TestInformation testInfo)
             throws DeviceNotAvailableException, FileNotFoundException {
@@ -112,6 +116,10 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         // We must kill previously bound route providers to avoid unrelated scan requests
         // interfering with tests.
         forceStopAllRouteProviders();
+
+        // Set the userId that the tests are running as. Fall back to the current user if not set.
+        TestInformation testInfo = getTestInformation();
+        mUserId = testInfo == null ? getDevice().getCurrentUser() : getRunTestsAsUser(testInfo);
     }
 
     @Test
@@ -250,11 +258,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_SCAN",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_CONNECT",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
@@ -266,11 +276,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_SCAN",
-                /* enabled= */ false);
+                /* enabled= */ false,
+                mUserId);
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_CONNECT",
-                /* enabled= */ false);
+                /* enabled= */ false,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
@@ -285,11 +297,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_SCAN",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         setPermissionEnabled(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 "android.permission.BLUETOOTH_CONNECT",
-                /* enabled= */ true);
+                /* enabled= */ true,
+                mUserId);
         try {
             runDeviceTests(
                     MEDIA_ROUTER_TEST_PACKAGE,
@@ -299,11 +313,13 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
             setPermissionEnabled(
                     MEDIA_ROUTER_TEST_PACKAGE,
                     "android.permission.BLUETOOTH_SCAN",
-                    /* enabled= */ false);
+                    /* enabled= */ false,
+                    mUserId);
             setPermissionEnabled(
                     MEDIA_ROUTER_TEST_PACKAGE,
                     "android.permission.BLUETOOTH_CONNECT",
-                    /* enabled= */ false);
+                    /* enabled= */ false,
+                    mUserId);
         }
     }
 
@@ -311,6 +327,16 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
     @RequiresDevice
     @Test
     public void getSystemController_withoutBTPermissions_returnsDefaultRoute() throws Exception {
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_SCAN",
+                /* enabled= */ false,
+                mUserId);
+        setPermissionEnabled(
+                MEDIA_ROUTER_TEST_PACKAGE,
+                "android.permission.BLUETOOTH_CONNECT",
+                /* enabled= */ false,
+                mUserId);
         runDeviceTests(
                 MEDIA_ROUTER_TEST_PACKAGE,
                 DEVICE_SIDE_TEST_CLASS,
@@ -445,34 +471,6 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "managerScan_withNoAppsScanning_doesNotWakeUpProvider");
     }
 
-    @AppModeFull
-    @RequiresDevice
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
-    })
-    @Test
-    public void screenOffScan_onLocalRouter_allowedWithMediaContentControl() throws Exception {
-        runDeviceTests(
-                MEDIA_ROUTER_TEST_PACKAGE,
-                DEVICE_SIDE_TEST_CLASS,
-                "screenOffScan_onLocalRouter_allowedWithMediaContentControl");
-    }
-
-    @AppModeFull
-    @RequiresDevice
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_SCREEN_OFF_SCANNING,
-        Flags.FLAG_ENABLE_FULL_SCAN_WITH_MEDIA_CONTENT_CONTROL
-    })
-    @Test
-    public void screenOffScan_onProxyRouter_allowedWithMediaContentControl() throws Exception {
-        runDeviceTests(
-                MEDIA_ROUTER_TEST_PACKAGE,
-                DEVICE_SIDE_TEST_CLASS,
-                "screenOffScan_onProxyRouter_allowedWithMediaContentControl");
-    }
-
     @Test
     @AppModeFull
     @RequiresDevice
@@ -484,13 +482,15 @@ public class MediaRouter2HostSideTest extends BaseHostJUnit4Test {
                 "requestScan_screenOff_withoutMediaRoutingControl_throwsSecurityException");
     }
 
-    private void setPermissionEnabled(String packageName, String permission, boolean enabled)
+    private void setPermissionEnabled(
+            String packageName, String permission, boolean enabled, int userId)
             throws DeviceNotAvailableException {
         String action = enabled ? "grant" : "revoke";
         String result =
                 getDevice()
                         .executeShellCommand(
-                                "pm %s %s %s".formatted(action, packageName, permission));
+                                "pm %s --user %d %s %s"
+                                        .formatted(action, userId, packageName, permission));
         if (!result.isEmpty()) {
             assertWithMessage("Setting permission %s failed: %s".formatted(permission, result))
                     .fail();

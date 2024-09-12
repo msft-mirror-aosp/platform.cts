@@ -37,10 +37,6 @@ import android.keystore.cts.util.StrictModeDetector;
 import android.keystore.cts.util.TestUtils;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.keystore.KeyPermanentlyInvalidatedException;
 import android.security.keystore.KeyProperties;
 import android.security.keystore.KeyProtection;
@@ -56,7 +52,6 @@ import com.android.compatibility.common.util.ApiTest;
 
 import com.google.common.collect.ObjectArrays;
 
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -100,9 +95,6 @@ import javax.crypto.spec.SecretKeySpec;
  */
 @RunWith(AndroidJUnit4.class)
 public class CipherTest {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String EXPECTED_PROVIDER_NAME = TestUtils.EXPECTED_CRYPTO_OP_PROVIDER_NAME;
 
@@ -320,6 +312,8 @@ public class CipherTest {
 
         public DeviceLockSession() throws Exception {
             setUp();
+            assumeRunNotOnVisibleBackgroundNonProfileUser(
+                    "Keyguard not supported for visible background users");
             mLockCredential = new LockScreenSession(mInstrumentation, mWmState);
             mLockCredential.setLockCredential();
         }
@@ -752,17 +746,6 @@ public class CipherTest {
                 /* isUnlockedDeviceRequired= */ true, /* isUserAuthRequired= */ false);
     }
 
-    // TODO(b/299298338): remove this test, which tests for the wrong behavior
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
-    @Test
-    public void testUnlockedDeviceRequiredKeysRequireSecureLockScreen() throws Exception {
-        for (String algorithm : BASIC_ALGORITHMS) {
-            assertThrows(KeyStoreException.class, () -> importDefaultKatKey(algorithm,
-                        getUnlockedDeviceRequiredParams(algorithm)));
-        }
-    }
-
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
     @Test
     public void testUnlockedDeviceRequiredKeysDoNotRequireSecureLockScreen() throws Exception {
         for (String algorithm : BASIC_ALGORITHMS) {
@@ -770,26 +753,6 @@ public class CipherTest {
         }
     }
 
-    // TODO(b/299298338): remove this test, which tests for the wrong behavior
-    @RequiresFlagsDisabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
-    @Test
-    public void testUnlockedDeviceRequiredKeysAreInvalidatedByLockRemoval() throws Exception {
-        assumeTrue(TestUtils.hasSecureLockScreen(getContext()));
-
-        List<ImportedKey> importedKeys = new ArrayList<>();
-        try (DeviceLockSession dl = new DeviceLockSession()) {
-            for (String algorithm : BASIC_ALGORITHMS) {
-                KeyProtection importParams = getUnlockedDeviceRequiredParams(algorithm);
-                importedKeys.add(importDefaultKatKey(algorithm, importParams));
-            }
-        }
-
-        for (ImportedKey key : importedKeys) {
-            assertFalse(TestUtils.keyExists(key.getAlias()));
-        }
-    }
-
-    @RequiresFlagsEnabled(android.security.Flags.FLAG_FIX_UNLOCKED_DEVICE_REQUIRED_KEYS_V2)
     @Test
     public void testUnlockedDeviceRequiredKeysAreNotInvalidatedByLockRemoval() throws Exception {
         assumeTrue(TestUtils.hasSecureLockScreen(getContext()));

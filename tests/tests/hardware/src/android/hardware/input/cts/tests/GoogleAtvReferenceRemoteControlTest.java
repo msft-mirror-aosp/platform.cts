@@ -33,6 +33,7 @@ public class GoogleAtvReferenceRemoteControlTest extends InputHidTestCase {
     // Exercises the Bluetooth behavior of the ATV reference remote control
     public GoogleAtvReferenceRemoteControlTest() {
         super(R.raw.google_atvreferenceremote_register);
+        addDelayAfterSetup();
     }
 
     @Test

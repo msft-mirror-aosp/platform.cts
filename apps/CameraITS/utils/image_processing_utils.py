@@ -51,8 +51,6 @@ MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)
     for i in range(MAX_LUT_SIZE)])
-NUM_TRIES = 2
-NUM_FRAMES = 4
 RGB2GRAY_WEIGHTS = (0.299, 0.587, 0.114)
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 
@@ -128,7 +126,7 @@ def capture_scene_image(cam, props, name_with_log_path):
 
 
 def convert_image_to_uint8(image):
-  image *= 255
+  image = image*255
   return image.astype(numpy.uint8)
 
 
@@ -1236,32 +1234,6 @@ def rotate_img_per_argv(img):
   if 'rotate180' in sys.argv:
     img_out = numpy.fliplr(numpy.flipud(img_out))
   return img_out
-
-
-def stationary_lens_cap(cam, req, fmt):
-  """Take up to NUM_TRYS caps and save the 1st one with lens stationary.
-
-  Args:
-   cam: open device session
-   req: capture request
-   fmt: format for capture
-
-  Returns:
-    capture
-  """
-  tries = 0
-  done = False
-  reqs = [req] * NUM_FRAMES
-  while not done:
-    logging.debug('Waiting for lens to move to correct location.')
-    cap = cam.do_capture(reqs, fmt)
-    done = (cap[NUM_FRAMES - 1]['metadata']['android.lens.state'] == 0)
-    logging.debug('status: %s', done)
-    tries += 1
-    if tries == NUM_TRIES:
-      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
-                                      tries)
-  return cap[NUM_FRAMES - 1]
 
 
 def compute_image_rms_difference_1d(rgb_x, rgb_y):

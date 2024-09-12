@@ -631,8 +631,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
         }
     }
 
+    /** Asserts the front stack activity type for the given display id. */
+    public void assertFrontStackActivityTypeOnDisplay(String msg, int activityType, int displayId) {
+        assertEquals(msg, activityType, getFrontRootTaskActivityType(displayId));
+    }
+
     public void assertFrontStackActivityType(String msg, int activityType) {
-        assertEquals(msg, activityType, getFrontRootTaskActivityType(DEFAULT_DISPLAY));
+        assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
     public void assertFocusedRootTask(String msg, int taskId) {
@@ -740,10 +745,39 @@ public class WindowManagerStateHelper extends WindowManagerState {
                 visible, isWindowSurfaceShown(windowName));
     }
 
+    /**
+     * Assert visibility on a {@code displayId} since an activity can be present on more than one
+     * displays.
+     */
+    public void assertVisibility(final ComponentName activityName, final boolean visible,
+            int displayId) {
+        final String windowName = getWindowName(activityName);
+        // Check existence of activity and window.
+        assertTrue("Activity=" + getActivityName(activityName) + " must exist.",
+                containsActivity(activityName));
+        assertTrue("Window=" + windowName + " must exist.", containsWindow(windowName));
+
+        // Check visibility of activity and window.
+        assertEquals("Activity=" + getActivityName(activityName) + " must" + (visible ? "" : " NOT")
+                + " be visible.", visible, isActivityVisible(activityName));
+        assertEquals("Window=" + windowName + " must" + (visible ? "" : " NOT")
+                        + " have shown surface on display=" + displayId,
+                visible, isWindowSurfaceShownOnDisplay(windowName, displayId));
+    }
+
     public void assertHomeActivityVisible(boolean visible) {
         final ComponentName homeActivity = getHomeActivityName();
         assertNotNull(homeActivity);
         assertVisibility(homeActivity, visible);
+    }
+
+    /**
+     * Note: This is required since home can be present on more than one displays.
+     */
+    public void assertHomeActivityVisible(boolean visible, int displayId) {
+        final ComponentName homeActivity = getHomeActivityName();
+        assertNotNull(homeActivity);
+        assertVisibility(homeActivity, visible, displayId);
     }
 
     /**

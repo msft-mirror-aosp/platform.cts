@@ -27,13 +27,17 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 
 // MegaAudio
@@ -53,6 +57,8 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private Context mContext;
     private AudioManager mAudioManager;
 
+    private AudioDeviceConnectionCallback mConnectionListener;
+
     private DuplexAudioManager mDuplexAudioManager;
 
     private AudioSourceProvider mLeftSineSourceProvider;
@@ -64,8 +70,6 @@ class AudioLoopbackCalibrationDialog extends Dialog
     private boolean mPlaying;
     private int mNumDisplayChannels;
     private WaveScopeView mWaveView = null;
-
-    private WebView mInfoPanel;
 
     Spinner mInputsSpinner;
     Spinner mOutputsSpinner;
@@ -123,10 +127,41 @@ class AudioLoopbackCalibrationDialog extends Dialog
         mOutputsSpinner = (Spinner) findViewById(R.id.output_devices_spinner);
         mOutputsSpinner.setOnItemSelectedListener(this);
 
-        mAudioManager.registerAudioDeviceCallback(new AudioDeviceConnectionCallback(), null);
 
-        mInfoPanel = (WebView) findViewById(R.id.audio_calibration_info);
-        mInfoPanel.loadUrl("file:///android_asset/html/AudioCalibrationInfo.html");
+        boolean hasWebView = AudioSystemFlags.supportsWebView(mContext);
+        View instructionsView = hasWebView ? new WebView(mContext) : new TextView(mContext);
+
+        LinearLayout instructionsFrame = findViewById(R.id.audio_calibration_info);
+        instructionsFrame.addView(instructionsView,
+                new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+
+        if (AudioSystemFlags.isWatch(mContext)) {
+            ((LinearLayout) findViewById(R.id.audio_calibration_process))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
+        mConnectionListener = new AudioDeviceConnectionCallback();
+
+        if (hasWebView) {
+            ((WebView) instructionsView)
+                    .loadUrl("file:///android_asset/html/AudioCalibrationInfo.html");
+        } else {
+            ((TextView) instructionsView)
+                    .setText(R.string.audio_calibration_info);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectionListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        stopAudio();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectionListener);
+        super.onStop();
     }
 
     ArrayAdapter fillAdapter(AudioDeviceInfo[] deviceInfos) {
@@ -149,11 +184,6 @@ class AudioLoopbackCalibrationDialog extends Dialog
             }
         }
         return arrayAdapter;
-    }
-
-    @Override
-    public void onStop() {
-        stopAudio();
     }
 
     private static final int CHANNEL_LEFT = 0;

@@ -414,6 +414,9 @@ abstract class SensorPrivacyBaseTest(
     @AppModeFull(reason = "Uses secondary app, instant apps have no visibility")
     fun testOpStartsRunningAfterStartedWithSensoryPrivacyEnabled() {
         assumeSensorToggleSupport()
+        if (sensor == CAMERA) {
+            assumeTrue(supportsCameraMute())
+        }
         setSensor(true)
         // Retry camera connection because external cameras are disconnected
         // if sensor privacy is enabled (b/182204067)

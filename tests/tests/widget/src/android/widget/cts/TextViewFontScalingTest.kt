@@ -26,12 +26,15 @@ import androidx.test.InstrumentationRegistry
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.ShellIdentityUtils
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.atomic.AtomicBoolean
 import org.junit.After
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,6 +42,12 @@ import org.junit.runner.RunWith
 /**
  * Test {@link TextView} under non-linear font scaling.
  */
+// The RequireRunNotOnVisibleBackgroundNonProfileUser annotation is added to prevent running as
+// a visible background user, because currently updating the font scale is allowed only for the
+// current user. (b/342307420)
+// TODO(b/342307420): Remove the annotation after updating font scale is allowed for visible
+// background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser
 @MediumTest
 @RunWith(AndroidJUnit4::class)
 class TextViewFontScalingTest {
@@ -273,5 +282,10 @@ class TextViewFontScalingTest {
                 .isWithin(TOLERANCE)
                 .of(expectedLineHeightPx)
         }
+
+        @JvmField
+        @ClassRule
+        @Rule
+        val sDeviceState = DeviceState()
     }
 }

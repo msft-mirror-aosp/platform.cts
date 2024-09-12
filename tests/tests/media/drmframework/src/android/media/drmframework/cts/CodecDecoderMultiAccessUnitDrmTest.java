@@ -16,8 +16,11 @@
 
 package android.media.drmframework.cts;
 
-import static android.media.drmframework.cts.CodecDecoderDrmTest.convert;
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
+import static android.media.drmframework.cts.CodecDecoderDrmTest.convert;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -29,6 +32,7 @@ import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderMultiAccessUnitDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
@@ -40,7 +44,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.media.codec.flags.Flags;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,7 +65,7 @@ import java.util.UUID;
  */
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @LargeTest
 @RunWith(Parameterized.class)
 public class CodecDecoderMultiAccessUnitDrmTest extends CodecDecoderMultiAccessUnitDrmTestBase {
@@ -112,7 +115,11 @@ public class CodecDecoderMultiAccessUnitDrmTest extends CodecDecoderMultiAccessU
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_stereo_48kHz_192kbps_opus_cenc.mp4"},
         }));
-        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
+        // cts -- check them all
+        // mcts/mts -- just check codecs implemented in modules
+        boolean ignoreModule = (TestUtils.currentTestMode() == TestUtils.TESTMODE_CTS);
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                        false /*testingallCodecs*/, ignoreModule /*ignoreModeDuringSelection*/);
     }
 
     /**

@@ -32,6 +32,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -78,6 +79,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     Context mContext;
     protected AudioManager mAudioManager;
+
+    private ConnectListener mConnectListener;
 
     // UI
     TextView[] mRouteStatus = new TextView[NUM_TEST_ROUTES];
@@ -512,23 +515,39 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mAudioManager = getSystemService(AudioManager.class);
         scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
 
+        // Utilties Buttons
+        if (mIsWatch) {
+            ((LinearLayout) findViewById(R.id.audio_loopback_utilities_layout))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
         connectLoopbackUI();
 
         if (mustRunTest()) {
             getPassButton().setEnabled(false);
-            enableStartButtons(true);
         } else {
             getPassButton().setEnabled(isReportLogOkToPass());
-            enableStartButtons(false);
         }
 
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mConnectListener = new ConnectListener();
 
         showRouteStatus();
         showTestInstructions();
         handleTestCompletion(false);
 
         DisplayUtils.setKeepScreenOn(this, true);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
+    public void onStop() {
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
+        super.onStop();
     }
 
     //
@@ -975,7 +994,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mTestStatusText.setText(generateStatusString(requirements, showResult));
 
         showWait(false);
-        enableStartButtons(mustRunTest());
+        enableStartButtons(true);
     }
 
     /**

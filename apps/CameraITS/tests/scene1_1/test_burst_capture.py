@@ -26,7 +26,7 @@ import its_session_utils
 
 _FRAME_TIME_DELTA_RTOL = 0.1  # allow 10% variation from reported value
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
-_NR_MODE_FAST = 1  # burst capture uses noise reduction mode FAST
+_NR_MODE_FAST = 1  # burst capture uses noise reducton mode FAST
 _NUM_TEST_FRAMES = 15
 _PATCH_H = 0.1  # center 10% patch params
 _PATCH_W = 0.1
@@ -50,6 +50,8 @@ class BurstCaptureTest(its_base_test.ItsBaseTest):
         hidden_physical_id=self.hidden_physical_id) as cam:
       props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(props)
+
+      # Check SKIP conditions
       camera_properties_utils.skip_unless(
           camera_properties_utils.backward_compatible(props) and
           camera_properties_utils.burst_capture_capable

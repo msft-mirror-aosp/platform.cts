@@ -23,5 +23,4 @@ public class OSFeatures {
 
     public static native int prctlCapBsetRead(int i);
     public static native boolean hasSeccompSupport();
-    public static native boolean needsSeccompSupport();
 }

@@ -42,6 +42,7 @@ android_test_helper_app {
         "mcts-adservices",
         "mcts-appsearch",
         "mcts-art",
+        "mcts-bluetooth",
         "mcts-cellbroadcast",
         "mcts-configinfrastructure",
         "mcts-conscrypt",

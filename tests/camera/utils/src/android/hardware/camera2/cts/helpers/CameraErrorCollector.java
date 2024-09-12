@@ -172,11 +172,13 @@ public class CameraErrorCollector extends ErrorCollector {
         }
 
         if (!Objects.equals(expected, actual)) {
+            String collectorMsg = String.format("%s (expected = %s, actual = %s) ", msg, expected,
+                    actual);
             if (mpc) {
+                Log.i(TAG, "MPC failure: " + collectorMsg);
                 mMPCStatus = false;
             } else {
-                addMessage(String.format("%s (expected = %s, actual = %s) ", msg, expected,
-                        actual));
+                addMessage(collectorMsg);
             }
             return false;
         }

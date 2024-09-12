@@ -31,6 +31,7 @@ android_test_helper_app {
         "general-tests",
         "mts",
         "sts",
+        "mcts",
     ],
     manifest: "AndroidManifest_mockime_res.xml",
     additional_manifests: [
@@ -78,6 +79,7 @@ android_test_helper_app {
         "general-tests",
         "mts",
         "sts",
+        "mcts",
     ],
     static_libs: [
         "CtsMockInputMethodLib",
@@ -102,6 +104,7 @@ android_test_helper_app {
         "general-tests",
         "mts",
         "sts",
+        "mcts",
     ],
     static_libs: [
         "CtsMockInputMethodLib",

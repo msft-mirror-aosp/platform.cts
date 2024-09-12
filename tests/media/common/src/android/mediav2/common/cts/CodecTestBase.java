@@ -132,6 +132,9 @@ public abstract class CodecTestBase {
     public static final boolean VNDK_IS_AT_LEAST_T =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     >= Build.VERSION_CODES.TIRAMISU;
+    public static final boolean VNDK_IS_AT_LEAST_U =
+            SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
+                    >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
     public static final boolean VNDK_IS_BEFORE_U =
             SystemProperties.getInt("ro.vndk.version", Build.VERSION_CODES.CUR_DEVELOPMENT)
                     < Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
@@ -937,19 +940,35 @@ public abstract class CodecTestBase {
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                mustTestAllCodecs, ComponentClass.ALL, null /* features */);
+                mustTestAllCodecs, ComponentClass.ALL, null /* features */,
+                false /*ignoreModeDuringSelection*/);
+    }
+
+    public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+            boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
+            boolean ignoreModeDuringSelection) {
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                mustTestAllCodecs, ComponentClass.ALL, null /* features */,
+                ignoreModeDuringSelection);
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch) {
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
-                mustTestAllCodecs, selectSwitch, null);
+                mustTestAllCodecs, selectSwitch, null, false);
     }
 
     public static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
             boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
             ComponentClass selectSwitch, String[] features) {
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                mustTestAllCodecs, selectSwitch, features, false);
+    }
+
+    private static List<Object[]> prepareParamList(List<Object[]> exhaustiveArgsList,
+            boolean isEncoder, boolean needAudio, boolean needVideo, boolean mustTestAllCodecs,
+            ComponentClass selectSwitch, String[] features, boolean ignoreModeDuringSelection) {
         ArrayList<String> mediaTypes = compileCompleteTestMediaTypesList(isEncoder,
                 needAudio, needVideo);
         ArrayList<String> cddRequiredMediaTypesList =
@@ -971,11 +990,13 @@ public abstract class CodecTestBase {
             }
 
             for (String codec : totalListOfCodecs) {
-                // general mode exclusions
-                if (!TestUtils.isTestableCodecInCurrentMode(codec)) {
-                    Log.v(LOG_TAG, "codec " + codec + " skipped in mode "
-                                    + TestUtils.currentTestModeName());
-                    continue;
+                if (!ignoreModeDuringSelection) {
+                    // general mode exclusions
+                    if (!TestUtils.isTestableCodecInCurrentMode(codec)) {
+                        Log.v(LOG_TAG, "codec " + codec + " skipped in mode "
+                                        + TestUtils.currentTestModeName());
+                        continue;
+                    }
                 }
                 // and then prefix checking exclusions
                 if (codecPrefix != null && !codec.startsWith(codecPrefix)) {

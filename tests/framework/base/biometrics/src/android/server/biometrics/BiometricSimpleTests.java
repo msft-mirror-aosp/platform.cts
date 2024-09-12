@@ -269,10 +269,17 @@ public class BiometricSimpleTests extends BiometricTestBase {
     @Test
     public void testInvalidInputs() {
         assumeTrue(Utils.isFirstApiLevel29orGreater());
+
+        //TODO(b/347123256): Update once mandatory biometrics becomes public
+        final int mandatoryBiometricsBit = 1 << 16;
         for (int i = 0; i < 32; i++) {
             final int authenticator = 1 << i;
             // If it's a public constant, no need to test
             if (Utils.isPublicAuthenticatorConstant(authenticator)) {
+                continue;
+            }
+
+            if (authenticator == mandatoryBiometricsBit) {
                 continue;
             }
 

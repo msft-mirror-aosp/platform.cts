@@ -26,7 +26,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.android.compatibility.common.util.ResultType;
@@ -36,6 +40,8 @@ import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
+import com.android.cts.verifier.libs.ui.PlainTextFormatter;
+import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // Here is the current specification for the Intent from the Immersive Audio test harness
 /*
@@ -57,8 +63,6 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
     ImmersiveAudioActivity mTheIAActivity;
 
     // UI
-    private WebView mResultsView;
-    private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
     private boolean mSupportsHeadTracking;
 
     // Intent Handling
@@ -94,8 +98,6 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
 
         setContentView(R.layout.immersive_audio_activity);
         setInfoResources(R.string.immersive_audio_test, R.string.immersive_audio_test_info, -1);
-
-        mResultsView = (WebView) findViewById(R.id.immersive_test_result);
 
         setPassFailButtonClickListeners();
 
@@ -199,11 +201,29 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
     private static final String KEY_LOWLATENCY = "feature_low_latency";
 
     private void displayIntent(Intent intent) {
-        mHtmlFormatter.clear();
-        mHtmlFormatter.openDocument();
+        LinearLayout resultsLayout = findViewById(R.id.immersive_test_result);
+        resultsLayout.removeViews(0, resultsLayout.getChildCount());
+
+        TextFormatter textFormatter;
+        View resultsView;
+
+        if (AudioSystemFlags.supportsWebView(this)) {
+            textFormatter = new HtmlFormatter();
+            resultsView = new WebView(this);
+        } else {
+            // No WebView
+            textFormatter = new PlainTextFormatter();
+            resultsView = new TextView(this);
+        }
+
+        resultsLayout.addView(resultsView,
+                new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
+
+        textFormatter.clear();
+        textFormatter.openDocument();
 
         if (!mSupportsHeadTracking) {
-            mHtmlFormatter.openBold()
+            textFormatter.openBold()
                     .appendText(getString(R.string.immersive_audio_noheadtracking))
                     .closeBold()
                     .appendBreak().appendBreak();
@@ -219,32 +239,31 @@ public class ImmersiveAudioActivity extends PassFailButtons.Activity {
             mPassRange = intent.getIntExtra(INTENT_EXTRA_PASSRANGE, -1);
             mVersionCode = intent.getStringExtra(INTENT_EXTRA_VERSIONCODE);
 
-            mHtmlFormatter.appendText(INTENT_EXTRA_TESTCODE + ": " + mTestCode);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_RESULT + ": " + mResultString);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_ERRORCODE + ": " + mErrorCode);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_LATENCY + ": " + mLatency);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_RELIABILITY + ": " + mReliability);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_PASSTHRESHOLD + ": " + mPassThreshold);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_PASSRELIABILITY + ": " + mPassReliability);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_PASSRANGE + ": " + mPassRange);
-            mHtmlFormatter.appendBreak();
-            mHtmlFormatter.appendText(INTENT_EXTRA_VERSIONCODE + ": " + mVersionCode);
-            mHtmlFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_TESTCODE + ": " + mTestCode);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_RESULT + ": " + mResultString);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_ERRORCODE + ": " + mErrorCode);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_LATENCY + ": " + mLatency);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_RELIABILITY + ": " + mReliability);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_PASSTHRESHOLD + ": " + mPassThreshold);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_PASSRELIABILITY + ": " + mPassReliability);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_PASSRANGE + ": " + mPassRange);
+            textFormatter.appendBreak();
+            textFormatter.appendText(INTENT_EXTRA_VERSIONCODE + ": " + mVersionCode);
+            textFormatter.appendBreak();
         } else {
-            mHtmlFormatter.openBold();
-            mHtmlFormatter.appendText("No Intent Received!");
-            mHtmlFormatter.closeBold();
+            textFormatter.openBold();
+            textFormatter.appendText("No Intent Received!");
+            textFormatter.closeBold();
         }
-        mHtmlFormatter.closeDocument();
-        mResultsView.loadData(mHtmlFormatter.toString(),
-                "text/html; charset=utf-8", "utf-8");
+        textFormatter.closeDocument();
+        textFormatter.put(resultsView);
     }
 
     //

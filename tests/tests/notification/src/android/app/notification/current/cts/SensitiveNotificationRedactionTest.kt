@@ -439,6 +439,10 @@ class SensitiveNotificationRedactionTest : BaseNotificationManagerTest() {
     @CddTest(requirement = "3.8.3.4/C-1-1")
     @RequiresFlagsEnabled(Flags.FLAG_REDACT_SENSITIVE_NOTIFICATIONS_FROM_UNTRUSTED_LISTENERS)
     fun testE2ERedaction_shouldRedact() {
+        assumeFalse(
+            mPackageManager.hasSystemFeature(PackageManager.FEATURE_WATCH) ||
+                    mPackageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+        )
         assertTrue(
             "Expected a notification assistant to be present",
             mPreviousEnabledAssistant != null

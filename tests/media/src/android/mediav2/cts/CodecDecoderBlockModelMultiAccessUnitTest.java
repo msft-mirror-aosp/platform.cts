@@ -17,9 +17,12 @@
 package android.mediav2.cts;
 
 import static android.media.MediaCodecInfo.CodecCapabilities.FEATURE_MultipleFrames;
+import static android.media.codec.Flags.FLAG_LARGE_AUDIO_FRAME_FINISH;
 import static android.mediav2.common.cts.CodecTestBase.SupportClass.CODEC_OPTIONAL;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.RECONFIG_FILE_MEDIA_TYPE_MAP;
 import static android.mediav2.cts.CodecDecoderMultiAccessUnitTest.exhaustiveArgsList;
+
+import static com.android.media.codec.flags.Flags.FLAG_LARGE_AUDIO_FRAME;
 
 import static org.junit.Assert.fail;
 
@@ -38,7 +41,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.media.codec.flags.Flags;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -65,7 +67,7 @@ import java.util.Collection;
  **/
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName = "VanillaIceCream")
 @AppModeFull(reason = "Instant apps cannot access the SD card")
-@RequiresFlagsEnabled(Flags.FLAG_LARGE_AUDIO_FRAME)
+@RequiresFlagsEnabled({FLAG_LARGE_AUDIO_FRAME, FLAG_LARGE_AUDIO_FRAME_FINISH})
 @RunWith(Parameterized.class)
 public class CodecDecoderBlockModelMultiAccessUnitTest
         extends CodecDecoderBlockModelMultiAccessUnitTestBase {

@@ -54,12 +54,17 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.FeatureUtil;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.internal.util.ArrayUtils;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -68,9 +73,13 @@ import java.util.Arrays;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class DistractingPackageTest {
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     private Context mContext;
     private PackageManager mPackageManager;
     private Handler mHandler;
+    private final UserHelper mUserHelper = new UserHelper();
 
     @Before
     public void setUp() {
@@ -99,19 +108,23 @@ public class DistractingPackageTest {
 
     @Test
     public void testShouldHideFromSuggestions() throws Exception {
-        final int currentUserId = getCurrentUserId();
+        final int userId = mUserHelper.isVisibleBackgroundUser()
+                ? mContext.getUserId() : getCurrentUserId();
         final LauncherApps launcherApps = mContext.getSystemService(LauncherApps.class);
         assertFalse("shouldHideFromSuggestions true before setting the flag",
                 launcherApps.shouldHideFromSuggestions(TEST_APP_PACKAGE_NAME,
-                        UserHandle.of(currentUserId)));
+                        UserHandle.of(userId)));
         setDistractionFlagsAndAssertResult(TEST_PACKAGE_ARRAY, RESTRICTION_HIDE_FROM_SUGGESTIONS,
                 ArrayUtils.emptyArray(String.class));
         assertTrue("shouldHideFromSuggestions false after setting the flag",
                 launcherApps.shouldHideFromSuggestions(TEST_APP_PACKAGE_NAME,
-                        UserHandle.of(currentUserId)));
+                        UserHandle.of(userId)));
     }
 
+    // This test is skipped for visible background users since it sets the component
+    // as profile owner for the current user.
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testCannotRestrictWhenUninstallBlocked() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
         addAndAssertProfileOwner();
@@ -130,13 +143,19 @@ public class DistractingPackageTest {
                 ALL_TEST_PACKAGES);
     }
 
+    // This test is skipped for visible background users since it sets the component
+    // as profile owner for the current user.
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testCannotRestrictUnderDisallowAppsControl() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
         assertCannotRestrictUnderUserRestriction(UserManager.DISALLOW_APPS_CONTROL);
     }
 
+    // This test is skipped for visible background users since it sets the component
+    // as profile owner for the current user.
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     public void testCannotRestrictUnderDisallowUninstallApps() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_DEVICE_ADMIN));
         assertCannotRestrictUnderUserRestriction(UserManager.DISALLOW_UNINSTALL_APPS);

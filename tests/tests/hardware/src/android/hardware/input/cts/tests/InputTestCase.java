@@ -228,7 +228,7 @@ public abstract class InputTestCase {
      */
     private void assertSource(String testCase, InputEvent expected, InputEvent actual) {
         assertNotEquals(testCase + " (source)", InputDevice.SOURCE_CLASS_NONE, actual.getSource());
-        assertTrue(testCase + " (source)", expected.isFromSource(actual.getSource()));
+        assertTrue(testCase + " (source)", actual.isFromSource(expected.getSource()));
     }
 
     /**

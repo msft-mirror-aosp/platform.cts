@@ -13,6 +13,7 @@
 # limitations under the License.
 """Verify feature combinations for stabilization, 10-bit, and frame rate."""
 
+import concurrent.futures
 import logging
 import os
 
@@ -65,6 +66,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
   """
 
   def test_feature_combination(self):
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+      self._test_feature_combination(executor)
+
+  def _test_feature_combination(self, executor):
     rot_rig = {}
     log_path = self.log_path
 
@@ -120,6 +125,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
 
       test_failures = []
+      preview_verification_futures = []
+      combination_names = []
       for stream_combination in combinations:
         streams_name = stream_combination['name']
         min_frame_duration = 0
@@ -214,6 +221,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if skip_test:
                 continue
 
+              # TODO: b/341299485 - parallelize preview recording
               recording_obj = (
                   preview_processing_utils.collect_data_with_surfaces(
                       cam, self.tablet_device, output_surfaces, is_stabilized,
@@ -264,15 +272,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, {fps_range[1]}+{_FPS_ATOL_METADATA})')
                 test_failures.append(failure_msg)
 
-              # Verify video stabilization
+              # Schedule stabilization verification to run asynchronously
               if is_stabilized:
-                stabilization_result = (
-                    preview_processing_utils.verify_preview_stabilization(
-                        recording_obj, gyro_events, _NAME, log_path, facing))
-                if stabilization_result['failure'] is not None:
-                  failure_msg = (combination_name + ': ' +
-                                 stabilization_result['failure'])
-                  test_failures.append(failure_msg)
+                future = executor.submit(
+                    preview_processing_utils.verify_preview_stabilization,
+                    recording_obj, gyro_events, _NAME, log_path, facing)
+                preview_verification_futures.append(future)
+                combination_names.append(combination_name)
 
               # Verify color space
               color_space = video_processing_utils.get_video_colorspace(
@@ -283,6 +289,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
                 test_failures.append(failure_msg)
+
+      # Verify preview stabilization
+      for future, name in zip(preview_verification_futures, combination_names):
+        stabilization_result = future.result()
+        logging.debug('Stabilization result for %s: %s',
+                      name, stabilization_result)
+        if stabilization_result['failure']:
+          failure_msg = f'{name}: {stabilization_result["failure"]}'
+          test_failures.append(failure_msg)
 
       # Assert PASS/FAIL criteria
       if test_failures:

@@ -16,7 +16,7 @@
   -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 xmlns:tools="http://schemas.android.com/tools"
-                android:fitsSystemWindows="true"
+                android:fitsSystemWindows="@bool/fit_system_windows"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
@@ -99,7 +99,7 @@
                     android:id="@+id/ref_device_id_input"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:inputType="numberDecimal|numberSigned"
+                    android:inputType="number"
                     android:hint="@string/reference_device_id_input_presence"/>
             </LinearLayout>
 

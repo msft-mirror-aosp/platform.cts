@@ -113,6 +113,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.modules.utils.build.SdkLevel;
@@ -122,6 +124,8 @@ import com.google.common.collect.Iterables;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -135,9 +139,16 @@ import java.util.Objects;
  * Tests zen/dnd related logic in NotificationManager.
  */
 @RunWith(AndroidJUnit4.class)
+// TODO(b/355106764): Remove the annotation once zen/dnd supports visible background users.
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "zen/dnd does not support visible"
+        + " background users at the moment")
 public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
     private static final String TAG = NotificationManagerZenTest.class.getSimpleName();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final String NOTIFICATION_CHANNEL_ID = TAG;
     private static final String NOTIFICATION_CHANNEL_ID_NOISY = TAG + "/noisy";
@@ -214,7 +225,28 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
 
             // Also get and cache the default policy for comparison later.
             if (Flags.modesApi()) {
-                mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                if (Flags.modesUi()) {
+                    mDefaultPolicy = mNotificationManager.getDefaultZenPolicy();
+                } else {
+                    // Pre-modes_ui, the "default policy" (for the purposes of merging with missing
+                    // or underspecified policies) is actually the manual policy. Thus we construct
+                    // a ZenPolicy matching the previous setNotificationPolicy() call.
+                    mDefaultPolicy = new ZenPolicy.Builder()
+                            .allowPriorityChannels(true)
+                            .disallowAllSounds()
+                            .allowAlarms(true)
+                            .allowMedia(true)
+                            .allowCalls(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowMessages(ZenPolicy.PEOPLE_TYPE_STARRED)
+                            .allowConversations(ZenPolicy.CONVERSATION_SENDERS_IMPORTANT)
+                            .allowRepeatCallers(true)
+                            .showAllVisualEffects()
+                            .showInAmbientDisplay(false)
+                            .showPeeking(false)
+                            .showLights(false)
+                            .showFullScreenIntent(false)
+                            .build();
+                }
             }
         });
     }
@@ -2966,4 +2998,5 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         final ResolveInfo resolveInfo = pm.resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull(resolveInfo);
     }
+
 }

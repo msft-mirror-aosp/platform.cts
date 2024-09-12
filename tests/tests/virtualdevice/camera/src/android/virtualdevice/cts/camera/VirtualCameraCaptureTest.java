@@ -26,7 +26,6 @@ import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 import static android.hardware.camera2.CameraMetadata.LENS_FACING_FRONT;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.assertImagesSimilar;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.imageHasColor;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.jpegImageToBitmap;
@@ -244,10 +243,45 @@ public class VirtualCameraCaptureTest {
         }
     }
 
+    /**
+     * Test that when the input of virtual camera comes from an ImageReader, the output ouf virtual
+     * camera is similar to the output of the image reader.
+     */
     @Test
     public void virtualCamera_renderFromMediaCodec() throws Exception {
+        // This must match the test video size to avoid down scaling the bitmap for the comparison
+        // and limit at best the diff value.
+        int width = 1280;
+        int height = 720;
+        double maxImageDiff = 20;
+
+        try (VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888)) {
+            String cameraId = getVirtualCameraId(virtualCamera);
+
+            try (ImageReader imageReader =
+                    ImageReader.newInstance(width, height, JPEG, IMAGE_READER_MAX_IMAGES)) {
+
+                VirtualCameraUtils.VideoRenderer videoRenderer =
+                        new VirtualCameraUtils.VideoRenderer(R.raw.test_video);
+                Image imageFromCamera = captureImage(cameraId, imageReader, videoRenderer);
+
+                Bitmap bitmapFromVideo = videoRenderer.getGoldenBitmap();
+                Bitmap bitmapFromCamera = jpegImageToBitmap(imageFromCamera);
+                VirtualCameraUtils.assertImagesSimilar(
+                        bitmapFromCamera, bitmapFromVideo, "renderFromMediaCodec", maxImageDiff);
+            }
+        }
+    }
+
+    /**
+     * Test that when the input of virtual camera comes from an ImageReader, the output ouf virtual
+     * camera is similar a golden file generated on a pixel device.
+     */
+    @Test
+    public void virtualCamera_renderFromMediaCodec_golden_from_pixel() throws Exception {
         int width = 460;
         int height = 260;
+        double maxImageDiff = 20;
 
         try (VirtualCamera virtualCamera = createVirtualCamera(width, height, YUV_420_888)) {
             String cameraId = getVirtualCameraId(virtualCamera);
@@ -255,12 +289,19 @@ public class VirtualCameraCaptureTest {
             try (ImageReader imageReader = ImageReader.newInstance(width, height, JPEG,
                     IMAGE_READER_MAX_IMAGES)) {
 
-                Image image = captureImage(cameraId, imageReader,
-                        new VirtualCameraUtils.VideoRenderer(R.raw.test_video));
+                Image imageFromCamera =
+                        captureImage(
+                                cameraId,
+                                imageReader,
+                                new VirtualCameraUtils.VideoRenderer(R.raw.test_video));
 
-                Bitmap bitmap = jpegImageToBitmap(image);
+                Bitmap bitmapFromCamera = jpegImageToBitmap(imageFromCamera);
                 Bitmap golden = loadBitmapFromRaw(R.raw.golden_test_video);
-                assertImagesSimilar(bitmap, golden, "media_codec_virtual_camera");
+                VirtualCameraUtils.assertImagesSimilar(
+                        bitmapFromCamera,
+                        golden,
+                        "renderFromMediaCodec_golden_from_pixel",
+                        maxImageDiff);
             }
         }
     }

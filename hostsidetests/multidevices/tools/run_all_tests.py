@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import json
 import logging
+import multi_device_utils
 import os
 import os.path
 from pathlib import Path
@@ -21,7 +23,6 @@ import re
 import subprocess
 import tempfile
 import time
-import multi_device_utils
 import yaml
 
 
@@ -109,29 +110,52 @@ def main():
   logging.basicConfig(level=logging.INFO)
   topdir = tempfile.mkdtemp(prefix='MultiDevice_')
   subprocess.call(['chmod', 'g+rx', topdir])  # Add permissions
-  logging.info('Saving multi-device tests output files to: %s', topdir)
+
+  # Parse command-line arguments
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+      '--test_cases',
+      nargs='+',
+      help='Specific test cases to run (space-separated)')
+  parser.add_argument(
+      '--test_files',
+      nargs='+',
+      help='Filter test files by name (substring match, space-separated)')
+  args = parser.parse_args()
 
   config_file_contents = get_config_file_contents()
   device_ids = get_device_serial_number(config_file_contents)
+
+  # Prepare devices
+  for device_id in device_ids:
+    # Verify CTS Verifier is installed
+    multi_device_utils.check_apk_installed(device_id, CTS_VERIFIER_PACKAGE_NAME)
 
   test_results = {}
   test_summary_file_list = []
 
   # Run tests
   for root, _, files in os.walk(TESTS_DIR):
-    for file in files:
-      if file.endswith('_test.py'):
-        test_name = os.path.splitext(file)[0]
-        test_file_path = os.path.join(root, file)
-        logging.info('Start running test: %s', test_name)
+    for test_file in files:
+      if test_file.endswith('-py-ctsv') and (
+          args.test_files is None or
+          test_file in args.test_files
+      ):
+        test_file_path = os.path.join(root, test_file)
+        logging.info('Start running test: %s', test_file)
         cmd = [
-            'python3',
             test_file_path,  # Use the full path to the test file
             '-c',
             CONFIG_FILE,
             '--testbed',
-            test_name,
+            test_file,
         ]
+
+        if args.test_cases:
+          cmd.extend(['--tests'])
+          for test_case in args.test_cases:
+            cmd.extend([test_case])
+
         summary_file_path = os.path.join(topdir, MOBLY_TEST_SUMMARY_TXT_FILE)
 
         test_completed = False
@@ -140,9 +164,13 @@ def main():
           fp.seek(0)
           for line in fp:
             if line.startswith('Test summary saved in'):
-              match = re.search(r'"(.*?)"', line)  # Get file path
+              match = re.search(r'"(.*?)"', line)  # Get test artifacts file path
               if match:
                 test_summary = Path(match.group(1))
+                test_artifact = test_summary.parent
+                logging.info(
+                    'Please check the test artifacts of %s under: %s', test_file, test_artifact
+                )
                 if test_summary.exists():
                   test_summary_file_list.append(test_summary)
                   test_completed = True

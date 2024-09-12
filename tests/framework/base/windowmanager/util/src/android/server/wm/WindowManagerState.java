@@ -511,6 +511,20 @@ public class WindowManagerState {
         return null;
     }
 
+    /**
+     * Returns the task display area feature id present on a display, or
+     * {@code DisplayAreaOrganizer.FEATURE_UNDEFINED} if task display area not found.
+     * Note: This is required since an activity can be present on more than one task display areas
+     * if there are visible background users.
+     */
+    public int getTaskDisplayAreaFeatureIdOnDisplay(ComponentName activityName, int displayId) {
+        final DisplayArea tda = getDisplay(displayId).getTaskDisplayArea(activityName);
+        if (tda != null) {
+            return tda.getFeatureId();
+        }
+        return FEATURE_UNDEFINED;
+    }
+
     @Nullable
     public DisplayArea getTaskDisplayArea(ComponentName activityName) {
         final List<DisplayArea> result = new ArrayList<>();
@@ -1086,7 +1100,22 @@ public class WindowManagerState {
         return false;
     }
 
-    /** Check if at least one window which matches the specified name has shown it's surface. */
+    /**
+     * Check if at least one window on {@code displayId}. which matches the specified name has shown
+     * it's surface.
+     */
+    public boolean isWindowSurfaceShownOnDisplay(String windowName, int displayId) {
+        for (WindowState window : mWindowStates) {
+            if (window.getName().equals(windowName) && window.getDisplayId() == displayId) {
+                if (window.isSurfaceShown()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /** Check if at least one window which matches the specified name has shown its surface. */
     public boolean isWindowSurfaceShown(String windowName) {
         for (WindowState window : mWindowStates) {
             if (window.getName().equals(windowName)) {

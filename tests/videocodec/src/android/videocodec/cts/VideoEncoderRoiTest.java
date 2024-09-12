@@ -258,7 +258,7 @@ public class VideoEncoderRoiTest extends VideoEncoderQualityRegressionTestBase {
         Predicate<Double> predicate = bdRate -> bdRate <= EXPECTED_BD_RATE;
         Map<Long, List<Rect>> frameCropRects = getPtsRectMap(roiMetadata);
         getQualityRegressionForCfgs(cfgsUnion, testInstances, encoderNames, res, FRAME_LIMIT,
-                FRAME_RATE, frameCropRects, false, predicate);
+                FRAME_RATE, frameCropRects, false, predicate, true);
     }
 }
 
