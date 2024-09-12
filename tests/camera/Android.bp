@@ -109,3 +109,10 @@ filegroup {
         "src/android/hardware/camera2/cts/rs/BitmapUtils.java",
     ],
 }
+
+test_module_config {
+    name: "CtsCameraTestCases_cts_fastbasicstest",
+    base: "CtsCameraTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.camera2.cts.FastBasicsTest"],
+}
