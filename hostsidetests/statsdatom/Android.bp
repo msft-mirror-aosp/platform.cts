@@ -156,3 +156,10 @@ test_module_config_host {
     test_suites: ["general-tests"],
     include_filters: ["android.cts.statsdatom.powermanager"],
 }
+
+test_module_config_host {
+    name: "CtsStatsdAtomHostTestCases_statsdatom_performancehintmanager",
+    base: "CtsStatsdAtomHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.cts.statsdatom.performancehintmanager"],
+}
