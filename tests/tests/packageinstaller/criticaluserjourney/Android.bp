@@ -104,3 +104,26 @@ android_test {
     ],
     test_config: "UpdateSelfTest.xml",
 }
+
+android_test {
+    name: "CtsPackageInstallerCUJDeviceAdminTestCases",
+    defaults: ["cts_package_installer_cuj_defaults"],
+
+    static_libs: [
+        "Harrier",
+        "Nene",
+    ],
+
+    data: [
+        ":CtsPackageInstallerDeviceAdminApp",
+    ],
+    per_testcase_directory: true,
+    manifest: "AndroidManifest_deviceadmin.xml",
+    srcs: [
+        "src/android/packageinstaller/criticaluserjourney/cts/UninstallDeviceAdminAppTest.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/PackageInstallerCujTestBase.java",
+        "src/android/packageinstaller/criticaluserjourney/cts/UninstallationTestBase.java",
+
+    ],
+    test_config: "DeviceAdminTest.xml",
+}

@@ -92,3 +92,10 @@ filegroup {
     ],
     path: "common/src",
 }
+
+test_module_config {
+    name: "CtsBroadcastTestCases_android_server_am",
+    base: "CtsBroadcastTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}

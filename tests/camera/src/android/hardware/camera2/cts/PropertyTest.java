@@ -29,6 +29,8 @@ import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -42,6 +44,7 @@ import com.android.window.flags.Flags;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -62,6 +65,9 @@ public class PropertyTest {
     private static final TestApp PROPERTY_APP2 =
             new TestApp("CameraCtsPropertyTestApp2", PROPERTY_APP2_PACKAGE_NAME, 30,
                     false, "CameraCtsPropertyTestApp2.apk");
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
     private PackageManager mPackageManager;
