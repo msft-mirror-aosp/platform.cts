@@ -355,3 +355,11 @@ test_module_config {
     test_suites: ["general-tests"],
     include_filters: ["android.app.cts.DownloadManagerTest"],
 }
+
+test_module_config {
+    name: "CtsAppFgsTestCases_pm_Presubmit",
+    base: "CtsAppFgsTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
