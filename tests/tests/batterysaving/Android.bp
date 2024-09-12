@@ -52,3 +52,10 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsBatterySavingTestCases_android_server_power",
+    base: "CtsBatterySavingTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
