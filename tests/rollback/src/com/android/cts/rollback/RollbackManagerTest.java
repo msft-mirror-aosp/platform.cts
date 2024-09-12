@@ -16,6 +16,8 @@
 
 package com.android.cts.rollback;
 
+import static android.crashrecovery.flags.Flags.FLAG_ENABLE_CRASHRECOVERY;
+
 import static com.android.cts.rollback.lib.RollbackInfoSubject.assertThat;
 import static com.android.cts.rollback.lib.RollbackUtils.getRollbackManager;
 
@@ -837,12 +839,35 @@ public class RollbackManagerTest {
         RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
 
         assertThat(rollback).isNotNull();
-        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
     }
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_RECOVERABILITY_DETECTION)
     public void testImpactLevelInRollbackDefault() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
+    public void testImpactLevelInRollback_withGetRollbackImpactAsSystemApi() throws Exception {
+        Install.single(TestApp.A1).commit();
+        Install.single(TestApp.A2).setEnableRollback().setRollbackImpactLevel(1).commit();
+        RollbackUtils.waitForAvailableRollback(TestApp.A);
+        RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
+
+        assertThat(rollback).isNotNull();
+        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled({Flags.FLAG_RECOVERABILITY_DETECTION, FLAG_ENABLE_CRASHRECOVERY})
+    public void testImpactLevelInRollbackDefault_withGetRollbackImpactAsSystemApi() throws Exception {
         Install.single(TestApp.A1).commit();
         Install.single(TestApp.A2).setEnableRollback().commit();
         RollbackUtils.waitForAvailableRollback(TestApp.A);
