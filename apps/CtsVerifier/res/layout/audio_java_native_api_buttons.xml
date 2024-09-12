@@ -14,7 +14,7 @@
      limitations under the License.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:fitsSystemWindows="true"
+    android:fitsSystemWindows="@bool/fit_system_windows"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal">
@@ -22,7 +22,8 @@
     <RadioGroup
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:id="@+id/audio_api_radiogroup">
         <RadioButton
             android:id="@+id/audioJavaApiBtn"
             android:text="@string/audio_general_JavaApi"

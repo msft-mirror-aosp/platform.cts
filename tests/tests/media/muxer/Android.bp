@@ -87,6 +87,7 @@ android_test {
     jni_uses_sdk_apis: true,
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
+        "cts",
         "general-tests",
         "mcts-media",
         "mts-media",

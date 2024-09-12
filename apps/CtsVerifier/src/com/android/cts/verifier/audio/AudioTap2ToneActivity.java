@@ -26,7 +26,6 @@ import android.media.AudioManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -70,8 +69,10 @@ public class AudioTap2ToneActivity
         implements View.OnClickListener, AppCallback {
     private static final String TAG = "AudioTap2ToneActivity";
 
-    Context mContext;
-    AudioManager mAudioManager;
+    private Context mContext;
+    private AudioManager mAudioManager;
+
+    private ConnectListener mConnectListener;
 
     private boolean mHasMic;
     private boolean mHasSpeaker;
@@ -271,14 +272,21 @@ public class AudioTap2ToneActivity
         stopAudio();
         calculateTestPass();
 
-        mAudioManager.registerAudioDeviceCallback(new ConnectListener(), new Handler());
+        mConnectListener = new ConnectListener();
 
         DisplayUtils.setKeepScreenOn(this, true);
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        mAudioManager.registerAudioDeviceCallback(mConnectListener, null);
+    }
+
+    @Override
     public void onStop() {
         stopAudio();
+        mAudioManager.unregisterAudioDeviceCallback(mConnectListener);
         super.onStop();
     }
 

@@ -33,6 +33,7 @@ import androidx.test.uiautomator.UiDevice
 import com.google.common.truth.Truth.assertThat
 import kotlin.reflect.KClass
 import org.junit.AfterClass
+import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
@@ -157,6 +158,13 @@ class OverrideConfigTest {
         ActivityScenario.launch(kClass.java).use {
             // Initial state should already have overridden the values, verify that first
             it.onActivity {
+                // TODO(b/350774335): When the activity is in multi-window mode, rotating the device
+                // or requesting an orientation change may not result in the app config orientation
+                // changing. For now, assume the activity is not in multi-window mode. We should do
+                // ideally do something like resizing the activity task to trigger the requested
+                // orientation instead, which will be easier to do after some refactoring is done.
+                assumeFalse(it.isInMultiWindowMode)
+
                 assertThat(it.textOrientation.text).isEqualTo("default")
                 assertThat(it.textSmallestWidth.text).isEqualTo("overridden 99999")
                 assertThat(it.resources.getString(R.string.config_overridden_string))

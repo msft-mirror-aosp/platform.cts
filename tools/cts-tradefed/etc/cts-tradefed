@@ -118,21 +118,18 @@ if [ "$USE_ATS" == "true" ]; then
 
     FASTBOOT_FLAGS=" \
       --enable_fastboot_in_android_real_device=true \
-      --fastboot='$(type -P fastboot 2>/dev/null)' \
+      --fastboot=$(type -P fastboot 2>/dev/null) \
     "
     if ! type -P fastboot &> /dev/null; then
         FASTBOOT_FLAGS="--enable_fastboot_in_android_real_device=false"
     fi;
 
-    # Add a new variable to control the dynamic downloader
-    ENABLE_XTS_DYNAMIC_DOWNLOADER=${ENABLE_XTS_DYNAMIC_DOWNLOADER:-"true"}
-
     DEVICE_INFRA_SERVICE_FLAGS=" \
-      --aapt='$(type -P aapt2 2>/dev/null)' \
-      --adb='$(type -P adb 2>/dev/null)' \
-      --ats_console_olc_server_path='${ATS_OLC_SERVER_JAR}' \
-      --enable_xts_dynamic_downloader=${ENABLE_XTS_DYNAMIC_DOWNLOADER} \
-      --xts_res_dir_root='${HOME}/xts' \
+      --aapt=$(type -P aapt2 2>/dev/null) \
+      --adb=$(type -P adb 2>/dev/null) \
+      --ats_console_olc_server_path=${ATS_OLC_SERVER_JAR} \
+      --enable_xts_dynamic_downloader=false \
+      --xts_res_dir_root=$HOME/xts \
       --public_dir=/tmp \
       --simplified_log_format=true \
       --tmp_dir_root=/tmp \

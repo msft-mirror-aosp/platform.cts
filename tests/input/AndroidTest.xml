@@ -56,7 +56,7 @@
         <option name="pull-pattern-keys"
             value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
         <!-- Pull files created by tests, like the output of screenshot tests -->
-        <option name="directory-keys" value="/sdcard/Download/CtsInputTestCases" />
+        <option name="directory-keys" value="/storage/emulated/0/CtsInputTestCases" />
         <option name="collect-on-run-ended-only" value="false" />
     </metrics_collector>
 </configuration>

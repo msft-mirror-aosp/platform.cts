@@ -55,6 +55,13 @@ message Requirement {
   // test cases proto to be repeated fields. Non-Cts tests need optional fields.
   optional bool is_non_cts_test = 7 [default = false];
 
+  // Tests may use different setups depending on which performance class(es)
+  // are being tested. This field specifies a list of identifiers for each
+  // setup. Each identifier must have at least one corresponding entry in specs.
+  // The list can just be a single entry of a blank string if only one setup
+  // exists.
+  map<string, TestConfig> test_configs = 8;
+
   // variant_id to Variant
   //
   // The variant_id is a field name safe string.
@@ -78,6 +85,10 @@ message RequirementSpec {
   // variant_id to VariantSpec
   // The variant_id is a field name safe string.
   map<string, VariantSpec> variant_specs = 5;
+
+  // The test config id to use for this spec. If not specified, defaults to an
+  // empty string.
+  optional string test_config_id = 6 [default = ""];
 }
 
 enum Group {
@@ -96,10 +107,7 @@ message RequiredMeasurement {
   optional MeasurementType measurement_type = 3;
   optional Comparison comparison = 4;
 
-  // Whether this measurement is used to differentiate between tests. Some
-  // requirements have multiple tests that test for different performance
-  // classes. ex: 5.1/H-1-2.
-  optional bool is_test_differentiator = 5 [default = false];
+  reserved 5;  // is_test_differentiator
 }
 
 // A required value for a RequiredMeasurement at a given MPC level.
@@ -132,6 +140,12 @@ message VariantSpec {
   map<string, RequiredValue> required_values = 4;
 }
 
+message TestConfig {
+  // The id is a field name safe string.
+  optional string id = 1;
+  optional string description = 2;
+}
+
 enum Comparison {
   COMPARISON_UNSPECIFIED = 0;
   COMPARISON_EQUAL = 1;
@@ -140,6 +154,7 @@ enum Comparison {
   COMPARISON_GREATER_THAN = 4;
   COMPARISON_GREATER_THAN_OR_EQUAL = 5;
   COMPARISON_INFO_ONLY = 6;
+  COMPARISON_CONFIG = 7;
 }
 
 enum MeasurementType {

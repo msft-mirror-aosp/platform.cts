@@ -19,7 +19,7 @@ import static android.app.Activity.RESULT_OK;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR;
 import static android.media.cts.MediaProjectionActivity.ACCEPT_RESOURCE_ID;
 import static android.media.cts.MediaProjectionActivity.ENTIRE_SCREEN_STRING_RES_NAME;
-import static android.media.cts.MediaProjectionActivity.SPINNER_RESOURCE_ID;
+import static android.media.cts.MediaProjectionActivity.SCREEN_SHARE_OPTIONS_RES_PATTERN;
 import static android.media.cts.MediaProjectionActivity.getResourceString;
 import static android.server.wm.BuildUtils.HW_TIMEOUT_MULTIPLIER;
 
@@ -38,19 +38,19 @@ import android.media.ImageReader;
 import android.media.cts.MediaProjectionActivity;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.UiObject2;
-import android.support.test.uiautomator.UiObjectNotFoundException;
-import android.support.test.uiautomator.UiScrollable;
-import android.support.test.uiautomator.UiSelector;
-import android.support.test.uiautomator.Until;
 import android.util.Log;
 import android.view.Surface;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.UiObject2;
+import androidx.test.uiautomator.UiObjectNotFoundException;
+import androidx.test.uiautomator.UiScrollable;
+import androidx.test.uiautomator.UiSelector;
+import androidx.test.uiautomator.Until;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -323,7 +323,7 @@ public class MediaProjectionSDK33Test {
     }
 
     private boolean selectEntireScreenOption(String entireScreenString) {
-        UiObject2 spinner = waitForObject(By.res(SPINNER_RESOURCE_ID));
+        UiObject2 spinner = waitForObject(By.res(SCREEN_SHARE_OPTIONS_RES_PATTERN));
         if (spinner == null) {
             Log.e(TAG, "Couldn't find spinner to select projection mode");
             return false;

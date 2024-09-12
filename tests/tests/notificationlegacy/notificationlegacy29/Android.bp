@@ -21,12 +21,14 @@ android_test {
     name: "CtsLegacyNotification29TestCases",
     defaults: ["cts_defaults"],
     static_libs: [
+        "Harrier",
         "androidx.test.rules",
         "ctstestrunner-axt",
         "androidx.test.rules",
         "junit",
         "permission-test-util-lib",
         "compatibility-device-util-axt",
+        "compatibility-device-preconditions",
         "CtsAppTestStubsShared",
     ],
     libs: [

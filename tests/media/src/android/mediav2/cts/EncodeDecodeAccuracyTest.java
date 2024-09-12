@@ -172,6 +172,11 @@ public class EncodeDecodeAccuracyTest extends CodecDecoderTestBase {
             assumeTrue("Color conversion related tests are not valid on cuttlefish releases "
                     + "through android T", IS_AT_LEAST_U);
         }
+        // Few vendor codecs fixed color conversion issues in Android U.
+        if (!isSoftwareCodec(mCompName)) {
+            assumeTrue("Color conversion tests are not valid for vendor codecs in vendor"
+                    + "partitions older than Android U.", VNDK_IS_AT_LEAST_U);
+        }
         if (mEncCfgParams.mInputBitDepth == 10) {
             assumeTrue("Codec doesn't support ABGR2101010",
                     hasSupportForColorFormat(mCompName, mMediaType, COLOR_Format32bitABGR2101010));

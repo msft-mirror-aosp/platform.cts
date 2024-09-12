@@ -24,6 +24,7 @@ import static android.view.View.SYSTEM_UI_FLAG_FULLSCREEN;
 import static android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
 import static android.view.View.SYSTEM_UI_FLAG_IMMERSIVE;
 import static android.view.View.SYSTEM_UI_FLAG_LOW_PROFILE;
+import static android.view.View.SYSTEM_UI_FLAG_VISIBLE;
 import static android.view.WindowInsets.Type.ime;
 import static android.view.WindowInsets.Type.navigationBars;
 import static android.view.WindowInsets.Type.statusBars;
@@ -254,6 +255,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         PollingCheck.waitFor(TIMEOUT, () -> !rootView.getRootWindowInsets().isVisible(ime()));
     }
 
+    @FlakyTest(bugId = 339380439)
     @Test
     public void testImeForceShowingNavigationBar() throws Exception {
         final Instrumentation instrumentation = getInstrumentation();
@@ -531,9 +533,10 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         waitForIdle();
         final int sysUiFlag = SYSTEM_UI_FLAG_LOW_PROFILE;
         getInstrumentation().runOnMainSync(() -> controlTarget.setSystemUiVisibility(sysUiFlag));
-        PollingCheck.waitFor(TIMEOUT, () -> targetSysUiVis[0] == sysUiFlag);
-        getInstrumentation().runOnMainSync(() -> controlTarget.setSystemUiVisibility(0));
-        PollingCheck.waitFor(TIMEOUT, () -> targetSysUiVis[0] == 0);
+        PollingCheck.waitFor(TIMEOUT, () -> (targetSysUiVis[0] & sysUiFlag) == sysUiFlag);
+        getInstrumentation().runOnMainSync(() ->
+                controlTarget.setSystemUiVisibility(SYSTEM_UI_FLAG_VISIBLE));
+        PollingCheck.waitFor(TIMEOUT, () -> (targetSysUiVis[0] & sysUiFlag) == 0);
     }
 
     @Test
@@ -927,6 +930,7 @@ public class WindowInsetsControllerTests extends WindowManagerTestBase {
         assertEquals(1, dispatchApplyWindowInsetsCount[0]);
     }
 
+    @FlakyTest(bugId = 339380439)
     @Test
     public void testDispatchApplyWindowInsetsCount_ime() throws Exception {
         assumeFalse("Automotive is to skip this test until showing and hiding certain insets "

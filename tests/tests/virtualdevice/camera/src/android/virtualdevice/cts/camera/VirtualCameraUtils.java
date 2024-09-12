@@ -45,6 +45,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 
@@ -63,6 +64,7 @@ import android.graphics.PixelFormat;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.cts.rs.BitmapUtils;
 import android.media.Image;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.opengl.EGLConfig;
@@ -92,8 +94,7 @@ public final class VirtualCameraUtils {
             new CameraCharacteristics.Key<Integer>("android.info.deviceId", int.class);
     private static final long TIMEOUT_MILLIS = 2000L;
     private static final float EPSILON = 0.3f;
-    // Difference between two bitmaps using average of per-pixel differences.
-    private static final double BITMAP_MAX_DIFF = 1.5;
+    private static final int TEST_VIDEO_SEEK_TIME_MS = 2000;
     private static final String TAG = "VirtualCameraUtils";
 
     static VirtualCameraConfig createVirtualCameraConfig(
@@ -251,15 +252,6 @@ public final class VirtualCameraUtils {
      * @param golden    Golden bitmap to compare to.
      * @param prefix    Prefix for the image file generated in case of error.
      */
-    static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix) {
-        assertImagesSimilar(generated, golden, prefix, BITMAP_MAX_DIFF);
-    }
-
-    /**
-     * @param generated Bitmap generated from the test.
-     * @param golden    Golden bitmap to compare to.
-     * @param prefix    Prefix for the image file generated in case of error.
-     */
     static void assertImagesSimilar(Bitmap generated, Bitmap golden, String prefix,
             double maxDiff) {
         boolean assertionPassed = false;
@@ -279,11 +271,13 @@ public final class VirtualCameraUtils {
     static class VideoRenderer implements Consumer<Surface> {
         private final MediaPlayer mPlayer;
         private final CountDownLatch mLatch;
+        private final Uri mUri;
 
         VideoRenderer(int resId) {
             String path =
                     "android.resource://" + getApplicationContext().getPackageName() + "/" + resId;
-            mPlayer = MediaPlayer.create(getApplicationContext(), Uri.parse(path));
+            mUri = Uri.parse(path);
+            mPlayer = MediaPlayer.create(getApplicationContext(), mUri);
             mLatch = new CountDownLatch(1);
 
             mPlayer.setOnInfoListener((mp, what, extra) -> {
@@ -298,7 +292,7 @@ public final class VirtualCameraUtils {
         @Override
         public void accept(Surface surface) {
             mPlayer.setSurface(surface);
-            mPlayer.seekTo(1000);
+            mPlayer.seekTo(TEST_VIDEO_SEEK_TIME_MS);
             mPlayer.start();
             try {
                 // Block until media player has drawn the first video frame
@@ -306,6 +300,20 @@ public final class VirtualCameraUtils {
                         .that(mLatch.await(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS))
                         .isTrue();
             } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        Bitmap getGoldenBitmap() {
+            // Get the frame at a specific time (in microseconds) or the first frame 🐶
+            try (MediaMetadataRetriever goldenRetriever = new MediaMetadataRetriever()) {
+                goldenRetriever.setDataSource(getApplicationContext(), mUri);
+                Bitmap frame =
+                        goldenRetriever.getFrameAtTime(
+                                TEST_VIDEO_SEEK_TIME_MS, MediaMetadataRetriever.OPTION_CLOSEST);
+                assertNotNull("Can't extract golden frame for test video.", frame);
+                return frame;
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }

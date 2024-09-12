@@ -35,8 +35,9 @@ ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_31CM = 13.5  # cm
-CHART_HEIGHT_22CM = 9.5  # cm
+CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
+CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_90CM = 90.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -88,6 +89,8 @@ LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
 
+SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -201,6 +204,8 @@ def calc_chart_scaling(chart_distance, camera_fov):
       chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
   is_chart_distance_31cm = math.isclose(
       chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_90cm = math.isclose(
+      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
 
   if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
     chart_scaling = SCALE_WIDE_IN_22CM_RIG
@@ -208,14 +213,16 @@ def calc_chart_scaling(chart_distance, camera_fov):
     chart_scaling = SCALE_TELE_IN_22CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
     chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif (fov <= FOV_THRESH_TELE25 and
-        is_chart_distance_31cm or
-        chart_distance > CHART_DISTANCE_31CM):
+  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE25_IN_31CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
+    chart_scaling = SCALE_CHART_67_PERCENT
   elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE_IN_31CM_RIG
+  elif chart_distance > CHART_DISTANCE_31CM:
+    chart_scaling = SCALE_CHART_33_PERCENT
   return chart_scaling
 
 
@@ -296,7 +303,7 @@ class Chart(object):
       scale_factor: float; scaling factor for chart search
     """
     req = capture_request_utils.auto_capture_request()
-    cap_chart = image_processing_utils.stationary_lens_cap(cam, req, fmt)
+    cap_chart = capture_request_utils.stationary_lens_capture(cam, req, fmt)
     img_3a = image_processing_utils.convert_capture_to_rgb_image(
         cap_chart, props)
     img_3a = image_processing_utils.rotate_img_per_argv(img_3a)
@@ -837,23 +844,48 @@ def correct_faces_for_crop(faces, img, crop):
   """Correct face rectangles for sensor crop.
 
   Args:
-    faces: list of dicts with face information
+    faces: list of dicts with face information relative to sensor's
+      aspect ratio
     img: np image array
-    crop: dict of crop region size with 'top, right, left, bottom' as keys
+    crop: dict of crop region size with 'top', 'right', 'left', 'bottom'
+      as keys to desired region of the sensor to read out
   Returns:
     list of face locations (left, right, top, bottom) corrected
   """
   faces_corrected = []
-  cw, ch = crop['right'] - crop['left'], crop['bottom'] - crop['top']
+  crop_w = crop['right'] - crop['left']
+  crop_h = crop['bottom'] - crop['top']
   logging.debug('crop region: %s', str(crop))
-  w = img.shape[1]
-  h = img.shape[0]
+  img_w, img_h = img.shape[1], img.shape[0]
+  crop_aspect_ratio = crop_w / crop_h
+  img_aspect_ratio = img_w / img_h
   for rect in [face['bounds'] for face in faces]:
     logging.debug('rect: %s', str(rect))
-    left = int(round((rect['left'] - crop['left']) * w / cw))
-    right = int(round((rect['right'] - crop['left']) * w / cw))
-    top = int(round((rect['top'] - crop['top']) * h / ch))
-    bottom = int(round((rect['bottom'] - crop['top']) * h / ch))
+    if crop_aspect_ratio >= img_aspect_ratio:
+      # Sensor width is being cropped, so we need to adjust the horizontal
+      # coordinates of the face rectangles to account for the crop.
+      # Since we are converting from sensor coordinates to image coordinates
+      img_crop_h_ratio = img_h / crop_h
+      scaled_crop_w = crop_w * img_crop_h_ratio
+      excess_w = (img_w - scaled_crop_w) / 2
+      left = int(
+          round((rect['left'] - crop['left']) * img_crop_h_ratio + excess_w))
+      right = int(
+          round((rect['right'] - crop['left']) * img_crop_h_ratio + excess_w))
+      top = int(round((rect['top'] - crop['top']) * img_crop_h_ratio))
+      bottom = int(round((rect['bottom'] - crop['top']) * img_crop_h_ratio))
+    else:
+      # Sensor height is being cropped, so we need to adjust the vertical
+      # coordinates of the face rectangles to account for the crop.
+      img_crop_w_ratio = img_w / crop_w
+      scaled_crop_h = crop_h * img_crop_w_ratio
+      excess_w = (img_h - scaled_crop_h) / 2
+      left = int(round((rect['left'] - crop['left']) * img_crop_w_ratio))
+      right = int(round((rect['right'] - crop['left']) * img_crop_w_ratio))
+      top = int(
+          round((rect['top'] - crop['top']) * img_crop_w_ratio + excess_w))
+      bottom = int(
+          round((rect['bottom'] - crop['top']) * img_crop_w_ratio + excess_w))
     faces_corrected.append([left, right, top, bottom])
   logging.debug('faces_corrected: %s', str(faces_corrected))
   return faces_corrected
@@ -969,15 +1001,29 @@ def find_aruco_markers(input_img, output_img_path):
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  # Early return if sufficient markers found
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected.')
+    cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
+    image_processing_utils.write_image(input_img / 255, output_img_path)
+    return corners, ids, rejected_params
+  # Try with high-contrast greyscale if needed
+  logging.debug('Trying ArUco marker detection with greyscale image.')
+  bw_img = convert_image_to_high_contrast_black_white(input_img)
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
+      bw_img, aruco_dict, parameters=parameters)
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected with greyscale image.')
+  # Handle case where no markers are found
   if ids is None:
-    e_msg = 'ArUco markers not detected.'
     image_processing_utils.write_image(input_img/255, output_img_path)
-    raise AssertionError(e_msg)
-  logging.debug('Number of ArUco markers detected: %d', len(ids))
+    raise AssertionError('ArUco markers not detected.')
+  # Log and save results
+  logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-  image_processing_utils.write_image(input_img/255, output_img_path)
+  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+  image_processing_utils.write_image(bw_img / 255, output_img_path)
   return corners, ids, rejected_params
 
 

@@ -1707,13 +1707,11 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             mId1 = NOTIFICATION_ID + 1;
 
             Notification.MessagingStyle.Message msg1 =
-                    new Notification.MessagingStyle.Message("text 1", 0 /* timestamp */,
-                            "sender 1");
+                    new Notification.MessagingStyle.Message("text1", 0 /* timestamp */, "sender1");
             msg1.getExtras().putCharSequence(extrasKey1, extrasValue1);
 
             Notification.MessagingStyle.Message msg2 =
-                    new Notification.MessagingStyle.Message("text 2", 1 /* timestamp */,
-                            "sender 2");
+                    new Notification.MessagingStyle.Message("text2", 1 /* timestamp */, "sender2");
             msg2.getExtras().putCharSequence(extrasKey2, extrasValue2);
 
             Notification.MessagingStyle style = new Notification.MessagingStyle("display_name");
@@ -1723,7 +1721,7 @@ public class NotificationListenerVerifierActivity extends InteractiveVerifierAct
             Notification n1 =
                     new Notification.Builder(mContext, NOTIFICATION_CHANNEL_ID)
                             .setContentTitle("ClearTest 1")
-                            .setContentText("Content Title")
+                            .setContentText(mTag1.toString())
                             .setPriority(Notification.PRIORITY_LOW)
                             .setSmallIcon(mIcon1)
                             .setWhen(mWhen1)

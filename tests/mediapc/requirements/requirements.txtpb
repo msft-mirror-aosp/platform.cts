@@ -255,6 +255,12 @@ requirements {
   description:
     "Maximum codec initialization latency for a 1080p or smaller video "
     "encoding session for all hardware video encoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
 
   measurements: {
     key: "codec_initialization_latency_ms"
@@ -422,6 +428,12 @@ requirements {
   id: "5.1/H-1-8"
   name: "Audio encoder init latency"
   description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio encoding session for all audio encoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "codec_initialization_latency_ms"
     value: {
@@ -600,6 +612,12 @@ requirements {
   id: "5.1/H-1-13"
   name: "Audio decoder init latency"
   description: "Maximum codec initialization latency for a 128 kbps or lower bitrate audio decoding session for all audio decoders when under load."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "codec_initialization_latency_ms"
     value: {
@@ -806,31 +824,97 @@ requirements {
 }
 requirements {
   id: "5.1/H-1-20"
+  name: "Video Codec Hgl Editing"
+  description: "Video codec Hgl Editing"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "hlg_editing"
+    value: {
+      description: "Is hdr Editing supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support the Feature_HdrEditing feature for all hardware AV1 and HEVC encoders present on the device at 4K resolution or the largest Camera-supported resolution, whichever is less."
+      required_values: {
+        key: "hlg_editing"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-21"
+  name: "Video Codec Dynamic Color Aspect"
+  description: "Video codec dynamic color aspect"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "dynamic_color_aspects"
+    value: {
+      description: "Is Dynamic Color Aspect supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support FEATURE_DynamicColorAspect for all hardware video decoders (AVC, HEVC, VP9, AV1, or later). Note: This means applications can update the color aspects of the video content during the decoding session. Decoders that support 10-bit and 8-bit content MUST support dynamically switching between 8- and 10-bit content in Surface mode. Decoders that support HDR transfer function MUST support dynamically switching between SDR and HDR content."
+      required_values: {
+        key: "dynamic_color_aspects"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.1/H-1-22"
+  name: "Video Codec Portrait Resolution"
+  description: "Video codec portrait resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "portrait_resolution"
+    value: {
+      description: "Is Portrait Resolution supported."
+      measurement_type: MEASUREMENT_TYPE_BOOL
+      comparison: COMPARISON_EQUAL
+    }
+  }
   specs {
     key: 35
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "MUST support encoding, decoding, GPU-editing and displaying video content in portrait aspect ratio regardless of the rotation metadata for the largest Camera supported resolution or 4K whichever is less. Note: this includes HDR profiles if codec supports HDR. AV1 codecs are only required to support 1080p resolution. This requirement is only for hardware codecs, GPU and the DPU."
+      required_values: {
+        key: "portrait_resolution"
+        value {
+          bool_value: true
+        }
+      }
     }
   }
 }
@@ -838,6 +922,12 @@ requirements {
   id: "5.12/H-1-2"
   name: "RGBA 1010102 color format"
   description: "RGBA_1010102 color format support for hardware encoders."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "rgba_1010102_color_format"
     value: {
@@ -895,6 +985,12 @@ requirements {
   id: "5.2/H-2-1"
   name: "VEQ"
   description: "Video encoding quality (VEQ) tests."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "bdrate_vmaf"
     value: {
@@ -1017,12 +1113,74 @@ requirements {
 }
 requirements {
   id: "5.3/H-1-1"
+  name: "Frame drop"
   description: "- Decoder frame drops"
+  test_configs: {
+    key: "1080p_30fps"
+    value: {
+      id: "1080p_30fps"
+    }
+  }
+  test_configs: {
+    key: "1080p_60fps"
+    value: {
+      id: "1080p_60fps"
+    }
+  }
+  test_configs: {
+    key: "4k_60fps"
+    value: {
+      id: "4k_60fps"
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_30sec"
+    value: {
+      description: "Frame dropped in 30 seconds"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_rate"
+    value: {
+      description: "Frame rate the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_CONFIG
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "Resolution the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.333 percent frame drop) for a 1080p 30 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_30fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1030,6 +1188,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST NOT drop more than 2 frames in 10 seconds (i.e less than 0.333 percent frame drop) for a 1080p 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 6
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1037,6 +1214,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.167 percent frame drop) for a 1080p 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1044,6 +1240,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST NOT drop more than 1 frame in 10 seconds (i.e less than 0.167 percent frame drop) for a 4K 60 fps video session under load."
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -1051,17 +1266,98 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
 requirements {
   id: "5.3/H-1-2"
-  description: "- Decoder frame drops"
+  name: "Adaptive Playback Frame Drop"
+  description: "Adaptive playback frame drop"
+  test_configs: {
+    key: "1080p_30fps"
+    value: {
+      id: "1080p_30fps"
+    }
+  }
+  test_configs: {
+    key: "1080p_60fps"
+    value: {
+      id: "1080p_60fps"
+    }
+  }
+  test_configs: {
+    key: "4k_60fps"
+    value: {
+      id: "4k_60fps"
+    }
+  }
+  measurements: {
+    key: "frame_drops_per_30sec"
+    value: {
+      description: "Frame dropped in 30 seconds"
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_LESS_THAN_OR_EQUAL
+    }
+  }
+  measurements: {
+    key: "frame_rate"
+    value: {
+      description: "Frame rate the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_CONFIG
+    }
+  }
+  measurements: {
+    key: "resolution"
+    value: {
+      description: "Resolution the test was ran at."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_CONFIG
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 30 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128Kbps AAC audio playback."
+      test_config_id: "1080p_30fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 30.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1069,6 +1365,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST NOT drop more than 2 frames in 10 seconds during a video resolution change in a 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 6
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1076,6 +1391,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 60 fps video session under load. Load is defined as a concurrent 1080p to 720p video-only transcoding session using hardware video codecs, as well as a 128 kbps AAC audio playback."
+      test_config_id: "1080p_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 1080
+        }
+      }
     }
   }
   specs {
@@ -1083,6 +1417,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST NOT drop more than 1 frame in 10 seconds during a video resolution change in a 60 fps video session under load for a 4K session."
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
   specs {
@@ -1090,6 +1443,25 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      test_config_id: "4k_60fps"
+      required_values {
+        key: "frame_drops_per_30sec"
+        value {
+          int_value: 3
+        }
+      }
+      required_values {
+        key: "frame_rate"
+        value {
+          double_value: 60.0
+        }
+      }
+      required_values {
+        key: "resolution"
+        value {
+          int_value: 2160
+        }
+      }
     }
   }
 }
@@ -1796,6 +2168,12 @@ requirements {
   id: "7.1.1.1/H-1-1"
   name: "Screen Resolution R"
   description: "- Screen resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements {
     key: "long_resolution_pixels"
     value: {
@@ -1838,6 +2216,12 @@ requirements {
   id: "7.1.1.1/H-2-1"
   name: "Screen Resolution"
   description: "- Screen resolution"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements {
     key: "long_resolution_pixels"
     value: {
@@ -1937,6 +2321,12 @@ requirements {
   id: "7.1.1.3/H-1-1"
   name: "Screen Density R"
   description: "- Screen density"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements {
     key: "display_density_dpi"
     value: {
@@ -1964,6 +2354,12 @@ requirements {
   id: "7.1.1.3/H-2-1"
   name: "Screen Density"
   description: "- Screen density"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements {
     key: "display_density_dpi"
     value: {
@@ -2030,6 +2426,12 @@ requirements {
   id: "7.1.1.3/H-3-1"
   name: "HDR display"
   description: "HDR display"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: [
     {
       key: "is_hdr"
@@ -2078,6 +2480,12 @@ requirements {
   id: "7.6.1/H-1-1"
   name: "Android 11 Memory"
   description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "physical_memory_mb"
     value: {
@@ -2104,6 +2512,12 @@ requirements {
   id: "7.6.1/H-2-1"
   name: "Memory"
   description: "Minimum memory available to the kernel as reported by android.app.ActivityManager.MemoryInfo."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "physical_memory_mb"
     value: {
@@ -2169,6 +2583,12 @@ requirements {
   id: "8.2/H-1-1"
   name: "Sequential write"
   description: "Sequential write"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: {
     key: "filesystem_io_rate_mbps"
     value: {
@@ -2233,23 +2653,67 @@ requirements {
 }
 requirements {
   id: "8.2/H-2-1"
-  description: "- Read and write performance"
+  name: "Sequential write S"
+  description: "Sequential write"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Sequential write performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST ensure a sequential write performance of at least 125 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 125
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-1-2"
-  description: "- Read and write performance"
+  name: "Random Write"
+  description: "- Random write"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Random write performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST ensure a random write performance of at least 10 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 10
+        }
+      }
     }
   }
   specs {
@@ -2257,6 +2721,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 10
+        }
+      }
     }
   }
   specs {
@@ -2264,6 +2734,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 10
+        }
+      }
     }
   }
   specs {
@@ -2271,28 +2747,78 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 10
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-2-2"
-  description: "- Read and write performance"
+  name: "Random Write S"
+  description: "- Random write"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Random write performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
-      specification: "same"
+      specification: "MUST ensure a random write performance of at least 10 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 10
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-1-3"
-  description: "- Read and write performance"
+  name: "Sequential Read"
+  description: "- Sequential read"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Sequential read performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST ensure a sequential read performance of at least 200 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 200
+        }
+      }
     }
   }
   specs {
@@ -2300,6 +2826,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST ensure a sequential read performance of at least 250 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 250
+        }
+      }
     }
   }
   specs {
@@ -2307,6 +2839,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 250
+        }
+      }
     }
   }
   specs {
@@ -2314,28 +2852,78 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 250
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-2-3"
-  description: "- Read and write performance"
+  name: "Sequential Read S"
+  description: "- Sequential read"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Sequential read performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST ensure a sequential read performance of at least 250 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 250
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-1-4"
-  description: "- Read and write performance"
+  name: "Random Read"
+  description: "- Random read"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Random read performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 30
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_11
       specification: "MUST ensure a random read performance of at least 25 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 25
+        }
+      }
     }
   }
   specs {
@@ -2343,6 +2931,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_13
       specification: "MUST ensure a random read performance of at least 40 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 40
+        }
+      }
     }
   }
   specs {
@@ -2350,6 +2944,12 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_14
       specification: "MUST ensure a random read performance of at least 100 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 100
+        }
+      }
     }
   }
   specs {
@@ -2357,17 +2957,45 @@ requirements {
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_15
       specification: "same"
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 100
+        }
+      }
     }
   }
 }
 requirements {
   id: "8.2/H-2-4"
-  description: "- Read and write performance"
+  name: "Random Read S"
+  description: "- Random read"
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
+  measurements: {
+    key: "filesystem_io_rate_mbps"
+    value: {
+      id: "filesystem_io_rate_mbps"
+      description: "Random read performance in MB per second."
+      measurement_type: MEASUREMENT_TYPE_DOUBLE
+      comparison: COMPARISON_GREATER_THAN_OR_EQUAL
+    }
+  }
   specs {
     key: 31
     value {
       mpc: MEDIA_PERFORMANCE_CLASS_12
       specification: "MUST ensure a random read performance of at least 40 MB/s."
+      required_values: {
+        key: "filesystem_io_rate_mbps"
+        value: {
+          double_value: 40
+        }
+      }
     }
   }
 }
@@ -2389,6 +3017,12 @@ requirements {
   id: "7.1.4.1/H-1-3"
   name: "Vulkan"
   description: "Must support vulkan physical device protected memory and global priority."
+  test_configs: {
+    key: ""
+    value: {
+      id: ""
+    }
+  }
   measurements: [
     {
       key: "vk_ext_global_priority"

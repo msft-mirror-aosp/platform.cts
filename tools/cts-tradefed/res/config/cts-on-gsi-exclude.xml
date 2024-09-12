@@ -158,10 +158,14 @@
     <option name="compatibility:exclude-filter" value="CtsUwbMultiDeviceTestCase_FiraRangingTests" />
 
     <!-- b/296896687 -->
-    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
-    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
-    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
-    <option name="compatibility:exclude-filter" value="CtsViewTestCases android.view.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.ASurfaceControlTest#testSurfaceTransaction_setFrameTimeline_notPreferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_30ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setDesiredPresentTime_100ms" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_preferredIndex" />
+    <option name="compatibility:exclude-filter" value="CtsSurfaceControlTests android.view.surfacecontrol.cts.SurfaceControlTest#testSurfaceTransaction_setFrameTimeline_nonPreferredIndex" />
 
     <!-- b/298915013 Remove CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest from cts-on-gsi -->
     <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.AttestKeyTest#testEcAttestKey_StrongBox" />
@@ -179,9 +183,6 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 
-    <!-- b/342028446 Remove SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked from cts-on-gsi -->
-    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases android.cts.statsdatom.sizecompatrestartbutton.SizeCompatRestartButtonStatsTests#testSizeCompatRestartButtonAppearedButNotClicked" />
-
     <!-- b/337678518#comment25 Missing vendor_required_attestation_certificates.xml -->
     <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
 
@@ -189,4 +190,12 @@
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualIntentFilterChanges" />
     <option name="compatibility:exclude-filter" value="CtsDynamicMimePreferredActivitiesHostTestCases android.dynamicmime.cts.PreferredActivitiesTestCases#testModifyGroupWithoutActualGroupChanges" />
 
+    <!-- b/349776686 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testAttestedRoTAcrossKeymints" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testEcAttestation_UniqueIdWorksWithCorrectPermission_StrongBox" />
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.KeyAttestationTest#testRsaAttestation_StrongBox" />
+
+    <!-- b/349072303 -->
+    <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
 </configuration>

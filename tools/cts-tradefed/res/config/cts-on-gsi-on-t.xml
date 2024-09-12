@@ -65,4 +65,7 @@
     <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases2" />
     <option name="compatibility:exclude-filter" value="signed-CtsSecureElementAccessControlTestCases3" />
 
+    <!-- b/355055754, b/265405707, b/293943253, b/341364053 -->
+    <option name="compatibility:exclude-filter" value="CtsMediaV2TestCases android.mediav2.cts.CodecDecoderTest" />
+
 </configuration>

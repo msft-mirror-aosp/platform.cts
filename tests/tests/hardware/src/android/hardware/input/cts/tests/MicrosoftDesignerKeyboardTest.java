@@ -33,6 +33,7 @@ public class MicrosoftDesignerKeyboardTest extends InputHidTestCase {
 
     public MicrosoftDesignerKeyboardTest() {
         super(R.raw.microsoft_designer_keyboard_register);
+        addDelayAfterSetup();
     }
 
     @Test

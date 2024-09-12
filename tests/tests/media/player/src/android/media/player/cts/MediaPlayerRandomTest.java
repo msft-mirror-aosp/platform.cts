@@ -18,6 +18,8 @@ package android.media.player.cts;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static java.util.stream.Collectors.joining;
+
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaPlayer;
 import android.media.cts.MediaHeavyPresubmitTest;
@@ -40,6 +42,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -137,6 +141,7 @@ public class MediaPlayerRandomTest extends MediaTestBase {
 
     private void testPlayerRandomAction(final String res) throws Exception {
         WatchDog watchDog = new WatchDog(5000);
+        ActionCounter actionCounter = new ActionCounter();
         try {
             mPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
                 @Override
@@ -163,7 +168,7 @@ public class MediaPlayerRandomTest extends MediaTestBase {
                 int action = r.nextInt(12);
                 int param1 = r.nextInt(MAX_PARAM);
                 int param2 = r.nextInt(MAX_PARAM);
-                Log.d(TAG, "Action: " + action + " Param1: " + param1 + " Param2: " + param2);
+                actionCounter.recordAction(action, param1, param2);
                 watchDog.reset();
                 assertTrue(!mMediaServerDied);
 
@@ -219,6 +224,57 @@ public class MediaPlayerRandomTest extends MediaTestBase {
             Log.v(TAG, e.toString());
         } finally {
             watchDog.stop();
+            Log.d(TAG, actionCounter.toString());
+        }
+    }
+
+    private static final class ActionCounter {
+
+        private static final int RECENT_ACTION_LIMIT = 20;
+
+        private final int[] mActionCounts;
+        private final ArrayDeque<int[]> mRecentActions;
+
+        ActionCounter() {
+            mActionCounts = new int[NUMBER_OF_PLAYER_RANDOM_ACTIONS];
+            mRecentActions = new ArrayDeque<>(RECENT_ACTION_LIMIT);
+        }
+
+        public void recordAction(int action, int param1, int param2) {
+            mActionCounts[action]++;
+            int[] actionAndParams =
+                    mRecentActions.size() >= RECENT_ACTION_LIMIT
+                            ? mRecentActions.pollFirst()
+                            : new int[3];
+            actionAndParams[0] = action;
+            actionAndParams[1] = param1;
+            actionAndParams[2] = param2;
+            mRecentActions.addLast(actionAndParams);
+        }
+
+        @Override
+        public String toString() {
+            String recentActions =
+                    mRecentActions.stream()
+                            .map(
+                                    actionAndParams ->
+                                            "{a="
+                                                    + actionAndParams[0]
+                                                    + ",p1="
+                                                    + actionAndParams[1]
+                                                    + ",p2="
+                                                    + actionAndParams[2]
+                                                    + "}")
+                            .collect(joining(", "));
+            return "Action counts (total="
+                    + Arrays.stream(mActionCounts).sum()
+                    + "): "
+                    + Arrays.toString(mActionCounts)
+                    + "\nPrevious "
+                    + RECENT_ACTION_LIMIT
+                    + " actions (oldest to newest): ["
+                    + recentActions
+                    + "]";
         }
     }
 }

@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.media.AudioManager;
 import android.os.Looper;
 import android.util.DisplayMetrics;
 
@@ -60,13 +61,15 @@ public abstract class PlayerListener implements Player.Listener {
     PIP_MODE_TEST,
     SPLIT_SCREEN_TEST,
     DEVICE_LOCK_TEST,
-    LOCK_PLAYBACK_CONTROLLER_TEST
+    LOCK_PLAYBACK_CONTROLLER_TEST,
+    AUDIO_OFFLOAD_TEST
   }
 
   public static boolean mPlaybackEnded;
   protected long mExpectedTotalTime;
   protected MainActivity mActivity;
   protected ScrollTestActivity mScrollActivity;
+  protected AudioOffloadTestActivity mAudioOffloadActivity;
   protected long mSendMessagePosition;
   protected int mPreviousOrientation;
   protected int mOrientationIndex;
@@ -77,6 +80,8 @@ public abstract class PlayerListener implements Player.Listener {
   protected Format mCurrentTrackFormat;
   protected Format mConfiguredTrackFormat;
   protected long mStartTime;
+  protected AudioManager mAudioManager;
+  protected boolean mRingVolumeUpdated;
 
   public PlayerListener() {
     this.mSendMessagePosition = 0;
@@ -130,6 +135,13 @@ public abstract class PlayerListener implements Player.Listener {
   }
 
   /**
+   * Returns True for Audio Offload test.
+   */
+  public final boolean isAudioOffloadTest() {
+    return getTestType().equals(TestType.AUDIO_OFFLOAD_TEST);
+  }
+
+  /**
    * Returns expected playback time for the playlist.
    */
   public final long getExpectedTotalTime() {
@@ -166,6 +178,13 @@ public abstract class PlayerListener implements Player.Listener {
    */
   public final void setScrollActivity(ScrollTestActivity activity) {
     this.mScrollActivity = activity;
+  }
+
+  /**
+   * Sets activity for audio offload test.
+   */
+  public final void setAudioOffloadActivity(AudioOffloadTestActivity activity) {
+    this.mAudioOffloadActivity = activity;
   }
 
   /**
@@ -213,18 +232,31 @@ public abstract class PlayerListener implements Player.Listener {
           if (mPlaybackEnded) {
             throw new RuntimeException("mPlaybackEnded already set, player could be ended");
           }
-          if (!isScrollTest()) {
-            mActivity.removePlayerListener();
-          } else {
+          if (isScrollTest()) {
             assertTrue(mScrollRequested);
             mScrollActivity.removePlayerListener();
+          } else if (isAudioOffloadTest()) {
+            mAudioOffloadActivity.removePlayerListener();
+          } else {
+            mActivity.removePlayerListener();
           }
           // Verify the total time taken by the notification test
           if (getTestType().equals(TestType.CALL_NOTIFICATION_TEST) || getTestType().equals(
               TestType.MESSAGE_NOTIFICATION_TEST)) {
+            // Restore the ring volume in case it was updated
+            if (mRingVolumeUpdated) {
+              mAudioManager.setStreamVolume(AudioManager.STREAM_RING,
+                  mAudioManager.getStreamMinVolume(AudioManager.STREAM_RING), 0 /*no flag used*/);
+            }
             long actualTime = System.currentTimeMillis() - mStartTime;
             assertEquals((float) mExpectedTotalTime, (float) actualTime,
-              NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+                NOTIFICATIONTEST_PLAYBACK_DELTA_TIME_US);
+          }
+          if (isAudioOffloadTest()) {
+            assertTrue("Player did not sleep for audio offload",
+                mAudioOffloadActivity.mIsSleepingForAudioOffloadEnabled);
+            assertTrue("Audio offload was not enabled",
+                mAudioOffloadActivity.mIsAudioOffloadEnabled);
           }
           mPlaybackEnded = true;
           LISTENER_LOCK.notify();
@@ -311,6 +343,13 @@ public abstract class PlayerListener implements Player.Listener {
       }
     }
   }
+
+  /**
+   * This method is triggered after the test completes, that is there are no more
+   * actions left to be performed in the test. This can be used to free resources, assert
+   * conditions and or anything else that is required to be done post completion of the test.
+   */
+  public void onTestCompletion() { /* Default empty/Noop implementation. */ }
 
   /**
    * Get all audio/subtitle tracks group from the player's Tracks.

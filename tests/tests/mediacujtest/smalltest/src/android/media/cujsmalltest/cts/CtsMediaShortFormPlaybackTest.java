@@ -16,6 +16,8 @@
 
 package android.media.cujsmalltest.cts;
 
+import android.media.AudioFormat;
+import android.media.cujcommon.cts.AudioOffloadTestPlayerListener;
 import android.media.cujcommon.cts.CujTestBase;
 import android.media.cujcommon.cts.CujTestParam;
 import android.media.cujcommon.cts.DeviceLockTestPlayerListener;
@@ -50,6 +52,8 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CtsMediaShortFormPlaybackTest extends CujTestBase {
 
+  private static final String MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING =
+      "android.resource://android.media.cujsmalltest.cts/raw/sine1khzs40dblong";
   private static final String MP4_FORBIGGERJOYRIDES_ASSET_720P_HEVC_URI_STRING =
       "android.resource://android.media.cujsmalltest.cts/raw/ForBiggerJoyrides_720p_hevc_15s";
   private static final String MP4_FORBIGGERMELTDOWN_ASSET_720P_HEVC_URI_STRING =
@@ -160,6 +164,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
             .setTimeoutMilliSeconds(50000)
             .setPlayerListener(new LockPlaybackControllerTestPlayerListener(6000)).build(),
             "Hevc_720p_15sec_LockPlaybackTest"},
+        {CujTestParam.builder().setMediaUrls(prepareSineWaveAudioList())
+            .setTimeoutMilliSeconds(100000)
+            .setPlayerListener(new AudioOffloadTestPlayerListener()).build(),
+            "Mp3_Sine_AudioOffloadTest"},
     }));
     return exhaustiveArgsList;
   }
@@ -282,6 +290,16 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
     return audioInput;
   }
 
+  /**
+   * Prepare sine wave audio list.
+   */
+  public static List<String> prepareSineWaveAudioList() {
+    List<String> audioInput = Arrays.asList(
+        MP3_SINE_ASSET_1KHZ_40DB_LONG_URI_STRING);
+    return audioInput;
+  }
+
+
   // Test to Verify video playback with and without seek
   @ApiTest(apis = {"android.media.MediaCodec#configure",
       "android.media.MediaCodec#createByCodecName",
@@ -327,6 +345,10 @@ public class CtsMediaShortFormPlaybackTest extends CujTestBase {
       Assume.assumeFalse("Skipping " + mTestType + " for a visible background user"
               + " as individual lock/unlock on a secondary screen is not supported.",
               isVisibleBackgroundNonProfileUser(mActivity));
+    }
+    if (mCujTestParam.playerListener().isAudioOffloadTest()) {
+      Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support audio offloading",
+          deviceSupportAudioOffload(AudioFormat.ENCODING_MP3));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }

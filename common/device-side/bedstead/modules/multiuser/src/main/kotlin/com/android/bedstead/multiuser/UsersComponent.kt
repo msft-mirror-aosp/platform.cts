@@ -369,7 +369,11 @@ class UsersComponent(private val deviceState: DeviceState) : DeviceStateComponen
         )
         mUsers[instrumentedUser.type()] = instrumentedUser
         if (mutableSwitchedToUser == OptionalBoolean.ANY) {
-            if (!mAnnotationHasSwitchedUser && instrumentedUser.canBeSwitchedTo()) {
+            if (instrumentedUser.isVisibleBagroundNonProfileUser()) {
+                // If the option for a visible background user is ANY,
+                // set it to FALSE to prevent user switching on the driver screen.
+                mutableSwitchedToUser = OptionalBoolean.FALSE
+            } else if (!mAnnotationHasSwitchedUser && instrumentedUser.canBeSwitchedTo()) {
                 mutableSwitchedToUser = OptionalBoolean.TRUE
             }
         }

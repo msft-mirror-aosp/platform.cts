@@ -47,11 +47,18 @@ public class ClassProfile {
     // A map of test methods defined in this class with the method signature as the key.
     private Map<String, MethodProfile> mTestMethods = null;
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT4_ANNOTATION_PATTERNS = new HashSet<>(
+            List.of(
+                    "org.junit.*",
+                    "com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4"
+            ));
 
-    // TODO(slotus): Add known patterns.
-    private static final Set<String> JUNIT3_CLASS_PATTERNS = new HashSet<>(List.of());
+    private static final Set<String> JUNIT3_CLASS_PATTERNS = new HashSet<>(
+            List.of(
+                    "junit.framework.TestCase",
+                    "android.test.AndroidTestCase",
+                    "android.test.InstrumentationTestCase"
+            ));
 
     public ClassProfile(String moduleName, String packageName, String className, boolean apiClass) {
         mModule = moduleName;
@@ -112,6 +119,25 @@ public class ClassProfile {
             mMethods.put(methodSignature, new MethodProfile(this, methodName, params));
         }
         return mMethods.get(methodSignature);
+    }
+
+    /**
+     * Adds a supper method call when the method is extended from super classes. If the "super"
+     * keyword is not explicitly added, the java bytecode will not show which super class is called.
+     * In this case, find the nearest method along the super class chain and add an additionally
+     * call to that method.
+     */
+    public void resolveExtendedMethods() {
+        for (MethodProfile method : mMethods.values()) {
+            if (method.isDirectMember() || mSuperClass == null) {
+                continue;
+            }
+            MethodProfile superMethod = mSuperClass.findMethod(
+                    method.getMethodName(), method.getMethodParams());
+            if (superMethod != null) {
+                method.addMethodCall(superMethod);
+            }
+        }
     }
 
     /** Adds an interface implemented by the class. */
@@ -232,6 +258,17 @@ public class ClassProfile {
         return false;
     }
 
+    /** Finds the given method from the class or its super classes. */
+    private MethodProfile findMethod(String methodName, List<String> params) {
+        if (isApiClass()) {
+            return getOrCreateMethod(methodName, params);
+        }
+        String methodSignature = Utils.getMethodSignature(methodName, params);
+        if (mMethods.containsKey(methodSignature)) {
+            return mMethods.get(methodSignature);
+        }
+        return mSuperClass == null ? null : mSuperClass.findMethod(methodName, params);
+    }
 
     private boolean matchAnyTypes(int typesValue) {
         return (mClassType & typesValue) != 0;

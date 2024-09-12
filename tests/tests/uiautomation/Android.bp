@@ -30,6 +30,7 @@ android_test {
         "CtsAccessibilityServiceUtils",
         "ctstestrunner-axt",
         "truth",
+        "Harrier",
     ],
     libs: ["android.test.base"],
     srcs: ["src/**/*.java"],

@@ -300,9 +300,9 @@ public class EncoderConfigParams {
             mMsg.append(String.format("key frame interval : %f, ", mKeyFrameInterval));
             mMsg.append(String.format("max b frames : %d, ", mMaxBFrames));
             if (mBitRateMode >= 0) mMsg.append(String.format("bitrate mode : %d, ", mBitRateMode));
-            if (mProfile >= 0) mMsg.append(String.format("profile : %x, ", mProfile));
-            if (mLevel >= 0) mMsg.append(String.format("level : %x, ", mLevel));
-            mMsg.append(String.format("color format : %x, ", mColorFormat));
+            if (mProfile >= 0) mMsg.append(String.format("profile : %#x, ", mProfile));
+            if (mLevel >= 0) mMsg.append(String.format("level : %#x, ", mLevel));
+            mMsg.append(String.format("color format : %#x, ", mColorFormat));
             if (mColorFormat == COLOR_FormatSurface) {
                 mMsg.append(String.format("bit depth : %d, ", mInputBitDepth));
             }

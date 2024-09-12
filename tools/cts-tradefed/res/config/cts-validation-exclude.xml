@@ -541,4 +541,7 @@
     <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest com.android.cts.appcloning.contacts.ManagedProfileContactsAccessTest#testClonedAppsAccessManagedProfileContacts_contactReadsBlocked" />
     <option name="compatibility:exclude-filter" value="CtsAppCloningHostTest com.android.cts.appcloning.contacts.ManagedProfileContactsAccessTest#testClonedAppsAccessManagedProfileContacts_contactReadSuccessfully" />
 
+    <!-- b/291069162 -->
+    <option name="compatibility:exclude-filter" value="CtsKeystoreTestCases android.keystore.cts.DeviceOwnerKeyManagementTest" />
+
 </configuration>

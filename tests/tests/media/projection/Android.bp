@@ -44,6 +44,7 @@ java_defaults {
         "cts",
         "general-tests",
         "mts-media",
+        "mcts-media",
     ],
     host_required: ["cts-dynamic-config"],
 }

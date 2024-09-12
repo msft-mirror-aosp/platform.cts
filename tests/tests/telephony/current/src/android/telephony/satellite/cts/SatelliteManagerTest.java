@@ -817,13 +817,8 @@ public class SatelliteManagerTest extends SatelliteManagerTestBase {
         assertThrows(SecurityException.class,
                 () -> sSatelliteManager.registerForNtnSignalStrengthChanged(
                         getContext().getMainExecutor(), callback));
-        try {
-            sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback);
-            fail("Expected IllegalArgumentException or SecurityException");
-        } catch (IllegalArgumentException | SecurityException ex) {
-            assertTrue(ex instanceof IllegalArgumentException || ex instanceof SecurityException);
-            logd(ex.toString());
-        }
+        assertThrows(SecurityException.class,
+                () -> sSatelliteManager.unregisterForNtnSignalStrengthChanged(callback));
     }
 
     @Test

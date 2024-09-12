@@ -19,6 +19,7 @@ package android.hdmicec.cts;
 import com.android.tradefed.device.ITestDevice;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /** Helper class with methods to test the remote control passthrough functionality */
 public final class RemoteControlPassthrough {
@@ -244,6 +245,35 @@ public final class RemoteControlPassthrough {
             LogicalAddress sourceDevice,
             LogicalAddress dutLogicalAddress)
             throws Exception {
+        // Remove unusupported keys.
+        Map<Integer, Integer> keycodeMenuMap = new HashMap<>();
+        keycodeMenuMap.put(HdmiCecConstants.CEC_KEYCODE_ROOT_MENU,
+            HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_ROOT_MENU);
+        keycodeMenuMap.put(HdmiCecConstants.CEC_KEYCODE_SETUP_MENU,
+            HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_SETUP_MENU);
+        keycodeMenuMap.put(HdmiCecConstants.CEC_KEYCODE_CONTENTS_MENU,
+            HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_CONTENTS_MENU);
+        keycodeMenuMap.put(HdmiCecConstants.CEC_KEYCODE_MEDIA_TOP_MENU,
+            HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_TOP_MENU);
+        keycodeMenuMap.put(HdmiCecConstants.CEC_KEYCODE_MEDIA_CONTEXT_SENSITIVE_MENU,
+            HdmiCecConstants.RC_PROFILE_SOURCE_HANDLES_MEDIA_CONTEXT_SENSITIVE_MENU);
+
+        hdmiCecClient.sendCecMessage(LogicalAddress.TV, CecOperand.GIVE_FEATURES);
+        String message = hdmiCecClient.checkExpectedOutput(CecOperand.REPORT_FEATURES);
+        int remoteControlProfileSource = CecMessage.getParams(message, 4, 6);
+
+        for (Map.Entry<Integer, Integer> entry : keycodeMenuMap.entrySet()) {
+            int keyCode = entry.getKey();
+            int bitPosition = entry.getValue();
+            int mask = 1 << bitPosition;
+            // If the menu is not handled, remove it.
+            if ((remoteControlProfileSource & mask) >> bitPosition
+                == HdmiCecConstants.RC_PROFILE_SOURCE_MENU_NOT_HANDLED) {
+                mUserControlPressKeys_20.remove(keyCode);
+            }
+
+        }
+
         // Clear activity
         device.executeShellCommand(CLEAR_COMMAND);
         // Clear logcat.

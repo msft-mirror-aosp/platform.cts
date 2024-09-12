@@ -109,10 +109,9 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-documentsui",
-        "mcts-documentsui",
     ],
     static_libs: [
+        "android.service.chooser.flags-aconfig-java",
         "android.security.flags-aconfig-java",
         "flag-junit",
         "TestParameterInjector",
@@ -122,6 +121,10 @@ android_test {
         "BinderPermissionTestService/**/I*.aidl",
         "ContentUriTestApp/**/I*.aidl",
     ],
+    exclude_srcs: [
+        "src/android/content/cts/AvailableDocumentIntentsTest.java",
+        "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
+    ],
     data: [
         ":CtsSyncAccountAccessStubs",
         ":CtsBinderPermissionTestService",
@@ -129,6 +132,25 @@ android_test {
         ":CtsContentUriTestApp",
     ],
     test_config: "CtsContentTest.xml",
+}
+
+android_test {
+    name: "CtsDocumentContentTestCases",
+    defaults: ["cts_content_defaults"],
+
+    srcs: [
+        "src/android/content/cts/AvailableDocumentIntentsTest.java",
+        "src/android/content/cts/AvailableIntentsActivity.java",
+        "src/android/content/cts/DocumentsUIUsedContentApiTest.java",
+    ],
+
+    test_suites: [
+        "cts",
+        "general-tests",
+        "mts-documentsui",
+        "mcts-documentsui",
+    ],
+    test_config: "CtsDocumentContentTest.xml",
 }
 
 android_test {

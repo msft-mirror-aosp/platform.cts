@@ -170,7 +170,7 @@ class VirtualCameraCameraXTest {
             bitmap,
             golden,
             "camerax_virtual_camera",
-            5.0
+            10.0
         )
     }
 

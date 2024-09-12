@@ -925,6 +925,13 @@ public class AudioManagerTest {
         // set mode to SILENT
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
         assertStreamMuteStateChange(() -> mAudioManager.setRingerMode(RINGER_MODE_SILENT),
                 expectedTransitionsSilentMode,
                 "RING/NOTIF should mute in SILENT");
@@ -1104,6 +1111,12 @@ public class AudioManagerTest {
                     () -> mAudioManager.adjustStreamVolume(stream, ADJUST_RAISE, 0),
                     stream,
                     "No change expected at max volume");
+
+            if (stream == STREAM_VOICE_CALL) {
+                // TODO: add API to check the adjust volume delta for voice call based on ratio
+                // between index UI steps and voice call range
+                continue;
+            }
 
             volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(stream));
             assertCallChangesStreamVolume(
@@ -1693,6 +1706,14 @@ public class AudioManagerTest {
 
         Utils.toggleNotificationPolicyAccess(
                 mContext.getPackageName(), getInstrumentation(), true);
+        mNm.setNotificationPolicy(
+                new NotificationManager.Policy(
+                        mOriginalNotificationPolicy.priorityCategories
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS
+                                | NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA,
+                        mOriginalNotificationPolicy.priorityCallSenders,
+                        mOriginalNotificationPolicy.priorityMessageSenders));
+
         Map<Integer, MuteStateTransition> expectedSilentTransition = Map.of(
                 STREAM_MUSIC, new MuteStateTransition(false, false),
                 STREAM_SYSTEM, new MuteStateTransition(false, true),

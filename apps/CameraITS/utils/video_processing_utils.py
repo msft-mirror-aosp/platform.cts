@@ -19,6 +19,7 @@
 
 
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -65,6 +66,29 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
+def clamp_preview_sizes(preview_sizes, min_area=0, max_area=math.inf):
+  """Returns a list of preview_sizes with areas between min/max_area.
+
+  Args:
+    preview_sizes: list; sizes to be filtered (ex. "1280x720")
+    min_area: int; optional filter to eliminate sizes <= to the specified
+        area (ex. 640*480).
+    max_area: int; optional filter to eliminate sizes >= to the specified
+        area (ex. 3840*2160).
+  Returns:
+    preview_sizes: list; filtered preview sizes clamped by min/max_area.
+  """
+  size_to_area = lambda size: int(size.split('x')[0])*int(size.split('x')[1])
+  filtered_preview_sizes = [
+      size for size in preview_sizes
+      if max_area >= size_to_area(size) >= min_area]
+  if not filtered_preview_sizes:
+    raise AssertionError('No preview size within the specified area range!')
+  logging.debug(
+      'No preview sizes between %s and %s', min_area, max_area)
+  return filtered_preview_sizes
+
+
 def get_largest_common_preview_video_size(cam, camera_id):
   """Returns the largest, common size between preview and video.
 
@@ -105,14 +129,14 @@ def get_largest_common_preview_video_size(cam, camera_id):
 
 
 def get_lowest_common_preview_video_size(
-    supported_preview_sizes, supported_video_qualities, min_area):
+    supported_preview_sizes, supported_video_qualities, min_area=0):
   """Returns the common, smallest size above minimum in preview and video.
 
   Args:
     supported_preview_sizes: str; preview size (ex. '1920x1080')
     supported_video_qualities: str; video recording quality and id pair
     (ex. '480P:4', '720P:5'')
-    min_area: int; filter to eliminate smaller sizes (ex. 640*480)
+    min_area: int; optional filter to eliminate smaller sizes (ex. 640*480)
   Returns:
     smallest_common_size: str; smallest, common size between preview and video
     smallest_common_video_quality: str; video recording quality such as 480P
@@ -235,50 +259,57 @@ def get_key_frame_to_process(key_frame_files):
   return key_frame_files[-1]
 
 
-def extract_all_frames_from_video(log_path, video_file_name, img_format):
-  """Extracts and returns a list of all extracted frames.
+def extract_all_frames_from_video(
+    log_path, video_file_name, img_format, video_fps=None):
+  """Extracts and returns a list of frames from a video using FFmpeg.
 
-  Ffmpeg tool is used to extract all frames from the video at path
-  <log_path>/<video_file_name>. The extracted key frames will have the name
-  video_file_name with "_frame" suffix to identify the frames for video of each
-  size. Each frame image will be differentiated with its frame index. All
-  extracted key frames will be available in the provided img_format format at
-  the same path as the video file.
+  Extract all frames from the video at path <log_path>/<video_file_name>.
+  The extracted frames will have the name video_file_name with "_frame"
+  suffix to identify the frames for video of each size. Each frame image
+  will be differentiated with its frame index. All extracted rames will be
+  available in the provided img_format format at the same path as the video.
 
   The run time flag '-loglevel quiet' hides the information from terminal.
   In order to see the detailed output of ffmpeg command change the loglevel
   option to 'info'.
 
   Args:
-    log_path: str; path for video file directory
+    log_path: str; directory containing video file.
     video_file_name: str; name of the video file.
-    img_format: str; type of image to export frames into. ex. 'png'
+    img_format: str; desired image format for export frames. ex. 'png'
+    video_fps: str; fps of imported video.
   Returns:
-    key_frame_files: An ordered list of paths for each frame extracted from the
-                     video
+    an ordered list of paths to the extracted frame images.
   """
   logging.debug('Extracting all frames')
   ffmpeg_image_name = f"{video_file_name.split('.')[0]}_frame"
   logging.debug('ffmpeg_image_name: %s', ffmpeg_image_name)
   ffmpeg_image_file_names = (
       f'{os.path.join(log_path, ffmpeg_image_name)}_%04d.{img_format}')
-  cmd = [
-      'ffmpeg', '-i', os.path.join(log_path, video_file_name),
-      '-vsync', 'passthrough',  # prevents frame drops during decoding
-      ffmpeg_image_file_names, '-loglevel', 'quiet'
-  ]
-  _ = subprocess.call(cmd,
-                      stdin=subprocess.DEVNULL,
-                      stdout=subprocess.DEVNULL,
-                      stderr=subprocess.DEVNULL)
+  if video_fps:
+    cmd = [
+        'ffmpeg', '-i', os.path.join(log_path, video_file_name),
+        '-r', video_fps,  # force a constant frame rate for reliability
+        ffmpeg_image_file_names, '-loglevel', 'quiet'
+    ]
+  else:
+    cmd = [
+        'ffmpeg', '-i', os.path.join(log_path, video_file_name),
+        '-vsync', 'passthrough',  # prevents frame drops during decoding
+        ffmpeg_image_file_names, '-loglevel', 'quiet'
+    ]
+  subprocess.call(cmd,
+                  stdin=subprocess.DEVNULL,
+                  stdout=subprocess.DEVNULL,
+                  stderr=subprocess.DEVNULL)
 
-  file_list = sorted(
-      [_ for _ in os.listdir(log_path) if (_.endswith(img_format)
-                                           and ffmpeg_image_name in _)])
-  if not file_list:
+  files = sorted(
+      [file for file in os.listdir(log_path) if
+       (file.endswith(img_format) and ffmpeg_image_name in file)])
+  if not files:
     raise AssertionError('No frames extracted. Check source video.')
 
-  return file_list
+  return files
 
 
 def extract_last_key_frame_from_recording(log_path, file_name):

@@ -254,6 +254,8 @@ public class VulkanFeaturesTest {
     private JSONObject mVulkanDevices[];
     private JSONObject mBestDevice = null;
     private boolean mIsTV = false;
+    private boolean mIsWatch = false;
+    private boolean mHasTouchscreen = false;
 
     @Before
     public void setup() throws Throwable {
@@ -283,6 +285,10 @@ public class VulkanFeaturesTest {
                     }
                 } else if (PackageManager.FEATURE_LEANBACK.equals(feature.name)) {
                     mIsTV = true;
+                } else if (PackageManager.FEATURE_WATCH.equals(feature.name)) {
+                    mIsWatch = true;
+                } else if (PackageManager.FEATURE_TOUCHSCREEN.equals(feature.name)) {
+                    mHasTouchscreen = true;
                 }
             }
         }
@@ -420,7 +426,7 @@ public class VulkanFeaturesTest {
                     "externalFenceFeatures", 0x3 /* importable + exportable */));
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-7, 3.3.1/C-0-12")
+    @CddTest(requirement = "7.1.4.2/C-1-7,3.3.1/C-0-12")
     @Test
     public void testVulkanRequiredExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanDevices.length > 0);
@@ -518,11 +524,16 @@ public class VulkanFeaturesTest {
     private static native String nativeGetABPSupport();
     private static native String nativeGetABPCpuOnlySupport();
 
+    private boolean isHandheld() {
+        // There is no PM feature for "handheld"
+        return mHasTouchscreen && !mIsTV && !mIsWatch;
+    }
+
     @CddTest(requirement = "7.1.4.2/C-1-13")
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
-        assumeTrue("Skipping because ABP is not required of TV devices", !mIsTV);
+        assumeTrue("Skipping because ABP is only required of handheld devices", isHandheld());
 
         if (!hasOnlyCpuDevice()) {
             assertEquals("This device must support the ABP 2021.", "", nativeGetABPSupport());

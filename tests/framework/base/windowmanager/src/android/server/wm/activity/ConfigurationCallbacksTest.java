@@ -36,9 +36,6 @@ import android.os.Looper;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.RotationSession;
 import android.server.wm.WindowManagerTestBase;
 import android.util.Log;
@@ -48,11 +45,9 @@ import android.view.Display;
 import androidx.annotation.NonNull;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.window.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -65,10 +60,6 @@ import org.junit.Test;
  */
 @Presubmit
 public class ConfigurationCallbacksTest extends WindowManagerTestBase {
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private static final String TAG = ConfigurationCallbacksTest.class.getSimpleName();
 
@@ -127,7 +118,6 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
      * {@link DisplayListener#onDisplayChanged} have updated {@link android.app.WindowConfiguration}
      * that is synchronized with the display window.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_BUNDLE_CLIENT_TRANSACTION_FLAG)
     @Test
     @ApiTest(apis = {
             "android.hardware.display.DisplayManager.DisplayListener#onDisplayChanged",
@@ -155,7 +145,6 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
      * {@link DisplayListener#onDisplayChanged} have updated {@link android.app.WindowConfiguration}
      * that is synchronized with the display window.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_BUNDLE_CLIENT_TRANSACTION_FLAG)
     @Test
     @ApiTest(apis = {
             "android.hardware.display.DisplayManager.DisplayListener#onDisplayChanged",
@@ -190,7 +179,6 @@ public class ConfigurationCallbacksTest extends WindowManagerTestBase {
      * Similar to {@link #testDisplayResize()}, but works for devices that always launch activities
      * in multi-window to make sure the display bounds is always up-to-date.
      */
-    @RequiresFlagsEnabled(Flags.FLAG_BUNDLE_CLIENT_TRANSACTION_FLAG)
     @Test
     @ApiTest(apis = {
             "android.hardware.display.DisplayManager.DisplayListener#onDisplayChanged",

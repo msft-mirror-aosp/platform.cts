@@ -33,6 +33,11 @@ import java.lang.annotation.Target;
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface RequireRunNotOnVisibleBackgroundNonProfileUser {
 
+    /**
+     * The reason this test must be skipped when running for a visible background non profile user.
+     */
+    String reason() default "";
+
      /**
      * Priority sets the order that annotations will be resolved.
      *

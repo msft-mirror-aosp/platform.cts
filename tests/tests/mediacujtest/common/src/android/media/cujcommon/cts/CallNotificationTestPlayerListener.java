@@ -16,10 +16,11 @@
 
 package android.media.cujcommon.cts;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.media.AudioManager;
 import android.os.Looper;
 import android.os.Process;
 import android.os.UserManager;
@@ -32,12 +33,17 @@ import androidx.media3.common.Player;
 import androidx.media3.common.Player.PlaybackSuppressionReason;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class CallNotificationTestPlayerListener extends PlayerListener {
 
   private static final String COMMAND_ENABLE = "telecom set-phone-account-enabled";
+  private static final int RING_VOLUME_INDEX = 1;
 
   private TelecomManager mTelecomManager;
   private PhoneAccountHandle mPhoneAccountHandle;
+  private final List<Integer> playbackSuppressionReasons = new ArrayList<>();
 
   public CallNotificationTestPlayerListener(long sendMessagePosition) {
     super();
@@ -85,6 +91,14 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
       if (mStartTime == 0) {
         mStartTime = System.currentTimeMillis();
         mExpectedTotalTime += player.getDuration();
+        // If the ring volume of device is muted, then the playback continues even when an incoming
+        // call is placed. Thus, set the ring volume to the volume index 1 if it is muted.
+        mAudioManager = mActivity.getSystemService(AudioManager.class);
+        if (mAudioManager.getStreamVolume(AudioManager.STREAM_RING) == 0) {
+          mAudioManager.setStreamVolume(AudioManager.STREAM_RING, RING_VOLUME_INDEX,
+              0 /*no flag used*/);
+          mRingVolumeUpdated = true;
+        }
         // Add the duration of the incoming call
         mExpectedTotalTime += CallNotificationService.DURATION_MS;
       }
@@ -116,12 +130,14 @@ public class CallNotificationTestPlayerListener extends PlayerListener {
    */
   @Override
   public void onPlaybackSuppressionReasonChanged(int playbackSuppressionReason) {
-    // Verify suppression reason change caused by call notification test
-    if (!mActivity.mPlayer.isPlaying()) {
-      assertEquals(Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS,
-          playbackSuppressionReason);
-    } else {
-      assertEquals(Player.PLAYBACK_SUPPRESSION_REASON_NONE, playbackSuppressionReason);
-    }
+    playbackSuppressionReasons.add(playbackSuppressionReason);
+  }
+
+  @Override
+  public void onTestCompletion() {
+    // When the test completes, there should be at least one
+    // PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS playback suppression reason.
+    assertTrue(playbackSuppressionReasons.contains(
+            Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS));
   }
 }

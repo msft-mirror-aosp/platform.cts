@@ -218,6 +218,7 @@ public class ItsService extends Service implements SensorEventListener {
     public static final String TRIGGER_AF_KEY = "af";
     public static final String VIB_PATTERN_KEY = "pattern";
     public static final String EVCOMP_KEY = "evComp";
+    public static final String FLASH_MODE_KEY = "flashMode";
     public static final String AUTO_FLASH_KEY = "autoFlash";
     public static final String ZOOM_RATIO_KEY = "zoomRatio";
     public static final String AUDIO_RESTRICTION_MODE_KEY = "mode";
@@ -2167,6 +2168,11 @@ public class ItsService extends Service implements SensorEventListener {
                 Logt.i(TAG, String.format("Running 3A with AE exposure compensation value: %d", evComp));
             }
 
+            int flashMode = params.optInt(FLASH_MODE_KEY, CaptureRequest.FLASH_MODE_OFF);
+            if (flashMode != 0) {
+                Logt.i(TAG, String.format("Running 3A with FLASH_MODE: %d", flashMode));
+            }
+
             // Auto flash can be specified as part of AE convergence.
             boolean autoFlash = params.optBoolean(AUTO_FLASH_KEY, false);
             if (autoFlash == true) {
@@ -2264,6 +2270,10 @@ public class ItsService extends Service implements SensorEventListener {
 
                         if (evComp != 0) {
                             req.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, evComp);
+                        }
+
+                        if (flashMode != CaptureRequest.FLASH_MODE_OFF) {
+                            req.set(CaptureRequest.FLASH_MODE, flashMode);
                         }
 
                         if (autoFlash == false) {
@@ -2396,6 +2406,8 @@ public class ItsService extends Service implements SensorEventListener {
             Size inputSize, int inputFormat, int maxInputBuffers,
             boolean backgroundRequest, boolean reuseSession)
             throws ItsException {
+        final int TEN_BIT_CAPABILITY =
+            CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT;
         Size outputSizes[];
         int outputFormats[];
         int numSurfaces = 0;
@@ -2443,7 +2455,10 @@ public class ItsService extends Service implements SensorEventListener {
                     } else if (JPEG_R_FMT.equals(sformat)) {
                         outputFormats[i] = ImageFormat.JPEG_R;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
-                        is10bitOutputPresent = true;
+                        int[] actualCapabilities = cameraCharacteristics.get(
+                                CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                        is10bitOutputPresent = Arrays.asList(CameraTestUtils.toObject(
+                                    actualCapabilities)).contains(TEN_BIT_CAPABILITY);
                     } else if ("priv".equals(sformat)) {
                         outputFormats[i] = ImageFormat.PRIVATE;
                         sizes = ItsUtils.getJpegOutputSizes(cameraCharacteristics);
@@ -3122,7 +3137,7 @@ public class ItsService extends Service implements SensorEventListener {
                 try {
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare", e);
+                    Logt.e(TAG, "Interrupted while waiting for MediaRecorder to prepare.", e);
                 }
             }
             configureAndCreateCaptureSession(CameraDevice.TEMPLATE_PREVIEW,
@@ -3134,7 +3149,7 @@ public class ItsService extends Service implements SensorEventListener {
                 try {
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                    Logt.e(TAG, "Interrupted while waiting for green frames.", e);
                 }
 
                 Logt.v(TAG, "Record Camera frames after green frames");
@@ -3146,9 +3161,10 @@ public class ItsService extends Service implements SensorEventListener {
             if (paddedFrames) {
                 pr.overrideCameraFrames(true);
                 try {
+                    Logt.v(TAG, "Record Green frames at the end of the video.");
                     Thread.sleep(PADDED_FRAMES_MS);
                 } catch (InterruptedException e) {
-                    Logt.e(TAG, "Interrupted while waiting for green frames", e);
+                    Logt.e(TAG, "Interrupted while waiting for green frames.", e);
                 }
             }
 
@@ -3156,6 +3172,12 @@ public class ItsService extends Service implements SensorEventListener {
             mSession.stopRepeating();
             sessionListener.getStateWaiter().waitForState(
                     BlockingSessionCallback.SESSION_READY, TIMEOUT_SESSION_READY);
+            try {
+                Logt.v(TAG, "Wait for recording to finish.");
+                Thread.sleep(PADDED_FRAMES_MS * 2);
+            } catch (InterruptedException e) {
+                Logt.e(TAG, "Interrupted while waiting for recording to complete.", e);
+            }
             pr.stopRecording();
             mSession.close();
 
@@ -4863,7 +4885,10 @@ public class ItsService extends Service implements SensorEventListener {
                         + " z = " + result.get(CaptureResult.CONTROL_ZOOM_RATIO)
                         + " fl = " + result.get(CaptureResult.LENS_FOCAL_LENGTH)
                         + " phyid = "
-                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID));
+                        + result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
+                        + " AE_STATE = " + result.get(CaptureResult.CONTROL_AE_STATE)
+                        + " AF_STATE = " + result.get(CaptureResult.CONTROL_AF_STATE)
+                        + " AWB_STATE = " + result.get(CaptureResult.CONTROL_AWB_STATE));
                 long timestamp = result.get(CaptureResult.SENSOR_TIMESTAMP);
                 partialResult.addKeys(result, RecordingResult.PREVIEW_RESULT_TRACKED_KEYS);
                 mTimestampToCaptureResultsMap.put(timestamp, partialResult);

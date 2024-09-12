@@ -167,6 +167,7 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_SDK1_UPDATED = "HelloWorldSdk1Updated.apk";
     private static final String TEST_SDK1_MAJOR_VERSION2 = "HelloWorldSdk1MajorVersion2.apk";
     private static final String TEST_SDK1_DIFFERENT_SIGNER = "HelloWorldSdk1DifferentSigner.apk";
+
     private static final String TEST_SDK2 = "HelloWorldSdk2.apk";
     private static final String TEST_SDK2_UPDATED = "HelloWorldSdk2Updated.apk";
 

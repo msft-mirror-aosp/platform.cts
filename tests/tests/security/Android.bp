@@ -69,6 +69,7 @@ android_test {
         "src/android/security/cts/activity/ISecureRandomService.aidl",
         "aidl/android/security/cts/IBitmapService.aidl",
         "aidl/android/security/cts/IIsolatedService.aidl",
+        "aidl/android/security/cts/ICertCheckService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
         "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
     ],
@@ -97,13 +98,23 @@ android_test {
         ":DynamicPermissionTestAttackerApp",
         ":RolePermissionOverrideTestApp",
         ":SplitBluetoothPermissionTestApp",
+        ":CertBlocklistTestApp",
     ],
 }
 
 android_test_helper_app {
     name: "PackageInstallerTestApp",
-    srcs: ["testdata/src/**/*.java"],
-    manifest: "testdata/packageinstallertestapp.xml",
+    srcs: ["testdata/packageinstallertestapp/src/**/*.java"],
+    manifest: "testdata/packageinstallertestapp/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CertBlocklistTestApp",
+    srcs: [
+        "aidl/android/security/cts/ICertCheckService.aidl",
+        "testdata/certblocklisttestapp/src/**/*.java",
+    ],
+    manifest: "testdata/certblocklisttestapp/AndroidManifest.xml",
 }
 
 android_test_helper_app {

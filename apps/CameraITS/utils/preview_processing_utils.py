@@ -15,7 +15,6 @@
 """
 
 import cv2
-import fnmatch
 import logging
 import os
 import threading
@@ -31,21 +30,22 @@ import video_processing_utils
 _AREA_720P_VIDEO = 1280 * 720
 _ASPECT_RATIO_16_9 = 16/9  # determine if preview fmt > 16:9
 _ASPECT_TOL = 0.01
-_GREEN_TOL = 235
-_RED_BLUE_TOL = 15
+_GREEN_TOL = 200  # 200 out of 255 Green value in RGB
+_GREEN_PERCENT = 95
 _HIGH_RES_SIZE = '3840x2160'  # Resolution for 4K quality
 _IMG_FORMAT = 'png'
 _MIN_PHONE_MOVEMENT_ANGLE = 5  # degrees
 _NATURAL_ORIENTATION_PORTRAIT = (90, 270)  # orientation in "normal position"
 _NUM_ROTATIONS = 24
+_PREVIEW_DURATION = 400  # milliseconds
 _PREVIEW_MAX_TESTED_AREA = 1920 * 1440
 _PREVIEW_MIN_TESTED_AREA = 320 * 240
 _PREVIEW_STABILIZATION_FACTOR = 0.7  # 70% of gyro movement allowed
+_RED_BLUE_TOL = 15  # 15 out of 255 Red or Blue value in RGB
 _SKIP_INITIAL_FRAMES = 15
 _START_FRAME = 30  # give 3A some frames to warm up
 _VIDEO_DELAY_TIME = 5.5  # seconds
 _VIDEO_DURATION = 5.5  # seconds
-_PREVIEW_DURATION = 400  # milliseconds
 
 
 def get_720p_or_above_size(supported_preview_sizes):
@@ -274,17 +274,11 @@ def verify_preview_stabilization(recording_obj, gyro_events,
         f'THRESH: {preview_stabilization_factor}.')
   # Delete saved frames if the format is a PASS
   else:
-    try:
-      tmpdir = os.listdir(log_path)
-    except FileNotFoundError:
-      logging.debug('Tmp directory: %s not found', log_path)
-    for file in tmpdir:
-      if fnmatch.fnmatch(file, f'*_{video_size}_stabilized_frame_*'):
-        file_to_remove = os.path.join(log_path, file)
-        try:
-          os.remove(file_to_remove)
-        except FileNotFoundError:
-          logging.debug('File Not Found: %s', str(file))
+    for file in file_list:
+      try:
+        os.remove(os.path.join(log_path, file))
+      except FileNotFoundError:
+        logging.debug('File Not Found: %s', str(file))
     logging.debug('Format %s passes, frame images removed', video_size)
 
   return {'gyro': max_gyro_angle, 'cam': max_camera_angle,
@@ -460,17 +454,13 @@ def is_image_green(image_path):
 
   image = cv2.imread(image_path)
 
-  average_color = np.mean(image, axis=(0, 1))
+  green_pixels = ((image[:, :, 1] > _GREEN_TOL) &
+                  (image[:, :, 0] < _RED_BLUE_TOL) &
+                  (image[:, :, 2] < _RED_BLUE_TOL)).sum()
 
-  # Extract individual color values
-  blue_value = average_color[0]
-  green_value = average_color[1]
-  red_value = average_color[2]
+  green_percentage = (green_pixels / (image.shape[0] * image.shape[1])) * 100
 
-  # Check if green is dominant and red/blue are below the threshold
-  if (green_value > _GREEN_TOL and
-      red_value < _RED_BLUE_TOL and
-      blue_value < _RED_BLUE_TOL):
+  if green_percentage >= _GREEN_PERCENT:
     return True
   else:
     return False

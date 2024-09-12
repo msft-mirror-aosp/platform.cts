@@ -32,6 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -39,6 +40,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Debug;
+import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.SecurityTest;
@@ -104,7 +106,7 @@ public class InputMethodManagerTest {
     @After
     public void resetImes() {
         if (mNeedsImeReset) {
-            runShellCommandOrThrow("ime reset");
+            runShellCommandOrThrow("ime reset --user " + UserHandle.myUserId());
             mNeedsImeReset = false;
         }
     }
@@ -258,6 +260,8 @@ public class InputMethodManagerTest {
     @AppModeFull(reason = "Instant apps cannot rely on ACTION_CLOSE_SYSTEM_DIALOGS")
     @Test
     public void testShowInputMethodPicker() throws Exception {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
         assumeTrue(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_INPUT_METHODS));
         enableImes(MOCK_IME_ID, HIDDEN_FROM_PICKER_IME_ID);
@@ -350,7 +354,7 @@ public class InputMethodManagerTest {
 
     private void enableImes(String... ids) {
         for (String id : ids) {
-            runShellCommandOrThrow("ime enable " + id);
+            runShellCommandOrThrow("ime enable --user " + UserHandle.myUserId() + " " + id);
         }
         mNeedsImeReset = true;
     }

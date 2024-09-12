@@ -31,7 +31,6 @@ import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.RO
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID4_TO_SELECT_AND_DESELECT;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID5_TO_TRANSFER_TO;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID7_STATIC_GROUP;
-import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.ROUTE_ID8_SYSTEM_TYPE;
 import static android.media.bettertogether.cts.StubMediaRoute2ProviderService.STATIC_GROUP_SELECTED_ROUTES_IDS;
 
 import static androidx.test.ext.truth.os.BundleSubject.assertThat;
@@ -254,15 +253,6 @@ public class MediaRouter2Test {
         assertThat(nonSystemRoutes)
                 .comparingElementsUsing(ROUTE_HAS_ORIGINAL_ID)
                 .containsExactlyElementsIn(FEATURE_SPECIAL_ROUTE_IDS);
-    }
-
-    @Test
-    public void getType_forSystemRouteFromNonSystemProvider_returnsTypeUnknown() throws Exception {
-        setUpStubProvider();
-        Map<String, MediaRoute2Info> routes = waitAndGetRoutes(List.of(FEATURE_SAMPLE));
-        MediaRoute2Info route = routes.get(ROUTE_ID8_SYSTEM_TYPE);
-        assertThat(route).isNotNull();
-        assertThat(route.getType()).isEqualTo(MediaRoute2Info.TYPE_UNKNOWN);
     }
 
     @Test

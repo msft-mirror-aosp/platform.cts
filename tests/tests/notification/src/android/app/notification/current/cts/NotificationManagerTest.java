@@ -103,6 +103,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -114,7 +116,9 @@ import com.google.common.base.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -148,6 +152,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             "com.android.test.notificationprovider.RichNotificationActivity";
     final String TAG = NotificationManagerTest.class.getSimpleName();
     final boolean DEBUG = false;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION = 264179692L;
     private static final String DELEGATE_POST_CLASS = TEST_APP + ".NotificationDelegateAndPost";
@@ -930,6 +938,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendPackage() throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
@@ -1190,6 +1202,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendedPackageSendsNotification() throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
@@ -2034,9 +2050,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         listener.onNotificationRemoved(null);
         listener.onNotificationRemoved(null, null);
 
-        listener.onNotificationChannelGroupModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelGroupModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
-        listener.onNotificationChannelModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
 
         listener.onListenerDisconnected();
@@ -2414,7 +2430,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertNotNull(mListener);
 
         try {
-            mListener.getNotificationChannels(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannels(mContext.getPackageName(), mContext.getUser());
             fail("Shouldn't be able get channels without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2426,7 +2442,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         try {
-            mListener.getNotificationChannelGroups(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannelGroups(mContext.getPackageName(), mContext.getUser());
             fail("Should not be able get groups without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2441,7 +2457,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         NotificationChannel channel = new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT);
         try {
-            mListener.updateNotificationChannel(mContext.getPackageName(), UserHandle.CURRENT,
+            mListener.updateNotificationChannel(mContext.getPackageName(), mContext.getUser(),
                     channel);
             fail("Shouldn't be able to update channel without "
                     + "CompanionDeviceManager#getAssociations()");
@@ -3341,7 +3357,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                     public void onCallNotificationPosted(String packageName, UserHandle userH) {
@@ -3389,7 +3405,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                         public void onCallNotificationPosted(String packageName, UserHandle user) {
@@ -3432,7 +3448,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(), listener);
+                    mContext.getUser(), mContext.getMainExecutor(), listener);
         } catch (SecurityException e) {
             fail("registerCallNotificationListener should succeed " + e);
         }

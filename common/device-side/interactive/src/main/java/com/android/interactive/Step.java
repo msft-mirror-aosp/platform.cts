@@ -20,9 +20,7 @@ import static com.android.bedstead.permissions.CommonPermissions.INTERNAL_SYSTEM
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_ALERT_WINDOW;
 import static com.android.bedstead.permissions.CommonPermissions.SYSTEM_APPLICATION_OVERLAY;
 import static com.android.interactive.Automator.AUTOMATION_FILE;
-import static com.android.interactive.testrules.TestNameSaver.INTERACTIVE_TEST_NAME;
 
-import android.content.Context;
 import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
@@ -234,6 +232,11 @@ public abstract class Step<E> {
         throw new AssertionError("Could not automatically or manually pass test");
     }
 
+    /** Gets the boolean value of an instrumentation argument with a default value. */
+    private static boolean getBooleanArg(String argName, boolean defaultValue) {
+        return TestApis.instrumentation().arguments().getBoolean(argName, defaultValue);
+    }
+
     protected final void pass() {
         try {
             pass((E) Nothing.NOTHING);
@@ -420,33 +423,21 @@ public abstract class Step<E> {
      * instruction view if it's still there.
      */
     protected void close() {
-        if (!mHasTakenScreenshot
-                && TestApis.instrumentation().arguments().getBoolean("TAKE_SCREENSHOT", false)) {
+        if (getBooleanArg("TAKE_SCREENSHOT", false) && !mHasTakenScreenshot) {
             mHasTakenScreenshot = true;
-            String testName =
-                    TestApis.context()
-                            .instrumentedContext()
-                            .getSharedPreferences(INTERACTIVE_TEST_NAME, Context.MODE_PRIVATE)
-                            .getString(INTERACTIVE_TEST_NAME, "");
-            ScreenshotUtil.captureScreenshot(
-                    testName.isEmpty()
-                            ? getClass().getCanonicalName()
-                            : testName + "__" + getClass().getSimpleName());
-        }
-        if (mInstructionView != null) {
-            TestApis.context()
-                    .instrumentationContext()
-                    .getMainExecutor()
-                    .execute(
-                            () -> {
-                                try {
-                                    sWindowManager.removeViewImmediate(mInstructionView);
-                                    mInstructionView = null;
-                                } catch (IllegalArgumentException e) {
-                                    // This can happen if the view is no longer attached
-                                    Log.i(LOG_TAG, "Error removing instruction view", e);
-                                }
-                            });
+            Log.i(LOG_TAG, "Test Name: " + ScreenshotUtil.getTestName());
+            String screenshotName = getClass().getSimpleName();
+            if (getBooleanArg("HIDE_INSTRUCTION", false)) {
+                screenshotName = ScreenshotUtil.getTestName() + "__" + screenshotName;
+                doRemoveInstructionView();
+                ScreenshotUtil.captureScreenshotWithDelay(
+                        screenshotName, /* delayInMillis= */ 50L);
+            } else {
+                ScreenshotUtil.captureScreenshot(screenshotName);
+                removeInstructionView();
+            }
+        } else {
+            removeInstructionView();
         }
     }
 
@@ -461,5 +452,29 @@ public abstract class Step<E> {
     public Optional<E> validate(E value) {
         // By default there is no validation
         return Optional.of(value);
+    }
+
+    /** Removes the instruction view in the main executor if it's still there. */
+    private void removeInstructionView() {
+        if (mInstructionView != null) {
+            TestApis.context()
+                    .instrumentationContext()
+                    .getMainExecutor()
+                    .execute(() -> doRemoveInstructionView());
+        }
+    }
+
+    /** Removes the instruction view in the main thread immdediately if it's still there. */
+    private void doRemoveInstructionView() {
+        if (mInstructionView != null) {
+            try {
+                mInstructionView.setVisibility(View.INVISIBLE);
+                sWindowManager.removeViewImmediate(mInstructionView);
+                mInstructionView = null;
+            } catch (IllegalArgumentException e) {
+                // This can happen if the view is no longer attached
+                Log.i(LOG_TAG, "Error removing instruction view", e);
+            }
+        }
     }
 }

@@ -638,7 +638,10 @@ public class DeviceOwnerPositiveTestActivity extends PassFailButtons.TestListAct
         }
 
         // setUsbDataSignalingEnabled
-        if (!FeatureUtil.isTelevision(this) && canUsbDataSignalingBeDisabled()) {
+        // Skipping on aaos since it doesn't have the Settings UI even though USB connection is
+        // supported in HW
+        if (!FeatureUtil.isTelevision(this) && !FeatureUtil.isAutomotive(this)
+                        && canUsbDataSignalingBeDisabled()) {
             adapter.add(createInteractiveTestItem(this, DISABLE_USB_DATA_SIGNALING_TEST_ID,
                     R.string.device_owner_disable_usb_data_signaling_test,
                     R.string.device_owner_disable_usb_data_signaling_test_info,

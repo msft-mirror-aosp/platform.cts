@@ -125,7 +125,7 @@ public class VideoEncoderQualityRegressionTestBase {
     protected void getQualityRegressionForCfgs(List<EncoderConfigParams[]> cfgsUnion,
             VideoEncoderValidationTestBase[] testInstances, String[] encoderNames, RawResource res,
             int frameLimit, int frameRate, Map<Long, List<Rect>> frameCropRects,
-            boolean setLoopBack, Predicate<Double> predicate)
+            boolean setLoopBack, Predicate<Double> predicate, boolean enforcePredicate)
             throws IOException, InterruptedException {
         assertEquals("Quality comparison is done between two sets", 2, cfgsUnion.size());
         assertTrue("Minimum of 4 points are required for polynomial curve fitting",
@@ -169,6 +169,7 @@ public class VideoEncoderQualityRegressionTestBase {
         }
         retMsg.append(String.format(Locale.getDefault(), "bd rate: %f", bdRate));
         Log.d(TAG, retMsg.toString());
-        assumeTrue(retMsg.toString(), predicate.test(bdRate));
+        if (enforcePredicate) assertTrue(retMsg.toString(), predicate.test(bdRate));
+        else assumeTrue(retMsg.toString(), predicate.test(bdRate));
     }
 }
