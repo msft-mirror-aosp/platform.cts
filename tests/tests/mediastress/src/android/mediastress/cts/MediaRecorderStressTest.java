@@ -31,6 +31,7 @@ import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.UserHelper;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -64,6 +65,7 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     private Camera mCamera;
     private Thread mLooperThread;
     private Handler mHandler;
+    private UserHelper mUserHelper;
 
     private static int mCameraId;
     private static int mProfileQuality = CamcorderProfile.QUALITY_HIGH;
@@ -89,6 +91,7 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     protected void setUp() throws Exception {
         PackageManager packageManager =
                 getInstrumentation().getTargetContext().getPackageManager();
+        mUserHelper = new UserHelper();
         mHasRearCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA);
         mHasFrontCamera = packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT);
         int cameraId = 0;
@@ -172,7 +175,8 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     //Test case for stressing the camera preview.
     @LargeTest
     public void testStressCamera() throws Exception {
-        if (Camera.getNumberOfCameras() < 1) {
+        // Skip the test for a visible background user, because camera is not supported.
+        if (Camera.getNumberOfCameras() < 1 || mUserHelper.isVisibleBackgroundUser()) {
             return;
         }
 
@@ -219,6 +223,11 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     //Test case for stressing the camera preview.
     @LargeTest
     public void testStressRecorder() throws Exception {
+        // Skip the test for a visible background user, because camera is not supported.
+        if (mUserHelper.isVisibleBackgroundUser()) {
+            return;
+        }
+
         String filename;
         SurfaceHolder mSurfaceHolder;
         mSurfaceHolder = MediaFrameworkTest.getSurfaceView().getHolder();
@@ -300,7 +309,8 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     //Stress test case for switching camera and video recorder preview.
     @LargeTest
     public void testStressCameraSwitchRecorder() throws Exception {
-        if (Camera.getNumberOfCameras() < 1) {
+        // Skip the test for a visible background user, because camera is not supported.
+        if (Camera.getNumberOfCameras() < 1 || mUserHelper.isVisibleBackgroundUser()) {
             return;
         }
 
@@ -409,7 +419,8 @@ public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<Me
     //Stress test case for record a video and play right away.
     @LargeTest
     public void testStressRecordVideoAndPlayback() throws Exception {
-        if (Camera.getNumberOfCameras() < 1) {
+        // Skip the test for a visible background user, because camera is not supported.
+        if (Camera.getNumberOfCameras() < 1 || mUserHelper.isVisibleBackgroundUser()) {
             return;
         }
 
