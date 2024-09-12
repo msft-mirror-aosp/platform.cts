@@ -85,6 +85,8 @@ android_test {
         ":CtsDummyTargetApi15TestApp",
         ":CtsWallpaperBalTestApp",
         ":CtsEmptyApp",
+        ":DynamicPermissionTestAttackerApp",
+        ":UpdatedDynamicPermissionTestAttackerApp",
     ],
 }
 

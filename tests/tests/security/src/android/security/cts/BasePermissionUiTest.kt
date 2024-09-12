@@ -38,13 +38,13 @@ import androidx.test.rule.ActivityTestRule
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.UiAutomatorUtils
 import com.android.sts.common.util.StsExtraBusinessLogicTestCase
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
 
 abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
     protected val mInstrumentation = InstrumentationRegistry.getInstrumentation()
@@ -77,13 +77,15 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
     private var screenTimeoutBeforeTest: Long = 0L
 
     @Before
-    fun setUp() {
+    open fun setUp() {
         SystemUtil.runWithShellPermissionIdentity {
             screenTimeoutBeforeTest = Settings.System.getLong(
                 mContext.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT
             )
             Settings.System.putLong(
-                mContext.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT, 1800000L
+                mContext.contentResolver,
+                Settings.System.SCREEN_OFF_TIMEOUT,
+                1800000L
             )
         }
 
@@ -94,10 +96,11 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
     }
 
     @After
-    fun tearDown() {
+    open fun tearDown() {
         SystemUtil.runWithShellPermissionIdentity {
             Settings.System.putLong(
-                mContext.contentResolver, Settings.System.SCREEN_OFF_TIMEOUT,
+                mContext.contentResolver,
+                Settings.System.SCREEN_OFF_TIMEOUT,
                 screenTimeoutBeforeTest
             )
         }
@@ -114,8 +117,10 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
 
     protected fun waitFindObject(selector: BySelector, timeoutMillis: Long): UiObject2 {
         waitForIdle()
-        return findObjectWithRetry({ t -> UiAutomatorUtils.waitFindObject(selector, t) },
-            timeoutMillis)!!
+        return findObjectWithRetry(
+            { t -> UiAutomatorUtils.waitFindObject(selector, t) },
+            timeoutMillis
+        )!!
     }
 
     protected fun pressHome() {
@@ -208,16 +213,24 @@ abstract class BasePermissionUiTest : StsExtraBusinessLogicTestCase() {
     }
 
     private val mPermissionControllerResources: Resources = mContext.createPackageContext(
-        mContext.packageManager.permissionControllerPackageName, 0).resources
+        mContext.packageManager.permissionControllerPackageName,
+        0
+    ).resources
 
     private fun getPermissionControllerString(res: String, vararg formatArgs: Any): Pattern {
         val textWithHtml = mPermissionControllerResources.getString(
             mPermissionControllerResources.getIdentifier(
-                res, "string", "com.android.permissioncontroller"), *formatArgs)
+                res,
+                "string",
+                "com.android.permissioncontroller"
+            ),
+            *formatArgs
+        )
         val textWithoutHtml = Html.fromHtml(textWithHtml, 0).toString()
         return Pattern.compile(
             Pattern.quote(textWithoutHtml),
-            Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE)
+            Pattern.CASE_INSENSITIVE or Pattern.UNICODE_CASE
+        )
     }
 
     private fun startActivityForFuture(
