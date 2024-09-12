@@ -308,13 +308,13 @@ public class BuildTest {
     }
 
     /**
-     * Verify that the minor SDK version is always non-negative.
+     * Verify that SDK_INT_FULL version is always non-zero and positive.
      */
     @RequiresFlagsEnabled(android.sdk.Flags.FLAG_MAJOR_MINOR_VERSIONING_SCHEME)
     @Test
-    public void testSdkMinorInt() {
-        assertTrue("Minor SDK version " + Build.VERSION.SDK_MINOR_INT
-                + " is invalid; must not be negative", Build.VERSION.SDK_MINOR_INT >= 0);
+    public void testSdkIntFull() {
+        assertTrue(" version " + Build.VERSION.SDK_INT_FULL
+                + " is invalid; must be non-zero and positive", Build.VERSION.SDK_INT_FULL >= 0);
     }
 
     /**
