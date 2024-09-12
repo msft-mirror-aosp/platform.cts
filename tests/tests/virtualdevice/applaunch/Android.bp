@@ -45,3 +45,10 @@ android_test {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config {
+    name: "CtsVirtualDevicesAppLaunchTestCases_applaunch_virtualdevicepermissiontest",
+    base: "CtsVirtualDevicesAppLaunchTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest"],
+}

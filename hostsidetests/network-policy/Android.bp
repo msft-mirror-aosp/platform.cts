@@ -46,3 +46,13 @@ java_test_host {
     ],
     per_testcase_directory: true,
 }
+
+test_module_config_host {
+    name: "CtsHostsideNetworkPolicyTests_com_android_server_job",
+    base: "CtsHostsideNetworkPolicyTests",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "com.android.cts.netpolicy.HostsideRestrictBackgroundNetworkTests#testNonMeteredNetworkAccess_expeditedJob",
+        "com.android.cts.netpolicy.HostsideRestrictBackgroundNetworkTests#testMeteredNetworkAccess_expeditedJob",
+    ],
+}

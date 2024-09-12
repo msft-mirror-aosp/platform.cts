@@ -23,6 +23,7 @@ import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 import static android.content.pm.PackageInstaller.EXTRA_STATUS;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED;
+import static android.content.pm.PackageInstaller.STATUS_FAILURE_BLOCKED;
 import static android.content.pm.PackageInstaller.STATUS_FAILURE_INVALID;
 import static android.content.pm.PackageInstaller.STATUS_PENDING_USER_ACTION;
 import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
@@ -86,7 +87,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void resetUninstallResult() {
-        sUninstallResult = new CompletableFuture();
+        sUninstallResult = new CompletableFuture<>();
     }
 
     private static IntentSender getIntentSender() {
@@ -98,15 +99,24 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Start the uninstallation via PackageInstaller#uninstall api with granting DELETE_PACKAGES
-     * permission
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via
+     * PackageInstaller#uninstall api with granting DELETE_PACKAGES permission
      */
     public static void startUninstallationViaPackageInstallerApiWithDeletePackages(
             boolean isSameInstaller) throws Exception {
+        startUninstallationViaPackageInstallerApiWithDeletePackages(isSameInstaller,
+                TEST_APP_PACKAGE_NAME);
+    }
+
+    /**
+     * Start the uninstallation for {@code packageName} via PackageInstaller#uninstall api
+     * with granting DELETE_PACKAGES permission
+     */
+    public static void startUninstallationViaPackageInstallerApiWithDeletePackages(
+            boolean isSameInstaller, String packageName) throws Exception {
         try {
             getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(DELETE_PACKAGES);
-            getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
-                    getIntentSender());
+            getPackageManager().getPackageInstaller().uninstall(packageName, getIntentSender());
         } finally {
             getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         }
@@ -121,11 +131,19 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Start the uninstallation via PackageInstaller#uninstall api
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via
+     * PackageInstaller#uninstall api
      */
     public static void startUninstallationViaPackageInstallerApi() throws Exception {
-        getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
-                getIntentSender());
+        startUninstallationViaPackageInstallerApi(TEST_APP_PACKAGE_NAME);
+    }
+
+    /**
+     * Start the uninstallation for {@code packageName} via PackageInstaller#uninstall api
+     */
+    public static void startUninstallationViaPackageInstallerApi(String packageName)
+            throws Exception {
+        getPackageManager().getPackageInstaller().uninstall(packageName, getIntentSender());
 
         assertThat(getUninstallStatus()).isEqualTo(STATUS_PENDING_USER_ACTION);
 
@@ -141,22 +159,42 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Start the uninstallation via startActivity with ACTION_DELETE.
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via startActivity with
+     * ACTION_DELETE.
      */
     public static void startUninstallationViaIntentActionDelete() throws Exception {
-        startUninstallationViaIntent(Intent.ACTION_DELETE);
+        startUninstallationViaIntentActionDelete(TEST_APP_PACKAGE_NAME);
     }
 
     /**
-     * Start the uninstallation via startActivity with ACTION_UNINSTALL_PACKAGE.
+     * Start the uninstallation for {@code packageName} via startActivity with ACTION_DELETE.
      */
-    public static void startUninstallationViaIntentActionUninstallPackage() throws Exception {
-        startUninstallationViaIntent(Intent.ACTION_UNINSTALL_PACKAGE);
+    public static void startUninstallationViaIntentActionDelete(String packageName)
+            throws Exception {
+        startUninstallationViaIntent(Intent.ACTION_DELETE, packageName);
     }
 
-    private static void startUninstallationViaIntent(String action) throws Exception {
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via startActivity with
+     * ACTION_UNINSTALL_PACKAGE.
+     */
+    public static void startUninstallationViaIntentActionUninstallPackage() throws Exception {
+        startUninstallationViaIntentActionUninstallPackage(TEST_APP_PACKAGE_NAME);
+    }
+
+    /**
+     * Start the uninstallation for {@code packageName} via startActivity with
+     * ACTION_UNINSTALL_PACKAGE.
+     */
+    public static void startUninstallationViaIntentActionUninstallPackage(String packageName)
+            throws Exception {
+        startUninstallationViaIntent(Intent.ACTION_UNINSTALL_PACKAGE, packageName);
+    }
+
+    private static void startUninstallationViaIntent(String action, String packageName)
+            throws Exception {
         final Intent intent = new Intent(action);
-        intent.setData(Uri.fromParts("package", TEST_APP_PACKAGE_NAME, null));
+        intent.setData(Uri.fromParts("package", packageName, null));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
         getContext().startActivity(intent);
@@ -171,7 +209,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
-     * Assert the title is {@link #TEST_APK_LABEL} and the content includes
+     * Assert the title is {@link #TEST_APP_LABEL} and the content includes
      * {@link #UNINSTALL_LABEL}.
      */
     public static void assertUninstallDialog() throws Exception {
@@ -184,6 +222,14 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void assertUninstallSuccess() throws Exception {
         assertThat(getUninstallStatus()).isEqualTo(STATUS_SUCCESS);
+        resetUninstallResult();
+    }
+
+    /**
+     * Assert the uninstall status is PackageInstaller#STATUS_FAILURE_BLOCKED.
+     */
+    public static void assertUninstallFailureBlocked() throws Exception {
+        assertThat(getUninstallStatus()).isEqualTo(STATUS_FAILURE_BLOCKED);
         resetUninstallResult();
     }
 

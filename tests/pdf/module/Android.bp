@@ -31,7 +31,7 @@ android_test {
     min_sdk_version: "31",
     target_sdk_version: "35",
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.system",
         "framework-pdf.impl",
         "framework-pdf-v.impl",
     ],

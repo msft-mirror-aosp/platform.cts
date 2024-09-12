@@ -63,6 +63,7 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
+        "mcts-media",
         "mts-media",
     ],
     host_required: ["cts-dynamic-config"],
@@ -118,4 +119,11 @@ android_test {
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "current",
     target_sdk_version: "current",
+}
+
+test_module_config {
+    name: "CtsMediaDrmFrameworkTestCases_Presubmit",
+    base: "CtsMediaDrmFrameworkTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

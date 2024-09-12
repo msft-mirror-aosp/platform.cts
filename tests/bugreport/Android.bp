@@ -36,3 +36,10 @@ android_test {
         "general-tests",
     ],
 }
+
+test_module_config {
+    name: "CtsBugreportTestCases_android_server_os",
+    base: "CtsBugreportTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
