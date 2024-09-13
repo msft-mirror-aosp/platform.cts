@@ -164,7 +164,7 @@ open class UinputTouchDevice(
         )
         waitForDeviceUpdatesUntil {
             val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
-            display.displayId == inputDevice!!.associatedDisplayId
+            inputDevice != null && display.displayId == inputDevice.associatedDisplayId
         }
     }
 
