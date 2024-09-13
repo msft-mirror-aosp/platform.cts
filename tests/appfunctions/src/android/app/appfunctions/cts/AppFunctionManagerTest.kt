@@ -19,7 +19,6 @@ package android.app.appfunctions.cts
 import android.app.appfunctions.AppFunctionManager
 import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
-import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_INDEXER_PACKAGE
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
@@ -52,6 +51,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
@@ -84,7 +84,13 @@ class AppFunctionManagerTest {
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         mManager = manager
-        assertMetadataIndexed()
+        installPackage(TEST_APP_PATH)
+        assertMetadataIndexed(setOf(TEST_HELPER_PKG, CTS_PACKAGE))
+    }
+
+    @After
+    fun tearDown() {
+        uninstallPackage(TEST_HELPER_PKG)
     }
 
     @Test
@@ -387,8 +393,14 @@ class AppFunctionManagerTest {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
     }
 
-    private suspend fun assertMetadataIndexed() {
-        retryAssert { assertThat(searchStaticMetadataWithPackageName()).isNotEmpty() }
+    private suspend fun assertMetadataIndexed(installedPackages: Set<String>) {
+        retryAssert {
+            val staticMetadataResult = searchStaticMetadata()
+            assertThat(staticMetadataResult).isNotEmpty()
+            val packages: Set<String?> =
+                (staticMetadataResult.map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }).toSet()
+            assertThat(packages).containsAtLeastElementsIn(installedPackages)
+        }
     }
 
     private fun installPackage(path: String) {
@@ -408,7 +420,7 @@ class AppFunctionManagerTest {
         SystemUtil.runShellCommand("pm uninstall $packageName")
     }
 
-    private fun searchRuntimeMetadataWithPackageName(): List<GenericDocument> {
+    private fun searchRuntimeMetadata(): List<GenericDocument> {
         val globalSearchSession: GlobalSearchSessionShim =
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
 
@@ -425,7 +437,7 @@ class AppFunctionManagerTest {
         return collectAllSearchResults(searchResults)
     }
 
-    private fun searchStaticMetadataWithPackageName(): List<GenericDocument> {
+    private fun searchStaticMetadata(): List<GenericDocument> {
         val globalSearchSession: GlobalSearchSessionShim =
             GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
 
@@ -471,6 +483,8 @@ class AppFunctionManagerTest {
 
         private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
         private const val RETRY_MAX_INTERVALS: Long = 10
+        private const val PROPERTY_PACKAGE_NAME = "packageName"
+        private const val APP_FUNCTION_INDEXER_PACKAGE = "android"
 
         /** Retries an assertion with a delay between attempts. */
         @Throws(Throwable::class)
