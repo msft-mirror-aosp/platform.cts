@@ -896,6 +896,12 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
                 mAudioManager.adjustStreamVolume(stream, ADJUST_RAISE, 0);
                 assertEquals(maxVolume, mAudioManager.getStreamVolume(stream));
 
+                if (stream == AudioManager.STREAM_VOICE_CALL) {
+                    // TODO(b/362836517): add API to check the adjust volume delta for voice call
+                    // based on ratio between index UI steps and voice call range
+                    continue;
+                }
+
                 volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(stream));
                 mAudioManager.adjustSuggestedStreamVolume(ADJUST_LOWER, stream, 0);
                 try {
