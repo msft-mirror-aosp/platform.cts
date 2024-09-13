@@ -67,6 +67,9 @@ import android.os.Build;
 import android.os.ConditionVariable;
 import android.os.SystemClock;
 import android.os.SystemProperties;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 import android.util.Pair;
 import android.util.Size;
@@ -75,6 +78,7 @@ import android.view.Surface;
 import com.android.compatibility.common.util.PropertyUtil;
 import com.android.ex.camera2.blocking.BlockingSessionCallback;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -129,6 +133,10 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
     public void tearDown() throws Exception {
         super.tearDown();
     }
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
     public void testFlexibleYuv() throws Exception {
@@ -268,6 +276,38 @@ public class ImageReaderTest extends Camera2AndroidTestCase {
 
                 BufferFormatTestParam params = new BufferFormatTestParam(
                         ImageFormat.YCBCR_P010, /*repeating*/false);
+                params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10;
+                bufferFormatTestByCamera(params);
+            } finally {
+                closeDevice(id);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.media.codec.Flags.FLAG_P210_FORMAT_SUPPORT)
+    public void testP210() throws Exception {
+        for (String id : getCameraIdsUnderTest()) {
+            try {
+                Log.v(TAG, "Testing YUV P210 capture for Camera " + id);
+                openDevice(id);
+                if (!mStaticInfo.isCapabilitySupported(CameraCharacteristics
+                            .REQUEST_AVAILABLE_CAPABILITIES_DYNAMIC_RANGE_TEN_BIT)) {
+                    Log.v(TAG, "No 10-bit output support for Camera " + id);
+                    continue;
+                }
+                if (mStaticInfo.getP210OutputSizesChecked().length == 0) {
+                    Log.v(TAG, "No YUV P210 output support for Camera " + id);
+                    continue;
+                }
+                Set<Long> availableProfiles =
+                        mStaticInfo.getAvailableDynamicRangeProfilesChecked();
+                assertFalse("Absent dynamic range profiles", availableProfiles.isEmpty());
+                assertTrue("HLG10 not present in the available dynamic range profiles",
+                        availableProfiles.contains(DynamicRangeProfiles.HLG10));
+
+                BufferFormatTestParam params = new BufferFormatTestParam(
+                        ImageFormat.YCBCR_P210, /*repeating*/false);
                 params.mDynamicRangeProfile = DynamicRangeProfiles.HLG10;
                 bufferFormatTestByCamera(params);
             } finally {

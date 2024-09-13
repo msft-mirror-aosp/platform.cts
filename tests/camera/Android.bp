@@ -78,6 +78,7 @@ android_test {
         "androidx.camera_camera-lifecycle",
         "modules-utils-native-coverage-listener",
         "camera_platform_flags_java_lib",
+        "android.media.codec-aconfig-java",
         "flag-junit",
     ],
     jni_libs: [
