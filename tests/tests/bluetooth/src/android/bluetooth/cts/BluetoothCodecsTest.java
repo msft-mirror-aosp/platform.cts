@@ -18,10 +18,7 @@ package android.bluetooth.cts;
 
 import android.bluetooth.BluetoothCodecConfig;
 import android.bluetooth.BluetoothCodecStatus;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.test.AndroidTestCase;
-
-import com.android.bluetooth.flags.Flags;
 
 import java.util.List;
 import java.util.Objects;
@@ -240,7 +237,6 @@ public class BluetoothCodecsTest extends AndroidTestCase {
         assertTrue(builder.isMandatoryCodec());
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_A2DP_OFFLOAD_CODEC_EXTENSIBILITY)
     public void test_BluetoothCodecConfigExtendedBuilder() {
         // Test that setExtendedCodecType has the same effect
         // as setCodecType.
