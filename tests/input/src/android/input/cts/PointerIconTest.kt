@@ -16,6 +16,7 @@
 
 package android.input.cts
 
+import android.Manifest.permission.CREATE_VIRTUAL_DEVICE
 import android.cts.input.EventVerifier
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -24,7 +25,7 @@ import android.hardware.input.VirtualMouse
 import android.os.SystemProperties
 import android.view.MotionEvent
 import android.view.PointerIcon
-import android.virtualdevice.cts.common.FakeAssociationRule
+import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.DefaultPointerSpeedRule
@@ -69,9 +70,17 @@ class PointerIconTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
+    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
+
+    // Use VirtualDeviceManager to create the display for this test because VirtualDisplays
+    // created via VDM have mouse acceleration disabled automatically.
+    // TODO(b/366492484): Remove reliance on VDM when we achieve feature parity between VDM
+    //   and display + input APIs.
     @get:Rule
-    val fakeAssociationRule = FakeAssociationRule()
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(
+        testName,
+        virtualDeviceRule = virtualDeviceRule
+    )
     @get:Rule
     val defaultPointerSpeedRule = DefaultPointerSpeedRule()
     @get:Rule
@@ -94,7 +103,11 @@ class PointerIconTest {
             activity.window.decorView.rootView.setBackgroundColor(Color.WHITE)
         }
 
-        device.setUp(context, virtualDisplayRule.virtualDisplay.display, fakeAssociationRule)
+        device.setUp(
+            context,
+            virtualDisplayRule.virtualDisplay.display,
+            virtualDeviceRule.createManagedAssociation()!!
+        )
 
         verifier = EventVerifier(activity::getInputEvent)
 
@@ -107,6 +120,12 @@ class PointerIconTest {
     @After
     fun tearDown() {
         device.tearDown()
+
+        // Ensure VirtualDeviceRule has the required permissions to close the device, since
+        // the adopted permission may be have been changed or reset by the test.
+        InstrumentationRegistry.getInstrumentation().uiAutomation.adoptShellPermissionIdentity(
+            CREATE_VIRTUAL_DEVICE
+        )
     }
 
     @Test
