@@ -28,11 +28,11 @@ import static android.virtualdevice.cts.camera.VirtualCameraUtils.BACK_CAMERA_ID
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.FRONT_CAMERA_ID;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createHandler;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.createVirtualCameraConfig;
-import static android.virtualdevice.cts.camera.VirtualCameraUtils.imageHasColor;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.jpegImageToBitmap;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.loadBitmapFromRaw;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.paintSurface;
 import static android.virtualdevice.cts.camera.VirtualCameraUtils.toFormat;
+import static android.virtualdevice.cts.camera.util.ImageSubject.assertThat;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
@@ -187,7 +187,7 @@ public class VirtualCameraCaptureTest {
                 assertThat(image.getFormat()).isEqualTo(YUV_420_888);
                 assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
                 assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
-                assertThat(imageHasColor(image, Color.GREEN)).isTrue();
+                assertThat(image).hasOnlyColor(Color.GREEN);
             }
         }
     }
@@ -208,7 +208,7 @@ public class VirtualCameraCaptureTest {
                 assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
                 assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
                 assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
-                assertThat(imageHasColor(image, Color.RED)).isTrue();
+                assertThat(image).hasOnlyColor(Color.RED);
             }
         }
     }
@@ -231,7 +231,7 @@ public class VirtualCameraCaptureTest {
                 assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
                 assertThat(image.getWidth()).isEqualTo(CAMERA_WIDTH);
                 assertThat(image.getHeight()).isEqualTo(CAMERA_HEIGHT);
-                assertThat(imageHasColor(image, Color.BLACK)).isTrue();
+                assertThat(image).hasOnlyColor(Color.BLACK);
             }
         }
     }
@@ -255,7 +255,7 @@ public class VirtualCameraCaptureTest {
                 assertThat(image.getFormat()).isEqualTo(outputPixelFormat);
                 assertThat(image.getWidth()).isEqualTo(halfWidth);
                 assertThat(image.getHeight()).isEqualTo(halfHeight);
-                assertThat(imageHasColor(image, Color.RED)).isTrue();
+                assertThat(image).hasOnlyColor(Color.RED);
             }
         }
     }
