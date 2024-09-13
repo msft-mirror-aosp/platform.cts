@@ -16,6 +16,8 @@
 
 package android.telephony.satellite.cts;
 
+import static android.telephony.satellite.SatelliteManager.DATAGRAM_TYPE_UNKNOWN;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -195,6 +197,10 @@ public class SatelliteManagerTestBase {
         private List<DatagramStateChangeArgument> mReceiveDatagramStateChanges = new ArrayList<>();
         private final Object mReceiveDatagramStateChangesLock = new Object();
         private final Semaphore mReceiveSemaphore = new Semaphore(0);
+        private final Object mSendDatagramRequestedLock = new Object();
+        private final Semaphore mSendDatagramRequestedSemaphore = new Semaphore(0);
+        @SatelliteManager.DatagramType
+        private List<Integer> mSendDatagramRequestedList = new ArrayList<>();
 
         @Override
         public void onSatellitePositionChanged(PointingInfo pointingInfo) {
@@ -248,6 +254,20 @@ public class SatelliteManagerTestBase {
             }
         }
 
+        @Override
+        public void onSendDatagramRequested(int datagramType) {
+            logd("onSendDatagramRequested: datagramType=" + datagramType);
+            synchronized (mSendDatagramRequestedLock) {
+                mSendDatagramRequestedList.add(datagramType);
+            }
+
+            try {
+                mSendDatagramRequestedSemaphore.release();
+            } catch (Exception e) {
+                loge("onSendDatagramRequested: Got exception, ex=" + e);
+            }
+        }
+
         public boolean waitUntilOnSatellitePositionChanged(int expectedNumberOfEvents) {
             for (int i = 0; i < expectedNumberOfEvents; i++) {
                 try {
@@ -297,6 +317,25 @@ public class SatelliteManagerTestBase {
             return true;
         }
 
+        public boolean waitUntilOnSendDatagramRequested(int expectedNumberOfEvents) {
+            logd("waitUntilOnSendDatagramRequested expectedNumberOfEvents:"
+                    + expectedNumberOfEvents);
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSendDatagramRequestedSemaphore.tryAcquire(
+                            TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSendDatagramRequested() callback");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("SatelliteTransmissionUpdateCallback "
+                            + "waitUntilOnSendDatagramRequested: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void clearPointingInfo() {
             mPointingInfo = null;
             mPositionChangeSemaphore.drainPermits();
@@ -315,6 +354,14 @@ public class SatelliteManagerTestBase {
                 logd("clearReceiveDatagramStateChanges");
                 mReceiveDatagramStateChanges.clear();
                 mReceiveSemaphore.drainPermits();
+            }
+        }
+
+        public void clearSendDatagramRequested() {
+            synchronized (mSendDatagramRequestedLock) {
+                logd("clearSendDatagramRequested");
+                mSendDatagramRequestedList.clear();
+                mSendDatagramRequestedSemaphore.drainPermits();
             }
         }
 
@@ -356,6 +403,26 @@ public class SatelliteManagerTestBase {
         public int getNumOfReceiveDatagramStateChanges() {
             synchronized (mReceiveDatagramStateChangesLock) {
                 return mReceiveDatagramStateChanges.size();
+            }
+        }
+
+        @SatelliteManager.DatagramType
+        public int getSendDatagramRequestedType(int index) {
+            synchronized (mSendDatagramRequestedLock) {
+                if (index < mSendDatagramRequestedList.size()) {
+                    return mSendDatagramRequestedList.get(index);
+                } else {
+                    Log.e(TAG, "getSendDatagramRequestedType: invalid index= " + index
+                            + " mSendDatagramRequestedList.size= "
+                            + mSendDatagramRequestedList.size());
+                    return DATAGRAM_TYPE_UNKNOWN;
+                }
+            }
+        }
+
+        public int getNumOfSendDatagramRequestedChanges() {
+            synchronized (mSendDatagramRequestedLock) {
+                return mSendDatagramRequestedList.size();
             }
         }
     }
