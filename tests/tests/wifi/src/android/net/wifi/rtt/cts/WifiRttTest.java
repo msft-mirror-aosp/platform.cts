@@ -61,6 +61,7 @@ import org.junit.runner.RunWith;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Wi-Fi RTT CTS test: range to all available Access Points which support IEEE 802.11mc.
@@ -467,7 +468,8 @@ public class WifiRttTest extends TestBase {
                 numFailures++;
             }
             // Wait for the minimum measurement time
-            Thread.sleep(result.getMinTimeBetweenNtbMeasurementsMicros() * 1000);
+            Thread.sleep(TimeUnit.MICROSECONDS.toMillis(
+                    result.getMinTimeBetweenNtbMeasurementsMicros()));
         }
 
         // Save results to log

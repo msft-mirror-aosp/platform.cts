@@ -82,6 +82,13 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
 
         startTestActivity(mProfileUserId, true);
         RunUtil.getDefault().sleep(PROFILE_TIMEOUT_DELAY_MS);
+        // verifyOnlyProfileLocked call below invokes a device-side test, which kills all
+        // processes in the instrumented package, including TestActivity.
+        // Simulate user interaction here so that the profile doesn't get locked
+        // as a result of that. This doesn't invalidate the test
+        // since if the profile is already locked despite "keep screen on" flag,
+        // user interaction won't unlock it.
+        simulateUserInteraction(10000);
 
         verifyOnlyProfileLocked(false);
     }
@@ -93,7 +100,7 @@ public final class ManagedProfileTimeoutTest extends BaseManagedProfileTest {
         // Make sure the profile is not prematurely locked.
         verifyUserCredential(TEST_PASSWORD, mProfileUserId);
         verifyOnlyProfileLocked(false);
-        // Set profile timeout to 5 seconds.
+        // Set profile timeout to 30 seconds.
         runProfileTimeoutTest("testSetWorkProfileTimeout", mProfileUserId);
     }
 

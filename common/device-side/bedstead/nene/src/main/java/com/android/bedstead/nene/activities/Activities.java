@@ -16,6 +16,7 @@
 
 package com.android.bedstead.nene.activities;
 
+import static android.cts.testapisreflection.TestApisReflectionKt.getDisplayId;
 import static android.Manifest.permission.REAL_GET_TASKS;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
@@ -30,20 +31,26 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.cts.testapisreflection.ActivityTaskManagerProxy;
-import android.cts.testapisreflection.TestApisReflectionKt;
+import android.os.Bundle;
+import android.util.Log;
 import android.view.Display;
 
 import androidx.annotation.Nullable;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.ComponentReference;
-import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.nene.utils.Poll;
 import com.android.bedstead.nene.utils.ShellCommand;
 import com.android.bedstead.nene.utils.Versions;
+import com.android.bedstead.permissions.PermissionContext;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,8 +72,10 @@ public final class Activities {
     private static final int ACTIVITY_TYPE_DREAM = 5;
 
     /** Proxy class to access inaccessible TestApi methods. */
-    private static final ActivityTaskManagerProxy sProxyInstance =
+    private static final ActivityTaskManagerProxy sActivityTaskManagerProxy =
             new ActivityTaskManagerProxy();
+
+    private static final String TAG = "BedsteadActivities";
 
     private Activities() {
     }
@@ -102,15 +111,15 @@ public final class Activities {
                     TestApis.context().instrumentedContext().getSystemService(
                             ActivityManager.class);
             return activityManager.getRunningTasks(100).stream()
-                    .filter(r -> getDisplayId(r) == Display.DEFAULT_DISPLAY)
+                    .filter(r -> getDisplayIdInternal(r) == Display.DEFAULT_DISPLAY)
                     .map(r -> new ComponentReference(r.topActivity))
                     .collect(Collectors.toList());
         }
     }
 
-    private int getDisplayId(ActivityManager.RunningTaskInfo task) {
+    private int getDisplayIdInternal(ActivityManager.RunningTaskInfo task) {
         if (Versions.meetsMinimumSdkVersionRequirement(Versions.U)) {
-            return TestApisReflectionKt.getDisplayId(task);
+            return getDisplayId(task);
         }
 
         return Display.DEFAULT_DISPLAY;
@@ -177,12 +186,23 @@ public final class Activities {
         if (Versions.meetsMinimumSdkVersionRequirement(S)) {
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_ACTIVITY_TASKS)) {
-                sProxyInstance.removeRootTasksWithActivityTypes(activityTypes);
+                sActivityTaskManagerProxy.removeRootTasksWithActivityTypes(activityTypes);
             }
         } else {
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_ACTIVITY_STACKS)) {
-                sProxyInstance.removeStacksWithActivityTypes(activityTypes);
+                // This should have been a proxy call through ActivityTaskManagerProxy as well, but
+                // is not since ActivityTaskManager#removeStacksWithActivityTypes is not available
+                // to be fetched and proxied in Versions S+.
+                Method method = Class.forName("android.app.ActivityTaskManager")
+                        .getDeclaredMethod("removeStacksWithActivityTypes",
+                        new Class<?>[]{ int[].class });
+                method.invoke(TestApis.context().instrumentedContext().getSystemService(
+                        Class.forName("android.app.ActivityTaskManager")),
+                        ALL_ACTIVITY_TYPE_BUT_HOME);
+            } catch (NoSuchMethodException | IllegalAccessException |
+                     InvocationTargetException | ClassNotFoundException e) {
+                throw new NeneException("Error clearing all activities activity pre S", e);
             }
         }
     }
@@ -211,5 +231,35 @@ public final class Activities {
                     activityName
             ));
         }
+    }
+
+    /**
+     * Blocks until the activity has started.
+     *
+     * @param intent The intent to start.
+     */
+    public void startActivity(Intent intent) {
+        startActivity(intent, null);
+    }
+
+    /**
+     * Blocks until the activity has started.
+     *
+     * @param intent The intent to start.
+     * @param options Additional options for how the Activity should be started.
+     * See {@link android.content.Context#startActivity(Intent, Bundle)}
+     * Context.startActivity(Intent, Bundle)} for more details.
+     */
+    public void startActivity(Intent intent, @Nullable Bundle options) {
+        Log.d(TAG, "startActivity(): " + intent + ", " + options);
+        ComponentReference startActivity = TestApis.activities().foregroundActivity();
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        InstrumentationRegistry.getInstrumentation().getContext().startActivity(intent, options);
+        Poll.forValue("Foreground activity", () -> TestApis.activities().foregroundActivity())
+                .toNotBeEqualTo(startActivity)
+                .errorOnFail("Could not start activity " + this + ". Relevant logcat: "
+                    + TestApis.logcat().dump(l -> l.contains("ActivityManager")))
+                .timeout(Duration.ofSeconds(30))
+                .await();
     }
 }

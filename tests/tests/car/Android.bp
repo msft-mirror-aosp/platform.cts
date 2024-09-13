@@ -41,7 +41,7 @@ android_test {
         "Harrier",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
         "android.car-test-stubs",
     ],
     srcs: [

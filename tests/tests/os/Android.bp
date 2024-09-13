@@ -22,6 +22,7 @@ android_test {
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     static_libs: [
+        "android-sdk-flags-java",
         "android.hidl.manager-V1.0-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
@@ -68,12 +69,13 @@ android_test {
         "cts",
         "general-tests",
         "sts",
+        "mcts-documentsui",
         "mts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],
@@ -86,6 +88,7 @@ android_ravenwood_test {
     defaults: ["cts_defaults"],
     sdk_version: "test_current",
     static_libs: [
+        "android-sdk-flags-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
         "compatibility-device-util-axt",
@@ -105,6 +108,7 @@ android_ravenwood_test {
         "src/android/os/cts/HandlerTest.java",
         "src/android/os/cts/HandlerThreadTest.java",
         "src/android/os/cts/ISecondary.aidl",
+        "src/android/os/cts/LocaleListTest.java",
         "src/android/os/cts/LooperTest.java",
         "src/android/os/cts/MessageQueueTest.java",
         "src/android/os/cts/MessageTest.java",
@@ -123,4 +127,41 @@ android_ravenwood_test {
         "src/android/os/cts/UserHandleTest.java",
     ],
     auto_gen_config: true,
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_strictmodetest_Presubmit",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.StrictModeTest"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_sharedmemorytest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.SharedMemoryTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_performancehintmanagertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.PerformanceHintManagerTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_storagemanagertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.storage.cts.StorageManagerTest"],
+}
+
+test_module_config {
+    name: "CtsOsTestCases_cts_hwbindertest",
+    base: "CtsOsTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.os.cts.HwBinderTest"],
 }

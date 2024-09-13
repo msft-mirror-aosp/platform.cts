@@ -45,7 +45,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Notification;
@@ -104,10 +103,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
-import com.android.compatibility.common.util.UserHelper;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
@@ -116,7 +116,9 @@ import com.google.common.base.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -150,6 +152,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             "com.android.test.notificationprovider.RichNotificationActivity";
     final String TAG = NotificationManagerTest.class.getSimpleName();
     final boolean DEBUG = false;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION = 264179692L;
     private static final String DELEGATE_POST_CLASS = TEST_APP + ".NotificationDelegateAndPost";
@@ -224,7 +230,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private static final long TIMEOUT_MS = 4000;
 
     private static final long POST_TIMEOUT = 200;
-    private static final long TIMEOUT_FORCE_REGROUP_MS = 3000 + POST_TIMEOUT;
+    private static final long TIMEOUT_FORCE_REGROUP_MS = TIMEOUT_MS + POST_TIMEOUT;
     private static final int MESSAGE_BROADCAST_NOTIFICATION = 1;
     private static final int MESSAGE_SERVICE_NOTIFICATION = 2;
     private static final int MESSAGE_CLICK_NOTIFICATION = 3;
@@ -944,8 +950,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendPackage() throws Exception {
-        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -1205,8 +1214,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendedPackageSendsNotification() throws Exception {
-        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
@@ -1579,6 +1591,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch rerankLatch = mListener.setRankingUpdateCountDown(5);
+        CountDownLatch postingLatch = mListener.setPostedCountDown(5);
 
         sendNotification(801, R.drawable.black);
         sendNotification(802, R.drawable.blue);
@@ -1586,6 +1599,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         sendNotification(804, R.drawable.yellow);
 
         // Wait until all the notifications, including the autogroup, are posted and grouped.
+        postingLatch.await(400, TimeUnit.MILLISECONDS);
         rerankLatch.await(400, TimeUnit.MILLISECONDS);
         assertNotificationCount(5);
         assertAllPostedNotificationsAutogrouped();
@@ -3652,13 +3666,6 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             }
         } catch (InterruptedException e) {
         }
-    }
-
-    // TODO(b/340238181): enable the tests for visible background user.
-    private void assumeNotVisibleBackgroundUser() {
-        UserHelper userHelper = new UserHelper(mContext);
-        assumeFalse("Not supported on visible background user",
-                userHelper.isVisibleBackgroundUser());
     }
 
     private static class EventCallback extends Handler {

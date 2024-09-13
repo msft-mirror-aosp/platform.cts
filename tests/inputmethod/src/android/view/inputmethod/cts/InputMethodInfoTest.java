@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -50,9 +51,9 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.Nullable;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -71,6 +72,7 @@ import java.util.List;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InputMethodInfoTest {
+    private static final String MOCK_IME_PACKAGE = "com.android.cts.mockime";
     private static final String MOCK_IME_ID = "com.android.cts.mockime/.MockIme";
     private static final String HIDDEN_FROM_PICKER_IME_ID =
             "com.android.cts.hiddenfrompickerime/.HiddenFromPickerIme";
@@ -247,7 +249,9 @@ public class InputMethodInfoTest {
         assertNotNull(languageSettingsIntent);
         assertEquals(InputMethodInfo.ACTION_IME_LANGUAGE_SETTINGS,
                 languageSettingsIntent.getAction());
-        assertEquals("language_settings", languageSettingsIntent.getComponent().getClassName());
+        final var component = new ComponentName(MOCK_IME_PACKAGE,
+                "com.android.cts.mockime.LanguageSettingsActivity");
+        assertEquals(component, languageSettingsIntent.getComponent());
     }
 
     @Test
@@ -301,16 +305,11 @@ public class InputMethodInfoTest {
     @Test
     public void testAtLeastOneEncryptionAwareInputMethodIsAvailable() {
         assumeFalse(FeatureUtil.isWatch());
-
-        if (!mContext.getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_INPUT_METHODS)) {
-            return;
-        }
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_INPUT_METHODS));
 
         // If the device doesn't use FBE, skip the test.
-        if (!PropertyUtil.propertyEquals("ro.crypto.type", "file")) {
-            return;
-        }
+        assumeTrue(PropertyUtil.propertyEquals("ro.crypto.type", "file"));
 
         final List<InputMethodInfo> imis = mImManager.getInputMethodList();
         boolean hasEncryptionAwareInputMethod = false;

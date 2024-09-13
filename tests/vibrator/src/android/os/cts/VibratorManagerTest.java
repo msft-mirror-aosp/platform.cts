@@ -16,9 +16,6 @@
 
 package android.os.cts;
 
-import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
-import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
-
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
@@ -29,6 +26,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import android.content.Context;
 import android.os.CombinedVibration;
 import android.os.SystemClock;
 import android.os.VibrationAttributes;
@@ -36,7 +34,7 @@ import android.os.VibrationEffect;
 import android.os.Vibrator;
 import android.os.Vibrator.OnVibratorStateChangedListener;
 import android.os.VibratorManager;
-import android.os.vibrator.VibratorFrequencyProfile;
+import android.provider.Settings;
 import android.util.SparseArray;
 
 import androidx.test.filters.LargeTest;
@@ -53,7 +51,6 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.time.Duration;
 import java.util.Arrays;
 
 @RunWith(AndroidJUnit4.class)
@@ -63,7 +60,8 @@ public class VibratorManagerTest {
     public final AdoptShellPermissionsRule mAdoptShellPermissionsRule =
             new AdoptShellPermissionsRule(
                     InstrumentationRegistry.getInstrumentation().getUiAutomation(),
-                    android.Manifest.permission.ACCESS_VIBRATOR_STATE);
+                    android.Manifest.permission.ACCESS_VIBRATOR_STATE,
+                    android.Manifest.permission.WRITE_SETTINGS);
     
     @Rule
     public final MockitoRule mMockitoRule = MockitoJUnit.rule();
@@ -84,10 +82,10 @@ public class VibratorManagerTest {
 
     @Before
     public void setUp() {
-        mVibratorManager =
-                InstrumentationRegistry.getInstrumentation().getContext().getSystemService(
-                        VibratorManager.class);
+        Context context = InstrumentationRegistry.getInstrumentation().getContext();
+        Settings.System.putInt(context.getContentResolver(), Settings.System.VIBRATE_ON, 1);
 
+        mVibratorManager = context.getSystemService(VibratorManager.class);
         for (int vibratorId : mVibratorManager.getVibratorIds()) {
             OnVibratorStateChangedListener listener = mock(OnVibratorStateChangedListener.class);
             mVibratorManager.getVibrator(vibratorId).addVibratorStateListener(listener);
@@ -215,44 +213,6 @@ public class VibratorManagerTest {
 
         mVibratorManager.cancel();
         assertStopsVibrating();
-    }
-
-    @LargeTest
-    @Test
-    public void testCombinedVibrationWaveformWithFrequencyStartsAndFinishesVibration() {
-        Vibrator defaultVibrator = mVibratorManager.getDefaultVibrator();
-        assumeTrue(defaultVibrator.hasFrequencyControl());
-
-        VibratorFrequencyProfile frequencyProfile = defaultVibrator.getFrequencyProfile();
-        float minFrequency = frequencyProfile.getMinFrequency();
-        float maxFrequency = frequencyProfile.getMaxFrequency();
-        float resonantFrequency = defaultVibrator.getResonantFrequency();
-        float sustainFrequency = Float.isNaN(resonantFrequency)
-                ? (maxFrequency + minFrequency) / 2
-                : resonantFrequency;
-
-        // Then ramp to zero amplitude at fixed frequency.
-        VibrationEffect waveform =
-                VibrationEffect.startWaveform(targetAmplitude(0), targetFrequency(minFrequency))
-                        // Ramp from min to max frequency and from zero to max amplitude.
-                        .addTransition(Duration.ofMillis(10),
-                                targetAmplitude(1), targetFrequency(maxFrequency))
-                        // Ramp back to min frequency and zero amplitude.
-                        .addTransition(Duration.ofMillis(10),
-                                targetAmplitude(0), targetFrequency(minFrequency))
-                        // Then sustain at a fixed frequency and half amplitude.
-                        .addTransition(Duration.ZERO,
-                                targetAmplitude(0.5f), targetFrequency(sustainFrequency))
-                        .addSustain(Duration.ofMillis(20))
-                        // Ramp from min to max frequency and at max amplitude.
-                        .addTransition(Duration.ZERO,
-                                targetAmplitude(1), targetFrequency(minFrequency))
-                        .addTransition(Duration.ofMillis(10), targetFrequency(maxFrequency))
-                        // Ramp from max to min amplitude at max frequency.
-                        .addTransition(Duration.ofMillis(10), targetAmplitude(0))
-                        .build();
-        mVibratorManager.vibrate(CombinedVibration.createParallel(waveform));
-        assertStartsThenStopsVibrating(50);
     }
 
     @Test

@@ -33,23 +33,34 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
+import android.os.CancellationSignal;
+import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.storage.StorageManager;
 import android.os.storage.StorageVolume;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.BaseColumns;
 import android.provider.MediaStore;
 import android.provider.MediaStore.MediaColumns;
+import android.system.Os;
+import android.system.OsConstants;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -61,6 +72,10 @@ import java.util.Set;
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.R)
 @RunWith(Parameterized.class)
 public class MediaStoreTest {
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
+
     static final String TAG = "MediaStoreTest";
 
     private static final long SIZE_DELTA = 32_000;
@@ -163,6 +178,136 @@ public class MediaStoreTest {
         assertFalse(volumeNames.contains(MediaStore.VOLUME_INTERNAL));
         assertFalse(volumeNames.contains(MediaStore.VOLUME_EXTERNAL));
         assertTrue(volumeNames.contains(MediaStore.VOLUME_EXTERNAL_PRIMARY));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile() throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.volantis, mExternalImages);
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (ParcelFileDescriptor pfd1 = mContext.getContentResolver()
+                .openFileDescriptor(uri, "r", cg)) {
+            try (ParcelFileDescriptor pfd2 = MediaStore
+                    .openFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+                long end1 = Os.lseek(pfd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(pfd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile() throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.volantis, mExternalImages);
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openAssetFileDescriptor(uri, "r", cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore
+                    .openAssetFileDescriptor(mContext.getContentResolver(), uri, "r", cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenTypedAssetFile() throws Exception {
+        final Uri uri = MediaProviderTestUtils.stageMedia(R.raw.volantis, mExternalImages);
+        final CancellationSignal cg = new CancellationSignal();
+
+        try (AssetFileDescriptor afd1 = mContext.getContentResolver()
+                .openTypedAssetFileDescriptor(uri, "*/*", null, cg)) {
+            try (AssetFileDescriptor afd2 = MediaStore.openTypedAssetFileDescriptor(
+                    mContext.getContentResolver(), uri, "*/*", null, cg)) {
+                long end1 = Os.lseek(afd1.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                long end2 = Os.lseek(afd2.getFileDescriptor(), 0, OsConstants.SEEK_END);
+                assertThat(end1).isEqualTo(end2);
+            }
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile_wrongAuthority() throws Exception {
+        final Uri uri = Uri.parse("content://wrong_authority");
+
+        try (ParcelFileDescriptor pfd = MediaStore
+                .openFileDescriptor(mContext.getContentResolver(), uri, "r", null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile_wrongAuthority() throws Exception {
+        final Uri uri = Uri.parse("content://wrong_authority");
+
+        try (AssetFileDescriptor afd = MediaStore
+                .openAssetFileDescriptor(mContext.getContentResolver(), uri, "r", null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenTypedAssetFile_wrongAuthority() throws Exception {
+        final Uri uri = Uri.parse("content://wrong_authority");
+
+        try (AssetFileDescriptor afd = MediaStore.openTypedAssetFileDescriptor(
+                mContext.getContentResolver(), uri, "*/*", null, null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenFile_wrongScheme() throws Exception {
+        final Uri uri = Uri.parse("file://authority");
+
+        try (ParcelFileDescriptor pfd = MediaStore
+                .openFileDescriptor(mContext.getContentResolver(), uri, "r", null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenAssetFile_wrongScheme() throws Exception {
+        final Uri uri = Uri.parse("file://authority");
+
+        try (AssetFileDescriptor afd = MediaStore
+                .openAssetFileDescriptor(mContext.getContentResolver(), uri, "r", null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_MEDIA_STORE_OPEN_FILE)
+    public void testMediaStoreOpenTypedAssetFile_wrongScheme() throws Exception {
+        final Uri uri = Uri.parse("file://authority");
+
+        try (AssetFileDescriptor afd = MediaStore
+                .openTypedAssetFileDescriptor(
+                        mContext.getContentResolver(), uri, "*/*", null, null)) {
+            fail("Expected IllegalArgumentException thrown");
+        } catch (IllegalArgumentException e) {
+            // Expected
+        }
     }
 
     @Test

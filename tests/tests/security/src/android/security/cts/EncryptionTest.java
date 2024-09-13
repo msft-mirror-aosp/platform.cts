@@ -56,7 +56,7 @@ public class EncryptionTest {
         if (firstApiLevel >= Build.VERSION_CODES.S) {
             // Assumes every test in this file asserts a requirement of CDD section 9.
             assumeTrue("Skipping test: FEATURE_SECURITY_MODEL_COMPATIBLE missing.",
-                    !context.getPackageManager()
+                    context.getPackageManager()
                     .hasSystemFeature(PackageManager.FEATURE_SECURITY_MODEL_COMPATIBLE));
         }
     }

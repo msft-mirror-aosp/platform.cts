@@ -13,6 +13,7 @@
 # limitations under the License.
 """Verify feature combinations for stabilization, 10-bit, and frame rate."""
 
+import concurrent.futures
 import logging
 import os
 
@@ -65,6 +66,16 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
   """
 
   def test_feature_combination(self):
+    # Use a pool of threads to execute calls asynchronously
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+      self._test_feature_combination(executor)
+
+  def _test_feature_combination(self, executor):
+    """Tests features using an injected ThreadPoolExecutor for analysis.
+
+    Args:
+      executor: a ThreadPoolExecutor to analyze recordings asynchronously.
+    """
     rot_rig = {}
     log_path = self.log_path
 
@@ -81,7 +92,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             its_session_utils.ANDROID14_API_LEVEL
         )
       should_run = (feature_combination_query_version >=
-                    its_session_utils.ANDROID15_API_LEVEL)
+                    its_session_utils.ANDROID15_API_LEVEL or
+                    self.feature_combo_verify)
       camera_properties_utils.skip_unless(should_run)
 
       # Log ffmpeg version being used
@@ -120,6 +132,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
 
       test_failures = []
+      preview_verification_futures = []
+      combination_names = []
       for stream_combination in combinations:
         streams_name = stream_combination['name']
         min_frame_duration = 0
@@ -196,12 +210,13 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                   f'[{fps_range[0]}, {fps_range[1]}])')
               logging.debug('combination name: %s', combination_name)
 
-              # Is the feature combination supported?
-              supported = cam.is_stream_combination_supported(
-                  output_surfaces, settings)
-              if not supported:
-                logging.debug('%s not supported', combination_name)
-                break
+              if not self.feature_combo_verify:
+                # Is the feature combination supported?
+                supported = cam.is_stream_combination_supported(
+                    output_surfaces, settings)
+                if not supported:
+                  logging.debug('%s not supported', combination_name)
+                  break
 
               is_stabilized = False
               if (stabilize ==
@@ -214,6 +229,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               if skip_test:
                 continue
 
+              # TODO: b/341299485 - parallelize preview recording
               recording_obj = (
                   preview_processing_utils.collect_data_with_surfaces(
                       cam, self.tablet_device, output_surfaces, is_stabilized,
@@ -233,46 +249,49 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   recording_obj['recordedOutputPath'].split('/')[-1])
               preview_file_name_with_path = os.path.join(
                   self.log_path, preview_file_name)
-              average_frame_rate_codec = (
-                  video_processing_utils.get_average_frame_rate(
+              avg_frame_rate_codec = (
+                  video_processing_utils.get_avg_frame_rate(
                       preview_file_name_with_path))
-              logging.debug('Average codec frame rate for %s is %f', combination_name,
-                            average_frame_rate_codec)
-              if (average_frame_rate_codec > fps_range[1] + _FPS_ATOL_CODEC or
-                  average_frame_rate_codec < fps_range[0] - _FPS_ATOL_CODEC):
+              logging.debug('Average codec frame rate for %s is %f',
+                            combination_name, avg_frame_rate_codec)
+              if (avg_frame_rate_codec > fps_range[1] + _FPS_ATOL_CODEC or
+                  avg_frame_rate_codec < fps_range[0] - _FPS_ATOL_CODEC):
                 failure_msg = (
                     f'{combination_name}: Average video clip frame rate '
-                    f'{average_frame_rate_codec} exceeding the allowed range of '
+                    f'{avg_frame_rate_codec} exceeding the allowed range of '
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
                 test_failures.append(failure_msg)
 
               # Verify FPS by inspecting the result metadata
               capture_results = recording_obj['captureMetadata']
-              assert len(capture_results) > 1
+              if len(capture_results) <= 1:
+                raise AssertionError(
+                    f'{combination_name}: captureMetadata has only '
+                    f'{len(capture_results)} frames')
               last_t = capture_results[-1]['android.sensor.timestamp']
               first_t = capture_results[0]['android.sensor.timestamp']
-              average_frame_duration = (last_t - first_t) / (len(capture_results) - 1)
-              average_frame_rate_metadata = _SEC_TO_NSEC / average_frame_duration
-              logging.debug('Average metadata frame rate for %s is %f', combination_name,
-                            average_frame_rate_metadata)
-              if (average_frame_rate_metadata > fps_range[1] + _FPS_ATOL_METADATA or
-                  average_frame_rate_metadata < fps_range[0] - _FPS_ATOL_METADATA):
+              avg_frame_duration = (
+                  (last_t - first_t) / (len(capture_results) - 1))
+              avg_frame_rate_metadata = _SEC_TO_NSEC / avg_frame_duration
+              logging.debug('Average metadata frame rate for %s is %f',
+                            combination_name, avg_frame_rate_metadata)
+              if (avg_frame_rate_metadata > fps_range[1] + _FPS_ATOL_METADATA or
+                  avg_frame_rate_metadata < fps_range[0] - _FPS_ATOL_METADATA):
                 failure_msg = (
                     f'{combination_name}: Average frame rate '
-                    f'{average_frame_rate_metadata} exceeding the allowed range of '
-                    f'({fps_range[0]}-{_FPS_ATOL_METADATA}, {fps_range[1]}+{_FPS_ATOL_METADATA})')
+                    f'{avg_frame_rate_metadata} exceeding the allowed range of '
+                    f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
+                    f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
                 test_failures.append(failure_msg)
 
-              # Verify video stabilization
+              # Schedule stabilization verification to run asynchronously
               if is_stabilized:
-                stabilization_result = (
-                    preview_processing_utils.verify_preview_stabilization(
-                        recording_obj, gyro_events, _NAME, log_path, facing))
-                if stabilization_result['failure'] is not None:
-                  failure_msg = (combination_name + ': ' +
-                                 stabilization_result['failure'])
-                  test_failures.append(failure_msg)
+                future = executor.submit(
+                    preview_processing_utils.verify_preview_stabilization,
+                    recording_obj, gyro_events, _NAME, log_path, facing)
+                preview_verification_futures.append(future)
+                combination_names.append(combination_name)
 
               # Verify color space
               color_space = video_processing_utils.get_video_colorspace(
@@ -283,6 +302,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
                 test_failures.append(failure_msg)
+
+      # Verify preview stabilization
+      for future, name in zip(preview_verification_futures, combination_names):
+        stabilization_result = future.result()
+        logging.debug('Stabilization result for %s: %s',
+                      name, stabilization_result)
+        if stabilization_result['failure']:
+          failure_msg = f'{name}: {stabilization_result["failure"]}'
+          test_failures.append(failure_msg)
 
       # Assert PASS/FAIL criteria
       if test_failures:

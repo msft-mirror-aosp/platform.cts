@@ -17,6 +17,10 @@ package templatefns
 import (
 	"errors"
 	"testing"
+
+	pb "cts/test/mediapc/requirements/requirements_go_proto"
+
+	"google.golang.org/protobuf/proto"
 )
 
 var caseTests = []struct {
@@ -183,6 +187,50 @@ func TestDict(t *testing.T) {
 			if got[k] != v {
 				t.Fatalf("dict(%v)[%q] = %q, want %q", tt.values, k, got[k], v)
 			}
+		}
+	}
+}
+
+func TestHasConfigVariant(t *testing.T) {
+	testReq := pb.Requirement_builder{
+		Specs: map[int64]*pb.RequirementSpec{
+			30: pb.RequirementSpec_builder{
+				TestConfigId: proto.String("720p"),
+				VariantSpecs: map[string]*pb.VariantSpec{
+					"VP9": pb.VariantSpec_builder{}.Build(),
+				},
+			}.Build(),
+			34: pb.RequirementSpec_builder{
+				TestConfigId: proto.String("4k"),
+				VariantSpecs: make(map[string]*pb.VariantSpec),
+			}.Build(),
+		},
+	}.Build()
+
+	tests := []struct {
+		r         *pb.Requirement
+		configID  string
+		variantID string
+		want      bool
+	}{
+		{
+			r:         testReq,
+			configID:  "720p",
+			variantID: "VP9",
+			want:      true,
+		},
+		{
+			r:         testReq,
+			configID:  "4k",
+			variantID: "VP9",
+			want:      false,
+		},
+	}
+
+	for _, tc := range tests {
+		got := HasConfigVariant(tc.r, tc.configID, tc.variantID)
+		if got != tc.want {
+			t.Errorf("HasConfigVariant(%v, %q, %q) = %v, want: %v", tc.r, tc.configID, tc.variantID, got, tc.want)
 		}
 	}
 }

@@ -365,7 +365,7 @@ public class StreamedAppClipboardTest {
             initialize();
         }
 
-        DeviceEnvironment(@VirtualDeviceParams.DevicePolicy int clipboardPolicy) {
+        DeviceEnvironment(int clipboardPolicy) {
             MockitoAnnotations.initMocks(this);
             VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
                     new VirtualDeviceParams.Builder()

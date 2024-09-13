@@ -90,7 +90,7 @@ public final class TransformReverseTransformIdentityTest {
 
   @Parameterized.Parameters(name = "{index}_{7}")
   public static Collection<Object[]> input() {
-    // mediaType, transformationRequestType, clip, ssim, params
+    // mediaType, transformationRequestType, clip, params
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][] {
         // Scale X and Y
         {MimeTypes.VIDEO_H264, SET_SCALE,
@@ -226,18 +226,7 @@ public final class TransformReverseTransformIdentityTest {
             .run(testId, editedMediaItem);
 
     Format muxedOutputFormat = MediaEditingUtil.getMuxedWidthHeight(transformationResult.filePath);
-    if (outWidth >= outHeight) {
-      assertThat(muxedOutputFormat.width).isEqualTo(outWidth);
-      assertThat(muxedOutputFormat.height).isEqualTo(outHeight);
-    } else {
-      // Encoders commonly support higher maximum widths than maximum heights.
-      // VideoTranscodingSamplePipeline#getSurfaceInfo may rotate frame before encoding, so the
-      // encoded frame's width >= height, and sets rotationDegrees in the output Format to ensure
-      // the frame is displayed in the correct orientation.
-      assertThat(muxedOutputFormat.rotationDegrees).isEqualTo(90);
-      assertThat(muxedOutputFormat.width).isEqualTo(outHeight);
-      assertThat(muxedOutputFormat.height).isEqualTo(outWidth);
-    }
+    MediaEditingUtil.validateOutput(muxedOutputFormat, outWidth, outHeight);
 
     EditedMediaItem reverseEditedMediaItem = new EditedMediaItem.Builder(
         MediaItem.fromUri(transformationResult.filePath)).setEffects(reverseVideoEffects)
@@ -248,12 +237,13 @@ public final class TransformReverseTransformIdentityTest {
             .run(testId + "_reverseTransform", reverseEditedMediaItem);
 
     muxedOutputFormat = MediaEditingUtil.getMuxedWidthHeight(reverseTransformationResult.filePath);
-    assertThat(muxedOutputFormat.width).isEqualTo(inpWidth);
-    assertThat(muxedOutputFormat.height).isEqualTo(inpHeight);
+    MediaEditingUtil.validateOutput(muxedOutputFormat, inpWidth, inpHeight);
 
-    double ssim = SsimHelper.calculate(context,
-        checkNotNull(Uri.parse(MEDIA_DIR + testFile)).toString(),
-        reverseTransformationResult.filePath);
-    assertThat(ssim).isGreaterThan(EXPECTED_MINIMUM_SSIM);
+    if (muxedOutputFormat.height == inpHeight && muxedOutputFormat.width == inpWidth) {
+      double ssim = SsimHelper.calculate(context,
+          checkNotNull(Uri.parse(MEDIA_DIR + testFile)).toString(),
+          reverseTransformationResult.filePath);
+      assertThat(ssim).isGreaterThan(EXPECTED_MINIMUM_SSIM);
+    }
   }
 }

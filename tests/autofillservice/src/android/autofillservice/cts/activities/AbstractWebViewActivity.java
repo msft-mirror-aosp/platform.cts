@@ -35,6 +35,7 @@ public abstract class AbstractWebViewActivity extends AbstractAutoFillActivity {
         // Then the input is next.
         final UiObject2 parent = label.getParent();
         UiObject2 previous = null;
+        uiBot.waitForIdleSync();
         for (UiObject2 child : parent.getChildren()) {
             if (label.equals(previous)) {
                 if (child.getClassName().equals(EditText.class.getName())) {

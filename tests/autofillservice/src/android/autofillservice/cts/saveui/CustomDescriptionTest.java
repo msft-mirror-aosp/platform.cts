@@ -109,7 +109,7 @@ public class CustomDescriptionTest extends AbstractLoginActivityTestCase {
         // In this case, the URI doesn't exist
         badPresentation.setImageViewIcon(
                 R.id.icon,
-                Icon.createWithContentUri("content://10@com.android.contacts/display_photo/1"));
+                Icon.createWithContentUri("content://1000@com.android.contacts/display_photo/1"));
         badPresentation.setTextViewText(R.id.first, "do not display");
 
         sReplier.addResponse(

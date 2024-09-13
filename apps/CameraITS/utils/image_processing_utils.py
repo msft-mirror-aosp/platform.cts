@@ -19,8 +19,7 @@ import io
 import logging
 import math
 import matplotlib
-from matplotlib import pylab
-import matplotlib.pyplot
+from matplotlib import pyplot as plt
 import os
 import sys
 
@@ -51,8 +50,6 @@ MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)
     for i in range(MAX_LUT_SIZE)])
-NUM_TRIES = 2
-NUM_FRAMES = 4
 RGB2GRAY_WEIGHTS = (0.299, 0.587, 0.114)
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
 
@@ -89,34 +86,34 @@ def plot_lsc_maps(lsc_maps, plot_name, test_name_with_log_path):
   """
   aspect_ratio = lsc_maps[:, :, 0].shape[1] / lsc_maps[:, :, 0].shape[0]
   plot_w = 1 + aspect_ratio * _CMAP_SIZE  # add 1 for heatmap legend
-  matplotlib.pyplot.figure(plot_name, figsize=(plot_w, _CMAP_SIZE))
-  pylab.suptitle(plot_name)
+  plt.figure(plot_name, figsize=(plot_w, _CMAP_SIZE))
+  plt.suptitle(plot_name)
 
-  pylab.subplot(2, 2, 1)  # 2x2 top left
-  pylab.title('R')
+  plt.subplot(2, 2, 1)  # 2x2 top left
+  plt.title('R')
   cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_RED)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 0], cmap=cmap)
-  matplotlib.pyplot.colorbar()
+  plt.pcolormesh(lsc_maps[:, :, 0], cmap=cmap)
+  plt.colorbar()
 
-  pylab.subplot(2, 2, 2)  # 2x2 top right
-  pylab.title('Gr')
+  plt.subplot(2, 2, 2)  # 2x2 top right
+  plt.title('Gr')
   cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 1], cmap=cmap)
-  matplotlib.pyplot.colorbar()
+  plt.pcolormesh(lsc_maps[:, :, 1], cmap=cmap)
+  plt.colorbar()
 
-  pylab.subplot(2, 2, 3)  # 2x2 bottom left
-  pylab.title('Gb')
+  plt.subplot(2, 2, 3)  # 2x2 bottom left
+  plt.title('Gb')
   cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_GREEN)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 2], cmap=cmap)
-  matplotlib.pyplot.colorbar()
+  plt.pcolormesh(lsc_maps[:, :, 2], cmap=cmap)
+  plt.colorbar()
 
-  pylab.subplot(2, 2, 4)  # 2x2 bottom right
-  pylab.title('B')
+  plt.subplot(2, 2, 4)  # 2x2 bottom right
+  plt.title('B')
   cmap = matplotlib.colors.LinearSegmentedColormap.from_list('', _CMAP_BLUE)
-  matplotlib.pyplot.pcolormesh(lsc_maps[:, :, 3], cmap=cmap)
-  matplotlib.pyplot.colorbar()
+  plt.pcolormesh(lsc_maps[:, :, 3], cmap=cmap)
+  plt.colorbar()
 
-  matplotlib.pyplot.savefig(f'{test_name_with_log_path}_{plot_name}_cmaps.png')
+  plt.savefig(f'{test_name_with_log_path}_{plot_name}_cmaps.png')
 
 
 def capture_scene_image(cam, props, name_with_log_path):
@@ -128,7 +125,7 @@ def capture_scene_image(cam, props, name_with_log_path):
 
 
 def convert_image_to_uint8(image):
-  image *= 255
+  image = image*255
   return image.astype(numpy.uint8)
 
 
@@ -1236,32 +1233,6 @@ def rotate_img_per_argv(img):
   if 'rotate180' in sys.argv:
     img_out = numpy.fliplr(numpy.flipud(img_out))
   return img_out
-
-
-def stationary_lens_cap(cam, req, fmt):
-  """Take up to NUM_TRYS caps and save the 1st one with lens stationary.
-
-  Args:
-   cam: open device session
-   req: capture request
-   fmt: format for capture
-
-  Returns:
-    capture
-  """
-  tries = 0
-  done = False
-  reqs = [req] * NUM_FRAMES
-  while not done:
-    logging.debug('Waiting for lens to move to correct location.')
-    cap = cam.do_capture(reqs, fmt)
-    done = (cap[NUM_FRAMES - 1]['metadata']['android.lens.state'] == 0)
-    logging.debug('status: %s', done)
-    tries += 1
-    if tries == NUM_TRIES:
-      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
-                                      tries)
-  return cap[NUM_FRAMES - 1]
 
 
 def compute_image_rms_difference_1d(rgb_x, rgb_y):

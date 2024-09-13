@@ -48,7 +48,6 @@ cc_test_library {
 
 android_test {
     name: "CtsMediaDecoderTestCases",
-    team: "trendy_team_android_media_audio_framework",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -130,4 +129,11 @@ android_test {
     host_required: ["cts-dynamic-config"],
     min_sdk_version: "29",
     target_sdk_version: "31",
+}
+
+test_module_config {
+    name: "CtsMediaDecoderTestCases_cts_decoderrendertest",
+    base: "CtsMediaDecoderTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.media.decoder.cts.DecoderRenderTest"],
 }

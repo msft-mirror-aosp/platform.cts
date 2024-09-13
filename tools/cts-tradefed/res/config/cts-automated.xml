@@ -26,6 +26,12 @@
     <option name="skip-system-status-check" value="com.android.compatibility.common.tradefed.targetprep.NetworkConnectivityChecker" />
     <option name="wifi-check:disable" value="true" />
 
+    <!-- Temporary add the ensure_verify_apps baseline for debugging. -->
+    <system_checker class="com.android.tradefed.suite.checker.DeviceBaselineChecker">
+        <option name="enable-device-baseline-settings" value="true" />
+        <option name="enable-experimental-device-baseline-setters" value="ensure_verify_apps" />
+    </system_checker>
+
     <!-- Tell all AndroidJUnitTests to exclude certain annotations -->
     <option name="compatibility:test-arg" value="com.android.tradefed.testtype.AndroidJUnitTest:exclude-annotation:android.platform.test.annotations.RestrictedBuildTest" />
 

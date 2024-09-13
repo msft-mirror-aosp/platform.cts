@@ -40,6 +40,7 @@ import android.widget.FrameLayout;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.WidgetTestUtils;
 
 import org.junit.Before;
@@ -58,7 +59,14 @@ public abstract class BaseTransitionTest {
     protected Transition mTransition;
     protected Transition.TransitionListener mListener;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule =
+            new AdoptShellPermissionsRule(
+                    androidx.test.platform.app.InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation(),
+                    android.Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<TransitionActivity> mActivityRule =
             new ActivityTestRule<>(TransitionActivity.class);
 

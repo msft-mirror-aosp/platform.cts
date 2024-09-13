@@ -26,7 +26,7 @@ android_test {
         "general-tests",
     ],
     compile_multilib: "both",
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "CtsInputMethodServiceCommon",
         "CtsMockInputMethodLib",
@@ -54,6 +54,7 @@ android_test {
     },
     sdk_version: "test_current",
     data: [
+        ":CtsDirectBootAwareIme",
         ":CtsInputMethod1",
         ":CtsInputMethod2",
         ":CtsInputMethodStandaloneTestApp",

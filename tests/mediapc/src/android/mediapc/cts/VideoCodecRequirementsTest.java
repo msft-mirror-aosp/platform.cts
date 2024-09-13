@@ -29,6 +29,7 @@ import static android.mediapc.cts.CodecTestBase.getCodecInfo;
 import static android.mediapc.cts.CodecTestBase.getMediaTypesOfAvailableCodecs;
 import static android.mediapc.cts.CodecTestBase.selectCodecs;
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
+import static android.mediav2.common.cts.CodecTestBase.isDefaultCodec;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -172,8 +173,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAV1DecoderReq = pce.addRAV1DecoderReq();
-        rAV1DecoderReq.setAv1DecoderReq(oneCodecDecoding);
+        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
+                Requirements.addR5_1__H_1_14().to(pce);
+        rAV1DecoderReq.setAv1DecoderRequirementBoolean(oneCodecDecoding);
 
         pce.submitAndCheck();
     }
@@ -188,8 +190,9 @@ public class VideoCodecRequirementsTest {
         Set<String> decoderSet = get4k60HwCodecSet(false);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement r4k60HwDecoder = pce.addR4k60HwDecoder();
-        r4k60HwDecoder.set4kHwDecoders(decoderSet.size());
+        Requirements.HardwareDecoder4K60Requirement r4k60HwDecoder =
+                Requirements.addR5_1__H_1_15().to(pce);
+        r4k60HwDecoder.setNumber4KHwDecoders(decoderSet.size());
 
         pce.submitAndCheck();
     }
@@ -204,8 +207,9 @@ public class VideoCodecRequirementsTest {
         Set<String> encoderSet = get4k60HwCodecSet(true);
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement r4k60HwEncoder = pce.addR4k60HwEncoder();
-        r4k60HwEncoder.set4kHwEncoders(encoderSet.size());
+        Requirements.HardwareEncoder4K60Requirement r4k60HwEncoder =
+                Requirements.addR5_1__H_1_16().to(pce);
+        r4k60HwEncoder.setNumber4KHwEncoders(encoderSet.size());
 
         pce.submitAndCheck();
     }
@@ -233,9 +237,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAVIFDecoderReq =
-                pce.addRAVIFDecoderReq();
-        rAVIFDecoderReq.setAVIFDecoderReq(isDecoded);
+        Requirements.AVIFBaselineProfileRequirement rAVIFDecoderReq =
+                Requirements.addR5_1__H_1_17().to(pce);
+        rAVIFDecoderReq.setAvifImageDecoderBoolean(isDecoded);
 
         pce.submitAndCheck();
     }
@@ -292,15 +296,13 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement rAV1EncoderReq = pce.addRAV1EncoderReq();
-        rAV1EncoderReq.setAv1EncResolution(height);
-        rAV1EncoderReq.setAv1EncFps(fps);
-        rAV1EncoderReq.setAv1EncBitrate(1);
+        Requirements.AV1EncoderRequirement rAV1EncoderReq = Requirements.addR5_1__H_1_18().to(pce);
+        rAV1EncoderReq.setAv1EncoderFps(fps);
         pce.submitAndCheck();
     }
 
     /**
-     * MUST support the Feature_HlgEditing feature for all hardware AV1 and HEVC
+     * MUST support the Feature_HlgEditing feature for default hardware AV1 and HEVC
      * encoders present on the device at 4K resolution or the largest Camera-supported
      * resolution, whichever is less.
      */
@@ -308,7 +310,7 @@ public class VideoCodecRequirementsTest {
     @RequiresFlagsEnabled(Flags.FLAG_HLG_EDITING)
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirement = "5.1/H-1-20")
-    public void testHlgEditingSupport() throws CameraAccessException {
+    public void testHlgEditingSupport() throws CameraAccessException, IOException {
         final String[] mediaTypes =
                 {MediaFormat.MIMETYPE_VIDEO_HEVC, MIMETYPE_VIDEO_AV1};
 
@@ -327,6 +329,9 @@ public class VideoCodecRequirementsTest {
         for (String mediaType : mediaTypes) {
             ArrayList<String> hwEncoders = selectHardwareCodecs(mediaType, null, null, true);
             for (String encoder : hwEncoders) {
+                if (!isDefaultCodec(encoder, mediaType, true)) {
+                    continue;
+                }
                 MediaFormat format =
                         MediaFormat.createVideoFormat(mediaType, maxRecordingSize.getWidth(),
                                 maxRecordingSize.getHeight());
@@ -339,9 +344,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement HlgEditingSupportReq =
-                pce.addR5_1__H_1_20();
-        HlgEditingSupportReq.setHlgEditingSupportedReq(isFeatureSupported);
+        Requirements.VideoCodecHlgEditingRequirement hlgEditingSupportReq =
+                Requirements.addR5_1__H_1_20().to(pce);
+        hlgEditingSupportReq.setHlgEditing(isFeatureSupported);
 
         pce.submitAndCheck();
     }
@@ -373,17 +378,17 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement DynamicColorAspectsReq =
-                pce.addR5_1__H_1_21();
-        DynamicColorAspectsReq.setDynamicColorAspectsSupportReq(isSupported);
+        Requirements.VideoCodecDynamicColorAspectRequirement dynamicColorAspectsReq =
+                Requirements.addR5_1__H_1_21().to(pce);
+        dynamicColorAspectsReq.setDynamicColorAspects(isSupported);
 
         pce.submitAndCheck();
     }
 
     /**
-     * MUST support portrait resolution for all hardware codecs. AV1 codecs are limited to only
-     * 1080p resolution while others should support 4k or camera preferred resolution
-     * (whichever is less)
+     * MUST support portrait resolution for all hardware codecs that support landscape. AV1 codecs
+     * are limited to only 1080p resolution while others should support 4k or camera preferred
+     * resolution (whichever is less)
      */
     @SmallTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS)
@@ -413,8 +418,8 @@ public class VideoCodecRequirementsTest {
                 Size finalRequiredSize = requiredSize;
                 Size rotatedSize = new Size(requiredSize.getHeight(), requiredSize.getWidth());
                 isSupported = selectHardwareCodecs(mediaType, null, null, isEncoder).stream()
-                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize)
-                                && MediaUtils.supports(codec, mediaType, rotatedSize));
+                        .filter(codec -> MediaUtils.supports(codec, mediaType, finalRequiredSize))
+                        .allMatch(codec -> MediaUtils.supports(codec, mediaType, rotatedSize));
                 if (!isSupported) {
                     break outerloop;
                 }
@@ -422,9 +427,9 @@ public class VideoCodecRequirementsTest {
         }
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.VideoCodecRequirement portraitResolutionSupportReq =
-                pce.addR5_1__H_1_22();
-        portraitResolutionSupportReq.setPortraitResolutionSupportreq(isSupported);
+        Requirements.VideoCodecPortraitResolutionRequirement portraitResolutionSupportReq =
+                Requirements.addR5_1__H_1_22().to(pce);
+        portraitResolutionSupportReq.setPortraitResolution(isSupported);
 
         pce.submitAndCheck();
     }

@@ -14,9 +14,11 @@
 """Utility functions to create custom capture requests."""
 
 
+import error_util
 import logging
 import math
 
+_AE_MODE_OFF = 0
 _AE_MODE_ON_AUTO_FLASH = 2
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
@@ -35,7 +37,41 @@ FMT_CODE_YUV = 0x23  # YUV_420_888
 FMT_CODE_Y8 = 0x20203859
 _MAX_YUV_SIZE = (1920, 1080)
 _MIN_YUV_SIZE = (640, 360)
+_STATIONARY_LENS_NUM_TRIES = 2  # num of tries to wait for stationary lens
+_STATIONARY_LENS_NUM_FRAMES = 4  # num of frames to capture for stationay lens
+_STATIONARY_LENS_STATE = 0
 _VGA_W, _VGA_H = (640, 480)
+
+
+def stationary_lens_capture(
+    cam, req, fmt,
+    num_frames=_STATIONARY_LENS_NUM_FRAMES,
+    num_tries=_STATIONARY_LENS_NUM_TRIES):
+  """Take up to num_tries caps with num_frames & save when lens stationary.
+
+  Args:
+   cam: open device session.
+   req: capture request.
+   fmt: format dictionary for capture.
+   num_frames: int; number of frames per capture.
+   num_tries: int; number of tries to get lens stationary capture.
+
+  Returns:
+    capture
+  """
+  tries = 0
+  done = False
+  while not done:
+    logging.debug('Waiting for lens to move to correct location.')
+    cap = cam.do_capture([req] * num_frames, fmt)
+    done = (cap[num_frames - 1]['metadata']['android.lens.state'] ==
+            _STATIONARY_LENS_STATE)
+    logging.debug('lens stationary status: %s', done)
+    if tries == num_tries:
+      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
+                                      tries)
+    tries += 1
+  return cap[num_frames - 1]
 
 
 def is_common_aspect_ratio(size):
@@ -387,23 +423,6 @@ def int_to_rational(i):
     return {'numerator': i, 'denominator': 1}
 
 
-def get_largest_yuv_format(props, match_ar=None):
-  """Return a capture request and format spec for the largest yuv size.
-
-  Args:
-    props: object returned from camera_properties_utils.get_camera_properties().
-    match_ar: (Optional) a (w, h) tuple. Aspect ratio to match during search.
-
-  Returns:
-    fmt:   an output format specification for the largest possible yuv format
-           for this device.
-  """
-  size = get_available_output_sizes('yuv', props, match_ar_size=match_ar)[0]
-  fmt = {'format': 'yuv', 'width': size[0], 'height': size[1]}
-
-  return fmt
-
-
 def get_smallest_yuv_format(props, match_ar=None):
   """Return a capture request and format spec for the smallest yuv size.
 
@@ -556,21 +575,29 @@ def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
       * metadata: the capture result object
   """
   preview_req_start = auto_capture_request()
-  preview_req_start[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_start['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_start[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_start[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
+  preview_req_start[
+      'android.flash.mode'] = _FLASH_MODE_SINGLE
+  preview_req_start[
+      'android.flash.strengthLevel'] = strength
   # Repeat preview requests with aePrecapture set to IDLE
   # until AE is converged.
   preview_req_idle = auto_capture_request()
-  preview_req_idle[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_idle['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_idle[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_idle[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  preview_req_idle[
+      'android.flash.strengthLevel'] = strength
   # Single still capture request.
   still_capture_req = auto_capture_request()
   still_capture_req[

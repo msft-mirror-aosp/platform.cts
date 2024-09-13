@@ -17,6 +17,7 @@
 package com.android.cts.apicommon;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class ApiMethod implements Comparable<ApiMethod> {
     private final Map<String, Boolean> mCoveredWith = new ConcurrentHashMap<>();
 
     // A list of CTS test methods that call this API method.
-    private final Map<String, Boolean> mCoveredTests = new ConcurrentHashMap<>();
+    private final Map<String, TestMethodInfo> mCoveredTests = new ConcurrentHashMap<>();
 
     public ApiMethod(
             String name,
@@ -113,8 +114,8 @@ public class ApiMethod implements Comparable<ApiMethod> {
         return mCoveredWith.keySet();
     }
 
-    public Set<String> getCoveredTests() {
-        return mCoveredTests.keySet();
+    public Collection<TestMethodInfo> getCoveredTests() {
+        return mCoveredTests.values();
     }
 
     public void setCovered(String coveredWithModule) {
@@ -126,7 +127,7 @@ public class ApiMethod implements Comparable<ApiMethod> {
     }
 
     /** Adds a test method that is calling this API. */
-    public void setCoveredTest(String coveredTest) {
-        mCoveredTests.put(coveredTest, true);
+    public void setCoveredTest(TestMethodInfo testMethodInfo) {
+        mCoveredTests.put(testMethodInfo.signature(), testMethodInfo);
     }
 }

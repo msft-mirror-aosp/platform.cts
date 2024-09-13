@@ -38,9 +38,10 @@ java_library {
     srcs: ["src/android/keystore/cts/util/**/*.java"],
 
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.system",
+        "android.test.runner.stubs.system",
         "androidx.test.rules",
+        "compatibility-device-util-axt",
         "junit",
         "truth",
     ],
@@ -59,8 +60,8 @@ android_test {
     ],
     libs: [
         "bouncycastle-unbundled",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "DeviceAdminApp",
@@ -77,10 +78,10 @@ android_test {
         "cts-wm-util",
         "ctstestrunner-axt",
         "flag-junit",
-        "keystore2_flags_java",
         "guava",
         "hamcrest-library",
         "junit",
+        "junit-params",
         "platformprotosnano",
         "testng",
     ],
@@ -108,8 +109,8 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "androidx.test.rules",
@@ -140,8 +141,8 @@ android_test {
         "general-tests",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "bouncycastle-bcpkix-unbundled",
@@ -154,4 +155,31 @@ android_test {
     // sdk_version: "test_current",
     platform_apis: true,
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsKeystoreTestCases_RequiresDevice",
+    base: "CtsKeystoreTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.RequiresDevice"],
+    exclude_filters: [
+        "android.keystore.cts.EcKeyGenPerformanceTest",
+        "android.keystore.cts.AttestationPerformanceTest",
+        "android.keystore.cts.SignatureTest",
+        "android.keystore.cts.KeyPairGeneratorTest",
+        "android.keystore.cts.HmacMacPerformanceTest",
+        "android.keystore.cts.KeyGeneratorTest#testHmacKeySupportedSizes",
+        "android.keystore.cts.DesCipherPerformanceTest",
+        "android.keystore.cts.MacTest#testLargeMsgKat",
+        "android.keystore.cts.DESedeECBNoPaddingCipherTest",
+        "android.keystore.cts.DESedeECBPKCS7PaddingCipherTest",
+        "android.keystore.cts.RsaKeyGenPerformanceTest",
+        "android.keystore.cts.AESCipherNistCavpKatTest",
+        "android.keystore.cts.RsaSignaturePerformanceTest",
+        "android.keystore.cts.CipherTest",
+        "android.keystore.cts.RsaCipherPerformanceTest",
+        "android.keystore.cts.AndroidKeyStoreTest",
+        "android.keystore.cts.EcdsaSignaturePerformanceTest",
+        "android.keystore.cts.AesCipherPerformanceTest",
+    ],
 }

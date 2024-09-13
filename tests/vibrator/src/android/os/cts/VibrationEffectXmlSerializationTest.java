@@ -24,16 +24,19 @@ import static android.os.VibrationEffect.EFFECT_CLICK;
 import static android.os.VibrationEffect.VibrationParameter.targetAmplitude;
 import static android.os.VibrationEffect.VibrationParameter.targetFrequency;
 import static android.os.vibrator.Flags.FLAG_VIBRATION_XML_APIS;
+import static android.os.vibrator.Flags.FLAG_VENDOR_VIBRATION_EFFECTS;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import static org.junit.Assert.assertThrows;
 
+import android.os.PersistableBundle;
 import android.os.VibrationEffect;
 import android.os.vibrator.persistence.ParsedVibration;
 import android.os.vibrator.persistence.VibrationXmlParser;
 import android.os.vibrator.persistence.VibrationXmlSerializer;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -50,12 +53,14 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Base64;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -887,6 +892,76 @@ public class VibrationEffectXmlSerializationTest {
                     </waveform-effect>
                 </vibration-effect>
                 """);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testParseVendorEffect_withFeatureFlagEnabled_isSuccessful() throws Exception {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        vendorData.writeToStream(outputStream);
+        String text = Base64.getEncoder().encodeToString(outputStream.toByteArray());
+
+        assertSuccessfulParse(
+                "<vibration-effect><vendor-effect>  " // check trailing whitespace is ignored
+                        + text
+                        + "\n </vendor-effect></vibration-effect>",
+                VibrationEffect.createVendorEffect(vendorData));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testParseInvalidVendorEffect_withFeatureFlagEnabled_fails() {
+        assertFailedParse("<vibration-effect><vendor-effect/></vibration-effect>");
+        assertFailedParse("<vibration-effect><vendor-effect>  </vendor-effect></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><vendor-effect>invalid</vendor-effect></vibration-effect>");
+        assertFailedParse(
+                "<vibration-effect><vendor-effect>c29tZXNh</vendor-effect></vibration-effect>");
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testParseVendorEffect_withFeatureFlagDisabled_fails() throws IOException {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        vendorData.writeToStream(outputStream);
+        String text = Base64.getEncoder().encodeToString(outputStream.toByteArray());
+
+        assertFailedParse(
+                "<vibration-effect><vendor-effect>" + text + "</vendor-effect></vibration-effect>");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testSerializeVendorEffect_withFeatureFlagEnabled_isSuccessful() throws Exception {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        vendorData.writeToStream(outputStream);
+        String text = Base64.getEncoder().encodeToString(outputStream.toByteArray());
+        String expectedXml =
+                "<vibration-effect><vendor-effect>" + text + "</vendor-effect></vibration-effect>";
+
+        StringWriter writer = new StringWriter();
+        VibrationXmlSerializer.serialize(VibrationEffect.createVendorEffect(vendorData), writer);
+        assertSameXml(expectedXml, writer.toString());
+    }
+
+    @Test
+    @RequiresFlagsDisabled(FLAG_VENDOR_VIBRATION_EFFECTS)
+    public void testSerializeVendorEffect_withFeatureFlagDisabled_fails() {
+        PersistableBundle vendorData = new PersistableBundle();
+        vendorData.putInt("id", 1);
+
+        StringWriter writer = new StringWriter();
+        assertThrows(VibrationXmlSerializer.SerializationFailedException.class,
+                () -> VibrationXmlSerializer.serialize(
+                        VibrationEffect.createVendorEffect(vendorData),
+                        writer));
+        assertThat(writer.toString()).isEmpty();
     }
 
     @Test

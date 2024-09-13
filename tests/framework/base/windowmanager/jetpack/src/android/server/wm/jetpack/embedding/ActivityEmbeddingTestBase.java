@@ -22,7 +22,6 @@ import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assumeActivi
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.jetpack.extensions.util.TestValueCountConsumer;
 import android.server.wm.jetpack.utils.WindowManagerJetpackTestBase;
-import android.view.Display;
 
 import androidx.window.extensions.embedding.ActivityEmbeddingComponent;
 import androidx.window.extensions.embedding.SplitInfo;
@@ -41,16 +40,17 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
 
     protected ActivityEmbeddingComponent mActivityEmbeddingComponent;
     protected TestValueCountConsumer<List<SplitInfo>> mSplitInfoConsumer;
-    protected ReportedDisplayMetrics mReportedDisplayMetrics =
-            ReportedDisplayMetrics.getDisplayMetrics(Display.DEFAULT_DISPLAY);
+    protected ReportedDisplayMetrics mReportedDisplayMetrics;
 
     @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
         assumeActivityEmbeddingSupportedDevice();
+        mReportedDisplayMetrics = ReportedDisplayMetrics.getDisplayMetrics(getMainDisplayId());
 
         mActivityEmbeddingComponent = getWindowExtensions().getActivityEmbeddingComponent();
+
         mSplitInfoConsumer = new TestValueCountConsumer<>();
         mActivityEmbeddingComponent.setSplitInfoCallback(mSplitInfoConsumer);
         // The splitInfoCallback will be triggered once upon register, so clear the queue before
@@ -65,7 +65,9 @@ public class ActivityEmbeddingTestBase extends WindowManagerJetpackTestBase {
     @After
     public void tearDown() throws Throwable {
         super.tearDown();
-        mReportedDisplayMetrics.restoreDisplayMetrics();
+        if (mReportedDisplayMetrics != null) {
+            mReportedDisplayMetrics.restoreDisplayMetrics();
+        }
         if (mActivityEmbeddingComponent != null) {
             mActivityEmbeddingComponent.setEmbeddingRules(Collections.emptySet());
             mActivityEmbeddingComponent.clearActivityStackAttributesCalculator();

@@ -41,6 +41,8 @@ import androidx.window.extensions.layout.FoldingFeature;
 import androidx.window.extensions.layout.WindowLayoutComponent;
 import androidx.window.extensions.layout.WindowLayoutInfo;
 
+import com.android.window.flags.Flags;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -59,7 +61,10 @@ public class ExtensionsUtil {
      * See <a href="https://source.android.com/docs/core/display/windowmanager-extensions#extensions_versions_and_updates">
      * Extensions versions</a>.
      */
-    public static final int EXTENSION_VERSION_CURRENT_PLATFORM = 6;
+    // TODO(b/354597584): Clean up use of Extensions v6 after AE animation customization is
+    // released. Activity Embedding animation customization is the only major feature for v7.
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V6 = 6;
+    public static final int EXTENSION_VERSION_CURRENT_PLATFORM_V7 = 7;
 
     /**
      * Returns the current version of {@link WindowExtensions} if present on the device.
@@ -95,7 +100,11 @@ public class ExtensionsUtil {
      * corresponding platform version.
      */
     public static boolean isExtensionVersionLatest() {
-        return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM);
+        if (Flags.activityEmbeddingAnimationCustomizationFlag()) {
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V7);
+        } else {
+            return isExtensionVersionAtLeast(EXTENSION_VERSION_CURRENT_PLATFORM_V6);
+        }
     }
 
     /**

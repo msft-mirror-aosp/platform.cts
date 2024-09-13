@@ -17,6 +17,7 @@ package android.packageinstaller.install.cts
 
 import android.Manifest
 import android.app.Activity.RESULT_CANCELED
+import android.app.Activity.RESULT_FIRST_USER
 import android.app.Activity.RESULT_OK
 import android.content.Intent
 import android.content.pm.InstallSourceInfo
@@ -69,6 +70,7 @@ class IntentTest : PackageInstallerTestBase() {
         const val TEST_REJECTED_BY_VERIFIER_APK_NAME = "CtsEmptyTestApp_RejectedByVerifier.apk"
         const val TEST_REJECTED_BY_VERIFIER_PACKAGE_NAME =
             "android.packageinstaller.emptytestapp.rejectedbyverifier.cts"
+        const val TEST_APK_V2_NAME = "CtsEmptyTestAppV2.apk"
 
         @JvmField
         @ClassRule
@@ -113,6 +115,37 @@ class IntentTest : PackageInstallerTestBase() {
         // Install should have been aborted
         assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
         assertNotInstalled()
+    }
+
+    @Test
+    fun failedInstallation_requireFailureDialog() {
+        installPackage(TEST_APK_V2_NAME)
+
+        // Install a lower version of the same app to trigger an install failure
+        // We want the InstallFailed dialog to be visible. Thus, pass EXTRA_RETURN_RESULT as false
+        val intent = getInstallationIntent()
+        intent.putExtra(Intent.EXTRA_RETURN_RESULT, false)
+        val installation = startInstallationViaIntent(intent)
+
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        // Click the positive button on InstallFailed dialog.
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        assertEquals(RESULT_CANCELED, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
+    }
+
+    @Test
+    fun failedInstallation_noRequireFailureDialog() {
+        // The InstallFailed dialog isn't shown here as the default intent used by
+        // startInstallationViaIntent contains EXTRA_RETURN_RESULT set to true
+
+        installPackage(TEST_APK_V2_NAME)
+
+        val installation = startInstallationViaIntent()
+        clickInstallerUIButton(INSTALL_BUTTON_ID)
+
+        assertEquals(RESULT_FIRST_USER, installation.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS))
     }
 
     /**

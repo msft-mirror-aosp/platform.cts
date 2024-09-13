@@ -16,6 +16,7 @@
 package com.android.bedstead.nene.utils
 
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 interface FailureDumper {
 
@@ -31,5 +32,19 @@ interface FailureDumper {
          */
         val failureDumpers: MutableSet<String> =
             ConcurrentHashMap<String, Boolean>().keySet(true)
+
+        private val currentTestName = AtomicReference("")
+
+        /**
+         * Register currently started test name
+         */
+        fun registerCurrentTest(testName: String) {
+            currentTestName.set(testName)
+        }
+
+        /**
+         * Get the name of the last started test method
+         */
+        fun getCurrentTestName(): String = currentTestName.get()
     }
 }

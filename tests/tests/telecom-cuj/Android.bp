@@ -29,10 +29,11 @@ android_test {
         "telecom_flags_core_java_lib",
         "telephony_flags_core_java_lib",
         "flag-junit",
+        "android.media.audio-aconfig-java",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     srcs: [
         "src/**/*.java",

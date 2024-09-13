@@ -18,7 +18,9 @@
 # only if supported by the camera device.
 
 
+import dataclasses
 import logging
+import math
 import os.path
 import re
 import subprocess
@@ -65,58 +67,29 @@ VIDEO_QUALITY_SIZE = {
 }
 
 
-def get_largest_common_preview_video_size(cam, camera_id):
-  """Returns the largest, common size between preview and video.
+@dataclasses.dataclass
+class CommonPreviewSizeData:
+  """Class to store smallest and largest common sizes of preview and video."""
+  smallest_size: str
+  smallest_quality: str
+  largest_size: str
+  largest_quality: str
+
+
+def get_preview_video_sizes_union(cam, camera_id, min_area=0):
+  """Returns largest and smallest common size and quality of preview and video.
 
   Args:
     cam: camera object.
     camera_id: str; camera ID.
+    min_area: int; Optional filter to eliminate smaller sizes (ex. 640*480).
 
   Returns:
-    largest_common_size: str; largest common size between preview & video.
+    common_size_quality, CommonPreviewSizeData class
   """
-  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = set(cam.get_all_supported_preview_sizes(camera_id))
   supported_video_qualities = cam.get_supported_video_qualities(camera_id)
   logging.debug('Supported video profiles & IDs: %s', supported_video_qualities)
-
-  # Make a list of supported_video_sizes from video qualities
-  supported_video_sizes = []
-  for quality in supported_video_qualities:
-    video_quality = quality.split(':')[0]  # form is ['CIF:3', '480P:4', ...]
-    if video_quality in VIDEO_QUALITY_SIZE:
-      supported_video_sizes.append(VIDEO_QUALITY_SIZE[video_quality])
-  logging.debug(
-      'Supported video sizes: %s', supported_video_sizes)
-
-  # Use areas of video sizes to find the largest common size
-  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  largest_common_size = ''
-  largest_area = 0
-  common_sizes = list(set(supported_preview_sizes) & set(supported_video_sizes))
-  for size in common_sizes:
-    area = size_to_area(size)
-    if area > largest_area:
-      largest_area = area
-      largest_common_size = size
-  if not largest_common_size:
-    raise AssertionError('No common size between Preview and Video!')
-  logging.debug('Largest common size: %s', largest_common_size)
-  return largest_common_size
-
-
-def get_lowest_common_preview_video_size(
-    supported_preview_sizes, supported_video_qualities, min_area):
-  """Returns the common, smallest size above minimum in preview and video.
-
-  Args:
-    supported_preview_sizes: str; preview size (ex. '1920x1080')
-    supported_video_qualities: str; video recording quality and id pair
-    (ex. '480P:4', '720P:5'')
-    min_area: int; filter to eliminate smaller sizes (ex. 640*480)
-  Returns:
-    smallest_common_size: str; smallest, common size between preview and video
-    smallest_common_video_quality: str; video recording quality such as 480P
-  """
 
   # Make dictionary on video quality and size according to compatibility
   supported_video_size_to_quality = {}
@@ -126,27 +99,64 @@ def get_lowest_common_preview_video_size(
       video_size = VIDEO_QUALITY_SIZE[video_quality]
       supported_video_size_to_quality[video_size] = video_quality
   logging.debug(
-      'Supported video size to quality: %s', supported_video_size_to_quality)
-
-  # Use areas of video sizes to find the smallest, common size
+      'Supported video size to quality: %s', supported_video_size_to_quality
+  )
+  # Find the intersection of supported preview sizes and video sizes
+  common_sizes = supported_preview_sizes.intersection(
+      supported_video_size_to_quality.keys()
+  )
+  if not common_sizes:
+    raise AssertionError('No common size between Preview and Video!')
+  # Filter common sizes based on min_area
   size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  smallest_common_size = ''
-  smallest_area = float('inf')
-  for size in supported_preview_sizes:
-    if size in supported_video_size_to_quality:
-      area = size_to_area(size)
-      if smallest_area > area >= min_area:
-        smallest_area = area
-        smallest_common_size = size
-  logging.debug('Lowest common size: %s', smallest_common_size)
-
+  common_sizes = (
+      [size for size in common_sizes if size_to_area(size) >= min_area]
+  )
+  if not common_sizes:
+    raise AssertionError(
+        'No common size above min_area between Preview and Video!'
+    )
+  # Use areas of video sizes to find the smallest and largest common size
+  smallest_common_size = min(common_sizes, key=size_to_area)
+  largest_common_size = max(common_sizes, key=size_to_area)
+  logging.debug('Smallest common size: %s', smallest_common_size)
+  logging.debug('Largest common size: %s', largest_common_size)
   # Find video quality of resolution with resolution as key
-  smallest_common_video_quality = (
-      supported_video_size_to_quality[smallest_common_size])
-  logging.debug(
-      'Lowest common size video quality: %s', smallest_common_video_quality)
+  smallest_common_quality = (
+      supported_video_size_to_quality[smallest_common_size]
+  )
+  logging.debug('Smallest common quality: %s', smallest_common_quality)
+  largest_common_quality = supported_video_size_to_quality[largest_common_size]
+  logging.debug('Largest common quality: %s', largest_common_quality)
+  common_size_quality = CommonPreviewSizeData(
+      smallest_size=smallest_common_size,
+      smallest_quality=smallest_common_quality,
+      largest_size=largest_common_size,
+      largest_quality=largest_common_quality
+  )
+  return common_size_quality
 
-  return smallest_common_size, smallest_common_video_quality
+
+def clamp_preview_sizes(preview_sizes, min_area=0, max_area=math.inf):
+  """Returns a list of preview_sizes with areas between min/max_area.
+
+  Args:
+    preview_sizes: list; sizes to be filtered (ex. "1280x720")
+    min_area: int; optional filter to eliminate sizes <= to the specified
+        area (ex. 640*480).
+    max_area: int; optional filter to eliminate sizes >= to the specified
+        area (ex. 3840*2160).
+  Returns:
+    preview_sizes: list; filtered preview sizes clamped by min/max_area.
+  """
+  size_to_area = lambda size: int(size.split('x')[0])*int(size.split('x')[1])
+  filtered_preview_sizes = [
+      size for size in preview_sizes
+      if max_area >= size_to_area(size) >= min_area]
+  logging.debug('Filtered preview sizes: %s', filtered_preview_sizes)
+  if not filtered_preview_sizes:
+    raise AssertionError(f'No preview sizes between {min_area} and {max_area}')
+  return filtered_preview_sizes
 
 
 def log_ffmpeg_version():
@@ -168,7 +178,7 @@ def extract_key_frames_from_video(log_path, video_file_name):
   os.path.join(log_path, video_file_name).
   The extracted key frames will have the name video_file_name with "_key_frame"
   suffix to identify the frames for video of each quality. Since there can be
-  multiple key frames, each key frame image will be differentiated with it's
+  multiple key frames, each key frame image will be differentiated with its
   frame index. All the extracted key frames will be available in jpeg format
   at the same path as the video file.
 
@@ -313,7 +323,7 @@ def extract_last_key_frame_from_recording(log_path, file_name):
   return np_image
 
 
-def get_average_frame_rate(video_file_name_with_path):
+def get_avg_frame_rate(video_file_name_with_path):
   """Get average frame rate assuming variable frame rate video.
 
   Args:

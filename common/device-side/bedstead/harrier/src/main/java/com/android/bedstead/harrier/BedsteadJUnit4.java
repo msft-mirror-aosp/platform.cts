@@ -27,6 +27,7 @@ import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.annotations.AnnotationCostRunPrecedence;
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
@@ -59,6 +60,7 @@ import com.android.bedstead.harrier.annotations.parameterized.IncludeNone;
 import com.android.bedstead.harrier.exceptions.RestartTestException;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.types.OptionalBoolean;
+import com.android.bedstead.performanceanalyzer.annotations.PerformanceTest;
 import com.android.queryable.annotations.Query;
 
 import com.google.auto.value.AutoAnnotation;
@@ -100,12 +102,14 @@ import java.util.stream.Stream;
 // @AutoAnnotation is not able to set default value for a field with an annotated data type,
 // so we try to pass the default value explicitly that is accessed via reflection through this
 // class.
+@SuppressWarnings("AndroidJdkLibsChecker")
 @Query
 public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     private static final Set<TestLifecycleListener> sLifecycleListeners = new HashSet<>();
 
     private static final String LOG_TAG = "BedsteadJUnit4";
+    private boolean mHasManualHarrierRule = false;
 
     @AutoAnnotation
     private static RequireRunOnSystemUser requireRunOnSystemUser() {
@@ -238,7 +242,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
             return (int) annotation.annotationType().getMethod("cost").invoke(annotation);
         } catch (NoSuchMethodException e) {
             // Default to MIDDLE if no cost is found on the annotation.
-            return AnnotationPriorityRunPrecedence.MIDDLE;
+            return AnnotationCostRunPrecedence.MIDDLE;
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new NeneException("Failed to invoke cost on this annotation: " + annotation, e);
         }
@@ -463,6 +467,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
         methods.addAll(testClass.getAnnotatedMethods(MostRestrictiveCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(MostImportantCoexistenceTest.class));
         methods.addAll(testClass.getAnnotatedMethods(HiddenApiTest.class));
+        methods.addAll(testClass.getAnnotatedMethods(PerformanceTest.class));
 
         return new ArrayList<>(methods);
     }
@@ -688,7 +693,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
                     Policy.getAnnotationsForPolicies(
                             Policy.getEnterprisePolicyWithCallingClass(policyClasses));
 
-            List<FrameworkMethod> expandedMethodList = expandedMethods.toList();
+            List<FrameworkMethod> expandedMethodList = expandedMethods.collect(Collectors.toList());
             Set<FrameworkMethod> tempExpandedFrameworkMethodSet = new HashSet<>();
             for (Class<?> policyClass : policyClasses) {
                 Method validArgumentsMethod = policyClass.getDeclaredMethod("validArguments");
@@ -793,7 +798,7 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
         List<Annotation> bedsteadAnnotationsSortedByMostCommon =
                 bedsteadAnnotationsSortedByMostCommon(modifiedTests);
-        comparator.thenComparing((o1, o2) -> {
+        var unused = comparator.thenComparing((o1, o2) -> {
             for (Annotation annotation : bedsteadAnnotationsSortedByMostCommon) {
                 boolean o1HasAnnotation = o1.getAnnotation(annotation.annotationType()) != null;
                 boolean o2HasAnnotation = o2.getAnnotation(annotation.annotationType()) != null;
@@ -1166,43 +1171,51 @@ public final class BedsteadJUnit4 extends BlockJUnit4ClassRunner {
 
     HarrierRule getHarrierRule() {
         if (mHarrierRule == null) {
-            classRules();
+            var unused = classRules();
         }
         return mHarrierRule;
+    }
+
+    @Override
+    protected List<TestRule> getTestRules(Object target) {
+        var testRules = super.getTestRules(target);
+        if (mHasManualHarrierRule) {
+            return testRules;
+        }
+        var harrier = findHarrier(testRules);
+        if (harrier == null) {
+            testRules.add(getHarrierRule());
+        }
+        return testRules;
     }
 
     @Override
     protected List<TestRule> classRules() {
         List<TestRule> rules = super.classRules();
 
-        for (TestRule rule : rules) {
-            if (rule instanceof HarrierRule) {
-                mHarrierRule = (HarrierRule) rule;
-                break;
-            }
-        }
+        mHarrierRule = findHarrier(rules);
+        mHasManualHarrierRule = mHarrierRule != null;
 
         if (mHarrierRule == null) {
-            try {
-                mHarrierRule =
-                        (HarrierRule)
-                                Class.forName("com.android.bedstead.harrier.DeviceState")
-                                        .newInstance();
-                rules = new ArrayList<>(rules);
-                rules.add(mHarrierRule);
-            } catch (ClassNotFoundException e) {
-                // Must be running on the host - for now we don't add anything
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException("Error initialising Harrier Rule", e);
-            }
+            mHarrierRule = new DeviceState();
+        }
+        if (!rules.contains(mHarrierRule)) {
+            rules.add(mHarrierRule);
         }
 
-        if (mHarrierRule != null) {
-            mHarrierRule.setSkipTestTeardown(true);
-            mHarrierRule.setUsingBedsteadJUnit4(true);
-        }
+        mHarrierRule.setSkipTestTeardown(true);
+        mHarrierRule.setUsingBedsteadJUnit4(true);
 
         return rules;
+    }
+
+    private HarrierRule findHarrier(List<TestRule> rules) {
+        for (TestRule rule : rules) {
+            if (rule instanceof HarrierRule) {
+                return (HarrierRule) rule;
+            }
+        }
+        return null;
     }
 
     /**

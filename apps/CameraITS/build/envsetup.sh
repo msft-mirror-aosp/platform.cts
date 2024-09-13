@@ -76,6 +76,10 @@ do
         echo ">> Unit test for $M failed" >&2
 done
 
+export PYTHONPATH="$PWD/feature_verification_utils:$PYTHONPATH"
+python -c "import feature_combination_info_pb2" >/dev/null 2>&1 || \
+  echo ">> Require Python feature_combination_info_pb2 module. ('source feature_verification_utils/update.sh')" >&2
+
 for M in run_all_unit_tests
 do
     python "tools/$M.py" 2>&1 | grep -q "OK" || \
@@ -84,16 +88,21 @@ done
 
 echo -e "\n*****Please execute below adb command on your dut before running the tests*****\n"
 echo -e "adb -s <device_id> shell am compat enable ALLOW_TEST_API_ACCESS com.android.cts.verifier\n\n"
+echo -e "If using an environment manager, please run the command \"rename_libtinfo\" to handle cleanup.\n\n"
 
-# Rename libtinfo.so.6
-python_paths=$(which python)
-for python_path in $python_paths
-do
-  env_dir=${python_path%/python*}"/../../"
-  files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
-  for f in $files_to_rename
-  do
-    echo "Renaming potentially problematic file $f"
-    mv "$f" "$f.bak"
-  done
-done
+# Function to rename libtinfo.so.6 (if using an environment manager)
+function rename_libtinfo() {
+    echo "Trying to rename libtinfo.so.6"
+    python_paths=$(which python)
+    for python_path in $python_paths
+    do
+      env_dir=${python_path%/python*}"/../../"
+      files_to_rename=$(find $env_dir -name 'libtinfo.so.6')
+      for f in $files_to_rename
+      do
+          echo "Renaming potentially problematic file $f"
+          mv "$f" "$f.bak"
+      done
+    done
+}
+

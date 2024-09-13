@@ -16,6 +16,11 @@
 
 package android.cts.statsdatom.batterystats;
 
+import static com.android.os.framework.FrameworkExtensionAtoms.BATTERY_USAGE_STATS_PER_UID_FIELD_NUMBER;
+import static com.android.os.framework.FrameworkExtensionAtoms.batteryUsageStatsPerUid;
+import static com.android.server.power.optimization.Flags.FLAG_ADD_BATTERY_USAGE_STATS_SLICE_ATOM;
+import static com.android.server.power.optimization.Flags.FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import android.cts.statsdatom.lib.AtomTestUtils;
@@ -23,68 +28,149 @@ import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
 import android.cts.statsdatom.lib.ReportUtils;
 import android.os.PowerComponentEnum;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.host.HostFlagsValueProvider;
 
 import com.android.internal.os.StatsdConfigProto;
 import com.android.os.AtomsProto;
 import com.android.os.AtomsProto.BatteryUsageStatsAtomsProto;
 import com.android.os.AtomsProto.BatteryUsageStatsAtomsProto.BatteryConsumerData;
+import com.android.os.framework.FrameworkExtensionAtoms;
+import com.android.os.framework.FrameworkExtensionAtoms.BatteryUsageStatsPerUid;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.log.LogUtil.CLog;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
 
-import java.util.List;
-import java.util.function.Function;
+import com.google.protobuf.ExtensionRegistry;
 
-public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildReceiver {
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+import java.util.List;
+
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class BatteryUsageStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
+
+    private static final String DEVICE_CONFIG_NAMESPACE = "backstage_power";
+    private static final String MIN_CONSUMED_POWER_THRESHOLD_KEY = "min_consumed_power_threshold";
+
     private IBuildInfo mCtsBuild;
+
+    private String mMinConsumedPowerThreshold = "0.0";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            HostFlagsValueProvider.createCheckFlagsRule(this::getDevice);
 
     @Override
     public void setBuild(IBuildInfo buildInfo) {
         mCtsBuild = buildInfo;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.installStatsdTestApp(getDevice(), mCtsBuild);
+
+        try {
+            mMinConsumedPowerThreshold =
+                    DeviceUtils.getDeviceConfigFeature(
+                            getDevice(), DEVICE_CONFIG_NAMESPACE, MIN_CONSUMED_POWER_THRESHOLD_KEY);
+            DeviceUtils.putDeviceConfigFeature(
+                    getDevice(), DEVICE_CONFIG_NAMESPACE, MIN_CONSUMED_POWER_THRESHOLD_KEY, "0.0");
+        } catch (Exception e) {
+            CLog.d("MIN_CONSUMED_POWER_THRESHOLD_KEY is not setup. " + e);
+        }
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_LONG);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
-        super.tearDown();
+        try {
+            DeviceUtils.putDeviceConfigFeature(
+                    getDevice(),
+                    DEVICE_CONFIG_NAMESPACE,
+                    MIN_CONSUMED_POWER_THRESHOLD_KEY,
+                    mMinConsumedPowerThreshold);
+        } catch (Exception e) {
+            CLog.d("MIN_CONSUMED_POWER_THRESHOLD_KEY reset error. " + e);
+        }
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS)
     public void testBatteryUsageStatsSinceReset() throws Exception {
         if (!hasBattery()) {
             return;
         }
 
-        runBatteryUsageStatsAtomTest(AtomsProto.Atom.BATTERY_USAGE_STATS_SINCE_RESET_FIELD_NUMBER,
-                atom -> atom.getBatteryUsageStatsSinceReset().getBatteryUsageStats());
+        runBatteryUsageStatsAtomTest(
+                AtomsProto.Atom.BATTERY_USAGE_STATS_SINCE_RESET_FIELD_NUMBER,
+                atoms -> {
+                    for (final AtomsProto.Atom atom : atoms) {
+                        final BatteryUsageStatsAtomsProto batteryUsageStats =
+                                atom.getBatteryUsageStatsSinceReset().getBatteryUsageStats();
+                        assertBatteryUsageStatsAtom(batteryUsageStats);
+                    }
+                });
     }
 
+    @Test
+    @RequiresFlagsDisabled(FLAG_DISABLE_COMPOSITE_BATTERY_USAGE_STATS_ATOMS)
     public void testBatteryUsageStatsSinceResetUsingPowerProfileModel() throws Exception {
         if (!hasBattery()) {
             return;
         }
 
         runBatteryUsageStatsAtomTest(
-                AtomsProto.Atom.BATTERY_USAGE_STATS_SINCE_RESET_USING_POWER_PROFILE_MODEL_FIELD_NUMBER,
-                atom -> atom.getBatteryUsageStatsSinceResetUsingPowerProfileModel()
-                        .getBatteryUsageStats());
+                AtomsProto.Atom
+                        .BATTERY_USAGE_STATS_SINCE_RESET_USING_POWER_PROFILE_MODEL_FIELD_NUMBER,
+                atoms -> {
+                    for (final AtomsProto.Atom atom : atoms) {
+                        final BatteryUsageStatsAtomsProto batteryUsageStats =
+                                atom.getBatteryUsageStatsSinceResetUsingPowerProfileModel()
+                                        .getBatteryUsageStats();
+                        assertBatteryUsageStatsAtom(batteryUsageStats);
+                    }
+                });
     }
 
-    private void runBatteryUsageStatsAtomTest(int atomFieldNumber,
-            Function<AtomsProto.Atom, BatteryUsageStatsAtomsProto> getter) throws Exception {
+    @Test
+    @RequiresFlagsEnabled(FLAG_ADD_BATTERY_USAGE_STATS_SLICE_ATOM)
+    public void testBatteryUsageStatsPerUid() throws Exception {
+        if (!hasBattery()) {
+            return;
+        }
+
+        runBatteryUsageStatsAtomTest(
+                BATTERY_USAGE_STATS_PER_UID_FIELD_NUMBER,
+                atoms -> {
+                    assertBatteryUsageStatsPerUidAtoms(atoms);
+                });
+    }
+
+    @FunctionalInterface
+    private interface CheckedConsumer<T> {
+        void accept(T t) throws Exception;
+    }
+
+    private void runBatteryUsageStatsAtomTest(
+            int atomFieldNumber, CheckedConsumer<List<AtomsProto.Atom>> atomsValidationFunc)
+            throws Exception {
         unplugDevice();
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
         try {
@@ -103,12 +189,13 @@ public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildRece
         AtomTestUtils.sendAppBreadcrumbReportedAtom(getDevice());
         RunUtil.getDefault().sleep(AtomTestUtils.WAIT_TIME_SHORT);
 
-        final List<AtomsProto.Atom> atoms = ReportUtils.getGaugeMetricAtoms(getDevice());
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        FrameworkExtensionAtoms.registerAllExtensions(registry);
+
+        final List<AtomsProto.Atom> atoms =
+                ReportUtils.getGaugeMetricAtoms(getDevice(), registry, false);
         assertThat(atoms.size()).isAtLeast(1);
-        for (final AtomsProto.Atom atom : atoms) {
-            final BatteryUsageStatsAtomsProto batteryUsageStats = getter.apply(atom);
-            assertBatteryUsageStatsAtom(batteryUsageStats);
-        }
+        atomsValidationFunc.accept(atoms);
     }
 
     private void assertBatteryUsageStatsAtom(BatteryUsageStatsAtomsProto batteryUsageStats)
@@ -177,6 +264,65 @@ public class BatteryUsageStatsTests extends DeviceTestCase implements IBuildRece
                 assertThat(hasProcStateData).isTrue();
             }
         }
+    }
+
+    private void assertBatteryUsageStatsPerUidAtoms(List<AtomsProto.Atom> atoms) throws Exception {
+
+        boolean hasAppData = false;
+
+        final int testUid = DeviceUtils.getStatsdTestAppUid(getDevice());
+
+        CLog.d("assertBatteryUsageStatsPerUid testUid = " + testUid);
+
+        float testUidConsumedByCpu = 0;
+
+        for (final AtomsProto.Atom atom : atoms) {
+            final BatteryUsageStatsPerUid batteryUsageStats =
+                    atom.getExtension(batteryUsageStatsPerUid);
+
+            assertThat(batteryUsageStats.getSessionEndMillis())
+                    .isGreaterThan(getDeviceTimeMs() - 5 * 60 * 1000);
+            assertThat(batteryUsageStats.getSessionDurationMillis()).isGreaterThan(0);
+
+            assertThat(batteryUsageStats.getTotalConsumedPowerMah()).isAtLeast(0);
+            assertThat(batteryUsageStats.getDurationMillis()).isAtLeast(0);
+            assertThat(batteryUsageStats.getConsumedPowerMah()).isAtLeast(0);
+
+            if (batteryUsageStats.getUid() != -1) {
+                if (batteryUsageStats.getTimeInStateMillis() > 0) {
+                    hasAppData = true;
+                }
+
+                if (batteryUsageStats.getUid() == testUid) {
+                    if (batteryUsageStats.getPowerComponentName().toLowerCase().equals("cpu")) {
+                        testUidConsumedByCpu = batteryUsageStats.getConsumedPowerMah();
+                    }
+                }
+            }
+        }
+
+        if (testUidConsumedByCpu > 0.27f) {
+            // If the test app consumed a measurable amount of power, the break-down
+            // by process state should also be present in the atom.
+            boolean hasProcStateData = false;
+            for (final AtomsProto.Atom atom : atoms) {
+                final BatteryUsageStatsPerUid batteryUsageStats =
+                        atom.getExtension(batteryUsageStatsPerUid);
+
+                if (batteryUsageStats.getUid() != testUid) {
+                    continue;
+                }
+                if (batteryUsageStats.getProcState()
+                                != BatteryUsageStatsPerUid.ProcessState.UNSPECIFIED
+                        && (batteryUsageStats.getConsumedPowerMah() > 0
+                                || batteryUsageStats.getDurationMillis() > 0)) {
+                    hasProcStateData = true;
+                }
+            }
+            assertThat(hasProcStateData).isTrue();
+        }
+
+        assertThat(hasAppData).isTrue();
     }
 
     private boolean hasBattery() throws DeviceNotAvailableException  {

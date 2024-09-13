@@ -60,6 +60,8 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
     public void cectVerifyStartupMessages_Cec14b() throws Exception {
         ITestDevice device = getDevice();
 
+        setSystemCecVersion(HdmiCecConstants.CEC_VERSION_1_4);
+
         List<CecOperand> expectedMessages = Collections.singletonList(
                 CecOperand.REPORT_PHYSICAL_ADDRESS);
         List<CecOperand> allowedMessages = new ArrayList<>(
@@ -100,6 +102,10 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
                 expectedMessages.size());
         assertWithMessage("Expected <Report Physical Address>").that(
                 requiredMessages.get(0)).isEqualTo(CecOperand.REPORT_PHYSICAL_ADDRESS);
+
+        // Clear persist value
+        setSystemCecVersion(-1);
+        device.reboot();
     }
 
     /**

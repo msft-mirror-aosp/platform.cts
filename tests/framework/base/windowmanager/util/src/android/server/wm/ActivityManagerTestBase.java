@@ -55,27 +55,12 @@ import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 import static android.content.res.Configuration.ORIENTATION_UNDEFINED;
 import static android.os.UserHandle.USER_ALL;
 import static android.provider.Settings.Secure.IMMERSIVE_MODE_CONFIRMATIONS;
-import static android.server.wm.ActivityLauncher.KEY_ACTIVITY_TYPE;
-import static android.server.wm.ActivityLauncher.KEY_DISPLAY_ID;
-import static android.server.wm.ActivityLauncher.KEY_INTENT_EXTRAS;
-import static android.server.wm.ActivityLauncher.KEY_INTENT_FLAGS;
 import static android.server.wm.ActivityLauncher.KEY_LAUNCH_ACTIVITY;
-import static android.server.wm.ActivityLauncher.KEY_LAUNCH_TASK_BEHIND;
-import static android.server.wm.ActivityLauncher.KEY_LAUNCH_TO_SIDE;
-import static android.server.wm.ActivityLauncher.KEY_MULTIPLE_INSTANCES;
-import static android.server.wm.ActivityLauncher.KEY_MULTIPLE_TASK;
 import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
-import static android.server.wm.ActivityLauncher.KEY_RANDOM_DATA;
-import static android.server.wm.ActivityLauncher.KEY_REORDER_TO_FRONT;
-import static android.server.wm.ActivityLauncher.KEY_SUPPRESS_EXCEPTIONS;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
-import static android.server.wm.ActivityLauncher.KEY_TASK_DISPLAY_AREA_FEATURE_ID;
-import static android.server.wm.ActivityLauncher.KEY_USE_APPLICATION_CONTEXT;
-import static android.server.wm.ActivityLauncher.KEY_WINDOWING_MODE;
-import static android.server.wm.ActivityLauncher.launchActivityFromExtras;
-import static android.server.wm.CommandSession.KEY_FORWARD;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
+import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -94,8 +79,6 @@ import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_D
 import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_DISMISS_KEYGUARD_METHOD;
 import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_FINISH_BROADCAST;
 import static android.server.wm.app.Components.BroadcastReceiverActivity.EXTRA_MOVE_BROADCAST_TO_BACK;
-import static android.server.wm.app.Components.LAUNCHING_ACTIVITY;
-import static android.server.wm.app.Components.LaunchingActivity.KEY_FINISH_BEFORE_LAUNCH;
 import static android.server.wm.app.Components.PipActivity.ACTION_CHANGE_ASPECT_RATIO;
 import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP;
 import static android.server.wm.app.Components.PipActivity.ACTION_ENTER_PIP_AND_WAIT_FOR_UI_STATE;
@@ -113,7 +96,6 @@ import static android.server.wm.app.Components.TEST_ACTIVITY;
 import static android.server.wm.second.Components.SECOND_ACTIVITY;
 import static android.server.wm.third.Components.THIRD_ACTIVITY;
 import static android.view.Display.DEFAULT_DISPLAY;
-import static android.view.Display.INVALID_DISPLAY;
 import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_90;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
@@ -162,8 +144,6 @@ import android.server.wm.CommandSession.ActivityCallback;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
 import android.server.wm.CommandSession.ConfigInfo;
-import android.server.wm.CommandSession.LaunchInjector;
-import android.server.wm.CommandSession.LaunchProxy;
 import android.server.wm.CommandSession.SizeInfo;
 import android.server.wm.TestJournalProvider.TestJournalContainer;
 import android.server.wm.WindowManagerState.Task;
@@ -201,7 +181,6 @@ import org.junit.runners.model.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -211,7 +190,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -233,21 +211,18 @@ public abstract class ActivityManagerTestBase {
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
     private static final String THIRD_TEST_PACKAGE = THIRD_ACTIVITY.getPackageName();
-    private static final List<String> TEST_PACKAGES;
-
-    static {
-        final List<String> testPackages = new ArrayList<>();
-        testPackages.add(TEST_PACKAGE);
-        testPackages.add(SECOND_TEST_PACKAGE);
-        testPackages.add(THIRD_TEST_PACKAGE);
-        testPackages.add("android.server.wm.cts");
-        testPackages.add("android.server.wm.jetpack");
-        testPackages.add("android.server.wm.jetpack.second");
-        TEST_PACKAGES = Collections.unmodifiableList(testPackages);
-    }
+    private static final List<String> TEST_PACKAGES = List.of(
+            TEST_PACKAGE,
+            SECOND_TEST_PACKAGE,
+            THIRD_TEST_PACKAGE,
+            "android.server.wm.cts",
+            "android.server.wm.jetpack",
+            "android.server.wm.jetpack.second"
+    );
 
     protected static final String AM_START_HOME_ACTIVITY_COMMAND =
-            "am start -a android.intent.action.MAIN -c android.intent.category.HOME";
+            "am start -a android.intent.action.MAIN -c android.intent.category.HOME --user "
+                    + Process.myUserHandle().getIdentifier();
 
     protected static final String MSG_NO_MOCK_IME =
             "MockIme cannot be used for devices that do not support installable IMEs";
@@ -301,6 +276,10 @@ public abstract class ActivityManagerTestBase {
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
     private UserHelper mUserHelper;
+    protected int mUserId;
+
+    @NonNull
+    private SplitScreenActivityUtils mSplitScreenActivityUtils;
 
     /**
      * @return the am command to start the given activity with the following extra key/value pairs.
@@ -340,16 +319,20 @@ public abstract class ActivityManagerTestBase {
                         .append(" -f 0x")
                         .append(toHexString(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_MULTIPLE_TASK))
                         .append(" --display ")
-                        .append(displayId),
+                        .append(displayId)
+                        .append(" --user ")
+                        .append(Process.myUserHandle().getIdentifier()),
                 extras);
     }
 
     protected static String getAmStartCmdInNewTask(final ComponentName activityName) {
-        return "am start -n " + getActivityName(activityName) + " -f 0x18000000";
+        return "am start -n " + getActivityName(activityName) + " -f 0x18000000 --user "
+                + Process.myUserHandle().getIdentifier();
     }
 
     protected static String getAmStartCmdWithData(final ComponentName activityName, String data) {
-        return "am start -n " + getActivityName(activityName) + " -d " + data;
+        return "am start -n " + getActivityName(activityName) + " -d " + data + " --user "
+                + Process.myUserHandle().getIdentifier();
     }
 
     protected static String getAmStartCmdWithNoAnimation(final ComponentName activityName,
@@ -407,10 +390,15 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected void waitForActivityResumed(int timeoutMs, ComponentName componentName) {
+        waitForActivityState(timeoutMs, componentName, STATE_RESUMED);
+    }
+
+    protected void waitForActivityState(int timeoutMs, ComponentName componentName,
+            String expectedState) {
         long endTime = System.currentTimeMillis() + timeoutMs;
         while (endTime > System.currentTimeMillis()) {
             mWmState.computeState();
-            if (mWmState.hasActivityState(componentName, STATE_RESUMED)) {
+            if (mWmState.hasActivityState(componentName, expectedState)) {
                 SystemClock.sleep(200);
                 mWmState.computeState();
                 break;
@@ -700,9 +688,15 @@ public abstract class ActivityManagerTestBase {
         }
 
         launchHomeActivityNoWait();
-        // TODO(b/242933292): Consider removing all the tasks belonging to android.server.wm
-        // instead of removing all and then waiting for allActivitiesResumed.
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            // Remove all tasks and then wait for allActivitiesResumed.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        } else {
+            // Stop any residual tasks from the test package.
+            forceStopAllTestPackages();
+        }
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -711,15 +705,20 @@ public abstract class ActivityManagerTestBase {
             // state.
             mAtm.clearLaunchParamsForPackages(TEST_PACKAGES);
         });
+        mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
 
         // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
         // the systemUI might have a few tasks that need to be displayed all the time.
         // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
         // restarts can interfere with the test state. To avoid that, its better to wait for all
         // the activities to come in the resumed state.
-        mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
-                + "be either empty or resumed");
+        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
+                    "Root Tasks should be either empty or resumed");
+        }
         mUserHelper = new UserHelper(mContext);
+        mUserId = mContext.getUserId();
     }
 
     /** It always executes after {@link org.junit.After}. */
@@ -735,10 +734,13 @@ public abstract class ActivityManagerTestBase {
         // process if executed first.
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        stopTestPackage(TEST_PACKAGE);
-        stopTestPackage(SECOND_TEST_PACKAGE);
-        stopTestPackage(THIRD_TEST_PACKAGE);
+
+        if (shouldKeepLegacyTaskCleanup(getClass())) {
+            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
+            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        }
+        forceStopAllTestPackages();
+
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
             mWmState.waitForAllNonHomeActivitiesToDestroyed();
         }
@@ -752,6 +754,12 @@ public abstract class ActivityManagerTestBase {
             mPostAssertionRule.addError(
                     new IllegalStateException("Shell transition left unfinished!"));
         }
+    }
+
+    private void forceStopAllTestPackages() {
+        stopTestPackage(TEST_PACKAGE);
+        stopTestPackage(SECOND_TEST_PACKAGE);
+        stopTestPackage(THIRD_TEST_PACKAGE);
     }
 
     /** This should only be called if keyguard is still locked unexpectedly. */
@@ -1068,87 +1076,45 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityInPrimarySplit(ComponentName activityName) {
         runWithShellPermission(() -> {
             launchActivity(activityName);
-            final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-            mTaskOrganizer.putTaskInSplitPrimary(taskId);
-            mWmState.waitForValidState(activityName);
+            mSplitScreenActivityUtils.putActivityInPrimarySplit(activityName);
         });
     }
 
     protected void launchActivityInSecondarySplit(ComponentName activityName) {
         runWithShellPermission(() -> {
             launchActivity(activityName);
-            final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-            mTaskOrganizer.putTaskInSplitSecondary(taskId);
-            mWmState.waitForValidState(activityName);
+            mSplitScreenActivityUtils.putActivityInSecondarySplit(activityName);
         });
     }
 
+    /** @see SplitScreenActivityUtils#putActivityInPrimarySplit(ComponentName) */
     protected void putActivityInPrimarySplit(ComponentName activityName) {
-        final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(taskId);
-        mWmState.waitForValidState(activityName);
+        mSplitScreenActivityUtils.putActivityInPrimarySplit(activityName);
     }
 
+    /** @see SplitScreenActivityUtils#putActivityInSecondarySplit(ComponentName) */
     protected void putActivityInSecondarySplit(ComponentName activityName) {
-        final int taskId = mWmState.getTaskByActivity(activityName).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(taskId);
-        mWmState.waitForValidState(activityName);
+        mSplitScreenActivityUtils.putActivityInSecondarySplit(activityName);
     }
 
     /**
-     * Launches {@param primaryActivity} into split-screen primary windowing mode
-     * and {@param secondaryActivity} to the side in split-screen secondary windowing mode.
+     * @see SplitScreenActivityUtils#launchActivitiesInSplitScreen(LaunchActivityBuilder,
+     * LaunchActivityBuilder)
      */
     protected void launchActivitiesInSplitScreen(LaunchActivityBuilder primaryActivity,
             LaunchActivityBuilder secondaryActivity) {
-        // Launch split-screen primary.
-        primaryActivity
-                .setUseInstrumentation()
-                .setWaitForLaunched(true)
-                .execute();
-
-        final int primaryTaskId = mWmState.getTaskByActivity(
-                primaryActivity.mTargetActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(primaryTaskId);
-
-        // Launch split-screen secondary
-        secondaryActivity
-                .setUseInstrumentation()
-                .setWaitForLaunched(true)
-                .setNewTask(true)
-                .setMultipleTask(true)
-                .execute();
-
-        final int secondaryTaskId = mWmState.getTaskByActivity(
-                secondaryActivity.mTargetActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(secondaryTaskId);
-        mWmState.computeState(primaryActivity.getTargetActivity(),
-                secondaryActivity.getTargetActivity());
-        log("launchActivitiesInSplitScreen(), primaryTaskId=" + primaryTaskId +
-                ", secondaryTaskId=" + secondaryTaskId);
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(primaryActivity, secondaryActivity);
     }
 
-    /**
-     * Move the task of {@param primaryActivity} into split-screen primary and the task of
-     * {@param secondaryActivity} to the side in split-screen secondary.
-     */
+    /** @see SplitScreenActivityUtils#moveActivitiesToSplitScreen(ComponentName, ComponentName) */
     protected void moveActivitiesToSplitScreen(ComponentName primaryActivity,
             ComponentName secondaryActivity) {
-        final int primaryTaskId = mWmState.getTaskByActivity(primaryActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitPrimary(primaryTaskId);
-
-        final int secondaryTaskId = mWmState.getTaskByActivity(secondaryActivity).mTaskId;
-        mTaskOrganizer.putTaskInSplitSecondary(secondaryTaskId);
-
-        mWmState.computeState(primaryActivity, secondaryActivity);
-        log("moveActivitiesToSplitScreen(), primaryTaskId=" + primaryTaskId +
-                ", secondaryTaskId=" + secondaryTaskId);
+        mSplitScreenActivityUtils.moveActivitiesToSplitScreen(primaryActivity, secondaryActivity);
     }
 
+    /** @see SplitScreenActivityUtils#dismissSplitScreen(boolean) */
     protected void dismissSplitScreen(boolean primaryOnTop) {
-        if (mTaskOrganizer != null) {
-            mTaskOrganizer.dismissSplitScreen(primaryOnTop);
-        }
+        mSplitScreenActivityUtils.dismissSplitScreen(primaryOnTop);
     }
 
     /**
@@ -1396,18 +1362,9 @@ public abstract class ActivityManagerTestBase {
         return ActivityTaskManager.supportsSplitScreenMultiWindow(context);
     }
 
-    /** Returns true if the default display supports split screen multi-window. */
+    /** @see SplitScreenActivityUtils#supportsSplitScreenMultiWindow(Context) */
     protected boolean supportsSplitScreenMultiWindow() {
-        Display defaultDisplay = mDm.getDisplay(DEFAULT_DISPLAY);
-        return supportsSplitScreenMultiWindow(mContext.createDisplayContext(defaultDisplay));
-    }
-
-    /**
-     * Returns true if the display associated with the supplied {@code context} supports split
-     * screen multi-window.
-     */
-    protected boolean supportsSplitScreenMultiWindow(Context context) {
-        return ActivityTaskManager.supportsSplitScreenMultiWindow(context);
+        return SplitScreenActivityUtils.supportsSplitScreenMultiWindow(mContext);
     }
 
     protected boolean hasHomeScreen() {
@@ -1593,6 +1550,11 @@ public abstract class ActivityManagerTestBase {
     /** @see ObjectTracker#manage(AutoCloseable) */
     protected FontScaleSession createManagedFontScaleSession() {
         return mObjectTracker.manage(new FontScaleSession());
+    }
+
+    /** @see ObjectTracker#manage(AutoCloseable) */
+    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
+        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
     }
 
     /** Allows requesting orientation in case ignore_orientation_request is set to true. */
@@ -2355,343 +2317,6 @@ public abstract class ActivityManagerTestBase {
         return new ActivityScenarioRule<>(clazz, options.toBundle());
     }
 
-    protected static class LaunchActivityBuilder implements LaunchProxy {
-        private final WindowManagerStateHelper mAmWmState;
-
-        // The activity to be launched
-        private ComponentName mTargetActivity = TEST_ACTIVITY;
-        private boolean mUseApplicationContext;
-        private boolean mToSide;
-        private boolean mRandomData;
-        private boolean mNewTask;
-        private boolean mMultipleTask;
-        private boolean mAllowMultipleInstances = true;
-        private boolean mLaunchTaskBehind;
-        private boolean mFinishBeforeLaunch;
-        private int mDisplayId = INVALID_DISPLAY;
-        private int mWindowingMode = -1;
-        private int mActivityType = ACTIVITY_TYPE_UNDEFINED;
-        // A proxy activity that launches other activities including mTargetActivityName
-        private ComponentName mLaunchingActivity = LAUNCHING_ACTIVITY;
-        private boolean mReorderToFront;
-        private boolean mWaitForLaunched;
-        private boolean mSuppressExceptions;
-        private boolean mWithShellPermission;
-        // Use of the following variables indicates that a broadcast receiver should be used instead
-        // of a launching activity;
-        private ComponentName mBroadcastReceiver;
-        private String mBroadcastReceiverAction;
-        private int mIntentFlags;
-        private Bundle mExtras;
-        private LaunchInjector mLaunchInjector;
-        private ActivitySessionClient mActivitySessionClient;
-        private int mLaunchTaskDisplayAreaFeatureId = FEATURE_UNDEFINED;
-
-        private enum LauncherType {
-            INSTRUMENTATION, LAUNCHING_ACTIVITY, BROADCAST_RECEIVER
-        }
-
-        private LauncherType mLauncherType = LauncherType.LAUNCHING_ACTIVITY;
-
-        public LaunchActivityBuilder(WindowManagerStateHelper amWmState) {
-            mAmWmState = amWmState;
-            mWaitForLaunched = true;
-            mWithShellPermission = true;
-        }
-
-        public LaunchActivityBuilder setToSide(boolean toSide) {
-            mToSide = toSide;
-            return this;
-        }
-
-        public LaunchActivityBuilder setRandomData(boolean randomData) {
-            mRandomData = randomData;
-            return this;
-        }
-
-        public LaunchActivityBuilder setNewTask(boolean newTask) {
-            mNewTask = newTask;
-            return this;
-        }
-
-        public LaunchActivityBuilder setMultipleTask(boolean multipleTask) {
-            mMultipleTask = multipleTask;
-            return this;
-        }
-
-        public LaunchActivityBuilder allowMultipleInstances(boolean allowMultipleInstances) {
-            mAllowMultipleInstances = allowMultipleInstances;
-            return this;
-        }
-
-        public LaunchActivityBuilder setLaunchTaskBehind(boolean launchTaskBehind) {
-            mLaunchTaskBehind = launchTaskBehind;
-            return this;
-        }
-
-        public LaunchActivityBuilder setReorderToFront(boolean reorderToFront) {
-            mReorderToFront = reorderToFront;
-            return this;
-        }
-
-        public LaunchActivityBuilder setUseApplicationContext(boolean useApplicationContext) {
-            mUseApplicationContext = useApplicationContext;
-            return this;
-        }
-
-        public LaunchActivityBuilder setFinishBeforeLaunch(boolean finishBeforeLaunch) {
-            mFinishBeforeLaunch = finishBeforeLaunch;
-            return this;
-        }
-
-        public ComponentName getTargetActivity() {
-            return mTargetActivity;
-        }
-
-        public boolean isTargetActivityTranslucent() {
-            return mAmWmState.isActivityTranslucent(mTargetActivity);
-        }
-
-        public LaunchActivityBuilder setTargetActivity(ComponentName targetActivity) {
-            mTargetActivity = targetActivity;
-            return this;
-        }
-
-        public LaunchActivityBuilder setDisplayId(int id) {
-            mDisplayId = id;
-            return this;
-        }
-
-        public LaunchActivityBuilder setWindowingMode(int windowingMode) {
-            mWindowingMode = windowingMode;
-            return this;
-        }
-
-        public LaunchActivityBuilder setActivityType(int type) {
-            mActivityType = type;
-            return this;
-        }
-
-        public LaunchActivityBuilder setLaunchingActivity(ComponentName launchingActivity) {
-            mLaunchingActivity = launchingActivity;
-            mLauncherType = LauncherType.LAUNCHING_ACTIVITY;
-            return this;
-        }
-
-        public LaunchActivityBuilder setWaitForLaunched(boolean shouldWait) {
-            mWaitForLaunched = shouldWait;
-            return this;
-        }
-
-        public LaunchActivityBuilder setLaunchTaskDisplayAreaFeatureId(
-                int launchTaskDisplayAreaFeatureId) {
-            mLaunchTaskDisplayAreaFeatureId = launchTaskDisplayAreaFeatureId;
-            return this;
-        }
-
-        /** Use broadcast receiver as a launchpad for activities. */
-        public LaunchActivityBuilder setUseBroadcastReceiver(final ComponentName broadcastReceiver,
-                final String broadcastAction) {
-            mBroadcastReceiver = broadcastReceiver;
-            mBroadcastReceiverAction = broadcastAction;
-            mLauncherType = LauncherType.BROADCAST_RECEIVER;
-            return this;
-        }
-
-        /** Use {@link android.app.Instrumentation} as a launchpad for activities. */
-        public LaunchActivityBuilder setUseInstrumentation() {
-            mLauncherType = LauncherType.INSTRUMENTATION;
-            // Calling startActivity() from outside of an Activity context requires the
-            // FLAG_ACTIVITY_NEW_TASK flag.
-            setNewTask(true);
-            return this;
-        }
-
-        public LaunchActivityBuilder setSuppressExceptions(boolean suppress) {
-            mSuppressExceptions = suppress;
-            return this;
-        }
-
-        public LaunchActivityBuilder setWithShellPermission(boolean withShellPermission) {
-            mWithShellPermission = withShellPermission;
-            return this;
-        }
-
-        public LaunchActivityBuilder setActivitySessionClient(ActivitySessionClient sessionClient) {
-            mActivitySessionClient = sessionClient;
-            return this;
-        }
-
-        @Override
-        public boolean shouldWaitForLaunched() {
-            return mWaitForLaunched;
-        }
-
-        public LaunchActivityBuilder setIntentFlags(int flags) {
-            mIntentFlags = flags;
-            return this;
-        }
-
-        public LaunchActivityBuilder setIntentExtra(Consumer<Bundle> extrasConsumer) {
-            if (extrasConsumer != null) {
-                mExtras = new Bundle();
-                extrasConsumer.accept(mExtras);
-            }
-            return this;
-        }
-
-        @Override
-        public Bundle getExtras() {
-            return mExtras;
-        }
-
-        @Override
-        public void setLaunchInjector(LaunchInjector injector) {
-            mLaunchInjector = injector;
-        }
-
-        @Override
-        public void execute() {
-            if (mActivitySessionClient != null) {
-                final ActivitySessionClient client = mActivitySessionClient;
-                // Clear the session client so its startActivity can call the real execute().
-                mActivitySessionClient = null;
-                client.startActivity(this);
-                return;
-            }
-            switch (mLauncherType) {
-                case INSTRUMENTATION:
-                    if (mWithShellPermission) {
-                        NestedShellPermission.run(this::launchUsingInstrumentation);
-                    } else {
-                        launchUsingInstrumentation();
-                    }
-                    break;
-                case LAUNCHING_ACTIVITY:
-                case BROADCAST_RECEIVER:
-                    launchUsingShellCommand();
-            }
-
-            if (mWaitForLaunched) {
-                mAmWmState.waitForValidState(mTargetActivity);
-            }
-        }
-
-        /** Launch an activity using instrumentation. */
-        private void launchUsingInstrumentation() {
-            final Bundle b = new Bundle();
-            b.putBoolean(KEY_LAUNCH_ACTIVITY, true);
-            b.putBoolean(KEY_LAUNCH_TO_SIDE, mToSide);
-            b.putBoolean(KEY_RANDOM_DATA, mRandomData);
-            b.putBoolean(KEY_NEW_TASK, mNewTask);
-            b.putBoolean(KEY_MULTIPLE_TASK, mMultipleTask);
-            b.putBoolean(KEY_MULTIPLE_INSTANCES, mAllowMultipleInstances);
-            b.putBoolean(KEY_LAUNCH_TASK_BEHIND, mLaunchTaskBehind);
-            b.putBoolean(KEY_REORDER_TO_FRONT, mReorderToFront);
-            b.putInt(KEY_DISPLAY_ID, mDisplayId);
-            b.putInt(KEY_WINDOWING_MODE, mWindowingMode);
-            b.putInt(KEY_ACTIVITY_TYPE, mActivityType);
-            b.putBoolean(KEY_USE_APPLICATION_CONTEXT, mUseApplicationContext);
-            b.putString(KEY_TARGET_COMPONENT, getActivityName(mTargetActivity));
-            b.putBoolean(KEY_SUPPRESS_EXCEPTIONS, mSuppressExceptions);
-            b.putInt(KEY_INTENT_FLAGS, mIntentFlags);
-            b.putBundle(KEY_INTENT_EXTRAS, getExtras());
-            b.putInt(KEY_TASK_DISPLAY_AREA_FEATURE_ID, mLaunchTaskDisplayAreaFeatureId);
-            final Context context = getInstrumentation().getContext();
-            launchActivityFromExtras(context, b, mLaunchInjector);
-        }
-
-        /** Build and execute a shell command to launch an activity. */
-        private void launchUsingShellCommand() {
-            StringBuilder commandBuilder = new StringBuilder();
-            if (mBroadcastReceiver != null && mBroadcastReceiverAction != null) {
-                // Use broadcast receiver to launch the target.
-                commandBuilder.append("am broadcast -a ").append(mBroadcastReceiverAction)
-                        .append(" -p ").append(mBroadcastReceiver.getPackageName())
-                        // Include stopped packages
-                        .append(" -f 0x00000020");
-            } else {
-                // If new task flag isn't set the windowing mode of launcher activity will be the
-                // windowing mode of the target activity, so we need to launch launcher activity in
-                // it.
-                String amStartCmd =
-                        (mWindowingMode == -1 || mNewTask)
-                                ? getAmStartCmd(mLaunchingActivity)
-                                : getAmStartCmd(mLaunchingActivity, mDisplayId)
-                                        + " --windowingMode " + mWindowingMode;
-                // Use launching activity to launch the target.
-                commandBuilder.append(amStartCmd)
-                        .append(" -f 0x20000020");
-            }
-
-            // Add a flag to ensure we actually mean to launch an activity.
-            commandBuilder.append(" --ez " + KEY_LAUNCH_ACTIVITY + " true");
-
-            if (mToSide) {
-                commandBuilder.append(" --ez " + KEY_LAUNCH_TO_SIDE + " true");
-            }
-            if (mRandomData) {
-                commandBuilder.append(" --ez " + KEY_RANDOM_DATA + " true");
-            }
-            if (mNewTask) {
-                commandBuilder.append(" --ez " + KEY_NEW_TASK + " true");
-            }
-            if (mMultipleTask) {
-                commandBuilder.append(" --ez " + KEY_MULTIPLE_TASK + " true");
-            }
-            if (mAllowMultipleInstances) {
-                commandBuilder.append(" --ez " + KEY_MULTIPLE_INSTANCES + " true");
-            }
-            if (mReorderToFront) {
-                commandBuilder.append(" --ez " + KEY_REORDER_TO_FRONT + " true");
-            }
-            if (mFinishBeforeLaunch) {
-                commandBuilder.append(" --ez " + KEY_FINISH_BEFORE_LAUNCH + " true");
-            }
-            if (mDisplayId != INVALID_DISPLAY) {
-                commandBuilder.append(" --ei " + KEY_DISPLAY_ID + " ").append(mDisplayId);
-            }
-            if (mWindowingMode != -1) {
-                commandBuilder.append(" --ei " + KEY_WINDOWING_MODE + " ").append(mWindowingMode);
-            }
-            if (mActivityType != ACTIVITY_TYPE_UNDEFINED) {
-                commandBuilder.append(" --ei " + KEY_ACTIVITY_TYPE + " ").append(mActivityType);
-            }
-
-            if (mUseApplicationContext) {
-                commandBuilder.append(" --ez " + KEY_USE_APPLICATION_CONTEXT + " true");
-            }
-
-            if (mTargetActivity != null) {
-                // {@link ActivityLauncher} parses this extra string by
-                // {@link ComponentName#unflattenFromString(String)}.
-                commandBuilder.append(" --es " + KEY_TARGET_COMPONENT + " ")
-                        .append(getActivityName(mTargetActivity));
-            }
-
-            if (mSuppressExceptions) {
-                commandBuilder.append(" --ez " + KEY_SUPPRESS_EXCEPTIONS + " true");
-            }
-
-            if (mIntentFlags != 0) {
-                commandBuilder.append(" --ei " + KEY_INTENT_FLAGS + " ").append(mIntentFlags);
-            }
-
-            if (mLaunchTaskDisplayAreaFeatureId != FEATURE_UNDEFINED) {
-                commandBuilder.append(" --task-display-area-feature-id ")
-                        .append(mLaunchTaskDisplayAreaFeatureId);
-                commandBuilder.append(" --ei " + KEY_TASK_DISPLAY_AREA_FEATURE_ID + " ")
-                        .append(mLaunchTaskDisplayAreaFeatureId);
-            }
-
-            if (mLaunchInjector != null) {
-                commandBuilder.append(" --ez " + KEY_FORWARD + " true");
-                mLaunchInjector.setupShellCommand(commandBuilder);
-            }
-            executeShellCommand(commandBuilder.toString());
-        }
-    }
-
     /**
      * The actions which wraps a test method. It is used to set necessary rules that cannot be
      * overridden by subclasses. It executes in the outer scope of {@link Before} and {@link After}.
@@ -3357,7 +2982,7 @@ public abstract class ActivityManagerTestBase {
     /**
      * Checks whether the test is enabled on visible background users.
      */
-    protected void requireRunNotOnVisibleBackgroundNonProfileUser(String message) {
+    protected void assumeRunNotOnVisibleBackgroundNonProfileUser(String message) {
         assumeFalse(message, mUserHelper.isVisibleBackgroundUser());
     }
 

@@ -40,6 +40,7 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.os.UserManager;
 import android.os.storage.StorageManager;
@@ -155,7 +156,7 @@ public class MediaProviderTestUtils {
                 .getSystemService(StorageManager.class)
                 .getStorageVolume(MediaStore.Files.getContentUri(volumeName));
         return Environment.buildPath(vol.getDirectory(),
-                Environment.DIRECTORY_DOWNLOADS, "android.provider.cts");
+                Environment.DIRECTORY_DOWNLOADS);
     }
 
     public static File stageFile(int resId, File file) throws IOException {
@@ -200,6 +201,16 @@ public class MediaProviderTestUtils {
             }
         }
         return waitUntilExists(file);
+    }
+
+    public static File createMediaInDownloads(int resId, String volumeName) throws Exception {
+        File image = new File(MediaProviderTestUtils.stageDownloadDir(volumeName),
+                "test" + System.nanoTime() + ".mp3");
+        stageFile(resId, image);
+        scanFile(image);
+        // Sleep is needed for images to have different modified_date
+        SystemClock.sleep(2000);
+        return image;
     }
 
     public static Uri stageMedia(int resId, Uri collectionUri) throws IOException {

@@ -21,12 +21,13 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerR
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
-import com.android.bedstead.harrier.TestAppsComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.harrier.components.AccountsComponent
+import com.android.bedstead.harrier.components.TestAppsComponent
+import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
@@ -45,11 +46,12 @@ import com.android.bedstead.testapp.TestAppProvider
  */
 class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
 
-    private val deviceState: DeviceState by locator
     private val deviceOwnerComponent: DeviceOwnerComponent by locator
     private val profileOwnersComponent: ProfileOwnersComponent by locator
     private val testAppsComponent: TestAppsComponent by locator
     private val usersComponent: UsersComponent by locator
+    private val accountsComponent: AccountsComponent by locator
+    private val userTypeResolver: UserTypeResolver by locator
     private var devicePolicyManagerRoleHolder: RemoteDevicePolicyManagerRoleHolder? = null
     private var delegateDpc: RemotePolicyManager? = null
     var primaryPolicyManager: RemotePolicyManager? = null
@@ -74,7 +76,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             RemoteDelegate.sTestApp,
             dpc.user()
         )
-        val delegate = RemoteDelegate(RemoteDelegate.sTestApp, deviceState.dpc().user())
+        val delegate = RemoteDelegate(RemoteDelegate.sTestApp, dpc().user())
         dpc.devicePolicyManager().setDelegatedScopes(
             dpc.componentName(),
             delegate.packageName(),
@@ -90,10 +92,10 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
      * See [EnsureHasDevicePolicyManagerRoleHolder]
      */
     fun ensureHasDevicePolicyManagerRoleHolder(onUser: UserType, isPrimary: Boolean) {
-        val user: UserReference = deviceState.resolveUserTypeToUser(onUser)
-        deviceState.ensureHasNoAccounts(
+        val user: UserReference = userTypeResolver.toUser(onUser)
+        accountsComponent.ensureHasNoAccounts(
             UserType.ANY,
-            /* allowPreCreatedAccounts = */ true,
+            allowPreCreatedAccounts = true,
             FailureMode.FAIL
         )
         testAppsComponent.ensureTestAppInstalled(RemoteDevicePolicyManagerRoleHolder.sTestApp, user)
@@ -142,16 +144,16 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
 
     private fun getDeviceAdmin(adminType: EnsureHasDelegate.AdminType): RemotePolicyManager {
         return when (adminType) {
-            EnsureHasDelegate.AdminType.DEVICE_OWNER -> deviceState.deviceOwner()
-            EnsureHasDelegate.AdminType.PROFILE_OWNER -> deviceState.profileOwner()
-            EnsureHasDelegate.AdminType.PRIMARY -> deviceState.dpc()
+            EnsureHasDelegate.AdminType.DEVICE_OWNER -> deviceOwnerComponent.deviceOwner()
+            EnsureHasDelegate.AdminType.PROFILE_OWNER -> profileOwnersComponent.profileOwner()
+            EnsureHasDelegate.AdminType.PRIMARY -> dpc()
         }
     }
 
     /**
      * See [com.android.bedstead.harrier.DeviceState.dpc]
      */
-    fun dpc(): RemotePolicyManager? {
+    fun dpc(): RemotePolicyManager {
         primaryPolicyManager?.let {
             return it
         }
@@ -184,8 +186,8 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
         }
         val dpc: RemotePolicyManager = when (adminType) {
             EnsureHasNoDelegate.AdminType.PRIMARY -> primaryPolicyManager!!
-            EnsureHasNoDelegate.AdminType.DEVICE_OWNER -> deviceState.deviceOwner()
-            EnsureHasNoDelegate.AdminType.PROFILE_OWNER -> deviceState.profileOwner()
+            EnsureHasNoDelegate.AdminType.DEVICE_OWNER -> deviceOwnerComponent.deviceOwner()
+            EnsureHasNoDelegate.AdminType.PROFILE_OWNER -> profileOwnersComponent.profileOwner()
             else -> throw IllegalStateException("Unknown Admin Type $adminType")
         }
         testAppsComponent.ensureTestAppNotInstalled(RemoteDelegate.sTestApp, dpc.user())
@@ -212,7 +214,7 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
     }
 
     private fun EnsureHasWorkProfile.logic() {
-        val forUserReference: UserReference = deviceState.resolveUserTypeToUser(forUser)
+        val forUserReference: UserReference = userTypeResolver.toUser(forUser)
         val profile = usersComponent.ensureHasProfile(
             profileType = EnsureHasWorkProfile.PROFILE_TYPE,
             forUserReference,
@@ -234,9 +236,9 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             deviceOwnerComponent.ensureHasNoDeviceOwner()
         }
 
-        val profileOwner = deviceState
-                .profileOwner(deviceState.workProfile(forUser))
-                .devicePolicyController() as ProfileOwner
+        val profileOwner = profileOwnersComponent
+            .profileOwner(workProfile(forUser))
+            .devicePolicyController() as ProfileOwner
         profileOwner.setIsOrganizationOwned(isOrganizationOwned)
     }
 
@@ -268,10 +270,34 @@ class EnterpriseComponent(locator: BedsteadServiceLocator) : DeviceStateComponen
             deviceOwnerComponent.ensureHasNoDeviceOwner()
         }
 
-        val profileOwner = deviceState
-                .profileOwner(deviceState.workProfile())
+        val profileOwner = profileOwnersComponent
+                .profileOwner(workProfile())
                 .devicePolicyController() as ProfileOwner
         profileOwner.setIsOrganizationOwned(isOrganizationOwned)
+    }
+
+    /**
+     * See [com.android.bedstead.harrier.DeviceState.workProfile]
+     */
+    fun workProfile(): UserReference {
+        return workProfile(forUser = UserType.INITIAL_USER)
+    }
+
+    /**
+     * See [com.android.bedstead.harrier.DeviceState.workProfile]
+     */
+    fun workProfile(forUser: UserType): UserReference {
+        return workProfile(userTypeResolver.toUser(forUser))
+    }
+
+    /**
+     * See [com.android.bedstead.harrier.DeviceState.workProfile]
+     */
+    fun workProfile(forUser: UserReference): UserReference {
+        return usersComponent.profile(
+            com.android.bedstead.nene.users.UserType.MANAGED_PROFILE_TYPE_NAME,
+            forUser
+        )
     }
 
     companion object {

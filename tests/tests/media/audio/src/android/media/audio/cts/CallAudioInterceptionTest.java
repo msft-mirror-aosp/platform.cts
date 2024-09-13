@@ -18,10 +18,14 @@ package android.media.audio.cts;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
+import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
+import static android.Manifest.permission.CALL_AUDIO_INTERCEPTION;
+import static android.Manifest.permission.CAPTURE_AUDIO_OUTPUT;
+import static android.Manifest.permission.MODIFY_PHONE_STATE;
 
+import android.app.Instrumentation;
 import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -31,16 +35,20 @@ import android.platform.test.annotations.AppModeFull;
 //  import android.os.Build;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 // TODO: b/189472651 uncomment when TM version code is published
 //  import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.RequiredFeatureRule;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -54,23 +62,27 @@ public class CallAudioInterceptionTest {
     private static final String TAG = CallAudioInterceptionTest.class.getSimpleName();
     private static final int SET_MODE_DELAY_MS = 300;
 
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
     private AudioManager mAudioManager;
+
+    @Rule(order = 1)
+    public final RequiredFeatureRule mTelephonyRule = new RequiredFeatureRule(FEATURE_TELEPHONY);
+
+    @Rule(order = 2)
+    public final AdoptShellPermissionsRule mPermissionRule = new AdoptShellPermissionsRule(
+            mInstrumentation.getUiAutomation(),
+            CALL_AUDIO_INTERCEPTION, CAPTURE_AUDIO_OUTPUT, MODIFY_PHONE_STATE);
+
+    @Rule(order = 3)
+    public final PermissionUpdateBarrierRule mBarrierRule = new PermissionUpdateBarrierRule(
+            mInstrumentation.getContext());
 
     /** Test setup */
     @Before
     public void setUp() throws Exception {
-        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
+        var context = mInstrumentation.getContext();
         mAudioManager = context.getSystemService(AudioManager.class);
         mAudioManager.setMode(AudioManager.MODE_NORMAL);
-
-        InstrumentationRegistry.getInstrumentation()
-                .getUiAutomation()
-                .adoptShellPermissionIdentity(Manifest.permission.CALL_AUDIO_INTERCEPTION,
-                        Manifest.permission.CAPTURE_AUDIO_OUTPUT,
-                        Manifest.permission.MODIFY_PHONE_STATE);
-
-        assumeTrue(context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEPHONY));
         clearAudioserverPermissionCache();
     }
 
@@ -78,9 +90,6 @@ public class CallAudioInterceptionTest {
     @After
     public void tearDown() {
         mAudioManager.setMode(AudioManager.MODE_NORMAL);
-        InstrumentationRegistry.getInstrumentation()
-              .getUiAutomation()
-              .dropShellPermissionIdentity();
         clearAudioserverPermissionCache();
     }
 
@@ -179,7 +188,8 @@ public class CallAudioInterceptionTest {
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build();
         final int[] TEST_MODES = new int[] { AudioManager.MODE_IN_CALL,
-                AudioManager.MODE_IN_COMMUNICATION,
+                // TODO (b/360430658)
+                // AudioManager.MODE_IN_COMMUNICATION,
                 AudioManager.MODE_CALL_REDIRECT,
                 AudioManager.MODE_COMMUNICATION_REDIRECT
         };

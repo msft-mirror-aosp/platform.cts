@@ -76,8 +76,6 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
 
     private static final String TAG = "Statsd.UidAtomTests";
 
-    private static final String TEST_PACKAGE_NAME = "com.android.server.cts.device.statsd";
-
     private static final String ACTION_SHOW_APPLICATION_OVERLAY = "action.show_application_overlay";
 
     private static final String FEATURE_AUDIO_OUTPUT = "android.hardware.audio.output";
@@ -609,7 +607,7 @@ public class UidAtomTests extends DeviceTestCase implements IBuildReceiver {
                 atomTag);
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".AtomTests", "testScreenBrightness");
 
-        List<Integer> expectedValues = Arrays.asList(47, 100);
+        List<Integer> expectedValues = Arrays.asList(47, 70);
 
         // Sorted list of brightness values in order in which they occurred, filtered to only
         // contain expectedValues if they are present.

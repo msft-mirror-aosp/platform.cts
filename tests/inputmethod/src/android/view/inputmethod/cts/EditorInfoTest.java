@@ -46,8 +46,8 @@ import android.view.inputmethod.PreviewableHandwritingGesture;
 import android.view.inputmethod.SelectGesture;
 import android.view.inputmethod.SurroundingText;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -184,7 +184,7 @@ public class EditorInfoTest {
         assertEquals(info.getSupportedHandwritingGesturePreviews(), selectGestureSet);
 
         assertNotEquals(info.getSupportedHandwritingGesturePreviews(),
-                info.getSupportedHandwritingGestures());
+                new HashSet<>(info.getSupportedHandwritingGestures()));
 
         info.setSupportedHandwritingGesturePreviews(
                 Stream.of(SelectGesture.class, DeleteGesture.class).collect(Collectors.toSet()));

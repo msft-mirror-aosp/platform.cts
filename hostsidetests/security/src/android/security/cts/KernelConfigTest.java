@@ -332,8 +332,10 @@ public class KernelConfigTest extends BaseHostJUnit4Test {
                 }
             }
         } else if (CpuFeatures.isX86(mDevice)) {
-            assertTrue("Linux kernel must have KPTI enabled: CONFIG_PAGE_TABLE_ISOLATION=y",
-                    configSet.contains("CONFIG_PAGE_TABLE_ISOLATION=y"));
+            assertTrue("Linux kernel must have KPTI enabled: "
+                    + "CONFIG_PAGE_TABLE_ISOLATION=y or CONFIG_MITIGATION_PAGE_TABLE_ISOLATION=y",
+                    configSet.contains("CONFIG_PAGE_TABLE_ISOLATION=y")
+                    || configSet.contains("CONFIG_MITIGATION_PAGE_TABLE_ISOLATION=y"));
         }
     }
 

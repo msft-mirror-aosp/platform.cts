@@ -32,6 +32,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -42,6 +43,7 @@ import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.PassFailButtons;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils;
+import com.android.cts.verifier.audio.audiolib.AudioDeviceUtils.UsbDeviceReport;
 import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.AudioUtils;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
@@ -159,6 +161,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String LOG_ERROR_STR = "Could not log metric.";
 
     private TestSpec[] mTestSpecs = new TestSpec[NUM_TEST_ROUTES];
+    private volatile UsbDeviceReport mUsbDeviceReport;
+
     class TestSpec {
         private static final String TAG = "AudioLoopbackLatencyActivity.TestSpec";
         // impossibly low latencies (indicating something in the test went wrong).
@@ -179,6 +183,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         double[] mTimestampLatencyMS = new double[NUM_TEST_PHASES];
 
         double mMeanLatencyMS;
+        double mMeasuredLatencyMS;
+        double mLatencyOffsetMS;
         double mMeanAbsoluteDeviation;
         double mMeanConfidence;
         double mRequiredConfidence;
@@ -219,7 +225,18 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         }
 
         void handleTestCompletion() {
-            mMeanLatencyMS = StatUtils.calculateMean(mLatencyMS);
+            // Some USB devices have higher latency than the Google device.
+            // We subtract that extra latency so that we are just using the Android device latency.
+            mMeasuredLatencyMS = StatUtils.calculateMean(mLatencyMS);
+            mLatencyOffsetMS = 0.0;
+            if (mRouteId == TESTROUTE_USB) {
+                UsbDeviceReport report = mUsbDeviceReport; // fetch volatile object
+                if (report != null && report.isValid) {
+                    mLatencyOffsetMS = report.latencyOffset;
+                }
+            }
+            mMeanLatencyMS = mMeasuredLatencyMS - mLatencyOffsetMS;
+
             mMeanAbsoluteDeviation =
                     StatUtils.calculateMeanAbsoluteDeviation(
                             mMeanLatencyMS, mLatencyMS, mLatencyMS.length);
@@ -257,14 +274,25 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
                         "Test Finished\nLatency unrealistically low (%.2f < %.2f). No Results.",
                         mMeanLatencyMS, LOWEST_REASONABLE_LATENCY_MILLIS);
             } else {
-                result = String.format(
+                // Print more info if we are correcting the latency measurement.
+                String adjustment = "";
+                if (mLatencyOffsetMS > 0.0) {
+                    adjustment = String.format(Locale.US, "Measured Latency: %.2f ms\n"
+                            + "Latency Offset: %.2f ms\n",
+                        mMeasuredLatencyMS,
+                        mLatencyOffsetMS);
+
+                }
+                result = String.format(Locale.US,
                         "Test Finished\nMean Latency:%.2f ms\n"
-                                + "Mean Absolute Deviation: %.2f\n"
-                                + "Confidence: %.2f\n"
-                                + "Low Latency Path: %s\n"
-                                + "24 Bit Hardware Support: %s\n"
-                                + "Timestamp Latency:%.2f ms",
+                            + "%s"
+                            + "Mean Absolute Deviation: %.2f\n"
+                            + "Confidence: %.2f\n"
+                            + "Low Latency Path: %s\n"
+                            + "24 Bit Hardware Support: %s\n"
+                            + "Timestamp Latency:%.2f ms",
                         mMeanLatencyMS,
+                        adjustment,
                         mMeanAbsoluteDeviation,
                         mMeanConfidence,
                         mIsLowLatencyStream ? mYesString : mNoString,
@@ -514,14 +542,18 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mAudioManager = getSystemService(AudioManager.class);
         scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
 
+        // Utilties Buttons
+        if (mIsWatch) {
+            ((LinearLayout) findViewById(R.id.audio_loopback_utilities_layout))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
         connectLoopbackUI();
 
         if (mustRunTest()) {
             getPassButton().setEnabled(false);
-            enableStartButtons(true);
         } else {
             getPassButton().setEnabled(isReportLogOkToPass());
-            enableStartButtons(false);
         }
 
         mConnectListener = new ConnectListener();
@@ -696,12 +728,13 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         @Override
         public void onAudioDevicesAdded(AudioDeviceInfo[] addedDevices) {
             scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
-            AudioDeviceUtils.validateUsbDevice(mContext);
+            mUsbDeviceReport = AudioDeviceUtils.validateUsbDevice(mContext);
         }
 
         @Override
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
             scanPeripheralList(mAudioManager.getDevices(AudioManager.GET_DEVICES_ALL));
+            mUsbDeviceReport = null;
         }
     }
 
@@ -989,7 +1022,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
         mTestStatusText.setText(generateStatusString(requirements, showResult));
 
         showWait(false);
-        enableStartButtons(mustRunTest());
+        enableStartButtons(true);
     }
 
     /**

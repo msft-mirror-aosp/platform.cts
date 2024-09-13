@@ -52,6 +52,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiNetworkSpecifier;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.WorkSource;
 import android.support.test.uiautomator.UiDevice;
 import android.text.TextUtils;
@@ -62,6 +63,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.wifi.flags.Flags;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,7 +77,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Class to hold helper methods that are repeated across wifi CTS tests.
@@ -375,6 +376,7 @@ public class TestHelper {
         public boolean onAvailableCalled = false;
         public boolean onUnavailableCalled = false;
         public boolean onLostCalled = false;
+        public boolean onLosingCalled = false;
         public NetworkCapabilities networkCapabilities;
 
         TestNetworkCallback() {
@@ -412,7 +414,15 @@ public class TestHelper {
         }
 
         @Override
+        public void onLosing(Network network, int maxMsToLive) {
+            Log.i(TAG, "onLosing + " + maxMsToLive);
+            onLosingCalled = true;
+            mBlocker.countDown();
+        }
+
+        @Override
         public void onLost(Network network) {
+            Log.i(TAG, "onLost ");
             onLostCalled = true;
             mBlocker.countDown();
         }
@@ -713,101 +723,94 @@ public class TestHelper {
 
     private static class TestNetworkRequestMatchCallback implements
             WifiManager.NetworkRequestMatchCallback {
-        private final Object mLock;
-
         public boolean onRegistrationCalled = false;
         public boolean onAbortCalled = false;
         public boolean onMatchCalled = false;
         public boolean onConnectSuccessCalled = false;
         public boolean onConnectFailureCalled = false;
+        private CountDownLatch mBlocker;
+
         public WifiManager.NetworkRequestUserSelectionCallback userSelectionCallback = null;
         public List<ScanResult> matchedScanResults = null;
 
-        TestNetworkRequestMatchCallback(Object lock) {
-            mLock = lock;
+        TestNetworkRequestMatchCallback() {
+            mBlocker = new CountDownLatch(1);
+        }
+
+        public boolean waitForAnyCallback(int timeout) {
+            try {
+                boolean noTimeout = mBlocker.await(timeout, TimeUnit.MILLISECONDS);
+                mBlocker = new CountDownLatch(1);
+                return noTimeout;
+            } catch (InterruptedException e) {
+                return false;
+            }
         }
 
         @Override
         public void onUserSelectionCallbackRegistration(
                 WifiManager.NetworkRequestUserSelectionCallback userSelectionCallback) {
             Log.d(TAG, "onUserSelectionCallbackRegistration");
-            synchronized (mLock) {
-                onRegistrationCalled = true;
-                this.userSelectionCallback = userSelectionCallback;
-                mLock.notify();
-            }
+            onRegistrationCalled = true;
+            this.userSelectionCallback = userSelectionCallback;
+            mBlocker.countDown();
         }
 
         @Override
         public void onAbort() {
             Log.d(TAG, "onAbort");
-            synchronized (mLock) {
-                onAbortCalled = true;
-                mLock.notify();
-            }
+            onAbortCalled = true;
+            mBlocker.countDown();
         }
 
         @Override
         public void onMatch(List<ScanResult> scanResults) {
             Log.d(TAG, "onMatch");
-            synchronized (mLock) {
-                // This can be invoked multiple times. So, ignore after the first one to avoid
-                // disturbing the rest of the test sequence.
-                if (onMatchCalled) return;
-                onMatchCalled = true;
-                matchedScanResults = scanResults;
-                mLock.notify();
-            }
+            // This can be invoked multiple times. So, ignore after the first one to avoid
+            // disturbing the rest of the test sequence.
+            if (onMatchCalled) return;
+            onMatchCalled = true;
+            matchedScanResults = scanResults;
+            mBlocker.countDown();
         }
 
         @Override
         public void onUserSelectionConnectSuccess(WifiConfiguration config) {
             Log.d(TAG, "onUserSelectionConnectSuccess");
-            synchronized (mLock) {
-                onConnectSuccessCalled = true;
-                mLock.notify();
-            }
+            onConnectSuccessCalled = true;
+            mBlocker.countDown();
         }
 
         @Override
         public void onUserSelectionConnectFailure(WifiConfiguration config) {
             Log.d(TAG, "onUserSelectionConnectFailure");
-            synchronized (mLock) {
-                onConnectFailureCalled = true;
-                mLock.notify();
-            }
+            onConnectFailureCalled = true;
+            mBlocker.countDown();
         }
     }
 
     private void handleUiInteractions(WifiConfiguration network, boolean shouldUserReject) {
-        // can't use CountDownLatch since there are many callbacks expected and CountDownLatch
-        // cannot be reset.
-        // TODO(b/177591382): Use ArrayBlockingQueue/LinkedBlockingQueue
-        Object uiLock = new Object();
         TestNetworkRequestMatchCallback networkRequestMatchCallback =
-                new TestNetworkRequestMatchCallback(uiLock);
+                new TestNetworkRequestMatchCallback();
+        mWifiManager.registerNetworkRequestMatchCallback(
+                Executors.newSingleThreadExecutor(), networkRequestMatchCallback);
+        long start = SystemClock.elapsedRealtime();
         try {
             // 1. Wait for registration callback.
-            synchronized (uiLock) {
-                try {
+            while (!networkRequestMatchCallback.onRegistrationCalled
+                    && SystemClock.elapsedRealtime() - start < DURATION_UI_INTERACTION_MILLIS) {
+                networkRequestMatchCallback.waitForAnyCallback(1000);
+                if (networkRequestMatchCallback.onAbortCalled) {
+                    networkRequestMatchCallback.onAbortCalled = false;
                     mWifiManager.registerNetworkRequestMatchCallback(
                             Executors.newSingleThreadExecutor(), networkRequestMatchCallback);
-                    uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                } catch (InterruptedException e) {
                 }
             }
             assertThat(networkRequestMatchCallback.onRegistrationCalled).isTrue();
             assertThat(networkRequestMatchCallback.userSelectionCallback).isNotNull();
 
             // 2. Wait for matching scan results
-            synchronized (uiLock) {
-                if (!networkRequestMatchCallback.onMatchCalled) {
-                    try {
-                        uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
+            networkRequestMatchCallback.waitForAnyCallback(DURATION_UI_INTERACTION_MILLIS);
             assertThat(networkRequestMatchCallback.onMatchCalled).isTrue();
             assertThat(networkRequestMatchCallback.matchedScanResults).isNotNull();
             assertThat(networkRequestMatchCallback.matchedScanResults.size()).isAtLeast(1);
@@ -820,12 +823,7 @@ public class TestHelper {
             }
 
             // 4. Wait for connection success or abort.
-            synchronized (uiLock) {
-                try {
-                    uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                } catch (InterruptedException e) {
-                }
-            }
+            networkRequestMatchCallback.waitForAnyCallback(DURATION_UI_INTERACTION_MILLIS);
             if (shouldUserReject) {
                 assertThat(networkRequestMatchCallback.onAbortCalled).isTrue();
             } else {
@@ -855,20 +853,6 @@ public class TestHelper {
         TestLocalOnlyListener localOnlyListener = new TestLocalOnlyListener();
         mWifiManager.addLocalOnlyConnectionFailureListener(Executors.newSingleThreadExecutor(),
                 localOnlyListener);
-        AtomicBoolean uiVerified = new AtomicBoolean(false);
-        // Fork a thread to handle the UI interactions.
-        Thread uiThread = new Thread(() -> {
-            try {
-                handleUiInteractions(network, shouldUserReject);
-                uiVerified.set(true);
-            } catch (Throwable e /* catch assertions & exceptions */) {
-                try {
-                    mConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
-                } catch (IllegalArgumentException ie) { }
-                Log.e(TAG, "handleUiInteractions failed: " + e);
-            }
-        });
-
         try {
             // File a request for wifi network.
             mConnectivityManager.requestNetwork(
@@ -878,18 +862,16 @@ public class TestHelper {
                             .setNetworkSpecifier(specifier)
                             .build(),
                     testNetworkCallback);
-            // Wait for the request to reach the wifi stack before kick-starting the UI
-            // interactions.
-            Thread.sleep(1_000);
-            // Start the UI interactions.
-            uiThread.start();
+            handleUiInteractions(network, shouldUserReject);
             // now wait for callback
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
             if (shouldUserReject) {
-                assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
-                assertThat(localOnlyListener.failureReason)
-                        .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                if (Flags.localOnlyConnectionOptimization()) {
+                    assertThat(localOnlyListener.await(DURATION_MILLIS)).isTrue();
+                    assertThat(localOnlyListener.failureReason)
+                            .isEqualTo(STATUS_LOCAL_ONLY_CONNECTION_FAILURE_USER_REJECT);
+                }
                 assertThat(testNetworkCallback.onUnavailableCalled).isTrue();
             } else {
                 assertThat(localOnlyListener.await(DURATION_MILLIS)).isFalse();
@@ -914,16 +896,6 @@ public class TestHelper {
             } catch (IllegalArgumentException ie) { }
             throw e;
         }
-        try {
-            // Ensure that the UI interaction thread has completed.
-            uiThread.join(DURATION_UI_INTERACTION_MILLIS);
-        } catch (InterruptedException e) {
-            try {
-                mConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
-            } catch (IllegalArgumentException ie) { }
-            fail("UI interaction interrupted");
-        }
-        assertThat(uiVerified.get()).isTrue();
         mWifiManager.removeLocalOnlyConnectionFailureListener(localOnlyListener);
         return testNetworkCallback;
     }
@@ -1065,10 +1037,16 @@ public class TestHelper {
         // File the network request & wait for the callback.
         TestNetworkCallback testNetworkCallback2G = createTestNetworkCallback();
         TestNetworkCallback testNetworkCallback5G = createTestNetworkCallback();
+        TestNetworkCallback testNetworkCallback5GLow = createTestNetworkCallback();
+        TestNetworkCallback testNetworkCallback5GHigh = createTestNetworkCallback();
         final NetworkRequest networkRequest2G = createNetworkRequestForInternet(
                 ScanResult.WIFI_BAND_24_GHZ);
         final NetworkRequest networkRequest5G = createNetworkRequestForInternet(
                 ScanResult.WIFI_BAND_5_GHZ);
+        final NetworkRequest networkRequest5GLow = createNetworkRequestForInternet(
+                1 << 29 /*WIFI_BAND_INDEX_5_GHZ_LOW*/);
+        final NetworkRequest networkRequest5GHigh = createNetworkRequestForInternet(
+                1 << 30 /*WIFI_BAND_INDEX_5_GHZ_HIGH*/);
          // Make sure wifi is connected to primary after wifi enabled with saved network.
         PollingCheck.check("Wifi not connected", DURATION_NETWORK_CONNECTION_MILLIS,
                 () -> getNumWifiConnections() > 0);
@@ -1076,10 +1054,14 @@ public class TestHelper {
             // Request both 2G and 5G wifi networks.
             mConnectivityManager.requestNetwork(networkRequest2G, testNetworkCallback2G);
             mConnectivityManager.requestNetwork(networkRequest5G, testNetworkCallback5G);
+            mConnectivityManager.requestNetwork(networkRequest5GLow, testNetworkCallback5GLow);
+            mConnectivityManager.requestNetwork(networkRequest5GHigh, testNetworkCallback5GHigh);
             // Wait for the request to reach the wifi stack before kick-start periodic scans.
             Thread.sleep(200);
             boolean band2gFound = false;
             boolean band5gFound = false;
+            boolean band5gLowFound = false;
+            boolean band5gHighFound = false;
             // now wait for connection to complete and wait for callback
             WifiInfo primaryInfo = null;
             WifiInfo secondaryInfo = null;
@@ -1107,12 +1089,50 @@ public class TestHelper {
                     band5gFound = true;
                 }
             }
+            if (testNetworkCallback5GLow.await(DURATION_NETWORK_CONNECTION_MILLIS)) {
+                WifiInfo info5g = checkWifiNetworkInfo(testNetworkCallback5GLow,
+                        ScanResult.WIFI_BAND_5_GHZ);
+                if (info5g != null) {
+                    if (info5g.isPrimary()) {
+                        primaryInfo = info5g;
+                    } else {
+                        secondaryInfo = info5g;
+                    }
+                    band5gLowFound = true;
+                }
+            }
+            if (testNetworkCallback5GHigh.await(DURATION_NETWORK_CONNECTION_MILLIS)) {
+                WifiInfo info5g = checkWifiNetworkInfo(testNetworkCallback5GHigh,
+                        ScanResult.WIFI_BAND_5_GHZ);
+                if (info5g != null) {
+                    if (info5g.isPrimary()) {
+                        primaryInfo = info5g;
+                    } else {
+                        secondaryInfo = info5g;
+                    }
+                    band5gHighFound = true;
+                }
+            }
             if (expectConnectionSuccess) {
                 // Ensure both primary and non-primary networks are created.
-                assertTrue("Network not found on 2g", band2gFound);
-                assertTrue("Network not found on 5g", band5gFound);
-                assertFalse("Network unavailable on 2g", testNetworkCallback2G.onUnavailableCalled);
-                assertFalse("Network unavailable on 5g", testNetworkCallback5G.onUnavailableCalled);
+                if (band2gFound) {
+                    // Expect a 2.4Ghz connection and a 5Ghz connection
+                    assertTrue("Network not found on 2g", band2gFound);
+                    assertTrue("Network not found on 5g", band5gFound);
+                    assertFalse("Network unavailable on 2g",
+                            testNetworkCallback2G.onUnavailableCalled);
+                    assertFalse("Network unavailable on 5g",
+                            testNetworkCallback5G.onUnavailableCalled);
+                } else {
+                    // If there's no 2.4Ghz connection, then expect a 5Ghz low and a 5Ghz high
+                    // connection
+                    assertTrue("Network not found on 5g low", band5gLowFound);
+                    assertTrue("Network not found on 5g high", band5gHighFound);
+                    assertFalse("Network unavailable on 5g low",
+                            testNetworkCallback5GLow.onUnavailableCalled);
+                    assertFalse("Network unavailable on 5g high",
+                            testNetworkCallback5GHigh.onUnavailableCalled);
+                }
                 assertNotNull("No primary network info", primaryInfo);
                 assertNotNull("No secondary network info", secondaryInfo);
                 assertFalse("Primary and secondary networks are same",
@@ -1153,6 +1173,8 @@ public class TestHelper {
         } finally {
             mConnectivityManager.unregisterNetworkCallback(testNetworkCallback2G);
             mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5G);
+            mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5GLow);
+            mConnectivityManager.unregisterNetworkCallback(testNetworkCallback5GHigh);
             executorService.shutdown();
         }
     }

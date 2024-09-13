@@ -18,6 +18,7 @@ package com.android.queryable.info;
 
 import android.app.Service;
 import android.content.IntentFilter;
+import android.os.Bundle;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,6 +32,7 @@ import java.util.Set;
 public final class ServiceInfo extends ClassInfo {
 
     private final Set<IntentFilter> mIntentFilters;
+    private Set<Bundle> mMetadata;
 
     /** Return a new builder for {@link ServiceInfo}. */
     public static Builder builder() {
@@ -43,12 +45,18 @@ public final class ServiceInfo extends ClassInfo {
                 .serviceClass(serviceInfo.name);
     }
 
-    private ServiceInfo(String serviceClass, Set<IntentFilter> intentFilters) {
+    private ServiceInfo(String serviceClass, Set<IntentFilter> intentFilters,
+            Set<Bundle> metadata) {
         super(serviceClass);
         if (intentFilters == null) {
             mIntentFilters = new HashSet<>();
         } else {
             mIntentFilters = intentFilters;
+        }
+        if (metadata == null) {
+            mMetadata = new HashSet<>();
+        } else {
+            mMetadata = metadata;
         }
     }
 
@@ -57,11 +65,17 @@ public final class ServiceInfo extends ClassInfo {
         return mIntentFilters;
     }
 
+    /** Return the metadata of this service. */
+    public Set<Bundle> metadata() {
+        return mMetadata;
+    }
+
     @Override
     public String toString() {
         return "Service{"
                 + "class=" + super.toString()
                 + "intentFilters=" + mIntentFilters
+                + "metadata=" + mMetadata
                 + "}";
     }
 
@@ -69,6 +83,7 @@ public final class ServiceInfo extends ClassInfo {
     public static final class Builder {
         String mServiceClass;
         Set<IntentFilter> mIntentFilters;
+        Set<Bundle> mMetadata;
 
         /** Set the serviceClassName with the class name provided. */
         public Builder serviceClass(String serviceClassName) {
@@ -92,11 +107,18 @@ public final class ServiceInfo extends ClassInfo {
             return this;
         }
 
+        /** Set the metadata with the set of metadata provided */
+        public ServiceInfo.Builder metadata(Set<Bundle> metadata) {
+            mMetadata = metadata;
+            return this;
+        }
+
         /** Build the {@link ServiceInfo}*/
         public ServiceInfo build() {
             return new ServiceInfo(
                     mServiceClass,
-                    mIntentFilters
+                    mIntentFilters,
+                    mMetadata
             );
         }
     }

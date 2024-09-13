@@ -35,6 +35,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.UinputTouchScreen
+import com.android.cts.input.VirtualDisplayActivityScenario
 import com.android.cts.input.inputeventmatchers.withDeviceId
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withRawCoords
@@ -71,7 +72,7 @@ class SimultaneousTouchAndStylusTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<TwoWindowsActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<TwoWindowsActivity>(testName)
     @get:Rule
     val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 

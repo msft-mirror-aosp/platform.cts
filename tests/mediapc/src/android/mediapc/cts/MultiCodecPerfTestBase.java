@@ -66,6 +66,11 @@ public class MultiCodecPerfTestBase {
             REQUIRED_MIN_CONCURRENT_INSTANCES - REQUIRED_MIN_CONCURRENT_4K_DECODER_INSTANCES;
     static final int REQUIRED_MIN_CONCURRENT_1080_ENCODER_INSTANCES =
             REQUIRED_MIN_CONCURRENT_INSTANCES - REQUIRED_MIN_CONCURRENT_4K_ENCODER_INSTANCES;
+    static final ArrayList<String> MEDIAPC_CONCURRENT_CODECS_R = new ArrayList<>(
+            Arrays.asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC));
+    static final ArrayList<String> MEDIAPC_CONCURRENT_CODECS = new ArrayList<>(
+            Arrays.asList(MediaFormat.MIMETYPE_VIDEO_AVC, MediaFormat.MIMETYPE_VIDEO_HEVC,
+                    MediaFormat.MIMETYPE_VIDEO_VP9, MediaFormat.MIMETYPE_VIDEO_AV1));
 
     static ArrayList<String> mMediaTypeList = new ArrayList<>();
     static Map<String, String> mTestFiles = new HashMap<>();
@@ -172,6 +177,33 @@ public class MultiCodecPerfTestBase {
         ArrayList<MediaFormat> formatsList = new ArrayList<>();
         formatsList.add(fmt);
         return selectHardwareCodecs(mediaType, formatsList, null, isEncoder, allCodecs);
+    }
+
+    static boolean isRCodec(String mediaType) {
+        return isRCodec(mediaType, mediaType);
+    }
+
+    static boolean isRCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS_R.contains(mediaType2);
+    }
+
+    static boolean isMPCCodec(String mediaType) {
+        return isMPCCodec(mediaType, mediaType);
+    }
+
+    static boolean isMPCCodec(String mediaType1, String mediaType2) {
+        return MEDIAPC_CONCURRENT_CODECS.contains(mediaType1)
+                && MEDIAPC_CONCURRENT_CODECS.contains(mediaType2);
+    }
+
+    static boolean isVP9Codec(String mediaType) {
+        return isVP9Codec(mediaType, mediaType);
+    }
+
+    static boolean isVP9Codec(String mediaType1, String mediaType2) {
+        return MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType1)
+                || MediaFormat.MIMETYPE_VIDEO_VP9.equalsIgnoreCase(mediaType2);
     }
 
     protected CodecMetrics invokeWithThread(int maxInstances, Collection<? extends

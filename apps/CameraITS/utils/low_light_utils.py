@@ -43,14 +43,25 @@ _K_MEANS_EPSILON = 0.5
 _TEXT_COLOR = (255, 255, 255)
 _FIG_SIZE = (10, 6)
 
-# pylint: disable=line-too-long
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
+    'gta9p',  # Samsung Galaxy Tab A9+ 5G
+    'nabu',  # Xiaomi Pad 5
 )
+
+# Tablet brightness mapping strings for (rear, front) facing camera tests
+# List entries must be entered in lowercase
+TABLET_BRIGHTNESS = {
+    'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
+    'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
+    'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+
+    'gta9p': ('6', '12'),  # Samsung Galaxy Tab A9+ 5G
+    'nabu': ('8', '14'),  # Xiaomi Pad 5
+}
 
 
 def _crop(img):
@@ -282,17 +293,17 @@ def _draw_luminance(image, intensities):
         image, (left, top, (right - left), (bottom - top)))
     cv2.rectangle(image, (left, top), (right, bottom), _BOUNDING_BOX_COLOR, 2)
     # place the luma value above the box offset by 10 pixels
-    cv2.putText(img = image, text = f'{intensity}', org = (x, y - 10),
-                fontFace = cv2.FONT_HERSHEY_PLAIN, fontScale = 1,
-                color = _TEXT_COLOR)
+    cv2.putText(img=image, text=f'{intensity}', org=(x, y - 10),
+                fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1,
+                color=_TEXT_COLOR)
     luma = str(round(noise_stats['luma'], 1))
     cu = str(round(noise_stats['chroma_u'], 1))
     cv = str(round(noise_stats['chroma_v'], 1))
     # place the noise (luma, chroma u, chroma v) values above the luma value
     # offset by 30 pixels
-    cv2.putText(img = image, text = f"{luma}, {cu}, {cv}", org = (x, y - 30),
-                fontFace = cv2.FONT_HERSHEY_PLAIN, fontScale = 1,
-                color = _TEXT_COLOR)
+    cv2.putText(img=image, text=f'{luma}, {cu}, {cv}', org=(x, y - 30),
+                fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1,
+                color=_TEXT_COLOR)
 
 
 def _compute_avg(results):
@@ -388,6 +399,7 @@ def _plot_noise(results, file_stem, img, test_name):
     results: A list of tuples where each tuple is (box, luminance).
     file_stem: The output file where the plot is saved.
     img: The captured image used to measure patch noise.
+    test_name: Name of the test being plotted.
   """
   luma_noise_values = []
   chroma_u_noise_values = []
@@ -529,6 +541,9 @@ def analyze_low_light_scene_capture(
       sorted_regions[9],
       sorted_regions[5],
   ]
+
+  test_name = os.path.basename(file_stem)
+
   _plot_results(hilbert_ordered, file_stem)
   _plot_successive_difference(hilbert_ordered, file_stem)
   _plot_noise(hilbert_ordered, file_stem, img, test_name)
@@ -538,7 +553,6 @@ def analyze_low_light_scene_capture(
 
   avg = _compute_avg(hilbert_ordered)
   delta_avg = _compute_avg_delta_of_successive_boxes(hilbert_ordered)
-  test_name = os.path.basename(file_stem)
 
   # the following print statements are necessary for telemetry
   # do not convert to logging.debug

@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -33,7 +33,7 @@ _COLORS = ('R', 'G', 'B')
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NR_MODES = {'OFF': 0, 'FAST': 1, 'HQ': 2, 'MIN': 3, 'ZSL': 4}
 _NR_MODES_LIST = tuple(_NR_MODES.values())
-_NUM_FRAMES = 4
+_NUM_FRAMES = 2
 _PATCH_H = 0.1  # center 10%
 _PATCH_W = 0.1
 _PATCH_X = 0.5 - _PATCH_W/2
@@ -70,15 +70,14 @@ def create_plot(snrs, reprocess_format, name_with_log_path):
     reprocess_format: String of 'yuv' or 'private'.
     name_with_log_path: Test name with path for storage.
   """
-  pylab.figure(reprocess_format)
+  plt.figure(reprocess_format)
   for ch, color in enumerate(_COLORS):
-    pylab.plot(_NR_MODES_LIST, snrs[ch], f'-{color.lower()}o')
-  pylab.title(f'{_NAME} ({reprocess_format})')
-  pylab.xlabel(f'{str(_NR_MODES)[1:-1]}')  # strip '{' '}' off string
-  pylab.ylabel('SNR (dB)')
-  pylab.xticks(_NR_MODES_LIST)
-  matplotlib.pyplot.savefig(
-      f'{name_with_log_path}_plot_{reprocess_format}_SNRs.png')
+    plt.plot(_NR_MODES_LIST, snrs[ch], f'-{color.lower()}o')
+  plt.title(f'{_NAME} ({reprocess_format})')
+  plt.xlabel(f'{str(_NR_MODES)[1:-1]}')  # strip '{' '}' off string
+  plt.ylabel('SNR (dB)')
+  plt.xticks(_NR_MODES_LIST)
+  plt.savefig(f'{name_with_log_path}_plot_{reprocess_format}_SNRs.png')
 
 
 class ReprocessNoiseReductionTest(its_base_test.ItsBaseTest):

@@ -55,6 +55,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.PollingCheck;
+import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeSettings;
 import com.android.cts.mockime.MockImeSession;
 import com.android.os.nano.AtomsProto;
@@ -327,9 +328,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                                 .showSoftInput(editText, 0 /* flags */);
                         return true;
                     });
-                    mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, null, editText);
+                    final var display = editText.getContext().getDisplay();
+                    try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                        touch.tapOnViewCenter(editText);
 
-                    expectImeVisible(TIMEOUT);
+                        expectImeVisible(TIMEOUT);
+                    }
                 });
     }
 
@@ -354,9 +358,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                                 .hideSoftInputFromWindow(textView.getWindowToken(), 0 /* flags */);
                         return true;
                     });
-                    mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, null, textView);
+                    final var display = textView.getContext().getDisplay();
+                    try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                        touch.tapOnViewCenter(textView);
 
-                    expectImeInvisible(TIMEOUT);
+                        expectImeInvisible(TIMEOUT);
+                    }
                 });
     }
 
@@ -382,9 +389,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                         activity.getWindow().getInsetsController().show(WindowInsets.Type.ime());
                         return true;
                     });
-                    mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, null, editText);
+                    final var display = editText.getContext().getDisplay();
+                    try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                        touch.tapOnViewCenter(editText);
 
-                    expectImeVisible(TIMEOUT);
+                        expectImeVisible(TIMEOUT);
+                    }
                 });
     }
 
@@ -409,9 +419,12 @@ public class InputMethodStatsTest extends EndToEndImeTestBase {
                         activity.getWindow().getInsetsController().hide(WindowInsets.Type.ime());
                         return true;
                     });
-                    mCtsTouchUtils.emulateTapOnViewCenter(mInstrumentation, null, textView);
+                    final var display = textView.getContext().getDisplay();
+                    try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                        touch.tapOnViewCenter(textView);
 
-                    expectImeInvisible(TIMEOUT);
+                        expectImeInvisible(TIMEOUT);
+                    }
                 });
     }
 

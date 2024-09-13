@@ -44,7 +44,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       logical_props = cam.get_camera_properties()
       props = cam.override_with_hidden_physical_camera_props(logical_props)
       name_with_log_path = os.path.join(self.log_path, _NAME)
-      debug = self.debug_mode
+
       # Skip the test if CROPPED_RAW is not present in stream use cases
       camera_properties_utils.skip_unless(
           camera_properties_utils.cropped_raw_stream_use_case(props))
@@ -68,11 +68,11 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       # Capture a RAW frame without any zoom
       raw_size = capture_request_utils.get_available_output_sizes(
           'raw', props)[0]
-      output_surfaces = [{'format' : 'raw',
+      output_surfaces = [{'format': 'raw',
                           'width': raw_size[0],
                           'height': raw_size[1]}]
       if self.hidden_physical_id:
-        output_surfaces[0].update({'physicalCamera' : self.hidden_physical_id})
+        output_surfaces[0].update({'physicalCamera': self.hidden_physical_id})
       imgs = {}
       cam.do_3a(out_surfaces=output_surfaces)
       req = capture_request_utils.auto_capture_request()
@@ -87,16 +87,22 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
       image_processing_utils.write_image(
           rgb_full_img, f'{name_with_log_path}_raw_full.jpg')
       imgs['raw_full'] = rgb_full_img
-      output_surfaces[0].update({'useCase' : its_session_utils.USE_CASE_CROPPED_RAW})
+      output_surfaces[0].update(
+          {'useCase': its_session_utils.USE_CASE_CROPPED_RAW}
+      )
+      first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+      reuse_session = False
       # Capture RAW images with different zoom ratios with stream use case
       # CROPPED_RAW set
       for _, z in enumerate(z_list):
         req['android.control.zoomRatio'] = z
-        cam.do_3a(out_surfaces=output_surfaces)
+        if first_api_level >= its_session_utils.ANDROID15_API_LEVEL:
+          cam.do_3a(out_surfaces=output_surfaces)
+          reuse_session = True
         cap_zoomed_raw = cam.do_capture(
             req,
             output_surfaces,
-            reuse_session=True)
+            reuse_session=reuse_session)
         rgb_zoomed_raw = (
             image_processing_utils.convert_raw_capture_to_rgb_image(
                 cap_zoomed_raw, props, 'raw', name_with_log_path))
@@ -127,7 +133,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
                                f' active array size: {aw} x {ah}')
         # Find FoV to determine minimum circle size for
         # find_center_circle's parameter
-        fov_ratio = zoom_capture_utils._DEFAULT_FOV_RATIO
+        fov_ratio = zoom_capture_utils.DEFAULT_FOV_RATIO
         if self.hidden_physical_id is not None:
           logical_cam_fov = float(cam.calc_camera_fov(logical_props))
           cam_fov = float(cam.calc_camera_fov(props))

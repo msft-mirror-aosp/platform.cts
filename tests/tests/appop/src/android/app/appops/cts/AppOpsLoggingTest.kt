@@ -84,6 +84,8 @@ import android.util.Log
 import android.util.Size
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
@@ -95,7 +97,9 @@ import org.junit.Assert.fail
 import org.junit.Assume.assumeNoException
 import org.junit.Assume.assumeTrue
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 
 private const val TEST_SERVICE_PKG = "android.app.appops.cts.appthatusesappops"
@@ -121,6 +125,14 @@ private external fun nativeStartStopAudioRecord(
 
 @AppModeFull(reason = "Test relies on other app to connect to. Instant apps can't see other apps")
 class AppOpsLoggingTest {
+
+    companion object {
+        @JvmField
+        @ClassRule
+        @Rule
+        val deviceState = DeviceState()
+    }
+
     private val context = InstrumentationRegistry.getInstrumentation().targetContext as Context
     private val appOpsManager = context.getSystemService(AppOpsManager::class.java)!!
 
@@ -157,7 +169,6 @@ class AppOpsLoggingTest {
 
     @Before
     fun loadNativeCode() {
-        System.loadLibrary("CtsAppOpsTestCases_jni")
         System.loadLibrary("NDKCtsAppOpsTestCases_jni")
     }
 
@@ -239,35 +250,6 @@ class AppOpsLoggingTest {
                 null)
 
         assertThat(selfNoted.map { it.first.attributionTag }).containsExactly(TEST_ATTRIBUTION_TAG)
-    }
-
-    @Test
-    fun nativeSelfNoteAndCheckLog() {
-        nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage)
-
-        assertThat(noted).isEmpty()
-        assertThat(selfNoted).isEmpty()
-
-        // All native notes will be reported as async notes
-        eventually {
-            assertThat(asyncNoted[0].attributionTag).isEqualTo(null)
-            // There is always a message.
-            assertThat(asyncNoted[0].message).isNotEqualTo(null)
-            assertThat(asyncNoted[0].op).isEqualTo(OPSTR_COARSE_LOCATION)
-            assertThat(asyncNoted[0].notingUid).isEqualTo(myUid)
-        }
-    }
-
-    @Test
-    fun nativeSelfNoteWithAttributionAndMsgAndCheckLog() {
-        nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage,
-            attributionTag = TEST_ATTRIBUTION_TAG, message = "testMsg")
-
-        // All native notes will be reported as async notes
-        eventually {
-            assertThat(asyncNoted[0].attributionTag).isEqualTo(TEST_ATTRIBUTION_TAG)
-            assertThat(asyncNoted[0].message).isEqualTo("testMsg")
-        }
     }
 
     @Test
@@ -353,21 +335,6 @@ class AppOpsLoggingTest {
     }
 
     @Test
-    fun noteSyncOpNativeAndCheckLog() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesSyncOpNativelyAndCheckLog(AppOpsUserClient(context))
-        }
-    }
-
-    @Test
-    fun noteNonPermissionSyncOpNativeAndCheckLog() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesNonPermissionSyncOpNativelyAndCheckLog(
-                    AppOpsUserClient(context))
-        }
-    }
-
-    @Test
     fun noteSyncOpOneway() {
         rethrowThrowableFrom {
             testService.callOnewayApiThatNotesSyncOpAndCheckLog(AppOpsUserClient(context))
@@ -375,23 +342,9 @@ class AppOpsLoggingTest {
     }
 
     @Test
-    fun noteSyncOpOnewayNative() {
-        rethrowThrowableFrom {
-            testService.callOnewayApiThatNotesSyncOpNativelyAndCheckLog(AppOpsUserClient(context))
-        }
-    }
-
-    @Test
     fun noteSyncOpOtherUidAndCheckLog() {
         rethrowThrowableFrom {
             testService.callApiThatNotesSyncOpOtherUidAndCheckLog(AppOpsUserClient(context))
-        }
-    }
-
-    @Test
-    fun noteSyncOpOtherUidNativeAndCheckLog() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesSyncOpOtherUidNativelyAndCheckLog(AppOpsUserClient(context))
         }
     }
 
@@ -423,21 +376,6 @@ class AppOpsLoggingTest {
         }
     }
 
-    @Test
-    fun noteAsyncOpNativelyAndCheckCustomMessage() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesAsyncOpNativelyAndCheckCustomMessage(
-                    AppOpsUserClient(context))
-        }
-    }
-
-    @Test
-    fun noteAsyncOpNativeAndCheckLog() {
-        rethrowThrowableFrom {
-            testService.callApiThatNotesAsyncOpNativelyAndCheckLog(AppOpsUserClient(context))
-        }
-    }
-
     /**
      * Realistic end-to-end test for scanning wifi
      */
@@ -458,8 +396,11 @@ class AppOpsLoggingTest {
 
     /**
      * Realistic end-to-end test for getting bluetooth scan results
+     * (b/347614488 - BT scan does not support visible background users at the moment,
+     * so skipping this test for secondary_user_on_secondary_display)
      */
     @Test
+    @RequireRunNotOnVisibleBackgroundNonProfileUser
     fun getBTScanResults() {
         assumeTrue("Device does not support bluetooth",
                 context.packageManager.hasSystemFeature(FEATURE_BLUETOOTH))
@@ -1047,19 +988,6 @@ class AppOpsLoggingTest {
             }
         }
 
-        override fun noteSyncOpNative() {
-            runWithShellPermissionIdentity {
-                nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), getCallingUid(), TEST_SERVICE_PKG)
-            }
-        }
-
-        override fun noteNonPermissionSyncOpNative() {
-            runWithShellPermissionIdentity {
-                nativeNoteOp(strOpToOp(OPSTR_ACCESS_ACCESSIBILITY), getCallingUid(),
-                        TEST_SERVICE_PKG)
-            }
-        }
-
         override fun noteSyncOpOneway() {
             runWithShellPermissionIdentity {
                 appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, getCallingUid(),
@@ -1067,18 +995,8 @@ class AppOpsLoggingTest {
             }
         }
 
-        override fun noteSyncOpOnewayNative() {
-            runWithShellPermissionIdentity {
-                nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), getCallingUid(), TEST_SERVICE_PKG)
-            }
-        }
-
         override fun noteSyncOpOtherUid() {
             appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, myUid, myPackage, null, null)
-        }
-
-        override fun noteSyncOpOtherUidNative() {
-            nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), myUid, myPackage)
         }
 
         override fun noteAsyncOp() {
@@ -1110,27 +1028,6 @@ class AppOpsLoggingTest {
                 runWithShellPermissionIdentity {
                     appOpsManager.noteOpNoThrow(OPSTR_COARSE_LOCATION, callingUid, TEST_SERVICE_PKG,
                             null, "custom msg")
-                }
-            }
-        }
-
-        override fun noteAsyncOpNative() {
-            val callingUid = getCallingUid()
-
-            handler.post {
-                runWithShellPermissionIdentity {
-                    nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), callingUid, TEST_SERVICE_PKG)
-                }
-            }
-        }
-
-        override fun noteAsyncOpNativeWithCustomMessage() {
-            val callingUid = getCallingUid()
-
-            handler.post {
-                runWithShellPermissionIdentity {
-                    nativeNoteOp(strOpToOp(OPSTR_COARSE_LOCATION), callingUid, TEST_SERVICE_PKG,
-                        message = "native custom msg")
                 }
             }
         }

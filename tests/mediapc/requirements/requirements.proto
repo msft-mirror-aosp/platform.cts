@@ -108,6 +108,9 @@ message RequiredMeasurement {
   optional Comparison comparison = 4;
 
   reserved 5;  // is_test_differentiator
+
+  // Must be unique per requirement and greater than or equal to 3.
+  optional int32 proto_field_number = 6;
 }
 
 // A required value for a RequiredMeasurement at a given MPC level.
@@ -121,6 +124,7 @@ message RequiredValue {
     double double_value = 5;
     bool bool_value = 6;
     int64 long_value = 7;
+    float float_value = 8;
   }
 }
 
@@ -141,9 +145,11 @@ message VariantSpec {
 }
 
 message TestConfig {
-  // The id is a field name safe string.
-  optional string id = 1;
+  reserved 1;  // id
   optional string description = 2;
+  // The proto field number of the test config. Must be unique across all
+  // requirements.
+  optional int32 proto_field_number = 3;
 }
 
 enum Comparison {
@@ -155,6 +161,7 @@ enum Comparison {
   COMPARISON_GREATER_THAN_OR_EQUAL = 5;
   COMPARISON_INFO_ONLY = 6;
   COMPARISON_CONFIG = 7;
+  COMPARISON_CAMERA_HARDWARE_LEVEL_GREATER_THAN_OR_EQUAL = 8;
 }
 
 enum MeasurementType {
@@ -164,4 +171,5 @@ enum MeasurementType {
   MEASUREMENT_TYPE_INT = 3;
   MEASUREMENT_TYPE_STRING = 4;
   MEASUREMENT_TYPE_LONG = 5;
+  MEASUREMENT_TYPE_FLOAT = 6;
 }

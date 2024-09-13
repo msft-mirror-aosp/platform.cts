@@ -92,6 +92,9 @@ public class VideoEncoderMultiResTest extends VideoEncoderValidationTestBase {
                 }
                 for (int bitRateMode : bitRateModes) {
                     for (int intraInterval : intraIntervals) {
+                        if (maxBFrames > intraInterval * frameRate) {
+                            continue;
+                        }
                         // mediaType, cfg, label
                         String label = String.format("%dx%d_%dfps_maxb-%d_%s_i-dist-%d", width,
                                 height, frameRate, maxBFrames, bitRateModeToString(bitRateMode),

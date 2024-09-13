@@ -14,11 +14,11 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_windowing_sdk",
 }
 
 android_test {
     name: "CtsDeviceStateManagerTestCases",
-    team: "trendy_team_interactions_frameworks",
     defaults: ["cts_defaults"],
     static_libs: [
         "androidx.test.ext.junit",
@@ -27,6 +27,7 @@ android_test {
         "mockito-target-minus-junit4",
         "cts-wm-util",
         "cts_window_jetpack_utils",
+        "android.hardware.devicestate.feature.flags-aconfig-java",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact

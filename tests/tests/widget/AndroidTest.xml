@@ -61,7 +61,7 @@
             the sandbox mode as well.
         -->
         <option name="run-command" value="cmd sdk_sandbox append-test-allowlist send-broadcast android.intent.action.CLOSE_SYSTEM_DIALOGS" />
-        <option name="teardown-command" value="cmd sdk_sandbox sdk_sandbox clear-test-allowlists" />
+        <option name="teardown-command" value="cmd sdk_sandbox clear-test-allowlists" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

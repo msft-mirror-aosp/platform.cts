@@ -19,7 +19,6 @@ package android.telephony.satellite.cts;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
 
-import android.annotation.ArrayRes;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
@@ -91,6 +90,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-access-control-overlay-configs";
     private static final String SET_IS_SATELLITE_COMMUNICATION_ALLOWED_FOR_CURRENT_LOCATION_CACHE =
             "cmd phone set-is-satellite-communication-allowed-for-current-location-cache ";
+    private static final String SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT =
+            "cmd phone set-satellite-subscriberid-list-changed-intent-component ";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -393,7 +394,7 @@ class MockSatelliteServiceManager {
         }
 
         try {
-            if (!setSatelliteServicePackageName(PACKAGE)) {
+            if (!setSatelliteServicePackageName(PACKAGE, true)) {
                 loge("Failed to set satellite service package name");
                 return false;
             }
@@ -415,7 +416,7 @@ class MockSatelliteServiceManager {
         }
 
         try {
-            if (!setSatelliteServicePackageName(EXTERNAL_SATELLITE_PACKAGE)) {
+            if (!setSatelliteServicePackageName(EXTERNAL_SATELLITE_PACKAGE, null)) {
                 loge("Failed to set satellite service package name");
                 return false;
             }
@@ -512,7 +513,7 @@ class MockSatelliteServiceManager {
     boolean restoreSatelliteServicePackageName() {
         logd("restoreSatelliteServicePackageName");
         try {
-            if (!setSatelliteServicePackageName(null)) {
+            if (!setSatelliteServicePackageName(null, null)) {
                 loge("Failed to restore satellite service package name");
                 return false;
             }
@@ -628,7 +629,7 @@ class MockSatelliteServiceManager {
         }
     }
 
-    void clearRequestSatelliteEnabledInfo() {
+    void clearRequestSatelliteEnabledPermits() {
         synchronized (mRequestSatelliteEnabledLock) {
             mRequestSatelliteEnabledSemaphore.drainPermits();
         }
@@ -1127,13 +1128,23 @@ class MockSatelliteServiceManager {
         return mSatelliteService.sendSavedDatagram();
     }
 
-    boolean respondToRequestSatelliteEnabled(boolean isEnabled) {
-        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled);
+    boolean respondToRequestSatelliteEnabled(boolean isEnabled, int modemState) {
+        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled
+                + ", modemState=" + modemState);
         if (mSatelliteService == null) {
             loge("respondToRequestSatelliteEnabled: mSatelliteService is null");
             return false;
         }
-        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled);
+        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled, modemState);
+    }
+
+    void clearSatelliteEnableRequestQueues() {
+        logd("clearSatelliteEnableRequestQueues");
+        if (mSatelliteService == null) {
+            loge("clearSatelliteEnableRequestQueues: mSatelliteService is null");
+            return;
+        }
+        mSatelliteService.clearSatelliteEnableRequestQueues();
     }
 
     boolean stopExternalSatelliteService() {
@@ -1208,20 +1219,8 @@ class MockSatelliteServiceManager {
         mSatelliteService.clearSatelliteEnabledForCarrier();
     }
 
-    /**
-     * Set whether provisioning API should be supported
-     */
-    void setProvisioningApiSupported(boolean provisioningApiSupported) {
-        if (mSatelliteService == null) {
-            loge("setProvisioningApiSupported: mSatelliteService is null");
-            return;
-        }
-        mSatelliteService.setProvisioningApiSupported(provisioningApiSupported);
-    }
-
     @NonNull List<String> getPlmnListFromOverlayConfig() {
-        String[] plmnArr = readStringArrayFromOverlayConfig(
-                R.array.config_satellite_providers);
+        String[] plmnArr = readStringArrayFromOverlayConfig("config_satellite_providers");
         return Arrays.stream(plmnArr).toList();
     }
 
@@ -1303,12 +1302,14 @@ class MockSatelliteServiceManager {
         }
     }
 
-    @NonNull private String[] readStringArrayFromOverlayConfig(@ArrayRes int id) {
+    @NonNull private String[] readStringArrayFromOverlayConfig(@NonNull String resourceName) {
         String[] strArray = null;
         try {
-            strArray = mInstrumentation.getContext().getResources().getStringArray(id);
+            strArray = mInstrumentation.getContext().getResources().getStringArray(
+                    Resources.getSystem().getIdentifier(resourceName, "array", "android"));
         } catch (Resources.NotFoundException ex) {
-            loge("readStringArrayFromOverlayConfig: id= " + id + ", ex=" + ex);
+            loge("readStringArrayFromOverlayConfig: resourceName = "
+                    + resourceName + ", ex = " + ex);
         }
         if (strArray == null) {
             strArray = new String[0];
@@ -1351,10 +1352,17 @@ class MockSatelliteServiceManager {
         }
     }
 
-    private boolean setSatelliteServicePackageName(@Nullable String packageName) {
+    private boolean setSatelliteServicePackageName(@Nullable String packageName,
+            @Nullable Boolean provisioned) {
+        String option = packageName;
+
+        if (provisioned != null) {
+            option = option + " -p " + (provisioned ? "true" : "false");
+        }
+
         try {
-            TelephonyUtils.executeShellCommand(
-                    mInstrumentation, SET_SATELLITE_SERVICE_PACKAGE_NAME_CMD + packageName);
+            TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_SERVICE_PACKAGE_NAME_CMD + option);
             return true;
         } catch (Exception ex) {
             loge("setSatelliteServicePackageName: ex= " + ex);
@@ -1408,6 +1416,30 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setIsSatelliteCommunicationAllowedForCurrentLocationCache: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteSubscriberIdListChangedIntentComponent(String name) {
+        String option;
+        if ("package".equalsIgnoreCase(name)) {
+            option = "-p";
+        } else if ("class".equalsIgnoreCase(name)) {
+            option = "-c";
+        } else if ("reset".equalsIgnoreCase(name)) {
+            option = "-r";
+        } else {
+            return false;
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT + option);
+            logd("setSatelliteSubscriberIdListChangedIntentComponent(" + option + "): result = "
+                    + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSatelliteSubscriberIdListChangedIntentComponent: e=" + e);
             return false;
         }
     }

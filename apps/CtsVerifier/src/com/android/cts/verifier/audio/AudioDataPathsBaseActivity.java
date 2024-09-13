@@ -27,8 +27,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.android.compatibility.common.util.ResultType;
@@ -42,6 +44,8 @@ import com.android.cts.verifier.audio.audiolib.AudioSystemFlags;
 import com.android.cts.verifier.audio.audiolib.DisplayUtils;
 import com.android.cts.verifier.audio.audiolib.WaveScopeView;
 import com.android.cts.verifier.libs.ui.HtmlFormatter;
+import com.android.cts.verifier.libs.ui.PlainTextFormatter;
+import com.android.cts.verifier.libs.ui.TextFormatter;
 
 // MegaAudio
 import org.hyphonate.megaaudio.common.BuilderBase;
@@ -72,9 +76,6 @@ public abstract class AudioDataPathsBaseActivity
     protected boolean mHasMic;
     protected boolean mHasSpeaker;
 
-    // This determines whether or not passing all test-modules is required to pass the test overall
-    private boolean mIsLessThanV;
-
     // UI
     protected View mStartBtn;
     protected View mCancelButton;
@@ -84,16 +85,16 @@ public abstract class AudioDataPathsBaseActivity
     private Button mDevicesButton;
 
     private TextView mRoutesTx;
-    private WebView mResultsView;
+    private View mResultsView;
 
     private WaveScopeView mWaveView = null;
 
-    private HtmlFormatter mHtmlFormatter = new HtmlFormatter();
+    private TextFormatter mTextFormatter;
 
     // Test Manager
     protected TestManager mTestManager = new TestManager();
     private boolean mTestHasBeenRun;
-    private boolean mTestCanceled;
+    private boolean mTestCanceledByUser;
 
     // Audio I/O
     private AudioManager mAudioManager;
@@ -143,8 +144,6 @@ public abstract class AudioDataPathsBaseActivity
         ((TextView) findViewById(R.id.audio_datapaths_MMAP_exclusive))
                 .setText(mSupportsMMAPExclusive ? yesString : noString);
 
-        mIsLessThanV = Build.VERSION.SDK_INT <= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
-
         mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
         mCalibrateButton.setOnClickListener(this);
 
@@ -161,9 +160,29 @@ public abstract class AudioDataPathsBaseActivity
 
         mRoutesTx = (TextView) findViewById(R.id.audio_datapaths_routes);
 
-        mResultsView = (WebView) findViewById(R.id.audio_datapaths_results);
+        LinearLayout resultsLayout = findViewById(R.id.audio_datapaths_results);
+        if (AudioSystemFlags.supportsWebView(this)) {
+            mTextFormatter = new HtmlFormatter();
+            mResultsView = new WebView(this);
+        } else {
+            // No WebView
+            mTextFormatter = new PlainTextFormatter();
+            mResultsView = new TextView(this);
+        }
+        resultsLayout.addView(mResultsView,
+                new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.WRAP_CONTENT));
 
-        mWaveView = (WaveScopeView) findViewById(R.id.uap_recordWaveView);
+        boolean isWatch = AudioSystemFlags.isWatch(this);
+        if (isWatch) {
+            // Device Attributes Header
+            ((LinearLayout) findViewById(R.id.audio_datapaths_header))
+                    .setOrientation(LinearLayout.VERTICAL);
+            // Utilities UI
+            ((LinearLayout) findViewById(R.id.audio_loopback_utilities_layout))
+                    .setOrientation(LinearLayout.VERTICAL);
+        }
+
+        mWaveView = findViewById(R.id.uap_recordWaveView);
         mWaveView.setBackgroundColor(Color.DKGRAY);
         mWaveView.setTraceColor(Color.WHITE);
 
@@ -179,7 +198,7 @@ public abstract class AudioDataPathsBaseActivity
 
         DisplayUtils.setKeepScreenOn(this, true);
 
-        getPassButton().setEnabled(!mIsHandheld);
+        getPassButton().setEnabled(!mIsHandheld || !hasPeripheralSupport());
         if (!mIsHandheld) {
             displayNonHandheldMessage();
         }
@@ -218,6 +237,7 @@ public abstract class AudioDataPathsBaseActivity
         mWaveView.setVisibility(View.GONE);
 
         mResultsView.setVisibility(View.VISIBLE);
+        mResultsView.invalidate();
     }
 
     void enableTestButtons(boolean startEnabled, boolean stopEnabled) {
@@ -252,6 +272,7 @@ public abstract class AudioDataPathsBaseActivity
 
         int mAnalysisChannel = 0;
         int mInputPreset;
+        int mModuleIndex;
 
         AudioDeviceInfo mOutDeviceInfo;
         AudioDeviceInfo mInDeviceInfo;
@@ -404,6 +425,14 @@ public abstract class AudioDataPathsBaseActivity
             return clonedModule;
         }
 
+        public int getModuleIndex() {
+            return mModuleIndex;
+        }
+
+        public void setModuleIndex(int index) {
+            this.mModuleIndex = index;
+        }
+
         public void setAnalysisType(int type) {
             mAnalysisType = type;
         }
@@ -426,7 +455,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestStateCode[api] = TESTSTATUS_NOT_RUN;
             mTestResults[api] = null;
             mTestHasBeenRun = false;
-            mTestCanceled = false;
+            mTestCanceledByUser = false;
         }
 
         int getTestState(int api) {
@@ -459,7 +488,8 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         String getDescription() {
-            return mDescription + "-" + transferTypeToString(mTransferType)
+            return "(" + getModuleIndex() + ") " + mDescription
+                    + "-" + transferTypeToString(mTransferType)
                     + ":" + performanceModeToString(mOutPerformanceMode);
         }
 
@@ -495,15 +525,15 @@ public abstract class AudioDataPathsBaseActivity
         //
         // Predicates
         //
-        // Ran to completion and results supplied
+        // Ran to completion, maybe with failures
         boolean hasRun(int api) {
-            return mTestResults[api] != null;
+            return mTestStateCode[api] != TESTSTATUS_NOT_RUN;
         }
 
         // Ran and passed the criteria
         boolean hasPassed(int api) {
             boolean passed = false;
-            if (hasRun(api)) {
+            if (hasRun(api) && mTestResults[api] != null) {
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     passed = mTestResults[api].mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
                             && mTestResults[api].mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
@@ -518,10 +548,6 @@ public abstract class AudioDataPathsBaseActivity
         boolean hasError(int api) {
             // TESTSTATUS_NOT_RUN && TESTSTATUS_RUN are not errors
             return mTestStateCode[api] < 0;
-        }
-
-        boolean wasTestValid(int api) {
-            return false;
         }
 
         //
@@ -618,12 +644,20 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
+        private void logBeginning(int api) {
+            Log.d(TAG, "BEGIN_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+        }
+
+        private void logEnding(int api) {
+            Log.d(TAG, "END_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+        }
+
         //
         // Process
         //
         // TEMP
         private int startTest(int api) {
-            Log.d(TAG, "startTest(" + api + ") - " + getDescription());
+            logBeginning(api);
             if (mOutDeviceInfo != null && mInDeviceInfo != null) {
                 mAnalyzer.reset();
                 mAnalyzer.setSampleRate(mInSampleRate);
@@ -751,101 +785,108 @@ public abstract class AudioDataPathsBaseActivity
         //
         // HTML Reporting
         //
-        HtmlFormatter generateReport(int api, HtmlFormatter htmlFormatter) {
+        TextFormatter generateReport(int api, TextFormatter textFormatter) {
             // Description
-            htmlFormatter.openParagraph()
+            textFormatter.openParagraph()
                     .appendText(getDescription());
             if (hasPassed(api)) {
-                htmlFormatter.appendBreak()
+                textFormatter.appendBreak()
                         .openBold()
                         .appendText(getTestStateString(api))
                         .closeBold();
 
                 TestStateData stateData = mTestStateData[api];
                 if (stateData != null) {
-                    htmlFormatter.appendBreak()
+                    textFormatter.appendBreak()
                             .openTextColor("blue")
                             .appendText(stateData.buildErrorString(this))
                             .closeTextColor();
                 }
             } else {
                 if (hasError(api)) {
-                    htmlFormatter.appendBreak();
+                    textFormatter.appendBreak();
                     switch (mTestStateCode[api]) {
                         case TESTSTATUS_BAD_START:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Couldn't Start Stream");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Couldn't Start Stream");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_BUILD:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Couldn't Open Stream");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Couldn't Open Stream");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ROUTING:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Invalid Route");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Invalid Route");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_BAD_ANALYSIS_CHANNEL:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Invalid Analysis Channel");
-                            htmlFormatter.closeTextColor();
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Invalid Analysis Channel");
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_CANT_SET_MMAP:
-                            htmlFormatter.openTextColor("red");
-                            htmlFormatter.appendText("Error : Did not set MMAP mode - "
+                            textFormatter.openTextColor("red");
+                            textFormatter.appendText("Error : Did not set MMAP mode - "
                                     + transferTypeToSharingString(mTransferType));
-                            htmlFormatter.closeTextColor();
+                            textFormatter.closeTextColor();
                             break;
                         case TESTSTATUS_MISMATCH_MMAP: {
-                            htmlFormatter.openTextColor("blue");
-                            htmlFormatter.appendText("Note : ");
+                            textFormatter.openTextColor("blue");
+                            textFormatter.appendText("Note : ");
                             BadMMAPTestState errorData = (BadMMAPTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
-                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatOutputAttributes());
+                                textFormatter.appendBreak();
+                                textFormatter.appendText(formatOutputAttributes());
                             }
                             if (errorData.mRecorderFailed) {
                                 if (errorData.mPlayerFailed) {
-                                    htmlFormatter.appendBreak();
+                                    textFormatter.appendBreak();
                                 }
-                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
-                                htmlFormatter.appendBreak();
-                                htmlFormatter.appendText(formatInputAttributes());
+                                textFormatter.appendBreak();
+                                textFormatter.appendText(formatInputAttributes());
                             }
-                            htmlFormatter.closeTextColor();
+                            textFormatter.closeTextColor();
                         }
                             break;
                         case TESTSTATUS_BAD_SHARINGMODE:
-                            htmlFormatter.openTextColor("blue");
-                            htmlFormatter.appendText("Note : ");
+                            textFormatter.openTextColor("blue");
+                            textFormatter.appendText("Note : ");
                             BadSharingTestState errorData =
                                     (BadSharingTestState) mTestStateData[api];
                             String transferTypeString = transferTypeToSharingString(mTransferType);
                             if (errorData.mPlayerFailed) {
-                                htmlFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(PLAYER_FAILED_TO_GET_STRING
                                         + transferTypeString);
                             }
                             if (errorData.mRecorderFailed) {
-                                htmlFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
+                                textFormatter.appendText(RECORDER_FAILED_TO_GET_STRING
                                         + transferTypeString);
                             }
-                            htmlFormatter.appendBreak();
-                            htmlFormatter.appendText(formatOutputAttributes());
-                            htmlFormatter.closeTextColor();
+                            textFormatter.appendBreak();
+                            textFormatter.appendText(formatOutputAttributes());
+                            textFormatter.closeTextColor();
                             break;
                     }
-                    htmlFormatter.closeTextColor();
+                    textFormatter.closeTextColor();
                 }
             }
 
-            TestResults results = mTestResults[api];
-            if (results != null) {
+            TestResults results = mTestResults[api];    // need this (potentially) below.
+            if (!hasRun(api)) {
+                // We didn't run the test for this module
+                textFormatter.appendBreak()
+                        .openBold()
+                        .appendText(getTestStateString(mTestStateCode[api]))
+                        .closeBold();
+            } else if (results != null) {
+                // We (attempted to) run this module. Let's see how it turned out.
                 // we can get null here if the test was cancelled
                 Locale locale = Locale.getDefault();
                 String maxMagString = String.format(
@@ -857,49 +898,77 @@ public abstract class AudioDataPathsBaseActivity
                         ? results.mMaxMagnitude >= MIN_SIGNAL_PASS_MAGNITUDE
                         : results.mMaxMagnitude <= MAX_XTALK_PASS_MAGNITUDE;
 
-                // Do we want a threshold value for jitter in crosstalk tests?
-                boolean passJitter =
-                        results.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
-
                 // Values / Criteria
                 // NOTE: The criteria is why the test passed or failed, not what
                 // was needed to pass.
                 // So, for a cross-talk test, "mag:0.01062 > 0.01000" means that the test
                 // failed, because 0.01062 > 0.01000
-                htmlFormatter.appendBreak();
-                htmlFormatter.openTextColor(passMagnitude ? "black" : "red");
+                textFormatter.appendBreak();
+                textFormatter.openTextColor(passMagnitude ? "black" : "red");
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    htmlFormatter.appendText(maxMagString
+                    textFormatter.appendText(maxMagString
                             + String.format(locale,
                             passMagnitude ? " >= %.5f " : " < %.5f ",
                             MIN_SIGNAL_PASS_MAGNITUDE));
                 } else {
-                    htmlFormatter.appendText(maxMagString
+                    textFormatter.appendText(maxMagString
                             + String.format(locale,
                             passMagnitude ? " <= %.5f " : " > %.5f ",
                             MAX_XTALK_PASS_MAGNITUDE));
                 }
-                htmlFormatter.closeTextColor();
+                textFormatter.closeTextColor();
 
-                htmlFormatter.openTextColor(passJitter ? "black" : "red");
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
-                    htmlFormatter.appendText(phaseJitterString
-                                    + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
-                                    MAX_SIGNAL_PASS_JITTER));
+                    // Do we want a threshold value for jitter in crosstalk tests?
+                    boolean passJitter =
+                            results.mPhaseJitter <= MAX_SIGNAL_PASS_JITTER;
+                    textFormatter.openTextColor(passJitter ? "black" : "red");
+                    textFormatter.appendText(phaseJitterString
+                            + String.format(locale, passJitter ? " <= %.5f" : " > %.5f",
+                            MAX_SIGNAL_PASS_JITTER));
+                    textFormatter.closeTextColor();
                 } else {
-                    htmlFormatter.appendText(phaseJitterString);
+                    textFormatter.appendText(phaseJitterString);
                 }
-                htmlFormatter.closeTextColor();
 
-                htmlFormatter.appendBreak();
+                textFormatter.appendBreak();
+
+                // "Prose" status messages
+                textFormatter.openItalic();
+                if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
+                    if (results.mMaxMagnitude == 0.0) {
+                        textFormatter.appendText("Dead Channel?");
+                        textFormatter.appendBreak();
+                    } else if (results.mMaxMagnitude > 0.0
+                            && results.mMaxMagnitude < MIN_SIGNAL_PASS_MAGNITUDE) {
+                        textFormatter.appendText("Low Gain or Volume.");
+                        textFormatter.appendBreak();
+                    } else if (results.mPhaseJitter > MAX_SIGNAL_PASS_JITTER) {
+                        // if the signal is absent or really low, the jitter will be high, so
+                        // only call out a high jitter if there seems to be a reasonable signal.
+                        textFormatter.appendText("Noisy or Corrupt Signal.");
+                        textFormatter.appendBreak();
+                    }
+                } else {
+                    // TYPE_SIGNAL_ABSENCE
+                    if (results.mMaxMagnitude > MAX_XTALK_PASS_MAGNITUDE) {
+                        textFormatter.appendText("Cross Talk Failed. "
+                                + "Crossed patch cables on interface?");
+                        textFormatter.appendBreak();
+                    }
+                }
+                textFormatter.closeItalic();
             } else {
                 // results == null
-                htmlFormatter.appendBreak();
-                htmlFormatter.appendText("No Results.");
+                textFormatter.appendBreak()
+                        .openBold()
+                        .appendText("Skipped.")
+                        .closeBold();
             }
-            htmlFormatter.closeParagraph();
 
-            return htmlFormatter;
+            textFormatter.closeParagraph();
+
+            return textFormatter;
         }
 
         //
@@ -1067,6 +1136,7 @@ public abstract class AudioDataPathsBaseActivity
 
         public void initializeTests() {
             // Get the test modules from the sub-class
+            clearTestModules();
             gatherTestModules(this);
 
             validateTestDevices();
@@ -1079,6 +1149,15 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
+        public void clearTestModules() {
+            mTestModules.clear();
+        }
+
+        private void addIndexedTestModule(TestModule module) {
+            module.setModuleIndex(mTestModules.size());
+            mTestModules.add(module);
+        }
+
         public void addTestModule(TestModule module) {
             // We're going to expand each module to three, one for each transfer type
 
@@ -1089,7 +1168,7 @@ public abstract class AudioDataPathsBaseActivity
             // Test Performance Mode None for both Output and Input
             module.mOutPerformanceMode = module.mInPerformanceMode =
                     BuilderBase.PERFORMANCE_MODE_NONE;
-            mTestModules.add(module);
+            addIndexedTestModule(module);
 
             //
             // BuilderBase.PERFORMANCE_MODE_LOWLATENCY
@@ -1101,35 +1180,39 @@ public abstract class AudioDataPathsBaseActivity
                 clonedModule.mOutPerformanceMode = module.mInPerformanceMode =
                         BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                 clonedModule.mSectionTitle = null;
-                mTestModules.add(clonedModule);
+                addIndexedTestModule(clonedModule);
             } catch (CloneNotSupportedException ex) {
                 Log.e(TAG, "Couldn't clone TestModule - PERFORMANCE_MODE_LOWLATENCY");
             }
 
             //
             // MMAP Modes - BuilderBase.PERFORMANCE_MODE_LOWLATENCY
+            // Note: Java API doesn't support MMAP Modes
             //
-            if (mSupportsMMAP) {
+            if (mSupportsMMAP && mApi == TEST_API_NATIVE) {
                 try {
                     TestModule moduleMMAP = module.clone();
                     moduleMMAP.setTransferType(TestModule.TRANSFER_MMAP_SHARED);
                     // Test Performance Mode LowLatency for both Output and Input
                     moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
-                    mTestModules.add(moduleMMAP);
+                    addIndexedTestModule(moduleMMAP);
+                    moduleMMAP.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_SHARED");
                 }
             }
 
-            if (mSupportsMMAPExclusive) {
+            // Note: Java API doesn't support MMAP Modes
+            if (mSupportsMMAPExclusive && mApi == TEST_API_NATIVE) {
                 try {
                     TestModule moduleExclusive = module.clone();
                     moduleExclusive.setTransferType(TestModule.TRANSFER_MMAP_EXCLUSIVE);
                     // Test Performance Mode LowLatency for both Output and Input
                     moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
-                    mTestModules.add(moduleExclusive);
+                    addIndexedTestModule(moduleExclusive);
+                    moduleExclusive.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_EXCLUSIVE");
                 }
@@ -1141,6 +1224,7 @@ public abstract class AudioDataPathsBaseActivity
             AudioDeviceInfo[] outputDevices =
                     mAudioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
             for (TestModule testModule : mTestModules) {
+                testModule.mOutDeviceInfo = null;
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : outputDevices) {
                     // Don't invalidate previously validated devices
@@ -1161,6 +1245,7 @@ public abstract class AudioDataPathsBaseActivity
             AudioDeviceInfo[] inputDevices =
                     mAudioManager.getDevices(AudioManager.GET_DEVICES_INPUTS);
             for (TestModule testModule : mTestModules) {
+                testModule.mInDeviceInfo = null;
                 // Check to see if we have a (physical) device of this type
                 for (AudioDeviceInfo devInfo : inputDevices) {
                     // Don't invalidate previously validated devices?
@@ -1266,7 +1351,8 @@ public abstract class AudioDataPathsBaseActivity
         private int countFailures(int api) {
             int numFailed = 0;
             for (TestModule module : mTestModules) {
-                if (module.canRun() && (module.hasError(api) || !module.hasPassed(api))) {
+                if (module.hasRun(api) // can only fail if it has run
+                        && (module.hasError(api) || !module.hasPassed(api))) {
                     // Ignore MMAP "Inconsistencies"
                     // (we didn't get an MMAP stream so we skipped the test)
                     if (module.mTestStateCode[api]
@@ -1281,7 +1367,7 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         public int startTest(TestModule testModule) {
-            if (mTestCanceled) {
+            if (mTestCanceledByUser) {
                 return TestModule.TESTSTATUS_NOT_RUN;
             }
 
@@ -1296,7 +1382,7 @@ public abstract class AudioDataPathsBaseActivity
             mApi = api;
 
             mTestStep = TESTSTEP_NONE;
-            mTestCanceled = false;
+            mTestCanceledByUser = false;
 
             mCalibrateButton.setEnabled(false);
             mDevicesButton.setEnabled(false);
@@ -1325,7 +1411,7 @@ public abstract class AudioDataPathsBaseActivity
         protected boolean calculatePass() {
             int numFailures = countFailures(mApi);
             int numUntested = countValidTestModules() - countTestedTestModules();
-            return mTestHasBeenRun && !mTestCanceled && numFailures == 0 && numUntested <= 0;
+            return mTestHasBeenRun && !mTestCanceledByUser && numFailures == 0 && numUntested <= 0;
         }
 
         public void completeTest() {
@@ -1337,47 +1423,64 @@ public abstract class AudioDataPathsBaseActivity
                     mRoutesTx.setVisibility(View.GONE);
                     mWaveView.setVisibility(View.GONE);
 
-                    mHtmlFormatter.clear();
-                    mHtmlFormatter.openDocument();
-                    mTestManager.generateReport(mHtmlFormatter);
+                    mTextFormatter.clear();
+                    mTextFormatter.openDocument();
+                    mTestManager.generateReport(mTextFormatter);
 
-                    mTestHasBeenRun = true;
-                    boolean passEnabled = passBtnEnabled();
-                    getPassButton().setEnabled(passEnabled);
+                    mTextFormatter.openParagraph();
+                    mTextFormatter.appendText("Audio Test Version: " + Common.VERSION_CODE);
+                    mTextFormatter.appendBreak();
+                    mTextFormatter.appendText("Android SDK Version " + Build.VERSION.SDK_INT);
+                    mTextFormatter.appendBreak().appendBreak();
 
-                    mHtmlFormatter.openParagraph();
-                    if (mTestCanceled) {
-                        mHtmlFormatter.openBold();
-                        mHtmlFormatter.appendText("Test Canceled");
-                        mHtmlFormatter.closeBold();
-                        mHtmlFormatter.appendBreak();
-                    }
                     int numFailures = countFailures(mApi);
                     int numUntested = getNumTestModules() - countTestedTestModules();
-                    mHtmlFormatter.appendText("There were " + numFailures + " failures.");
-                    mHtmlFormatter.appendBreak();
-                    mHtmlFormatter.appendText(
+                    mTextFormatter.appendText("There were " + numFailures + " failures.");
+                    mTextFormatter.appendBreak();
+                    mTextFormatter.appendText(
                             "There were " + numUntested + " untested paths.");
 
                     if (numFailures == 0 && numUntested == 0) {
-                        mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText("All tests passed.");
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("All tests passed.");
                     }
-                    mHtmlFormatter.closeParagraph();
-                    mHtmlFormatter.openParagraph();
+                    mTextFormatter.closeParagraph();
+                    mTextFormatter.openParagraph();
 
-                    if (mIsLessThanV && passEnabled) {
-                        mHtmlFormatter.appendText("Although not all test modules passed, "
-                                + "for this OS version you may enter a PASS.");
-                        mHtmlFormatter.appendBreak();
-                        mHtmlFormatter.appendText("In future versions, "
+                    if (mTestCanceledByUser) {
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("Test Canceled. "
+                                + "Please run the test sequence to completion.");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendBreak().appendBreak();
+                    }
+
+                    // ALWAYS PASS (for now)
+                    mTestHasBeenRun = !mTestCanceledByUser;
+                    boolean passEnabled = passBtnEnabled();
+                    getPassButton().setEnabled(passEnabled);
+
+                    if (passEnabled) {
+                        mTextFormatter.appendText("Although not all test modules passed, "
+                                + "for this OS version you may press the ");
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("PASS");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendText(" button.");
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("In future versions, "
                                 + "ALL test modules will be required to pass.");
+                        mTextFormatter.appendBreak();
+                        mTextFormatter.appendText("Press the ");
+                        mTextFormatter.openBold();
+                        mTextFormatter.appendText("PASS");
+                        mTextFormatter.closeBold();
+                        mTextFormatter.appendText(" button below to complete the test.");
                     }
-                    mHtmlFormatter.closeParagraph();
+                    mTextFormatter.closeParagraph();
 
-                    mHtmlFormatter.closeDocument();
-                    mResultsView.loadData(mHtmlFormatter.toString(),
-                            "text/html; charset=utf-8", "utf-8");
+                    mTextFormatter.closeDocument();
+                    mTextFormatter.put(mResultsView);
                     showResultsView();
 
                     mCalibrateButton.setEnabled(true);
@@ -1399,21 +1502,24 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 TestModule testModule = getActiveTestModule();
-                if (testModule != null && testModule.canRun()) {
-                    testModule.setTestResults(mApi, mAnalyzer);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            displayTestDevices();
-                            mWaveView.resetPersistentMaxMagnitude();
-                        }
-                    });
+                if (testModule != null) {
+                    if (testModule.canRun()) {
+                        testModule.setTestResults(mApi, mAnalyzer);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                displayTestDevices();
+                                mWaveView.resetPersistentMaxMagnitude();
+                            }
+                        });
+                    }
+                    testModule.logEnding(mApi);
                 }
             }
         }
 
         public void advanceTestModule() {
-            if (mTestCanceled) {
+            if (mTestCanceledByUser) {
                 // test shutting down. Bail.
                 return;
             }
@@ -1429,7 +1535,9 @@ public abstract class AudioDataPathsBaseActivity
 
                 // Scan until we find a TestModule that starts playing/recording
                 TestModule testModule = mTestModules.get(mTestStep);
-                if (!testModule.hasPassed(mApi)) {
+                // Don't run if it has already been run. This to preserve (possible) error
+                // codes from previous runs
+                if (!testModule.hasRun(mApi)) {
                     int status = startTest(testModule);
                     if (status == TestModule.TESTSTATUS_RUN) {
                         // Allow this test to run to completion.
@@ -1449,12 +1557,17 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
-        HtmlFormatter generateReport(HtmlFormatter htmlFormatter) {
+        TextFormatter generateReport(TextFormatter textFormatter) {
+            textFormatter.openHeading(3);
+            textFormatter.appendText("Test API: ");
+            textFormatter.appendText(audioApiToString(mApi));
+            textFormatter.closeHeading(3);
+
             for (TestModule module : mTestModules) {
-                module.generateReport(mApi, htmlFormatter);
+                module.generateReport(mApi, textFormatter);
             }
 
-            return htmlFormatter;
+            return textFormatter;
         }
 
         //
@@ -1496,19 +1609,18 @@ public abstract class AudioDataPathsBaseActivity
     protected abstract boolean hasPeripheralSupport();
 
     boolean passBtnEnabled() {
-        return mIsLessThanV || !mIsHandheld || !hasPeripheralSupport() || calculatePass();
+        return mTestHasBeenRun || !hasPeripheralSupport();
     }
 
     void displayNonHandheldMessage() {
-        mHtmlFormatter.clear();
-        mHtmlFormatter.openDocument();
-        mHtmlFormatter.openParagraph();
-        mHtmlFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
-        mHtmlFormatter.closeParagraph();
+        mTextFormatter.clear();
+        mTextFormatter.openDocument();
+        mTextFormatter.openParagraph();
+        mTextFormatter.appendText(getResources().getString(R.string.audio_exempt_nonhandheld));
+        mTextFormatter.closeParagraph();
 
-        mHtmlFormatter.closeDocument();
-        mResultsView.loadData(mHtmlFormatter.toString(),
-                "text/html; charset=utf-8", "utf-8");
+        mTextFormatter.closeDocument();
+        mTextFormatter.put(mResultsView);
         showResultsView();
     }
 
@@ -1553,6 +1665,8 @@ public abstract class AudioDataPathsBaseActivity
         mResultsView.invalidate();
         mTestHasBeenRun = false;
         getPassButton().setEnabled(passBtnEnabled());
+
+        mTestManager.initializeTests();
     }
 
     //
@@ -1564,7 +1678,7 @@ public abstract class AudioDataPathsBaseActivity
         if (id == R.id.audio_datapaths_start) {
             startTest(mActiveTestAPI);
         } else if (id == R.id.audio_datapaths_cancel) {
-            mTestCanceled = true;
+            mTestCanceledByUser = true;
             mTestHasBeenRun = false;
             stopTest();
             mTestManager.completeTest();
@@ -1573,7 +1687,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.displayTestDevices();
         } else if (id == R.id.audioJavaApiBtn || id == R.id.audioNativeApiBtn) {
             super.onClick(view);
-            mTestCanceled = true;
+            mTestCanceledByUser = true;
             stopTest();
             mTestManager.clearTestState();
             showDeviceView();

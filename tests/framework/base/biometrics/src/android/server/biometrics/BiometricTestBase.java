@@ -16,9 +16,13 @@
 
 package android.server.biometrics;
 
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_WATCH;
 import static android.os.PowerManager.FULL_WAKE_LOCK;
 import static android.server.biometrics.util.SensorStates.SensorState;
 import static android.server.biometrics.util.SensorStates.UserState;
+import static android.server.wm.ComponentNameUtils.getActivityName;
+import static android.server.wm.ShellCommandHelper.executeShellCommand;
 
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -39,6 +43,7 @@ import static org.mockito.Mockito.verify;
 
 import android.app.Instrumentation;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.hardware.biometrics.BiometricManager;
@@ -53,6 +58,7 @@ import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.Process;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.biometrics.util.BiometricCallbackHelper;
@@ -60,10 +66,10 @@ import android.server.biometrics.util.BiometricServiceState;
 import android.server.biometrics.util.SensorStates;
 import android.server.biometrics.util.TestSessionList;
 import android.server.biometrics.util.Utils;
-import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TestJournalProvider.TestJournal;
 import android.server.wm.UiDeviceUtils;
 import android.server.wm.WindowManagerState;
+import android.server.wm.WindowManagerStateHelper;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -88,7 +94,7 @@ import java.util.concurrent.Executor;
 /**
  * Base class containing useful functionality. Actual tests should be done in subclasses.
  */
-abstract class BiometricTestBase extends ActivityManagerTestBase implements TestSessionList.Idler {
+abstract class BiometricTestBase implements TestSessionList.Idler {
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
@@ -97,6 +103,7 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     private static final String TAG = "BiometricTestBase";
     private static final String DUMPSYS_BIOMETRIC = Utils.DUMPSYS_BIOMETRIC;
     private static final String FLAG_CLEAR_SCHEDULER_LOG = " --clear-scheduler-buffer";
+    private static final String LOCK_CREDENTIAL = "1234";
 
     // Negative-side (left) buttons
     protected static final String BUTTON_ID_NEGATIVE = "button_negative";
@@ -113,25 +120,37 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
     protected static final String TITLE_VIEW = "title";
     protected static final String SUBTITLE_VIEW = "subtitle";
     protected static final String DESCRIPTION_VIEW = "description";
-    protected static final String CONTENT_VIEW = "customized_view";
-    protected static final String CONTENT_DESCRIPTION_VIEW  = "customized_view_description";
 
     protected static final String VIEW_ID_PASSWORD_FIELD = "lockPassword";
     protected static final String KEY_ENTER = "key_enter";
     private static final int VIEW_WAIT_TIME_MS = 10000;
-    @NonNull protected Instrumentation mInstrumentation;
-    @NonNull protected BiometricManager mBiometricManager;
+    @NonNull
+    protected final Instrumentation mInstrumentation = getInstrumentation();
+    @NonNull
+    protected final Context mContext = getInstrumentation().getContext();
+    @NonNull
+    protected final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
+    @NonNull
+    protected final BiometricManager mBiometricManager =
+            mContext.getSystemService(BiometricManager.class);
     @NonNull protected List<SensorProperties> mSensorProperties;
     @Nullable private PowerManager.WakeLock mWakeLock;
     @NonNull protected UiDevice mDevice;
     protected boolean mHasStrongBox;
 
-    /**
-     * Expose this functionality to our package, since ActivityManagerTestBase's is `protected`.
-     * @param componentName
-     */
     void launchActivity(@NonNull ComponentName componentName) {
-        super.launchActivity(componentName);
+        launchActivityNoWait(componentName);
+        mWmState.waitForValidState(componentName);
+    }
+
+    private static void launchActivityNoWait(@NonNull final ComponentName componentName) {
+        executeShellCommand(getAmStartCmd(componentName));
+    }
+
+    @NonNull
+    private static String getAmStartCmd(@NonNull final ComponentName componentName) {
+        return "am start --user " + Process.myUserHandle().getIdentifier()
+                + " -n " + getActivityName(componentName);
     }
 
     @Override
@@ -569,9 +588,6 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
 
     @Before
     public void setUp() throws Exception {
-        mInstrumentation = getInstrumentation();
-        mBiometricManager = mInstrumentation.getContext().getSystemService(BiometricManager.class);
-
         mInstrumentation.getUiAutomation().adoptShellPermissionIdentity();
         mDevice = UiDevice.getInstance(mInstrumentation);
         mSensorProperties = mBiometricManager.getSensorProperties();
@@ -656,5 +672,17 @@ abstract class BiometricTestBase extends ActivityManagerTestBase implements Test
         } else {
             Utils.waitForIdleService(this::getSensorStates);
         }
+    }
+
+    protected boolean isWatch() {
+        return hasDeviceFeature(FEATURE_WATCH);
+    }
+
+    protected boolean isCar() {
+        return hasDeviceFeature(FEATURE_AUTOMOTIVE);
+    }
+
+    private boolean hasDeviceFeature(final String requiredFeature) {
+        return mContext.getPackageManager().hasSystemFeature(requiredFeature);
     }
 }

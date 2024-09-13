@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -36,6 +37,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.app.PendingIntent;
+import android.app.UiAutomation;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -48,6 +50,7 @@ import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.UnarchivalState;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.PackageInfoFlags;
 import android.os.Handler;
 import android.os.Looper;
@@ -58,6 +61,7 @@ import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.TextUtils;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.By;
@@ -97,10 +101,14 @@ public class ArchiveTest {
     private static final String SAMPLE_APK_BASE = "/data/local/tmp/cts/uninstall/";
     private static final String ARCHIVE_APK = SAMPLE_APK_BASE
             + "CtsArchiveTestApp.apk";
-    private static final String ARCHIVE_APK_PACKAGE_NAME =
+    private static final String ARCHIVE_APP_PACKAGE_NAME =
             "android.packageinstaller.archive.cts.archiveapp";
-    private static final String ARCHIVE_APK_ACTIVITY_NAME =
-            ARCHIVE_APK_PACKAGE_NAME + ".MainActivity";
+    private static final String ARCHIVE_INSTALLER_APK = SAMPLE_APK_BASE
+            + "CtsArchiveInstallerApp.apk";
+    private static final String ARCHIVE_INSTALLER_APP_PACKAGE_NAME =
+            "android.packageinstaller.archiveinstaller.cts";
+    private static final String ARCHIVE_APP_ACTIVITY_NAME =
+            ARCHIVE_APP_PACKAGE_NAME + ".MainActivity";
     private static final String SYSTEM_PACKAGE_NAME = "android";
 
     private static final String HELLO_WORLD_PACKAGE_NAME = "com.example.helloworld";
@@ -162,7 +170,7 @@ public class ArchiveTest {
 
     @After
     public void tearDown() {
-        uninstallPackage(ARCHIVE_APK_PACKAGE_NAME);
+        uninstallPackage(ARCHIVE_APP_PACKAGE_NAME);
         if (mDefaultHome != null) {
             setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mDefaultHome);
         }
@@ -206,14 +214,75 @@ public class ArchiveTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void requestArchive_differentInstaller_confirmationDialog() throws Exception {
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            // Install the archive installer
+            installPackage(ARCHIVE_INSTALLER_APK);
+            // Install the test app and set the installer to archive installer
+            installPackage(ARCHIVE_APK, ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+            // The archive app is not archived
+            assertFalse(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
+                    PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
+            prepareDevice();
+            LocalIntentSender sender = new LocalIntentSender();
+
+            // adopt DELETE_PACKAGES permission
+            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
+
+            mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME, sender.getIntentSender());
+
+            Intent intent = sender.getResult();
+            assertThat(intent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100)).isEqualTo(
+                    PackageInstaller.STATUS_PENDING_USER_ACTION);
+
+            Intent extraIntent = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+            extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(extraIntent);
+
+            // wait for device idle
+            mUiDevice.waitForIdle();
+
+            UiObject2 headerTitle = waitFor(
+                    Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
+            UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
+            assertThat(headerTitle.getText()).contains("Archive");
+            assertThat(message.getText()).contains("data will be saved");
+
+            // Confirm the archive app can be archived after user confirmation
+            UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+            if (clickableView == null) {
+                Assert.fail("OK button not shown");
+            }
+            clickableView.click();
+
+            for (int i = 0; i < 30; i++) {
+                // We can't detect the confirmation Toast with UiAutomator, so we'll poll
+                Thread.sleep(500);
+                if (!isInstalled()) {
+                    break;
+                }
+            }
+            assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
+                    PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
+        } finally {
+            uninstallPackage(ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
     public void requestArchive_confirmationDialog() throws Exception {
         installPackage(ARCHIVE_APK);
-        assertFalse(mPackageManager.getPackageInfo(ARCHIVE_APK_PACKAGE_NAME,
+        assertFalse(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
         prepareDevice();
         LocalIntentSender sender = new LocalIntentSender();
         runWithShellPermissionIdentity(
-                () -> mPackageInstaller.requestArchive(ARCHIVE_APK_PACKAGE_NAME,
+                () -> mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
                         sender.getIntentSender()),
                 Manifest.permission.DELETE_PACKAGES);
         Intent intent = sender.getResult();
@@ -248,7 +317,7 @@ public class ArchiveTest {
                 break;
             }
         }
-        assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APK_PACKAGE_NAME,
+        assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
                 PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
     }
 
@@ -259,7 +328,7 @@ public class ArchiveTest {
         LocalIntentSender archiveSender = new LocalIntentSender();
         runWithShellPermissionIdentity(
                 () -> {
-                    mPackageInstaller.requestArchive(ARCHIVE_APK_PACKAGE_NAME,
+                    mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
                             archiveSender.getIntentSender());
                     Intent archiveIntent = archiveSender.getResult();
                     assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
@@ -273,11 +342,11 @@ public class ArchiveTest {
                 new Handler(Looper.getMainLooper()));
 
         LocalIntentSender unarchiveSender = new LocalIntentSender();
-        mPackageInstaller.requestUnarchive(ARCHIVE_APK_PACKAGE_NAME,
+        mPackageInstaller.requestUnarchive(ARCHIVE_APP_PACKAGE_NAME,
                         unarchiveSender.getIntentSender());
         Intent unarchiveIntent = unarchiveSender.pollResult(5, TimeUnit.SECONDS);
         assertThat(unarchiveIntent.getStringExtra(PackageInstaller.EXTRA_PACKAGE_NAME)).isEqualTo(
-                ARCHIVE_APK_PACKAGE_NAME);
+                ARCHIVE_APP_PACKAGE_NAME);
         assertThat(unarchiveIntent.getIntExtra(PackageInstaller.EXTRA_UNARCHIVE_STATUS,
                 -100)).isEqualTo(
                 PackageInstaller.STATUS_PENDING_USER_ACTION);
@@ -305,7 +374,7 @@ public class ArchiveTest {
                 PackageInstaller.UnarchivalState.createOkState(unarchiveId));
         PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(
                 PackageInstaller.SessionParams.MODE_FULL_INSTALL);
-        params.setAppPackageName(ARCHIVE_APK_PACKAGE_NAME);
+        params.setAppPackageName(ARCHIVE_APP_PACKAGE_NAME);
         final int sessionId = mPackageInstaller.createSession(params);
         assertThat(sessionId).isEqualTo(unarchiveId);
         PackageInstaller.Session session = mPackageInstaller.openSession(sessionId);
@@ -434,15 +503,15 @@ public class ArchiveTest {
         runWithShellPermissionIdentity(
                 () -> {
                     mPackageInstaller.requestArchive(
-                            ARCHIVE_APK_PACKAGE_NAME,
+                            ARCHIVE_APP_PACKAGE_NAME,
                             archiveSender.getIntentSender());
                     assertThat(archiveSender.getResult().getIntExtra(PackageInstaller.EXTRA_STATUS,
                             -100)).isEqualTo(PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
 
-        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APK_PACKAGE_NAME,
-                ARCHIVE_APK_ACTIVITY_NAME);
+        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APP_PACKAGE_NAME,
+                ARCHIVE_APP_ACTIVITY_NAME);
         setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mContext.getPackageName());
         prepareDevice();
 
@@ -464,8 +533,8 @@ public class ArchiveTest {
         }
         clickableView.click();
         assertThat(sUnarchiveReceiverPackageName.get(10, TimeUnit.SECONDS)).isEqualTo(
-                ARCHIVE_APK_PACKAGE_NAME);
-        assertThat(sUnarchiveReceiverPackageName.get()).isEqualTo(ARCHIVE_APK_PACKAGE_NAME);
+                ARCHIVE_APP_PACKAGE_NAME);
+        assertThat(sUnarchiveReceiverPackageName.get()).isEqualTo(ARCHIVE_APP_PACKAGE_NAME);
         assertThat(sUnarchiveReceiverAllUsers.get()).isFalse();
     }
 
@@ -478,7 +547,7 @@ public class ArchiveTest {
         runWithShellPermissionIdentity(
                 () -> {
                     mPackageInstaller.requestArchive(
-                            ARCHIVE_APK_PACKAGE_NAME,
+                            ARCHIVE_APP_PACKAGE_NAME,
                             archiveSender.getIntentSender());
                     Intent archiveIntent = archiveSender.getResult();
                     assertThat(archiveIntent.getIntExtra(PackageInstaller.EXTRA_STATUS,
@@ -486,8 +555,8 @@ public class ArchiveTest {
                             PackageInstaller.STATUS_SUCCESS);
                 },
                 Manifest.permission.DELETE_PACKAGES);
-        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APK_PACKAGE_NAME,
-                ARCHIVE_APK_ACTIVITY_NAME);
+        ComponentName archiveComponentName = new ComponentName(ARCHIVE_APP_PACKAGE_NAME,
+                ARCHIVE_APP_ACTIVITY_NAME);
         setDefaultLauncher(InstrumentationRegistry.getInstrumentation(), mContext.getPackageName());
         prepareDevice();
 
@@ -509,6 +578,82 @@ public class ArchiveTest {
         clickableView.click();
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void unarchiveApp_noInstaller_cannotUnarchive_canReinstall() throws Exception {
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            // install an installer app
+            installPackage(ARCHIVE_INSTALLER_APK);
+            // install a target app with a custom installer set
+            installPackage(ARCHIVE_APK, ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+
+            prepareDevice();
+            LocalIntentSender archiveSender = new LocalIntentSender();
+
+            // adopt DELETE_PACKAGES permission
+            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
+
+            mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
+                    archiveSender.getIntentSender());
+            // Since installer is different from the requester of archival, we'll get a
+            // STATUS_PENDING_USER_ACTION.
+            Intent resultIntent = archiveSender.getResult();
+            assertThat(resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100))
+                    .isEqualTo(PackageInstaller.STATUS_PENDING_USER_ACTION);
+
+            Intent archivalIntent = resultIntent.getParcelableExtra(Intent.EXTRA_INTENT,
+                    Intent.class);
+            assert archivalIntent != null;
+            archivalIntent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(archivalIntent);
+
+            UiObject2 headerTitle = waitFor(
+                    Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
+            UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
+            assertThat(headerTitle.getText()).contains("Archive");
+            assertThat(message.getText()).contains("data will be saved");
+
+            // Confirm the archive app can be archived after user confirmation
+            UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+            if (clickableView == null) {
+                Assert.fail("OK button not shown");
+            }
+            clickableView.click();
+
+            for (int i = 0; i < 30; i++) {
+                // We can't detect the confirmation Toast with UiAutomator, so we'll poll
+                Thread.sleep(500);
+                if (!isInstalled()) {
+                    break;
+                }
+            }
+            assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
+                    PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
+
+            // Uninstalling the installer app will set the responsible installer of target app
+            // to null
+            uninstallPackage(ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+            assertFalse(isInstalled(ARCHIVE_INSTALLER_APP_PACKAGE_NAME));
+
+            // Unarchiving the app should fail since there's no responsible installer
+            NameNotFoundException e = assertThrows(NameNotFoundException.class,
+                    () -> mPackageInstaller.requestUnarchive(ARCHIVE_APP_PACKAGE_NAME,
+                        archiveSender.getIntentSender()));
+
+            assertThat(e).hasMessageThat().contains("No installer found to unarchive app");
+
+            // Try to reinstall the app
+            String command = String.format("pm install -r -t -g -i %s --pkg %s %s",
+                    ARCHIVE_INSTALLER_APP_PACKAGE_NAME, ARCHIVE_APP_PACKAGE_NAME, ARCHIVE_APK);
+            assertEquals("Success\n", SystemUtil.runShellCommand(command));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
     private void prepareDevice() throws Exception {
         mUiDevice.waitForIdle();
         // wake up the screen
@@ -523,14 +668,17 @@ public class ArchiveTest {
         mUiDevice.waitForIdle();
     }
 
-    private void installPackage(String path) {
+    private void installPackage(@NonNull String path) {
+        installPackage(path, mContext.getPackageName());
+    }
+
+    private void installPackage(@NonNull String path, @NonNull String installerPackageName) {
         assertEquals("Success\n", SystemUtil.runShellCommand(
-                String.format("pm install -r -i %s -t -g %s", mContext.getPackageName(),
-                        path)));
+                String.format("pm install -r -i %s -t -g %s", installerPackageName, path)));
     }
 
     private boolean isInstalled() {
-        return isInstalled(ARCHIVE_APK_PACKAGE_NAME);
+        return isInstalled(ARCHIVE_APP_PACKAGE_NAME);
     }
 
     private boolean isInstalled(String packageName) {
@@ -549,7 +697,7 @@ public class ArchiveTest {
     private void abandonPendingUnarchivalSessions() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())
+            if (TextUtils.equals(ARCHIVE_APP_PACKAGE_NAME, session.getAppPackageName())
                     && TextUtils.equals(mContext.getPackageName(),
                         session.getInstallerPackageName())) {
                 // The test app cannot abandon draft sessions
@@ -564,7 +712,7 @@ public class ArchiveTest {
     private int getUnarchivalSessionId() {
         List<PackageInstaller.SessionInfo> sessions = mPackageInstaller.getAllSessions();
         for (PackageInstaller.SessionInfo session : sessions) {
-            if (TextUtils.equals(ARCHIVE_APK_PACKAGE_NAME, session.getAppPackageName())) {
+            if (TextUtils.equals(ARCHIVE_APP_PACKAGE_NAME, session.getAppPackageName())) {
                 return session.getSessionId();
             }
         }

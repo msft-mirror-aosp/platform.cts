@@ -76,7 +76,7 @@ public class AppStandbyTests {
     private static final long POLL_INTERVAL = 200;
 
     // Tweaked alarm manager constants to facilitate testing
-    private static final long MIN_FUTURITY = 1_000;
+    private static final long MIN_FUTURITY = 0;
 
     // Not touching ACTIVE and RARE parameters for this test
     private static final int WORKING_INDEX = 0;
@@ -107,9 +107,11 @@ public class AppStandbyTests {
     private static TestAlarmHistory sAlarmHistory;
     private static Context sContext = InstrumentationRegistry.getTargetContext();
 
-    private ComponentName mAlarmScheduler;
-    private AtomicInteger mAlarmCount;
-    private AlarmManagerDeviceConfigHelper mConfigHelper = new AlarmManagerDeviceConfigHelper();
+    private final ComponentName mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE,
+            TEST_APP_RECEIVER);
+    private final AtomicInteger mAlarmCount = new AtomicInteger(0);
+    private final AlarmManagerDeviceConfigHelper mConfigHelper =
+            new AlarmManagerDeviceConfigHelper();
 
     private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
         @Override
@@ -135,9 +137,7 @@ public class AppStandbyTests {
 
     @Before
     public void setUp() throws Exception {
-        mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER);
-        mAlarmCount = new AtomicInteger(0);
-
+        assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
         // To make sure it doesn't get pinned to working_set on older versions.
         AppOpsUtils.setUidMode(Utils.getPackageUid(TEST_APP_PACKAGE), OPSTR_SCHEDULE_EXACT_ALARM,
                 MODE_IGNORED);
@@ -149,7 +149,6 @@ public class AppStandbyTests {
 
         setBatteryCharging(false);
         updateAlarmManagerConstants();
-        assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
     }
 
     private void scheduleAlarm(long triggerMillis, long interval) throws InterruptedException {
@@ -171,6 +170,12 @@ public class AppStandbyTests {
     }
 
     public void testSimpleQuotaDeferral(int bucketIndex) throws Exception {
+        // Duration between start timestamp and the first scheduled alarm.
+        final int startToFirstDelta = 4_000;
+
+        // Futurity to use for scheduling alarms in the next test.
+        final int minFuturityHere = 500;
+
         setTestAppStandbyBucket(APP_BUCKET_TAGS[bucketIndex]);
         final int quota = APP_STANDBY_QUOTAS[bucketIndex];
 
@@ -182,22 +187,28 @@ public class AppStandbyTests {
             // Now we should have no alarms in the past APP_STANDBY_WINDOW
         }
         final long desiredTrigger = startElapsed + APP_STANDBY_WINDOW;
-        final long firstTrigger = startElapsed + 4_000;
+        final long firstTrigger = startElapsed + startToFirstDelta;
         assertTrue("Quota too large for test",
-                firstTrigger + ((quota - 1) * MIN_FUTURITY) < desiredTrigger);
+                firstTrigger + ((quota - 1) * minFuturityHere) < desiredTrigger);
         for (int i = 0; i < quota; i++) {
-            final long trigger = firstTrigger + (i * MIN_FUTURITY);
+            final long trigger = firstTrigger + (i * minFuturityHere);
             scheduleAlarm(trigger, 0);
-            Thread.sleep(trigger - SystemClock.elapsedRealtime());
+            long nowElapsed = SystemClock.elapsedRealtime();
+            assertTrue(trigger >= nowElapsed);
+            Thread.sleep(trigger - nowElapsed);
             assertTrue("Alarm within quota not firing as expected", waitForAlarm());
         }
 
         // Now quota is reached, any subsequent alarm should get deferred.
         scheduleAlarm(desiredTrigger, 0);
-        Thread.sleep(desiredTrigger - SystemClock.elapsedRealtime());
+        long nowElapsed = SystemClock.elapsedRealtime();
+        assertTrue(desiredTrigger >= nowElapsed);
+        Thread.sleep(desiredTrigger - nowElapsed);
         assertFalse("Alarm exceeding quota not deferred", waitForAlarm());
         final long minTrigger = firstTrigger + APP_STANDBY_WINDOW;
-        Thread.sleep(minTrigger - SystemClock.elapsedRealtime());
+        nowElapsed = SystemClock.elapsedRealtime();
+        assertTrue(minTrigger >= nowElapsed);
+        Thread.sleep(minTrigger - nowElapsed);
         assertTrue("Alarm exceeding quota not delivered after expected delay", waitForAlarm());
     }
 
@@ -250,6 +261,9 @@ public class AppStandbyTests {
 
     @After
     public void tearDown() throws Exception {
+        if (!AppStandbyUtils.isAppStandbyEnabled()) {
+            return;
+        }
         setPowerAllowlisted(false);
         setBatteryCharging(true);
         mConfigHelper.restoreAll();

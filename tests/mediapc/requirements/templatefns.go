@@ -20,6 +20,8 @@ import (
 	"strings"
 	"text/template"
 	"unicode"
+
+	pb "cts/test/mediapc/requirements/requirements_go_proto"
 )
 
 // Funcs returns a mapping from names of template helper functions to the
@@ -29,6 +31,7 @@ func Funcs() template.FuncMap {
 	return template.FuncMap{
 		// go/keep-sorted start
 		"Dict":             dict,
+		"HasConfigVariant": HasConfigVariant,
 		"KebabCase":        kebabCase,
 		"LowerCamelCase":   lowerCamelCase,
 		"LowerCase":        strings.ToLower,
@@ -146,6 +149,19 @@ func dict(v ...any) map[string]any {
 		dict[key] = v[i+1]
 	}
 	return dict
+}
+
+// HasConfigVariant checks if a requirement has a spec for a given test config and variant.
+func HasConfigVariant(r *pb.Requirement, configID string, variantID string) bool {
+	for _, spec := range r.GetSpecs() {
+		if configID == spec.GetTestConfigId() {
+			_, ok := spec.GetVariantSpecs()[variantID]
+			if ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // toString converts a value to a string.

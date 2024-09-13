@@ -24,6 +24,8 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.TapToToneLatencyRequirement;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -63,7 +65,7 @@ import java.util.Locale;
 /**
  * CtsVerifier test to measure tap-to-tone latency.
  */
-@CddTest(requirement = "5.6")
+@CddTest(requirement = "5.6/H-1-1")
 public class AudioTap2ToneActivity
         extends PassFailButtons.Activity
         implements View.OnClickListener, AppCallback {
@@ -117,7 +119,7 @@ public class AudioTap2ToneActivity
     // Stats for latency
     private double mMaxRequiredLatency;
 
-    // REQUIRED CDD  [5.6/H-1-2]
+    // REQUIRED CDD  [5.6/H-1-1]
     private static final int MAX_TAP_2_TONE_LATENCY_BASIC = 300;  // ms
     // Requirement for "R" and "S"
     private static final int MAX_TAP_2_TONE_LATENCY_RS = 100;  // ms
@@ -596,11 +598,10 @@ public class AudioTap2ToneActivity
     /** Records perf class results and returns if mpc is met */
     private void recordPerfClassResults() {
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(testName);
-        PerformanceClassEvaluator.AudioTap2ToneLatencyRequirement r5_6__h_1_1 =
-                pce.addR5_6__H_1_1();
+        TapToToneLatencyRequirement r5_6__h_1_1 = Requirements.addR5_6__H_1_1().to(pce);
 
-        r5_6__h_1_1.setNativeLatency(mLatencyAve[TEST_API_NATIVE]);
-        r5_6__h_1_1.setJavaLatency(mLatencyAve[TEST_API_JAVA]);
+        r5_6__h_1_1.setNativeLatencyMs(mLatencyAve[TEST_API_NATIVE]);
+        r5_6__h_1_1.setJavaLatencyMs(mLatencyAve[TEST_API_JAVA]);
 
         pce.submitAndVerify();
     }

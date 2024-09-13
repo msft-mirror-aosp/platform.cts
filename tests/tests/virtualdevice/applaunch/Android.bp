@@ -19,12 +19,12 @@ package {
 
 android_test {
     name: "CtsVirtualDevicesAppLaunchTestCases",
-
+    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
 
     static_libs: [
@@ -44,4 +44,11 @@ android_test {
         ":CtsVirtualDeviceStreamedTestApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsVirtualDevicesAppLaunchTestCases_applaunch_virtualdevicepermissiontest",
+    base: "CtsVirtualDevicesAppLaunchTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.virtualdevice.cts.applaunch.VirtualDevicePermissionTest"],
 }

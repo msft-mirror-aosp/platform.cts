@@ -42,8 +42,8 @@ android_test {
     ],
 
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
 
     jni_libs: [
@@ -79,4 +79,11 @@ android_ravenwood_test {
         "src/android/text/cts/TextUtils_SimpleStringSplitterTest.java",
     ],
     auto_gen_config: true,
+}
+
+test_module_config {
+    name: "CtsTextTestCases_text",
+    base: "CtsTextTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

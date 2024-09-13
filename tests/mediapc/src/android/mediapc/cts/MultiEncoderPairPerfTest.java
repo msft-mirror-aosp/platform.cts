@@ -23,6 +23,9 @@ import static android.mediapc.cts.CodecTestBase.mediaTypePrefix;
 import android.media.MediaFormat;
 import android.mediapc.cts.common.CodecMetrics;
 import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.ConcurrentVideoEncoderSessionsRequirement;
+import android.mediapc.cts.common.Requirements.VideoEncoderInstancesRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
 
@@ -196,25 +199,39 @@ public class MultiEncoderPairPerfTest extends MultiCodecPerfTestBase {
             frameDropsPerSec = result.fdps();
         }
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_3;
-        PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_4;
+        VideoEncoderInstancesRequirement r5_1__H_1_3;
+        ConcurrentVideoEncoderSessionsRequirement r5_1__H_1_4;
         // Achieved frame rate is not compared as this test runs in byte buffer mode.
         if (height > 1080) {
-            r5_1__H_1_3 = pce.addR5_1__H_1_3_4k();
-            r5_1__H_1_4 = pce.addR5_1__H_1_4_4k();
-            r5_1__H_1_3.setConcurrentInstances(maxInstances);
+            r5_1__H_1_3 = Requirements.addR5_1__H_1_3().withConfig4K().to(pce);
+            r5_1__H_1_4 = Requirements.addR5_1__H_1_4().withConfig4K()
+                    .withVariantByteBufferMode().to(pce);
+            r5_1__H_1_3.setConcurrentSessions(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
-            r5_1__H_1_4.setFrameDropsPerSecond(frameDropsPerSec);
+            r5_1__H_1_4.setFrameDropsPerSec(frameDropsPerSec);
         } else if (height == 1080) {
-            r5_1__H_1_3 = pce.addR5_1__H_1_3_1080p();
-            r5_1__H_1_4 = pce.addR5_1__H_1_4_1080p();
-            r5_1__H_1_3.setConcurrentInstances(maxInstances);
+            r5_1__H_1_3 = Requirements.addR5_1__H_1_3().withConfig1080P().to(pce);
+            r5_1__H_1_4 = Requirements.addR5_1__H_1_4().withConfig1080P()
+                    .withVariantByteBufferMode().to(pce);
+            r5_1__H_1_3.setConcurrentSessions(maxInstances);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
         } else {
-            r5_1__H_1_3 = pce.addR5_1__H_1_3_720p(mFirstPair.first, mSecondPair.first, height);
-            r5_1__H_1_4 = pce.addR5_1__H_1_4_720p();
-            r5_1__H_1_3.setConcurrentInstances(maxInstances);
+            r5_1__H_1_4 = Requirements.addR5_1__H_1_4().withConfig720P()
+                    .withVariantByteBufferMode().to(pce);
             r5_1__H_1_4.setConcurrentFps(achievedFrameRate);
+
+            if (isMPCCodec(mMediaType)) {
+                if (isRCodec(mMediaType)) {
+                    r5_1__H_1_3 = Requirements.addR5_1__H_1_3().withConfig720P().to(pce);
+                } else if (isVP9Codec(mMediaType)) {
+                    r5_1__H_1_3 = Requirements.addR5_1__H_1_3().withConfig720P()
+                            .withVariantVP9().to(pce);
+                } else {
+                    r5_1__H_1_3 = Requirements.addR5_1__H_1_3().withConfig720P()
+                            .withVariantAV1().to(pce);
+                }
+                r5_1__H_1_3.setConcurrentSessions(maxInstances);
+            }
         }
 
         pce.submitAndCheck();

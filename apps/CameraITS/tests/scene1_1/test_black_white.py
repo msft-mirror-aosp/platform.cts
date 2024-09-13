@@ -17,10 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
 
-
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -130,14 +128,14 @@ class BlackWhiteTest(its_base_test.ItsBaseTest):
       b_means.append(white_means[2])
 
       # Draw plot
-      pylab.title('test_black_white')
-      pylab.plot([0, 1], r_means, '-ro')
-      pylab.plot([0, 1], g_means, '-go')
-      pylab.plot([0, 1], b_means, '-bo')
-      pylab.xlabel('Capture Number')
-      pylab.ylabel('Output Values [0:255]')
-      pylab.ylim([0, 255])
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+      plt.title('test_black_white')
+      plt.plot([0, 1], r_means, '-ro')
+      plt.plot([0, 1], g_means, '-go')
+      plt.plot([0, 1], b_means, '-bo')
+      plt.xlabel('Capture Number')
+      plt.ylabel('Output Values [0:255]')
+      plt.ylim([0, 255])
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
 
       # Assert blacks below CH_THRESH_BLACK
       for ch, mean in enumerate(black_means):

@@ -21,6 +21,8 @@ import static android.Manifest.permission.REVOKE_POST_NOTIFICATIONS_WITHOUT_KILL
 import static android.Manifest.permission.REVOKE_RUNTIME_PERMISSIONS;
 import static android.service.notification.NotificationAssistantService.FEEDBACK_RATING;
 
+import static com.android.compatibility.common.preconditions.SystemUiHelper.hasNoTraditionalStatusBar;
+
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -43,7 +45,6 @@ import android.app.stubs.shared.TestNotificationAssistant;
 import android.app.stubs.shared.TestNotificationListener;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Process;
 import android.os.SystemClock;
@@ -52,7 +53,6 @@ import android.permission.cts.PermissionUtils;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.provider.Settings;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
 import android.service.notification.NotificationAssistantService;
@@ -63,10 +63,13 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,6 +82,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
+@RequireNotVisibleBackgroundUsers(reason = "collapsePanels(), expandNotificationsPanel() and "
+        + " sendNotificationFeedback() don't support visible background user")
 public class NotificationAssistantServiceTest {
 
     private static final String PKG = "android.app.notification.legacy29.cts";
@@ -96,12 +101,12 @@ public class NotificationAssistantServiceTest {
     private NotificationHelper mHelper;
     private String mPreviousAssistant;
 
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
-
-    private boolean isWatch() {
-      return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -604,7 +609,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationVisibilityChanged() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch() || isTelevision());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
         setUpListeners();
         turnScreenOn();
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
@@ -644,7 +649,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationClicked() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch() || isTelevision());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
 
         setUpListeners();
         turnScreenOn();
@@ -672,7 +677,7 @@ public class NotificationAssistantServiceTest {
 
     @Test
     public void testOnNotificationFeedbackReceived() throws Exception {
-        assumeFalse("Status bar service not supported", isWatch());
+        assumeFalse("Status bar service not supported", hasNoTraditionalStatusBar(mContext));
 
         setUpListeners(); // also enables assistant
         mUi.adoptShellPermissionIdentity("android.permission.STATUS_BAR_SERVICE",
@@ -764,13 +769,6 @@ public class NotificationAssistantServiceTest {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         mHelper.runCommand("input keyevent KEYCODE_WAKEUP", instrumentation);
         mHelper.runCommand("wm dismiss-keyguard", instrumentation);
-    }
-
-    private boolean isTelevision() {
-        PackageManager packageManager = mContext.getPackageManager();
-        return packageManager != null
-                && (packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
-                || packageManager.hasSystemFeature(PackageManager.FEATURE_TELEVISION));
     }
 
     private int getAssistantCancellationReason(String key) {

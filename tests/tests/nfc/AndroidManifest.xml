@@ -70,6 +70,8 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.cts.PollingLoopFired" />
+                <action android:name="com.cts.ObserveModeChanged" />
+                <action android:name="com.cts.PreferredServiceChanged" />
             </intent-filter>
         </receiver>
         <activity android:name="android.nfc.cts.interactive.TagVerifierActivity"

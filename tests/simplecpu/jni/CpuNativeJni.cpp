@@ -19,6 +19,12 @@
 #include <string.h>
 #include <sys/time.h>
 
+#ifdef __clang__
+#define OPTNONE __attribute__((optnone))
+#else
+#define OPTNONE __attribute__((optimize("O0")))
+#endif
+
 /* Code from now to qsort_local all copied from bionic source.
  * The code is duplicated here to remove dependency on optimized bionic
  */
@@ -240,7 +246,7 @@ void doMatrixMultiplication(float* A, float* B, float* C, int n)
 }
 
 extern "C" JNIEXPORT jdouble JNICALL Java_android_simplecpu_cts_CpuNative_runMatrixMultiplication(
-        JNIEnv* env, jclass clazz, jint n, jint repetition)
+        JNIEnv* env, jclass clazz, jint n, jint repetition) OPTNONE
 {
     // C = A x B
     float* A = new float[n * n];

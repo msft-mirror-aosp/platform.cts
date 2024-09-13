@@ -37,8 +37,10 @@ import static android.server.wm.activity.lifecycle.TransitionVerifier.assertRecr
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertRestartAndResumeSequence;
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertResumeToDestroySequence;
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertSequence;
+import static android.server.wm.activity.lifecycle.TransitionVerifier.assertTransitionNotObserved;
 import static android.server.wm.activity.lifecycle.TransitionVerifier.assertTransitionObserved;
 import static android.server.wm.activity.lifecycle.TransitionVerifier.transition;
+import static android.view.Display.DEFAULT_DISPLAY;
 
 import static androidx.test.InstrumentationRegistry.getInstrumentation;
 
@@ -48,15 +50,22 @@ import static org.junit.Assume.assumeTrue;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.CtsWindowInfoUtils;
+import android.server.wm.RotationSession;
+import android.view.WindowInsets;
 
 import androidx.test.filters.MediumTest;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
@@ -386,5 +395,72 @@ public class ActivityLifecycleLegacySplitScreenTests extends ActivityLifecycleCl
                 FirstActivity.class,
                 Arrays.asList(ON_USER_LEAVE_HINT, ON_PAUSE, ON_STOP),
                 "moveFromSplitScreen");
+    }
+
+    @Test
+    public void testLifecycleOnShowingImeFromSplitScreenNoRelaunch() throws Exception {
+        // Here tries to test the behavior in portrait mode because the positions of tasks will be
+        // moved when IME is showing for apps in the bottom half of split-screen in most cases.
+        mWmState.computeState();
+        final Configuration displayConfig =
+                mWmState.getDisplay(DEFAULT_DISPLAY).getFullConfiguration();
+        final int displayOrientation = displayConfig.orientation;
+        final int displayRotation = displayConfig.windowConfiguration.getDisplayRotation();
+        final RotationSession rotationSession = createManagedRotationSession();
+        if (displayOrientation != Configuration.ORIENTATION_PORTRAIT) {
+            rotationSession.set((displayRotation + 1) % 2);
+        }
+
+        // Use the public method to launch activities in split-screen, so that the default behavior
+        // of the platform will be tested.
+        final Activity firstActivity = launchActivityAndWait(FirstActivity.class);
+        final Intent intent = new Intent(firstActivity, ShowImeActivity.class)
+                .setFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT
+                        | Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_MULTIPLE_TASK);
+        firstActivity.startActivity(intent);
+        final ShowImeActivity showImeActivity = ShowImeActivity.waitForFocusedInstance();
+
+        assertNotNull("ShowImeActivity must be focused.", showImeActivity);
+
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
+
+        getTransitionLog().clear();
+        getInstrumentation().runOnMainSync(() ->
+                showImeActivity.getWindow().getDecorView().getWindowInsetsController().show(
+                        WindowInsets.Type.ime()));
+
+        CtsWindowInfoUtils.waitForStableWindowGeometry(Duration.ofSeconds(5));
+
+        assertTransitionNotObserved(getTransitionLog(),
+                transition(ShowImeActivity.class, ON_DESTROY), "showingIme");
+    }
+
+    public static class ShowImeActivity extends LifecycleTrackingActivity {
+
+        private static CountDownLatch sFocusLatch = new CountDownLatch(1);
+        private static ShowImeActivity sActivity = null;
+
+        @Override
+        public void onWindowFocusChanged(boolean hasFocus) {
+            if (hasFocus) {
+                sActivity = this;
+                sFocusLatch.countDown();
+            } else if (sActivity == this) {
+                sActivity = null;
+                sFocusLatch = new CountDownLatch(1);
+            }
+        }
+
+        static ShowImeActivity waitForFocusedInstance() {
+            try {
+                if (sFocusLatch.await(10, TimeUnit.SECONDS)) {
+                    return sActivity;
+                }
+            } catch (InterruptedException e) {
+                // Do nothing.
+            }
+            return null;
+        }
     }
 }

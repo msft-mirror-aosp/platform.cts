@@ -47,6 +47,7 @@ import android.content.res.Resources;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.CommandSession.ActivityCallback;
+import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
 import android.view.WindowManager;

@@ -30,7 +30,7 @@ android_test {
         "flag-junit",
         "Harrier",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     srcs: [
         "src/**/*.java",
         "JobTestApp/src/**/*.java",
@@ -47,4 +47,11 @@ android_test {
         ":CtsJobTestApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsJobSchedulerTestCases_com_android_server_job",
+    base: "CtsJobSchedulerTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

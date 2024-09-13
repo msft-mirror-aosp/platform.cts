@@ -29,7 +29,8 @@ ACTION_ITS_DO_JCA_CAPTURE = (
     'com.android.cts.verifier.camera.its.ACTION_ITS_DO_JCA_CAPTURE'
 )
 ACTIVITY_WAIT_TIME_SECONDS = 5
-AGREE_BUTTON = 'Agree and continue'
+AGREE_BUTTON = 'Agree'
+AGREE_AND_CONTINUE_BUTTON = 'Agree and continue'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
@@ -41,6 +42,7 @@ FLASH_MODE_TO_CLICKS = types.MappingProxyType({
 IMG_CAPTURE_CMD = 'am start -a android.media.action.IMAGE_CAPTURE'
 ITS_ACTIVITY_TEXT = 'Camera ITS Test'
 JPG_FORMAT_STR = '.jpg'
+LOCATION_ON_TXT = 'Turn on'
 OK_BUTTON_TXT = 'OK'
 TAKE_PHOTO_CMD = 'input keyevent KEYCODE_CAMERA'
 QUICK_SETTINGS_RESOURCE_ID = 'QuickSettingsDropDown'
@@ -193,12 +195,18 @@ def launch_and_take_capture(dut, pkg_name):
     if dut.ui(text=AGREE_BUTTON).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=AGREE_BUTTON).click.wait()
+    if dut.ui(text=AGREE_AND_CONTINUE_BUTTON).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=AGREE_AND_CONTINUE_BUTTON).click.wait()
     if dut.ui(text=OK_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=OK_BUTTON_TXT).click.wait()
     if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=DONE_BUTTON_TXT).click.wait()
+    if dut.ui(text=LOCATION_ON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=LOCATION_ON_TXT).click.wait()
 
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)

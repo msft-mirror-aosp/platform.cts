@@ -26,16 +26,17 @@ import org.hamcrest.Description
 import org.hamcrest.Matcher
 import org.hamcrest.TypeSafeMatcher
 
-private const val EPSILON = 0.001f
+const val EPSILON = 0.001f
 
-fun withCoords(pt: PointF): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+fun withCoords(pt: PointF, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With coords = $pt")
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.x - pt.x) < EPSILON) &&
-                (abs(event.y - pt.y) < EPSILON)
+        return (abs(event.x - pt.x) < epsilon) &&
+                (abs(event.y - pt.y) < epsilon)
     }
 }
 
@@ -49,32 +50,36 @@ fun withPointerCount(count: Int): Matcher<MotionEvent> = object : TypeSafeMatche
     }
 }
 
-fun withCoords(pt: Point): Matcher<MotionEvent> = withCoords(PointF(pt))
+fun withCoords(pt: Point, epsilon: Float = EPSILON): Matcher<MotionEvent> = withCoords(
+    PointF(pt),
+    epsilon
+)
 
-fun withCoordsForPointerIndex(index: Int, pt: PointF): Matcher<MotionEvent> =
-        object : TypeSafeMatcher<MotionEvent>() {
+fun withCoordsForPointerIndex(index: Int, pt: PointF, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With coords = $pt for pointer index = $index")
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.getX(index)) - pt.x < EPSILON) &&
-                (abs(event.getY(index)) - pt.y < EPSILON)
+        return (abs(event.getX(index)) - pt.x < epsilon) &&
+                (abs(event.getY(index)) - pt.y < epsilon)
     }
 }
 
-fun withRawCoords(pt: PointF): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
+fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
+        Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With coords = $pt")
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return (abs(event.rawX) - pt.x < EPSILON) &&
-                (abs(event.rawY) - pt.y < EPSILON)
+        return (abs(event.rawX) - pt.x < epsilon) &&
+                (abs(event.rawY) - pt.y < epsilon)
     }
 
     override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
-        mismatchDescription.appendText("Got raw coords = {${event.getRawX()}, ${event.getRawY()}}")
+        mismatchDescription.appendText("Got raw coords = {${event.rawX}, ${event.rawY}}")
     }
 }
 
@@ -111,8 +116,8 @@ fun withMotionAction(action: Int, index: Int): Matcher<MotionEvent> =
     }
 }
 
-fun withRawCoords(pt: Point): Matcher<MotionEvent> {
-    return withRawCoords(PointF(pt))
+fun withRawCoords(pt: Point, epsilon: Float = EPSILON): Matcher<MotionEvent> {
+    return withRawCoords(PointF(pt), epsilon)
 }
 
 fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
@@ -121,7 +126,7 @@ fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<Mot
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return event.getSource() == source
+        return event.source == source
     }
 }
 
@@ -131,7 +136,7 @@ fun withDeviceId(deviceId: Int): Matcher<MotionEvent> = object : TypeSafeMatcher
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return event.getDeviceId() == deviceId
+        return event.deviceId == deviceId
     }
 }
 
@@ -141,7 +146,7 @@ fun withEventTime(eventTime: Long): Matcher<MotionEvent> = object : TypeSafeMatc
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        return event.getEventTime() == eventTime
+        return event.eventTime == eventTime
     }
 }
 
@@ -161,7 +166,7 @@ fun withToolType(toolType: Int): Matcher<MotionEvent> = object : TypeSafeMatcher
     }
 
     override fun matchesSafely(event: MotionEvent): Boolean {
-        for (p in 0..<event.getPointerCount()) {
+        for (p in 0..<event.pointerCount) {
             if (event.getToolType(p) != toolType) {
                 return false
             }

@@ -13,25 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License
  */
+
 package android.app.usage.cts;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static android.server.wm.SplitScreenActivityUtils.supportsSplitScreenMultiWindow;
+
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
+import static java.util.Objects.requireNonNull;
 
 import android.app.Activity;
+import android.app.Instrumentation;
 import android.app.usage.UsageStatsManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.platform.test.annotations.AppModeFull;
-import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.LockScreenSession;
+import android.server.wm.NestedShellPermission;
+import android.server.wm.SplitScreenActivityUtils;
+import android.server.wm.TestTaskOrganizer;
+import android.server.wm.UiDeviceUtils;
+import android.server.wm.WindowManagerStateHelper;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.annotation.NonNull;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.TestUtils;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -40,105 +52,129 @@ import org.junit.Test;
  * Run test: atest CtsUsageStatsTestCases:UsageReportingTest
  */
 @AppModeFull
-public class UsageReportingTest extends ActivityManagerTestBase {
+public class UsageReportingTest {
 
-    private UiDevice mUiDevice;
-    private UsageStatsManager mUsageStatsManager;
-    private String mTargetPackage;
-
-    private String mFullToken0;
-    private String mFullToken1;
-
+    private static final String TARGET_PACKAGE = Activities.class.getPackageName();
     private static final String TOKEN_0 = "SuperSecretToken";
     private static final String TOKEN_1 = "AnotherSecretToken";
+    private static final String FULL_TOKEN_0 = TARGET_PACKAGE + "/" + TOKEN_0;
+    private static final String FULL_TOKEN_1 = TARGET_PACKAGE + "/" + TOKEN_1;
+
+    private static final ComponentName ACTIVITY_ONE_COMPONENT =
+            new ComponentName(TARGET_PACKAGE, Activities.ActivityOne.class.getName());
+    private static final ComponentName ACTIVITY_TWO_COMPONENT =
+            new ComponentName(TARGET_PACKAGE, Activities.ActivityTwo.class.getName());
 
     private static final String DEVICE_SLEEP_COMMAND = "input keyevent KEYCODE_SLEEP";
 
     private static final int ASSERT_TIMEOUT_SECONDS = 5; // 5 seconds
 
+    @NonNull
+    private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
+    @NonNull
+    private Instrumentation mInstrumentation;
+    @NonNull
+    private UiDevice mUiDevice;
+    @NonNull
+    private Context mContext;
+    @NonNull
+    private UsageStatsManager mUsageStatsManager;
+    @NonNull
+    private TestTaskOrganizer mTaskOrganizer;
+    @NonNull
+    private SplitScreenActivityUtils mSplitScreenActivityUtils;
+
     @Before
-    @Override
     public void setUp() throws Exception {
-        super.setUp();
+        mInstrumentation = InstrumentationRegistry.getInstrumentation();
+        mUiDevice = UiDevice.getInstance(mInstrumentation);
+        mContext = mInstrumentation.getContext();
+        mUsageStatsManager = requireNonNull(mContext.getSystemService(UsageStatsManager.class));
+        UiDeviceUtils.wakeUpAndUnlock(mContext);
+        NestedShellPermission.run(() -> {
+            // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
+            mTaskOrganizer = new TestTaskOrganizer();
+        });
+        mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
+    }
 
-        mUiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        mUsageStatsManager = (UsageStatsManager) InstrumentationRegistry.getInstrumentation()
-                .getContext().getSystemService(Context.USAGE_STATS_SERVICE);
-        mTargetPackage = InstrumentationRegistry.getTargetContext().getPackageName();
-
-        mFullToken0 = mTargetPackage + "/" + TOKEN_0;
-        mFullToken1 = mTargetPackage + "/" + TOKEN_1;
+    @After
+    public void tearDown() {
+        if (mTaskOrganizer != null) {
+            mTaskOrganizer.unregisterOrganizerIfNeeded();
+        }
+        Activities.sStartedActivities.clear();
     }
 
     @Test
     public void testUsageStartAndStopReporting() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
 
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
     }
 
     @Test
     public void testUsagePastReporting() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0, 100);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
     }
 
     @Test
     public void testUsageReportingMissingStop() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         // Send the device to sleep to get onStop called for the token reporting activities.
         mUiDevice.executeShellCommand(DEVICE_SLEEP_COMMAND);
         Thread.sleep(1000);
 
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
     }
 
     @Test
     public void testExceptionOnRepeatReport() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         try {
             mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
@@ -146,10 +182,10 @@ public class UsageReportingTest extends ActivityManagerTestBase {
         } catch (IllegalArgumentException iae) {
             //Expected exception
         }
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
 
 
         try {
@@ -161,201 +197,177 @@ public class UsageReportingTest extends ActivityManagerTestBase {
 
         // One more cycle of reporting just to make sure there was no underflow
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
     }
 
     @Test
     public void testMultipleTokenUsageReporting() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity, TOKEN_1);
-        assertAppOrTokenUsed(mFullToken0, true);
-        assertAppOrTokenUsed(mFullToken1, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_1, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
-        assertAppOrTokenUsed(mFullToken1, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_1, true);
 
         mUsageStatsManager.reportUsageStop(activity, TOKEN_1);
-        assertAppOrTokenUsed(mFullToken0, false);
-        assertAppOrTokenUsed(mFullToken1, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_1, false);
     }
 
     @Test
     public void testMultipleTokenMissingStop() throws Exception {
-        launchActivity(new ComponentName(mTargetPackage, Activities.ActivityOne.class.getName()));
+        launchActivity(ACTIVITY_ONE_COMPONENT);
 
-        Activity activity;
-        synchronized ( Activities.startedActivities) {
-            activity = Activities.startedActivities.valueAt(0);
+        final Activity activity;
+        synchronized (Activities.sStartedActivities) {
+            activity = Activities.sStartedActivities.valueAt(0);
         }
 
         mUsageStatsManager.reportUsageStart(activity, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity, TOKEN_1);
-        assertAppOrTokenUsed(mFullToken0, true);
-        assertAppOrTokenUsed(mFullToken1, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_1, true);
 
 
         // Send the device to sleep to get onStop called for the token reporting activities.
         mUiDevice.executeShellCommand(DEVICE_SLEEP_COMMAND);
         Thread.sleep(1000);
 
-        assertAppOrTokenUsed(mFullToken0, false);
-        assertAppOrTokenUsed(mFullToken1, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_1, false);
     }
 
     @Test
     public void testSplitscreenUsageReporting() throws Exception {
-        if (!supportsSplitScreenMultiWindow()) {
-            // Skipping test: no multi-window support
-            return;
-        }
+        assumeTrue("Skipping test: no multi-window support",
+                supportsSplitScreenMultiWindow(mContext));
 
-        launchActivitiesInSplitScreen(
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityOne.class.getName())),
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityTwo.class.getName())));
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_ONE_COMPONENT),
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_TWO_COMPONENT));
         Thread.sleep(500);
 
-        Activity activity0;
-        Activity activity1;
-        synchronized ( Activities.startedActivities) {
-            activity0 = Activities.startedActivities.valueAt(0);
-            activity1 = Activities.startedActivities.valueAt(1);
+        final Activity activity0;
+        final Activity activity1;
+        synchronized (Activities.sStartedActivities) {
+            activity0 = Activities.sStartedActivities.valueAt(0);
+            activity1 = Activities.sStartedActivities.valueAt(1);
         }
 
         mUsageStatsManager.reportUsageStart(activity0, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity1, TOKEN_1);
-        assertAppOrTokenUsed(mFullToken0, true);
-        assertAppOrTokenUsed(mFullToken1, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_1, true);
 
         mUsageStatsManager.reportUsageStop(activity0, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
-        assertAppOrTokenUsed(mFullToken1, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_1, true);
 
         mUsageStatsManager.reportUsageStop(activity1, TOKEN_1);
-        assertAppOrTokenUsed(mFullToken0, false);
-        assertAppOrTokenUsed(mFullToken1, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_1, false);
     }
 
     @Test
     public void testSplitscreenSameToken() throws Exception {
-        if (!supportsSplitScreenMultiWindow()) {
-            // Skipping test: no multi-window support
-            return;
-        }
+        assumeTrue("Skipping test: no multi-window support",
+                supportsSplitScreenMultiWindow(mContext));
 
-        launchActivitiesInSplitScreen(
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityOne.class.getName())),
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityTwo.class.getName())));
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_ONE_COMPONENT),
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_TWO_COMPONENT));
         Thread.sleep(500);
 
-        Activity activity0;
-        Activity activity1;
-        synchronized ( Activities.startedActivities) {
-            activity0 = Activities.startedActivities.valueAt(0);
-            activity1 = Activities.startedActivities.valueAt(1);
+        final Activity activity0;
+        final Activity activity1;
+        synchronized (Activities.sStartedActivities) {
+            activity0 = Activities.sStartedActivities.valueAt(0);
+            activity1 = Activities.sStartedActivities.valueAt(1);
         }
 
         mUsageStatsManager.reportUsageStart(activity0, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity1, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity0, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity1, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, false);
+        assertAppOrTokenUsed(FULL_TOKEN_0, false);
     }
 
     @Test
     public void testSplitscreenSameTokenOneMissedStop() throws Exception {
-        if (!supportsSplitScreenMultiWindow()) {
-            // Skipping test: no multi-window support
-            return;
-        }
+        assumeTrue("Skipping test: no multi-window support",
+                supportsSplitScreenMultiWindow(mContext));
 
-        launchActivitiesInSplitScreen(
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityOne.class.getName())),
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityTwo.class.getName())));
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_ONE_COMPONENT),
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_TWO_COMPONENT));
         Thread.sleep(500);
 
-        Activity activity0;
-        Activity activity1;
-        synchronized ( Activities.startedActivities) {
-            activity0 = Activities.startedActivities.valueAt(0);
-            activity1 = Activities.startedActivities.valueAt(1);
+        final Activity activity0;
+        final Activity activity1;
+        synchronized (Activities.sStartedActivities) {
+            activity0 = Activities.sStartedActivities.valueAt(0);
+            activity1 = Activities.sStartedActivities.valueAt(1);
         }
 
         mUsageStatsManager.reportUsageStart(activity0, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity1, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         mUsageStatsManager.reportUsageStop(activity0, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         // Send the device to keyguard to get onStop called for the token reporting activities.
         try (LockScreenSession lockScreenSession =
-                    new LockScreenSession(mInstrumentation, mWmState)) {
+                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.gotoKeyguard();
             Thread.sleep(1000);
-            assertAppOrTokenUsed(mFullToken0, false);
+            assertAppOrTokenUsed(FULL_TOKEN_0, false);
         }
     }
 
     @Test
     public void testSplitscreenSameTokenTwoMissedStop() throws Exception {
-        if (!supportsSplitScreenMultiWindow()) {
-            // Skipping test: no multi-window support
-            return;
-        }
+        assumeTrue("Skipping test: no multi-window support",
+                supportsSplitScreenMultiWindow(mContext));
 
-        launchActivitiesInSplitScreen(
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityOne.class.getName())),
-                getLaunchActivityBuilder().setTargetActivity(
-                        new ComponentName(mTargetPackage,
-                                Activities.ActivityTwo.class.getName())));
+        mSplitScreenActivityUtils.launchActivitiesInSplitScreen(
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_ONE_COMPONENT),
+                getLaunchActivityBuilder().setTargetActivity(ACTIVITY_TWO_COMPONENT));
         Thread.sleep(500);
 
-        Activity activity0;
-        Activity activity1;
-        synchronized ( Activities.startedActivities) {
-            activity0 = Activities.startedActivities.valueAt(0);
-            activity1 = Activities.startedActivities.valueAt(1);
+        final Activity activity0;
+        final Activity activity1;
+        synchronized (Activities.sStartedActivities) {
+            activity0 = Activities.sStartedActivities.valueAt(0);
+            activity1 = Activities.sStartedActivities.valueAt(1);
         }
 
         mUsageStatsManager.reportUsageStart(activity0, TOKEN_0);
         mUsageStatsManager.reportUsageStart(activity1, TOKEN_0);
-        assertAppOrTokenUsed(mFullToken0, true);
+        assertAppOrTokenUsed(FULL_TOKEN_0, true);
 
         // Send the device to keyguard to get onStop called for the token reporting activities.
         try (LockScreenSession lockScreenSession =
-                    new LockScreenSession(mInstrumentation, mWmState)) {
+                     new LockScreenSession(mInstrumentation, mWmState)) {
             lockScreenSession.gotoKeyguard();
             Thread.sleep(1000);
-            assertAppOrTokenUsed(mFullToken0, false);
+            assertAppOrTokenUsed(FULL_TOKEN_0, false);
         }
     }
 
@@ -373,7 +385,7 @@ public class UsageReportingTest extends ActivityManagerTestBase {
             final String[] actives = activeUsages.split("\n");
             boolean found = false;
 
-            for (String active: actives) {
+            for (String active : actives) {
                 if (active.equals(entity)) {
                     found = true;
                     break;
@@ -381,5 +393,17 @@ public class UsageReportingTest extends ActivityManagerTestBase {
             }
             return found == expected;
         });
+    }
+
+    @NonNull
+    private LaunchActivityBuilder getLaunchActivityBuilder() {
+        return new LaunchActivityBuilder(mWmState);
+    }
+
+    private void launchActivity(@NonNull ComponentName componentName) {
+        getLaunchActivityBuilder()
+                .setLaunchingActivity(componentName)
+                .setWaitForLaunched(true)
+                .execute();
     }
 }
