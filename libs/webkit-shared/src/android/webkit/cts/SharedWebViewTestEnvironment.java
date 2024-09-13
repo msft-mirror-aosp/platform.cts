@@ -24,6 +24,7 @@ import android.content.Context;
 import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.SystemClock;
+import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,6 +34,8 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
+
+import com.android.compatibility.common.util.UserHelper;
 
 import org.apache.http.util.EncodingUtils;
 
@@ -211,7 +214,10 @@ public final class SharedWebViewTestEnvironment {
     public static IHostAppInvoker.Stub createHostAppInvoker(
             Context applicationContext, boolean allowUiAutomation) {
         return new IHostAppInvoker.Stub() {
-            private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+            private final Instrumentation mInstrumentation =
+                    InstrumentationRegistry.getInstrumentation();
+            private final UserHelper mUserHelper = new UserHelper(mInstrumentation.getContext());
+            private final int mDisplayId = mUserHelper.getMainDisplayId();
             private UiAutomation mUiAutomation;
 
             @Override
@@ -231,11 +237,17 @@ public final class SharedWebViewTestEnvironment {
             @Override
             public void sendTapSync(int x, int y) {
                 long downTime = SystemClock.uptimeMillis();
-                sendPointerSync(
-                        MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0));
+                sendPointerSync(MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN,
+                        x, y, /* pressure= */ 1.0f, /* size= */ 1.0f, /* metaState= */ 0,
+                        /* xPrecision= */ 1.0f, /* yPrecision= */ 1.0f, /* deviceId= */ 0,
+                        /* edgeFlags= */ 0, InputDevice.SOURCE_CLASS_POINTER, mDisplayId));
+
 
                 long upTime = SystemClock.uptimeMillis();
-                sendPointerSync(MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP, x, y, 0));
+                sendPointerSync(MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP,
+                        x, y, /* pressure= */ 1.0f, /* size= */ 1.0f, /* metaState= */ 0,
+                        /* xPrecision= */ 1.0f, /* yPrecision= */ 1.0f, /* deviceId= */ 0,
+                        /* edgeFlags= */ 0, InputDevice.SOURCE_CLASS_POINTER, mDisplayId));
             }
 
             @Override
