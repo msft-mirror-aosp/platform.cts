@@ -62,6 +62,10 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Build/Install/Run:
+ *     atest CtsDreamsTestCases:DreamServiceTest
+ */
 @RunWith(AndroidJUnit4.class)
 public class DreamServiceTest extends ActivityManagerTestBase {
     private static final int TIMEOUT_SECONDS = 2;
@@ -184,7 +188,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         waitAndAssertTopResumedActivity(dreamActivity, Display.DEFAULT_DISPLAY,
                 "Dream activity should be the top resumed activity");
 
-        removeRootTasksWithActivityTypes(ACTIVITY_TYPE_DREAM);
+        removeRootTasksWithDreamTypeActivity();
 
         // Listen for the dream to end
         final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -348,5 +352,12 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         mWmState.waitAndAssertKeyguardGone();
 
         dreamSession.stop();
+    }
+
+    private void removeRootTasksWithDreamTypeActivity() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(new int[]{ACTIVITY_TYPE_DREAM});
+        });
+        waitForIdle();
     }
 }

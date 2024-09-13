@@ -84,6 +84,14 @@ public class StartActivityTests extends ActivityManagerTestBase {
             ACTIVITY_TYPE_DREAM,
     };
     private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
+    private static final int[] ALL_ACTIVITY_TYPES = {
+            ACTIVITY_TYPE_UNDEFINED,
+            ACTIVITY_TYPE_STANDARD,
+            ACTIVITY_TYPE_HOME,
+            ACTIVITY_TYPE_RECENTS,
+            ACTIVITY_TYPE_ASSISTANT,
+            ACTIVITY_TYPE_DREAM,
+    };
 
     @After
     public void tearDown() {
@@ -97,10 +105,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
         }
 
         final ComponentName defaultHome = getDefaultHomeComponent();
-        final int[] allActivityTypes = Arrays.copyOf(ALL_ACTIVITY_TYPE_BUT_HOME,
-                ALL_ACTIVITY_TYPE_BUT_HOME.length + 1);
-        allActivityTypes[allActivityTypes.length - 1] = ACTIVITY_TYPE_HOME;
-        removeRootTasksWithActivityTypes(allActivityTypes);
+        removeRootTasksWithAllActivityTypes();
 
         waitAndAssertResumedActivity(defaultHome,
                 "Home activity should be restarted after force-finish");
@@ -524,6 +529,13 @@ public class StartActivityTests extends ActivityManagerTestBase {
                 () -> {
                     mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES_BUT_HOME);
                 });
+        waitForIdle();
+    }
+
+    private void removeRootTasksWithAllActivityTypes() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES);
+        });
         waitForIdle();
     }
 }
