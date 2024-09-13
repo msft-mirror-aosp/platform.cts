@@ -50,7 +50,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     public static void beforeAllTests() throws Exception {
         logd(TAG, "beforeAllTests");
 
-        assumeTrue(shouldTestSatelliteWithMockService());
+        if (!shouldTestSatelliteWithMockService()) return;
         beforeAllTestsBase();
         insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
     }
@@ -69,6 +69,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
+        assumeTrue(shouldTestSatelliteWithMockService());
     }
 
     @After
