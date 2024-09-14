@@ -36,8 +36,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -243,6 +245,19 @@ public class InputJsonParser {
         } catch (JSONException e) {
             throw new RuntimeException("Could not process entry " + testCaseNumber + " : " + entry);
         }
+    }
+
+    /**
+     * Encode an InputEvent to the JSON format used by this parser.
+     */
+    public JSONObject encodeEvent(InputEvent event) throws JSONException {
+        if (event instanceof KeyEvent) {
+            return encodeKeyEvent((KeyEvent) event);
+        }
+        if (event instanceof MotionEvent) {
+            return encodeMotionEvent((MotionEvent) event);
+        }
+        throw new IllegalArgumentException("Invalid InputEvent");
     }
 
     /**
@@ -480,14 +495,56 @@ public class InputJsonParser {
         return tests;
     }
 
+    private static JSONObject encodeKeyEvent(KeyEvent event) throws JSONException {
+        JSONObject entry = new JSONObject();
+        entry.put("action", keyActionToString(event.getAction()));
+        entry.put("keycode", KeyEvent.keyCodeToString(event.getKeyCode()));
+        entry.put("metaState", metaStateToString(event.getMetaState()));
+        return entry;
+    }
+
     private KeyEvent parseKeyEvent(int source, JSONObject entry) throws JSONException {
-        int action = keyActionFromString(entry.getString("action"));
+        int action = keyActionFromString(entry.getString("action").toUpperCase());
         int keyCode = KeyEvent.keyCodeFromString(entry.getString("keycode"));
         int metaState = metaStateFromString(entry.optString("metaState"));
         // We will only check select fields of the KeyEvent. Times are not checked.
         return new KeyEvent(/* downTime */ 0, /* eventTime */ 0, action, keyCode,
                 /* repeat */ 0, metaState, /* deviceId */ 0, /* scanCode */ 0,
                 /* flags */ 0, source);
+    }
+
+    private static JSONObject encodeMotionEvent(MotionEvent event)
+            throws JSONException {
+        JSONObject entry = new JSONObject();
+        encodeMotionAction(entry, event.getActionMasked());
+        int pointerCount = event.getPointerCount();
+        if (pointerCount > 1) {
+            JSONArray pointers = new JSONArray();
+            for (int i = 0; i < pointerCount; i++) {
+                JSONObject axes = new JSONObject();
+                for (int axis = 0; axis < MotionEvent.AXIS_GENERIC_16; axis++) {
+                    if (event.getAxisValue(axis, i) != 0) {
+                        axes.put(MotionEvent.axisToString(axis), event.getAxisValue(axis, i));
+                    }
+                }
+                pointers.put(axes);
+            }
+            entry.put("axes", pointers);
+        } else {
+            JSONObject axes = new JSONObject();
+            for (int axis = 0; axis < MotionEvent.AXIS_GENERIC_16; axis++) {
+                if (event.getAxisValue(axis, 0) != 0) {
+                    axes.put(MotionEvent.axisToString(axis), event.getAxisValue(axis, 0));
+                }
+            }
+            entry.put("axes", axes);
+        }
+        JSONArray buttons = new JSONArray();
+        for (String button : motionButtonsToStrings(event.getButtonState())) {
+            buttons.put(button);
+        }
+        entry.put("buttonState", buttons);
+        return entry;
     }
 
     private MotionEvent parseMotionEvent(int source, JSONObject entry) throws JSONException {
@@ -540,14 +597,67 @@ public class InputJsonParser {
                 0, 0, source, 0);
     }
 
+    private static String keyActionToString(int action) {
+        return switch (action) {
+            case KeyEvent.ACTION_DOWN -> "DOWN";
+            case KeyEvent.ACTION_UP -> "UP";
+            default -> throw new RuntimeException("Unknown action specified: " + action);
+        };
+    }
+
     private static int keyActionFromString(String action) {
-        switch (action.toUpperCase()) {
+        switch (action) {
             case "DOWN":
                 return KeyEvent.ACTION_DOWN;
             case "UP":
                 return KeyEvent.ACTION_UP;
         }
         throw new RuntimeException("Unknown action specified: " + action);
+    }
+
+    private static String metaStateToString(int metaState) {
+        StringBuilder metaStateString = new StringBuilder();
+        if (metaState == 0) {
+            return "";
+        }
+        if ((metaState & KeyEvent.META_SHIFT_LEFT_ON) != 0) {
+            metaStateString.append("SHIFT_LEFT|");
+        }
+        if ((metaState & KeyEvent.META_SHIFT_RIGHT_ON) != 0) {
+            metaStateString.append("SHIFT_RIGHT|");
+        }
+        if ((metaState & KeyEvent.META_CTRL_LEFT_ON) != 0) {
+            metaStateString.append("CTRL_LEFT|");
+        }
+        if ((metaState & KeyEvent.META_CTRL_RIGHT_ON) != 0) {
+            metaStateString.append("CTRL_RIGHT|");
+        }
+        if ((metaState & KeyEvent.META_ALT_LEFT_ON) != 0) {
+            metaStateString.append("ALT_LEFT|");
+        }
+        if ((metaState & KeyEvent.META_ALT_RIGHT_ON) != 0) {
+            metaStateString.append("ALT_RIGHT|");
+        }
+        if ((metaState & KeyEvent.META_META_LEFT_ON) != 0) {
+            metaStateString.append("META_LEFT|");
+        }
+        if ((metaState & KeyEvent.META_META_RIGHT_ON) != 0) {
+            metaStateString.append("META_RIGHT|");
+        }
+        if ((metaState & KeyEvent.META_CAPS_LOCK_ON) != 0) {
+            metaStateString.append("CAPS_LOCK|");
+        }
+        if ((metaState & KeyEvent.META_NUM_LOCK_ON) != 0) {
+            metaStateString.append("NUM_LOCK|");
+        }
+        if ((metaState & KeyEvent.META_SCROLL_LOCK_ON) != 0) {
+            metaStateString.append("SCROLL_LOCK|");
+        }
+
+        if (!metaStateString.isEmpty()) {
+            metaStateString.deleteCharAt(metaStateString.length() - 1);
+        }
+        return metaStateString.toString();
     }
 
     private static int metaStateFromString(String metaStateString) {
@@ -598,6 +708,31 @@ public class InputJsonParser {
             }
         }
         return metaState;
+    }
+
+    private static void encodeMotionAction(JSONObject entry, int motionAction)
+            throws JSONException {
+        String action;
+        final int actionMasked = motionAction & MotionEvent.ACTION_MASK;
+        action = switch (actionMasked) {
+            case MotionEvent.ACTION_POINTER_DOWN -> "POINTER_DOWN";
+            case MotionEvent.ACTION_POINTER_UP -> "POINTER_UP";
+            case MotionEvent.ACTION_DOWN -> "DOWN";
+            case MotionEvent.ACTION_MOVE -> "MOVE";
+            case MotionEvent.ACTION_UP -> "UP";
+            case MotionEvent.ACTION_BUTTON_PRESS -> "BUTTON_PRESS";
+            case MotionEvent.ACTION_BUTTON_RELEASE -> "BUTTON_RELEASE";
+            case MotionEvent.ACTION_HOVER_ENTER -> "HOVER_ENTER";
+            case MotionEvent.ACTION_HOVER_MOVE -> "HOVER_MOVE";
+            case MotionEvent.ACTION_HOVER_EXIT -> "HOVER_EXIT";
+            case MotionEvent.ACTION_CANCEL -> "CANCEL";
+            default -> throw new RuntimeException("Unknown action specified: " + motionAction);
+        };
+        entry.put("action", action);
+        if (actionMasked == MotionEvent.ACTION_POINTER_DOWN
+                || actionMasked == MotionEvent.ACTION_POINTER_UP) {
+            entry.put("pointerId", motionAction >> MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+        }
     }
 
     private static int motionActionFromString(JSONObject entry) {
@@ -705,24 +840,38 @@ public class InputJsonParser {
         return source;
     }
 
-    private static int motionButtonFromString(String button) {
-        switch (button.toUpperCase()) {
-            case "BACK":
-                return MotionEvent.BUTTON_BACK;
-            case "FORWARD":
-                return MotionEvent.BUTTON_FORWARD;
-            case "PRIMARY":
-                return MotionEvent.BUTTON_PRIMARY;
-            case "SECONDARY":
-                return MotionEvent.BUTTON_SECONDARY;
-            case "STYLUS_PRIMARY":
-                return MotionEvent.BUTTON_STYLUS_PRIMARY;
-            case "STYLUS_SECONDARY":
-                return MotionEvent.BUTTON_STYLUS_SECONDARY;
-            case "TERTIARY":
-                return MotionEvent.BUTTON_TERTIARY;
+    private static final Map<String, Integer> MOTION_BUTTON_NAMES = new HashMap<>();
+    static {
+        MOTION_BUTTON_NAMES.put("BACK", MotionEvent.BUTTON_BACK);
+        MOTION_BUTTON_NAMES.put("FORWARD", MotionEvent.BUTTON_FORWARD);
+        MOTION_BUTTON_NAMES.put("PRIMARY", MotionEvent.BUTTON_PRIMARY);
+        MOTION_BUTTON_NAMES.put("SECONDARY", MotionEvent.BUTTON_SECONDARY);
+        MOTION_BUTTON_NAMES.put("STYLUS_PRIMARY", MotionEvent.BUTTON_STYLUS_PRIMARY);
+        MOTION_BUTTON_NAMES.put("STYLUS_SECONDARY", MotionEvent.BUTTON_STYLUS_SECONDARY);
+        MOTION_BUTTON_NAMES.put("TERTIARY", MotionEvent.BUTTON_TERTIARY);
+    }
+
+    private static List<String> motionButtonsToStrings(int buttons) {
+        final var strings = new ArrayList<String>();
+        int unprocessedButtons = buttons;
+        for (Map.Entry<String, Integer> e : MOTION_BUTTON_NAMES.entrySet()) {
+            if ((buttons & e.getValue()) != 0) {
+                strings.add(e.getKey());
+                unprocessedButtons &= ~e.getValue();
+            }
         }
-        throw new RuntimeException("Unknown button specified: " + button);
+        if (unprocessedButtons != 0) {
+            throw new RuntimeException("Unknown buttons specified: " + unprocessedButtons);
+        }
+        return strings;
+    }
+
+    private static int motionButtonFromString(String button) {
+        Integer buttonVal = MOTION_BUTTON_NAMES.get(button.toUpperCase());
+        if (buttonVal == null) {
+            throw new RuntimeException("Unknown button specified: " + button);
+        }
+        return buttonVal;
     }
 
     private static int lightTypeFromString(String typeString) {
