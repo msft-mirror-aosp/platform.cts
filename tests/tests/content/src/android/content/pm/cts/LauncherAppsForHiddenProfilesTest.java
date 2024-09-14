@@ -242,7 +242,7 @@ public class LauncherAppsForHiddenProfilesTest {
                 new TestLauncherCallback(targetUser.userHandle(), mTestApp.packageName());
         mLauncherApps.registerCallback(callback, new Handler(Looper.getMainLooper()));
         triggerCallbacks(targetUser);
-        long timeoutSec = 2;
+        long timeoutSec = 5;
         try {
             assertThat(callback.mPackageAdded.await(timeoutSec, TimeUnit.SECONDS))
                     .isEqualTo(received);

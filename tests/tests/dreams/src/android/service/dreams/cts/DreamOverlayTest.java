@@ -16,6 +16,8 @@
 
 package android.service.dreams.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,10 +28,8 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
 import android.view.Display;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.runner.AndroidJUnit4;
-
-import static com.google.common.truth.Truth.assertThat;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -43,10 +43,11 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @SmallTest
 public class DreamOverlayTest extends ActivityManagerTestBase {
+    private static final String DREAM_APP_PACKAGE_NAME = "android.app.dream.cts.app";
     private static final String DREAM_OVERLAY_SERVICE_COMPONENT =
-            "android.app.dream.cts.app/.DreamOverlayService";
+            DREAM_APP_PACKAGE_NAME + "/.DreamOverlayService";
     private static final String DREAM_SERVICE_COMPONENT =
-            "android.app.dream.cts.app/.TestDreamService";
+            DREAM_APP_PACKAGE_NAME + "/.TestDreamService";
     private static final String ACTION_DREAM_OVERLAY_SHOWN =
             "android.app.dream.cts.app.action.overlay_shown";
     private static final String ACTION_DREAM_OVERLAY_REMOVED =
@@ -81,9 +82,10 @@ public class DreamOverlayTest extends ActivityManagerTestBase {
     }
 
     @After
-    public void reset()  {
+    public void tearDown()  {
         mDreamCoordinator.setDreamOverlay(null);
         mDreamCoordinator.restoreDefaults();
+        stopTestPackage(DREAM_APP_PACKAGE_NAME);
     }
 
     @Test
