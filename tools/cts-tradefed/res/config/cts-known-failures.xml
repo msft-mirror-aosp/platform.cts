@@ -257,7 +257,9 @@
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:4:OPENED_REVERSE] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:6:OPENED_REVERSE_PRESENTATION] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
-
+    <!-- b/330287133 -->
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionState" />
+    <option name="compatibility:exclude-filter" value="CtsStatsdAtomHostTestCases[foldable:5:OPENED] android.cts.statsdatom.permissionstate.DangerousPermissionStateTests#testDangerousPermissionStateSampled" />
     <!-- b/202357331 -->
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedDeviceOwnerTest#testCreateAdminSupportIntent" />
     <option name="compatibility:exclude-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testCreateAdminSupportIntent" />
@@ -304,6 +306,16 @@
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraUPerfClassCharacteristics[1]" />
     <option name="compatibility:exclude-filter" value="CtsVirtualDevicesCameraCtsTestCases android.hardware.camera2.cts.ExtendedCameraCharacteristicsTest#testCameraOrientationAlignedWithDevice[1]" />
+
+    <!-- b/363168669 -->
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:3:REAR_DISPLAY_STATE] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:1:HALF_OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:2:OPENED] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:3:REAR_DISPLAY_STATE] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
+    <option name="compatibility:exclude-filter" value="arm64-v8a CtsWidgetTestCases[foldable:4:CONCURRENT_INNER_DEFAULT] android.widget.cts.RemoteViewsTest#testSetTextViewTextSize" />
 
     <!-- b/337925894 -->
     <option name="compatibility:exclude-filter" value="CtsMediaAudioTestCases android.media.audio.cts.AudioRecordTest#testAudioRecordLocalMono16BitShort" />

@@ -87,7 +87,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     public final CheckFlagsRule mFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_CAMERA_DEVICE_SETUP, Flags.FLAG_FEATURE_COMBINATION_QUERY})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupSupport() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             CameraCharacteristics chars = mCameraManager.getCameraCharacteristics(cameraId);
@@ -198,7 +198,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
      * Verify if valid session characteristics can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testSessionCharacteristics() throws Exception {
         String[] cameraIdsUnderTest = getCameraIdsUnderTest();
         for (String cameraId : cameraIdsUnderTest) {
@@ -384,7 +384,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_CAMERA_DEVICE_SETUP, Flags.FLAG_FEATURE_COMBINATION_QUERY})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testCameraDeviceSetupTemplates() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {
@@ -459,7 +459,7 @@ public class CameraDeviceSetupTest extends Camera2AndroidTestCase {
      * Verify if valid session characteristics can be fetched for a particular camera.
      */
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_FEATURE_COMBINATION_QUERY, Flags.FLAG_CAMERA_DEVICE_SETUP})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_DEVICE_SETUP)
     public void testFeatureCombinationQueryConsistency() throws Exception {
         for (String cameraId : getCameraIdsUnderTest()) {
             if (!mCameraManager.isCameraDeviceSetupSupported(cameraId)) {

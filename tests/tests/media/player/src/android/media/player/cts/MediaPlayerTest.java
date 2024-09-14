@@ -70,6 +70,7 @@ import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
 import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
+import com.android.compatibility.common.util.UserHelper;
 
 import junit.framework.AssertionFailedError;
 
@@ -138,10 +139,14 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
 
     private int mBoundsCount;
 
+    private UserHelper mUserHelper;
+
     @Override
     @Before
     public void setUp() throws Throwable {
         super.setUp();
+
+        mUserHelper = new UserHelper(mContext);
         RECORDED_FILE = new File(Environment.getExternalStorageDirectory(),
                 "mediaplayer_record.out").getAbsolutePath();
         mOutFile = new File(RECORDED_FILE);
@@ -1175,7 +1180,9 @@ public class MediaPlayerTest extends MediaPlayerTestBase {
     }
 
     private boolean hasCamera() {
-        return getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
+        // Camera is not supported for a visible background user.
+        return getActivity().getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)
+                && !mUserHelper.isVisibleBackgroundUser();
     }
 
     private void testRecordedVideoPlaybackWithAngle(int angle) throws Exception {

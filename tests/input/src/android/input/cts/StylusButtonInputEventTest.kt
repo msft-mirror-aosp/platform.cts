@@ -30,7 +30,7 @@ import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
 import com.android.cts.input.UinputTouchDevice
-import com.android.cts.input.VirtualDisplayActivityScenarioRule
+import com.android.cts.input.VirtualDisplayActivityScenario
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -75,7 +75,7 @@ class StylusButtonInputEventTest {
     @get:Rule val debugInputRule = DebugInputRule()
     @get:Rule val testName = TestName()
     @get:Rule val virtualDisplayRule =
-        VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+        VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private lateinit var statusBarManager: StatusBarManager
     private lateinit var initialStylusButtonsEnabledSetting: String

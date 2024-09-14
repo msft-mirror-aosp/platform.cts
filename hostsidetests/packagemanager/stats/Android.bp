@@ -84,3 +84,10 @@ test_module_config_host {
     test_suites: ["general-tests"],
     include_filters: ["com.android.cts.packagemanager.stats.host.PackageInstallerV2StatsTests"],
 }
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["androidx.test.filters.LargeTest"],
+}
