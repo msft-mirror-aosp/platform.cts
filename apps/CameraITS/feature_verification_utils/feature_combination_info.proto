@@ -1,0 +1,110 @@
+/*
+ * Copyright (C) 2024 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Proto definition for camera feature combination query results
+
+syntax = "proto3";
+
+package camera_feature_combination_proto;
+
+option java_multiple_files = true;
+
+enum Stabilization {
+  OFF = 0;
+  PREVIEW_STABILIZATION = 1;
+  // reserve 2-254 for future use
+  ANY_STABILIZATION = 255;  // Clients should consider this the "default" if the
+                            // field is not explicitly set.
+}
+
+enum ImageFormat {
+  JPEG = 0;
+  JPEG_R = 1;
+  PRIVATE = 2;
+  YUV_420_888 = 3;
+  // reserve 4-254 for future use
+  ANY_IMAGE_FORMAT = 255;  // Clients should consider this the "default" if the
+                           // field is not explicitly set.
+}
+
+enum DynamicRangeProfile {
+  HLG10 = 0;
+  HDR10 = 1;
+  HDR10_PLUS = 2;
+  STANDARD = 3;
+  // reserve 4-254 for future use
+  ANY_DYNAMIC_RANGE_PROFILE = 255;  // Clients should consider this as the
+                                    // "default" if the field is not
+                                    // explicitly set.
+}
+
+enum StreamUsecase {
+  DEFAULT = 0;
+  PREVIEW = 1;
+  STILL_CAPTURE = 2;
+  VIDEO_RECORD = 3;
+  VIDEO_CALL = 4;
+  PREVIEW_VIDEO_STILL = 5;
+  // reserve 6-254 for future use
+  ANY_STREAM_USECASE = 255;  // Clients should consider this as the "default" if
+                             // the field is not explicitly set.
+}
+
+message Size {
+  uint32 width = 1;
+  uint32 height = 2;
+}
+
+message FrameRateRange {
+  // missing field = wildcard
+  optional uint32 min = 1;
+  uint32 max = 2;
+}
+
+message OutputConfiguration {
+  // missing field = wildcard (i.e. ANY_* value)
+  optional ImageFormat image_format = 1;
+  optional Size size = 2;
+  optional StreamUsecase stream_usecase = 3;
+  optional DynamicRangeProfile dynamic_range_profile = 4;
+}
+
+message SessionConfiguration {
+  repeated OutputConfiguration output_configurations = 1;
+  // missing field = wildcard (i.e. ANY_* value)
+  optional Stabilization stabilization = 2;
+  optional FrameRateRange frame_rate_range = 3;
+}
+
+message FeatureCombinationEntry {
+  SessionConfiguration session_configuration = 1;
+  bool is_supported = 2;
+}
+
+message FeatureCombinationForCamera {
+  string camera_id = 1;
+  repeated FeatureCombinationEntry entries = 2;
+}
+
+message FeatureCombinationDatabase {
+  // Android build fingerprint in the form of
+  // BRAND/PRODUCT/DEVICE:VERSION.RELEASE/ID/VERSION_INCREMENTAL:TYPE/TAGS
+  string build_fingerprint = 1;
+  // Timestamp of database creation in seconds since epoch
+  int64 timestamp_in_sec = 2;
+  // The feature combination info per primary camera
+  repeated FeatureCombinationForCamera feature_combination_for_camera = 3;
+}

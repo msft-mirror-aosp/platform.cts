@@ -179,9 +179,9 @@ android_test {
     team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",
@@ -354,4 +354,12 @@ test_module_config {
     base: "CtsAppTestCases",
     test_suites: ["general-tests"],
     include_filters: ["android.app.cts.DownloadManagerTest"],
+}
+
+test_module_config {
+    name: "CtsAppFgsTestCases_pm_Presubmit",
+    base: "CtsAppFgsTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

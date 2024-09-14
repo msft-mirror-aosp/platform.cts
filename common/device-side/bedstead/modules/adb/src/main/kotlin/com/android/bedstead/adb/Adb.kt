@@ -43,7 +43,7 @@ object Adb {
         return try {
             TestApis.settings().global().getInt(ADB_WIFI_ENABLED) == 1
         } catch (exception: NeneException) {
-            Log.w(LOG_TAG,"ADB_WIFI_ENABLED setting not found on the device")
+            Log.w(LOG_TAG,"ADB_WIFI_ENABLED setting not found on the device", exception)
             false
         }
     }

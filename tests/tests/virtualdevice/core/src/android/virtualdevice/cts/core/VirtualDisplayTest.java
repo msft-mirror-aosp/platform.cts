@@ -19,6 +19,7 @@ package android.virtualdevice.cts.core;
 import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
 
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
@@ -28,12 +29,18 @@ import static org.junit.Assert.assertThrows;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
+import android.graphics.Insets;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.Condition;
 import android.view.Display;
+import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowManager;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
@@ -44,6 +51,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 
 @RunWith(AndroidJUnit4.class)
@@ -52,6 +60,9 @@ public class VirtualDisplayTest {
 
     private static final String PERMISSION_CAPTURE_VIDEO_OUTPUT =
             "android.permission.CAPTURE_VIDEO_OUTPUT";
+
+    private static final String STATUS_BAR_NAME = "android.virtualdevice.cts.core.STATUS_BAR";
+    private static final int STATUS_BAR_HEIGHT = 80;
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -388,6 +399,29 @@ public class VirtualDisplayTest {
         // Check whether display associated with virtual device is valid.
         Display display = virtualDisplay.getDisplay();
         assertThat(display.isValid()).isFalse();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
+    public void addStatusBarAndInsetsOnDisplayOwnedByVirtualDevice_succeeds() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
+                VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder());
+        Context context = getInstrumentation().getContext().createDisplayContext(
+                virtualDisplay.getDisplay());
+
+        WindowManager.LayoutParams lp =
+                new WindowManager.LayoutParams(WindowManager.LayoutParams.TYPE_STATUS_BAR);
+        lp.setTitle(STATUS_BAR_NAME);
+        lp.packageName = context.getPackageName();
+        lp.setInsetsParams(List.of(
+                new WindowManager.InsetsParams(WindowInsets.Type.statusBars())
+                        .setInsetsSize(Insets.of(0, STATUS_BAR_HEIGHT, 0, 0))));
+
+        WindowManager windowManager = context.getSystemService(WindowManager.class);
+        View statusBar = new View(context);
+        getInstrumentation().runOnMainSync(() -> windowManager.addView(statusBar, lp));
+
+        mRule.getWmState().assertWindowDisplayed(STATUS_BAR_NAME);
     }
 
     private void verifyDisplay(VirtualDisplay virtualDisplay) {
