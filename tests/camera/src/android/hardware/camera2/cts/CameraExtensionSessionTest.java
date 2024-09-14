@@ -783,8 +783,7 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_EXTENSION_10_BIT,
-        Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET})
+    @RequiresFlagsEnabled(Flags.FLAG_CAMERA_EXTENSIONS_CHARACTERISTICS_GET)
     public void test10bitRepeatingAndCaptureCombined() throws Exception {
         final int IMAGE_COUNT = 5;
         for (String id : getCameraIdsUnderTest()) {

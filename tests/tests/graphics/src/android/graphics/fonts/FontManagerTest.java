@@ -291,7 +291,7 @@ public class FontManagerTest {
         }
     }
 
-    @CddTest(requirement = "3.8.13/C-1-3")
+    @CddTest(requirements = {"3.8.13/C-1-3"})
     @Test
     public void fontManager_NotoColorEmojiAvailable() throws IOException {
         FontConfig fontConfig = getFontConfig();

@@ -52,6 +52,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WifiNetworkSpecifier;
 import android.net.wifi.WifiNetworkSuggestion;
 import android.os.Build;
+import android.os.SystemClock;
 import android.os.WorkSource;
 import android.support.test.uiautomator.UiDevice;
 import android.text.TextUtils;
@@ -76,7 +77,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Class to hold helper methods that are repeated across wifi CTS tests.
@@ -723,101 +723,94 @@ public class TestHelper {
 
     private static class TestNetworkRequestMatchCallback implements
             WifiManager.NetworkRequestMatchCallback {
-        private final Object mLock;
-
         public boolean onRegistrationCalled = false;
         public boolean onAbortCalled = false;
         public boolean onMatchCalled = false;
         public boolean onConnectSuccessCalled = false;
         public boolean onConnectFailureCalled = false;
+        private CountDownLatch mBlocker;
+
         public WifiManager.NetworkRequestUserSelectionCallback userSelectionCallback = null;
         public List<ScanResult> matchedScanResults = null;
 
-        TestNetworkRequestMatchCallback(Object lock) {
-            mLock = lock;
+        TestNetworkRequestMatchCallback() {
+            mBlocker = new CountDownLatch(1);
+        }
+
+        public boolean waitForAnyCallback(int timeout) {
+            try {
+                boolean noTimeout = mBlocker.await(timeout, TimeUnit.MILLISECONDS);
+                mBlocker = new CountDownLatch(1);
+                return noTimeout;
+            } catch (InterruptedException e) {
+                return false;
+            }
         }
 
         @Override
         public void onUserSelectionCallbackRegistration(
                 WifiManager.NetworkRequestUserSelectionCallback userSelectionCallback) {
             Log.d(TAG, "onUserSelectionCallbackRegistration");
-            synchronized (mLock) {
-                onRegistrationCalled = true;
-                this.userSelectionCallback = userSelectionCallback;
-                mLock.notify();
-            }
+            onRegistrationCalled = true;
+            this.userSelectionCallback = userSelectionCallback;
+            mBlocker.countDown();
         }
 
         @Override
         public void onAbort() {
             Log.d(TAG, "onAbort");
-            synchronized (mLock) {
-                onAbortCalled = true;
-                mLock.notify();
-            }
+            onAbortCalled = true;
+            mBlocker.countDown();
         }
 
         @Override
         public void onMatch(List<ScanResult> scanResults) {
             Log.d(TAG, "onMatch");
-            synchronized (mLock) {
-                // This can be invoked multiple times. So, ignore after the first one to avoid
-                // disturbing the rest of the test sequence.
-                if (onMatchCalled) return;
-                onMatchCalled = true;
-                matchedScanResults = scanResults;
-                mLock.notify();
-            }
+            // This can be invoked multiple times. So, ignore after the first one to avoid
+            // disturbing the rest of the test sequence.
+            if (onMatchCalled) return;
+            onMatchCalled = true;
+            matchedScanResults = scanResults;
+            mBlocker.countDown();
         }
 
         @Override
         public void onUserSelectionConnectSuccess(WifiConfiguration config) {
             Log.d(TAG, "onUserSelectionConnectSuccess");
-            synchronized (mLock) {
-                onConnectSuccessCalled = true;
-                mLock.notify();
-            }
+            onConnectSuccessCalled = true;
+            mBlocker.countDown();
         }
 
         @Override
         public void onUserSelectionConnectFailure(WifiConfiguration config) {
             Log.d(TAG, "onUserSelectionConnectFailure");
-            synchronized (mLock) {
-                onConnectFailureCalled = true;
-                mLock.notify();
-            }
+            onConnectFailureCalled = true;
+            mBlocker.countDown();
         }
     }
 
     private void handleUiInteractions(WifiConfiguration network, boolean shouldUserReject) {
-        // can't use CountDownLatch since there are many callbacks expected and CountDownLatch
-        // cannot be reset.
-        // TODO(b/177591382): Use ArrayBlockingQueue/LinkedBlockingQueue
-        Object uiLock = new Object();
         TestNetworkRequestMatchCallback networkRequestMatchCallback =
-                new TestNetworkRequestMatchCallback(uiLock);
+                new TestNetworkRequestMatchCallback();
+        mWifiManager.registerNetworkRequestMatchCallback(
+                Executors.newSingleThreadExecutor(), networkRequestMatchCallback);
+        long start = SystemClock.elapsedRealtime();
         try {
             // 1. Wait for registration callback.
-            synchronized (uiLock) {
-                try {
+            while (!networkRequestMatchCallback.onRegistrationCalled
+                    && SystemClock.elapsedRealtime() - start < DURATION_UI_INTERACTION_MILLIS) {
+                networkRequestMatchCallback.waitForAnyCallback(1000);
+                if (networkRequestMatchCallback.onAbortCalled) {
+                    networkRequestMatchCallback.onAbortCalled = false;
                     mWifiManager.registerNetworkRequestMatchCallback(
                             Executors.newSingleThreadExecutor(), networkRequestMatchCallback);
-                    uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                } catch (InterruptedException e) {
                 }
             }
             assertThat(networkRequestMatchCallback.onRegistrationCalled).isTrue();
             assertThat(networkRequestMatchCallback.userSelectionCallback).isNotNull();
 
             // 2. Wait for matching scan results
-            synchronized (uiLock) {
-                if (!networkRequestMatchCallback.onMatchCalled) {
-                    try {
-                        uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                    } catch (InterruptedException e) {
-                    }
-                }
-            }
+            networkRequestMatchCallback.waitForAnyCallback(DURATION_UI_INTERACTION_MILLIS);
             assertThat(networkRequestMatchCallback.onMatchCalled).isTrue();
             assertThat(networkRequestMatchCallback.matchedScanResults).isNotNull();
             assertThat(networkRequestMatchCallback.matchedScanResults.size()).isAtLeast(1);
@@ -830,12 +823,7 @@ public class TestHelper {
             }
 
             // 4. Wait for connection success or abort.
-            synchronized (uiLock) {
-                try {
-                    uiLock.wait(DURATION_UI_INTERACTION_MILLIS);
-                } catch (InterruptedException e) {
-                }
-            }
+            networkRequestMatchCallback.waitForAnyCallback(DURATION_UI_INTERACTION_MILLIS);
             if (shouldUserReject) {
                 assertThat(networkRequestMatchCallback.onAbortCalled).isTrue();
             } else {
@@ -865,20 +853,6 @@ public class TestHelper {
         TestLocalOnlyListener localOnlyListener = new TestLocalOnlyListener();
         mWifiManager.addLocalOnlyConnectionFailureListener(Executors.newSingleThreadExecutor(),
                 localOnlyListener);
-        AtomicBoolean uiVerified = new AtomicBoolean(false);
-        // Fork a thread to handle the UI interactions.
-        Thread uiThread = new Thread(() -> {
-            try {
-                handleUiInteractions(network, shouldUserReject);
-                uiVerified.set(true);
-            } catch (Throwable e /* catch assertions & exceptions */) {
-                try {
-                    mConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
-                } catch (IllegalArgumentException ie) { }
-                Log.e(TAG, "handleUiInteractions failed: " + e);
-            }
-        });
-
         try {
             // File a request for wifi network.
             mConnectivityManager.requestNetwork(
@@ -888,11 +862,7 @@ public class TestHelper {
                             .setNetworkSpecifier(specifier)
                             .build(),
                     testNetworkCallback);
-            // Wait for the request to reach the wifi stack before kick-starting the UI
-            // interactions.
-            Thread.sleep(1_000);
-            // Start the UI interactions.
-            uiThread.start();
+            handleUiInteractions(network, shouldUserReject);
             // now wait for callback
             assertThat(testNetworkCallback.waitForAnyCallback(DURATION_NETWORK_CONNECTION_MILLIS))
                     .isTrue();
@@ -926,16 +896,6 @@ public class TestHelper {
             } catch (IllegalArgumentException ie) { }
             throw e;
         }
-        try {
-            // Ensure that the UI interaction thread has completed.
-            uiThread.join(DURATION_UI_INTERACTION_MILLIS);
-        } catch (InterruptedException e) {
-            try {
-                mConnectivityManager.unregisterNetworkCallback(testNetworkCallback);
-            } catch (IllegalArgumentException ie) { }
-            fail("UI interaction interrupted");
-        }
-        assertThat(uiVerified.get()).isTrue();
         mWifiManager.removeLocalOnlyConnectionFailureListener(localOnlyListener);
         return testNetworkCallback;
     }

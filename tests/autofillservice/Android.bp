@@ -114,3 +114,10 @@ test_module_config {
     include_filters: ["android.autofillservice.cts.inline"],
     exclude_annotations: ["androidx.test.filters.LargeTest"],
 }
+
+test_module_config {
+    name: "CtsAutoFillServiceTestCases_android_server_autofill_Presubmit",
+    base: "CtsAutoFillServiceTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+}

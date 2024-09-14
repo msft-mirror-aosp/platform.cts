@@ -6,7 +6,7 @@ java_library {
     name: "hostsidetests-shortcuts-deviceside-common",
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
         "ShortcutManagerTestUtils",
         "compatibility-device-util-axt",
     ],

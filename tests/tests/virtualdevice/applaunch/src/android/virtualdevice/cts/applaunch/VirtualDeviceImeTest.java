@@ -81,7 +81,7 @@ import java.util.concurrent.TimeUnit;
 @RequiresFlagsEnabled(Flags.FLAG_VDM_CUSTOM_IME)
 public class VirtualDeviceImeTest {
 
-    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(3);
+    private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5);
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
@@ -97,6 +97,8 @@ public class VirtualDeviceImeTest {
     private String mVirtualDeviceImeId;
     private int mVirtualDisplayId = Display.INVALID_DISPLAY;
 
+    private int mUserId;
+
     private interface ImeListener {
         void onShow(int displayId);
     }
@@ -110,6 +112,8 @@ public class VirtualDeviceImeTest {
     public void setUp() throws Exception {
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_INPUT_METHODS));
 
+        mUserId = android.os.Process.myUserHandle().getIdentifier();
+
         DefaultDeviceTestIme.sImeListener = mDefaultDeviceImeListener;
         VirtualDeviceTestIme.sImeListener = mVirtualDeviceImeListener;
 
@@ -122,7 +126,7 @@ public class VirtualDeviceImeTest {
     public void tearDown() throws Exception {
         DefaultDeviceTestIme.sImeListener = null;
         VirtualDeviceTestIme.sImeListener = null;
-        SystemUtil.runShellCommandOrThrow("ime reset");
+        SystemUtil.runShellCommandOrThrow("ime reset --user " + mUserId);
     }
 
     /** The virtualDeviceOnly attribute is propagated to InputMethodInfo. */
@@ -221,7 +225,8 @@ public class VirtualDeviceImeTest {
     public void customImeComponent_changeDefaultDeviceIme() {
         createVirtualDeviceAndDisplay(/* imeComponent= */ Optional.of(
                 new ComponentName(mContext, VirtualDeviceTestIme.class.getName())));
-        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isNotEqualTo(mDefaultDeviceDefaultImeId);
 
@@ -229,8 +234,10 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime enable " + mDefaultDeviceDefaultImeId);
-        SystemUtil.runShellCommandOrThrow("ime set " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -254,7 +261,8 @@ public class VirtualDeviceImeTest {
         verify(mVirtualDeviceImeListener, timeout(TIMEOUT_MILLIS).atLeastOnce())
                 .onShow(mVirtualDisplayId);
 
-        SystemUtil.runShellCommandOrThrow("ime disable " + mDefaultDeviceDefaultImeId);
+        SystemUtil.runShellCommandOrThrow("ime disable --user " + mUserId + " "
+                + mDefaultDeviceDefaultImeId);
         assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId())
                 .isEqualTo(mVirtualDeviceImeId);
 
@@ -476,11 +484,16 @@ public class VirtualDeviceImeTest {
             Class<T> imeClass, boolean makeDefault) {
         final String imeId =
                 new ComponentName(mContext, imeClass.getName()).flattenToShortString();
-        SystemUtil.runShellCommandOrThrow("ime enable " + imeId);
+        SystemUtil.runShellCommandOrThrow("ime enable --user " + mUserId + " " + imeId);
         if (makeDefault) {
-            SystemUtil.runShellCommandOrThrow("ime set " + imeId);
-            assertThat(Condition.waitFor("current InputMethodInfo",
-                    () -> mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)))
+            // The "ime set" command can be flaky, try a few times until it takes effect.
+            for (int i = 0; i < 5; ++i) {
+                SystemUtil.runShellCommandOrThrow("ime set --user " + mUserId + " " + imeId);
+                if (mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId)) {
+                    return imeId;
+                }
+            }
+            assertThat(mInputMethodManager.getCurrentInputMethodInfo().getId().equals(imeId))
                     .isTrue();
         }
         return imeId;

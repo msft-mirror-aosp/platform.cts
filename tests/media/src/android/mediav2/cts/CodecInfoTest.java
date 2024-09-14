@@ -37,6 +37,7 @@ import static android.mediav2.common.cts.CodecTestBase.IS_AT_LEAST_V;
 import static android.mediav2.common.cts.CodecTestBase.IS_HDR_CAPTURE_SUPPORTED;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_MAP;
 import static android.mediav2.common.cts.CodecTestBase.PROFILE_HDR10_PLUS_MAP;
+import static android.mediav2.common.cts.CodecTestBase.PROFILE_MAP;
 import static android.mediav2.common.cts.CodecTestBase.VNDK_IS_AT_LEAST_T;
 import static android.mediav2.common.cts.CodecTestBase.canDisplaySupportHDRContent;
 import static android.mediav2.common.cts.CodecTestBase.codecFilter;
@@ -47,6 +48,7 @@ import static android.mediav2.common.cts.CodecTestBase.selectCodecs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import android.media.MediaCodecInfo;
@@ -123,6 +125,53 @@ public class CodecInfoTest {
             }
         }
         return argsList;
+    }
+
+    /**
+     * Checks if the video codecs available on the device advertise support for at least one
+     * profile. The ability to encode / decode clips of that profile is beyond the scope of the
+     * test. The test only checks if at least one profile is advertised.
+     */
+    @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
+    @Test
+    public void testCodecProfileSupport() {
+        Assume.assumeTrue("Test is applicable for video codecs and aac",
+                mMediaType.startsWith("video/") || mMediaType.equals(
+                        MediaFormat.MIMETYPE_AUDIO_AAC));
+        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
+        assertNotNull(mCodecName + " did not provide capabilities \n", caps);
+        assertTrue(mCodecName + " did not advertise any profile", caps.profileLevels.length > 0);
+        int[] profileArray = PROFILE_MAP.get(mMediaType);
+        if (profileArray != null) {
+            boolean hasStandardProfile = false;
+            for (CodecProfileLevel pl : caps.profileLevels) {
+                if (IntStream.of(profileArray).anyMatch(x -> x == pl.profile)) {
+                    hasStandardProfile = true;
+                    break;
+                }
+            }
+            assertTrue(mCodecName + " does not contain at least one standard profile",
+                    hasStandardProfile);
+        }
+    }
+
+    /**
+     * Checks if all the video codecs available on the device advertise supported dimensions.
+     * The ability to encode / decode clips of that size is beyond the scope of the
+     * test. The test only checks if all video codecs advertise valid size.
+     */
+    @ApiTest(apis = "android.media.MediaCodecInfo.VideoCapabilities#dimensions")
+    @Test
+    public void testSupportedDimensions() {
+        Assume.assumeTrue("Test is applicable for video codecs", mMediaType.startsWith("video/"));
+        MediaCodecInfo.CodecCapabilities caps = mCodecInfo.getCapabilitiesForType(mMediaType);
+        assertNotNull(mCodecName + " did not provide codec capabilities \n", caps);
+        MediaCodecInfo.VideoCapabilities vcaps = caps.getVideoCapabilities();
+        assertNotNull(mCodecName + " did not provide video capabilities \n", vcaps);
+        int minWidth = vcaps.getSupportedWidths().getLower();
+        int minHeight = vcaps.getSupportedHeights().getLower();
+        assertTrue(mCodecInfo.getName() + " does not specify size constraints for " + mMediaType,
+                minWidth > 0 && minHeight > 0);
     }
 
     /**

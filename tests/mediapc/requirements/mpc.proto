@@ -40,10 +40,6 @@ enum MediaPerformanceClass {
   // https://source.android.com/docs/compatibility/14/android-14-cdd#227_handheld_media_performance_class
   MEDIA_PERFORMANCE_CLASS_14 = 34;
   // As specified in
-  // copybara_aosp:strip_begin(next sdk)
-  // https://source.android.com/docs/compatibility/15/android-15-cdd#227_handheld_media_performance_class
-  // copybara_aosp:strip_end_and_replace_begin
-  // // Link pending
-  // copybara_aosp:replace_end
+  // Link pending
   MEDIA_PERFORMANCE_CLASS_15 = 35;
 }

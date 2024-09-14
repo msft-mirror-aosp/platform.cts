@@ -20,6 +20,7 @@ import static android.provider.cts.media.MediaProviderTestUtils.resolveVolumeNam
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -80,6 +81,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 @RunWith(Parameterized.class)
 public class MediaStoreUiTest {
@@ -331,6 +333,90 @@ public class MediaStoreUiTest {
             // Deleting files
             uriFilePairWithGrants.second.delete();
             uriFilePairWithoutGrants.second.delete();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidDataDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fdata/document/"
+                    + root + "%3AAndroid%2Fdata");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidDataDirWithZwsChars() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fdata/document/"
+                    + root + "%3AA%E2%80%8Bndroid%2Fdata");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_disabledForAndroidObbDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fobb/document/"
+                    + root + "%3AAndroid%2Fobb");
+
+            assertFalse(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
+        }
+    }
+
+    @Test
+    public void testOpenDocumentTree_enabledForAndroidMediaDir() throws Exception {
+        assumeTrue(supportsHardware());
+        clearDocumentsUi();
+        mDevice.waitForIdle();
+        String root = Set.of(MediaStore.VOLUME_EXTERNAL,
+                MediaStore.VOLUME_EXTERNAL_PRIMARY).contains(mVolumeName) ? "primary" : mVolumeName;
+
+        try {
+            mDevice.executeShellCommand("am start -a android.intent.action.OPEN_DOCUMENT_TREE "
+                    + "--eu android.provider.extra.INITIAL_URI content://com.android"
+                    + ".externalstorage.documents/tree/" + root + "%3AAndroid%2Fmedia/document/"
+                    + root + "%3AAndroid%2Fmedia");
+
+            assertTrue(findSaveButton().isEnabled());
+
+        } finally {
+            clearDocumentsUi();
         }
     }
 

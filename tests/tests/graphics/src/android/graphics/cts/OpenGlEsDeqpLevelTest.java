@@ -61,7 +61,7 @@ public class OpenGlEsDeqpLevelTest {
         }
     }
 
-    @CddTest(requirement = "7.1.4.1/C-2-3,C-2-4")
+    @CddTest(requirements = {"7.1.4.1/C-2-3,C-2-4"})
     @Test
     public void testOpenGlEsDeqpLevel() {
         assumeTrue(

@@ -298,7 +298,7 @@ public class VulkanFeaturesTest {
         mBestDevice = getBestDevice();
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-1,C-2-1")
+    @CddTest(requirements = {"7.1.4.2/C-1-1,C-2-1"})
     @Test
     public void testVulkanHardwareFeatures() throws JSONException {
         if (DEBUG) {
@@ -372,7 +372,7 @@ public class VulkanFeaturesTest {
         }
     }
 
-    @CddTest(requirement = "3.3.1/C-0-12")
+    @CddTest(requirements = {"3.3.1/C-0-12"})
     @Test
     public void testVulkanApplicationBinaryInterfaceRequirements() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -385,7 +385,7 @@ public class VulkanFeaturesTest {
                 mVulkanHardwareVersion.version >= VULKAN_1_1);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-3")
+    @CddTest(requirements = {"7.1.4.2/C-1-3"})
     @Test
     public void testVulkanApiForEachDevice() throws JSONException {
         for (JSONObject device : mVulkanDevices) {
@@ -394,7 +394,7 @@ public class VulkanFeaturesTest {
         }
     }
 
-    @CddTest(requirement = "7.1.4.2/C-3-1")
+    @CddTest(requirements = {"7.1.4.2/C-3-1"})
     @Test
     public void testVulkan1_1Requirements() throws JSONException {
         if (mVulkanHardwareVersion == null || mVulkanHardwareVersion.version < VULKAN_1_1
@@ -426,7 +426,7 @@ public class VulkanFeaturesTest {
                     "externalFenceFeatures", 0x3 /* importable + exportable */));
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-7, 3.3.1/C-0-12")
+    @CddTest(requirements = {"7.1.4.2/C-1-7", "3.3.1/C-0-12"})
     @Test
     public void testVulkanRequiredExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanDevices.length > 0);
@@ -440,7 +440,7 @@ public class VulkanFeaturesTest {
         assertVulkanDeviceExtension(VK_KHR_MAINTENANCE1, VK_KHR_MAINTENANCE1_SPEC_VERSION);
     }
 
-    @CddTest(requirement = "7.9.2/C-1-5")
+    @CddTest(requirements = {"7.9.2/C-1-5"})
     @Test
     public void testVulkanVersionForVrHighPerformance() {
         if (!mPm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE))
@@ -452,7 +452,7 @@ public class VulkanFeaturesTest {
             mVulkanHardwareLevel != null && mVulkanHardwareLevel.version >= 0);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-11")
+    @CddTest(requirements = {"7.1.4.2/C-1-11"})
     @Test
     public void testVulkanBlockedExtensions() throws JSONException {
         assertNoVulkanDeviceExtension("VK_KHR_performance_query");
@@ -461,7 +461,7 @@ public class VulkanFeaturesTest {
         assertNoVulkanDeviceExtension("VK_KHR_video_encode_queue");
     }
 
-    @CddTest(requirement = "7.1.4.2")
+    @CddTest(requirements = {"7.1.4.2"})
     @Test
     public void testVulkanVariantSupport() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -471,7 +471,7 @@ public class VulkanFeaturesTest {
         assertEquals(expectedVariant, actualVariant);
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-14")
+    @CddTest(requirements = {"7.1.4.2/C-1-14"})
     @Test
     public void testVulkanExposedDeviceExtensions() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);
@@ -529,7 +529,7 @@ public class VulkanFeaturesTest {
         return mHasTouchscreen && !mIsTV && !mIsWatch;
     }
 
-    @CddTest(requirement = "7.1.4.2/C-1-13")
+    @CddTest(requirements = {"7.1.4.2/C-1-13"})
     @Test
     public void testAndroidBaselineProfile2021Support() throws JSONException {
         assumeTrue("Skipping because Vulkan is not supported", mVulkanHardwareVersion != null);

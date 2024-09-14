@@ -37,6 +37,8 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,6 +68,9 @@ public final class GameFrameRateTest {
     // The tolerance within which we consider refresh rates are equal
     private static final float REFRESH_RATE_TOLERANCE = 0.01f;
 
+    // Needs to be in sync with RefreshRateSelector::kMinSupportedFrameRate
+    private static final float MIN_SUPPORTED_FRAME_RATE_HZ = 20.0f;
+
     private int mInitialMatchContentFrameRate;
     private DisplayManager mDisplayManager;
     private UiDevice mUiDevice;
@@ -74,8 +79,14 @@ public final class GameFrameRateTest {
     private static final int[] refreshRateDivisorsToTest =
             {120, 110, 100, 90, 80, 70, 60, 50, 40, 30};
 
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
 
-    @Rule
+
+    @Rule(order = 1)
     public ActivityTestRule<GameFrameRateCtsActivity> mActivityRule =
             new ActivityTestRule<>(GameFrameRateCtsActivity.class);
 
@@ -102,6 +113,9 @@ public final class GameFrameRateTest {
         mDisplayManager.setShouldAlwaysRespectAppRequestedMode(true);
         boolean changeIsEnabled =
                 CompatChanges.isChangeEnabled(DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE_CHANGEID);
+
+        // setting idle time to 0 to disable the display idle timeout feature
+        mUiDevice.executeShellCommand("setprop vendor.display.idle_time 0");
         Log.i(TAG, "DISPLAY_MODE_RETURNS_PHYSICAL_REFRESH_RATE_CHANGEID is "
                 + (changeIsEnabled ? "enabled" : "disabled"));
     }
@@ -162,9 +176,24 @@ public final class GameFrameRateTest {
         final long currentDisplayWidth = currentMode.getPhysicalWidth();
 
         for (Display.Mode mode : modes) {
+            // Skip synthetic test modes which are not currently handled. Usually synthetic mode
+            // is handled by a frame rate override, but due to SWITCHING_TYPE_RENDER_FRAME_RATE_ONLY
+            // in the test setup, this is not communicated and thus not handled.
+            // TODO(b/361849950): write new test or fix these tests to handle synthetic modes.
+            if (mode.isSynthetic()) {
+                continue;
+            }
+
             if (mode.getPhysicalHeight() == currentDisplayHeight
                     && mode.getPhysicalWidth() == currentDisplayWidth) {
+
+                // Do not add refresh rates that are too low as those will be discarded by SF
+                if (mode.getRefreshRate() / 2
+                        < MIN_SUPPORTED_FRAME_RATE_HZ + REFRESH_RATE_TOLERANCE) {
+                    continue;
+                }
                 modesWithSameResolution.add(mode);
+                Log.i(TAG, "Mode added: " + mode.toString());
             }
         }
 

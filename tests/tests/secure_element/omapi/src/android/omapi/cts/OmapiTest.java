@@ -239,6 +239,7 @@ public class OmapiTest {
     /** Tests getReaders API */
     @Test
     public void testGetReaders() {
+        assumeTrue(supportOMAPIReaders());
         try {
             waitForConnection();
             Reader[] readers = seService.getReaders();

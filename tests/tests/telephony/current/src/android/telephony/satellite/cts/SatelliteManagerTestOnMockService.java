@@ -807,6 +807,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
 
         // Send SOS satellite datagram
+        datagramCallback.clearSendDatagramRequested();
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 sosResultListener::offer);
@@ -818,13 +819,22 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_WAITING_TO_CONNECT,
                         1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
+        assertTrue(datagramCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, datagramCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                datagramCallback.getSendDatagramRequestedType(0));
 
         // Send keepAlive satellite datagram
         datagramCallback.clearSendDatagramStateChanges();
+        datagramCallback.clearSendDatagramRequested();
         callback.clearModemStates();
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE,
                 datagram, true, getContext().getMainExecutor(),
                 keepAliveResultListener::offer);
+        assertTrue(datagramCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, datagramCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_KEEP_ALIVE,
+                datagramCallback.getSendDatagramRequestedType(0));
 
         // Modem state and datagram transfer state should not be updated
         assertFalse(datagramCallback.waitUntilOnSendDatagramStateChanged(1));
@@ -892,9 +902,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         String mText = "This is a test datagram message from user";
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
 
+        transmissionUpdateCallback.clearSendDatagramRequested();
         sSatelliteManager.sendDatagram(
                 SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE, datagram, true,
                 getContext().getMainExecutor(), resultListener::offer);
+        assertTrue(transmissionUpdateCallback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, transmissionUpdateCallback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                transmissionUpdateCallback.getSendDatagramRequestedType(0));
 
         Integer errorCode;
         try {
@@ -1619,6 +1634,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
 
         // Send three datagrams to observe how pendingCount is updated
         // after processing one datagram at a time.
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener1 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
@@ -1628,16 +1644,31 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 new SatelliteTransmissionUpdateCallbackTest.DatagramStateChangeArgument(
                         SatelliteManager.SATELLITE_DATAGRAM_TRANSFER_STATE_SENDING,
                         1, SatelliteManager.SATELLITE_RESULT_SUCCESS));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener2 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 resultListener2::offer);
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
+
+        callback.clearSendDatagramRequested();
         LinkedBlockingQueue<Integer> resultListener3 = new LinkedBlockingQueue<>(1);
         sSatelliteManager.sendDatagram(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
                 datagram, true, getContext().getMainExecutor(),
                 resultListener3::offer);
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
 
@@ -6443,6 +6474,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         SatelliteDatagram datagram = new SatelliteDatagram(mText.getBytes());
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         if (shouldOverridePointingUiClassName) {
             assertTrue(sMockSatelliteServiceManager.overrideSatellitePointingUiClassName());
         }
@@ -6463,6 +6495,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(errorCode);
         assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         /*
          * Send datagram transfer state should have the following transitions:
@@ -6502,6 +6538,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         SatelliteDatagram datagram = new SatelliteDatagram(sampleText.getBytes());
         LinkedBlockingQueue<Integer> resultListener = new LinkedBlockingQueue<>(1);
         callback.clearSendDatagramStateChanges();
+        callback.clearSendDatagramRequested();
         assertTrue(sMockSatelliteServiceManager.overrideSatellitePointingUiClassName());
         sMockSatelliteServiceManager.clearMockPointingUiActivityStatusChanges();
         sMockSatelliteServiceManager.clearSentSatelliteDatagramInfo();
@@ -6522,6 +6559,10 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertNotNull(errorCode);
         assertThat(errorCode).isEqualTo(SatelliteManager.SATELLITE_RESULT_SUCCESS);
         assertTrue(sMockSatelliteServiceManager.waitForEventOnSendSatelliteDatagram(1));
+        assertTrue(callback.waitUntilOnSendDatagramRequested(1));
+        assertEquals(1, callback.getNumOfSendDatagramRequestedChanges());
+        assertEquals(SatelliteManager.DATAGRAM_TYPE_SOS_MESSAGE,
+                callback.getSendDatagramRequestedType(0));
 
         /*
          * Send datagram transfer state should have the following transitions:

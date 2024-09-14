@@ -26,13 +26,13 @@ import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.cts.input.UinputDrawingTablet
 import com.android.cts.input.UinputTouchDevice
-import com.android.cts.input.VirtualDisplayActivityScenarioRule
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.HEIGHT
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_0
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_180
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_270
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.ORIENTATION_90
-import com.android.cts.input.VirtualDisplayActivityScenarioRule.Companion.WIDTH
+import com.android.cts.input.VirtualDisplayActivityScenario
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_HEIGHT
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.DEFAULT_WIDTH
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_0
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_180
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_270
+import com.android.cts.input.VirtualDisplayActivityScenario.Companion.ORIENTATION_90
 import com.android.cts.input.inputeventmatchers.withCoords
 import com.android.cts.input.inputeventmatchers.withMotionAction
 import com.android.cts.input.inputeventmatchers.withSource
@@ -55,7 +55,7 @@ class DrawingTabletTest {
     @get:Rule
     val testName = TestName()
     @get:Rule
-    val virtualDisplayRule = VirtualDisplayActivityScenarioRule<CaptureEventActivity>(testName)
+    val virtualDisplayRule = VirtualDisplayActivityScenario.Rule<CaptureEventActivity>(testName)
 
     @Before
     fun setUp() {
@@ -201,9 +201,9 @@ class DrawingTabletTest {
         /** Coordinates in the drawing tablet injected in [verifyTaps]. */
         val INJECTION_POINTS = arrayOf(
             Point(0, 0), // top-left corner of drawing tablet
-            Point(WIDTH - 1, 0), // top-right corner of drawing tablet
-            Point(WIDTH - 1, HEIGHT - 1), // bottom-right corner of drawing tablet
-            Point(0, HEIGHT - 1), // bottom-left corner of drawing tablet
+            Point(DEFAULT_WIDTH - 1, 0), // top-right corner of drawing tablet
+            Point(DEFAULT_WIDTH - 1, DEFAULT_HEIGHT - 1), // bottom-right corner of drawing tablet
+            Point(0, DEFAULT_HEIGHT - 1), // bottom-left corner of drawing tablet
             Point(200, 200), // point inside drawing tablet
             Point(200, 600), // point inside drawing tablet
         )
@@ -239,10 +239,10 @@ class DrawingTabletTest {
         )
 
         fun transformForRotatedDrawingTablet(p: Point): PointF? {
-            val rotatedScale = HEIGHT.toFloat() / WIDTH.toFloat()
+            val rotatedScale = DEFAULT_HEIGHT.toFloat() / DEFAULT_WIDTH.toFloat()
             val scaled = PointF(p.x * rotatedScale, p.y * rotatedScale)
-            if (scaled.x < 0 || scaled.x >= HEIGHT.toFloat() ||
-                scaled.y < 0 || scaled.y >= WIDTH.toFloat()) {
+            if (scaled.x < 0 || scaled.x >= DEFAULT_HEIGHT.toFloat() ||
+                scaled.y < 0 || scaled.y >= DEFAULT_WIDTH.toFloat()) {
                 return null
             }
             return scaled

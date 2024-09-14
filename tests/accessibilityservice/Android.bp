@@ -73,3 +73,10 @@ java_library_static {
     ],
     srcs: ["src/**/utils/*.java"],
 }
+
+test_module_config {
+    name: "CtsAccessibilityServiceTestCases_cts_accessibilitydisplayproxytest",
+    base: "CtsAccessibilityServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.accessibilityservice.cts.AccessibilityDisplayProxyTest"],
+}

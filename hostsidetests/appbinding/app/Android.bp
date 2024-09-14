@@ -31,7 +31,7 @@ package {
 
 java_defaults {
     name: "cts_hostside_appbinding_defaults",
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     sdk_version: "test_current",
     static_libs: [
         "ctstestrunner-axt",
@@ -96,6 +96,7 @@ android_test_helper_app {
         "general-tests",
     ],
 }
+
 android_test_helper_app {
     name: "CtsAppBindingService5",
     defaults: [

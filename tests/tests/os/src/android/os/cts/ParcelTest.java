@@ -36,7 +36,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
-import android.platform.test.annotations.IgnoreUnderRavenwood;
+import android.platform.test.annotations.DisabledOnRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.util.Log;
 import android.util.SparseArray;
@@ -58,7 +58,8 @@ import java.util.Set;
 
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ParcelTest {
-    @Rule public RavenwoodRule mRavenwood = new RavenwoodRule();
+    @Rule
+    public RavenwoodRule mRavenwood = new RavenwoodRule.Builder().build();
 
     private static final float DELTA_FLOAT = 0.0f;
     private static final double DELTA_DOUBLE = 0.0d;
@@ -331,7 +332,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testObtainWithBinder() {
         Parcel p = Parcel.obtain(new Binder("anything"));
         // testing does not throw an exception, Parcel still works
@@ -345,7 +345,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testEnforceInterface() {
         Parcel p;
         String s = "IBinder interface token";
@@ -601,17 +600,15 @@ public class ParcelTest {
         }
         p.recycle();
 
-        if (!mRavenwood.isUnderRavenwood()) {
-            // test IBinder
-            Binder binder;
-            Binder binder2 = new Binder();
-            p = Parcel.obtain();
-            p.writeValue(binder2);
-            p.setDataPosition(0);
-            binder = (Binder) p.readValue(mcl);
-            assertEquals(binder2, binder);
-            p.recycle();
-        }
+        // test IBinder
+        Binder binder;
+        Binder binder2 = new Binder();
+        p = Parcel.obtain();
+        p.writeValue(binder2);
+        p.setDataPosition(0);
+        binder = (Binder) p.readValue(mcl);
+        assertEquals(binder2, binder);
+        p.recycle();
 
         // test Parcelable[]
         Signature[] signatures = {new Signature("1234"),
@@ -2269,7 +2266,7 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
+    @DisabledOnRavenwood(reason = "Test classes are loaded with the bootclassloader")
     public void testReadSerializableWithClass_whenNullClassLoader(){
         Parcel p = Parcel.obtain();
         TestSubException testSubException = new TestSubException("test");
@@ -2773,7 +2770,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testReadException2() {
         Parcel p = Parcel.obtain();
         String msg = "testReadException2";
@@ -2830,7 +2826,7 @@ public class ParcelTest {
         p.setDataPosition(0);
         try {
             p.writeException(new RuntimeException());
-            fail("Should throw an IllegalStateException");
+            fail("Should throw a RuntimeException");
         } catch (RuntimeException e) {
             //expected
         }
@@ -3475,7 +3471,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testWriteStrongBinder() {
         Parcel p;
         Binder binder;
@@ -3496,7 +3491,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testWriteStrongInterface() {
         Parcel p;
         MockIInterface mockInterface = new MockIInterface();
@@ -3517,7 +3511,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testWriteBinderArray() {
         Parcel p;
         IBinder[] ibinder2 = {new Binder(), new Binder()};
@@ -3580,7 +3573,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testCreateBinderArray() {
         Parcel p;
         IBinder[] ibinder  = {};
@@ -3616,7 +3608,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testWriteBinderList() {
         Parcel p;
         ArrayList<IBinder> arrayList = new ArrayList<IBinder>();
@@ -3663,7 +3654,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testCreateBinderArrayList() {
         Parcel p;
         ArrayList<IBinder> arrayList = new ArrayList<IBinder>();
@@ -3698,7 +3688,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testInterfaceArray() {
         Parcel p;
         MockIInterface[] iface2 = {new MockIInterface(), new MockIInterface(), null};
@@ -3788,7 +3777,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testInterfaceList() {
         Parcel p;
         ArrayList<MockIInterface> arrayList = new ArrayList<>();
@@ -3877,7 +3865,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testFixedArray() {
         Parcel p = Parcel.obtain();
 
@@ -3912,7 +3899,7 @@ public class ParcelTest {
         p.writeFixedArray(interfaces, 0, new int[]{2, 3});
         p.setDataPosition(0);
         MockIInterface[][] interfacesRead = p.createFixedArray(MockIInterface[][].class,
-            MockIInterface::asInterface, new int[]{2, 3});
+                MockIInterface::asInterface, new int[]{2, 3});
         assertEquals(2, interfacesRead.length);
         assertEquals(3, interfacesRead[0].length);
         MockIInterface[][] mockInterfaces = new MockIInterface[2][3];
@@ -4283,7 +4270,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testBinderDataProtection() {
         Parcel p;
         IBinder b = new Binder();
@@ -4315,7 +4301,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     public void testBinderDataProtectionIncrements() {
         Parcel p;
         IBinder b = new Binder();
@@ -4765,7 +4750,6 @@ public class ParcelTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood
     @AsbSecurityTest(cveBugId = 140419401)
     public void testObjectResize() throws Exception {
         Parcel p;

@@ -73,9 +73,9 @@ java_defaults {
         "libnativehelper_compat_libc++",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "apache-commons-compress",
@@ -388,9 +388,9 @@ android_ravenwood_test {
     ],
     resource_apk: "CtsResourcesTestCasesRavenwood-res",
     libs: [
-        "android.test.runner",
-        "android.test.base",
-        "android.test.mock",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
+        "android.test.mock.stubs.system",
     ],
     static_libs: [
         "androidx.annotation_annotation",

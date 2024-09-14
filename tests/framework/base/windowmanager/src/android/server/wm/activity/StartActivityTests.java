@@ -60,6 +60,8 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
+
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -73,6 +75,12 @@ import java.util.stream.Stream;
  */
 @Presubmit
 public class StartActivityTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
+    }
 
     @Test
     public void testStartHomeIfNoActivities() {
