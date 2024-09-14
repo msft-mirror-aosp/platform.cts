@@ -71,6 +71,7 @@ android_test_helper_app {
         "camera_platform_flags_java_lib",
         "compatibility-device-info",
         "compatibility-device-util-axt",
+        "display_flags_lib",
     ],
     // Disable by default
     enforce_uses_libs: false,

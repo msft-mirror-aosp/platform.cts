@@ -17,11 +17,13 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.appfunctions.cts.helper" >
-
     <application android:debuggable="true">
         <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
             android:exported="true">
+            <property
+                android:name="android.app.appfunctions"
+                android:value="appfunctions.xml"/>
             <intent-filter>
                 <action android:name="android.app.appfunctions.AppFunctionService"/>
             </intent-filter>
