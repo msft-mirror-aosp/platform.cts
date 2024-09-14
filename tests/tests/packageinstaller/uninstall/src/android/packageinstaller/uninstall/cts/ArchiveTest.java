@@ -29,6 +29,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -49,6 +50,7 @@ import android.content.pm.LauncherApps.ArchiveCompatibilityParams;
 import android.content.pm.PackageInstaller;
 import android.content.pm.PackageInstaller.UnarchivalState;
 import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.PackageManager.PackageInfoFlags;
 import android.os.Handler;
 import android.os.Looper;
@@ -574,6 +576,82 @@ public class ArchiveTest {
             Assert.fail("OK button not shown");
         }
         clickableView.click();
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    public void unarchiveApp_noInstaller_cannotUnarchive_canReinstall() throws Exception {
+        final UiAutomation uiAutomation =
+                InstrumentationRegistry.getInstrumentation().getUiAutomation();
+
+        try {
+            // install an installer app
+            installPackage(ARCHIVE_INSTALLER_APK);
+            // install a target app with a custom installer set
+            installPackage(ARCHIVE_APK, ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+
+            prepareDevice();
+            LocalIntentSender archiveSender = new LocalIntentSender();
+
+            // adopt DELETE_PACKAGES permission
+            uiAutomation.adoptShellPermissionIdentity(Manifest.permission.DELETE_PACKAGES);
+
+            mPackageInstaller.requestArchive(ARCHIVE_APP_PACKAGE_NAME,
+                    archiveSender.getIntentSender());
+            // Since installer is different from the requester of archival, we'll get a
+            // STATUS_PENDING_USER_ACTION.
+            Intent resultIntent = archiveSender.getResult();
+            assertThat(resultIntent.getIntExtra(PackageInstaller.EXTRA_STATUS, -100))
+                    .isEqualTo(PackageInstaller.STATUS_PENDING_USER_ACTION);
+
+            Intent archivalIntent = resultIntent.getParcelableExtra(Intent.EXTRA_INTENT,
+                    Intent.class);
+            assert archivalIntent != null;
+            archivalIntent.addFlags(FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(archivalIntent);
+
+            UiObject2 headerTitle = waitFor(
+                    Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "alertTitle")));
+            UiObject2 message = waitFor(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, "message")));
+            assertThat(headerTitle.getText()).contains("Archive");
+            assertThat(message.getText()).contains("data will be saved");
+
+            // Confirm the archive app can be archived after user confirmation
+            UiObject2 clickableView = mUiDevice.findObject(By.res(SYSTEM_PACKAGE_NAME, "button1"));
+            if (clickableView == null) {
+                Assert.fail("OK button not shown");
+            }
+            clickableView.click();
+
+            for (int i = 0; i < 30; i++) {
+                // We can't detect the confirmation Toast with UiAutomator, so we'll poll
+                Thread.sleep(500);
+                if (!isInstalled()) {
+                    break;
+                }
+            }
+            assertTrue(mPackageManager.getPackageInfo(ARCHIVE_APP_PACKAGE_NAME,
+                    PackageInfoFlags.of(MATCH_ARCHIVED_PACKAGES)).applicationInfo.isArchived);
+
+            // Uninstalling the installer app will set the responsible installer of target app
+            // to null
+            uninstallPackage(ARCHIVE_INSTALLER_APP_PACKAGE_NAME);
+            assertFalse(isInstalled(ARCHIVE_INSTALLER_APP_PACKAGE_NAME));
+
+            // Unarchiving the app should fail since there's no responsible installer
+            NameNotFoundException e = assertThrows(NameNotFoundException.class,
+                    () -> mPackageInstaller.requestUnarchive(ARCHIVE_APP_PACKAGE_NAME,
+                        archiveSender.getIntentSender()));
+
+            assertThat(e).hasMessageThat().contains("No installer found to unarchive app");
+
+            // Try to reinstall the app
+            String command = String.format("pm install -r -t -g -i %s --pkg %s %s",
+                    ARCHIVE_INSTALLER_APP_PACKAGE_NAME, ARCHIVE_APP_PACKAGE_NAME, ARCHIVE_APK);
+            assertEquals("Success\n", SystemUtil.runShellCommand(command));
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 
     private void prepareDevice() throws Exception {
