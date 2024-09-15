@@ -25,7 +25,6 @@ import android.os.Looper
 import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display
-import android.view.Surface
 import android.view.View
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
@@ -164,7 +163,7 @@ open class UinputTouchDevice(
         )
         waitForDeviceUpdatesUntil {
             val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
-            display.displayId == inputDevice!!.associatedDisplayId
+            inputDevice != null && display.displayId == inputDevice.associatedDisplayId
         }
     }
 
@@ -230,11 +229,14 @@ open class UinputTouchDevice(
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
      * @param x The x coordinate in screen (logical display) space.
      * @param y The y coordinate in screen (logical display) space.
+     * @param toolType The tool type to be used, default to MT_TOOL_FINGER.
+     * @param pressure The pressure value to be used, default not sending pressure.
      */
-    fun touchDown(x: Int, y: Int): Pointer {
+    @JvmOverloads
+    fun touchDown(x: Int, y: Int, toolType: Int = MT_TOOL_FINGER, pressure: Int? = null): Pointer {
         val pointerId = firstUnusedPointerId()
         pointerIds.add(pointerId)
-        return Pointer(pointerId, x, y)
+        return Pointer(pointerId, pressure, toolType, x, y)
     }
 
     private fun firstUnusedPointerId(): Int {
@@ -258,14 +260,18 @@ open class UinputTouchDevice(
      */
     inner class Pointer(
         private val id: Int,
+        private val pressure: Int?,
+        toolType: Int,
         x: Int,
         y: Int,
     ) : AutoCloseable {
         private var active = true
+
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), toolType)
+            pressure?.let { sendPressure(pressure) }
             sync()
         }
 
@@ -291,6 +297,7 @@ open class UinputTouchDevice(
                 sendBtnTouch(false)
             }
             sendUp(id)
+            pressure?.let { sendPressure(0) }
             sync()
             active = false
             removePointer(id)

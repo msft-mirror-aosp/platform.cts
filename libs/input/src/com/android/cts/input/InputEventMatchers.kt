@@ -21,6 +21,7 @@ import android.graphics.PointF
 import android.view.KeyEvent
 import android.view.KeyEvent.keyCodeToString
 import android.view.MotionEvent
+import android.view.MotionEvent.PointerCoords
 import kotlin.math.abs
 import org.hamcrest.Description
 import org.hamcrest.Matcher
@@ -83,6 +84,40 @@ fun withRawCoords(pt: PointF, epsilon: Float = EPSILON):
     }
 }
 
+private fun hasResampledSamples(event: MotionEvent): Boolean {
+    for (h in 0 until event.historySize) {
+        for (p in 0 until event.pointerCount) {
+            if (PointerCoords().also { event.getHistoricalPointerCoords(p, h, it) }.isResampled()) {
+                return true
+            }
+        }
+    }
+    for (p in 0 until event.pointerCount) {
+        if (PointerCoords().also { event.getPointerCoords(p, it) }.isResampled()) {
+            return true
+        }
+    }
+    return false
+}
+
+// A MotionEvent is treated as "resampled" if it contains any resampled pointers.
+fun isResampled(isResampled: Boolean): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("Is resampled = $isResampled")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return hasResampledSamples(event) == isResampled
+        }
+
+        override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+            mismatchDescription.appendText(
+                "Event was " + if (hasResampledSamples(event)) "" else "not" + " resampled"
+            )
+        }
+    }
+
 fun withMotionAction(action: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With action = ${MotionEvent.actionToString(action)}")
@@ -129,6 +164,17 @@ fun withSource(source: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<Mot
         return event.source == source
     }
 }
+
+fun withButtonState(buttonState: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+        override fun describeTo(description: Description) {
+            description.appendText("With buttonState = $buttonState")
+        }
+
+        override fun matchesSafely(event: MotionEvent): Boolean {
+            return event.buttonState == buttonState
+        }
+    }
 
 fun withDeviceId(deviceId: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
@@ -222,6 +268,25 @@ fun withPressure(pressure: Float): Matcher<MotionEvent> = object : TypeSafeMatch
 
     override fun matchesSafely(event: MotionEvent): Boolean {
         return abs(event.pressure - pressure) < EPSILON
+    }
+
+    override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+        mismatchDescription.appendText("Got pressure ${event.pressure}")
+    }
+}
+
+fun withHistorySize(historySize: Int): Matcher<MotionEvent> =
+    object : TypeSafeMatcher<MotionEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With history size = $historySize")
+    }
+
+    override fun matchesSafely(event: MotionEvent): Boolean {
+        return event.historySize == historySize
+    }
+
+    override fun describeMismatchSafely(event: MotionEvent, mismatchDescription: Description) {
+        mismatchDescription.appendText("Got history size ${event.historySize}")
     }
 }
 
