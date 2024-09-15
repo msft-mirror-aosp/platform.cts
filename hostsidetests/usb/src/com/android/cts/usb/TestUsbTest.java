@@ -59,6 +59,7 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
     private static final String DUMMY_ACTIVITY = PACKAGE_NAME + ".DummyActivity";
     private static final long CONN_TIMEOUT_MS = 15000;
     private static final long SLEEP_MS = 300;
+    private static final String FEATURE_MIDI = "android.software.midi";
     private static final String MIDI_DEVICE_NAME = "Android USB Peripheral Port";
 
     private ITestDevice mDevice;
@@ -263,6 +264,10 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
         String adbSerial = mDevice.getSerialNumber().toLowerCase(Locale.ENGLISH).trim();
         if (adbSerial.startsWith("emulator-") || mDevice.isAdbTcp()) {
             return; // Skip emulators and adb over WiFi
+        }
+
+        if (!mDevice.executeShellCommand("pm list features").contains(FEATURE_MIDI)) {
+            return; // Skip if midi isn't supported on the device
         }
 
         mDevice.executeShellCommand("svc usb setFunctions midi");
