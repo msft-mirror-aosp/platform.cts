@@ -186,8 +186,18 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         raise AssertionError('No supported sizes/formats found!')
 
       # Set tablet brightness to darken scene
-      self.set_screen_brightness(
-          low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()][0])
+      brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['BACK']):
+        self.set_screen_brightness(brightness[0])
+      elif (props['android.lens.facing'] ==
+            camera_properties_utils.LENS_FACING['FRONT']):
+        self.set_screen_brightness(brightness[1])
+      else:
+        logging.debug('Only front and rear camera supported. '
+                      'Skipping for camera ID %s',
+                      self.camera_id)
+        camera_properties_utils.skip_unless(False)
 
       file_stem = f'{test_name}_{self.camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
