@@ -34,6 +34,8 @@ import com.android.queryable.queries.UserHandleQuery;
 import com.android.queryable.queries.UserHandleQueryHelper;
 import com.android.queryable.util.SerializableParcelWrapper;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
+
 /**
  * Event logged when {@link DeviceAdminReceiver#onUserRemoved(Context, Intent, UserHandle)} is called.
  */
@@ -129,6 +131,7 @@ public final class DeviceAdminUserRemovedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminUserRemovedEventLogger setDeviceAdminReceiver(
                 DeviceAdminReceiver deviceAdminReceiver) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiver);
@@ -143,6 +146,7 @@ public final class DeviceAdminUserRemovedEvent extends Event {
         }
 
         /** Sets the {@link DeviceAdminReceiver} which received this event. */
+        @CanIgnoreReturnValue
         public DeviceAdminUserRemovedEventLogger setDeviceAdminReceiver(
                 String deviceAdminReceiverClassName) {
             mEvent.mDeviceAdminReceiver = new DeviceAdminReceiverInfo(deviceAdminReceiverClassName);

@@ -23,6 +23,7 @@ import struct
 import time
 
 import cv2
+import matplotlib
 from matplotlib import pylab
 import matplotlib.pyplot
 import numpy as np
@@ -32,6 +33,8 @@ from serial.tools import list_ports
 
 import camera_properties_utils
 import image_processing_utils
+
+matplotlib.use('agg')  # Must be executed before any figure is created.
 
 # Constants for Rotation Rig
 ARDUINO_ANGLE_MAX = 180.0  # degrees

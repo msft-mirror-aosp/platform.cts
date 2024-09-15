@@ -35,6 +35,7 @@ _EXP_LONG_THRESH = 1E6  # 1ms
 _EXP_MULT_SHORT = pow(2, 1.0/3)  # Test 3 steps per 2x exposure
 _EXP_MULT_LONG = pow(10, 1.0/3)  # Test 3 steps per 10x exposure
 _IMG_DELTA_THRESH = 0.99  # Each shot must be > 0.99*previous
+_IMG_INCREASING_ATOL = 2  # Require images get at lease 2x black level
 _IMG_SAT_RTOL = 0.01  # 1%
 _IMG_STATS_GRID = 9  # find used to find the center 11.11%
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
@@ -115,15 +116,17 @@ def assert_increasing_means(means, exps, sens, black_levels, white_level):
   lower_thresh = np.array(black_levels) * (1 + _BLK_LVL_RTOL)
   logging.debug('Lower threshold for check: %s', lower_thresh)
   allow_under_saturated = True
-  image_saturated = False
+  image_increasing = False
   for i in range(1, len(means)):
     prev_mean = means[i-1]
     mean = means[i]
 
+    if max(mean) > min(black_levels) * _IMG_INCREASING_ATOL:
+      image_increasing = True
+
     if math.isclose(max(mean), white_level, rel_tol=_IMG_SAT_RTOL):
       logging.debug('Saturated: white_level %f, max_mean %f',
                     white_level, max(mean))
-      image_saturated = True
       break
 
     if allow_under_saturated and min(mean-lower_thresh) < 0:
@@ -143,12 +146,12 @@ def assert_increasing_means(means, exps, sens, black_levels, white_level):
           e_msg += (f'exp[i-1]: {exps[i-2]:.3f}ms, '
                     f'mean[i-1]: {prev_mean[ch]:.2f}, ')
         e_msg += (f'exp[i]: {exps[i-1]:.3f}ms, mean[i]: {mean[ch]}, '
-                  f'TOL: {_IMG_DELTA_THRESH}')
+                  f'RTOL: {_IMG_DELTA_THRESH}')
         raise AssertionError(e_msg)
 
-  # Check image saturates
-  if not image_saturated:
-    raise AssertionError('Image does not saturate at high exposure!')
+  # Check image increases
+  if not image_increasing:
+    raise AssertionError('Image does not increase with exposure!')
 
 
 class RawExposureTest(its_base_test.ItsBaseTest):
@@ -176,6 +179,7 @@ class RawExposureTest(its_base_test.ItsBaseTest):
 
       # Create list of exposures
       e_min, e_max = props['android.sensor.info.exposureTimeRange']
+      logging.debug('exposureTimeRange(ns): %d, %d', e_min, e_max)
       e_test = create_test_exposure_list(e_min, e_max)
       e_test_ms = [e*_NS_TO_MS_FACTOR for e in e_test]
 

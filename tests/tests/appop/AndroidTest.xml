@@ -19,6 +19,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="run_on_sdk_sandbox" />
 
     <!-- TODO(b/245579250): update to Sdk34 once sdk finalized -->
@@ -35,7 +36,10 @@
 
     <!-- Create place to store apks -->
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="test-user-token" value="%TEST_USER%"/>
         <option name="run-command" value="mkdir -p /data/local/tmp/cts/appops" />
+        <option name="run-command" value="appops set --user %TEST_USER% android.app.appops.cts OP_RESERVED_FOR_TESTING allow" />
+        <option name="run-command" value="appops set --user %TEST_USER% com.google.android.packageinstaller OP_RESERVED_FOR_TESTING allow" />
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts" />
     </target_preparer>
 

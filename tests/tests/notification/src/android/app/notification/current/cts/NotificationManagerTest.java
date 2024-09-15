@@ -103,6 +103,8 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -114,7 +116,9 @@ import com.google.common.base.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -148,6 +152,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             "com.android.test.notificationprovider.RichNotificationActivity";
     final String TAG = NotificationManagerTest.class.getSimpleName();
     final boolean DEBUG = false;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION = 264179692L;
     private static final String DELEGATE_POST_CLASS = TEST_APP + ".NotificationDelegateAndPost";
@@ -252,6 +260,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         PermissionUtils.grantPermission(PRESSURE_APP_05, POST_NOTIFICATIONS);
         PermissionUtils.grantPermission(PRESSURE_APP_06, POST_NOTIFICATIONS);
         PermissionUtils.grantPermission(PRESSURE_APP_07, POST_NOTIFICATIONS);
+        PermissionUtils.setAppOp(mContext.getPackageName(),
+                android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ALLOWED);
 
         // This will leave a set of channels on the device with each test run.
         mId = UUID.randomUUID().toString();
@@ -299,6 +309,8 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         PermissionUtils.revokePermission(PRESSURE_APP_05, POST_NOTIFICATIONS);
         PermissionUtils.revokePermission(PRESSURE_APP_06, POST_NOTIFICATIONS);
         PermissionUtils.revokePermission(PRESSURE_APP_07, POST_NOTIFICATIONS);
+        PermissionUtils.setAppOp(mContext.getPackageName(),
+                android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_DEFAULT);
     }
 
     private PendingIntent getPendingIntent() {
@@ -824,6 +836,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         channelMap.put(channel2.getId(), channel2);
         channelMap.put(channel3.getId(), channel3);
         channelMap.put(channel4.getId(), channel4);
+        channelMap.put(NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL);
         mNotificationManager.createNotificationChannel(channel1);
         mNotificationManager.createNotificationChannel(channel2);
         mNotificationManager.createNotificationChannel(channel3);
@@ -833,19 +846,14 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         List<NotificationChannel> channels = mNotificationManager.getNotificationChannels();
         for (NotificationChannel nc : channels) {
-            if (NotificationChannel.DEFAULT_CHANNEL_ID.equals(nc.getId())) {
-                continue;
-            }
-            if (NOTIFICATION_CHANNEL_ID.equals(nc.getId())) {
-                continue;
-            }
             assertFalse(channel3.getId().equals(nc.getId()));
             if (!channelMap.containsKey(nc.getId())) {
-                // failed cleanup from prior test run; ignore
-                continue;
+                fail("Found extra channel " + nc.getId());
             }
             compareChannels(channelMap.get(nc.getId()), nc);
         }
+        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this test
+        assertEquals(4, channels.size());
     }
 
     @Test
@@ -930,6 +938,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendPackage() throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
@@ -1190,6 +1202,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendedPackageSendsNotification() throws Exception {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
@@ -2036,9 +2052,9 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         listener.onNotificationRemoved(null);
         listener.onNotificationRemoved(null, null);
 
-        listener.onNotificationChannelGroupModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelGroupModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
-        listener.onNotificationChannelModified("", UserHandle.CURRENT, null,
+        listener.onNotificationChannelModified("", mContext.getUser(), null,
                 NotificationListenerService.NOTIFICATION_CHANNEL_OR_GROUP_ADDED);
 
         listener.onListenerDisconnected();
@@ -2250,13 +2266,17 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 assertAccessible(background7Uri);
                 assertTrue(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
 
-                // Remove the listener to ensure permissions get revoked
-                mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
+                // Remove the external listener to ensure permissions get revoked
+                toggleExternalListenerAccess(
+                        new ComponentName("com.android.test.notificationlistener",
+                                "com.android.test.notificationlistener.TestNotificationListener"),
+                        false);
                 Thread.sleep(500); // wait for listener to be disabled
 
-                // Ensure that revoking listener access to this one app does not effect the other.
-                assertInaccessible(background7Uri);
-                assertTrue(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
+                // Ensure that revoking listener access to this one app does not affect the other:
+                // external app no longer has access, this one still does
+                assertFalse(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
+                assertAccessible(background7Uri);
 
             } finally {
                 // Clean Up -- Cancel #7
@@ -2264,13 +2284,16 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 Thread.sleep(500);
             }
 
-            // Finally, cancelling the permission must still revoke those other permissions.
-            assertFalse(mNotificationUriAccessService.isFileUriAccessible(background7Uri));
-
+            // Finally, cancelling the notification must still revoke those other permissions.
+            // Double-check first that the notification is actually gone, and then wait for a bit
+            // longer, as it may take some time for the uri permissions to clear up even after the
+            // notification is gone.
+            assertTrue(mNotificationHelper.isNotificationGone(7, SEARCH_TYPE.LISTENER));
+            Thread.sleep(500);
+            assertInaccessible(background7Uri);
         } finally {
-            // Clean Up -- Make sure the external listener is has access revoked
-            toggleExternalListenerAccess(new ComponentName("com.android.test.notificationlistener",
-                    "com.android.test.notificationlistener.TestNotificationListener"), false);
+            // Clean Up -- Make sure this app has access revoked
+            mNotificationHelper.disableListener(STUB_PACKAGE_NAME);
         }
     }
 
@@ -2324,7 +2347,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void assertAccessible(Uri uri)
             throws IOException {
         ContentResolver contentResolver = mContext.getContentResolver();
-        for (int tries = 3; tries-- > 0; ) {
+        for (int tries = 5; tries-- > 0; ) {
             try (AssetFileDescriptor fd = contentResolver.openAssetFile(uri, "r", null)) {
                 if (fd != null) {
                     return;
@@ -2332,7 +2355,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             } catch (SecurityException e) {
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(200);
             } catch (InterruptedException ex) {
             }
         }
@@ -2342,13 +2365,13 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     private void assertInaccessible(Uri uri)
             throws IOException {
         ContentResolver contentResolver = mContext.getContentResolver();
-        for (int tries = 3; tries-- > 0; ) {
+        for (int tries = 5; tries-- > 0; ) {
             try (AssetFileDescriptor fd = contentResolver.openAssetFile(uri, "r", null)) {
             } catch (SecurityException e) {
                 return;
             }
             try {
-                Thread.sleep(100);
+                Thread.sleep(200);
             } catch (InterruptedException ex) {
             }
         }
@@ -2409,7 +2432,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         assertNotNull(mListener);
 
         try {
-            mListener.getNotificationChannels(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannels(mContext.getPackageName(), mContext.getUser());
             fail("Shouldn't be able get channels without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2421,7 +2444,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         try {
-            mListener.getNotificationChannelGroups(mContext.getPackageName(), UserHandle.CURRENT);
+            mListener.getNotificationChannelGroups(mContext.getPackageName(), mContext.getUser());
             fail("Should not be able get groups without CompanionDeviceManager#getAssociations()");
         } catch (SecurityException e) {
             // expected
@@ -2436,7 +2459,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         NotificationChannel channel = new NotificationChannel(
                 NOTIFICATION_CHANNEL_ID, "name", IMPORTANCE_DEFAULT);
         try {
-            mListener.updateNotificationChannel(mContext.getPackageName(), UserHandle.CURRENT,
+            mListener.updateNotificationChannel(mContext.getPackageName(), mContext.getUser(),
                     channel);
             fail("Shouldn't be able to update channel without "
                     + "CompanionDeviceManager#getAssociations()");
@@ -3256,12 +3279,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
-    public void testCallNotificationListener_registerCallback_noPermission() throws Exception {
+    public void testCallNotificationListener_registerCallback_noInteractAcrossUsersPermission()
+            throws Exception {
         try {
             PermissionUtils.revokePermission(mContext.getPackageName(),
                     android.Manifest.permission.INTERACT_ACROSS_USERS);
-            PermissionUtils.revokePermission(mContext.getPackageName(),
-                    android.Manifest.permission.ACCESS_NOTIFICATIONS);
 
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
                     UserHandle.SYSTEM, mContext.getMainExecutor(),
@@ -3279,11 +3301,35 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         } finally {
             PermissionUtils.grantPermission(mContext.getPackageName(),
                     android.Manifest.permission.INTERACT_ACROSS_USERS);
-            PermissionUtils.setAppOp(mContext.getPackageName(),
-                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ALLOWED);
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
+    public void testCallNotificationListener_registerCallback_noAccessNotificationsPermission()
+            throws Exception {
+        try {
+            PermissionUtils.setAppOp(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_ERRORED);
+
+            mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
+                    UserHandle.SYSTEM, mContext.getMainExecutor(),
+                    new CallNotificationEventListener() {
+                    @Override
+                    public void onCallNotificationPosted(String packageName, UserHandle user) {
+                    }
+                    @Override
+                    public void onCallNotificationRemoved(String packageName, UserHandle user) {
+                    }
+                });
+            fail("registerCallNotificationListener should not succeed - privileged call");
+        } catch (SecurityException e) {
+            // Expected SecurityException
+        } finally {
+            PermissionUtils.setAppOp(mContext.getPackageName(),
+                    android.Manifest.permission.ACCESS_NOTIFICATIONS, MODE_DEFAULT);
+        }
+    }
     @Test
     @RequiresFlagsEnabled(android.service.notification.Flags.FLAG_CALLSTYLE_CALLBACK_API)
     public void testCallNotificationListener_registerCallback_withPermission()
@@ -3313,7 +3359,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                     public void onCallNotificationPosted(String packageName, UserHandle userH) {
@@ -3361,7 +3407,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         final Semaphore semaphore = new Semaphore(0);
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(),
+                    mContext.getUser(), mContext.getMainExecutor(),
                     new CallNotificationEventListener() {
                     @Override
                         public void onCallNotificationPosted(String packageName, UserHandle user) {
@@ -3404,7 +3450,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
 
         try {
             mNotificationManager.registerCallNotificationEventListener(mContext.getPackageName(),
-                    UserHandle.CURRENT, mContext.getMainExecutor(), listener);
+                    mContext.getUser(), mContext.getMainExecutor(), listener);
         } catch (SecurityException e) {
             fail("registerCallNotificationListener should succeed " + e);
         }

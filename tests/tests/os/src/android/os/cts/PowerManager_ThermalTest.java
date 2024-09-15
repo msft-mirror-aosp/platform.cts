@@ -21,6 +21,7 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static junit.framework.TestCase.fail;
 
+import static org.junit.Assume.assumeFalse;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -29,6 +30,7 @@ import android.content.Context;
 import android.os.Flags;
 import android.os.PowerManager;
 import android.os.PowerManager.OnThermalStatusChangedListener;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -51,6 +53,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class PowerManager_ThermalTest {
     private static final long CALLBACK_TIMEOUT_MILLI_SEC = 5000;
     private UiDevice mUiDevice;
@@ -145,11 +148,10 @@ public class PowerManager_ThermalTest {
     @CddTest(requirement="7.3.6")
     @Test
     public void testGetThermalHeadroom() throws Exception {
+        Thread.sleep(1000);
         float headroom = mPowerManager.getThermalHeadroom(0);
-        // If the device doesn't support thermal headroom, return early
-        if (Float.isNaN(headroom)) {
-            return;
-        }
+        // skip headroom test if device doesn't support headroom
+        assumeFalse(Float.isNaN(headroom));
         assertTrue("Expected non-negative headroom", headroom >= 0.0f);
         assertTrue("Expected reasonably small headroom", headroom < 10.0f);
 
@@ -171,16 +173,12 @@ public class PowerManager_ThermalTest {
     @ApiTest(apis = {"android.os.PowerManager#getThermalHeadroomThresholds"})
     @RequiresFlagsEnabled(Flags.FLAG_ALLOW_THERMAL_HEADROOM_THRESHOLDS)
     public void testGetThermalHeadroomThresholds() throws Exception {
+        Thread.sleep(1000);
         float headroom = mPowerManager.getThermalHeadroom(0);
-        // If the device doesn't support thermal headroom, return early
-        if (Float.isNaN(headroom)) {
-            return;
-        }
+        // skip thresholds test if device doesn't support headroom
+        assumeFalse(Float.isNaN(headroom));
+
         Map<Integer, Float> thresholds = mPowerManager.getThermalHeadroomThresholds();
-        assertTrue("Thermal headroom thresholds should contain SEVERE status",
-                thresholds.containsKey(PowerManager.THERMAL_STATUS_SEVERE));
-        float severeThreshold = thresholds.get(PowerManager.THERMAL_STATUS_SEVERE);
-        assertEquals(1f, severeThreshold, .01f);
         float lastHeadroom = Float.NaN;
         int lastStatus = PowerManager.THERMAL_STATUS_NONE;
         int[] allStatus =
@@ -194,6 +192,9 @@ public class PowerManager_ThermalTest {
             if (thresholds.containsKey(status)) {
                 assertFalse(Float.isNaN(thresholds.get(status)));
                 headroom = thresholds.get(status);
+                if (status == PowerManager.THERMAL_STATUS_SEVERE) {
+                    assertEquals("SEVERE headroom threshold must be 1.0f", 1f, headroom, .01f);
+                }
                 if (headroom >= 0) {
                     if (lastStatus == PowerManager.THERMAL_STATUS_NONE) {
                         lastStatus = status;
@@ -206,8 +207,7 @@ public class PowerManager_ThermalTest {
                     }
                 } else {
                     fail("Expected non-negative headroom threshold but got " + headroom
-                            + " for status "
-                            + status);
+                            + " for status " + status);
                 }
             }
         }

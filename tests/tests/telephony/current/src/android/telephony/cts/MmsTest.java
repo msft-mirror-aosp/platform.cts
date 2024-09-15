@@ -224,8 +224,7 @@ public class MmsTest {
     @BeforeClass
     public static void beforeAllTests() {
         Log.i(TAG, "beforeAllTests");
-        sCarrierConfigReceiver = new CarrierConfigReceiver(
-                SmsManager.getDefaultSmsSubscriptionId());
+        sCarrierConfigReceiver = new CarrierConfigReceiver();
         IntentFilter filter = new IntentFilter(CarrierConfigManager.ACTION_CARRIER_CONFIG_CHANGED);
         // ACTION_CARRIER_CONFIG_CHANGED is sticky, so we will get a callback right away.
         getInstrumentation().getContext().registerReceiver(sCarrierConfigReceiver, filter);
@@ -592,9 +591,11 @@ public class MmsTest {
     }
 
     private static class CarrierConfigReceiver extends BaseReceiver {
-        private final int mSubId;
+        private int mSubId;
 
-        CarrierConfigReceiver(int subId) {
+        CarrierConfigReceiver() {}
+
+        public void setSubId(int subId) {
             mSubId = subId;
         }
 
@@ -616,6 +617,7 @@ public class MmsTest {
             CarrierConfigManager carrierConfigManager = getInstrumentation()
                     .getContext().getSystemService(CarrierConfigManager.class);
             sCarrierConfigReceiver.clearQueue();
+            sCarrierConfigReceiver.setSubId(subId);
             ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(carrierConfigManager,
                     (m) -> m.overrideConfig(subId, bundle));
             return sCarrierConfigReceiver.waitForChanged();

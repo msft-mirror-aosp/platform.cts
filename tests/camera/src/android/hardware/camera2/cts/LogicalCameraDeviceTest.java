@@ -31,6 +31,7 @@ import static android.hardware.camera2.cts.CameraTestUtils.getCropRegionForZoom;
 import static android.hardware.camera2.cts.CameraTestUtils.getMaxPreviewSize;
 import static android.hardware.camera2.cts.CameraTestUtils.getPreviewSizeBound;
 import static android.hardware.camera2.cts.CameraTestUtils.getSupportedPreviewSizes;
+import static android.hardware.camera2.cts.CameraTestUtils.getUnavailablePhysicalCameras;
 import static android.hardware.camera2.cts.CameraTestUtils.isSessionConfigSupported;
 
 import static org.mockito.Mockito.any;
@@ -48,7 +49,6 @@ import android.graphics.Rect;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
@@ -81,11 +81,9 @@ import org.junit.runners.Parameterized;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Tests exercising logical camera setup, configuration, and usage.
@@ -187,7 +185,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testBasicPhysicalStreaming() throws Exception {
-        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
@@ -230,7 +229,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testBasicLogicalPhysicalStreamCombination() throws Exception {
-        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
@@ -283,7 +283,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue("Session configuration query for logical camera failed with error",
                         !sessionConfigSupport.error);
                 if (!sessionConfigSupport.callSupported) {
@@ -363,7 +364,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testBasicPhysicalRequests() throws Exception {
-        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
@@ -422,7 +424,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
                 SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                         mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                        SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                        SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                        false/*defaultSupport*/);
                 assertTrue("Session configuration query for logical camera failed with error",
                         !sessionConfigSupport.error);
                 if (!sessionConfigSupport.callSupported) {
@@ -502,7 +505,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
      */
     @Test
     public void testInvalidPhysicalCameraRequests() throws Exception {
-        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
         for (String id : getCameraIdsUnderTest()) {
             try {
                 Log.i(TAG, "Testing Camera " + id);
@@ -719,6 +723,27 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
                                 "length and crop region change cancelling out each other.",
                                 Math.abs(newFov - fov)/fov < FOV_MARGIN);
 
+                        if (j + 1 < results.length) {
+                            TotalCaptureResult nextResult = results[j+1];
+                            float[] lensIntrinsics = result.get(
+                                    CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                            float[] nextLensIntrinsics = nextResult.get(
+                                    CaptureResult.LENS_INTRINSIC_CALIBRATION);
+                            if ((lensIntrinsics != null) && (nextLensIntrinsics != null)) {
+                                mCollector.expectTrue("The lens intrinsics between two " +
+                                                "different focal lengths are not expected to " +
+                                                " match",
+                                        !Arrays.equals(lensIntrinsics, nextLensIntrinsics));
+                            } else {
+                                mCollector.expectNull("If not supported, lens intrinsics " +
+                                                "must always remain invalid regardless of the " +
+                                                "focal length", lensIntrinsics);
+                                mCollector.expectNull("If not supported, lens intrinsics " +
+                                        "must always remain invalid regardless of the " +
+                                        "focal length", nextLensIntrinsics);
+                            }
+                        }
+
                         if (staticInfo.isActivePhysicalCameraIdSupported()) {
                             String activePhysicalId = result.get(
                                     CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID);
@@ -747,40 +772,14 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
         }
     }
 
-    private Set<Pair<String, String>> getUnavailablePhysicalCameras() throws Exception {
-        final int AVAILABILITY_TIMEOUT_MS = 10;
-        final LinkedBlockingQueue<Pair<String, String>> unavailablePhysicalCamEventQueue =
-                new LinkedBlockingQueue<>();
-        CameraManager.AvailabilityCallback ac = new CameraManager.AvailabilityCallback() {
-             @Override
-            public void onPhysicalCameraUnavailable(String cameraId, String physicalCameraId) {
-                unavailablePhysicalCamEventQueue.offer(new Pair<>(cameraId, physicalCameraId));
-            }
-        };
-
-        mCameraManager.registerAvailabilityCallback(ac, mHandler);
-        Set<Pair<String, String>> unavailablePhysicalCameras = new HashSet<Pair<String, String>>();
-        Pair<String, String> candidatePhysicalIds =
-                unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                java.util.concurrent.TimeUnit.MILLISECONDS);
-        while (candidatePhysicalIds != null) {
-            unavailablePhysicalCameras.add(candidatePhysicalIds);
-            candidatePhysicalIds =
-                unavailablePhysicalCamEventQueue.poll(AVAILABILITY_TIMEOUT_MS,
-                java.util.concurrent.TimeUnit.MILLISECONDS);
-        }
-        mCameraManager.unregisterAvailabilityCallback(ac);
-
-        return unavailablePhysicalCameras;
-    }
-
-    /**
+   /**
      * Test that for logical multi-camera, the activePhysicalId is valid, and is the same
      * for all capture templates.
      */
     @Test
     public void testActivePhysicalId() throws Exception {
-        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras();
+        Set<Pair<String, String>> unavailablePhysicalCameras = getUnavailablePhysicalCameras(
+                mCameraManager, mHandler);
 
         for (String id : getCameraIdsUnderTest()) {
             try {
@@ -1131,7 +1130,8 @@ public final class LogicalCameraDeviceTest extends Camera2SurfaceViewTestCase {
 
         SessionConfigSupport sessionConfigSupport = isSessionConfigSupported(
                 mCamera, mHandler, outputConfigs, /*inputConfig*/ null,
-                SessionConfiguration.SESSION_REGULAR, false/*defaultSupport*/);
+                SessionConfiguration.SESSION_REGULAR, mCameraManager,
+                false/*defaultSupport*/);
         assertTrue("Session configuration query for logical camera failed with error",
                 !sessionConfigSupport.error);
         if (!sessionConfigSupport.callSupported) {

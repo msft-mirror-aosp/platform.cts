@@ -22,18 +22,22 @@ import cv2
 import numpy
 import scipy.spatial
 
+import camera_properties_utils
 import capture_request_utils
 import error_util
 import image_processing_utils
 
+AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
 ANGLE_CHECK_TOL = 1  # degrees
 ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
-
+ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
+CH_FULL_SCALE = 255
 CHART_FILE = os.path.join(TEST_IMG_DIR, 'ISO12233.png')
-CHART_HEIGHT_31CM = 13.5  # cm
-CHART_HEIGHT_22CM = 9.5  # cm
+CHART_HEIGHT_31CM = 13.5  # cm height of chart for 31cm distance chart
+CHART_HEIGHT_22CM = 9.5  # cm height of chart for 22cm distance chart
+CHART_DISTANCE_90CM = 90.0  # cm
 CHART_DISTANCE_31CM = 31.0  # cm
 CHART_DISTANCE_22CM = 22.0  # cm
 CHART_SCALE_RTOL = 0.1
@@ -49,9 +53,18 @@ CIRCLE_RADIUS_NUMPTS_THRESH = 2  # contour num_pts/radius: empirically ~3x
 CIRCLE_COLOR_ATOL = 0.05  # circle color fill tolerance
 CIRCLE_LOCATION_VARIATION_RTOL = 0.05  # tolerance to remove similar circles
 
+CV2_CONTRAST_ALPHA = 1.25  # contrast
+CV2_CONTRAST_BETA = 0  # brightness
+CV2_THESHOLD_LOWER_BLACK = 0
 CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
+CV2_BLACK = (0, 0, 0)
+CV2_BLUE = (0, 0, 255)
 CV2_RED = (255, 0, 0)  # color in cv2 to draw lines
-CV2_GREEN = (0, 1, 0)
+CV2_RED_NORM = tuple(numpy.array(CV2_RED) / 255)
+CV2_GREEN = (0, 255, 0)
+CV2_GREEN_NORM = tuple(numpy.array(CV2_GREEN) / 255)
+CV2_WHITE = (255, 255, 255)
+CV2_YELLOW = (255, 255, 0)
 CV2_THRESHOLD_BLOCK_SIZE = 11
 CV2_THRESHOLD_CONSTANT = 2
 
@@ -70,12 +83,14 @@ FOV_THRESH_TELE40 = 40
 FOV_THRESH_TELE = 60
 FOV_THRESH_UW = 90
 
-IMAGE_ROTATION_THRESHOLD = 2
+IMAGE_ROTATION_THRESHOLD = 40  # rotation by 20 pixels
 
 LOW_RES_IMG_THRESH = 320 * 240
 
-RGB_GRAY_WEIGHTS = (0.299, 0.587, 0.114)  # RGB to Gray conversion matrix
+NUM_AE_AWB_REGIONS = 4
 
+SCALE_CHART_33_PERCENT = 0.33
+SCALE_CHART_67_PERCENT = 0.67
 SCALE_WIDE_IN_22CM_RIG = 0.67
 SCALE_TELE_IN_22CM_RIG = 0.5
 SCALE_TELE_IN_31CM_RIG = 0.67
@@ -93,26 +108,24 @@ VGA_HEIGHT = 480
 VGA_WIDTH = 640
 
 
-def convert_to_gray(img):
-  """Returns openCV grayscale image.
+def convert_to_y(img, color_order='RGB'):
+  """Returns a Y image from a uint8 RGB or BGR ordered image.
 
   Args:
-    img: A numpy image.
+    img: a uint8 openCV image.
+    color_order: str; 'RGB' or 'BGR' to signify color plane order.
+
   Returns:
-    An openCV image converted to grayscale.
+    The Y plane of the input img.
   """
-  return numpy.dot(img[..., :3], RGB_GRAY_WEIGHTS)
-
-
-def convert_to_y(img):
-  """Returns a Y image from a BGR image.
-
-  Args:
-    img: An openCV image.
-  Returns:
-    An openCV image converted to Y.
-  """
-  y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YUV))
+  if img.dtype != 'uint8':
+    raise AssertionError(f'Incorrect input type: {img.dtype}! Expected: uint8')
+  if color_order == 'RGB':
+    y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_RGB2YUV))
+  elif color_order == 'BGR':
+    y, _, _ = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2YUV))
+  else:
+    raise AssertionError(f'Undefined color order: {color_order}!')
   return y
 
 
@@ -155,8 +168,8 @@ def find_opencv_faces(img, scale_factor, min_neighbors):
   # prep opencv
   opencv_haarcascade_file = _load_opencv_haarcascade_file()
   face_cascade = cv2.CascadeClassifier(opencv_haarcascade_file)
-  img_255 = img * 255
-  img_gray = cv2.cvtColor(img_255.astype(numpy.uint8), cv2.COLOR_RGB2GRAY)
+  img_uint8 = image_processing_utils.convert_image_to_uint8(img)
+  img_gray = cv2.cvtColor(img_uint8, cv2.COLOR_RGB2GRAY)
 
   # find face rectangles with opencv
   faces_opencv = face_cascade.detectMultiScale(
@@ -191,6 +204,8 @@ def calc_chart_scaling(chart_distance, camera_fov):
       chart_distance, CHART_DISTANCE_22CM, rel_tol=CHART_SCALE_RTOL)
   is_chart_distance_31cm = math.isclose(
       chart_distance, CHART_DISTANCE_31CM, rel_tol=CHART_SCALE_RTOL)
+  is_chart_distance_90cm = math.isclose(
+      chart_distance, CHART_DISTANCE_90CM, rel_tol=CHART_SCALE_RTOL)
 
   if FOV_THRESH_TELE < fov < FOV_THRESH_UW and is_chart_distance_22cm:
     chart_scaling = SCALE_WIDE_IN_22CM_RIG
@@ -198,14 +213,16 @@ def calc_chart_scaling(chart_distance, camera_fov):
     chart_scaling = SCALE_TELE_IN_22CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_22cm:
     chart_scaling = SCALE_TELE40_IN_22CM_RIG
-  elif (fov <= FOV_THRESH_TELE25 and
-        is_chart_distance_31cm or
-        chart_distance > CHART_DISTANCE_31CM):
+  elif fov <= FOV_THRESH_TELE25 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE25_IN_31CM_RIG
   elif fov <= FOV_THRESH_TELE40 and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE40_IN_31CM_RIG
+  elif fov <= FOV_THRESH_TELE40 and is_chart_distance_90cm:
+    chart_scaling = SCALE_CHART_67_PERCENT
   elif fov <= FOV_THRESH_TELE and is_chart_distance_31cm:
     chart_scaling = SCALE_TELE_IN_31CM_RIG
+  elif chart_distance > CHART_DISTANCE_31CM:
+    chart_scaling = SCALE_CHART_33_PERCENT
   return chart_scaling
 
 
@@ -213,18 +230,6 @@ def scale_img(img, scale=1.0):
   """Scale image based on a real number scale factor."""
   dim = (int(img.shape[1] * scale), int(img.shape[0] * scale))
   return cv2.resize(img.copy(), dim, interpolation=cv2.INTER_AREA)
-
-
-def gray_scale_img(img):
-  """Return gray scale version of image."""
-  if len(img.shape) == 2:
-    img_gray = img.copy()
-  elif len(img.shape) == 3:
-    if img.shape[2] == 1:
-      img_gray = img[:, :, 0].copy()
-    else:
-      img_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
-  return img_gray
 
 
 class Chart(object):
@@ -298,7 +303,7 @@ class Chart(object):
       scale_factor: float; scaling factor for chart search
     """
     req = capture_request_utils.auto_capture_request()
-    cap_chart = image_processing_utils.stationary_lens_cap(cam, req, fmt)
+    cap_chart = capture_request_utils.stationary_lens_capture(cam, req, fmt)
     img_3a = image_processing_utils.convert_capture_to_rgb_image(
         cap_chart, props)
     img_3a = image_processing_utils.rotate_img_per_argv(img_3a)
@@ -363,10 +368,11 @@ class Chart(object):
                   scale_start, scale_stop, scale_step)
     logging.debug('Used offset of %.3f to include stop value.', offset)
     max_match = []
-    # check for normalized image
-    if numpy.amax(scene) <= 1.0:
-      scene = (scene * 255.0).astype(numpy.uint8)
-    scene_gray = gray_scale_img(scene)
+    # convert [0.0, 1.0] image to [0, 255] and then grayscale
+    scene_uint8 = image_processing_utils.convert_image_to_uint8(scene)
+    scene_gray = image_processing_utils.convert_rgb_to_grayscale(scene_uint8)
+
+    # find scene
     logging.debug('Finding chart in scene...')
     for scale in numpy.arange(scale_start, scale_stop + offset, scale_step):
       scene_scaled = scale_img(scene_gray, scale)
@@ -415,11 +421,10 @@ class Chart(object):
       self.hnorm = ((bottom_right[1]) - top_left[1]) / scene.shape[0]
       self.xnorm = (top_left[0]) / scene.shape[1]
       self.ynorm = (top_left[1]) / scene.shape[0]
-      patch = image_processing_utils.get_image_patch(scene, self.xnorm,
-                                                     self.ynorm, self.wnorm,
-                                                     self.hnorm)
-      template_scene_name = os.path.join(log_path, 'template_scene.jpg')
-      image_processing_utils.write_image(patch, template_scene_name)
+      patch = image_processing_utils.get_image_patch(
+          scene_uint8, self.xnorm, self.ynorm, self.wnorm, self.hnorm) / 255
+      image_processing_utils.write_image(
+          patch, os.path.join(log_path, 'template_scene.jpg'))
 
 
 def component_shape(contour):
@@ -500,7 +505,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
                                    cv2.THRESH_BINARY, CV2_THRESHOLD_BLOCK_SIZE,
                                    CV2_THRESHOLD_CONSTANT)
   else:
-    img_gray = convert_to_gray(img)
+    img_gray = image_processing_utils.convert_rgb_to_grayscale(img)
     img_bw = binarize_image(img_gray)
 
   # find contours
@@ -609,7 +614,7 @@ def find_circle(img, img_name, min_area, color, use_adaptive_threshold=False):
   return circle
 
 
-def append_circle_center_to_img(circle, img, img_name):
+def append_circle_center_to_img(circle, img, img_name, save_img=True):
   """Append circle center and image center to image and save image.
 
   Draws line from circle center to image center and then labels end-points.
@@ -620,6 +625,7 @@ def append_circle_center_to_img(circle, img, img_name):
     circle: dict with circle location vals.
     img: numpy float image array in RGB, with pixel values in [0,255].
     img_name: string with image info of format and size.
+    save_img: optional boolean to not save image
   """
   line_width_scaling_factor = 500
   text_move_scaling_factor = 3
@@ -662,7 +668,8 @@ def append_circle_center_to_img(circle, img, img_name):
   text_imgct_y = move_text_dist * move_text_down_image + img_center_y
   cv2.putText(img, 'image center', (text_imgct_x, text_imgct_y),
               cv2.FONT_HERSHEY_SIMPLEX, font_size, CV2_RED, line_width)
-  image_processing_utils.write_image(img/255, img_name, True)  # [0, 1] values
+  if save_img:
+    image_processing_utils.write_image(img/255, img_name, True)  # [0, 1] values
 
 
 def is_circle_cropped(circle, size):
@@ -701,7 +708,7 @@ def find_white_square(img, min_area):
   img_size = img.shape
 
   # convert to gray-scale image
-  img_gray = convert_to_gray(img)
+  img_gray = image_processing_utils.convert_rgb_to_grayscale(img)
 
   # otsu threshold to binarize the image
   img_bw = binarize_image(img_gray)
@@ -782,10 +789,9 @@ def get_angle(input_img):
   img = numpy.array(input_img, copy=True)
 
   # Scale pixel values from 0-1 to 0-255
-  img *= 255
-  img = img.astype(numpy.uint8)
+  img_uint8 = image_processing_utils.convert_image_to_uint8(img)
   img_thresh = cv2.adaptiveThreshold(
-      img, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 201, 2)
+      img_uint8, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 201, 2)
 
   # Find all contours.
   contours = find_all_contours(img_thresh)
@@ -838,23 +844,48 @@ def correct_faces_for_crop(faces, img, crop):
   """Correct face rectangles for sensor crop.
 
   Args:
-    faces: list of dicts with face information
+    faces: list of dicts with face information relative to sensor's
+      aspect ratio
     img: np image array
-    crop: dict of crop region size with 'top, right, left, bottom' as keys
+    crop: dict of crop region size with 'top', 'right', 'left', 'bottom'
+      as keys to desired region of the sensor to read out
   Returns:
     list of face locations (left, right, top, bottom) corrected
   """
   faces_corrected = []
-  cw, ch = crop['right'] - crop['left'], crop['bottom'] - crop['top']
+  crop_w = crop['right'] - crop['left']
+  crop_h = crop['bottom'] - crop['top']
   logging.debug('crop region: %s', str(crop))
-  w = img.shape[1]
-  h = img.shape[0]
+  img_w, img_h = img.shape[1], img.shape[0]
+  crop_aspect_ratio = crop_w / crop_h
+  img_aspect_ratio = img_w / img_h
   for rect in [face['bounds'] for face in faces]:
     logging.debug('rect: %s', str(rect))
-    left = int(round((rect['left'] - crop['left']) * w / cw))
-    right = int(round((rect['right'] - crop['left']) * w / cw))
-    top = int(round((rect['top'] - crop['top']) * h / ch))
-    bottom = int(round((rect['bottom'] - crop['top']) * h / ch))
+    if crop_aspect_ratio >= img_aspect_ratio:
+      # Sensor width is being cropped, so we need to adjust the horizontal
+      # coordinates of the face rectangles to account for the crop.
+      # Since we are converting from sensor coordinates to image coordinates
+      img_crop_h_ratio = img_h / crop_h
+      scaled_crop_w = crop_w * img_crop_h_ratio
+      excess_w = (img_w - scaled_crop_w) / 2
+      left = int(
+          round((rect['left'] - crop['left']) * img_crop_h_ratio + excess_w))
+      right = int(
+          round((rect['right'] - crop['left']) * img_crop_h_ratio + excess_w))
+      top = int(round((rect['top'] - crop['top']) * img_crop_h_ratio))
+      bottom = int(round((rect['bottom'] - crop['top']) * img_crop_h_ratio))
+    else:
+      # Sensor height is being cropped, so we need to adjust the vertical
+      # coordinates of the face rectangles to account for the crop.
+      img_crop_w_ratio = img_w / crop_w
+      scaled_crop_h = crop_h * img_crop_w_ratio
+      excess_w = (img_h - scaled_crop_h) / 2
+      left = int(round((rect['left'] - crop['left']) * img_crop_w_ratio))
+      right = int(round((rect['right'] - crop['left']) * img_crop_w_ratio))
+      top = int(
+          round((rect['top'] - crop['top']) * img_crop_w_ratio + excess_w))
+      bottom = int(
+          round((rect['bottom'] - crop['top']) * img_crop_w_ratio + excess_w))
     faces_corrected.append([left, right, top, bottom])
   logging.debug('faces_corrected: %s', str(faces_corrected))
   return faces_corrected
@@ -926,7 +957,7 @@ def match_face_locations(faces_cropped, faces_opencv, img, img_name):
   image_processing_utils.write_image(img, img_name)
   if num_centers_aligned < FACES_ALIGNED_MIN_NUM:
     for (x, y, w, h) in faces_opencv:
-      cv2.rectangle(img, (x, y), (x+w, y+h), tuple(numpy.array(CV2_RED)/255), 2)
+      cv2.rectangle(img, (x, y), (x+w, y+h), CV2_RED_NORM, 2)
       image_processing_utils.write_image(img, img_name)
       logging.debug('centered: %s', str(num_centers_aligned))
     raise AssertionError(f'Face rectangles in wrong location(s)!. '
@@ -946,7 +977,7 @@ def draw_green_boxes_around_faces(img, faces_cropped, img_name):
   """
   # draw boxes around faces in green and save image
   for (l, r, t, b) in faces_cropped:
-    cv2.rectangle(img, (l, t), (r, b), CV2_GREEN, 2)
+    cv2.rectangle(img, (l, t), (r, b), CV2_GREEN_NORM, 2)
   image_processing_utils.write_image(img, img_name)
 
 
@@ -963,21 +994,37 @@ def find_aruco_markers(input_img, output_img_path):
   Returns:
     corners: list of detected corners
     ids: list of int ids for each ArUco markers in the input_img
+    rejected_params: list of rejected corners
   """
   parameters = cv2.aruco.DetectorParameters_create()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  corners, ids, _ = cv2.aruco.detectMarkers(
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
       input_img, aruco_dict, parameters=parameters)
+  # Early return if sufficient markers found
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected.')
+    cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
+    image_processing_utils.write_image(input_img / 255, output_img_path)
+    return corners, ids, rejected_params
+  # Try with high-contrast greyscale if needed
+  logging.debug('Trying ArUco marker detection with greyscale image.')
+  bw_img = convert_image_to_high_contrast_black_white(input_img)
+  corners, ids, rejected_params = cv2.aruco.detectMarkers(
+      bw_img, aruco_dict, parameters=parameters)
+  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+    logging.debug('All ArUco markers detected with greyscale image.')
+  # Handle case where no markers are found
   if ids is None:
-    e_msg = 'ArUco markers not detected.'
-    raise AssertionError(e_msg)
-  logging.debug('Number of ArUco markers detected: %d', len(ids))
+    image_processing_utils.write_image(input_img/255, output_img_path)
+    raise AssertionError('ArUco markers not detected.')
+  # Log and save results
+  logging.debug('Number of ArUco markers detected w/ greyscale: %d', len(ids))
   logging.debug('IDs of the ArUco markers detected: %s', ids)
   logging.debug('Corners of the ArUco markers detected: %s', corners)
-  cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
-  image_processing_utils.write_image(input_img/255, output_img_path)
-  return corners, ids
+  cv2.aruco.drawDetectedMarkers(bw_img, corners, ids)
+  image_processing_utils.write_image(bw_img / 255, output_img_path)
+  return corners, ids, rejected_params
 
 
 def get_patch_from_aruco_markers(
@@ -1000,17 +1047,174 @@ def get_patch_from_aruco_markers(
   for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
     corner = corner.reshape(4, 2)  # opencv returns 3D array
     index = marker_id[0]
+    # Roll the array 4x to align with the coordinates of the corner adjacent
+    # to the corner of the rectangle
+    # Marker id: 0 => index 2 coordinates
+    # Marker id: 1 => index 3 coordinates
+    # Marker id: 2 => index 0 coordinates
+    # Marker id: 3 => index 1 coordinates
     corner = numpy.roll(corner, 4)
+
     outer_rect_coordinates[index] = tuple(corner[index])
 
+  red_corner = tuple(map(int, outer_rect_coordinates[0]))
+  green_corner = tuple(map(int, outer_rect_coordinates[1]))
+  gray_corner = tuple(map(int, outer_rect_coordinates[2]))
+  blue_corner = tuple(map(int, outer_rect_coordinates[3]))
+
+  logging.debug('red_corner: %s', red_corner)
+  logging.debug('blue_corner: %s', blue_corner)
+  logging.debug('green_corner: %s', green_corner)
+  logging.debug('gray_corner: %s', gray_corner)
   # Ensure that the image is not rotated
-  assert((outer_rect_coordinates[1][1] - outer_rect_coordinates[0][1])
-         <= IMAGE_ROTATION_THRESHOLD)
-  assert((outer_rect_coordinates[3][1] - outer_rect_coordinates[2][1])
-         <= IMAGE_ROTATION_THRESHOLD)
+  blue_gray_y_diff = abs(gray_corner[1] - blue_corner[1])
+  red_green_y_diff = abs(green_corner[1] - red_corner[1])
+
+  if ((blue_gray_y_diff > IMAGE_ROTATION_THRESHOLD) or
+      (red_green_y_diff > IMAGE_ROTATION_THRESHOLD)):
+    raise AssertionError('Image rotation is not within the threshold. '
+                         f'Actual blue_gray_y_diff: {blue_gray_y_diff}, '
+                         f'red_green_y_diff: {red_green_y_diff} '
+                         f'Expected {IMAGE_ROTATION_THRESHOLD}')
+  cv2.rectangle(input_img, red_corner, gray_corner,
+                CV2_RED_NORM, CV2_LINE_THICKNESS)
+  return input_img[red_corner[1]:gray_corner[1],
+                   red_corner[0]:gray_corner[0]].copy()
+
+
+def get_chart_boundary_from_aruco_markers(
+    aruco_marker_corners, aruco_marker_ids, input_img, output_img_path):
+  """Returns top left and bottom right coordinates from the aruco markers.
+
+  Note: Refer to image used in scene8 for ArUco markers location.
+
+  Args:
+    aruco_marker_corners: array of aruco marker corner coordinates detected by
+      opencv_processing_utils.find_aruco_markers.
+    aruco_marker_ids: array of ids of aruco markers detected by
+      opencv_processing_utils.find_aruco_markers.
+    input_img: 3D RGB numpy [0, 255] uint8; input image.
+    output_img_path: string; output image path.
+  Returns:
+    top_left: tuple; aruco marker corner coordinates in pixel.
+    top_right: tuple; aruco marker corner coordinates in pixel.
+    bottom_right: tuple; aruco marker corner coordinates in pixel.
+    bottom_left: tuple; aruco marker corner coordinates in pixel.
+  """
+  outer_rect_coordinates = {}
+  for corner, marker_id in zip(aruco_marker_corners, aruco_marker_ids):
+    corner = corner.reshape(4, 2)  # reshape opencv 3D array to 4x2
+    index = marker_id[0]
+    corner = numpy.roll(corner, ARUCO_CORNER_COUNT)
+    outer_rect_coordinates[index] = tuple(corner[index])
+    logging.debug('Corners: %s', corner)
+    logging.debug('Index: %s', index)
+    logging.debug('Outer rect coordinates: %s', outer_rect_coordinates[index])
   top_left = tuple(map(int, outer_rect_coordinates[0]))
+  top_right = tuple(map(int, outer_rect_coordinates[1]))
   bottom_right = tuple(map(int, outer_rect_coordinates[2]))
-  cv2.rectangle(input_img, top_left, bottom_right,
-                tuple(numpy.array(CV2_RED)/255), CV2_LINE_THICKNESS)
-  return input_img[top_left[1]:bottom_right[1],
-                   top_left[0]:bottom_right[0]].copy()
+  bottom_left = tuple(map(int, outer_rect_coordinates[3]))
+
+  # Outline metering rectangles with corresponding colors
+  rect_w = round((bottom_right[0] - top_left[0])/NUM_AE_AWB_REGIONS)
+  top_x, top_y = top_left[0], top_left[1]
+  bottom_x, bottom_y = bottom_left[0], bottom_left[1]
+  cv2.rectangle(
+      input_img,
+      (top_x, top_y), (bottom_x + rect_w, bottom_y),
+      CV2_BLUE, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w, top_y), (bottom_x + rect_w * 2, bottom_y),
+      CV2_WHITE, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w * 2, top_y), (bottom_x + rect_w * 3, bottom_y),
+      CV2_BLACK, CV2_LINE_THICKNESS)
+  cv2.rectangle(
+      input_img,
+      (top_x + rect_w * 3, top_y), bottom_right,
+      CV2_YELLOW, CV2_LINE_THICKNESS)
+  image_processing_utils.write_image(input_img/255, output_img_path)
+  logging.debug('ArUco marker top_left: %s', top_left)
+  logging.debug('ArUco marker bottom_right: %s', bottom_right)
+  return top_left, top_right, bottom_right, bottom_left
+
+
+def define_metering_rectangle_values(
+    props, top_left, top_right, bottom_right, bottom_left, w, h):
+  """Find normalized values of coordinates and return 4 metering rects.
+
+  Args:
+    props: dict; camera properties object.
+    top_left: coordinates; defined by aruco markers for targeted image.
+    top_right: coordinates; defined by aruco markers for targeted image.
+    bottom_right: coordinates; defined by aruco markers for targeted image.
+    bottom_left: coordinates; defined by aruco markers for targeted image.
+    w: int; active array width in pixels.
+    h: int; active array height in pixels.
+  Returns:
+    meter_rects: 4 metering rectangles made of (x, y, width, height, weight).
+      x, y are the top left coordinate of the metering rectangle.
+  """
+  # If testing front camera, mirror coordinates either left/right or up/down
+  # Preview are flipped on device's natural orientation
+  # For sensor orientation 90 or 270, it is up or down
+  # For sensor orientation 0 or 180, it is left or right
+  if (props['android.lens.facing'] ==
+      camera_properties_utils.LENS_FACING['FRONT']):
+    if props['android.sensor.orientation'] in (90, 270):
+      tl_coordinates = (bottom_left[0], h - bottom_left[1])
+      br_coordinates = (top_right[0], h - top_right[1])
+      logging.debug('Found sensor orientation %d, flipping up down',
+                    props['android.sensor.orientation'])
+    else:
+      tl_coordinates = (w - top_right[0], top_right[1])
+      br_coordinates = (w - bottom_left[0], bottom_left[1])
+      logging.debug('Found sensor orientation %d, flipping left right',
+                    props['android.sensor.orientation'])
+    logging.debug('Mirrored top-left coordinates: %s', tl_coordinates)
+    logging.debug('Mirrored bottom-right coordinates: %s', br_coordinates)
+  else:
+    tl_coordinates, br_coordinates = top_left, bottom_right
+
+  # Normalize coordinates' values to construct metering rectangles
+  meter_rects = []
+  tl_normalized_x = tl_coordinates[0] / w
+  tl_normalized_y = tl_coordinates[1] / h
+  br_normalized_x = br_coordinates[0] / w
+  br_normalized_y = br_coordinates[1] / h
+  rect_w = round((br_normalized_x - tl_normalized_x) / NUM_AE_AWB_REGIONS, 2)
+  rect_h = round(br_normalized_y - tl_normalized_y, 2)
+  for i in range(NUM_AE_AWB_REGIONS):
+    x = round(tl_normalized_x + (rect_w * i), 2)
+    y = round(tl_normalized_y, 2)
+    meter_rect = [x, y, rect_w, rect_h, AE_AWB_METER_WEIGHT]
+    meter_rects.append(meter_rect)
+  logging.debug('metering rects: %s', meter_rects)
+  return meter_rects
+
+
+def convert_image_to_high_contrast_black_white(
+    img, contrast=CV2_CONTRAST_ALPHA, brightness=CV2_CONTRAST_BETA):
+  """Convert capture to high contrast black and white image.
+
+  Args:
+    img: numpy array of image.
+    contrast: gain parameter between the value of 0 to 3.
+    brightness: bias parameter between the value of 1 to 100.
+  Returns:
+    high_contrast_img: high contrast black and white image.
+  """
+  copy_img = numpy.ndarray.copy(img)
+  uint8_img = image_processing_utils.convert_image_to_uint8(copy_img)
+  gray_img = convert_to_y(uint8_img)
+  img_bw = cv2.convertScaleAbs(
+      gray_img, alpha=contrast, beta=brightness)
+  _, high_contrast_img = cv2.threshold(
+      numpy.uint8(img_bw), CV2_THESHOLD_LOWER_BLACK, CH_FULL_SCALE,
+      cv2.THRESH_BINARY + cv2.THRESH_OTSU
+  )
+  high_contrast_img = numpy.expand_dims(
+      (CH_FULL_SCALE - high_contrast_img), axis=2)
+  return high_contrast_img

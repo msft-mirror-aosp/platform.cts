@@ -132,11 +132,6 @@ public class TouchHelper {
         tapOnDisplaySync(bounds.centerX(), bounds.centerY(), displayId);
     }
 
-    public void tapOnDisplayCenterAsync(int displayId) {
-        final Rect bounds = mWmState.getDisplay(displayId).getDisplayRect();
-        tapOnDisplay(bounds.centerX(), bounds.centerY(), displayId, false /* sync */);
-    }
-
     public static void injectMotion(long downTime, long eventTime, int action,
             int x, int y, int displayId, boolean sync) {
         injectMotion(downTime, eventTime, action, x, y, displayId, sync,

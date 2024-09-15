@@ -23,6 +23,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.content.IntentSender;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -132,6 +133,20 @@ public class TestService extends Service {
                 throw e;
             } catch (Exception e) {
                 Log.e(TAG, "sendPendingIntent failed", e);
+                throw new AssertionError(e);
+            }
+        }
+
+        @Override
+        public void sendIntentSender(IntentSender intentSender,
+                Bundle sendOptions) {
+            try {
+                intentSender.sendIntent(getApplicationContext(), /*code*/0, /*intent*/null,
+                        /*onFinished*/null, /*handler*/null, /*requiredPermission*/null);
+            } catch (IllegalArgumentException e) {
+                throw e;
+            } catch (Exception e) {
+                Log.e(TAG, "sendIntentSender failed", e);
                 throw new AssertionError(e);
             }
         }

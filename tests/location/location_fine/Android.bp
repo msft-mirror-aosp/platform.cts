@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsLocationFineTestCases",
+    team: "trendy_team_location_time",
     defaults: ["cts_defaults"],
     static_libs: [
         "LocationCtsCommon",
@@ -37,4 +38,11 @@ android_test {
         "general-tests",
     ],
     platform_apis: true,
+}
+
+test_module_config {
+    name: "CtsLocationFineTestCases_android_server_location",
+    base: "CtsLocationFineTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.location.cts.fine.ScanningSettingsTest"],
 }

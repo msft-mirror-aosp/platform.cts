@@ -58,3 +58,9 @@ genrule {
     srcs: [":AppUsedByOtherApp_1_prof"],
     out: ["art-profile/baseline.prof"],
 }
+
+android_test_helper_app {
+    name: "CtsCompilationApp_debuggable",
+    defaults: ["CtsCompilationApp_defaults"],
+    manifest: "AndroidManifest_debuggable.xml",
+}

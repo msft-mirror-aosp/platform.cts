@@ -51,6 +51,7 @@ import android.util.Log;
 import android.window.TaskFragmentCreationParams;
 import android.window.TaskFragmentInfo;
 import android.window.TaskFragmentOrganizer;
+import android.window.TaskFragmentParentInfo;
 import android.window.TaskFragmentTransaction;
 import android.window.WindowContainerTransaction;
 
@@ -246,7 +247,7 @@ public class TaskFragmentOrganizerTestBase extends WindowManagerTestBase {
         private int mParentTaskId = INVALID_STACK_ID;
         @Nullable
         @GuardedBy("mLock")
-        private Configuration mParentConfig;
+        private TaskFragmentParentInfo mParentInfo;
         @Nullable
         @GuardedBy("mLock")
         private IBinder mErrorToken;
@@ -407,7 +408,7 @@ public class TaskFragmentOrganizerTestBase extends WindowManagerTestBase {
                 mRemovedInfos.clear();
                 mInfos.clear();
                 mParentTaskId = INVALID_STACK_ID;
-                mParentConfig = null;
+                mParentInfo = null;
                 mErrorToken = null;
                 mThrowable = null;
             }
@@ -437,7 +438,8 @@ public class TaskFragmentOrganizerTestBase extends WindowManagerTestBase {
                             onTaskFragmentVanished(info);
                             break;
                         case TYPE_TASK_FRAGMENT_PARENT_INFO_CHANGED:
-                            onTaskFragmentParentInfoChanged(taskId, change.getTaskConfiguration());
+                            onTaskFragmentParentInfoChanged(taskId,
+                                    change.getTaskFragmentParentInfo());
                             break;
                         case TYPE_TASK_FRAGMENT_ERROR:
                             final Bundle errorBundle = change.getErrorBundle();
@@ -491,9 +493,9 @@ public class TaskFragmentOrganizerTestBase extends WindowManagerTestBase {
 
         @GuardedBy("mLock")
         private void onTaskFragmentParentInfoChanged(int taskId,
-                @NonNull Configuration parentConfig) {
+                @NonNull TaskFragmentParentInfo parentInfo) {
             mParentTaskId = taskId;
-            mParentConfig = parentConfig;
+            mParentInfo = parentInfo;
             mParentChangedLatch.countDown();
         }
 

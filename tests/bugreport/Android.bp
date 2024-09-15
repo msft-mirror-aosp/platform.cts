@@ -14,23 +14,32 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_crumpet",
 }
 
 android_test {
     name: "CtsBugreportTestCases",
     defaults: ["cts_defaults"],
     static_libs: [
-            "androidx.test.rules",
-            "compatibility-device-util-axt",
-        ],
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "platform-test-annotations",
+    ],
     libs: [
-            "android.test.runner",
-            "android.test.base",
-        ],
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
+    ],
     srcs: ["src/**/*.java"],
     sdk_version: "test_current",
     test_suites: [
         "cts",
         "general-tests",
     ],
+}
+
+test_module_config {
+    name: "CtsBugreportTestCases_android_server_os",
+    base: "CtsBugreportTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

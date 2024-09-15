@@ -17,7 +17,7 @@
 package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.EnsureTestAppInstalled.DEFAULT_KEY;
-import static com.android.bedstead.harrier.annotations.enterprise.EnsureHasDelegate.ENSURE_HAS_DELEGATE_PRIORITY;
+import static com.android.bedstead.enterprise.annotations.EnsureHasDelegate.ENSURE_HAS_DELEGATE_PRIORITY;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Repeatable;

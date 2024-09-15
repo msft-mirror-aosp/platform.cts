@@ -37,6 +37,10 @@
             for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethod.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -46,6 +50,10 @@
             for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethod2.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -55,6 +63,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockSpellChecker.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -73,6 +85,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsHiddenFromPickerIme.apk" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
@@ -82,6 +98,10 @@
             running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockA11yInputMethod.apk" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
@@ -99,7 +119,24 @@
             CTS is running for instant apps.
         -->
         <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
         <option name="test-file-name" value="CtsMockInputMethodWithSubtypes.apk" />
+    </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
+        <option name="cleanup-apks" value="true" />
+        <!--
+            TestIme always needs to be installed as a full package, even when CTS is running for
+            instant apps.
+        -->
+        <option name="force-install-mode" value="FULL"/>
+        <!--
+            Enabling force-queryable makes package visibility tests impossible. So opt it out.
+        -->
+        <option name="force-queryable" value="false" />
+        <option name="test-file-name" value="TestIme.apk" />
     </target_preparer>
 
     <!--

@@ -18,11 +18,16 @@ package android.devicepolicy.cts.utils;
 
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.fail;
+
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.util.ArraySet;
 import android.util.Log;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Utility class for {@link Bundle} related operations.
@@ -121,6 +126,24 @@ public final class BundleUtils {
         // This uses an arbitrary value from the test bundle
         assertWithMessage("Bundle should not be equal to test bundle")
                 .that(value.getString("string")).isNotEqualTo(id);
+    }
+
+    /**
+     * Checks if the provided {@code bundle} list matches exactly the provided list of ids,
+     * irrespective of ordering. Ids should be unique.
+     */
+    public static void assertEqualToBundleList(List<Bundle> bundles, String... ids) {
+        Set<String> idSet = new ArraySet<>(ids);
+        if (idSet.size() != ids.length) {
+            fail("Duplicates in Ids");
+        }
+        assertWithMessage("Bundle size").that(bundles.size()).isEqualTo(idSet.size());
+        for (Bundle bundle : bundles) {
+            String id = bundle.getString("string");
+            assertWithMessage("Unexpected ID %s in bundles", id).that(idSet).contains(id);
+            assertEqualToBundle(id, bundle);
+            idSet.remove(id);
+        }
     }
 
     private static void assertBooleanKey(Bundle bundle, String key, boolean expectedValue) {

@@ -50,6 +50,7 @@ import android.os.Bundle;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.ActivityManagerTestBase;
+import android.server.wm.KeyguardTestBase;
 import android.server.wm.LockScreenSession;
 import android.view.View;
 import android.widget.EditText;
@@ -76,7 +77,7 @@ import java.util.concurrent.TimeUnit;
 @android.server.wm.annotation.Group2
 public class KeyguardLockedTests extends KeyguardTestBase {
 
-    private final static long TIMEOUT_IME = TimeUnit.SECONDS.toMillis(5);
+    private static final long TIMEOUT_IME = TimeUnit.SECONDS.toMillis(5);
 
     private final CtsTouchUtils mCtsTouchUtils =
             new CtsTouchUtils(InstrumentationRegistry.getTargetContext());
@@ -86,6 +87,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     public void setUp() throws Exception {
         super.setUp();
         assumeTrue(supportsSecureLock());
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Keyguard not supported for visible background users");
     }
 
     @Test

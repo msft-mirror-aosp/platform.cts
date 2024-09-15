@@ -22,8 +22,10 @@ import static org.junit.Assert.fail;
 
 import android.assist.common.AutoResetLatch;
 import android.assist.common.Utils;
+import android.content.pm.PackageManager;
 import android.util.Log;
 
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -58,6 +60,7 @@ public class AssistStructureTest extends AssistTestBase {
             Log.d(TAG, "Not running assist tests - voice_recognizers feature is not supported");
             return;
         }
+        Assume.assumeFalse(isUnsupportedDevice());
         start3pApp(TEST_CASE_TYPE);
         startTest(TEST_CASE_TYPE);
         waitForAssistantToBeReady();
@@ -70,5 +73,11 @@ public class AssistStructureTest extends AssistTestBase {
             verifyAssistStructure(Utils.getTestAppComponent(TEST_CASE_TYPE),
                     false /*FLAG_SECURE set*/);
         });
+    }
+
+    private boolean isUnsupportedDevice() {
+        // TODO(b/280025610): Need to check if this test class should be tested on Wear & Auto.
+        return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                || mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

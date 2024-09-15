@@ -269,12 +269,14 @@ public class SettingsPanelTest {
     }
 
     private void pressDone() {
-        if (mHasTouchScreen) {
-            mDevice.findObject(By.res(mSettingsPackage, RESOURCE_DONE)).click();
-            mDevice.wait(Until.hasObject(By.pkg(mLauncherPackage).depth(0)), TIMEOUT);
-        } else {
+        UiObject2 doneObject = mDevice.findObject(By.res(mSettingsPackage, RESOURCE_DONE));
+        if (!mHasTouchScreen || doneObject == null) {
             mDevice.pressBack();
+            return;
         }
+
+        doneObject.click();
+        mDevice.wait(Until.hasObject(By.pkg(mLauncherPackage).depth(0)), TIMEOUT);
     }
 
     private void pressSeeMore() {

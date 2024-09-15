@@ -21,7 +21,7 @@ import com.android.interactive.annotations.AutomationFor;
 /** Automation for TapLegalInformationStep. **/
 @AutomationFor("com.google.android.interactive.steps.settings.TapLegalInformationStep")
 public class TapLegalInformationStepAutomation extends TapPreferenceInSettingsStepAutomation {
-    protected TapLegalInformationStepAutomation() {
+    public TapLegalInformationStepAutomation() {
         super("Legal information");
     }
 }

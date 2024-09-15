@@ -1,7 +1,22 @@
 {
   "postsubmit": [
     {
-      "name": "CtsUserRestrictionTestCases"
+      "name": "CtsPackageSchemeTestsWithoutVisibility"
+    },
+    {
+      "name": "CtsPackageSchemeTestsWithVisibility"
+    },
+    {
+      "name": "CtsContentProviderTestsWithoutVisibility"
+    },
+    {
+      "name": "CtsContentProviderTestsWithVisibility"
+    },
+    {
+      "name": "CtsUpdateOwnershipEnforcementTestCases"
+    },
+    {
+      "name": "CtsPackageInstallerCUJTestCases"
     }
   ],
   "presubmit": [
@@ -28,6 +43,9 @@
     },
     {
       "name": "CtsPackageUninstallTestCases"
+    },
+    {
+      "name": "CtsUserRestrictionTestCases"
     }
   ],
   "imports": [

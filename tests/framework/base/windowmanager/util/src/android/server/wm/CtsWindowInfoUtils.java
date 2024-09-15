@@ -45,6 +45,7 @@ import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingRunnable;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +73,6 @@ public class CtsWindowInfoUtils {
      *
      * @param predicate The predicate tested each time window infos change.
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
-     * @param unit      The units associated with timeout.
      * @param uiAutomation Pass in a uiAutomation to use. If null is passed in, the default will
      *                     be used. Passing non null is only needed if the test has a custom version
      *                     of uiAutomtation since retrieving a uiAutomation could overwrite it.
@@ -80,7 +80,7 @@ public class CtsWindowInfoUtils {
      * the timeout is reached. False otherwise.
      */
     public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
-            long timeout, @NonNull TimeUnit unit, @Nullable UiAutomation uiAutomation)
+            @NonNull Duration timeout, @Nullable UiAutomation uiAutomation)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -101,7 +101,7 @@ public class CtsWindowInfoUtils {
                 var listener = new WindowInfosListenerForTest();
                 try {
                     listener.addWindowInfosListener(checkPredicate);
-                    latch.await(timeout, unit);
+                    latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
                 } finally {
                     listener.removeWindowInfosListener(checkPredicate);
                 }
@@ -127,19 +127,18 @@ public class CtsWindowInfoUtils {
     }
 
     /**
-     * Same as {@link #waitForWindowInfos(Predicate, long, TimeUnit, UiAutomation)}, but passes in
+     * Same as {@link #waitForWindowInfos(Predicate, Duration, UiAutomation)}, but passes in
      * a null uiAutomation object. This should be used in most cases unless there's a custom
      * uiAutomation object used in the test.
      *
      * @param predicate The predicate tested each time window infos change.
      * @param timeout   The amount of time to wait for the predicate to be satisfied.
-     * @param unit      The units associated with timeout.
      * @return True if the provided predicate is true for any invocation before
      * the timeout is reached. False otherwise.
      */
     public static boolean waitForWindowInfos(@NonNull Predicate<List<WindowInfo>> predicate,
-            long timeout, @NonNull TimeUnit unit) throws InterruptedException {
-        return waitForWindowInfos(predicate, timeout, unit, null /* uiAutomation */);
+            @NonNull Duration timeout) throws InterruptedException {
+        return waitForWindowInfos(predicate, timeout, null /* uiAutomation */);
     }
 
     /**
@@ -163,9 +162,9 @@ public class CtsWindowInfoUtils {
      * reached. False otherwise.
      * @hide
      */
-    public static boolean waitForWindowInfo(@NonNull Predicate<WindowInfo> predicate, long timeout,
-            @NonNull TimeUnit unit, @NonNull Supplier<IBinder> windowTokenSupplier, int displayId)
-            throws InterruptedException {
+    public static boolean waitForWindowInfo(@NonNull Predicate<WindowInfo> predicate,
+            @NonNull Duration timeout, @NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
         Predicate<List<WindowInfo>> wrappedPredicate = windowInfos -> {
             IBinder windowToken = windowTokenSupplier.get();
             if (windowToken == null) {
@@ -185,7 +184,7 @@ public class CtsWindowInfoUtils {
 
             return false;
         };
-        return waitForWindowInfos(wrappedPredicate, timeout, unit);
+        return waitForWindowInfos(wrappedPredicate, timeout);
     }
 
     /**
@@ -194,18 +193,33 @@ public class CtsWindowInfoUtils {
     public static boolean waitForWindowVisible(@NonNull View view) throws InterruptedException {
         // Wait until view is attached to a display
         PollingCheck.waitFor(() -> view.getDisplay() != null, "View not attached to a display");
-        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS,
+        return waitForWindowInfo(windowInfo -> true, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
                 view::getWindowToken, view.getDisplay().getDisplayId());
     }
 
     public static boolean waitForWindowVisible(@NonNull IBinder windowToken)
             throws InterruptedException {
-        return waitForWindowInfo(windowInfo -> true, HW_TIMEOUT_MULTIPLIER * 5L, TimeUnit.SECONDS,
-                () -> windowToken, DEFAULT_DISPLAY);
+        return waitForWindowVisible(windowToken, DEFAULT_DISPLAY);
     }
 
     /**
-     * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(int, TimeUnit, Supplier)}. Adopts
+     * Waits for a window to become visible.
+     *
+     * @param windowToken The token of the window to wait for.
+     * @param displayId The ID of the display on which to check for the window's visibility.
+     * @return {@code true} if the window becomes visible within the timeout period, {@code false}
+     *         otherwise.
+     * @throws InterruptedException If the thread is interrupted while waiting for the window
+     *         information.
+     */
+    public static boolean waitForWindowVisible(@NonNull IBinder windowToken, int displayId)
+            throws InterruptedException {
+        return waitForWindowInfo(windowInfo -> true, Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
+                () -> windowToken, displayId);
+    }
+
+    /**
+     * Calls {@link CtsWindowInfoUtils#waitForWindowOnTop(Duration, Supplier)}. Adopts
      * required permissions and waits at least five seconds before timing out.
      *
      * @param window The window to wait on.
@@ -213,7 +227,7 @@ public class CtsWindowInfoUtils {
      * reached. False otherwise.
      */
     public static boolean waitForWindowOnTop(@NonNull Window window) throws InterruptedException {
-        return waitForWindowOnTop(HW_TIMEOUT_MULTIPLIER * 5, TimeUnit.SECONDS,
+        return waitForWindowOnTop(Duration.ofSeconds(HW_TIMEOUT_MULTIPLIER * 5L),
                 () -> window.getDecorView().getWindowToken());
     }
 
@@ -230,15 +244,14 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param unit                The units associated with timeout.
-     * @param windowTokenSupplier Supplies the window token for the window to wait on. The
+     * @param predicate Supplies the window token for the window to wait on. The
      *                            supplier is called each time window infos change. If the
      *                            supplier returns null, the window is assumed not visible
      *                            yet.
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTop(long timeout, @NonNull TimeUnit unit,
+    public static boolean waitForWindowOnTop(@NonNull Duration timeout,
                                              @NonNull Predicate<WindowInfo> predicate)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
@@ -311,7 +324,7 @@ public class CtsWindowInfoUtils {
                         latch.countDown();
                     }
                 };
-                mTimer.schedule(mTask, 200 * HW_TIMEOUT_MULTIPLIER);
+                mTimer.schedule(mTask, 200L * HW_TIMEOUT_MULTIPLIER);
             }
         };
 
@@ -319,7 +332,7 @@ public class CtsWindowInfoUtils {
             var listener = new WindowInfosListenerForTest();
             try {
                 listener.addWindowInfosListener(windowNotOccluded);
-                latch.await(timeout, unit);
+                latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
             } finally {
                 listener.removeWindowInfosListener(windowNotOccluded);
             }
@@ -362,7 +375,6 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout             The amount of time to wait for the window to be visible.
-     * @param unit                The units associated with timeout.
      * @param windowTokenSupplier Supplies the window token for the window to wait on. The
      *                            supplier is called each time window infos change. If the
      *                            supplier returns null, the window is assumed not visible
@@ -370,10 +382,10 @@ public class CtsWindowInfoUtils {
      * @return True if the window satisfies the visibility requirements before the timeout is
      * reached. False otherwise.
      */
-    public static boolean waitForWindowOnTop(long timeout, @NonNull TimeUnit unit,
+    public static boolean waitForWindowOnTop(@NonNull Duration timeout,
             @NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
-        return waitForWindowOnTop(timeout, unit, windowInfo -> {
+        return waitForWindowOnTop(timeout, windowInfo -> {
             IBinder windowToken = windowTokenSupplier.get();
             return windowToken != null && windowInfo.windowToken == windowToken;
         });
@@ -388,11 +400,10 @@ public class CtsWindowInfoUtils {
      * </p>
      *
      * @param timeout The amount of time to wait for the window to be visible.
-     * @param unit    The units associated with timeout.
      * @return True if window geometry becomes stable before the timeout is reached. False
      * otherwise.
      */
-    public static boolean waitForStableWindowGeometry(long timeout, @NonNull TimeUnit unit)
+    public static boolean waitForStableWindowGeometry(@NonNull Duration timeout)
             throws InterruptedException {
         var latch = new CountDownLatch(1);
         var satisfied = new AtomicBoolean();
@@ -433,14 +444,14 @@ public class CtsWindowInfoUtils {
                     latch.countDown();
                 }
             };
-            timer.schedule(task[0], 200 * HW_TIMEOUT_MULTIPLIER);
+            timer.schedule(task[0], 200L * HW_TIMEOUT_MULTIPLIER);
         };
 
         runWithSurfaceFlingerPermission(() -> {
             var listener = new WindowInfosListenerForTest();
             try {
                 listener.addWindowInfosListener(consumer);
-                latch.await(timeout, unit);
+                latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
             } finally {
                 listener.removeWindowInfosListener(consumer);
             }
@@ -457,27 +468,40 @@ public class CtsWindowInfoUtils {
      * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
      *                            is called each time window infos change. If the supplier returns
      *                            null, the window is assumed not visible yet.
-     * @param useGlobalInjection  Whether to use targeted injection (false) or global (true).
-     *                            Targeted injection will only send injected events to the owned
-     *                            test app, while global will send the events to the entire system,
-     *                            including spy windows (launcher/System UI). Always use targeted
-     *                            injection unless you know what you are doing.
      * @param outCoords           If non null, the tapped coordinates will be set in the object.
      * @return true if successfully tapped on the coordinates, false otherwise.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindowCenter(Instrumentation instrumentation,
-            @NonNull Supplier<IBinder> windowTokenSupplier, boolean useGlobalInjection,
-            @Nullable Point outCoords)
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point outCoords)
             throws InterruptedException {
-        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+        return tapOnWindowCenter(instrumentation, windowTokenSupplier, outCoords, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Tap on the center coordinates of the specified window and sends back the coordinates tapped
+     * </p>
+     *
+     * @param instrumentation     Instrumentation object to use for tap.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @param outCoords           If non null, the tapped coordinates will be set in the object.
+     * @param displayId           The ID of the display on which to tap the window center.
+     * @return true if successfully tapped on the coordinates, false otherwise.
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static boolean tapOnWindowCenter(Instrumentation instrumentation,
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point outCoords,
+            int displayId) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
         if (bounds == null) {
             return false;
         }
 
         final Point coord = new Point(bounds.left + bounds.width() / 2,
                 bounds.top + bounds.height() / 2);
-        sendTap(instrumentation, coord, useGlobalInjection);
+        sendTap(instrumentation, coord);
         if (outCoords != null) {
             outCoords.set(coord.x, coord.y);
         }
@@ -494,31 +518,60 @@ public class CtsWindowInfoUtils {
      *                            null, the window is assumed not visible yet.
      * @param offset              The offset from 0,0 of the window to tap on. If null, it will be
      *                            ignored and 0,0 will be tapped.
-     * @param useGlobalInjection  Whether to use targeted injection (false) or global (true).
-     *                            Targeted injection will only send injected events to the owned
-     *                            test app, while global will send the events to the entire system,
-     *                            including spy windows (launcher/System UI). Always use targeted
-     *                            injection unless you know what you are doing.
+     * @return true if successfully tapped on the coordinates, false otherwise.
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static boolean tapOnWindow(Instrumentation instrumentation,
+            @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset)
+            throws InterruptedException {
+        return tapOnWindow(instrumentation, windowTokenSupplier, offset, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Tap on the coordinates of the specified window, offset by the value passed in.
+     * </p>
+     *
+     * @param instrumentation     Instrumentation object to use for tap.
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @param offset              The offset from 0,0 of the window to tap on. If null, it will be
+     *                            ignored and 0,0 will be tapped.
+     * @param displayId           The ID of the display on which to tap the window.
      * @return true if successfully tapped on the coordinates, false otherwise.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
     public static boolean tapOnWindow(Instrumentation instrumentation,
             @NonNull Supplier<IBinder> windowTokenSupplier, @Nullable Point offset,
-            boolean useGlobalInjection)
-            throws InterruptedException {
-        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier);
+            int displayId) throws InterruptedException {
+        Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
         if (bounds == null) {
             return false;
         }
 
         final Point coord = new Point(bounds.left + (offset != null ? offset.x : 0),
                 bounds.top + (offset != null ? offset.y : 0));
-        sendTap(instrumentation, coord, useGlobalInjection);
+        sendTap(instrumentation, coord);
         return true;
     }
 
     public static Rect getWindowBoundsInWindowSpace(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
+        return getWindowBoundsInWindowSpace(windowTokenSupplier, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Get the bounds of a window in window space.
+     *
+     * @param windowTokenSupplier A supplier that provides the window token.
+     * @param displayId The ID of the display for which the window bounds are to be retrieved.
+     * @return A {@link Rect} representing the bounds of the window in window space,
+     *         or null if the window information is not available within the timeout period.
+     * @throws InterruptedException If the thread is interrupted while waiting for the window
+     *         information.
+     */
+    public static Rect getWindowBoundsInWindowSpace(@NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
             if (!windowInfo.bounds.isEmpty()) {
@@ -536,8 +589,8 @@ public class CtsWindowInfoUtils {
             return false;
         };
 
-        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
-                windowTokenSupplier, DEFAULT_DISPLAY)) {
+        if (!waitForWindowInfo(predicate, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER),
+                windowTokenSupplier, displayId)) {
             return null;
         }
         return bounds;
@@ -545,6 +598,21 @@ public class CtsWindowInfoUtils {
 
     public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier)
             throws InterruptedException {
+        return getWindowBoundsInDisplaySpace(windowTokenSupplier, DEFAULT_DISPLAY);
+    }
+
+    /**
+     * Get the bounds of a window in display space for a specified display.
+     *
+     * @param windowTokenSupplier A supplier that provides the window token.
+     * @param displayId The ID of the display for which the window bounds are to be retrieved.
+     * @return A {@link Rect} representing the bounds of the window in display space, or null
+     *         if the window information is not available within the timeout period.
+     * @throws InterruptedException If the thread is interrupted while waiting for the
+     *         window information.
+     */
+    public static Rect getWindowBoundsInDisplaySpace(@NonNull Supplier<IBinder> windowTokenSupplier,
+             int displayId) throws InterruptedException {
         Rect bounds = new Rect();
         Predicate<WindowInfo> predicate = windowInfo -> {
             if (!windowInfo.bounds.isEmpty()) {
@@ -555,11 +623,30 @@ public class CtsWindowInfoUtils {
             return false;
         };
 
-        if (!waitForWindowInfo(predicate, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS,
-                windowTokenSupplier, DEFAULT_DISPLAY)) {
+        if (!waitForWindowInfo(predicate, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER),
+                windowTokenSupplier, displayId)) {
             return null;
         }
         return bounds;
+    }
+
+    /**
+     * Get the center coordinates of the specified window
+     *
+     * @param windowTokenSupplier Supplies the window token for the window to wait on. The supplier
+     *                            is called each time window infos change. If the supplier returns
+     *                            null, the window is assumed not visible yet.
+     * @param displayId The ID of the display on which the window is located.
+     * @return Point of the window center
+     * @throws InterruptedException if failed to wait for WindowInfo
+     */
+    public static Point getWindowCenter(@NonNull Supplier<IBinder> windowTokenSupplier,
+            int displayId) throws InterruptedException {
+        final Rect bounds = getWindowBoundsInDisplaySpace(windowTokenSupplier, displayId);
+        if (bounds == null) {
+            throw new IllegalArgumentException("Could not get the bounds for window");
+        }
+        return new Point(bounds.left + bounds.width() / 2, bounds.top + bounds.height() / 2);
     }
 
     /**
@@ -568,23 +655,16 @@ public class CtsWindowInfoUtils {
      *
      * @param instrumentation    Instrumentation object to use for tap.
      * @param coord              The coordinates to tap on in display space.
-     * @param useGlobalInjection Whether to use targeted injection (false) or global (true).
-     *                           Targeted injection will only send injected events to the owned
-     *                           test app, while global will send the events to the entire system,
-     *                           including spy windows (launcher/System UI). Always use targeted
-     *                           injection unless you know what you are doing.
      * @throws InterruptedException if failed to wait for WindowInfo
      */
-    public static void sendTap(Instrumentation instrumentation, Point coord,
-            boolean useGlobalInjection) {
+    public static void sendTap(Instrumentation instrumentation, Point coord) {
         // Get anchor coordinates on the screen
         final long downTime = SystemClock.uptimeMillis();
 
         CtsTouchUtils ctsTouchUtils = new CtsTouchUtils(instrumentation.getTargetContext());
         ctsTouchUtils.injectDownEvent(instrumentation, downTime, coord.x, coord.y,
-                /* eventInjectionListener= */ null, useGlobalInjection);
-        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y,
-                /*waitForAnimations=*/ true, null, useGlobalInjection);
+                /* eventInjectionListener= */ null);
+        ctsTouchUtils.injectUpEvent(instrumentation, downTime, false, coord.x, coord.y, null);
 
         instrumentation.waitForIdleSync();
     }
@@ -633,7 +713,7 @@ public class CtsWindowInfoUtils {
                 Log.d(tag, "     " + windowInfo);
             }
             return true;
-        }, 5L * HW_TIMEOUT_MULTIPLIER, TimeUnit.SECONDS);
+        }, Duration.ofSeconds(5L * HW_TIMEOUT_MULTIPLIER));
     }
 
     /**

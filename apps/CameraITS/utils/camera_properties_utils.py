@@ -58,8 +58,7 @@ def check_front_or_rear_camera(props):
     assertionError if not front or rear camera.
   """
   facing = props['android.lens.facing']
-  if not (facing == camera_properties_utils.LENS_FACING['BACK']
-      or facing == camera_properties_utils.LENS_FACING['FRONT']):
+  if not (facing == LENS_FACING['BACK'] or facing == LENS_FACING['FRONT']):
     raise AssertionError('Unknown lens facing: {facing}.')
 
 
@@ -161,6 +160,18 @@ def sensor_fusion(props):
      Boolean. True if camera and motion sensor timestamps in same time domain.
   """
   return props.get('android.sensor.info.timestampSource') == 1
+
+
+def burst_capture_capable(props):
+  """Returns whether a device supports burst capture.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if the device supports burst capture.
+  """
+  return 6 in props.get('android.request.availableCapabilities', [])
 
 
 def logical_multi_camera(props):
@@ -734,6 +745,19 @@ def cropped_raw_stream_use_case(props):
       'android.scaler.availableStreamUseCases']
 
 
+def dynamic_range_ten_bit(props):
+  """Returns whether a device supports the DYNAMIC_RANGE_TEN_BIT capability.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+     Boolean. True if the device supports the DYNAMIC_RANGE_TEN_BIT capability.
+  """
+  return 'android.request.availableCapabilities' in props and 18 in props[
+      'android.request.availableCapabilities']
+
+
 def intrinsic_calibration(props):
   """Returns whether a device supports android.lens.intrinsicCalibration.
 
@@ -746,26 +770,31 @@ def intrinsic_calibration(props):
   return props.get('android.lens.intrinsicCalibration') is not None
 
 
-def get_intrinsic_calibration(props, debug, fd=None):
+def get_intrinsic_calibration(props, metadata, debug, fd=None):
   """Get intrinsicCalibration and create intrisic matrix.
 
   If intrinsic android.lens.intrinsicCalibration does not exist, return None.
 
   Args:
-    props: camera properties
-    debug: bool to print more information
-    fd: focal length from capture metadata
+    props: camera properties.
+    metadata: dict; camera capture metadata.
+    debug: boolean; enable printing more information.
+    fd: float; focal length from capture metadata.
 
   Returns:
-    intrinsic transformation matrix
+    numpy array for intrinsic transformation matrix or None
     k = [[f_x, s, c_x],
          [0, f_y, c_y],
          [0,   0,   1]]
   """
-  if props.get('android.lens.intrinsicCalibration'):
+  if metadata.get('android.lens.intrinsicCalibration'):
+    ical = np.array(metadata['android.lens.intrinsicCalibration'])
+    logging.debug('Using capture metadata android.lens.intrinsicCalibration')
+  elif props.get('android.lens.intrinsicCalibration'):
     ical = np.array(props['android.lens.intrinsicCalibration'])
+    logging.debug('Using camera property android.lens.intrinsicCalibration')
   else:
-    logging.error('Device does not have android.lens.intrinsicCalibration.')
+    logging.error('Camera does not have android.lens.intrinsicCalibration.')
     return None
 
   # basic checks for parameter correctness
@@ -1062,3 +1091,44 @@ def awb_regions(props):
   """
   return 'android.control.maxRegionsAwb' in props and props[
       'android.control.maxRegionsAwb'] != 0
+
+
+def preview_stabilization_supported(props):
+  """Returns whether preview stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if preview stabilization is supported.
+  """
+  supported_stabilization_modes = props[
+      'android.control.availableVideoStabilizationModes'
+  ]
+  supported = (
+      supported_stabilization_modes is not None and
+      STABILIZATION_MODE_PREVIEW in supported_stabilization_modes
+  )
+  return supported
+
+
+def optical_stabilization_supported(props):
+  """Returns whether optical image stabilization is supported.
+
+  Args:
+    props: Camera properties object.
+
+  Returns:
+    Boolean. True if optical image stabilization is supported.
+  """
+  optical_stabilization_modes = props[
+      'android.lens.info.availableOpticalStabilization'
+    ]
+  logging.debug('optical_stabilization_modes = %s',
+                str(optical_stabilization_modes))
+
+  # Check if OIS supported
+  ois_supported = (optical_stabilization_modes is not None and
+                   LENS_OPTICAL_STABILIZATION_MODE_ON in
+                   optical_stabilization_modes)
+  return ois_supported

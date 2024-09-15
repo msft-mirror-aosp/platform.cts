@@ -19,9 +19,9 @@ package com.android.cts.managedprofile;
 import static org.testng.Assert.assertThrows;
 
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.flags.Flags;
+import android.util.ArraySet;
 import android.util.Log;
-
-import com.google.common.collect.ImmutableSet;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -43,69 +43,72 @@ public class ParentProfileTest extends BaseManagedProfileTest {
      * An allowlist of public API methods in {@link android.app.admin.DevicePolicyManager}
      * that are supported on a parent profile.
      */
-    private static final ImmutableSet<String> SUPPORTED_APIS = new ImmutableSet.Builder<String>()
-            .add("getPasswordQuality")
-            .add("setPasswordQuality")
-            .add("getPasswordMinimumLength")
-            .add("setPasswordMinimumLength")
-            .add("getPasswordMinimumUpperCase")
-            .add("setPasswordMinimumUpperCase")
-            .add("getPasswordMinimumLowerCase")
-            .add("setPasswordMinimumLowerCase")
-            .add("getPasswordMinimumLetters")
-            .add("setPasswordMinimumLetters")
-            .add("getPasswordMinimumNumeric")
-            .add("setPasswordMinimumNumeric")
-            .add("getPasswordMinimumSymbols")
-            .add("setPasswordMinimumSymbols")
-            .add("getPasswordMinimumNonLetter")
-            .add("setPasswordMinimumNonLetter")
-            .add("getPasswordHistoryLength")
-            .add("setPasswordHistoryLength")
-            .add("getPasswordExpirationTimeout")
-            .add("setPasswordExpirationTimeout")
-            .add("getPasswordExpiration")
-            .add("getPasswordMaximumLength")
-            .add("getPasswordComplexity")
-            .add("getRequiredPasswordComplexity")
-            .add("setRequiredPasswordComplexity")
-            .add("setCameraDisabled")
-            .add("getCameraDisabled")
-            .add("isActivePasswordSufficient")
-            .add("isActivePasswordSufficientForDeviceRequirement")
-            .add("getCurrentFailedPasswordAttempts")
-            .add("getMaximumFailedPasswordsForWipe")
-            .add("setMaximumFailedPasswordsForWipe")
-            .add("getMaximumTimeToLock")
-            .add("setMaximumTimeToLock")
-            .add("lockNow")
-            .add("getKeyguardDisabledFeatures")
-            .add("setKeyguardDisabledFeatures")
-            .add("getTrustAgentConfiguration")
-            .add("setTrustAgentConfiguration")
-            .add("getRequiredStrongAuthTimeout")
-            .add("setRequiredStrongAuthTimeout")
-            .add("isDeviceIdAttestationSupported")
-            .add("isUniqueDeviceAttestationSupported")
-            .add("wipeData")
-            .add("getAutoTimeEnabled")
-            .add("setAutoTimeEnabled")
-            .add("addUserRestriction")
-            .add("clearUserRestriction")
-            .add("getUserRestrictions")
-            .add("setApplicationHidden")
-            .add("isApplicationHidden")
-            .add("setScreenCaptureDisabled")
-            .add("getScreenCaptureDisabled")
-            .add("getAccountTypesWithManagementDisabled")
-            .add("setAccountManagementDisabled")
-            .add("setDefaultSmsApplication")
-            .add("getPermittedInputMethods")
-            .add("setPermittedInputMethods")
-            .add("getDevicePolicyManagementRoleHolderPackage")
-            .add("getResources")
-            .add("isMtePolicyEnforced")
-            .build();
+    private static final Set<String> SUPPORTED_APIS = new ArraySet<>();
+    static {
+        SUPPORTED_APIS.add("getPasswordQuality");
+        SUPPORTED_APIS.add("setPasswordQuality");
+        SUPPORTED_APIS.add("getPasswordMinimumLength");
+        SUPPORTED_APIS.add("setPasswordMinimumLength");
+        SUPPORTED_APIS.add("getPasswordMinimumUpperCase");
+        SUPPORTED_APIS.add("setPasswordMinimumUpperCase");
+        SUPPORTED_APIS.add("getPasswordMinimumLowerCase");
+        SUPPORTED_APIS.add("setPasswordMinimumLowerCase");
+        SUPPORTED_APIS.add("getPasswordMinimumLetters");
+        SUPPORTED_APIS.add("setPasswordMinimumLetters");
+        SUPPORTED_APIS.add("getPasswordMinimumNumeric");
+        SUPPORTED_APIS.add("setPasswordMinimumNumeric");
+        SUPPORTED_APIS.add("getPasswordMinimumSymbols");
+        SUPPORTED_APIS.add("setPasswordMinimumSymbols");
+        SUPPORTED_APIS.add("getPasswordMinimumNonLetter");
+        SUPPORTED_APIS.add("setPasswordMinimumNonLetter");
+        SUPPORTED_APIS.add("getPasswordHistoryLength");
+        SUPPORTED_APIS.add("setPasswordHistoryLength");
+        SUPPORTED_APIS.add("getPasswordExpirationTimeout");
+        SUPPORTED_APIS.add("setPasswordExpirationTimeout");
+        SUPPORTED_APIS.add("getPasswordExpiration");
+        SUPPORTED_APIS.add("getPasswordMaximumLength");
+        SUPPORTED_APIS.add("getPasswordComplexity");
+        SUPPORTED_APIS.add("getRequiredPasswordComplexity");
+        SUPPORTED_APIS.add("setRequiredPasswordComplexity");
+        SUPPORTED_APIS.add("setCameraDisabled");
+        SUPPORTED_APIS.add("getCameraDisabled");
+        SUPPORTED_APIS.add("isActivePasswordSufficient");
+        SUPPORTED_APIS.add("isActivePasswordSufficientForDeviceRequirement");
+        SUPPORTED_APIS.add("getCurrentFailedPasswordAttempts");
+        SUPPORTED_APIS.add("getMaximumFailedPasswordsForWipe");
+        SUPPORTED_APIS.add("setMaximumFailedPasswordsForWipe");
+        SUPPORTED_APIS.add("getMaximumTimeToLock");
+        SUPPORTED_APIS.add("setMaximumTimeToLock");
+        SUPPORTED_APIS.add("lockNow");
+        SUPPORTED_APIS.add("getKeyguardDisabledFeatures");
+        SUPPORTED_APIS.add("setKeyguardDisabledFeatures");
+        SUPPORTED_APIS.add("getTrustAgentConfiguration");
+        SUPPORTED_APIS.add("setTrustAgentConfiguration");
+        SUPPORTED_APIS.add("getRequiredStrongAuthTimeout");
+        SUPPORTED_APIS.add("setRequiredStrongAuthTimeout");
+        SUPPORTED_APIS.add("isDeviceIdAttestationSupported");
+        SUPPORTED_APIS.add("isUniqueDeviceAttestationSupported");
+        SUPPORTED_APIS.add("wipeData");
+        SUPPORTED_APIS.add("getAutoTimeEnabled");
+        SUPPORTED_APIS.add("setAutoTimeEnabled");
+        SUPPORTED_APIS.add("addUserRestriction");
+        SUPPORTED_APIS.add("clearUserRestriction");
+        SUPPORTED_APIS.add("getUserRestrictions");
+        SUPPORTED_APIS.add("setApplicationHidden");
+        SUPPORTED_APIS.add("isApplicationHidden");
+        SUPPORTED_APIS.add("setScreenCaptureDisabled");
+        SUPPORTED_APIS.add("getScreenCaptureDisabled");
+        SUPPORTED_APIS.add("getAccountTypesWithManagementDisabled");
+        SUPPORTED_APIS.add("setAccountManagementDisabled");
+        SUPPORTED_APIS.add("setDefaultSmsApplication");
+        SUPPORTED_APIS.add("getPermittedInputMethods");
+        SUPPORTED_APIS.add("setPermittedInputMethods");
+        SUPPORTED_APIS.add("getDevicePolicyManagementRoleHolderPackage");
+        SUPPORTED_APIS.add("getResources");
+        SUPPORTED_APIS.add("isMtePolicyEnforced");
+        SUPPORTED_APIS.add("setSystemSetting");
+        if (Flags.dmrhSetAppRestrictions()) SUPPORTED_APIS.add("setApplicationRestrictions");
+    }
 
     private static final String LOG_TAG = "ParentProfileTest";
 

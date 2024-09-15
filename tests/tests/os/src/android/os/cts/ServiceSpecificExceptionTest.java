@@ -18,6 +18,7 @@ package android.os.cts;
 import static org.junit.Assert.assertEquals;
 
 import android.os.ServiceSpecificException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
 import androidx.test.runner.AndroidJUnit4;
 
@@ -25,13 +26,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class ServiceSpecificExceptionTest {
     @Test
     public void testServiceSpecificException() {
         final var e = new ServiceSpecificException(123, "message");
         assertEquals(e.errorCode, 123);
         assertEquals(e.getMessage(), "message");
-        e.toString(); // shouldn't throw
-        e.hashCode(); // shouldn't throw
+        String unusedString = e.toString(); // shouldn't throw
+        int unusedHashCode = e.hashCode(); // shouldn't throw
     }
 }

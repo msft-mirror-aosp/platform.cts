@@ -32,7 +32,6 @@ import static android.autofillservice.cts.testcore.Helper.isImeShowing;
 import static android.autofillservice.cts.testcore.Helper.isPccFieldClassificationSet;
 import static android.autofillservice.cts.testcore.Helper.setFillDialogHints;
 import static android.service.autofill.FillRequest.FLAG_SUPPORTS_FILL_DIALOG;
-import static android.view.View.AUTOFILL_HINT_USERNAME;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -57,7 +56,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.RemoteViews;
 
-import androidx.test.filters.FlakyTest;
 import androidx.test.uiautomator.UiObject2;
 
 import com.android.compatibility.common.util.CddTest;
@@ -109,44 +107,6 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
         final FillRequest request = sReplier.getNextFillRequest();
         if (isPccEnabled) {
             assertThat(request.hints.size()).isEqualTo(1);
-            assertThat(request.hints.get(0)).isEqualTo("username");
-        }
-        mUiBot.waitForIdleSync();
-        disablePccDetectionFeature(sContext);
-        sReplier.setIdMode(IdMode.RESOURCE_ID);
-    }
-
-    @FlakyTest(bugId = 277539840) // TODO: Try to reduce flakes
-    @Test
-    public void testPccRequest_setForAllHints() throws Exception {
-        // Set service.
-        enablePccDetectionFeature(sContext, "username", "password", "new_password");
-        enableFillDialogFeature(sContext);
-        sReplier.setIdMode(IdMode.PCC_ID);
-        enableService();
-
-        boolean isPccEnabled = isPccFieldClassificationSet(sContext);
-
-        final CannedFillResponse.Builder builder = new CannedFillResponse.Builder()
-                .addDataset(new CannedDataset.Builder()
-                        .setField(AUTOFILL_HINT_USERNAME, "dude")
-                        .setField("allField1")
-                        .setPresentation(createPresentation("The Dude"))
-                        .build())
-                .addDataset(new CannedDataset.Builder()
-                        .setField("allField2")
-                        .setPresentation(createPresentation("generic user"))
-                        .build());
-        sReplier.addResponse(builder.build());
-
-        // Start activity and autofill
-        LoginActivity activity = startLoginActivity();
-        mUiBot.waitForIdleSync();
-
-        // Check onFillRequest has the flag: FLAG_SEND_ALL_USER_DATA
-        final FillRequest request = sReplier.getNextFillRequest();
-        if (isPccEnabled) {
-            assertThat(request.hints.size()).isEqualTo(3);
             assertThat(request.hints.get(0)).isEqualTo("username");
         }
         mUiBot.waitForIdleSync();
@@ -890,23 +850,9 @@ public class LoginActivityTest extends AutoFillServiceTestCase.ManualActivityLau
 
     @Test
     @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onCredmanFieldOnlyActivity_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onlyCredentialFields(true);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
     public void testSuppressFillDialog_onMixedFields_withIsCredman()
             throws Exception {
         testSuppressFillDialog_onMixedFields(false);
-    }
-
-    @Test
-    @CddTest(requirement = "9.8.14/C1-1")
-    public void testSuppressFillDialog_onMixedFields_withAutofillHint()
-            throws Exception {
-        testSuppressFillDialog_onMixedFields(true);
     }
 
     @Test

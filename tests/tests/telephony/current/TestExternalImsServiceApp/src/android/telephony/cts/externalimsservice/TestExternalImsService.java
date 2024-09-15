@@ -18,6 +18,7 @@ package android.telephony.cts.externalimsservice;
 
 import android.content.Intent;
 import android.os.IBinder;
+import android.telephony.ims.ImsReasonInfo;
 import android.telephony.ims.cts.ImsUtils;
 import android.telephony.ims.cts.TestImsService;
 import android.telephony.ims.stub.ImsFeatureConfiguration;
@@ -59,6 +60,22 @@ public class TestExternalImsService extends TestImsService {
 
         public boolean isTelephonyBound() {
             return TestExternalImsService.this.isTelephonyBound();
+        }
+
+        public void onDeregistered(ImsReasonInfo reason) {
+            getImsRegistration().onDeregistered(reason);
+        }
+
+        public void onRegistering(int registrationTech) {
+            getImsRegistration().onRegistering(registrationTech);
+        }
+
+        public void onRegistered(int registrationTech) {
+            getImsRegistration().onRegistered(registrationTech);
+        }
+
+        public void addCapabilities(long capabilities) {
+            TestExternalImsService.this.addCapabilities(capabilities);
         }
     }
 

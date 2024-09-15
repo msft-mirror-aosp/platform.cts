@@ -18,6 +18,7 @@ package {
 
 java_test_host {
     name: "CtsSyncContentHostTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     srcs: [
         "src/**/*.java",

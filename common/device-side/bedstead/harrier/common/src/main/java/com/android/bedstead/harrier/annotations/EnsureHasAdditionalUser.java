@@ -16,7 +16,7 @@
 
 package com.android.bedstead.harrier.annotations;
 
-import static com.android.bedstead.harrier.annotations.EnsureHasWorkProfileKt.ENSURE_HAS_WORK_PROFILE_PRIORITY;
+import static com.android.bedstead.enterprise.annotations.EnsureHasWorkProfileKt.ENSURE_HAS_WORK_PROFILE_PRIORITY;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
 import com.android.bedstead.nene.types.OptionalBoolean;
@@ -41,6 +41,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
 public @interface EnsureHasAdditionalUser {
     /** Whether the instrumented test app should be installed in the additional user. */
     OptionalBoolean installInstrumentedApp() default ANY;

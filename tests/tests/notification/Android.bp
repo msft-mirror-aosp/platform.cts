@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
@@ -31,6 +32,7 @@ android_test {
         "android.app.flags-aconfig-java",
         "flag-junit",
         "notification_flags_lib",
+        "Harrier",
     ],
     libs: [
         "android.test.runner.stubs.test",
@@ -68,4 +70,11 @@ android_test {
     sdk_version: "test_current",
     target_sdk_version: "current",
     min_sdk_version: "34",
+}
+
+test_module_config {
+    name: "CtsNotificationTestCases_notification",
+    base: "CtsNotificationTestCases",
+    test_suites: ["general-tests"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

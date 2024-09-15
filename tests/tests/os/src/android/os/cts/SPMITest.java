@@ -16,6 +16,8 @@
 
 package android.os.cts;
 
+import android.platform.test.annotations.AppModeSdkSandbox;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.regex.Pattern;
 
 import junit.framework.TestCase;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class SPMITest extends TestCase {
   static { System.loadLibrary("ctsos_jni"); }
 

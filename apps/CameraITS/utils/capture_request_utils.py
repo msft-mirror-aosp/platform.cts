@@ -14,20 +14,64 @@
 """Utility functions to create custom capture requests."""
 
 
+import error_util
 import logging
 import math
 
-_COMMON_IMG_ARS = (4/3, 16/9)
-_COMMON_IMG_ARS_ATOL = 0.01
-_MAX_YUV_SIZE = (1920, 1080)
-_MIN_YUV_SIZE = (640, 360)
-_VGA_W, _VGA_H = 640, 480
-_CAPTURE_INTENT_STILL_CAPTURE = 2
+_AE_MODE_OFF = 0
 _AE_MODE_ON_AUTO_FLASH = 2
-_CAPTURE_INTENT_PREVIEW = 1
 _AE_PRECAPTURE_TRIGGER_START = 1
 _AE_PRECAPTURE_TRIGGER_IDLE = 0
+_CAPTURE_INTENT_STILL_CAPTURE = 2
+_CAPTURE_INTENT_PREVIEW = 1
+_COMMON_IMG_ARS = (4/3, 16/9)
+_COMMON_IMG_ARS_ATOL = 0.01
 _FLASH_MODE_SINGLE = 1
+FMT_CODE_JPEG = 0x100
+FMT_CODE_JPEG_R = 0x1005
+FMT_CODE_PRIV = 0x22
+FMT_CODE_RAW = 0x20
+FMT_CODE_RAW10 = 0x25
+FMT_CODE_RAW12 = 0x26
+FMT_CODE_YUV = 0x23  # YUV_420_888
+FMT_CODE_Y8 = 0x20203859
+_MAX_YUV_SIZE = (1920, 1080)
+_MIN_YUV_SIZE = (640, 360)
+_STATIONARY_LENS_NUM_TRIES = 2  # num of tries to wait for stationary lens
+_STATIONARY_LENS_NUM_FRAMES = 4  # num of frames to capture for stationay lens
+_STATIONARY_LENS_STATE = 0
+_VGA_W, _VGA_H = (640, 480)
+
+
+def stationary_lens_capture(
+    cam, req, fmt,
+    num_frames=_STATIONARY_LENS_NUM_FRAMES,
+    num_tries=_STATIONARY_LENS_NUM_TRIES):
+  """Take up to num_tries caps with num_frames & save when lens stationary.
+
+  Args:
+   cam: open device session.
+   req: capture request.
+   fmt: format dictionary for capture.
+   num_frames: int; number of frames per capture.
+   num_tries: int; number of tries to get lens stationary capture.
+
+  Returns:
+    capture
+  """
+  tries = 0
+  done = False
+  while not done:
+    logging.debug('Waiting for lens to move to correct location.')
+    cap = cam.do_capture([req] * num_frames, fmt)
+    done = (cap[num_frames - 1]['metadata']['android.lens.state'] ==
+            _STATIONARY_LENS_STATE)
+    logging.debug('lens stationary status: %s', done)
+    if tries == num_tries:
+      raise error_util.CameraItsError('Cannot settle lens after %d tries!' %
+                                      tries)
+    tries += 1
+  return cap[num_frames - 1]
 
 
 def is_common_aspect_ratio(size):
@@ -183,15 +227,15 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
   """
   ar_tolerance = 0.03
   fmt_codes = {
-      'raw': 0x20,
-      'raw10': 0x25,
-      'raw12': 0x26,
-      'yuv': 0x23,
-      'jpg': 0x100,
-      'jpeg': 0x100,
-      'jpeg_r': 0x1005,
-      'priv': 0x22,
-      'y8': 0x20203859
+      'raw': FMT_CODE_RAW,
+      'raw10': FMT_CODE_RAW10,
+      'raw12': FMT_CODE_RAW12,
+      'yuv': FMT_CODE_YUV,
+      'jpg': FMT_CODE_JPEG,
+      'jpeg': FMT_CODE_JPEG,
+      'jpeg_r': FMT_CODE_JPEG_R,
+      'priv': FMT_CODE_PRIV,
+      'y8': FMT_CODE_Y8
   }
   configs = props[
       'android.scaler.streamConfigurationMap']['availableStreamConfigurations']
@@ -210,6 +254,7 @@ def get_available_output_sizes(fmt, props, max_size=None, match_ar_size=None):
     ]
   out_sizes.sort(reverse=True, key=lambda s: s[0])  # 1st pass, sort by width
   out_sizes.sort(reverse=True, key=lambda s: s[0] * s[1])  # sort by area
+  logging.debug('Available %s output sizes: %s', fmt, out_sizes)
   return out_sizes
 
 
@@ -545,21 +590,29 @@ def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
       * metadata: the capture result object
   """
   preview_req_start = auto_capture_request()
-  preview_req_start[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_start['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_start[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_start[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
+  preview_req_start[
+      'android.flash.mode'] = _FLASH_MODE_SINGLE
+  preview_req_start[
+      'android.flash.strengthLevel'] = strength
   # Repeat preview requests with aePrecapture set to IDLE
   # until AE is converged.
   preview_req_idle = auto_capture_request()
-  preview_req_idle[
-      'android.control.aeMode'] = _AE_MODE_ON_AUTO_FLASH
+  preview_req_idle['android.control.aeMode'] = (
+      _AE_MODE_ON_AUTO_FLASH if ae_mode == _AE_MODE_OFF else ae_mode
+  )
   preview_req_idle[
       'android.control.captureIntent'] = _CAPTURE_INTENT_PREVIEW
   preview_req_idle[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_IDLE
+  preview_req_idle[
+      'android.flash.strengthLevel'] = strength
   # Single still capture request.
   still_capture_req = auto_capture_request()
   still_capture_req[

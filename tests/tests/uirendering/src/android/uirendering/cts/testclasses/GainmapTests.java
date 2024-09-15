@@ -68,6 +68,7 @@ public class GainmapTests {
 
     private static final ColorSpace BT2020_HLG = ColorSpace.get(ColorSpace.Named.BT2020_HLG);
     private static final ColorSpace BT2020_PQ = ColorSpace.get(ColorSpace.Named.BT2020_PQ);
+    private static final ColorSpace SRGB = ColorSpace.get(ColorSpace.Named.SRGB);
 
     // A 10x6 base image with a 5x3 (so 1/2 res) gainmap that boosts the center 3 pixels
     // by 0x40, 0x80, and 0xff respectively
@@ -211,6 +212,14 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbSoftware() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, SRGB);
+        Canvas canvas = new Canvas(result);
+        canvas.drawBitmap(sTestImage, 0f, 0f, null);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgPictureSoftware() {
         Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_HLG);
         Canvas canvas = new Canvas(result);
@@ -227,6 +236,14 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbPictureSoftware() {
+        Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, SRGB);
+        Canvas canvas = new Canvas(result);
+        canvas.drawPicture(sTestPicture);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgHardware() throws Exception {
         Bitmap result = renderTestImageWithHardware(BT2020_HLG);
         assertTestImageResult(result);
@@ -239,6 +256,12 @@ public class GainmapTests {
     }
 
     @Test
+    public void gainmapToSrgbHardware() {
+        Bitmap result = renderTestImageWithHardware(SRGB);
+        assertTestImageResult(result, sNoOpGainmap);
+    }
+
+    @Test
     public void gainmapToHlgPictureHardware() throws Exception {
         Bitmap result = renderTestImageWithHardware(BT2020_HLG, true);
         assertTestImageResult(result);
@@ -248,6 +271,12 @@ public class GainmapTests {
     public void gainmapToPqPictureHardware() {
         Bitmap result = renderTestImageWithHardware(BT2020_PQ, true);
         assertTestImageResult(result);
+    }
+
+    @Test
+    public void gainmapToSrgbPictureHardware() {
+        Bitmap result = renderTestImageWithHardware(SRGB, true);
+        assertTestImageResult(result, sNoOpGainmap);
     }
 
     @Test
@@ -274,6 +303,19 @@ public class GainmapTests {
             canvas.drawPaint(paint);
         });
         assertTestImageResult(result);
+    }
+
+    @Test
+    public void bitmapShaderSupportSrgbHardware() {
+        Bitmap result = renderWithHardware(SRGB, canvas -> {
+            Paint paint = new Paint();
+            paint.setFlags(0);
+            BitmapShader shader = new BitmapShader(sTestImage, Shader.TileMode.CLAMP,
+                    Shader.TileMode.CLAMP);
+            paint.setShader(shader);
+            canvas.drawPaint(paint);
+        });
+        assertTestImageResult(result, sNoOpGainmap);
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_GAINMAP_ANIMATIONS)

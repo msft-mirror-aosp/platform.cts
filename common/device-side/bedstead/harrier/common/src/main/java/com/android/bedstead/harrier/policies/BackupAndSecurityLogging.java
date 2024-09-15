@@ -16,10 +16,10 @@
 
 package com.android.bedstead.harrier.policies;
 
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
-import static com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_DEVICE_OWNER;
+import static com.android.bedstead.enterprise.annotations.EnterprisePolicy.APPLIED_BY_ORGANIZATION_OWNED_PROFILE_OWNER_PROFILE;
 
-import com.android.bedstead.harrier.annotations.enterprise.EnterprisePolicy;
+import com.android.bedstead.enterprise.annotations.EnterprisePolicy;
 
 /**
  * Policy for the intersection of backup and security logging. Use to test the security log events

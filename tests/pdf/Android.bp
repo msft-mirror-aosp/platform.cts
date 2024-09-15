@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsPdfTestCases",
+    team: "trendy_team_android_pdf",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
     libs: ["android.test.runner.stubs.test"],
@@ -30,7 +31,7 @@ android_test {
         "junit",
     ],
     srcs: [
-        "src/**/PdfDocumentTest.java",
+        "src/**/*.java",
     ],
     // Tag this module as a cts test artifact
     test_suites: [
@@ -38,4 +39,11 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsPdfTestCases_cts_pdfdocumenttest",
+    base: "CtsPdfTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.pdf.cts.PdfDocumentTest"],
 }

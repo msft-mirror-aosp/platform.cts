@@ -49,7 +49,7 @@ public final class QueryableIntentFilterHashSet extends QueryableHashSet<IntentF
     public static QueryableIntentFilterHashSet of(IntentFilter... values) {
         QueryableIntentFilterHashSet set = new QueryableIntentFilterHashSet();
         for (IntentFilter value : values) {
-            set.add(value);
+            boolean unused = set.add(value);
         }
         return set;
     }

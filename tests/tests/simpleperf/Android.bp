@@ -5,6 +5,7 @@ package {
 
 cc_test {
     name: "CtsSimpleperfTestCases",
+    team: "trendy_team_llvm_and_toolchains",
     defaults: ["simpleperf_static_libs"],
     host_supported: false,
     compile_multilib: "both",

@@ -19,11 +19,11 @@ package {
 
 android_test {
     name: "CtsWindowManagerSdk25TestCases",
+    team: "trendy_team_windowing_sdk",
     defaults: ["cts_defaults"],
 
     srcs: [
         "src/**/*.java",
-        ":cts-wm-aspect-ratio-test-base",
     ],
 
     sdk_version: "30",

@@ -21,7 +21,5 @@ import com.android.bedstead.nene.utils.ShellCommand
 /** Test APIs related to dumpsys. */
 object Dumpsys {
 
-    fun devicePolicy(): String {
-        return ShellCommand.builder("dumpsys device_policy").validate(String::isNotEmpty).execute()
-    }
+    fun permissions(): String = ShellCommand.builder("dumpsys permissionmgr").validate(String::isNotEmpty).execute()
 }

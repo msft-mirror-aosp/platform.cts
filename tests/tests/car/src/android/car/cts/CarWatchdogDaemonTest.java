@@ -102,6 +102,7 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
         Log.i(TAG, "stop results:" + contents);
         assertWithMessage("Failed to custom collect I/O performance data").that(
                 contents).isNotEmpty();
+        // TODO(b/338282230): Use proto dump instead of text dump to verify the test results.
         long recordedBytes = parseDump(contents, UserHandle.getUserId(Process.myUid()),
                 getContext().getPackageName());
         assertThat(recordedBytes).isAtLeast(writtenBytes);
@@ -127,9 +128,14 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
     }
 
     private static void writeToFos(FileOutputStream fos, long maxSize) throws IOException {
+        Runtime runtime = Runtime.getRuntime();
         while (maxSize != 0) {
-            int writeSize = (int) Math.min(Integer.MAX_VALUE,
-                    Math.min(Runtime.getRuntime().freeMemory(), maxSize));
+            // The total available free memory can be calculated by adding the currently allocated
+            // memory that is free plus the total memory available to the process which hasn't been
+            // allocated yet.
+            long totalFreeMemory = runtime.maxMemory() - runtime.totalMemory()
+                    + runtime.freeMemory();
+            int writeSize = Math.toIntExact(Math.min(totalFreeMemory, maxSize));
             Log.i(TAG, "writeSize:" + writeSize);
             try {
                 fos.write(new byte[writeSize]);
@@ -168,8 +174,8 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
      * ProcStat collector failed to access the file /proc/stat
      * ... <Skipping unrelated text> ...
      *
-     * Top N Writes:
-     * -------------
+     * Top N storage I/O writes:
+     * -------------------------
      * Android User ID, Package Name, Foreground Bytes, Foreground Bytes %, Foreground Fsync, ...
      * 10, android.car.cts, 0, 0.00%, 0, 0.00%, 348516352, 100.00%, 1, 33.33%
      * 0, root, 389120, 84.82%, 2, 22.22%, 0, 0.00%, 0, 0.00%
@@ -202,7 +208,8 @@ public final class CarWatchdogDaemonTest extends AbstractCarTestCase {
             if (line.contains("collector failed to access")) {
                 errorLines += "\n" + line;
             }
-            if (line.matches(ioWritesHeader)) {
+            if (line.regionMatches(/* ignoreCase= */true, 0, ioWritesHeader, 0,
+                    ioWritesHeader.length())) {
                 curSection = Section.WRITTEN_BYTES_HEADER_SECTION;
                 continue;
             }

@@ -106,7 +106,7 @@ class DisassociateTest : CoreTestBase() {
          * Attempts to remove another app's association without [MANAGE_COMPANION_DEVICES]
          * permission should throw an Exception and should not change the existing associations.
          */
-        assertFailsWith(IllegalArgumentException::class) {
+        assertFailsWith(SecurityException::class) {
             cdm.disassociate(association.id)
         }
         assertAssociations(

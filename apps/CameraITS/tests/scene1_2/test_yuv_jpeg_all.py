@@ -39,6 +39,8 @@ _PLOT_ALPHA = 0.5
 _PLOT_MARKER_SIZE = 8
 _PLOT_LEGEND_CIRCLE_SIZE = 10
 _PLOT_LEGEND_TRIANGLE_SIZE = 6
+_STATIONARY_LENS_NUM_FRAMES = 4  # num of frames to wait for lens to stabilize
+_STATIONARY_LENS_NUM_TRIES = 1  # num of tries to wait for lens to stabilize
 _THRESHOLD_MAX_RMS_DIFF = 0.03
 _YUV_STR = 'yuv'
 
@@ -64,7 +66,7 @@ def do_capture_and_extract_rgb_means(
   out_surface = {'width': size[0], 'height': size[1], 'format': img_type}
   if camera_properties_utils.stream_use_case(props):
     out_surface['useCase'] = camera_properties_utils.USE_CASE_STILL_CAPTURE
-  logging.debug('output surface: %s', str(out_surface))
+  logging.debug('output surface: %s', out_surface)
   if debug and camera_properties_utils.raw(props):
     out_surfaces = [{'format': 'raw'}, out_surface]
     cap_raw, cap = cam.do_capture(req, out_surfaces)
@@ -74,7 +76,11 @@ def do_capture_and_extract_rgb_means(
         img_raw,
         f'{name_with_log_path}_raw_{img_type}_w{size[0]}_h{size[1]}.png', True)
   else:
-    cap = cam.do_capture(req, out_surface)
+    cap = capture_request_utils.stationary_lens_capture(
+        cam, req, out_surface,
+        num_frames=_STATIONARY_LENS_NUM_FRAMES,
+        num_tries=_STATIONARY_LENS_NUM_TRIES
+    )
   logging.debug('e_cap: %d, s_cap: %d, f_distance: %s',
                 cap['metadata']['android.sensor.exposureTime'],
                 cap['metadata']['android.sensor.sensitivity'],

@@ -24,15 +24,18 @@ import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.device.ITestDevice;
 import com.android.tradefed.device.UserInfo;
 import com.android.tradefed.invoker.TestInformation;
+import com.android.tradefed.log.LogUtil;
+import com.android.tradefed.targetprep.suite.SuiteApkInstaller;
 import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.junit4.AfterClassWithInfo;
 import com.android.tradefed.testtype.junit4.BeforeClassWithInfo;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * These tests cover:
@@ -49,77 +52,109 @@ import java.util.Collections;
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
 public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
-    private static int sPrimaryUserId;
+    private static int sMainUserId;
     private static int sSecondaryUserId;
-    private static int sEnterpriseProfileUserId;
-    private static boolean sIsTemporaryEnterpriseProfile;
+    private static int sEnterpriseUserId;
+    private static boolean sIsTemporaryEnterpriseUser;
     private static ITestDevice sDevice;
+    private static final List<SuiteApkInstaller> sInstallers = new ArrayList<>();
 
     @BeforeClassWithInfo
     public static void setUpClass(TestInformation testInfo) throws Exception {
-        assumeTrue("Multi-user is not supported on this device",
-                testInfo.getDevice().isMultiUserSupported());
         ITestDevice device = testInfo.getDevice();
-        sPrimaryUserId = device.getPrimaryUserId();
+        assumeTrue("Multi-user is not supported on this device", device.isMultiUserSupported());
+        assumeTrue("No main user on this device so cannot create enterprise profile",
+                device.getMainUserId() != null);
+        // Enterprise profile can only be created from the main user (initial human user)
+        sMainUserId = device.getMainUserId();
         sSecondaryUserId = createSecondaryUser(device);
-        sEnterpriseProfileUserId = getOrCreateEnterpriseProfile(testInfo.getDevice());
+        assumeTrue("Could not find or create an enterprise profile on this device",
+                setUpEnterpriseProfile(testInfo.getDevice()));
         sDevice = device;
+        installPackageAsUser(testInfo, sMainUserId);
+        installPackageAsUser(testInfo, sSecondaryUserId);
+        installPackageAsUser(testInfo, sEnterpriseUserId);
     }
 
     @AfterClassWithInfo
     public static void tearDownClass(TestInformation testInfo) throws Exception {
+        for (SuiteApkInstaller installer : sInstallers) {
+            installer.tearDown(testInfo, null);
+        }
         if (sSecondaryUserId > 0) {
             testInfo.getDevice().removeUser(sSecondaryUserId);
         }
-        if (sIsTemporaryEnterpriseProfile) {
-            testInfo.getDevice().removeUser(sEnterpriseProfileUserId);
+        if (sIsTemporaryEnterpriseUser) {
+            testInfo.getDevice().removeUser(sEnterpriseUserId);
         }
     }
 
     /** Creates a test user and returns the user id. */
     private static int createSecondaryUser(ITestDevice device) throws DeviceNotAvailableException {
-        int profileId = device.createUser("Test User #1");
+        int profileId = device.createUser("Test User");
         assertThat(device.startUser(profileId)).isTrue();
         return profileId;
     }
 
-    /** Gets or creates an enterprise profile and returns the user id. */
-    private static int getOrCreateEnterpriseProfile(ITestDevice device)
+    /**
+     * Gets or creates an enterprise profile and sets the user id. Returns false if could neither
+     * get or create an enterprise profile.
+     */
+    private static boolean setUpEnterpriseProfile(ITestDevice device)
             throws DeviceNotAvailableException {
         // Search for a managed profile
         for (UserInfo userInfo : device.getUserInfos().values()) {
             if (userInfo.isManagedProfile()) {
-                return userInfo.userId();
+                sEnterpriseUserId = userInfo.userId();
+                return true;
             }
         }
         // If no managed profile, set up a temporary one
-        int parentProfile = device.getCurrentUser();
-        // Create a managed profile "work" under the current profile which should be the main user
-        String createUserOutput = device.executeShellCommand(
-                "pm create-user --profileOf " + parentProfile + " --managed work");
-        int profileId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
-        assertThat(device.startUser(profileId, /*waitFlag=*/ true)).isTrue();
-        sIsTemporaryEnterpriseProfile = true;
-        return profileId;
+        try {
+            // Create a managed profile "work" under the main user
+            String createUserOutput = device.executeShellCommand(
+                    "pm create-user --profileOf " + sMainUserId + " --managed work");
+            sEnterpriseUserId = Integer.parseInt(createUserOutput.split(" id ")[1].trim());
+            assertThat(device.startUser(sEnterpriseUserId, /*waitFlag=*/ true)).isTrue();
+            sIsTemporaryEnterpriseUser = true;
+            return true;
+        } catch (Exception e) {
+            LogUtil.CLog.w("Could not set up enterprise profile for test: %s", e);
+            return false;
+        }
     }
 
-    @Before
-    public void setUp() throws Exception {
-        installPackageAsUser(TARGET_APK_A, /*grantPermission=*/ true, sPrimaryUserId);
-        installPackageAsUser(TARGET_APK_A, /*grantPermission=*/ true, sEnterpriseProfileUserId);
+    private static void installPackageAsUser(TestInformation testInfo, int userId)
+            throws Exception {
+        SuiteApkInstaller installer = new SuiteApkInstaller();
+        installer.addTestFileName(TARGET_APK_A);
+        installer.setUserId(userId);
+        installer.setShouldGrantPermission(true);
+        installer.setUp(testInfo);
+        sInstallers.add(installer);
     }
 
-    /** As setup, we need the enterprise user to first create some contacts locally. */
+    /**
+     * As setup, we need the enterprise user to first create some contacts locally. It's ok for this
+     * method to run at the beginning of each test without a previous teardown, since it will just
+     * overwrite the same contacts.
+     */
     private void setUpEnterpriseContacts() throws Exception {
         runEnterpriseContactsDeviceTestAsUserInPkgA("setUpEnterpriseContacts",
-                sEnterpriseProfileUserId,
+                sEnterpriseUserId,
                 Collections.emptyMap());
     }
 
     private void setUpEnterpriseContactsWithoutEnterprisePermissions() throws Exception {
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "setUpEnterpriseContactsWithoutEnterprisePermissions",
-                sEnterpriseProfileUserId,
+                sEnterpriseUserId,
+                Collections.emptyMap());
+    }
+
+    private void setUpEnterpriseContactsWithManagedPermission() throws Exception {
+        runEnterpriseContactsDeviceTestAsUserInPkgA("setUpEnterpriseContactsWithManagedPermission",
+                sEnterpriseUserId,
                 Collections.emptyMap());
     }
 
@@ -127,7 +162,34 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     public void testMainUser_hasEnterpriseAccess() throws Exception {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testHasEnterpriseAccess",
-                sPrimaryUserId,
+                sMainUserId,
+                Collections.emptyMap());
+    }
+
+    @Test
+    public void testMainUser_hasEnterpriseAccess_withManagedPermission_onUAbove() throws Exception {
+        assumeTrue(sDevice.getApiLevel() >= 34);
+        // We only run this test if we know that we have managed profile contacts access; this will
+        // be the case if we set up a temporary work profile. (It's not guaranteed in the case that
+        // there was an existing work profile instead)
+        assumeTrue(sIsTemporaryEnterpriseUser);
+        setUpEnterpriseContactsWithManagedPermission();
+        runEnterpriseContactsDeviceTestAsUserInPkgA("testHasEnterpriseAccess",
+                sMainUserId,
+                Collections.emptyMap());
+    }
+
+    @Test
+    public void testMainUser_doesNotHaveEnterpriseAccess_withManagedPermission_onTBelow()
+            throws Exception {
+        assumeTrue(sDevice.getApiLevel() <= 33);
+        // We only run this test if we know that we have managed profile contacts access; this will
+        // be the case if we set up a temporary work profile. (It's not guaranteed in the case that
+        // there was an existing work profile instead)
+        assumeTrue(sIsTemporaryEnterpriseUser);
+        setUpEnterpriseContactsWithManagedPermission();
+        runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
+                sMainUserId,
                 Collections.emptyMap());
     }
 
@@ -136,13 +198,13 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
             throws Exception {
         setUpEnterpriseContacts();
         try {
-            assertThat(sDevice.stopUser(sEnterpriseProfileUserId, /*waitFlag=*/ true, /*forceFlag=*/
+            assertThat(sDevice.stopUser(sEnterpriseUserId, /*waitFlag=*/ true, /*forceFlag=*/
                     true)).isTrue();
             runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                    sPrimaryUserId,
+                    sMainUserId,
                     Collections.emptyMap());
         } finally {
-            assertThat(sDevice.startUser(sEnterpriseProfileUserId, /*waitFlag=*/ true)).isTrue();
+            sDevice.startUser(sEnterpriseUserId, /*waitFlag=*/ true);
         }
     }
 
@@ -150,21 +212,20 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
     public void testMainUser_doesNotHaveEnterpriseAccessToNonEnterpriseSchema() throws Exception {
         setUpEnterpriseContactsWithoutEnterprisePermissions();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 
     @Test
-    public void testWorkProfile_doesNotHaveEnterpriseAccess() throws Exception {
+    public void testEnterpriseUser_doesNotHaveEnterpriseAccess() throws Exception {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
-                sEnterpriseProfileUserId,
+                sEnterpriseUserId,
                 Collections.emptyMap());
     }
 
     @Test
     public void testSecondaryUser_doesNotHaveEnterpriseAccess() throws Exception {
-        installPackageAsUser(TARGET_APK_A, /*grantPermission=*/ true, sSecondaryUserId);
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA("testDoesNotHaveEnterpriseAccess",
                 sSecondaryUserId,
@@ -176,7 +237,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testGetEnterpriseContact",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 
@@ -185,7 +246,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testGetEnterpriseContact_withProjection",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 
@@ -194,7 +255,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 
@@ -203,7 +264,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts_withProjection",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 
@@ -212,7 +273,7 @@ public class EnterpriseContactsMultiUserTest extends AppSearchHostTestBase {
         setUpEnterpriseContacts();
         runEnterpriseContactsDeviceTestAsUserInPkgA(
                 "testSearchEnterpriseContacts_withFilter",
-                sPrimaryUserId,
+                sMainUserId,
                 Collections.emptyMap());
     }
 }

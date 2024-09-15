@@ -29,6 +29,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 
+import android.app.Instrumentation;
+import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioAttributes.AttributeUsage;
 import android.media.AudioAttributes.CapturePolicy;
@@ -38,7 +40,9 @@ import android.media.AudioPlaybackCaptureConfiguration;
 import android.media.AudioRecord;
 import android.media.MediaPlayer;
 import android.media.cts.MediaProjectionActivity;
+import android.media.cts.Utils;
 import android.media.projection.MediaProjection;
+import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -71,6 +75,7 @@ import java.util.Map;
  */
 
 @Presubmit
+@AppModeFull(reason = "instant apps can't set up test conditions")
 public class RemoteSubmixTest {
     private static final String TAG = "RemoteSubmixTest";
     private static final int SAMPLE_RATE = 44100;
@@ -83,6 +88,7 @@ public class RemoteSubmixTest {
     private static final int RETRY_DISCONTINUITY = 10;
     private static final int RETRY_RECORD_READ = 3;
 
+    private Context mContext;
     private AudioManager mAudioManager;
     private MediaProjectionActivity mActivity;
     private MediaProjection mMediaProjection;
@@ -96,6 +102,7 @@ public class RemoteSubmixTest {
     @Before
     public void setup() throws Exception {
         mActivity = mActivityRule.getActivity();
+        mContext = getInstrumentation().getContext();
         mAudioManager = mActivity.getSystemService(AudioManager.class);
         mMediaProjection = mActivity.waitForMediaProjection();
         mStreamNames.put(AudioManager.STREAM_RING, "RING");
@@ -107,6 +114,10 @@ public class RemoteSubmixTest {
     @After
     public void tearDown() throws Exception {
         unmuteStreams();
+    }
+
+    private static Instrumentation getInstrumentation() {
+        return androidx.test.platform.app.InstrumentationRegistry.getInstrumentation();
     }
 
     private AudioRecord createPlaybackCaptureRecord() throws Exception {
@@ -172,27 +183,39 @@ public class RemoteSubmixTest {
     /**
      * Mute device audio streams
      */
-    private void muteStreams() {
-        for (Map.Entry<Integer, String> map : mStreamNames.entrySet()) {
-            // Get current device stream volume level
-            mStreamVolume.put(map.getKey(), mAudioManager.getStreamVolume(map.getKey()));
-            // Mute device streams
-            mAudioManager.adjustStreamVolume(
-                    map.getKey(), AudioManager.ADJUST_MUTE, 0 /*no flag used*/);
-            assumeThat("Stream " + map.getValue() + " can not be muted",
-                    mAudioManager.getStreamVolume(map.getKey()), is(0));
+    private void muteStreams() throws Exception {
+        try {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), true);
+            for (Map.Entry<Integer, String> map : mStreamNames.entrySet()) {
+                // Get current device stream volume level
+                mStreamVolume.put(map.getKey(), mAudioManager.getStreamVolume(map.getKey()));
+                // Mute device streams
+                mAudioManager.adjustStreamVolume(
+                        map.getKey(), AudioManager.ADJUST_MUTE, 0 /*no flag used*/);
+                assumeThat("Stream " + map.getValue() + " can not be muted",
+                        mAudioManager.getStreamVolume(map.getKey()), is(0));
+            }
+        } finally {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), false);
         }
     }
 
     /**
      * Unmute device audio streams
      */
-    private void unmuteStreams() {
-        for (Map.Entry<Integer, Integer> map : mStreamVolume.entrySet()) {
-            // Restore device stream volume
-            mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
-            assertEquals("Stream " + map.getValue() + " can not be unmuted", (int) map.getValue(),
-                    mAudioManager.getStreamVolume(map.getKey()));
+    private void unmuteStreams() throws Exception {
+        try {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), true);
+            for (Map.Entry<Integer, Integer> map : mStreamVolume.entrySet()) {
+                // Restore device stream volume
+                mAudioManager.setStreamVolume(map.getKey(), map.getValue(), 0 /*no flag used*/);
+            }
+        } finally {
+            Utils.toggleNotificationPolicyAccess(
+                    mContext.getPackageName(), getInstrumentation(), false);
         }
         mStreamVolume.clear();
     }

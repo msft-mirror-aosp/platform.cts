@@ -29,6 +29,8 @@ import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
 
+import com.android.compatibility.common.util.AmUtils;
+
 import junit.framework.Assert;
 
 import java.io.FileInputStream;
@@ -103,7 +105,9 @@ public class Utils {
     public static void toggleNotificationPolicyAccess(String packageName,
             Instrumentation instrumentation, boolean on) throws IOException {
 
-        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName;
+        int userId = instrumentation.getTargetContext().getUserId();
+        String command = " cmd notification " + (on ? "allow_dnd " : "disallow_dnd ") + packageName
+                + " " + userId;
 
         // Get permission to enable accessibility
         UiAutomation uiAutomation = instrumentation.getUiAutomation();
@@ -121,10 +125,13 @@ public class Utils {
             uiAutomation.destroy();
         }
 
+        AmUtils.waitForBroadcastBarrier();
+
         NotificationManager nm = (NotificationManager) instrumentation.getContext()
                 .getSystemService(Context.NOTIFICATION_SERVICE);
-        Assert.assertEquals("Wrote setting should be the same as the read one", on,
-                nm.isNotificationPolicyAccessGranted());
+        Assert.assertEquals("Notification Policy Access Grant is "
+                + nm.isNotificationPolicyAccessGranted() + " not " + on + " for "
+                + packageName, on, nm.isNotificationPolicyAccessGranted());
     }
 
     public static boolean compareRemoteUserInfo(RemoteUserInfo a, RemoteUserInfo b) {

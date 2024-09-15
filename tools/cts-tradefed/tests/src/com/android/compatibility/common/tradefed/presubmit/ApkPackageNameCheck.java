@@ -57,9 +57,27 @@ public class ApkPackageNameCheck {
         // TODO: Remove exception when their package have been fixed.
         EXCEPTION_LIST.add("android.app.cts");
         EXCEPTION_LIST.add("android.content.cts");
+        EXCEPTION_LIST.add("android.packageinstaller.install.cts");
         // TODO(b/290634145): Refactor WM CTS into fully isolated modules
         EXCEPTION_LIST.add("android.server.wm.cts");
         EXCEPTION_LIST.add("android.systemui.cts");
+        // TODO(b/331566031): Remove exception when the test owner
+        // split the CTS and MCTS into different modules.
+        EXCEPTION_LIST.add("android.mediav2.cts");
+        EXCEPTION_LIST.add("android.media.bettertogether.cts");
+        EXCEPTION_LIST.add("android.media.codec.cts");
+        EXCEPTION_LIST.add("android.media.drmframework.cts");
+        EXCEPTION_LIST.add("android.media.encoder.cts");
+        EXCEPTION_LIST.add("android.media.extractor.cts");
+        EXCEPTION_LIST.add("android.media.misc.cts");
+        EXCEPTION_LIST.add("android.media.muxer.cts");
+        EXCEPTION_LIST.add("android.media.player.cts");
+        EXCEPTION_LIST.add("android.media.recorder.cts");
+        EXCEPTION_LIST.add("android.media.mediaparser.cts");
+        EXCEPTION_LIST.add("android.mediastress.cts");
+        EXCEPTION_LIST.add("android.media.mediatranscoding.cts");
+        EXCEPTION_LIST.add("android.view.textclassifier.cts");
+        EXCEPTION_LIST.add("android.appsecurity.cts");
     }
 
     /**

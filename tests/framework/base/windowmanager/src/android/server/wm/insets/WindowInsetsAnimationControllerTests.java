@@ -54,7 +54,7 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.WindowManagerTestBase;
-import android.server.wm.insets.WindowInsetsAnimationTestBase.TestActivity;
+import android.server.wm.WindowInsetsAnimationTestBase.TestActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowInsets;

@@ -1145,6 +1145,14 @@ public class BitmapFactoryTest {
         assertEquals(Config.ARGB_8888, bm2.getConfig());
     }
 
+    @Test
+    public void testAssertionFromColorSpace() {
+        BitmapFactory.Options opt = new BitmapFactory.Options();
+        Bitmap b = BitmapFactory.decodeResource(mRes, R.drawable.b198155681, opt);
+        assertNotNull(b);
+        assertNull(opt.outColorSpace);
+    }
+
     private byte[] obtainArray() {
         ByteArrayOutputStream stm = new ByteArrayOutputStream();
         Options opt = new BitmapFactory.Options();

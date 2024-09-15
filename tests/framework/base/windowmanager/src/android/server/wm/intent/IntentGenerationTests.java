@@ -50,7 +50,7 @@ import java.util.Map;
  * /storage/emulated/0/Documents/.
  *
  * These can then be pulled out via adb and put into the intent_tests asset directory.
- * These are the tests that are checked by atest CtsWindowManagerDeviceTestCases:IntentTests
+ * These are the tests that are checked by atest CtsWindowManagerDeviceActivity:IntentTests
  *
  * Because this process takes so much time, certain timeouts in the AndroidTest.xml need to be
  * raised.
@@ -62,7 +62,7 @@ import java.util.Map;
  * it is ignored by default.
  *
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceTestCases:IntentGenerationTests
+ * atest CtsWindowManagerDeviceActivity:IntentGenerationTests
  *
  *
  * <p>NOTE: It is also possible to use this to manually verify a single test (useful for local

@@ -18,9 +18,9 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.mockmodem.MockSimService.MOCK_SIM_PROFILE_ID_TWN_CHT;
 
-import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -35,6 +35,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
+import android.telephony.SmsManager;
 import android.telephony.SmsMessage;
 import android.telephony.cts.AsyncSmsMessageListener;
 import android.telephony.cts.SmsReceiverHelper;
@@ -97,8 +98,8 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
     @Before
     public void setUp() throws Exception {
         logd(TAG, "setUp()");
-        if (!shouldTestSatelliteWithMockService()) return;
 
+        assumeTrue(shouldTestSatelliteWithMockService());
         assumeTrue(getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_TELEPHONY_MESSAGING));
 
@@ -117,11 +118,11 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
         logd(TAG, "testSendMessage");
 
         // Test non-default SMS app
-        sendMessage(TEST_DEST_ADDR);
+        sendMessage(TEST_DEST_ADDR, Activity.RESULT_OK);
 
         // Test default SMS app
         DefaultSmsAppHelper.ensureDefaultSmsApp();
-        sendMessage(TEST_DEST_ADDR);
+        sendMessage(TEST_DEST_ADDR, Activity.RESULT_OK);
         DefaultSmsAppHelper.stopBeingDefaultSmsApp();
     }
 
@@ -146,15 +147,40 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
 
         TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
-        sendMessage(TEST_EMERGENCY_NUMBER);
+        try {
+            sendMessage(TEST_EMERGENCY_NUMBER, Activity.RESULT_OK);
 
-        // Test default SMS app
-        DefaultSmsAppHelper.ensureDefaultSmsApp();
-        sendMessage(TEST_EMERGENCY_NUMBER);
-        DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+            // Test default SMS app
+            DefaultSmsAppHelper.ensureDefaultSmsApp();
+            sendMessage(TEST_EMERGENCY_NUMBER, Activity.RESULT_OK);
+            DefaultSmsAppHelper.stopBeingDefaultSmsApp();
+        } finally {
+            TelephonyUtils.removeTestEmergencyNumber(
+                    InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
+        }
+    }
 
-        TelephonyUtils.removeTestEmergencyNumber(
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    public void testSendSmsAutomaticallyOnSatelliteConnected() throws Exception {
+        logd(TAG, "testSendSmsAutomaticallyOnSatelliteConnected");
+
+        sendMessageAutomaticallyAfterSatelliteConnectionIsRestored(TEST_DEST_ADDR);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
+    public void testSendEmergencySmsAutomaticallyOnSatelliteConnected() throws Exception {
+        logd(TAG, "testSendEmergencySmsAutomaticallyOnSatelliteConnected");
+
+        TelephonyUtils.addTestEmergencyNumber(
                 InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
+        try {
+            sendMessageAutomaticallyAfterSatelliteConnectionIsRestored(TEST_EMERGENCY_NUMBER);
+        } finally {
+            TelephonyUtils.removeTestEmergencyNumber(
+                    InstrumentationRegistry.getInstrumentation(), TEST_EMERGENCY_NUMBER);
+        }
     }
 
     @Test
@@ -203,13 +229,13 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
         }
     }
 
-    private void sendMessage(String destAddr) throws Exception {
-        logd(TAG, "sendMessage destAddr:" + destAddr);
+    private void sendMessage(String destAddr, int resultCode) throws Exception {
+        logd(TAG, "sendMessage destAddr:" + destAddr + ", resultCode:" + resultCode);
 
         // Register receiver
         SmsMmsBroadcastReceiver sendReceiver = new SmsMmsBroadcastReceiver();
         sendReceiver.setAction(SMS_SEND_ACTION);
-        getContext().registerReceiver(sendReceiver,  new IntentFilter(sendReceiver.getAction()),
+        getContext().registerReceiver(sendReceiver, new IntentFilter(sendReceiver.getAction()),
                 Context.RECEIVER_EXPORTED_UNAUDITED);
         Intent sendIntent = new Intent(SMS_SEND_ACTION).setPackage(getContext().getPackageName());
         PendingIntent sendPendingIntent = PendingIntent.getBroadcast(getContext(), 0,
@@ -221,6 +247,7 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
                     null);
 
             assertTrue(sendReceiver.waitForBroadcast(1));
+            assertEquals(resultCode, sendReceiver.getResultCode());
         } finally {
             getContext().unregisterReceiver(sendReceiver);
         }
@@ -280,5 +307,30 @@ public class CarrierRoamingSatelliteSmsTest extends CarrierRoamingSatelliteTestB
         String receivedMessage = AsyncSmsMessageListener.getInstance()
                 .waitForSmsMessage((int) TIMEOUT);
         Assert.assertEquals(EXPECTED_RECEIVED_MESSAGE, receivedMessage);
+    }
+
+    private void sendMessageAutomaticallyAfterSatelliteConnectionIsRestored(String destAddr)
+            throws Exception {
+        logd(TAG, "sendMessageAutomaticallyAfterSatelliteConnectionIsRestored");
+
+        // Loose the satellite network.
+        ServiceStateListenerTest serviceStateListener = new ServiceStateListenerTest();
+        serviceStateListener.clearServiceStateChanges();
+        sTelephonyManager.registerTelephonyCallback(getContext().getMainExecutor(),
+                serviceStateListener);
+        sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, false);
+        assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkDisconnected());
+
+        try {
+            // Send sms which will fail as there is no satellite network.
+            sendMessage(destAddr, SmsManager.RESULT_ERROR_NO_SERVICE);
+        } finally {
+            // Get satellite network and sms should be sent automatically.
+            sMockModemManager.changeNetworkService(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT, true);
+            assertTrue(serviceStateListener.waitUntilNonTerrestrialNetworkConnected());
+        }
+
+        // Since the message app triggers automatic send, send it again here.
+        sendMessage(destAddr, Activity.RESULT_OK);
     }
 }

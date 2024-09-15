@@ -25,6 +25,7 @@ android_test {
         "ctstestrunner-axt",
         "cts-wm-util",
         "junit",
+        "CtsTestDreamControlLib",
     ],
     libs: [
         "android.test.runner.stubs.system",

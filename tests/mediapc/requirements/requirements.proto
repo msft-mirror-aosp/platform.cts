@@ -108,6 +108,9 @@ message RequiredMeasurement {
   optional Comparison comparison = 4;
 
   reserved 5;  // is_test_differentiator
+
+  // Must be unique per requirement and greater than or equal to 3.
+  optional int32 proto_field_number = 6;
 }
 
 // A required value for a RequiredMeasurement at a given MPC level.
@@ -142,9 +145,11 @@ message VariantSpec {
 }
 
 message TestConfig {
-  // The id is a field name safe string.
-  optional string id = 1 [deprecated = true];
+  reserved 1;  // id
   optional string description = 2;
+  // The proto field number of the test config. Must be unique across all
+  // requirements.
+  optional int32 proto_field_number = 3;
 }
 
 enum Comparison {

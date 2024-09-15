@@ -18,6 +18,7 @@ package {
 
 android_test {
     name: "CtsShortFgsTestCases",
+    team: "trendy_team_framework_backstage_power",
     defaults: ["cts_defaults"],
     libs: [
         "android.test.runner.stubs.system",
@@ -43,4 +44,12 @@ android_test {
         ":ShortFgsTestHelper2",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsShortFgsTestCases_pm_Presubmit",
+    base: "CtsShortFgsTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
 }

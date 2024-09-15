@@ -102,6 +102,7 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -125,7 +126,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.test.InstrumentationRegistry;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.MediumTest;
 import androidx.test.rule.ActivityTestRule;
 import androidx.test.runner.AndroidJUnit4;
@@ -148,6 +148,7 @@ import org.junit.runner.RunWith;
 
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -2010,109 +2011,70 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_interceptsEventFromRequestedSource_SetAndUnset() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicInteger eventCount = new AtomicInteger(0);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    eventCount.incrementAndGet();
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource1 = InputDevice.SOURCE_JOYSTICK;
+        final int canarySource2 = InputDevice.SOURCE_SENSOR;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
 
-        // Inject 2 events to the input filter.
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // We should find 2 events.
-        TestUtils.waitOn(waitObject, () -> eventCount.get() == 2,
-                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                "Service did not receive MotionEvent");
+        // Set our interestedSource, inject an event, and assert it arrives.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource1, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        // Stop listening to events for this source, then inject 1 more event to the input filter.
-        service.setMotionEventSources(0 /* no sources */);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(0);
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-        // Assert we only received the original 2.
-        try {
-            TestUtils.waitOn(waitObject, () -> eventCount.get() == 3,
-                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(eventCount.get()).isEqualTo(2);
+        // Then unset our interested MotionEvent source (by updating it to 0), inject an
+        // event of the interested source type, and assert it does not arrive back to us.
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation,
+                // Use a different canary to ensure we're waiting for this new update.
+                canarySource2,
+                /*interestedSource=*/0,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
+        assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, interestedSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresEventFromDifferentSource() {
-        final int requestedSource = InputDevice.SOURCE_JOYSTICK;
-        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
         final StubMotionInterceptingAccessibilityService service =
                 mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        final Object waitObject = new Object();
-        final AtomicBoolean foundEvent = new AtomicBoolean(false);
-        service.setOnMotionEventListener(motionEvent -> {
-            synchronized (waitObject) {
-                if (motionEvent.getSource() == requestedSource) {
-                    foundEvent.set(true);
-                }
-                waitObject.notifyAll();
-            }
-        });
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_DPAD;
+        final int actualSource = InputDevice.SOURCE_ROTARY_ENCODER;
 
-        sUiAutomation.injectInputEventToInputFilter(createMotionEvent(actualSource));
+        service.setAndAwaitMotionEventSources(
+                sUiAutomation, canarySource, interestedSource,
+                TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-        try {
-            TestUtils.waitOn(waitObject, foundEvent::get, TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                    "(expected)");
-        } catch (AssertionError e) {
-            // expected
-        }
-        assertThat(foundEvent.get()).isFalse();
+        assertThrows("Expected no event from source " + actualSource, AssertionError.class,
+                () -> service.injectAndAwaitMotionEvent(sUiAutomation, actualSource,
+                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
     }
 
     @Test
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     public void testOnMotionEvent_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
+        final int canarySource = InputDevice.SOURCE_JOYSTICK;
+        final int interestedSource = InputDevice.SOURCE_TOUCHSCREEN;
         final StubMotionInterceptingAccessibilityService motionInterceptingService =
                 mMotionInterceptingServiceRule.enableService();
         TouchExplorationStubAccessibilityService touchExplorationService =
                 enableService(TouchExplorationStubAccessibilityService.class);
         try {
-            motionInterceptingService.setMotionEventSources(requestedSource);
-            final Object waitObject = new Object();
-            final AtomicBoolean foundEvent = new AtomicBoolean(false);
-            motionInterceptingService.setOnMotionEventListener(motionEvent -> {
-                synchronized (waitObject) {
-                    if (motionEvent.getSource() == requestedSource) {
-                        foundEvent.set(true);
-                    }
-                    waitObject.notifyAll();
-                }
-            });
+            motionInterceptingService.setAndAwaitMotionEventSources(
+                    sUiAutomation, canarySource, interestedSource,
+                    TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS);
 
-            sUiAutomation.injectInputEventToInputFilter(createMotionEvent(requestedSource));
-
-            try {
-                TestUtils.waitOn(waitObject, foundEvent::get,
-                        TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS,
-                        "(expected)");
-            } catch (AssertionError e) {
-                // expected
-            }
-            assertThat(foundEvent.get()).isFalse();
+            assertThrows("Expected no event from source " + interestedSource, AssertionError.class,
+                    () -> motionInterceptingService.injectAndAwaitMotionEvent(
+                            sUiAutomation, interestedSource,
+                            TIMEOUT_FOR_MOTION_EVENT_INTERCEPTION_MS));
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }
@@ -2120,7 +2082,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
     /** Test the case where we want to intercept but not consume motion events. */
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
     public void testOnMotionEvent_interceptsEventFromRequestedSource_observesMotionEvents() {
@@ -2209,10 +2170,29 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
      * has already enabled touch exploration. Motion event observing should not work.
      */
     @Test
-    @FlakyTest
     @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
     @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
+    @RequiresFlagsDisabled(
+            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS)
     public void testMotionEventObserving_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
+        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/false);
+    }
+
+    /**
+     * Test the case where we want to intercept but not consume motion events, but another service
+     * has already enabled touch exploration. Motion event observing should work.
+     */
+    @Test
+    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
+    @RequiresFlagsEnabled({
+            android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING,
+            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS})
+    public void testMotionEventObserving_observesTouchscreenEventWhenTouchExplorationEnabled() {
+        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/true);
+    }
+
+    private void testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(
+            boolean shouldObserve) {
         // Don't run this test on systems without a touchscreen.
         PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
         assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
@@ -2265,32 +2245,104 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
 
             // The view should have seen two hover events.
             listener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-            // The observing service shouldn't see any events.
-            assertThat(eventCount.get()).isEqualTo(0);
+            if (shouldObserve) {
+                assertThat(eventCount.get()).isEqualTo(2);
+            } else {
+                assertThat(eventCount.get()).isEqualTo(0);
+            }
         } finally {
             touchExplorationService.disableSelfAndRemove();
         }
     }
 
-    private MotionEvent createMotionEvent(int source) {
-        // Only source is used by these tests, so set other properties to valid defaults.
-        final long eventTime = SystemClock.uptimeMillis();
-        final MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
-        props.id = 0;
-        return MotionEvent.obtain(eventTime,
-                eventTime,
-                MotionEvent.ACTION_MOVE,
-                1 /* pointerCount */,
-                new MotionEvent.PointerProperties[]{props},
-                new MotionEvent.PointerCoords[]{new MotionEvent.PointerCoords()},
-                0 /* metaState */,
-                0 /* buttonState */,
-                0 /* xPrecision */,
-                0 /* yPrecision */,
-                1 /* deviceId */,
-                0 /* edgeFlags */,
-                source,
-                0 /* flags */);
+    @AsbSecurityTest(cveBugId = 326485767)
+    @Test
+    public void testUpdateServiceWithoutIntent_disablesService() throws Exception {
+        AccessibilityManager manager = mActivity.getSystemService(AccessibilityManager.class);
+        final String v1ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV1.apk";
+        final String v2ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV2.apk";
+        final String v3ApkPath =
+                "/data/local/tmp/cts/content/CtsAccessibilityUpdateServicesAppV3.apk";
+        final String packageName = "foo.bar.updateservice";
+        final ComponentName service = ComponentName.createRelative(packageName, ".StubService");
+
+        // Match AccessibilityManagerService#COMPONENT_NAME_SEPARATOR
+        final String componentNameSeparator = ":";
+        final String originalEnabledServicesSetting = getEnabledServicesSetting();
+        try {
+            // Install the apk in this test method, instead of as part of the target preparer, to
+            // allow repeated --iterations of the test.
+            assertThat(ShellUtils.runShellCommand("pm install " + v1ApkPath)).startsWith("Success");
+            // Wait for the service to register as installed.
+            TestUtils.waitUntil(
+                    "Failed to install service:" + v1ApkPath,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            manager.getInstalledAccessibilityServiceList().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Enable the service and wait until AccessibilityManager reports it is
+            // enabled.
+            final String servicesToEnable = service.flattenToShortString();
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, servicesToEnable)
+                    .run();
+            // Wait for the service to be enabled.
+            TestUtils.waitUntil(
+                    "Failed to enable service:" + servicesToEnable,
+                    (int) TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            getEnabledServices().stream()
+                                            .filter(info -> info.getId().startsWith(packageName))
+                                            .count()
+                                    == 1);
+
+            // Update to a new version that doesn't have the intent declared.
+            assertThat(ShellUtils.runShellCommand("pm install " + v2ApkPath)).startsWith("Success");
+
+            // Wait for the install to finish and the service to be disabled.
+            TestUtils.waitUntil(
+                    "The service is still in the enabled services list.",
+                    TIMEOUT_SERVICE_ENABLE / 1000,
+                    () ->
+                            Arrays.asList(getEnabledServicesSetting().split(componentNameSeparator))
+                                            .stream()
+                                            .filter(comp -> comp.startsWith(packageName))
+                                            .count()
+                                    == 0);
+
+            // Update to version 3 that does have the intent declared.
+            // The service should not re-enable.
+            assertThat(ShellUtils.runShellCommand("pm install " + v3ApkPath)).startsWith("Success");
+
+            // confirm the service is still not enabled.
+            assertThrows(
+                    "The service is still in the enabled services list.",
+                    AssertionError.class,
+                    () ->
+                            TestUtils.waitUntil(
+                                    "The service is still in the enabled services list.",
+                                    TIMEOUT_SERVICE_ENABLE / 1000,
+                                    () ->
+                                            Arrays.asList(getEnabledServicesSetting()
+                                            .split(componentNameSeparator))
+                                                            .stream().filter(comp ->
+                                                            comp.startsWith(packageName))
+                                                            .count() == 1));
+
+        } finally {
+            ShellCommandBuilder.create(sInstrumentation)
+                    .putSecureSetting(
+                            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                            originalEnabledServicesSetting)
+                    .run();
+            ShellUtils.runShellCommand("pm uninstall " + packageName);
+        }
     }
 
     private List<AccessibilityServiceInfo> getEnabledServices() {

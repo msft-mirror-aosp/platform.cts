@@ -48,11 +48,13 @@ import android.telephony.satellite.NtnSignalStrengthCallback;
 import android.telephony.satellite.PointingInfo;
 import android.telephony.satellite.SatelliteCapabilities;
 import android.telephony.satellite.SatelliteCapabilitiesCallback;
+import android.telephony.satellite.SatelliteCommunicationAllowedStateCallback;
 import android.telephony.satellite.SatelliteDatagram;
 import android.telephony.satellite.SatelliteDatagramCallback;
 import android.telephony.satellite.SatelliteManager;
 import android.telephony.satellite.SatelliteModemStateCallback;
 import android.telephony.satellite.SatelliteProvisionStateCallback;
+import android.telephony.satellite.SatelliteSupportedStateCallback;
 import android.telephony.satellite.SatelliteTransmissionUpdateCallback;
 import android.text.TextUtils;
 import android.util.Log;
@@ -213,6 +215,13 @@ public class SatelliteManagerTestBase {
             } catch (Exception e) {
                 loge("onSendDatagramStateChanged: Got exception, ex=" + e);
             }
+        }
+
+        @Override
+        public void onSendDatagramStateChanged(
+                int datagramType, int state, int sendPendingCount, int errorCode) {
+            logd("onSendDatagramStateChanged:datagramType=" + datagramType + ", state=" + state
+                    + ", sendPendingCount=" + sendPendingCount + ", errorCode=" + errorCode);
         }
 
         @Override
@@ -505,6 +514,7 @@ public class SatelliteManagerTestBase {
 
     protected static class SatelliteDatagramCallbackTest implements SatelliteDatagramCallback {
         public SatelliteDatagram mDatagram;
+        public final List<SatelliteDatagram> mDatagramList = new ArrayList<>();
         public long mDatagramId;
         private final Semaphore mSemaphore = new Semaphore(0);
 
@@ -514,6 +524,7 @@ public class SatelliteManagerTestBase {
             logd("onSatelliteDatagramReceived: datagramId=" + datagramId + ", datagram="
                     + datagram + ", pendingCount=" + pendingCount);
             mDatagram = datagram;
+            mDatagramList.add(datagram);
             mDatagramId = datagramId;
             if (callback != null) {
                 logd("onSatelliteDatagramReceived: callback.accept() datagramId=" + datagramId);
@@ -604,6 +615,99 @@ public class SatelliteManagerTestBase {
                     }
                 } catch (Exception ex) {
                     loge("onSatelliteCapabilitiesChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    protected static class SatelliteSupportedStateCallbackTest implements
+            SatelliteSupportedStateCallback {
+        public boolean isSupported = false;
+        private List<Boolean> mSupportedStates = new ArrayList<>();
+        private final Object mSupportedStatesLock = new Object();
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteSupportedStateChanged(boolean supported) {
+            logd("onSatelliteSupportedStateChanged: supported=" + supported);
+            isSupported = supported;
+            synchronized (mSupportedStatesLock) {
+                mSupportedStates.add(supported);
+            }
+            try {
+                mSemaphore.release();
+            } catch (Exception ex) {
+                loge("onSatelliteSupportedStateChanged: Got exception, ex=" + ex);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteSupportedStateChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onSatelliteSupportedStateChanged: Got exception=" + ex);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public void clearSupportedStates() {
+            synchronized (mSupportedStatesLock) {
+                mSupportedStates.clear();
+                mSemaphore.drainPermits();
+            }
+        }
+
+        public int getTotalCountOfSupportedStates() {
+            synchronized (mSupportedStatesLock) {
+                return mSupportedStates.size();
+            }
+        }
+
+        public Boolean getSupportedState(int index) {
+            synchronized (mSupportedStatesLock) {
+                if (index < mSupportedStates.size()) {
+                    return mSupportedStates.get(index);
+                }
+            }
+            loge("getSupportedState: invalid index=" + index);
+            return null;
+        }
+    }
+
+    protected static class SatelliteCommunicationAllowedStateCallbackTest implements
+            SatelliteCommunicationAllowedStateCallback {
+        public boolean isAllowed = false;
+        private final Semaphore mSemaphore = new Semaphore(0);
+
+        @Override
+        public void onSatelliteCommunicationAllowedStateChanged(boolean allowed) {
+            logd("onSatelliteCommunicationAllowedStateChanged: isAllowed=" + allowed);
+            isAllowed = allowed;
+
+            try {
+                mSemaphore.release();
+            } catch (Exception e) {
+                loge("onSatelliteCommunicationAllowedStateChanged: Got exception, ex=" + e);
+            }
+        }
+
+        public boolean waitUntilResult(int expectedNumberOfEvents) {
+            for (int i = 0; i < expectedNumberOfEvents; i++) {
+                try {
+                    if (!mSemaphore.tryAcquire(TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        loge("Timeout to receive onSatelliteCommunicationAllowedStateChanged");
+                        return false;
+                    }
+                } catch (Exception ex) {
+                    loge("onNtnSignalStrengthChanged: Got exception=" + ex);
                     return false;
                 }
             }
@@ -908,7 +1012,10 @@ public class SatelliteManagerTestBase {
     protected static void requestSatelliteEnabledForDemoMode(boolean enabled) {
         LinkedBlockingQueue<Integer> error = new LinkedBlockingQueue<>(1);
         sSatelliteManager.requestEnabled(
-                new EnableRequestAttributes.Builder(enabled).setDemoMode(true).build(),
+                new EnableRequestAttributes.Builder(enabled)
+                        .setDemoMode(true)
+                        .setEmergencyMode(true)
+                        .build(),
                 getContext().getMainExecutor(), error::offer);
         Integer errorCode;
         try {

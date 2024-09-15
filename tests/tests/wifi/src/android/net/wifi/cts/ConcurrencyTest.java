@@ -49,6 +49,7 @@ import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
 import android.net.wifi.p2p.WifiP2pDevice;
+import android.net.wifi.p2p.WifiP2pDeviceList;
 import android.net.wifi.p2p.WifiP2pDiscoveryConfig;
 import android.net.wifi.p2p.WifiP2pExtListenParams;
 import android.net.wifi.p2p.WifiP2pGroup;
@@ -70,6 +71,7 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -348,6 +350,10 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             return;
         }
         removeAllPersistentGroups();
+        resetResponse(MY_RESPONSE);
+        sWifiP2pManager.cancelConnect(sWifiP2pChannel, sActionListener);
+        assertTrue(waitForServiceResponse(MY_RESPONSE));
+        resetResponse(MY_RESPONSE);
         sWifiP2pManager.removeGroup(sWifiP2pChannel, sActionListener);
         assertTrue(waitForServiceResponse(MY_RESPONSE));
     }
@@ -1397,15 +1403,46 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     }
 
     private static class TestWifiP2pListener implements WifiP2pManager.WifiP2pListener {
+        public static final int ON_P2P_STATE_CHANGED = 0;
+        public static final int ON_DISCOVERY_STATE_CHANGED = 1;
+        public static final int ON_LISTEN_STATE_CHANGED = 2;
+        public static final int ON_DEVICE_CONFIGURATION_CHANGED = 3;
+        public static final int ON_PEER_LIST_CHANGED = 4;
+        public static final int ON_PERSISTENT_GROUPS_CHANGED = 5;
+        public static final int ON_GROUP_CREATING = 6;
+        public static final int ON_GROUP_NEGOTIATION_REJECTED_BY_USER = 7;
+        public static final int ON_GROUP_CREATION_FAILED = 8;
+        public static final int ON_GROUP_CREATED = 9;
+        public static final int ON_PEER_CLIENT_JOINED = 10;
+        public static final int ON_PEER_CLIENT_DISCONNECTED = 11;
+        public static final int ON_FREQUENCY_CHANGED = 12;
+        public static final int ON_GROUP_REMOVED = 13;
         final Object mP2pListenerLock;
+        int mCalledCallbacks = 0;
+        int mP2pState = -1;
+        int mDiscoveryState = -1;
         int mListenState = -1;
-        boolean mP2pGroupCreating = false;
-        boolean mP2pGroupRemoved = false;
+        WifiP2pDevice mP2pDevice = null;
+        WifiP2pDeviceList mP2pDeviceList = null;
+        WifiP2pGroupList mP2pGroupList = null;
         WifiP2pInfo mP2pInfo = null;
         WifiP2pGroup mP2pGroup = null;
+        int mP2pGroupCreationFailureReason = -1;
 
         TestWifiP2pListener(Object lock) {
             mP2pListenerLock = lock;
+        }
+
+        public int getP2pState() {
+            synchronized (mP2pListenerLock) {
+                return mP2pState;
+            }
+        }
+
+        public int getDiscoveryState() {
+            synchronized (mP2pListenerLock) {
+                return mDiscoveryState;
+            }
         }
 
         public int getListenState() {
@@ -1414,9 +1451,27 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             }
         }
 
-        public boolean getP2pGroupCreating() {
+        public WifiP2pDevice getP2pDevice() {
             synchronized (mP2pListenerLock) {
-                return mP2pGroupCreating;
+                return mP2pDevice;
+            }
+        }
+
+        public WifiP2pDeviceList getP2pDeviceList() {
+            synchronized (mP2pListenerLock) {
+                return mP2pDeviceList;
+            }
+        }
+
+        public WifiP2pGroupList getP2pGroupList() {
+            synchronized (mP2pListenerLock) {
+                return mP2pGroupList;
+            }
+        }
+
+        public int getP2pGroupCreationFailureReason() {
+            synchronized (mP2pListenerLock) {
+                return mP2pGroupCreationFailureReason;
             }
         }
 
@@ -1432,11 +1487,94 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             }
         }
 
+        public void reset() {
+            mCalledCallbacks = 0;
+            mP2pState = -1;
+            mDiscoveryState = -1;
+            mListenState = -1;
+            mP2pDevice = null;
+            mP2pDeviceList = null;
+            mP2pGroupList = null;
+            mP2pInfo = null;
+            mP2pGroup = null;
+            mP2pGroupCreationFailureReason = -1;
+        }
+
         @Override
-        public void onListenStateChanged(boolean started) {
+        public void onP2pStateChanged(int state) {
             synchronized (mP2pListenerLock) {
-                mListenState = started ? WifiP2pManager.WIFI_P2P_LISTEN_STARTED
-                        : WifiP2pManager.WIFI_P2P_LISTEN_STOPPED;
+                mP2pState = state;
+                mCalledCallbacks |= 1 << ON_P2P_STATE_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onDiscoveryStateChanged(int state) {
+            synchronized (mP2pListenerLock) {
+                mDiscoveryState = state;
+                mCalledCallbacks |= 1 << ON_DISCOVERY_STATE_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onListenStateChanged(int state) {
+            synchronized (mP2pListenerLock) {
+                mListenState = state;
+                mCalledCallbacks |= 1 << ON_LISTEN_STATE_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onDeviceConfigurationChanged(@Nullable WifiP2pDevice p2pDevice) {
+            synchronized (mP2pListenerLock) {
+                mP2pDevice = p2pDevice;
+                mCalledCallbacks |= 1 << ON_DEVICE_CONFIGURATION_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onPeerListChanged(@NonNull WifiP2pDeviceList p2pDeviceList) {
+            synchronized (mP2pListenerLock) {
+                mP2pDeviceList = p2pDeviceList;
+                mCalledCallbacks |= 1 << ON_PEER_LIST_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onPersistentGroupsChanged(@NonNull WifiP2pGroupList p2pGroupList) {
+            synchronized (mP2pListenerLock) {
+                mP2pGroupList = p2pGroupList;
+                mCalledCallbacks |= 1 << ON_PERSISTENT_GROUPS_CHANGED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onGroupCreating() {
+            synchronized (mP2pListenerLock) {
+                mCalledCallbacks |= 1 << ON_GROUP_CREATING;
+                // do not notify lock till group created
+            }
+        }
+
+        @Override
+        public void onGroupNegotiationRejectedByUser() {
+            synchronized (mP2pListenerLock) {
+                mCalledCallbacks |= 1 << ON_GROUP_NEGOTIATION_REJECTED_BY_USER;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onGroupCreationFailed(int reason) {
+            synchronized (mP2pListenerLock) {
+                mP2pGroupCreationFailureReason = reason;
+                mCalledCallbacks |= 1 << ON_GROUP_CREATION_FAILED;
                 mP2pListenerLock.notify();
             }
         }
@@ -1447,14 +1585,40 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
             synchronized (mP2pListenerLock) {
                 mP2pInfo = wifiP2pInfo;
                 mP2pGroup = wifiP2pGroup;
+                mCalledCallbacks |= 1 << ON_GROUP_CREATED;
                 mP2pListenerLock.notify();
             }
         }
 
         @Override
-        public void onGroupCreating() {
+        public void onPeerClientJoined(@NonNull WifiP2pInfo wifiP2pInfo,
+                @NonNull WifiP2pGroup wifiP2pGroup) {
             synchronized (mP2pListenerLock) {
-                mP2pGroupCreating = true;
+                mP2pInfo = wifiP2pInfo;
+                mP2pGroup = wifiP2pGroup;
+                mCalledCallbacks |= 1 << ON_PEER_CLIENT_JOINED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onPeerClientDisconnected(@NonNull WifiP2pInfo wifiP2pInfo,
+                @NonNull WifiP2pGroup wifiP2pGroup) {
+            synchronized (mP2pListenerLock) {
+                mP2pInfo = wifiP2pInfo;
+                mP2pGroup = wifiP2pGroup;
+                mCalledCallbacks |= 1 << ON_PEER_CLIENT_DISCONNECTED;
+                mP2pListenerLock.notify();
+            }
+        }
+
+        @Override
+        public void onFrequencyChanged(@NonNull WifiP2pInfo wifiP2pInfo,
+                @NonNull WifiP2pGroup wifiP2pGroup) {
+            synchronized (mP2pListenerLock) {
+                mP2pInfo = wifiP2pInfo;
+                mP2pGroup = wifiP2pGroup;
+                mCalledCallbacks |= 1 << ON_FREQUENCY_CHANGED;
                 mP2pListenerLock.notify();
             }
         }
@@ -1462,20 +1626,26 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
         @Override
         public void onGroupRemoved() {
             synchronized (mP2pListenerLock) {
-                mP2pGroupRemoved = true;
+                mCalledCallbacks |= 1 << ON_GROUP_REMOVED;
                 mP2pListenerLock.notify();
             }
         }
     }
 
-    private void waitForP2pListenerCallbackCalled(TestWifiP2pListener p2pListener) {
+    private boolean waitForP2pListenerCallbackCalled(TestWifiP2pListener p2pListener,
+            int calledCallbackOffset, int waitTimeoutMs) {
         synchronized (p2pListener.mP2pListenerLock) {
-            long timeout = System.currentTimeMillis() + TIMEOUT_MS;
+            long timeout = System.currentTimeMillis() + waitTimeoutMs;
             while (System.currentTimeMillis() < timeout) {
                 try {
                     p2pListener.mP2pListenerLock.wait(WAIT_MS);
-                } catch (InterruptedException e) { }
+                } catch (InterruptedException e) {
+                }
+                if ((p2pListener.mCalledCallbacks & (1 << calledCallbackOffset)) > 0) {
+                    return true;
+                }
             }
+            return false;
         }
     }
 
@@ -1484,43 +1654,141 @@ public class ConcurrencyTest extends WifiJUnit4TestBase {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
     @Test
-    public void testWifiP2pListenerListenStateChanged() {
+    public void testWifiP2pListener() {
+        int lockWaitTimeoutMs = 5000;
         TestWifiP2pListener p2pListener = new TestWifiP2pListener(mLock);
+        synchronized (mLock) {
+            sWifiP2pManager.registerWifiP2pListener(mExecutor, p2pListener);
 
-        sWifiP2pManager.registerWifiP2pListener(mExecutor, p2pListener);
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.startListening(sWifiP2pChannel, sActionListener);
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        waitForP2pListenerCallbackCalled(p2pListener);
-        assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STARTED, p2pListener.getListenState());
+            resetResponse(MY_RESPONSE);
+            sWifiP2pManager.startListening(sWifiP2pChannel, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(waitForP2pListenerCallbackCalled(p2pListener,
+                    p2pListener.ON_LISTEN_STATE_CHANGED, lockWaitTimeoutMs));
+            assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STARTED, p2pListener.getListenState());
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            sWifiP2pManager.stopListening(sWifiP2pChannel, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(waitForP2pListenerCallbackCalled(p2pListener,
+                    p2pListener.ON_LISTEN_STATE_CHANGED, lockWaitTimeoutMs));
+            assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STOPPED, p2pListener.getListenState());
 
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.stopListening(sWifiP2pChannel, sActionListener);
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        waitForP2pListenerCallbackCalled(p2pListener);
-        assertEquals(WifiP2pManager.WIFI_P2P_LISTEN_STOPPED, p2pListener.getListenState());
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            String testDeviceName = "Android_Test";
+            String originalDeviceName = getDeviceName();
+            assertNotNull(originalDeviceName);
+            ShellIdentityUtils.invokeWithShellPermissions(() -> {
+                sWifiP2pManager.setDeviceName(
+                        sWifiP2pChannel, testDeviceName, sActionListener);
+                assertTrue(waitForServiceResponse(MY_RESPONSE));
+                assertTrue(waitForP2pListenerCallbackCalled(p2pListener,
+                        p2pListener.ON_DEVICE_CONFIGURATION_CHANGED, lockWaitTimeoutMs));
+                assertEquals(testDeviceName, p2pListener.getP2pDevice().deviceName);
+            });
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            ShellIdentityUtils.invokeWithShellPermissions(() -> {
+                sWifiP2pManager.setDeviceName(
+                        sWifiP2pChannel, originalDeviceName, sActionListener);
+                assertTrue(waitForServiceResponse(MY_RESPONSE));
+                assertTrue(waitForP2pListenerCallbackCalled(p2pListener,
+                        p2pListener.ON_DEVICE_CONFIGURATION_CHANGED, lockWaitTimeoutMs));
+                assertEquals(originalDeviceName, p2pListener.getP2pDevice().deviceName);
+            });
 
-        sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            sWifiP2pManager.createGroup(sWifiP2pChannel, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(MY_RESPONSE.success);
+            assertTrue(waitForP2pListenerCallbackCalled(p2pListener, p2pListener.ON_GROUP_CREATED,
+                    lockWaitTimeoutMs));
+            assertTrue(p2pListener.getP2pInfo().groupFormed);
+            assertNotNull(p2pListener.getP2pGroup());
+
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            sWifiP2pManager.removeGroup(sWifiP2pChannel, sActionListener);
+            assertTrue(waitForServiceResponse(MY_RESPONSE));
+            assertTrue(waitForP2pListenerCallbackCalled(p2pListener, p2pListener.ON_GROUP_REMOVED,
+                    lockWaitTimeoutMs));
+
+            WifiP2pGroupList persistentGroups = getPersistentGroups();
+            assertNotNull(persistentGroups);
+            assertEquals(1, persistentGroups.getGroupList().size());
+            resetResponse(MY_RESPONSE);
+            p2pListener.reset();
+            final int firstNetworkId = persistentGroups.getGroupList().get(0).getNetworkId();
+            ShellIdentityUtils.invokeWithShellPermissions(() -> {
+                sWifiP2pManager.deletePersistentGroup(sWifiP2pChannel,
+                        firstNetworkId,
+                        sActionListener);
+                assertTrue(waitForServiceResponse(MY_RESPONSE));
+                assertTrue(waitForP2pListenerCallbackCalled(p2pListener,
+                        p2pListener.ON_PERSISTENT_GROUPS_CHANGED, lockWaitTimeoutMs));
+            });
+
+            sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
+        }
     }
 
-    @ApiTest(apis = {"android.net.wifi.p2p.WifiP2pManager#registerWifiP2pListener",
-            "android.net.wifi.p2p.WifiP2pManager#unregisterWifiP2pListener"})
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.TIRAMISU)
     @Test
-    public void testWifiP2pListenerGroupCreated() {
-        TestWifiP2pListener p2pListener = new TestWifiP2pListener(mLock);
-
-        sWifiP2pManager.registerWifiP2pListener(mExecutor, p2pListener);
-        resetResponse(MY_RESPONSE);
-        sWifiP2pManager.createGroup(sWifiP2pChannel, sActionListener);
-        assertTrue(waitForServiceResponse(MY_RESPONSE));
-        assertTrue(MY_RESPONSE.success);
-        waitForP2pListenerCallbackCalled(p2pListener);
-        assertTrue(p2pListener.getP2pGroupCreating());
-        assertTrue(p2pListener.getP2pInfo().groupFormed);
-        assertNotNull(p2pListener.getP2pGroup());
-
-        sWifiP2pManager.unregisterWifiP2pListener(p2pListener);
+    public void testP2pWhenInfraStaDisabled() throws Exception {
+        if (!sWifiManager.isD2dSupportedWhenInfraStaDisabled()) {
+            // skip the test if feature is not supported.
+            return;
+        }
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        WifiManagerTest.Mutable<Boolean> isQuerySucceeded =
+                new WifiManagerTest.Mutable<Boolean>(false);
+        boolean currentD2dAllowed = false;
+        boolean isRestoreRequired = false;
+        long now, deadline;
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            WifiManagerTest.Mutable<Boolean> isD2dAllowed =
+                    new WifiManagerTest.Mutable<Boolean>(false);
+            sWifiManager.queryD2dAllowedWhenInfraStaDisabled(mExecutor,
+                    new Consumer<Boolean>() {
+                    @Override
+                    public void accept(Boolean value) {
+                        synchronized (mLock) {
+                            isD2dAllowed.value = value;
+                            isQuerySucceeded.value = true;
+                            mLock.notify();
+                        }
+                    }
+                });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + DURATION;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("d2d allowed query fail", isQuerySucceeded.value);
+            currentD2dAllowed = isD2dAllowed.value;
+            isRestoreRequired = true;
+            // Now force wifi off and d2d is on
+            sWifiManager.setWifiEnabled(false);
+            sWifiManager.setD2dAllowedWhenInfraStaDisabled(true);
+            // Run a test to make sure p2p can be used.
+            testRequestDiscoveryState();
+            // Set d2d to false and check
+            sWifiManager.setD2dAllowedWhenInfraStaDisabled(false);
+            // Make sure WifiP2P is disabled
+            waitForBroadcasts(MySync.P2P_STATE);
+            assertThat(WifiP2pManager.WIFI_P2P_STATE_DISABLED).isEqualTo(MY_SYNC.expectedP2pState);
+        } finally {
+            if (isRestoreRequired) {
+                sWifiManager.setD2dAllowedWhenInfraStaDisabled(currentD2dAllowed);
+            }
+            uiAutomation.dropShellPermissionIdentity();
+        }
     }
 }
