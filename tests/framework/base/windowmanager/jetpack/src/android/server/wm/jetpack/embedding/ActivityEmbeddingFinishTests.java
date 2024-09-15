@@ -29,7 +29,7 @@ import static androidx.window.extensions.embedding.SplitRule.FINISH_ADJACENT;
 import static androidx.window.extensions.embedding.SplitRule.FINISH_ALWAYS;
 import static androidx.window.extensions.embedding.SplitRule.FINISH_NEVER;
 
-import static org.junit.Assert.assertTrue;
+import static com.google.common.truth.Truth.assertThat;
 
 import android.app.Activity;
 import android.platform.test.annotations.Presubmit;
@@ -67,7 +67,6 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
      * Tests that finishing the primary activity results in the secondary activity resizing to fill
      * the task.
      */
-    @FlakyTest(bugId = 302112669)
     @Test
     public void testFinishPrimary() throws InterruptedException {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
@@ -86,14 +85,13 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
-        assertTrue(splitInfoList.isEmpty());
+        assertThat(splitInfoList).isEmpty();
     }
 
     /**
      * Tests that finishing the secondary activity results in the primary activity resizing to fill
      * the task.
      */
-    @FlakyTest(bugId = 302192873)
     @Test
     public void testFinishSecondary() throws InterruptedException {
         SplitPairRule splitPairRule = createWildcardSplitPairRule();
@@ -112,7 +110,7 @@ public class ActivityEmbeddingFinishTests extends ActivityEmbeddingTestBase {
 
         // Verify that there are no split states
         List<SplitInfo> splitInfoList = mSplitInfoConsumer.waitAndGet();
-        assertTrue(splitInfoList.isEmpty());
+        assertThat(splitInfoList).isEmpty();
     }
 
     /**

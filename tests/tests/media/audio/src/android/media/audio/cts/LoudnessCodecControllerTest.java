@@ -26,6 +26,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
@@ -37,6 +38,7 @@ import android.media.LoudnessCodecController;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.Bundle;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -47,6 +49,7 @@ import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
@@ -259,6 +262,8 @@ public class LoudnessCodecControllerTest {
     @Test
     @RequiresFlagsEnabled(FLAG_LOUDNESS_CONFIGURATOR_API)
     public void audioTrackStart_afterAddMediaCodec_checkUpdateNumber() throws Exception {
+        assumeTrue("Skipping audioTrackStart_afterAddMediaCodec_checkUpdateNumber on API <= 35",
+                ApiLevelUtil.isAfter(Build.VERSION_CODES.VANILLA_ICE_CREAM));
         final MediaCodec mediaCodec1 = createMediaCodec(/*configure*/true);
         final MediaCodec mediaCodec2 = createMediaCodec(/*configure*/true);
 

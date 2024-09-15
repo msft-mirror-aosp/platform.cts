@@ -25,6 +25,7 @@ import android.location.cts.common.TestGnssMeasurementListener;
 import android.location.cts.common.TestLocationListener;
 import android.location.cts.common.TestLocationManager;
 import android.location.cts.common.TestMeasurementUtil;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.util.Log;
 
 import java.util.List;
@@ -70,6 +71,7 @@ public class GnssMeasurementsConstellationTest extends GnssTestCase {
     /**
      * Test Gnss multi constellation supported.
      */
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGnssMultiConstellationSupported() throws Exception {
         // Checks if GPS hardware feature is present, skips test (pass) if not
         if (!TestMeasurementUtil.canTestRunOnCurrentDevice(mTestLocationManager, TAG)) {

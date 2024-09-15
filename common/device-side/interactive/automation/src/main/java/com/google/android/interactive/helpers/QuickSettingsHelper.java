@@ -55,11 +55,11 @@ public final class QuickSettingsHelper {
         }
 
         for (int i = 0; i < num; i++) {
-            quickSettings.swipe(Direction.LEFT, 1f);
             UiObject2 tile = device.findObject(By.text(label));
             if (tile != null) {
                 return tile;
             }
+            quickSettings.swipe(Direction.LEFT, 1f);
         }
         return null;
     }

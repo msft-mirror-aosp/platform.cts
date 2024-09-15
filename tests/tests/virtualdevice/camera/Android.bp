@@ -19,7 +19,7 @@ package {
 
 android_test {
     name: "CtsVirtualDevicesCameraTestCases",
-
+    sdk_version: "test_current",
     defaults: ["cts_defaults"],
 
     libs: [
@@ -30,10 +30,24 @@ android_test {
     static_libs: [
         "CtsVirtualDeviceCommonLib",
         "junit-params",
+        "androidx.camera_camera-core",
+        "androidx.camera_camera-viewfinder",
+        "androidx.camera_camera-video",
+        "androidx.camera_camera-camera2",
+        "androidx.camera_camera-lifecycle",
+        "kotlinx-coroutines-android",
+        "androidx.lifecycle_lifecycle-runtime-testing",
     ],
+
+    jni_libs: ["libvirtualcameratest-jni"],
+
+    // include both the 32 and 64 bit versions
+    compile_multilib: "both",
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
+        ":CameraCtsBitmapUtils",
     ],
 
     // Tag this module as a cts test artifact

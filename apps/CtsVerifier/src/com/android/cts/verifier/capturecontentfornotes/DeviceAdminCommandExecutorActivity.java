@@ -52,7 +52,8 @@ public class DeviceAdminCommandExecutorActivity extends Activity {
         try {
             DevicePolicyManager dpm =
                     TestAppSystemServiceFactory.getDevicePolicyManager(this,
-                            DeviceAdminTestReceiver.class, true);
+                            DeviceAdminTestReceiver.class, /* forDeviceOwner = */ true,
+                            /* isSingleUser = */ false);
 
             String command = intent.getStringExtra(EXTRA_COMMAND);
             switch (command) {

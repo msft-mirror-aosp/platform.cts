@@ -124,11 +124,6 @@ abstract class BaseBroadcastTest {
                 mAm.forceDelayBroadcastDelivery(targetPackage, delayedDurationMs));
     }
 
-    protected boolean isModernBroadcastQueueEnabled() {
-        return SystemUtil.runWithShellPermissionIdentity(() ->
-                mAm.isModernBroadcastQueueEnabled());
-    }
-
     protected boolean isAppFreezerEnabled() throws Exception {
         final ActivityManager am = mContext.getSystemService(ActivityManager.class);
         return am.getService().isAppFreezerEnabled();
@@ -328,7 +323,7 @@ abstract class BaseBroadcastTest {
             Log.e(TAG, "Service got disconnected: " + componentName);
         }
 
-        private IBinder getService() throws Exception {
+        public IBinder getService() throws Exception {
             final IBinder service = mBlockingQueue.poll(TIMEOUT_BIND_SERVICE_SEC,
                     TimeUnit.SECONDS);
             return service;

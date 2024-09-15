@@ -22,6 +22,7 @@
     </application>
     <queries>
         <package android:name="com.android.server.cts.device.statsdatom" />
+        <package android:name="com.android.cts.packagemanager.stats.testcomponentstateapp" />
     </queries>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

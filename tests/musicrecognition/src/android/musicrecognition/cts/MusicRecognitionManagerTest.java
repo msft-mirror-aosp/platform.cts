@@ -23,7 +23,6 @@ import static com.android.compatibility.common.util.ShellUtils.runShellCommand;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -36,7 +35,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import android.app.AppOpsManager;
-
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -231,7 +229,7 @@ public class MusicRecognitionManagerTest {
         String expectedAttributionTag = "CtsMusicRecognitionAttributionTag";
         verify(listener, timeout(VERIFY_APPOP_CHANGE_TIMEOUT_MS))
                 .onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                eq(uid), eq(packageName), eq(expectedAttributionTag), eq(true),
+                eq(uid), eq(packageName), eq(expectedAttributionTag), anyInt(), eq(true),
                         anyInt(), anyInt());
 
         // Wait for streaming to finish.
@@ -245,7 +243,7 @@ public class MusicRecognitionManagerTest {
         // The app op should finish
         verify(listener, timeout(VERIFY_APPOP_CHANGE_TIMEOUT_MS))
                 .onOpActiveChanged(eq(AppOpsManager.OPSTR_RECORD_AUDIO),
-                        eq(uid), eq(packageName), eq(expectedAttributionTag), eq(false),
+                        eq(uid), eq(packageName), eq(expectedAttributionTag), anyInt(), eq(false),
                         anyInt(), anyInt());
 
 

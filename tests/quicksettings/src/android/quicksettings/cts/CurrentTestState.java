@@ -70,11 +70,13 @@ class CurrentTestState {
     private static AtomicReference<TestTileService> sInstance = new AtomicReference<>();
     private static AtomicBoolean sHasTileBeenClicked = new AtomicBoolean(false);
     private static AtomicReference<String> sClassName = new AtomicReference<>();
+    private static AtomicBoolean sFgsLaunched = new AtomicBoolean(false);
 
     public static void reset() {
         sInstance.set(null);
         sHasTileBeenClicked.set(false);
         sClassName.set(null);
+        sFgsLaunched.set(false);
     }
 
     public static TestTileService getCurrentInstance() {
@@ -107,5 +109,13 @@ class CurrentTestState {
 
     public static boolean hasTileBeenClicked() {
         return sHasTileBeenClicked.get();
+    }
+
+    public static void setFgsLaunched(boolean launched) {
+        sFgsLaunched.set(launched);
+    }
+
+    public static boolean isFgsLaunched() {
+        return sFgsLaunched.get();
     }
 }

@@ -27,10 +27,10 @@ import static org.junit.Assert.fail;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
-import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.WorkSource;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 
@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BinderTest {
     @Rule public RavenwoodRule mRavenwood = new RavenwoodRule.Builder().setProcessApp().build();
 

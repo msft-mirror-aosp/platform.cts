@@ -47,7 +47,10 @@ import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.expectThrows;
 
+import android.Manifest;
 import android.app.UiAutomation;
+import android.app.usage.StorageStats;
+import android.app.usage.StorageStatsManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -75,6 +78,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.Process;
 import android.os.RemoteException;
 import android.os.UserHandle;
+import android.os.storage.StorageManager;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -110,6 +114,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.cert.CertificateEncodingException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -162,6 +167,7 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_SDK1_UPDATED = "HelloWorldSdk1Updated.apk";
     private static final String TEST_SDK1_MAJOR_VERSION2 = "HelloWorldSdk1MajorVersion2.apk";
     private static final String TEST_SDK1_DIFFERENT_SIGNER = "HelloWorldSdk1DifferentSigner.apk";
+
     private static final String TEST_SDK2 = "HelloWorldSdk2.apk";
     private static final String TEST_SDK2_UPDATED = "HelloWorldSdk2Updated.apk";
 
@@ -186,6 +192,14 @@ public class PackageManagerShellCommandInstallTest {
     private static final String TEST_VERIFIER_REJECT = "HelloVerifierReject.apk";
     private static final String TEST_VERIFIER_DELAYED_REJECT = "HelloVerifierDelayedReject.apk";
     private static final String TEST_VERIFIER_DISABLED = "HelloVerifierDisabled.apk";
+
+    private static final String TEST_INSTALLER_APP = "HelloInstallerApp.apk";
+    private static final String TEST_INSTALLER_APP_UPDATED =
+            "HelloInstallerAppUpdated.apk";
+
+    private static final String TEST_INSTALLER_APP_ABSENT = "HelloInstallerAppAbsent.apk";
+    private static final String TEST_INSTALLER_APP_ABSENT_UPDATED =
+            "HelloInstallerAppAbsentUpdated.apk";
 
     private static final String PACKAGE_MIME_TYPE = "application/vnd.android.package-archive";
 
@@ -408,6 +422,65 @@ public class PackageManagerShellCommandInstallTest {
                     commandResult.startsWith("Failure [INSTALL_PARSE_FAILED_NOT_APK"));
         }
         assertFalse(isAppInstalled(TEST_APP_PACKAGE));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.content.pm.Flags.FLAG_GET_PACKAGE_STORAGE_STATS)
+    public void testGetPackageStorageStats() throws Exception {
+        installPackage(TEST_HW5);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        StorageStatsManager storageStatsManager =
+            getContext().getSystemService(StorageStatsManager.class);
+        StorageStats stats =
+            storageStatsManager.queryStatsForPackage(StorageManager.UUID_DEFAULT,
+                TEST_APP_PACKAGE, android.os.Process.myUserHandle());
+
+        String commandResult =
+            executeShellCommand("pm get-package-storage-stats " + TEST_APP_PACKAGE);
+        String[] lines = commandResult.split("\n");
+        for (String line : lines) {
+            String dataType = line.split(": ")[0];
+            String value = line.split(": ")[1];
+            switch (dataType) {
+                case "code":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytes()));
+                    break;
+                case "data":
+                    assertEquals(value, getDataSizeDisplay(stats.getDataBytes()));
+                    break;
+                case "cache":
+                    assertEquals(value, getDataSizeDisplay(stats.getCacheBytes()));
+                    break;
+                case "apk":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_APK)));
+                    break;
+                case "lib":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_LIB)));
+                    break;
+                case "dm":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_DM)));
+                    break;
+                case "dexopt artifacts":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_DEXOPT_ARTIFACT)));
+                    break;
+                case "current profile":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_CURRENT_PROFILE)));
+                    break;
+                case "reference profile":
+                    assertEquals(value, getDataSizeDisplay(stats.getAppBytesByDataType(
+                        StorageStats.APP_DATA_TYPE_FILE_TYPE_REFERENCE_PROFILE)));
+                    break;
+                case "external cache":
+                    assertEquals(value, getDataSizeDisplay(stats.getExternalCacheBytes()));
+                    break;
+            }
+        }
     }
 
     @Test
@@ -2346,6 +2419,242 @@ public class PackageManagerShellCommandInstallTest {
 
     }
 
+    @Test
+    public void testEmergencyInstallerNoAttribute() throws Exception {
+        installPackage(TEST_INSTALLER_APP_ABSENT);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.EMERGENCY_INSTALL_PACKAGES);
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_absent_updated",
+                    TEST_INSTALLER_APP_ABSENT_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testEmergencyInstallerNoPermission() throws Exception {
+        installPackage(TEST_INSTALLER_APP);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_updated", TEST_INSTALLER_APP_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    // We can't test updating a system app with INSTALL_PACKAGES in CTS tests; this positive test
+    // will be in GTS tests instead.
+    @Test
+    public void testEmergencyInstallerNonSystemApp() throws Exception {
+        installPackage(TEST_INSTALLER_APP);
+        assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+        getUiAutomation()
+                .adoptShellPermissionIdentity(Manifest.permission.EMERGENCY_INSTALL_PACKAGES);
+        try {
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            PackageInstaller.Session session = installer.openSession(sessionId);
+
+            writeFileToSession(session, "installer_app_updated", TEST_INSTALLER_APP_UPDATED);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+            session.commit(new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                @Override
+                public void send(int code, Intent intent, String resolvedType,
+                        IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                        String requiredPermission, Bundle options) throws RemoteException {
+                    status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                            Integer.MIN_VALUE));
+                    statusMessage.complete(
+                            intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                }
+            }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testEmergencyInstallerUninstallNoAttribiute() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.EMERGENCY_INSTALL_PACKAGES,
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP_ABSENT);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    @Test
+    public void testEmergencyInstallerUninstallNoPermission() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
+
+    // We can't test uninstalling a system app in CTS tests; this positive test will be in GTS tests
+    // instead.
+    @Test
+    public void testEmergencyInstallerUninstallNonSystemApp() throws Exception {
+        assumeTrue(mDataLoaderType == DATA_LOADER_TYPE_NONE);
+        getUiAutomation().adoptShellPermissionIdentity(
+                Manifest.permission.EMERGENCY_INSTALL_PACKAGES,
+                Manifest.permission.REQUEST_DELETE_PACKAGES,
+                Manifest.permission.INSTALL_PACKAGES);
+
+        try {
+            installPackage(TEST_INSTALLER_APP);
+            assertTrue(isAppInstalled(TEST_APP_PACKAGE));
+
+            final PackageInstaller installer = getPackageInstaller();
+            final SessionParams params = new SessionParams(SessionParams.MODE_FULL_INSTALL);
+            params.setAppPackageName(TEST_APP_PACKAGE);
+            final int sessionId = installer.createSession(params);
+            installer.openSession(sessionId);
+
+            final CompletableFuture<Integer> status = new CompletableFuture<>();
+            final CompletableFuture<String> statusMessage = new CompletableFuture<>();
+
+            installer.uninstall(TEST_APP_PACKAGE,
+                    new IntentSender((IIntentSender) new IIntentSender.Stub() {
+                        @Override
+                        public void send(int code, Intent intent, String resolvedType,
+                                IBinder whitelistToken, IIntentReceiver finishedReceiver,
+                                String requiredPermission, Bundle options) throws RemoteException {
+                            status.complete(intent.getIntExtra(PackageInstaller.EXTRA_STATUS,
+                                    Integer.MIN_VALUE));
+                            statusMessage.complete(
+                                    intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                        }
+                    }));
+
+            assertEquals(statusMessage.get(), PackageInstaller.STATUS_PENDING_USER_ACTION,
+                    (int) status.get());
+        } finally {
+            getUiAutomation().dropShellPermissionIdentity();
+        }
+    }
 
     private List<SharedLibraryInfo> getSharedLibraries() {
         getUiAutomation().adoptShellPermissionIdentity();
@@ -2618,6 +2927,33 @@ public class PackageManagerShellCommandInstallTest {
                 .filter(line -> line.startsWith(prefix))
                 .map(s -> s.substring(prefix.length()))
                 .toList();
+    }
+
+    private String getFormattedBytes(long size) {
+        double k = size/1024.0;
+        double m = size/1048576.0;
+        double g = size/1073741824.0;
+
+        DecimalFormat dec = new DecimalFormat("0.00");
+        if (g > 1) {
+            return dec.format(g).concat(" Gb");
+        } else if (m > 1) {
+            return dec.format(m).concat(" Mb");
+        } else if (k > 1) {
+            return dec.format(k).concat(" Kb");
+        }
+        return "";
+    }
+
+    /**
+     * Return the string that displays the data size.
+     */
+    private String getDataSizeDisplay(long size) {
+        String formattedOutput = getFormattedBytes(size);
+        if (!formattedOutput.isEmpty()) {
+           formattedOutput = " (" + formattedOutput + ")";
+        }
+        return Long.toString(size) + " bytes" + formattedOutput;
     }
 
     static class PackageBroadcastReceiver extends BroadcastReceiver {

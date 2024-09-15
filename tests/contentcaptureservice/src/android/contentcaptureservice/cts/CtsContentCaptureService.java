@@ -29,6 +29,7 @@ import android.service.contentcapture.ActivityEvent;
 import android.service.contentcapture.ContentCaptureService;
 import android.service.contentcapture.DataShareCallback;
 import android.service.contentcapture.DataShareReadAdapter;
+import android.service.contentcapture.SnapshotData;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Log;
@@ -69,6 +70,8 @@ public class CtsContentCaptureService extends ContentCaptureService {
             + CtsContentCaptureService.class.getSimpleName();
     public static final ComponentName CONTENT_CAPTURE_SERVICE_COMPONENT_NAME =
             componentNameFor(CtsContentCaptureService.class);
+
+    public static final String ASSIST_CONTENT_ACTIVITY_START_KEY = "activity_start_assist_content";
 
     private static final Executor sExecutor = Executors.newCachedThreadPool();
 
@@ -160,6 +163,8 @@ public class CtsContentCaptureService extends ContentCaptureService {
     boolean mDataShareSessionSucceeded = false;
     int mDataShareSessionErrorCode = 0;
     DataShareRequest mDataShareRequest;
+
+    boolean mActivityStartSnapShotReceived = false;
 
     @NonNull
     public static ServiceWatcher setServiceWatcher() {
@@ -400,6 +405,19 @@ public class CtsContentCaptureService extends ContentCaptureService {
         } else {
             callback.onReject();
             mDataShareSessionStarted = mDataShareSessionFinished = true;
+        }
+    }
+
+    @Override
+    public void onActivitySnapshot(@NonNull ContentCaptureSessionId sessionId,
+            @NonNull SnapshotData snapshotData) {
+        Log.d(TAG, "onActivitySnapshot invoked.");
+        if (snapshotData.getAssistContent() != null
+                && snapshotData.getAssistContent().getExtras().containsKey(
+                ASSIST_CONTENT_ACTIVITY_START_KEY)) {
+            assertWithMessage("Assist content has null intent on activity start.").that(
+                    snapshotData.getAssistContent().getIntent()).isNotNull();
+            mActivityStartSnapShotReceived = true;
         }
     }
 

@@ -2021,6 +2021,15 @@ public class CardEmulationTest {
         instance.recoverRoutingTable(activity);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CARD_EMULATION_EUICC)
+    @Test
+    public void testIsEuiccSupported() {
+        NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
+        Assert.assertTrue(NfcUtils.enableNfc(adapter, mContext));
+        CardEmulation instance = CardEmulation.getInstance(adapter);
+        instance.isEuiccSupported();
+    }
+
     private Activity createAndResumeActivity() {
         ensureUnlocked();
         Intent intent

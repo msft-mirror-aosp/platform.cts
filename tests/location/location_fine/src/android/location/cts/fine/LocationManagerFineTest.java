@@ -44,10 +44,10 @@ import static com.android.compatibility.common.util.LocationUtils.createLocation
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.app.AppOpsManager;
 import android.app.PendingIntent;
 import android.app.UiAutomation;
@@ -77,9 +77,11 @@ import android.location.provider.ProviderProperties;
 import android.os.Build;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.Process;
 import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.provider.DeviceConfig;
 import android.util.Log;
 
@@ -190,6 +192,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetLastKnownLocation() {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -212,17 +215,14 @@ public class LocationManagerFineTest {
     }
 
     @Test
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsLocation() throws Exception {
+    @AppModeFull(reason = "Instant apps can't hold INTERACT_ACROSS_USERS permission")
+    public void testGetLastKnownLocation_AdasLocationSettingsOn() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (DeviceConfigStateHelper locationDeviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_LOCATION)) {
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
+                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
             mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
@@ -236,36 +236,41 @@ public class LocationManagerFineTest {
                     .adoptShellPermissionIdentity(LOCATION_BYPASS, WRITE_SECURE_SETTINGS);
 
             try {
-                // Returns loc when ADAS toggle is on.
                 mManager.setLocationEnabledForUser(false, mContext.getUser());
                 mManager.setAdasGnssLocationEnabled(true);
-                assertThat(
-                        mManager.getLastKnownLocation(
-                                GPS_PROVIDER,
-                                new LastLocationRequest.Builder()
-                                        .setAdasGnssBypass(true)
-                                        .build()))
-                        .isEqualTo(loc);
 
+                if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isEqualTo(loc);
+                } else if (mUserHelper.isVisibleBackgroundUser()) {
+                    assertThat(
+                            mManager.getLastKnownLocation(
+                                    GPS_PROVIDER,
+                                    new LastLocationRequest.Builder()
+                                            .setAdasGnssBypass(true)
+                                            .build()))
+                            .isNull();
+                }
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
         }
     }
 
     @Test
-    public void testGetLastKnownLocation_AdasLocationSettings_ReturnsNull() throws Exception {
+    public void testGetLastKnownLocation_AdasLocationSettingsOff() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
-        try (DeviceConfigStateHelper locationDeviceConfigStateHelper = new DeviceConfigStateHelper(
-                DeviceConfig.NAMESPACE_LOCATION)) {
+        try (DeviceConfigStateHelper locationDeviceConfigStateHelper =
+                     new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
             mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
@@ -290,9 +295,8 @@ public class LocationManagerFineTest {
                                         .setAdasGnssBypass(true)
                                         .build()))
                         .isNull();
-
             } finally {
-                mManager.setLocationEnabledForUser(true, android.os.Process.myUserHandle());
+                mManager.setLocationEnabledForUser(true, Process.myUserHandle());
                 mManager.setAdasGnssLocationEnabled(true);
                 getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
             }
@@ -300,6 +304,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetLastKnownLocation_RemoveProvider() {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
 
@@ -309,6 +314,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetLastKnownLocation_NoteOp() {
         // Ensure no note ops for null location
         long timeBeforeLocationAccess = System.currentTimeMillis();
@@ -328,6 +334,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -348,6 +355,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_Timeout() throws Exception {
         try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
             mManager.getCurrentLocation(
@@ -369,6 +377,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_FreshOldLocation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -381,6 +390,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_DirectExecutor() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -393,6 +403,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_Cancellation() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -406,6 +417,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_ProviderDisabled() throws Exception {
         try (GetCurrentLocationCapture capture = new GetCurrentLocationCapture()) {
             mManager.setTestProviderEnabled(TEST_PROVIDER, false);
@@ -423,6 +435,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetCurrentLocation_NoteOps() throws Exception {
         long timeBeforeLocationAccess = System.currentTimeMillis();
         Location loc = createLocation(TEST_PROVIDER, mRandom);
@@ -447,6 +460,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -504,6 +518,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Passive() throws Exception {
         Location loc = createLocation(TEST_PROVIDER, mRandom);
 
@@ -521,6 +536,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_PendingIntent() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -584,6 +600,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_DirectExecutor() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -603,6 +620,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Looper() throws Exception {
         HandlerThread thread = new HandlerThread("locationTestThread");
         thread.start();
@@ -632,6 +650,7 @@ public class LocationManagerFineTest {
 
     @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_Criteria() throws Exception {
         // criteria API will always use the fused provider...
         mManager.addTestProvider(FUSED_PROVIDER,
@@ -699,6 +718,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_ReplaceRequest() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -715,6 +735,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_NumUpdates() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -734,6 +755,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_MinUpdateInterval() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -753,6 +775,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_MinUpdateDistance() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, 0, 0, 10);
         Location loc2 = createLocation(TEST_PROVIDER, 0, 1, 10);
@@ -772,6 +795,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_LocationSettingsIgnored() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
              DeviceConfigStateHelper locationDeviceConfigStateHelper =
@@ -808,31 +832,23 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeFull(reason = "Instant apps can't hold INTERACT_ACROSS_USERS permission")
     public void testRequestLocationUpdates_AdasGnssBypass() throws Exception {
         assumeTrue(mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE));
-        // ADAS is not supported on passenger users
-        assumeFalse("not supported when running on visible background user",
-                mUserHelper.isVisibleBackgroundUser());
 
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext);
              DeviceConfigStateHelper locationDeviceConfigStateHelper =
                      new DeviceConfigStateHelper(DeviceConfig.NAMESPACE_LOCATION)) {
 
-            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST,
-                    mContext.getPackageName());
+            locationDeviceConfigStateHelper.set(ADAS_SETTINGS_ALLOWLIST, mContext.getPackageName());
 
-            mManager.addTestProvider(
-                    GPS_PROVIDER,
-                    new ProviderProperties.Builder().build());
+            mManager.addTestProvider(GPS_PROVIDER, new ProviderProperties.Builder().build());
 
-            getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(LOCATION_BYPASS);
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(LOCATION_BYPASS);
             try {
                 mManager.requestLocationUpdates(
                         GPS_PROVIDER,
-                        new LocationRequest.Builder(0)
-                                .setAdasGnssBypass(true)
-                                .build(),
+                        new LocationRequest.Builder(0).setAdasGnssBypass(true).build(),
                         Executors.newSingleThreadExecutor(),
                         capture);
             } finally {
@@ -842,17 +858,28 @@ public class LocationManagerFineTest {
             // turn off provider
             mManager.setTestProviderEnabled(GPS_PROVIDER, false);
 
-            // test that all restrictions are bypassed
-            Location loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
-            loc = createLocation(GPS_PROVIDER, mRandom);
-            mManager.setTestProviderLocation(GPS_PROVIDER, loc);
-            assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            if (ActivityManager.getCurrentUser() == Process.myUserHandle().myUserId()) {
+                // test that all restrictions are bypassed
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isEqualTo(loc);
+            } else if (mUserHelper.isVisibleBackgroundUser()) {
+                // test restrictions aren't bypassed.
+                Location loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+                loc = createLocation(GPS_PROVIDER, mRandom);
+                mManager.setTestProviderLocation(GPS_PROVIDER, loc);
+                assertThat(capture.getNextLocation(FAILURE_TIMEOUT_MS)).isNull();
+            }
         }
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_NoteOps() throws Exception {
         long timeBeforeLocationAccess = System.currentTimeMillis();
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
@@ -879,6 +906,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestLocationUpdates_NoteOps_simultaneousRequests() {
         Context attributionContextFast =
                 mContext.createAttributionContext(VALID_LOCATION_ATTRIBUTION_TAG);
@@ -926,6 +954,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testMonitoring() throws Exception {
         AppOpsManager appOps = Objects.requireNonNull(
                 mContext.getSystemService(AppOpsManager.class));
@@ -1031,6 +1060,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush() throws Exception {
         try (LocationListenerCapture capture1 = new LocationListenerCapture(mContext);
              LocationListenerCapture capture2 = new LocationListenerCapture(mContext)) {
@@ -1119,6 +1149,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush_Ordering() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
             mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
@@ -1134,6 +1165,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRequestFlush_Gnss() throws Exception {
         assumeTrue(SystemProperties.getInt("ro.product.first_api_level", 0)
                 >= Build.VERSION_CODES.S);
@@ -1149,6 +1181,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testListenProviderEnable_Listener() throws Exception {
         try (LocationListenerCapture capture = new LocationListenerCapture(mContext)) {
             mManager.requestLocationUpdates(TEST_PROVIDER, 0, 0,
@@ -1221,6 +1254,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetProviders() {
         List<String> providers = mManager.getProviders(false);
         assertThat(providers.contains(TEST_PROVIDER)).isTrue();
@@ -1239,6 +1273,7 @@ public class LocationManagerFineTest {
 
     @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetProviders_Criteria() {
         Criteria criteria = new Criteria();
 
@@ -1259,6 +1294,7 @@ public class LocationManagerFineTest {
 
     @SuppressWarnings("deprecation")
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testGetBestProvider() {
         List<String> allProviders = mManager.getAllProviders();
         Criteria criteria = new Criteria();
@@ -1440,6 +1476,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testSetTestProviderLocation() throws Exception {
         Location loc1 = createLocation(TEST_PROVIDER, mRandom);
         Location loc2 = createLocation(TEST_PROVIDER, mRandom);
@@ -1497,6 +1534,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     @SuppressWarnings("TryFailThrowable")
     public void testSetTestProviderLocation_B33091107() throws Exception {
         // test for b/33091107, where a malicious app could fool a real provider into providing a
@@ -1587,6 +1625,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssStatusCallback() {
         GnssStatus.Callback callback = new GnssStatus.Callback() {
         };
@@ -1596,6 +1635,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testAddNmeaListener() {
         OnNmeaMessageListener listener = (message, timestamp) -> {
         };
@@ -1605,6 +1645,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssMeasurementsCallback() throws Exception {
         try (GnssMeasurementsCapture capture = new GnssMeasurementsCapture(mContext)) {
             mManager.registerGnssMeasurementsCallback(Runnable::run, capture);
@@ -1626,6 +1667,7 @@ public class LocationManagerFineTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have ACCESS_FINE_LOCATION permission")
     public void testRegisterGnssNavigationMessageCallback() throws Exception {
         try (GnssNavigationMessageCapture capture = new GnssNavigationMessageCapture(mContext)) {
             mManager.registerGnssNavigationMessageCallback(Runnable::run, capture);

@@ -28,6 +28,8 @@ import static com.android.utils.blob.Utils.triggerIdleMaintenance;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.testng.Assert.assertThrows;
 
 import android.app.blob.BlobHandle;
@@ -119,6 +121,7 @@ public class BlobStoreManagerTest {
             "D760873D812FE1CFC02C15ED416AB774B2D4C2E936DF6D8B6707277479D4812F");
 
     private Context mContext;
+    int mUserId;
     private BlobStoreManager mBlobStoreManager;
 
     private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
@@ -128,6 +131,7 @@ public class BlobStoreManagerTest {
     @Before
     public void setUp() {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
+        mUserId = mContext.getUser().getIdentifier();
         mBlobStoreManager = (BlobStoreManager) mContext.getSystemService(
                 Context.BLOB_STORE_SERVICE);
         // Wait for any previous package/uid related broadcasts to be handled before proceeding
@@ -137,11 +141,11 @@ public class BlobStoreManagerTest {
 
     @After
     public void tearDown() throws Exception {
-        runShellCmd("cmd blob_store clear-all-sessions");
-        runShellCmd("cmd blob_store clear-all-blobs");
+        runShellCmd("cmd blob_store clear-all-sessions -u " + mUserId);
+        runShellCmd("cmd blob_store clear-all-blobs -u " + mUserId);
         mContext.getFilesDir().delete();
         for (String pkg : new String[] {HELPER_PKG, HELPER_PKG2, HELPER_PKG3}) {
-            runShellCmd("cmd package clear " + pkg);
+            runShellCmd("cmd package clear " + pkg + " -u " + mUserId);
         }
     }
 
@@ -1400,7 +1404,7 @@ public class BlobStoreManagerTest {
 
         final long startTimeMs = System.currentTimeMillis();
         final long blobId = commitBlob(blobData);
-        assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId)).isEqualTo("1");
+        assertTrue(blobExists(blobId, mUserId));
 
         // Wait for the blob to expire
         SystemClock.sleep(expiryDurationMs);
@@ -1412,7 +1416,7 @@ public class BlobStoreManagerTest {
                         R.string.test_desc));
 
         triggerIdleMaintenance();
-        assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId)).isEqualTo("0");
+        assertFalse(blobExists(blobId, mUserId));
     }
 
     @Test
@@ -1425,7 +1429,8 @@ public class BlobStoreManagerTest {
 
         final long startTimeMs = System.currentTimeMillis();
         final long blobId = commitBlob(blobData);
-        assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId)).isEqualTo("1");
+        assertTrue(blobExists(blobId, mUserId));
+
         final long commitDurationMs = System.currentTimeMillis() - startTimeMs;
         acquireLease(mContext, blobData.getBlobHandle(), R.string.test_desc);
 
@@ -1438,7 +1443,7 @@ public class BlobStoreManagerTest {
                         R.string.test_desc));
 
         triggerIdleMaintenance();
-        assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId)).isEqualTo("0");
+        assertFalse(blobExists(blobId, mUserId));
     }
 
     @Test
@@ -1450,8 +1455,7 @@ public class BlobStoreManagerTest {
             blobData.prepare();
             try {
                 final long blobId = commitBlob(blobData);
-                assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId))
-                        .isEqualTo("1");
+                assertTrue(blobExists(blobId, mUserId));
 
                 acquireLease(mContext, blobData.getBlobHandle(), R.string.test_desc,
                         System.currentTimeMillis() + leaseExpiryDurationMs);
@@ -1461,8 +1465,7 @@ public class BlobStoreManagerTest {
                 assertNoLeasedBlobs(mBlobStoreManager);
 
                 triggerIdleMaintenance();
-                assertThat(runShellCmd("cmd blob_store query-blob-existence -b " + blobId))
-                        .isEqualTo("0");
+                assertFalse(blobExists(blobId, mUserId));
 
                 assertThrows(SecurityException.class, () -> mBlobStoreManager.acquireLease(
                         blobData.getBlobHandle(), R.string.test_desc,
@@ -1732,6 +1735,12 @@ public class BlobStoreManagerTest {
                 });
             });
         }
+    }
+
+    private static boolean blobExists(long blobId, int userId) throws Exception {
+        final String cmd = String.format(
+                "cmd blob_store query-blob-existence -u %d -b %d", userId, blobId);
+        return "1".equals(runShellCmd(cmd));
     }
 
     private void commitAndVerifyBlob(FakeBlobData blobData) throws Exception {

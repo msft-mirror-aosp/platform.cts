@@ -21,7 +21,7 @@ import android.content.Intent;
 
 public class Utils {
     static void sendIntentBroadcast(Context context, Intent intent) {
-        var broadcast = new Intent("android.content.cts.ContextTest.RECEIVING_INTENT")
+        var broadcast = new Intent("android.content.cts.RECEIVING_INTENT")
                 .setPackage("android.content.cts")
                 .putExtra(Intent.EXTRA_INTENT, intent);
         context.sendBroadcast(broadcast);

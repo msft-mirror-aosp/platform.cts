@@ -110,6 +110,7 @@
         <option name="package" value="android.server.wm.cts"/>
         <option name="runtime-hint" value="1h"/>
         <option name="device-listeners" value="android.tools.collectors.DefaultUITraceListener"/>
+        <option name="device-listeners" value="android.device.collectors.ScreenshotOnFailureCollector"/>
         <!-- DefaultUITraceListener args -->
         <option name="instrumentation-arg" key="skip_test_success_metrics" value="true"/>
         <option name="instrumentation-arg" key="per_class" value="true"/>
@@ -120,6 +121,8 @@
         <option name="pull-pattern-keys" value="perfetto_file_path*"/>
         <option name="directory-keys" value="/sdcard/DumpOnFailure" />
         <option name="directory-keys" value="/data/user/0/android.server.wm.cts/files" />
+        <!-- Collect the files generated on error -->
+        <option name="pull-pattern-keys" value="android.device.collectors.ScreenshotOnFailureCollector.*\.png" />
         <option name="collect-on-run-ended-only" value="true" />
     </metrics_collector>
 
@@ -128,8 +131,4 @@
         <option name="cleanup" value="true" />
         <option name="push-file" key="CtsDeviceDeprecatedAbiApp.apk" value="/data/local/tmp/cts/CtsDeviceDeprecatedAbiApp.apk" />
     </target_preparer>
-    <object class="com.android.tradefed.testtype.suite.module.TestFailureModuleController" type="module_controller">
-        <!-- Take screenshot upon test failure -->
-        <option name="screenshot-on-failure" value="true" />
-    </object>
 </configuration>

@@ -29,6 +29,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import android.app.dream.cts.app.IControlledDream;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -36,14 +37,24 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
+import android.os.RemoteException;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.DreamCoordinator;
+import android.server.wm.LockScreenSession;
 import android.service.dreams.DreamService;
+import android.service.dreams.Flags;
 import android.view.ActionMode;
 import android.view.Display;
+import android.view.KeyEvent;
+
+import androidx.test.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -53,6 +64,12 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     private static final int TIMEOUT_SECONDS = 2;
     private static final String DREAM_SERVICE_COMPONENT =
             "android.app.dream.cts.app/.SeparateProcessDreamService";
+
+    private static final String CONTROLLED_DREAM_SERVICE_COMPONENT =
+            "android.app.dream.cts.app/.ControlledTestDreamService";
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private final DreamCoordinator mDreamCoordinator = new DreamCoordinator(mContext);
 
@@ -76,6 +93,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     @Before
     public void setup() {
         mDreamCoordinator.setup();
+        InstrumentationRegistry.getInstrumentation().setInTouchMode(false);
     }
 
     @After
@@ -127,6 +145,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         assertThat(metadata.settingsActivity).isEqualTo(
                 ComponentName.unflattenFromString(testSettingsActivity));
         assertThat(metadata.showComplications).isFalse();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_HOME_PANEL);
     }
 
     @Test
@@ -137,6 +156,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         final DreamService.DreamMetadata metadata = getDreamMetadata(dreamComponent);
 
         assertThat(metadata.settingsActivity).isNull();
+        assertThat(metadata.dreamCategory).isEqualTo(DreamService.DREAM_CATEGORY_DEFAULT);
     }
 
     private DreamService.DreamMetadata getDreamMetadata(String dreamComponent)
@@ -195,5 +215,134 @@ public class DreamServiceTest extends ActivityManagerTestBase {
         // Asserts that the pinned stack does not exist.
         mWmState.assertDoesNotContainStack("Must not contain pinned stack.",
                 WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
+    }
+
+    private ControlledDreamSession startControlledDream()
+            throws RemoteException, InterruptedException {
+        final ComponentName dreamComponent =
+                ComponentName.unflattenFromString(CONTROLLED_DREAM_SERVICE_COMPONENT);
+        final ControlledDreamSession dreamSession = new ControlledDreamSession(mContext,
+                dreamComponent, mDreamCoordinator);
+
+        dreamSession.start();
+        waitAndAssertResumedActivity(mDreamCoordinator.getDreamActivityName(dreamComponent),
+                "Dream activity should be resumed");
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_FOCUS_GAINED);
+        return dreamSession;
+    }
+
+    /**
+     * Validates that pressing a confirm key when dreaming over an insecure keyguard wakes and
+     * dismisses the keyguard.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DREAM_HANDLES_CONFIRM_KEYS)
+    public void testKeyHandling_InsecureKeyguardDismissesOnConfirmKey()
+            throws RemoteException, InterruptedException {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        final ControlledDreamSession dreamSession = startControlledDream();
+
+        injectKey(KeyEvent.KEYCODE_SPACE, false, true);
+
+        dreamSession.awaitLifecycle(ControlledDreamSession.DREAM_LIFECYCLE_ON_WAKEUP);
+
+        // Assert keyguard is gone
+        mWmState.waitAndAssertKeyguardGone();
+        dreamSession.stop();
+    }
+
+    /**
+     * Checks that dismissing a dream from confirm key over a secure keyguard prompts the bouncer.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DREAM_HANDLES_CONFIRM_KEYS)
+    public void testKeyHandling_SecureKeyguardConfirmKeyPromptsBouncer()
+            throws InterruptedException, RemoteException {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        // Set secure lock credentials
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.setLockCredential();
+
+        // Go to the keyguard
+        lockScreenSession.gotoKeyguard();
+        mWmState.waitForKeyguardShowingAndNotOccluded();
+        mWmState.assertKeyguardShowingAndNotOccluded();
+
+        final ControlledDreamSession dreamSession = startControlledDream();
+
+        // Confirm and enter credentials
+        injectKey(KeyEvent.KEYCODE_SPACE, true, true);
+        lockScreenSession.enterAndConfirmLockCredential();
+
+        // Assert keyguard is gone
+        mWmState.waitAndAssertKeyguardGone();
+
+        dreamSession.stop();
+    }
+
+    /**
+     * Checks that interactive dreams are given priority on consuming keys and no action is taken
+     * in the case a confirm key is consumed.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DREAM_HANDLES_CONFIRM_KEYS)
+    public void testKeyHandling_InteractiveDreamConsumesConfirmNoWakeup()
+            throws InterruptedException, RemoteException {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        // Start the dream session
+        final ControlledDreamSession dreamSession = startControlledDream();
+        final IControlledDream dream = dreamSession.getControlledDream();
+
+        // Make the dream interactive
+        dream.setInteractive(true);
+
+        // Add space bar as a consumed key
+        dream.setConsumedKeys(new int[]{ KeyEvent.KEYCODE_SPACE});
+
+        // Dispatch confirm key
+        injectKey(KeyEvent.KEYCODE_SPACE, true, true);
+
+        // Assert that the device is still dreaming
+        assertThat(mDreamCoordinator.isDreaming()).isTrue();
+
+        dreamSession.stop();
+    }
+
+    /**
+     * Checks that pressing a confirm key over an interactive dream that doesn't consume the key
+     * causes the bouncer to show.
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DREAM_HANDLES_CONFIRM_KEYS)
+    public void testKeyHandling_InteractiveDreamDoesNotConsumeConfirmPromptsBouncer()
+            throws InterruptedException, RemoteException {
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_AUTOMOTIVE));
+        // Set secure lock credentials
+        final LockScreenSession lockScreenSession = createManagedLockScreenSession();
+        lockScreenSession.setLockCredential();
+
+        lockScreenSession.gotoKeyguard();
+        mWmState.waitForKeyguardShowingAndNotOccluded();
+        mWmState.assertKeyguardShowingAndNotOccluded();
+
+        // Start the dream session
+        final ControlledDreamSession dreamSession = startControlledDream();
+        final IControlledDream dream = dreamSession.getControlledDream();
+
+        // Make the dream interactive, but do not consume key presses
+        dream.setInteractive(true);
+
+        // Confirm and enter credentials
+        injectKey(KeyEvent.KEYCODE_SPACE, true, true);
+        lockScreenSession.enterAndConfirmLockCredential();
+
+        // Assert keyguard is gone
+        mWmState.waitAndAssertKeyguardGone();
+
+        dreamSession.stop();
     }
 }

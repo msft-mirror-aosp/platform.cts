@@ -18,6 +18,8 @@ package android.server.wm;
 
 import static android.content.pm.ActivityInfo.CONFIG_SCREEN_SIZE;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
+import static android.content.pm.PackageManager.FEATURE_AUTOMOTIVE;
+import static android.content.pm.PackageManager.FEATURE_INPUT_METHODS;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.UiDeviceUtils.pressSleepButton;
 import static android.server.wm.app.Components.VIRTUAL_DISPLAY_ACTIVITY;
@@ -43,6 +45,7 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.android.cts.mockime.ImeEventStreamTestUtils.clearAllEvents;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.expectEvent;
 import static com.android.cts.mockime.ImeEventStreamTestUtils.notExpectEvent;
+import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -109,6 +112,14 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         mTargetContext = getInstrumentation().getTargetContext();
     }
 
+    protected boolean isAutomotive() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_AUTOMOTIVE);
+    }
+
+    protected boolean supportsInstallableIme() {
+        return mContext.getPackageManager().hasSystemFeature(FEATURE_INPUT_METHODS);
+    }
+
     protected DisplayContent getDisplayState(int displayId) {
         return getDisplayState(getDisplaysStates(), displayId);
     }
@@ -155,11 +166,6 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
         }
 
         return result;
-    }
-
-    /** @see ObjectTracker#manage(AutoCloseable) */
-    protected DisplayMetricsSession createManagedDisplayMetricsSession(int displayId) {
-        return mObjectTracker.manage(new DisplayMetricsSession(displayId));
     }
 
     public static class LetterboxAspectRatioSession extends IgnoreOrientationRequestSession {
@@ -681,7 +687,7 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
     protected final void waitOrderedImeEventsThenAssertImeShown(ImeEventStream stream,
             int displayId,
             Predicate<ImeEvent>... conditions) throws Exception {
-        for (Predicate<ImeEvent> condition : conditions) {
+        for (var condition : conditions) {
             expectEvent(stream, condition, TimeUnit.SECONDS.toMillis(5) /* eventTimeout */);
         }
         // Assert the IME is shown on the expected display.
@@ -689,9 +695,10 @@ public class MultiDisplayTestBase extends ActivityManagerTestBase {
     }
 
     protected void waitAndAssertImeNoScreenSizeChanged(ImeEventStream stream) {
-        notExpectEvent(stream, event -> "onConfigurationChanged".equals(event.getEventName())
-                && (event.getArguments().getInt("ConfigUpdates") & CONFIG_SCREEN_SIZE) != 0,
-                TimeUnit.SECONDS.toMillis(1) /* eventTimeout */);
+        notExpectEvent(stream, withDescription("onConfigurationChanged(SCREEN_SIZE | ..)",
+                event -> "onConfigurationChanged".equals(event.getEventName())
+                        && (event.getArguments().getInt("ConfigUpdates") & CONFIG_SCREEN_SIZE)
+                        != 0), TimeUnit.SECONDS.toMillis(1) /* eventTimeout */);
     }
 
     /**

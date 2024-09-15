@@ -33,8 +33,10 @@ android_test {
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "flag-junit",
+        "Harrier",
         "CtsSurfaceValidatorLib",
         "android.companion.virtual.flags-aconfig-java",
+        "Harrier",
     ],
     libs: ["android.test.base.stubs.test"],
     // Tag this module as a cts test artifact

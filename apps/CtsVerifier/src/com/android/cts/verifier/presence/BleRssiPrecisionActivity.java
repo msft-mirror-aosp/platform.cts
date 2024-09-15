@@ -47,6 +47,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 
+/**
+ * Tests BLE Presence calibration requirement [7.4.3/C-10-1].
+ *
+ * <p>
+ * Link to requirement documentation is at <a
+ * href="https://source.android.com/docs/core/connect/presence-requirements#requirement_c-10-1">.
+ * ..</a>
+ */
 public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
     private static final String TAG = BleRssiPrecisionActivity.class.getName();
     private static final String DEVICE_NAME = Build.MODEL;
@@ -58,6 +66,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
 
     // Thresholds
     private static final int MAX_RSSI_RANGE_DBM = 18;
+    private static final int NUMBER_OF_TEST_SAMPLES = 1000;
 
     private boolean isReferenceDevice;
     private BleScanner mBleScanner;
@@ -159,9 +168,9 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
             mDeviceFoundTextView.setVisibility(View.VISIBLE);
             mReferenceDeviceName = referenceDeviceName;
             String deviceFoundText = getString(R.string.device_found_presence,
-                    resultList.size(), 1000);
+                    resultList.size(), NUMBER_OF_TEST_SAMPLES);
             mDeviceFoundTextView.setText(deviceFoundText);
-            if (resultList.size() >= 1000) {
+            if (resultList.size() >= NUMBER_OF_TEST_SAMPLES) {
                 Log.i(TAG, "Data collection complete");
                 mBleScanner.stopScanning();
                 mStartTestButton.setEnabled(true);
@@ -201,6 +210,7 @@ public class BleRssiPrecisionActivity extends PassFailButtons.Activity {
         mIsReferenceDeviceCheckbox.setEnabled(true);
     }
 
+    /** Starts advertising with the generated device ID specific to the reference device. */
     private void startAdvertising() {
         if (!checkBluetoothEnabled()) {
             return;

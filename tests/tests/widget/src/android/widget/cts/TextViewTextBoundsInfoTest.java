@@ -18,6 +18,7 @@ package android.widget.cts;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Instrumentation;
 import android.graphics.Matrix;
@@ -36,6 +37,8 @@ import android.widget.FrameLayout;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
+
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -120,7 +123,13 @@ public class TextViewTextBoundsInfoTest {
     private int[] mLocationOnScreen = new int[2];
     private InputConnection mInputConnection;
 
-    @Rule
+    @Rule(order = 0)
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            androidx.test.platform.app.InstrumentationRegistry
+                    .getInstrumentation().getUiAutomation(),
+            Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
+
+    @Rule(order = 1)
     public ActivityTestRule<TextViewHandwritingCtsActivity> mActivityRule =
             new ActivityTestRule<>(TextViewHandwritingCtsActivity.class);
 

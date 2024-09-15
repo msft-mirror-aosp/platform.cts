@@ -42,17 +42,15 @@ public class AppLocaleSettingsTest {
     public void testAppLocaleSettingsExist() throws RemoteException {
         assumeFalse(
                 "Skipping test: AppLocaleSettings is not supported in Wear OS",
-                isWatch());
+                SettingsTestUtils.isWatch());
+        assumeFalse(
+                "Skipping test: AppLocaleSettings is not supported in AAOS",
+                SettingsTestUtils.isAutomotive());
         final Intent intent = new Intent(Settings.ACTION_APP_LOCALE_SETTINGS);
         intent.setData(Uri.parse("package:com.my.app"));
         final ResolveInfo ri = InstrumentationRegistry.getTargetContext()
                 .getPackageManager().resolveActivity(
                 intent, PackageManager.MATCH_DEFAULT_ONLY);
         assertTrue(ri != null);
-    }
-
-    private boolean isWatch() {
-        return InstrumentationRegistry.getTargetContext()
-                .getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
     }
 }

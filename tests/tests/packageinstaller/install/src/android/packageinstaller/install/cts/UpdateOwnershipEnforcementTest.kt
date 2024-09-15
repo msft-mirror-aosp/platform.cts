@@ -18,16 +18,24 @@ package android.packageinstaller.install.cts
 
 import android.Manifest
 import android.app.Activity
+import android.content.pm.ApplicationInfo
 import android.content.pm.Flags
 import android.content.pm.PackageInstaller
+import android.content.pm.PackageManager
+import android.content.pm.PackageManager.ApplicationInfoFlags
 import android.platform.test.annotations.AppModeFull
 import android.platform.test.annotations.RequiresFlagsEnabled
-import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
-import androidx.test.InstrumentationRegistry
-import androidx.test.runner.AndroidJUnit4
+import android.platform.test.rule.ScreenRecordRule.ScreenRecord
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
+import androidx.test.uiautomator.By
+import androidx.test.uiautomator.Until
+import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
+import org.junit.Assert
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.fail
@@ -37,17 +45,23 @@ import org.junit.runner.RunWith
 
 @AppModeFull(reason = "Instant apps cannot create installer sessions")
 @RunWith(AndroidJUnit4::class)
+@ScreenRecord
 class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
-    @JvmField
-    @Rule
-    val mCheckFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
     companion object {
-        const val TEST_INSTALLER_APK_NAME = "CtsEmptyInstallerApp.apk"
         const val TEST_INSTALLER_APK_PACKAGE_NAME = "android.packageinstaller.emptyinstaller.cts"
+        const val TEST_ARCHIVE_APK_NAME = "CtsArchiveTestApp.apk"
+        const val TEST_ARCHIVE_APK_PACKAGE_NAME =
+            "android.packageinstaller.archive.cts.archiveapp"
+        const val TEST_ARCHIVE_INSTALLER_APK_NAME = "CtsArchiveInstallerApp.apk"
+        const val TEST_ARCHIVE_INSTALLER_APK_PACKAGE_NAME =
+            "android.packageinstaller.archiveinstaller.cts"
+        const val BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway"
     }
 
     private var isUpdateOwnershipEnforcementAvailable: String? = null
+    @get:Rule
+    val checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()!!
 
     /**
      * Checks that we can get default value from isRequestUpdateOwnership.
@@ -55,9 +69,12 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
     @Test
     fun isRequestUpdateOwnership_notSet_returnFalse() {
         val (sessionId, session) = createSession(
-                0 /* installFlags */,
-                false /* isMultiPackage */,
-                null /* packageSource */
+            /* installFlags */
+            0,
+            /* isMultiPackage */
+            false,
+            /* packageSource */
+            null
         )
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNotNull(sessionInfo)
@@ -71,9 +88,11 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
     @Test
     fun isRequestUpdateOwnership_set_returnTrue() {
         val (sessionId, session) = createSession(
-                INSTALL_REQUEST_UPDATE_OWNERSHIP,
-                false /* isMultiPackage */,
-                null /* packageSource */
+            INSTALL_REQUEST_UPDATE_OWNERSHIP,
+            /* isMultiPackage */
+            false,
+            /* packageSource */
+            null
         )
         val sessionInfo = pi.getSessionInfo(sessionId)
         assertNotNull(sessionInfo)
@@ -85,7 +104,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that we can enforce the update ownership when the first install.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_whenInitialInstall_hasUpdateOwner() {
         // First install the test app with enforcing the update ownership.
         startInstallationViaSession(INSTALL_REQUEST_UPDATE_OWNERSHIP)
@@ -104,7 +122,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that we cannot enforce the update ownership when the update.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_whenUpdate_hasNoUpdateOwner() {
         // First install the test app without enforcing the update ownership.
         installTestPackage()
@@ -160,8 +177,8 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         installTestPackage("--update-ownership -i " + context.opPackageName)
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             startInstallationViaSessionNoPrompt()
             // No need to click installer UI here.
 
@@ -169,8 +186,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
             assertInstalled()
         } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity()
+            InstrumentationRegistry.getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         }
     }
 
@@ -179,15 +195,17 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * it's not the update owner even if it has granted INSTALL_PACKAGES permission.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateByNonOwner_hasUserAction() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             startInstallationViaSession()
+
+            assertInstallerLabelShown()
+
             // Expecting a prompt to proceed.
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
@@ -195,8 +213,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
             assertInstalled()
         } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity()
+            InstrumentationRegistry.getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         }
     }
 
@@ -204,34 +221,89 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that an installer needs user action to update a package when
      * it's not the update owner even if it has granted INSTALL_PACKAGES permission.
      * This test simulates sideloading an APK when an installed app has an update owner set.
-     * Installing an app via intent results in 2 "User Action Required" dialogs:
-     *      # First one to confirm app installation.
-     *      # Second to confirm ownership update.
-     *  Ownership update is checked after install session is committed by Pia. As a result, the
-     *  system server sends another STATUS_PENDING_USER_ACTION to the user.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateViaIntentByNonOwner_hasUserAction() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            InstrumentationRegistry.getInstrumentation().uiAutomation
                 .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             val result = startInstallationViaIntent()
-            // Since it is simulating a side load, a user confirmation will be required to
-            // install the app
+
+            assertInstallerLabelShown()
+
+            // The dialog to confirm update ownership will be shown
             clickInstallerUIButton(INSTALL_BUTTON_ID)
 
-            // The second dialog will be shown to confirm update ownership
-            clickInstallerUIButton(INSTALL_BUTTON_ID)
-
-            assertThat(result.get(TIMEOUT, TimeUnit.MILLISECONDS)).isEqualTo(Activity.RESULT_OK)
+            assertThat(
+                result.get(GLOBAL_TIMEOUT, TimeUnit.MILLISECONDS)
+            ).isEqualTo(Activity.RESULT_OK)
             assertInstalled()
         } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
+            InstrumentationRegistry.getInstrumentation().uiAutomation.dropShellPermissionIdentity()
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ARCHIVING)
+    fun updateArchivedAppViaSessionByNonOwner_showConfirmDialog() {
+        installPackage(TEST_ARCHIVE_INSTALLER_APK_NAME)
+        assertInstalled(TEST_ARCHIVE_INSTALLER_APK_PACKAGE_NAME)
+
+        // Install the archive test app and enable update ownership enforcement with another package
+        installPackage(
+            TEST_ARCHIVE_APK_NAME,
+            "--update-ownership -i $TEST_ARCHIVE_INSTALLER_APK_PACKAGE_NAME"
+        )
+
+        val sourceInfo = pm.getInstallSourceInfo(TEST_ARCHIVE_APK_PACKAGE_NAME)
+        // This installer should be the update owner
+        assertThat(sourceInfo.updateOwnerPackageName).isEqualTo(
+            TEST_ARCHIVE_INSTALLER_APK_PACKAGE_NAME
+        )
+
+        try {
+            assertThat(
+                SystemUtil.runShellCommand(
+                    String.format("pm archive %s", TEST_ARCHIVE_APK_PACKAGE_NAME)
+                )
+            ).isEqualTo("Success\n")
+
+            // Check "installed" flag.
+            val applicationInfo: ApplicationInfo? = context.packageManager.getPackageInfo(
+                TEST_ARCHIVE_APK_PACKAGE_NAME,
+                PackageManager.PackageInfoFlags.of(PackageManager.MATCH_ARCHIVED_PACKAGES)
+            ).applicationInfo
+            assertEquals((applicationInfo!!.flags and ApplicationInfo.FLAG_INSTALLED).toLong(), 0)
+
+            // Check archive state.
+            Assert.assertTrue(applicationInfo.isArchived)
+
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
+            startInstallationViaSession(
+                /* installFlags */
+                0,
+                TEST_ARCHIVE_APK_NAME
+            )
+            val updateAnywayPattern = Pattern.compile(
+                BUTTON_UPDATE_ANYWAY_LABEL,
+                Pattern.CASE_INSENSITIVE
+            )
+
+            // The dialog to confirm update ownership will be shown
+            clickInstallerUIButton(By.text(updateAnywayPattern))
+
+            val result = getInstallSessionResult()
+            assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
+            assertInstalled(TEST_ARCHIVE_APK_PACKAGE_NAME)
+        } finally {
+            InstrumentationRegistry.getInstrumentation().uiAutomation
                 .dropShellPermissionIdentity()
+            uninstallPackage(TEST_ARCHIVE_INSTALLER_APK_PACKAGE_NAME)
+            uninstallPackage(TEST_ARCHIVE_APK_PACKAGE_NAME)
         }
     }
 
@@ -247,8 +319,8 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
         setDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE, "false")
 
         try {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
+            InstrumentationRegistry.getInstrumentation().uiAutomation
+                .adoptShellPermissionIdentity(Manifest.permission.INSTALL_PACKAGES)
             startInstallationViaSessionNoPrompt()
             // No need to click installer UI here.
 
@@ -256,8 +328,7 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             assertEquals(PackageInstaller.STATUS_SUCCESS, result.status)
             assertInstalled()
         } finally {
-            InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                    .dropShellPermissionIdentity()
+            InstrumentationRegistry.getInstrumentation().uiAutomation.dropShellPermissionIdentity()
         }
     }
 
@@ -265,7 +336,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that the update owner will be cleared once the installer changes.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun updateOwnershipEnforcement_updateByNonOwner_hasNoUpdateOwner() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
@@ -284,7 +354,6 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * Checks that the update owner will retain if the installer doesn't change.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun setRequestUpdateOwnership_notRequestWhenUpdate_ownerRetained() {
         // Install the test app and enable update ownership enforcement with another package
         installTestPackage("--update-ownership -i " + context.opPackageName)
@@ -304,15 +373,17 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * update ownership.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun getPendingUserActionReason_notRequestUpdateOwnership_reasonUnspecified() {
         installTestPackage()
         assertInstalled()
 
         val (sessionId, session) = createSession(
-                0 /* installFlags */,
-                false /* isMultiPackage */,
-                null /* packageSource*/
+            /* installFlags */
+            0,
+            /* isMultiPackage */
+            false,
+            /* packageSource */
+            null
         )
         writeAndCommitSession(TEST_APK_NAME, session)
 
@@ -334,15 +405,17 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
      * isn't changed.
      */
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_READ_INSTALL_INFO, Flags.FLAG_GET_RESOLVED_APK_PATH)
     fun getPendingUserActionReason_notRequestUpdateOwner_reasonRemindOwnership() {
         installTestPackage("--update-ownership -i $TEST_INSTALLER_APK_PACKAGE_NAME")
         assertInstalled()
 
         val (sessionId, session) = createSession(
-                0 /* installFlags */,
-                false /* isMultiPackage */,
-                null /* packageSource*/
+            /* installFlags */
+            0,
+            /* isMultiPackage */
+            false,
+            /* packageSource */
+            null
         )
         writeAndCommitSession(TEST_APK_NAME, session)
 
@@ -376,5 +449,20 @@ class UpdateOwnershipEnforcementTest : UpdateOwnershipEnforcementTestBase() {
             sourceInfo = pm.getInstallSourceInfo(TEST_APK_PACKAGE_NAME)
             assertEquals(SHELL_PACKAGE_NAME, sourceInfo.updateOwnerPackageName)
         }
+    }
+
+    private fun assertInstallerLabelShown() {
+        val installerAppInfo =
+            pm.getApplicationInfo(context.packageName, ApplicationInfoFlags.of(0))
+        val installerAppLabel = pm.getApplicationLabel(installerAppInfo)
+
+        waitForUIIdle()
+        assertNotNull(
+            "Installer label \"$installerAppLabel\" not shown",
+            uiDevice.wait(
+                Until.findObject(By.textContains(installerAppLabel.toString())),
+                FIND_OBJECT_TIMEOUT
+            )
+        )
     }
 }

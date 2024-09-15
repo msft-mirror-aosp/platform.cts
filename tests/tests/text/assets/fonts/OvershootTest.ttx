@@ -24,6 +24,8 @@
     <GlyphID id="5" name="1em_left_0.5em"/>
     <GlyphID id="6" name="1em_left_1em"/>
     <GlyphID id="7" name="1em_left_1.5em"/>
+    <GlyphID id="8" name="1em_left_inside_0.5em"/>
+    <GlyphID id="9" name="1em_right_inside_0.5em"/>
   </GlyphOrder>
 
   <head>
@@ -129,6 +131,8 @@
     <mtx name="1em_left_0.5em" width="100" lsb="-50"/>
     <mtx name="1em_left_1em" width="100" lsb="-100"/>
     <mtx name="1em_left_1.5em" width="100" lsb="-150"/>
+    <mtx name="1em_left_inside_0.5em" width="100" lsb="50"/>
+    <mtx name="1em_right_inside_0.5em" width="100" lsb="50"/>
   </hmtx>
 
   <cmap>
@@ -142,6 +146,8 @@
       <map code="0x0065" name="1em_left_0.5em" />   <!-- e -->
       <map code="0x0066" name="1em_left_1em" />     <!-- f -->
       <map code="0x0067" name="1em_left_1.5em" />   <!-- g -->
+      <map code="0x0068" name="1em_left_inside_0.5em" />   <!-- h -->
+      <map code="0x0069" name="1em_right_inside_0.5em" />   <!-- i -->
       <map code="0x05D0" name="1em" />              <!-- a -->
       <map code="0x05D1" name="1em_right_0.5em" />  <!-- b -->
       <map code="0x05D2" name="1em_right_1em" />    <!-- c -->
@@ -149,6 +155,8 @@
       <map code="0x05D4" name="1em_left_0.5em" />   <!-- e -->
       <map code="0x05D5" name="1em_left_1em" />     <!-- f -->
       <map code="0x05D6" name="1em_left_1.5em" />   <!-- g -->
+      <map code="0x05D7" name="1em_left_inside_0.5em" />   <!-- h -->
+      <map code="0x05D8" name="1em_right_inside_0.5em" />   <!-- i -->
     </cmap_format_12>
   </cmap>
 
@@ -218,6 +226,24 @@
         <pt x="-150" y="100" on="1" />
         <pt x="100" y="100" on="1" />
         <pt x="100" y="0" on="1" />
+      </contour>
+      <instructions />
+    </TTGlyph>
+    <TTGlyph name="1em_left_inside_0.5em" xMin="50" yMin="0" xMax="100" yMax="100">
+      <contour>
+        <pt x="50" y="0" on="1" />
+        <pt x="50" y="100" on="1" />
+        <pt x="100" y="100" on="1" />
+        <pt x="100" y="0" on="1" />
+      </contour>
+      <instructions />
+    </TTGlyph>
+    <TTGlyph name="1em_right_inside_0.5em" xMin="0" yMin="0" xMax="50" yMax="100">
+      <contour>
+        <pt x="0" y="0" on="1" />
+        <pt x="00" y="100" on="1" />
+        <pt x="50" y="100" on="1" />
+        <pt x="50" y="0" on="1" />
       </contour>
       <instructions />
     </TTGlyph>

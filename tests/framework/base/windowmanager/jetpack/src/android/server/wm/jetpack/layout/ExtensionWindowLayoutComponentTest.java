@@ -18,12 +18,10 @@ package android.server.wm.jetpack.layout;
 
 import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.EXTENSION_VERSION_2;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assertEqualWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.assumeHasDisplayFeatures;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getExtensionWindowLayoutInfo;
 import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.getWindowExtensions;
-import static android.server.wm.jetpack.extensions.util.ExtensionsUtil.isExtensionVersionAtLeast;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.assumeSidecarSupportedDevice;
 import static android.server.wm.jetpack.extensions.util.SidecarUtil.getSidecarInterface;
 import static android.view.Display.DEFAULT_DISPLAY;
@@ -47,9 +45,11 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.res.Resources;
 import android.graphics.Rect;
+import android.hardware.devicestate.DeviceState;
 import android.hardware.devicestate.DeviceStateManager;
 import android.hardware.devicestate.DeviceStateRequest;
 import android.hardware.display.DisplayManager;
+import android.platform.test.annotations.PlatinumTest;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.DeviceStateUtils;
 import android.server.wm.DisplayMetricsSession;
@@ -82,7 +82,6 @@ import com.android.compatibility.common.util.CddTest;
 import com.google.common.collect.BoundType;
 import com.google.common.collect.Range;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -124,20 +123,12 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     @Before
     @Override
-    public void setUp() {
+    public void setUp() throws Exception {
         super.setUp();
         mWindowLayoutComponent =
                 (WindowLayoutComponent) mWindowExtensionTestRule.getExtensionComponent();
         assumeNotNull(mWindowLayoutComponent);
         mDeviceStateManager = mContext.getSystemService(DeviceStateManager.class);
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Throwable {
-        // TODO(b/326498471) See how tear down affects other tests.
-        DeviceStateUtils
-                .runWithControlDeviceStatePermission(mDeviceStateManager::cancelStateRequest);
     }
 
     private Context createContextWithNonActivityWindow() {
@@ -156,15 +147,11 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         return windowContext;
     }
 
-    private void assumeExtensionVersionSupportsWindowContextLayout() {
-        assumeTrue("This test should only be run on devices with version: ",
-                isExtensionVersionAtLeast(EXTENSION_VERSION_2));
-    }
-
     /**
      * Test adding and removing a window layout change listener.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener() throws Exception {
@@ -177,6 +164,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Test adding and removing a window layout change listener with a wrapped activity context.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_wrappedContext()
@@ -196,6 +184,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Test adding and removing a window layout change listener with a window context.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_windowContext()
@@ -210,6 +199,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Test adding and removing a window layout change listener with a wrapped window context.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_onWindowLayoutChangeListener_wrappedWindowContext()
@@ -227,6 +217,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     }
 
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_windowLayoutInfoListener() {
@@ -241,12 +232,14 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     /** Test changing device states and verify no crash. */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_windowLayoutInfoListener_deviceStateChanged()
             throws Throwable {
-        final int[] supportedDeviceStates = mDeviceStateManager.getSupportedStates();
-        assumeTrue(supportedDeviceStates.length > 1);
+        final List<DeviceState> supportedDeviceStates =
+                mDeviceStateManager.getSupportedDeviceStates();
+        assumeTrue(supportedDeviceStates.size() > 1);
 
         TestActivity testActivity = startFullScreenActivityNewTask(
                 TestActivity.class, null /* activityId */);
@@ -259,20 +252,26 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         TestValueCountConsumer<DeviceStateRequest> deviceStateCallbackConsumer =
                 new TestValueCountConsumer<>();
         deviceStateCallbackConsumer.setCount(1);
-        for (int deviceState : supportedDeviceStates) {
-            DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceState).build();
-            DeviceStateUtils.runWithControlDeviceStatePermission(() ->
-                    mDeviceStateManager.requestBaseStateOverride(
-                            request,
-                            getInstrumentation().getTargetContext().getMainExecutor(),
-                            new DeviceStateRequest.Callback() {
-                                @Override
-                                public void onRequestActivated(DeviceStateRequest request) {
-                                    deviceStateCallbackConsumer.accept(request);
-                                }
-                            }));
-            deviceStateCallbackConsumer.waitAndGet();
-            deviceStateCallbackConsumer.clearQueue();
+        try {
+            for (DeviceState deviceState : supportedDeviceStates) {
+                final int deviceStateId = deviceState.getIdentifier();
+                DeviceStateRequest request = DeviceStateRequest.newBuilder(deviceStateId).build();
+                DeviceStateUtils.runWithControlDeviceStatePermission(() ->
+                        mDeviceStateManager.requestBaseStateOverride(
+                                request,
+                                getInstrumentation().getTargetContext().getMainExecutor(),
+                                new DeviceStateRequest.Callback() {
+                                    @Override
+                                    public void onRequestActivated(DeviceStateRequest request) {
+                                        deviceStateCallbackConsumer.accept(request);
+                                    }
+                                }));
+                deviceStateCallbackConsumer.waitAndGet();
+                deviceStateCallbackConsumer.clearQueue();
+            }
+        } finally {
+            DeviceStateUtils.runWithControlDeviceStatePermission(
+                    mDeviceStateManager::cancelBaseStateOverride);
         }
 
         mWindowLayoutComponent.removeWindowLayoutInfoListener(windowLayoutInfoConsumer);
@@ -280,6 +279,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testWindowLayoutComponent_providesWindowLayoutFromActivity()
             throws InterruptedException {
         TestActivity activity = startActivityNewTask(TestActivity.class);
@@ -311,10 +311,10 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     }
 
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     public void testWindowLayoutComponent_providesWindowLayoutFromWindowContext()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         Context windowContext = createContextWithNonActivityWindow();
 
         mWindowLayoutInfo = getExtensionWindowLayoutInfo(windowContext);
@@ -333,11 +333,11 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     }
 
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testWindowLayoutComponent_windowLayoutMatchesBetweenActivityAndWindowContext()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         TestConfigChangeHandlingActivity activity =
                 (TestConfigChangeHandlingActivity) startFullScreenActivityNewTask(
                         TestConfigChangeHandlingActivity.class, null /* activityId */);
@@ -352,6 +352,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     @CddTest(requirements = {"7.1.1.1"})
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testGetWindowLayoutInfo_configChanged_windowLayoutUpdates()
             throws InterruptedException {
         assumeSupportsRotation();
@@ -387,6 +388,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Test updating the display metrics and verify the updated WindowLayoutInfo.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     public void testGetWindowLayoutInfo_displayMetricsChanged_windowLayoutUpdates()
@@ -440,6 +442,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
 
     @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testGetWindowLayoutInfo_enterExitPip_windowLayoutInfoMatches()
             throws InterruptedException {
         TestConfigChangeHandlingActivity configHandlingActivity = startActivityNewTask(
@@ -464,19 +467,44 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
         assertEquals(mWindowLayoutInfo, values.get(2));
     }
 
+    @ApiTest(apis = {"androidx.window.extensions.layout.WindowLayoutInfo#getDisplayFeatures"})
+    @Test
+    @PlatinumTest(focusArea = "windowmanager")
+    public void testGetWindowLayoutInfo_enterPip_emptyWindowLayoutInfo()
+            throws InterruptedException {
+        TestConfigChangeHandlingActivity configHandlingActivity = startActivityNewTask(
+                TestConfigChangeHandlingActivity.class, null);
+        mWindowLayoutInfo = getExtensionWindowLayoutInfo(configHandlingActivity);
+        assumeHasDisplayFeatures(mWindowLayoutInfo);
+
+        TestValueCountConsumer<WindowLayoutInfo> consumer = new TestValueCountConsumer<>();
+        // We expect 2 values, 1 before entering PiP, one while in PiP.
+        consumer.setCount(2);
+        getWindowExtensions().getWindowLayoutComponent().addWindowLayoutInfoListener(
+                configHandlingActivity, consumer);
+
+        enterPipActivityHandlesConfigChanges(configHandlingActivity);
+
+        List<WindowLayoutInfo> values = consumer.waitAndGetAllValues();
+
+        assertEquals(2, values.size());
+        assertEquals(mWindowLayoutInfo, values.get(0));
+        assertTrue(values.get(1).getDisplayFeatures().isEmpty());
+    }
+
     /**
      * Similar to {@link #testGetWindowLayoutInfo_configChanged_windowLayoutUpdates}, here we
      * trigger rotations with a full screen activity on one Display Area, verify that
      * WindowLayoutInfo from both Activity and WindowContext are updated with callbacks.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener",
             "androidx.window.extensions.layout.WindowLayoutComponent#removeWindowLayoutInfoListener"
     })
     public void testWindowLayoutComponent_updatesWindowLayoutFromContextAfterRotation()
             throws InterruptedException {
-        assumeExtensionVersionSupportsWindowContextLayout();
         assumeSupportsRotation();
 
         final TestConfigChangeHandlingActivity activity = startFullScreenActivityNewTask(
@@ -531,6 +559,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     }
 
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener"})
     public void testGetWindowLayoutInfo_windowRecreated_windowLayoutUpdates()
@@ -569,6 +598,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      */
     @CddTest(requirements = {"7.1.1.1"})
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @FlakyTest(bugId = 295892511)
     public void testSidecarHasSameDisplayFeatures() throws InterruptedException {
         TestActivity activity = startFullScreenActivityNewTask(TestActivity.class,
@@ -638,6 +668,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * and may not match the API defined in the androidx repository.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testDisplayFeature_publicApi() throws NoSuchMethodException {
         Class<DisplayFeature> displayFeatureClass = DisplayFeature.class;
 
@@ -650,6 +681,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Tests that the public API of {@link FoldingFeature} matches the implementation provided.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testFoldingFeature_publicApi() throws NoSuchMethodException {
         Class<DisplayFeature> displayFeatureClass = DisplayFeature.class;
         Class<FoldingFeature> foldingFeatureClass = FoldingFeature.class;
@@ -681,6 +713,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Tests that the public API of {@link WindowLayoutInfo} matches the implementation provided.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     public void testWindowLayoutInfo_publicApi() throws NoSuchMethodException {
         // Create a FoldingFeature that will be added to WindowLayoutInfo as a DisplayFeature
         final Rect foldBoundaries = new Rect(0, 1, 1, 0);
@@ -708,6 +741,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * Tests that if a device supports half-opened mode then the fold reports half-opened support.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {"androidx.window.layout.WindowLayoutComponent#getSupportedWindowFeatures"})
     public void test_half_opened_state_reports_half_opened_property() {
         SupportedWindowFeatures features = mWindowLayoutComponent.getSupportedWindowFeatures();
@@ -729,6 +763,7 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
      * through {@link SupportedWindowFeatures}.
      */
     @Test
+    @PlatinumTest(focusArea = "windowmanager")
     @ApiTest(apis = {
             "androidx.window.extensions.layout.WindowLayoutComponent#addWindowLayoutInfoListener",
             "androidx.window.extensions.layout.WindowLayoutComponent#getSupportedWindowFeatures"})
@@ -759,9 +794,13 @@ public class ExtensionWindowLayoutComponentTest extends WindowManagerJetpackTest
     private boolean isHalfOpenedSupported() {
         DeviceStateManager deviceStateManager = mContext.getSystemService(DeviceStateManager.class);
 
-        final int[] supportedStates = deviceStateManager.getSupportedStates();
+        final List<DeviceState> supportedStates = deviceStateManager.getSupportedDeviceStates();
+        final int[] supportedStateIdentifiers = new int[supportedStates.size()];
+        for (int i = 0; i < supportedStates.size(); i++) {
+            supportedStateIdentifiers[i] = supportedStates.get(i).getIdentifier();
+        }
         final int[] halfOpenedDeviceStates = getHalfOpenedDeviceStates(mContext);
-        return containsAny(supportedStates, halfOpenedDeviceStates);
+        return containsAny(supportedStateIdentifiers, halfOpenedDeviceStates);
     }
 
     // TODO(b/326289376) replace with API from DeviceStateManager.

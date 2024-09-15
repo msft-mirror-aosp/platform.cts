@@ -71,6 +71,7 @@ android_test {
         "aidl/android/security/cts/IIsolatedService.aidl",
         "aidl/android/security/cts/ICertCheckService.aidl",
         "aidl/android/security/cts/CVE_2021_0327/IBadProvider.aidl",
+        "testdata/dynamicpermissiontestattackerapp/src/**/*.aidl",
     ],
     //sdk_version: "current",
     platform_apis: true,
@@ -84,8 +85,6 @@ android_test {
     per_testcase_directory: true,
     data: [
         ":CtsDeviceInfo",
-        ":RolePermissionOverrideTestApp",
-        ":SplitBluetoothPermissionTestApp",
         ":CtsPermissionBackupAppCert1",
         ":CtsPermissionBackupAppCert1Dup",
         ":CtsPermissionBackupAppCert2",
@@ -96,6 +95,9 @@ android_test {
         ":CtsPermissionBackupAppCert34",
         ":CtsPermissionBackupAppCert123",
         ":CtsPermissionBackupAppCert4History124",
+        ":DynamicPermissionTestAttackerApp",
+        ":RolePermissionOverrideTestApp",
+        ":SplitBluetoothPermissionTestApp",
         ":CertBlocklistTestApp",
     ],
 }

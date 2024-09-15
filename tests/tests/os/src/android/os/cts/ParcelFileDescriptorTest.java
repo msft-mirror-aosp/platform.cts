@@ -33,6 +33,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.ParcelFileDescriptor.AutoCloseInputStream;
 import android.os.Parcelable;
 import android.platform.test.annotations.AppModeFull;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.IgnoreUnderRavenwood;
 import android.platform.test.ravenwood.RavenwoodRule;
 import android.system.ErrnoException;
@@ -64,6 +65,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 @RunWith(AndroidJUnit4.class)
 public class ParcelFileDescriptorTest {
     @Rule
@@ -285,7 +287,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = ParcelFileDescriptor.class)
     public void testGetStatSize() throws Exception {
         ParcelFileDescriptor pf = makeParcelFileDescriptor();
         assertTrue(pf.getStatSize() >= 0);
@@ -323,6 +324,20 @@ public class ParcelFileDescriptorTest {
     // propagation is lost, and read() will never throw IOException in such case.
     private static int read(ParcelFileDescriptor pfd) throws IOException {
         return new FileInputStream(pfd.getFileDescriptor()).read();
+    }
+
+    @Test
+    public void testBasicPipeNormal() throws Exception {
+        final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
+        final ParcelFileDescriptor red = pipe[0];
+        final ParcelFileDescriptor blue = pipe[1];
+
+        write(blue, 1);
+        assertEquals(1, read(red));
+
+        blue.close();
+        assertEquals(-1, read(red));
+        red.checkError();
     }
 
     @Test
@@ -505,7 +520,6 @@ public class ParcelFileDescriptorTest {
     }
 
     @Test
-    @IgnoreUnderRavenwood(blockedBy = Os.class)
     public void testCheckFinalizerBehavior() throws Exception {
         final Runtime runtime = Runtime.getRuntime();
         ParcelFileDescriptor pfd = makeParcelFileDescriptor();
@@ -539,6 +553,57 @@ public class ParcelFileDescriptorTest {
         } catch (IOException ex) {
             // Success
         }
+    }
+
+    @Test
+    public void testFromFd() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = ParcelFileDescriptor.fromFd(pfd1.getFd())) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    @Test
+    public void testDup() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = pfd1.dup()) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    @Test
+    public void testDupStatic() throws Exception {
+        try (var pfd1 = makeParcelFileDescriptor()) {
+            try (var pfd2 = ParcelFileDescriptor.dup(pfd1.getFileDescriptor())) {
+                checkSameFd(pfd1, pfd2);
+            }
+        }
+    }
+
+    void checkSameFd(ParcelFileDescriptor pfd1, ParcelFileDescriptor pfd2) throws Exception {
+        // Make sure dup'ed FDs share the same position.
+        seekTo(pfd1, 0);
+        seekTo(pfd2, 0);
+
+        assertEquals(0, tell(pfd1));
+        assertEquals(0, tell(pfd2));
+
+        seekTo(pfd1, 2);
+
+        assertEquals(2, tell(pfd1));
+        assertEquals(2, tell(pfd2));
+    }
+
+    /** Change PFD's current position. */
+    long seekTo(ParcelFileDescriptor pfd, int pos) throws Exception {
+        return Os.lseek(pfd.getFileDescriptor(), pos, OsConstants.SEEK_SET);
+    }
+
+    /** Returns the PFD's current position */
+    long tell(ParcelFileDescriptor pfd) throws Exception {
+        return Os.lseek(pfd.getFileDescriptor(), 0, OsConstants.SEEK_CUR);
     }
 
     boolean checkIsValid(FileDescriptor fd) {

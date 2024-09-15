@@ -68,7 +68,6 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.keystore.cts.Attestation;
 import android.keystore.cts.util.TestUtils;
 import android.os.Build;
 import android.os.SystemProperties;
@@ -86,7 +85,7 @@ import androidx.test.filters.RequiresDevice;
 import androidx.test.runner.AndroidJUnit4;
 
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.PropertyUtil;
 
@@ -898,9 +897,9 @@ public class KeyAttestationTest {
     }
 
     @RestrictedBuildTest
-    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     @RequiresDevice  // Emulators have no place to store the needed key
     @Test
+    @CddTest(requirements = {"9.10/C-0-1", "9.10/C-1-3"})
     public void testRsaAttestation_DeviceLockedStrongbox() throws Exception {
         if (!TestUtils.hasStrongBox(getContext()))
             return;

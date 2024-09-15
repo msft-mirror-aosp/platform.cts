@@ -16,16 +16,16 @@
 
 package com.android.bedstead.nene.accounts;
 
-import static com.android.bedstead.nene.permissions.CommonPermissions.GET_ACCOUNTS;
-import static com.android.bedstead.nene.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
-import static com.android.bedstead.nene.permissions.CommonPermissions.READ_CONTACTS;
+import static com.android.bedstead.permissions.CommonPermissions.GET_ACCOUNTS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+import static com.android.bedstead.permissions.CommonPermissions.READ_CONTACTS;
 
 import android.accounts.AccountManager;
 import android.accounts.RemoteAccountManager;
 
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.annotations.Experimental;
-import com.android.bedstead.nene.permissions.PermissionContext;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.users.UserReference;
 
 import java.util.Arrays;

@@ -110,6 +110,9 @@ public class VisualVoicemailServiceTest {
         assumeTrue(hasFeatureSupported(mContext));
         // The tests run on real modem with visual voicemail SMS.
         assumeFalse(Build.IS_EMULATOR);
+        // Wear does not support Visual Voicemail
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_WATCH));
         mPreviousDefaultDialer = getDefaultDialer(getInstrumentation());
         setDefaultDialer(getInstrumentation(), PACKAGE);
 
@@ -175,11 +178,15 @@ public class VisualVoicemailServiceTest {
         String clientPrefix = "//CTSVVM";
         String text = "//CTSVVM:STATUS:st=R;rc=0;srv=1;dn=1;ipt=1;spt=0;u=eg@example.com;pw=1";
 
-        mTelephonyManager.setVisualVoicemailSmsFilterSettings(
-                new VisualVoicemailSmsFilterSettings.Builder()
-                        .setClientPrefix(clientPrefix)
-                        .build());
-
+        try {
+            mTelephonyManager.setVisualVoicemailSmsFilterSettings(
+                    new VisualVoicemailSmsFilterSettings.Builder()
+                            .setClientPrefix(clientPrefix)
+                            .build());
+            fail("SecurityException expected");
+        } catch (SecurityException e) {
+            // Expected
+        }
         try {
             mTelephonyManager
                     .sendVisualVoicemailSms(mPhoneNumber, 0, text, null);
@@ -195,7 +202,6 @@ public class VisualVoicemailServiceTest {
 
         SmsManager.getDefault().sendTextMessage(mPhoneNumber, null, text, null, null);
 
-        mSmsReceiver.assertReceived(EVENT_RECEIVED_TIMEOUT_MILLIS);
         try {
             future.get(EVENT_NOT_RECEIVED_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             throw new RuntimeException("Unexpected visual voicemail SMS received");

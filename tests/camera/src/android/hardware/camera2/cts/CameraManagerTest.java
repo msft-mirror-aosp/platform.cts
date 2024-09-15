@@ -18,6 +18,8 @@ package android.hardware.camera2.cts;
 
 import static junit.framework.Assert.*;
 
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.*;
 
 import android.app.Instrumentation;
@@ -152,10 +154,12 @@ public class CameraManagerTest extends Camera2ParameterizedTestCase {
         String[] ids = getCameraIdsUnderTest();
         if (VERBOSE) Log.v(TAG, "CameraManager ids: " + Arrays.toString(ids));
 
-        if (mAdoptShellPerm) {
-            Log.v(TAG, "Camera related features may not be accurate for system cameras, skipping");
-            return;
-        }
+        assumeFalse("Camera related features may not be accurate for system cameras, skipping",
+                mAdoptShellPerm);
+        assumeTrue(
+                "Camera related features may not be accurent when test is run with single "
+                        + "camera under test specified by cameraId override",
+                mOverrideCameraId == null);
 
         /**
          * Test: that if there is at least one reported id, then the system must have

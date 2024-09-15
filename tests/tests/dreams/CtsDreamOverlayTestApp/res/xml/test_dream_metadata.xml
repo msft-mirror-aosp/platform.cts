@@ -16,4 +16,6 @@
 
 <dream xmlns:android="http://schemas.android.com/apk/res/android"
        android:settingsActivity="android.app.dream.cts.app/.TestDreamSettingsActivity"
-       android:showClockAndComplications="false"/>
+       android:showClockAndComplications="false"
+       android:dreamCategory="home_panel"
+       />

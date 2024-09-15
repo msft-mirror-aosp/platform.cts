@@ -60,10 +60,15 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -72,6 +77,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(AndroidJUnit4.class)
+@RequireNotVisibleBackgroundUsers(reason = "collapsePanels(), expandNotificationsPanel() and "
+        + " sendNotificationFeedback() don't support visible background user")
 public class NotificationAssistantServiceTest {
 
     private static final String PKG = "android.app.notification.legacy29.cts";
@@ -87,6 +94,11 @@ public class NotificationAssistantServiceTest {
     private Context mContext;
     private UiAutomation mUi;
     private NotificationHelper mHelper;
+    private String mPreviousAssistant;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setUp() throws Exception {
@@ -100,6 +112,7 @@ public class NotificationAssistantServiceTest {
         mStatusBarManager = (StatusBarManager) mContext.getSystemService(
                 Context.STATUS_BAR_SERVICE);
         mHelper = new NotificationHelper(mContext);
+        mPreviousAssistant = mHelper.getEnabledAssistant();
     }
 
     @After
@@ -121,6 +134,7 @@ public class NotificationAssistantServiceTest {
         mUi.adoptShellPermissionIdentity("android.permission.EXPAND_STATUS_BAR");
         mStatusBarManager.collapsePanels();
         mUi.dropShellPermissionIdentity();
+        mHelper.enableOtherPkgAssistantIfNeeded(mPreviousAssistant);
     }
 
     @Test
@@ -261,6 +275,7 @@ public class NotificationAssistantServiceTest {
     }
 
     @Test
+    @Ignore("b/330193582")
     public void testAdjustNotifications_rankingScoreKey() throws Exception {
         setUpListeners();
 

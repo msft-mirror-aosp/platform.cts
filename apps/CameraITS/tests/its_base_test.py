@@ -87,12 +87,13 @@ class ItsBaseTest(base_test.BaseTestClass):
         self.tablet = devices[1]
         self.tablet_screen_brightness = self.user_params['brightness']
         tablet_name_unencoded = self.tablet.adb.shell(
-            ['getprop', 'ro.build.product']
+            ['getprop', 'ro.product.device']
         )
         tablet_name = str(tablet_name_unencoded.decode('utf-8')).strip()
         logging.debug('tablet name: %s', tablet_name)
-        its_session_utils.validate_tablet_brightness(
-            tablet_name, self.tablet_screen_brightness)
+        its_session_utils.validate_tablet(
+            tablet_name, self.tablet_screen_brightness,
+            self.tablet.serial)
       except KeyError:
         logging.debug('Not all tablet arguments set.')
     else:  # sensor_fusion or manual run
@@ -119,7 +120,7 @@ class ItsBaseTest(base_test.BaseTestClass):
 
     # Check if current foldable state matches scene, if applicable
     if self.user_params.get('foldable_device', 'False') == 'True':
-      foldable_state_unencoded = tablet_name_unencoded = self.dut.adb.shell(
+      foldable_state_unencoded = self.dut.adb.shell(
           ['cmd', 'device_state', 'state']
       )
       foldable_state = str(foldable_state_unencoded.decode('utf-8')).strip()
@@ -241,7 +242,7 @@ class ItsBaseTest(base_test.BaseTestClass):
   def turn_off_tablet(self):
     """Turns off tablet, raising AssertionError if tablet is not found."""
     if self.tablet:
-      lighting_control_utils.turn_off_device(self.tablet)
+      lighting_control_utils.turn_off_device_screen(self.tablet)
     else:
       raise AssertionError('Test must be run with tablet.')
 

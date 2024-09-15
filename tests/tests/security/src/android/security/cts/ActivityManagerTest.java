@@ -43,9 +43,9 @@ import android.os.UserHandle;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.util.Log;
 import android.view.SurfaceControl;
-import android.window.IRemoteTransition;
 import android.window.IRemoteTransitionFinishedCallback;
 import android.window.RemoteTransition;
+import android.window.RemoteTransitionStub;
 import android.window.TransitionInfo;
 
 import androidx.test.InstrumentationRegistry;
@@ -224,24 +224,13 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         final BaseActivity baseActivity = (BaseActivity) SystemUtil.callWithShellPermissionIdentity(
                 () -> getInstrumentation().startActivitySync(baseIntent));
 
-        RemoteTransition someRemote = new RemoteTransition(new IRemoteTransition.Stub() {
+        RemoteTransition someRemote = new RemoteTransition(new RemoteTransitionStub() {
             @Override
             public void startAnimation(IBinder token, TransitionInfo info,
                     SurfaceControl.Transaction t,
                     IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
                 t.apply();
                 finishCallback.onTransitionFinished(null /* wct */, null /* sct */);
-            }
-
-            @Override
-            public void mergeAnimation(IBinder token, TransitionInfo info,
-                    SurfaceControl.Transaction t, IBinder mergeTarget,
-                    IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
-            }
-
-            @Override
-            public void onTransitionConsumed(IBinder transition, boolean aborted)
-                throws RemoteException {
             }
         });
         ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);
@@ -271,7 +260,7 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
         baseIntent.setFlags(FLAG_ACTIVITY_NO_USER_ACTION | FLAG_ACTIVITY_NEW_TASK);
 
         final boolean[] remoteCalled = new boolean[]{false};
-        RemoteTransition someRemote = new RemoteTransition(new IRemoteTransition.Stub() {
+        RemoteTransition someRemote = new RemoteTransition(new RemoteTransitionStub() {
             @Override
             public void startAnimation(IBinder token, TransitionInfo info,
                     SurfaceControl.Transaction t,
@@ -286,11 +275,6 @@ public class ActivityManagerTest extends StsExtraBusinessLogicTestCase {
                     SurfaceControl.Transaction t, IBinder mergeTarget,
                     IRemoteTransitionFinishedCallback finishCallback) throws RemoteException {
                 remoteCalled[0] = true;
-            }
-
-            @Override
-            public void onTransitionConsumed(IBinder transition, boolean aborted)
-                throws RemoteException {
             }
         });
         ActivityOptions opts = ActivityOptions.makeRemoteTransition(someRemote);

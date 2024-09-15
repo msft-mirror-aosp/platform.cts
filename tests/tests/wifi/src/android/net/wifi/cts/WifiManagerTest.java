@@ -1214,19 +1214,19 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         if (!sWifiManager.isPortableHotspotSupported()) {
             return;
         }
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
+        if (wifiEnabled) {
+            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
+            // no STA+AP concurrency.
+            ShellIdentityUtils.invokeWithShellPermissions(() ->
+                    sWifiManager.setWifiEnabled(false));
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiEnabled());
+            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> sWifiManager.isWifiEnabled());
+        }
         runWithScanning(() -> {
-            boolean wifiEnabled = sWifiManager.isWifiEnabled();
-            if (wifiEnabled) {
-                // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
-                // no STA+AP concurrency.
-                ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        sWifiManager.setWifiEnabled(false));
-                PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !sWifiManager.isWifiEnabled());
-                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> sWifiManager.isWifiEnabled());
-            }
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
 
             // add sleep to avoid calling stopLocalOnlyHotspot before TetherController
@@ -1998,23 +1998,21 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testStartLocalOnlyHotspotSingleRequestByApps() throws Exception {
         // check that softap mode is supported by the device
         assumeTrue(sWifiManager.isPortableHotspotSupported());
-
+        boolean wifiEnabled = sWifiManager.isWifiEnabled();
+        if (wifiEnabled) {
+            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
+            // no STA+AP concurrency.
+            ShellIdentityUtils.invokeWithShellPermissions(() ->
+                    sWifiManager.setWifiEnabled(false));
+            PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> !sWifiManager.isWifiEnabled());
+            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                    () -> sWifiManager.isWifiEnabled());
+        }
 
         runWithScanning(() -> {
             boolean caughtException = false;
-            boolean wifiEnabled = sWifiManager.isWifiEnabled();
-            if (wifiEnabled) {
-                // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's
-                // no STA+AP concurrency.
-                ShellIdentityUtils.invokeWithShellPermissions(() ->
-                        sWifiManager.setWifiEnabled(false));
-                PollingCheck.check("Wifi turn off failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> !sWifiManager.isWifiEnabled());
-                SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-                PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                        () -> sWifiManager.isWifiEnabled());
-            }
-
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
 
             // now make a second request - this should fail.
@@ -2357,7 +2355,9 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         allowedUIDs.add(Process.SHELL_UID);
         allowedUIDs.add(Process.PHONE_UID);
         allowedUIDs.add(Process.NETWORK_STACK_UID);
-        allowedUIDs.add(Process.NFC_UID);
+        if (!SdkLevel.isAtLeastV()) {
+            allowedUIDs.add(Process.NFC_UID);
+        }
 
         // only quick settings is allowed to bind to the BIND_QUICK_SETTINGS_TILE permission, using
         // this fact to determined allowed package name for sysui. This is a signature permission,
@@ -2820,8 +2820,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         testSoftApConfig.getMaxChannelBandwidth());
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))) {
+                    && SdkLevel.isAtLeastV()) {
                 assertTrue(Objects.equals(
                         currentConfig.getVendorData(), testSoftApConfig.getVendorData()));
             }
@@ -3134,49 +3133,16 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
             return;
         }
         runWithScanning(() -> {
-            UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation()
-                    .getUiAutomation();
             TestExecutor executor = new TestExecutor();
             TestSoftApCallback callback = new TestSoftApCallback(mLock);
             try {
-                uiAutomation.adoptShellPermissionIdentity();
-
-                // start tethering which used to verify startTetheredHotspot
                 TetheringManager.TetheringRequest request =
                         new TetheringManager.TetheringRequest.Builder(
                                 TetheringManager.TETHERING_WIFI).build();
                 sWifiManager.startTetheredHotspot(request, executor, callback);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_ENABLED;
-                        });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-
-                // stop tethering which used to verify stopSoftAp
-                sTetheringManager.stopTethering(ConnectivityManager.TETHERING_WIFI);
-                PollingCheck.check("startTetheredHotspot turn on failed!", TEST_WAIT_DURATION_MS,
-                        () -> {
-                            executor.runAll();
-                            return callback.getOnSoftApStateChangedCalled()
-                                    && callback.getCurrentSoftApState().getState()
-                                    == WifiManager.WIFI_AP_STATE_DISABLED;
-                        });
-                if (ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM)) {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest())
-                            .isEqualTo(request);
-                } else {
-                    assertThat(callback.getCurrentSoftApState().getTetheringRequest()).isNull();
-                }
-            } finally {
-                uiAutomation.dropShellPermissionIdentity();
+                fail("startTetheredHotspot succeeded even without NETWORK_STACK permission!");
+            } catch (SecurityException e) {
+                // Expected to fail without NETWORK_STACK
             }
         }, false /* run with disabled */);
     }
@@ -3225,6 +3191,13 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                 softApConfigBuilder.setAllowedAcsChannels(
                         SoftApConfiguration.BAND_6GHZ, new int[] {});
                 softApConfigBuilder.setMaxChannelBandwidth(SoftApInfo.CHANNEL_WIDTH_80MHZ);
+            }
+
+            if (Flags.androidVWifiApi()
+                    && SdkLevel.isAtLeastV()) {
+                OuiKeyedData vendorDataElement =
+                        new OuiKeyedData.Builder(0x00112233, new PersistableBundle()).build();
+                softApConfigBuilder.setVendorData(Arrays.asList(vendorDataElement));
             }
 
             // Test SoftApConfiguration set and get
@@ -3382,8 +3355,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                         ScanResult.WIFI_STANDARD_UNKNOWN);
             }
             if (Flags.androidVWifiApi()
-                    && (ApiLevelUtil.codenameEquals("VanillaIceCream")
-                    || ApiLevelUtil.isAtLeast(Build.VERSION_CODES.VANILLA_ICE_CREAM))
+                    && SdkLevel.isAtLeastV()
                     && callback.getOnSoftapInfoChangedCalledCount() > 1) {
                 assertNotNull(callback.getCurrentSoftApInfo().getVendorData());
             }
@@ -3818,16 +3790,15 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     public void testIsStaApConcurrencySupported() throws Exception {
         // check that softap mode is supported by the device
         assumeTrue(sWifiManager.isPortableHotspotSupported());
+        // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
+        // STA+AP concurrency.
+        ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
+        PollingCheck.check("Wifi turn off failed!", 2_000, () -> !sWifiManager.isWifiEnabled());
+        SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
+        PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
+                () -> sWifiManager.isWifiEnabled());
 
         runWithScanning(() -> {
-            // Re-enabled Wi-Fi as shell for HalDeviceManager legacy LOHS behavior when there's no
-            // STA+AP concurrency.
-            ShellIdentityUtils.invokeWithShellPermissions(() -> sWifiManager.setWifiEnabled(false));
-            PollingCheck.check("Wifi turn off failed!", 2_000, () -> !sWifiManager.isWifiEnabled());
-            SystemUtil.runShellCommand("cmd wifi set-wifi-enabled enabled");
-            PollingCheck.check("Wifi turn on failed!", WIFI_OFF_ON_TIMEOUT_MILLIS,
-                    () -> sWifiManager.isWifiEnabled());
-
             boolean isStaApConcurrencySupported = sWifiManager.isStaApConcurrencySupported();
             // start local only hotspot.
             TestLocalOnlyHotspotCallback callback = startLocalOnlyHotspot();
@@ -5723,6 +5694,40 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     }
 
     /**
+     * Tests {@link WifiAvailableChannel#getChannelWidth()}.
+     */
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.S)
+    @RequiresFlagsEnabled(Flags.FLAG_GET_CHANNEL_WIDTH_API)
+    @ApiTest(apis = {"android.net.wifi.WifiAvailableChannel#getChannelWidth"})
+    @Test
+    public void testGetAllowedChannelsWidth() throws Exception {
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            final List<Integer> valid24GhzFreqs = Arrays.asList(2412, 2417, 2422, 2427, 2432, 2437,
+                    2442, 2447, 2452, 2457, 2462, 2467, 2472, 2484);
+            uiAutomation.adoptShellPermissionIdentity();
+            List<WifiAvailableChannel> allowedChannels = sWifiManager.getAllowedChannels(
+                    WIFI_BAND_24_GHZ, OP_MODE_STA);
+            assertNotNull(allowedChannels);
+            for (WifiAvailableChannel ch : allowedChannels) {
+                //Must contain a valid 2.4GHz frequency
+                assertTrue(valid24GhzFreqs.contains(ch.getFrequencyMhz()));
+                if (ch.getFrequencyMhz() <= 2462) {
+                    //Channels 1-11 are supported for STA in all countries
+                    assertEquals(ch.getOperationalModes() & OP_MODE_STA, OP_MODE_STA);
+                    assertEquals(ch.getChannelWidth(), ScanResult.CHANNEL_WIDTH_20MHZ);
+                }
+            }
+        } catch (UnsupportedOperationException ex) {
+            //expected if the device does not support this API
+        } catch (Exception ex) {
+            fail("getAllowedChannels unexpected Exception " + ex);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
      * Tests {@link WifiManager#getUsableChannels(int, int))} does not crash
      * and returns at least one 2G channel in STA and WFD GO modes (if WFD is supported)
      */
@@ -7170,7 +7175,7 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     @ApiTest(apis = {"android.net.wifi.WifiManager#getTwtCapabilities",
             "android.net.wifi.WifiManager#twtSessionSetup",
             "android.net.wifi.twt.TwtSession#getStats",
-            "android.net.wifi.twt.TwtSession#close",
+            "android.net.wifi.twt.TwtSession#teardown",
             "android.net.wifi.twt.TwtSession#getWakeDurationMicros",
             "android.net.wifi.twt.TwtSession#getWakeIntervalMicros",
             "android.net.wifi.twt.TwtSession#getMloLinkId",
@@ -7304,8 +7309,8 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
                             >= 0);
             assertTrue(twtStats.get().getInt(TwtSession.TWT_STATS_KEY_INT_EOSP_COUNT) >= 0);
 
-            // Verify TWT session close
-            testTwtSessionCallback.mTwtSession.get().close();
+            // Verify TWT session teardown
+            testTwtSessionCallback.mTwtSession.get().teardown();
             synchronized (mLock) {
                 now = System.currentTimeMillis();
                 deadline = now + TEST_WAIT_DURATION_MS;
@@ -7324,90 +7329,6 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM, codeName =
-            "VanillaIceCream")
-    @Test
-    public void testTwtSessionAutoCloseable() throws Exception {
-        AtomicReference<Bundle> twtCapabilities = new AtomicReference<>();
-        long now, deadline;
-        Consumer<Bundle> twtCapabilityCallback = capabilities -> {
-            synchronized (mLock) {
-                twtCapabilities.set(capabilities);
-                mLock.notify();
-            }
-        };
-        TestTwtSessionCallback testTwtSessionCallback = new TestTwtSessionCallback();
-        TestActionListener actionListener = new TestActionListener(mLock);
-        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-
-        try {
-            uiAutomation.adoptShellPermissionIdentity();
-            sWifiManager.getTwtCapabilities(mExecutor, twtCapabilityCallback);
-            synchronized (mLock) {
-                now = System.currentTimeMillis();
-                deadline = now + TEST_WAIT_DURATION_MS;
-                while (twtCapabilities.get() == null && now < deadline) {
-                    mLock.wait(deadline - now);
-                    now = System.currentTimeMillis();
-                }
-            }
-            assertNotNull("getTwtCapabilities() timed out !", twtCapabilities.get());
-            // Assume device is a TWT requester
-            assumeTrue(twtCapabilities.get().getBoolean(
-                    WifiManager.TWT_CAPABILITIES_KEY_BOOLEAN_TWT_REQUESTER));
-
-            // Connect to an available TWT responder network
-            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
-            WifiConfiguration twtNetwork = TestHelper.findFirstAvailableSavedNetwork(sWifiManager,
-                    savedNetworks, TestHelper.AP_CAPABILITY_BIT_TWT_RESPONDER);
-            assumeTrue("Unable to locate TWT capable networks in range.\n", twtNetwork != null);
-            sWifiManager.disconnect();
-            waitForDisconnection();
-            sWifiManager.connect(twtNetwork.networkId, actionListener);
-            waitForConnection();
-
-            // Verify TWT session setup
-            sWifiManager.setupTwtSession(new TwtRequest.Builder(twtCapabilities.get().getInt(
-                            WifiManager.TWT_CAPABILITIES_KEY_INT_MIN_WAKE_DURATION_MICROS),
-                            twtCapabilities.get().getInt(
-                                    WifiManager.TWT_CAPABILITIES_KEY_INT_MAX_WAKE_DURATION_MICROS),
-                            twtCapabilities.get().getLong(
-                                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MIN_WAKE_INTERVAL_MICROS),
-                            twtCapabilities.get().getLong(
-                                    WifiManager.TWT_CAPABILITIES_KEY_LONG_MAX_WAKE_INTERVAL_MICROS)).build(),
-                    mExecutor, testTwtSessionCallback);
-            synchronized (mLock) {
-                now = System.currentTimeMillis();
-                deadline = now + TEST_WAIT_DURATION_MS;
-                while (testTwtSessionCallback.mTwtSession.get() == null && now < deadline) {
-                    mLock.wait(deadline - now);
-                    now = System.currentTimeMillis();
-                }
-            }
-            assertNotNull("setupTwtSession() timed out !",
-                    testTwtSessionCallback.mTwtSession.get());
-
-        } finally {
-            // Test Twt Session, if setup, closes automatically
-            if (testTwtSessionCallback.mTwtSession.get() != null) {
-                synchronized (mLock) {
-                    now = System.currentTimeMillis();
-                    deadline = now + TEST_WAIT_DURATION_MS;
-                    while (testTwtSessionCallback.mTwtTeardownReasonCode.get() == -1
-                            && now < deadline) {
-                        mLock.wait(deadline - now);
-                        now = System.currentTimeMillis();
-                    }
-                }
-                assertNotEquals("TwtSession auto close timed out !", -1,
-                        testTwtSessionCallback.mTwtTeardownReasonCode.get());
-                assertEquals(testTwtSessionCallback.mTwtTeardownReasonCode.get(),
-                        TwtSessionCallback.TWT_REASON_CODE_LOCALLY_REQUESTED);
-            }
-            uiAutomation.dropShellPermissionIdentity();
-        }
-    }
     /**
      * Tests {@link WifiManager#isD2dSupportedWhenInfraStaDisabled()},
      * {@link WifiManager#setD2dAllowedWhenInfraStaDisabled()} and
@@ -7484,11 +7405,53 @@ public class WifiManagerTest extends WifiJUnit4TestBase {
     }
 
     /**
+     * Tests {@link WifiManager#getBssidBlocklist(List, Executor, Consumer)}
+     */
+    @RequiresFlagsEnabled(Flags.FLAG_GET_BSSID_BLOCKLIST_API)
+    @Test
+    @ApiTest(apis = {"android.net.wifi.WifiManager#getBssidBlocklist"})
+    public void testGetBssidBlocklist() throws Exception {
+        Mutable<Boolean> isQuerySucceeded = new Mutable<Boolean>(false);
+        Mutable<Boolean> isResultNonNull = new Mutable<Boolean>(false);
+        long now, deadline;
+        UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
+        try {
+            uiAutomation.adoptShellPermissionIdentity();
+            sWifiManager.getBssidBlocklist(Collections.EMPTY_LIST, mExecutor,
+                    new Consumer<List<MacAddress>>() {
+                        @Override
+                        public void accept(List<MacAddress> value) {
+                            synchronized (mLock) {
+                                isQuerySucceeded.value = true;
+                                if (value != null) {
+                                    isResultNonNull.value = true;
+                                }
+                                mLock.notify();
+                            }
+                        }
+                    });
+            synchronized (mLock) {
+                now = System.currentTimeMillis();
+                deadline = now + TEST_WAIT_DURATION_MS;
+                while (!isQuerySucceeded.value && now < deadline) {
+                    mLock.wait(deadline - now);
+                    now = System.currentTimeMillis();
+                }
+            }
+            assertTrue("getBssidBlocklist fail", isQuerySucceeded.value);
+            assertTrue("getBssidBlocklist returned null list", isResultNonNull.value);
+        } finally {
+            uiAutomation.dropShellPermissionIdentity();
+        }
+    }
+
+    /**
      * Tests {@link WifiManager#retrieveWifiBackupData()},
      * {@link WifiManager#restoreWifiBackupData()}.
      */
     @RequiresFlagsEnabled(Flags.FLAG_ANDROID_V_WIFI_API)
-    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     @Test
     public void testWifiBackupRestore() throws Exception {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();

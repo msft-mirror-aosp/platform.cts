@@ -56,6 +56,7 @@ android_library {
 
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
         "src/**/I*.aidl",
     ],
 
@@ -64,6 +65,7 @@ android_library {
     },
 
     static_libs: [
+        "android.media.audio-aconfig-java",
         "android-ex-camera2",
         "compatibility-common-util-devicesidelib",
         "cts-sensors-tests",
@@ -73,7 +75,10 @@ android_library {
         "androidplot",
         "ctsverifier-opencv",
         "core-tests-support",
+        "androidx.appcompat_appcompat",
+        "androidx.fragment_fragment",
         "androidx.legacy_legacy-support-v4",
+        "androidx.preference_preference",
         "mockito-target-minus-junit4",
         "mockwebserver",
         "compatibility-device-util-axt",
@@ -88,6 +93,7 @@ android_library {
         "DpmWrapper",
         "MediaPerformanceClassCommon",
         "mediapc-requirements",
+        "com_android_wm_shell_flags_lib",
     ],
 
     libs: [

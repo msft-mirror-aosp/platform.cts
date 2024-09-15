@@ -18,9 +18,14 @@ package android.virtualdevice.cts.common;
 
 import static android.Manifest.permission.ADD_TRUSTED_DISPLAY;
 import static android.Manifest.permission.CREATE_VIRTUAL_DEVICE;
+import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
+import static android.companion.virtual.VirtualDeviceParams.POLICY_TYPE_CAMERA;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
 import static android.content.pm.PackageManager.FEATURE_FREEFORM_WINDOW_MANAGEMENT;
+import static android.graphics.ImageFormat.YUV_420_888;
+import static android.hardware.camera2.CameraMetadata.LENS_FACING_BACK;
 
+import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -37,6 +42,9 @@ import android.companion.AssociationInfo;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
+import android.companion.virtual.camera.VirtualCamera;
+import android.companion.virtual.camera.VirtualCameraCallback;
+import android.companion.virtual.camera.VirtualCameraConfig;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -54,6 +62,7 @@ import android.view.Surface;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.os.BuildCompat;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.FeatureUtil;
@@ -63,6 +72,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,11 +113,11 @@ public class VirtualDeviceRule implements TestRule {
     public static final ComponentName BLOCKED_ACTIVITY_COMPONENT =
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
-    private final RuleChain mRuleChain;
+    private RuleChain mRuleChain;
     private final FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
-    private final Context mContext = getInstrumentation().getContext();
+    private final Context mContext = getInstrumentation().getTargetContext();
     private final VirtualDeviceManager mVirtualDeviceManager =
             mContext.getSystemService(VirtualDeviceManager.class);
     private final WindowManagerStateHelper mWmState = new WindowManagerStateHelper();
@@ -132,10 +143,28 @@ public class VirtualDeviceRule implements TestRule {
                 .around(mTrackerRule);
     }
 
+    /** Creates a rule with virtual camera support check before test execution. */
+    public VirtualDeviceRule withVirtualCameraSupportCheck() {
+        mRuleChain = mRuleChain.around(new VirtualCameraSupportRule(this));
+        return this;
+    }
+
     @Override
     public Statement apply(final Statement base, final Description description) {
         assumeNotNull(mVirtualDeviceManager);
         return mRuleChain.apply(base, description);
+    }
+
+    /**
+     * Returns the VirtualDevice object for the given deviceId
+     */
+    public android.companion.virtual.VirtualDevice getVirtualDevice(int deviceId) {
+        if (BuildCompat.isAtLeastV()) {
+            return mVirtualDeviceManager.getVirtualDevice(deviceId);
+        } else {
+            return mVirtualDeviceManager.getVirtualDevices().stream()
+                    .filter(device -> device.getDeviceId() == deviceId).findFirst().orElse(null);
+        }
     }
 
     /**
@@ -246,6 +275,8 @@ public class VirtualDeviceRule implements TestRule {
     @NonNull
     public static VirtualDisplayConfig.Builder createDefaultVirtualDisplayConfigBuilder(
             int width, int height) {
+        // VirtualDevice#close will cause this to be recycled.
+        //noinspection Recycle
         SurfaceTexture texture = new SurfaceTexture(1);
         texture.setDefaultBufferSize(width, height);
         return new VirtualDisplayConfig.Builder(
@@ -431,7 +462,7 @@ public class VirtualDeviceRule implements TestRule {
      * Internal rule that tracks all created virtual devices and displays and ensures they are
      * properly closed and released after the test.
      */
-    private final class VirtualDeviceTrackerRule extends ExternalResource {
+    private static final class VirtualDeviceTrackerRule extends ExternalResource {
 
         final ArrayList<VirtualDevice> mVirtualDevices = new ArrayList<>();
         final ArrayList<VirtualDisplay> mVirtualDisplays = new ArrayList<>();
@@ -447,6 +478,56 @@ public class VirtualDeviceRule implements TestRule {
             }
             mVirtualDisplays.clear();
             super.after();
+        }
+    }
+
+    /**
+     * Internal rule that checks whether virtual camera is supported by the device, before executing
+     * any test.
+     */
+    private static final class VirtualCameraSupportRule extends ExternalResource {
+        private static final int VIRTUAL_CAMERA_SUPPORT_UNKNOWN = 0;
+        private static final int VIRTUAL_CAMERA_SUPPORT_AVAILABLE = 1;
+        private static final int VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE = 2;
+
+        @Mock
+        private VirtualCameraCallback mVirtualCameraCallback;
+
+        private final VirtualDeviceRule mVirtualDeviceRule;
+        private int mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_UNKNOWN;
+
+        private VirtualCameraSupportRule(VirtualDeviceRule virtualDeviceRule) {
+            mVirtualDeviceRule = virtualDeviceRule;
+        }
+
+        @Override
+        protected void before() {
+            MockitoAnnotations.initMocks(this);
+            assumeTrue("Virtual camera not available on this device",
+                    getVirtualCameraSupport() == VIRTUAL_CAMERA_SUPPORT_AVAILABLE);
+        }
+
+        private int getVirtualCameraSupport() {
+            if (mVirtualCameraSupport != VIRTUAL_CAMERA_SUPPORT_UNKNOWN) {
+                return mVirtualCameraSupport;
+            }
+
+            try (VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice(
+                    new VirtualDeviceParams.Builder().setDevicePolicy(POLICY_TYPE_CAMERA,
+                            DEVICE_POLICY_CUSTOM).build())) {
+                VirtualCameraConfig config = new VirtualCameraConfig.Builder("dummycam")
+                        .setVirtualCameraCallback(getApplicationContext().getMainExecutor(),
+                                mVirtualCameraCallback)
+                        .addStreamConfig(640, 480, YUV_420_888, 30)
+                        .setLensFacing(LENS_FACING_BACK)
+                        .build();
+                try (VirtualCamera ignored = virtualDevice.createVirtualCamera(config)) {
+                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_AVAILABLE;
+                } catch (UnsupportedOperationException e) {
+                    mVirtualCameraSupport = VIRTUAL_CAMERA_SUPPORT_NOT_AVAILABLE;
+                }
+            }
+            return mVirtualCameraSupport;
         }
     }
 }

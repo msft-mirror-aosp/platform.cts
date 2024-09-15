@@ -16,6 +16,7 @@
 
 package android.location.cts.fine;
 
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -90,6 +91,14 @@ public class GeocodeProviderBaseTest {
         verify(mMock, never()).onError(anyString());
     }
 
+
+
+    @ApiTest(apis = "android.location.provider.GeocodeProviderBase#getBinder")
+    @Test
+    public void testGetBinder() {
+        assertNotNull(mGeocodeProvider.getBinder());
+    }
+
     private static class MyProvider extends GeocodeProviderBase {
 
         MyProvider(Context context, String tag) {
@@ -102,13 +111,13 @@ public class GeocodeProviderBaseTest {
 
         @Override
         public void onReverseGeocode(
-                ReverseGeocodeRequest request, OutcomeReceiver<List<Address>, Exception> callback) {
+                ReverseGeocodeRequest request, OutcomeReceiver<List<Address>, Throwable> callback) {
             callback.onResult(Collections.emptyList());
         }
 
         @Override
         public void onForwardGeocode(
-                ForwardGeocodeRequest request, OutcomeReceiver<List<Address>, Exception> callback) {
+                ForwardGeocodeRequest request, OutcomeReceiver<List<Address>, Throwable> callback) {
             callback.onResult(Collections.emptyList());
         }
     }

@@ -18,5 +18,15 @@
         }
       ]
     }
+  ],
+  "wifi-mainline-presubmit": [
+    {
+      "name": "CtsWifiTestCases",
+      "options": [
+        {
+          "exclude-annotation": "com.android.compatibility.common.util.NonMainlineTest"
+        }
+      ]
+    }
   ]
 }

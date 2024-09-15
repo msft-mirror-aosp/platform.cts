@@ -18,11 +18,16 @@ package android.os.cts;
 
 import java.util.ArrayList;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.os.CountDownTimer;
+import android.platform.test.annotations.AppModeSdkSandbox;
 import android.test.InstrumentationTestCase;
 
+import com.android.compatibility.common.util.SystemUtil;
+
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class CountDownTimerTest extends InstrumentationTestCase {
     private Context mContext;
     private CountDownTimerTestStub mActivity;
@@ -35,7 +40,9 @@ public class CountDownTimerTest extends InstrumentationTestCase {
         mContext = getInstrumentation().getTargetContext();
         Intent intent = new Intent(mContext, CountDownTimerTestStub.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        mActivity = (CountDownTimerTestStub) getInstrumentation().startActivitySync(intent);
+        mActivity = SystemUtil.runWithShellPermissionIdentity(
+                () -> (CountDownTimerTestStub) getInstrumentation().startActivitySync(intent),
+                Manifest.permission.START_ACTIVITIES_FROM_SDK_SANDBOX);
         mStartTime = System.currentTimeMillis();
         mActivity.countDownTimer.start();
     }

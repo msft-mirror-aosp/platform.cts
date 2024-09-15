@@ -14,6 +14,7 @@
 
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_permissions",
 }
 
 android_test {
@@ -27,10 +28,12 @@ android_test {
     libs: ["android.test.base.stubs.test"],
     static_libs: [
         "android.view.flags-aconfig-java",
+        "android.permission.flags-aconfig-java",
         "androidx.test.core",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.uiautomator_uiautomator",
+        "CtsAppTestStubsShared",
         "CtsSurfaceValidatorLib",
         "compatibility-device-util-axt",
         "ctstestrunner-axt",
@@ -40,6 +43,7 @@ android_test {
     ],
     srcs: [
         "src/**/*.java",
+        "src/**/*.kt",
     ],
     sdk_version: "test_current",
     target_sdk_version: "current",

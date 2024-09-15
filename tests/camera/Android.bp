@@ -68,6 +68,7 @@ android_test {
         "androidx.heifwriter_heifwriter",
         "androidx.test.rules",
         "MediaPerformanceClassCommon",
+        "mediapc-requirements",
         "cts-wm-util",
         "cts-install-lib",
         "androidx.camera_camera-camera2",
@@ -100,4 +101,18 @@ android_test {
         "android.test.base.stubs",
     ],
     per_testcase_directory: true,
+}
+
+filegroup {
+    name: "CameraCtsBitmapUtils",
+    srcs: [
+        "src/android/hardware/camera2/cts/rs/BitmapUtils.java",
+    ],
+}
+
+test_module_config {
+    name: "CtsCameraTestCases_cts_fastbasicstest",
+    base: "CtsCameraTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.hardware.camera2.cts.FastBasicsTest"],
 }

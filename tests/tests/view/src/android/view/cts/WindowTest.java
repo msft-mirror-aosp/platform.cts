@@ -18,10 +18,15 @@ package android.view.cts;
 
 import static android.view.flags.Flags.FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY;
 
+import static com.android.graphics.hwui.flags.Flags.FLAG_LIMITED_HDR;
+
+import static junit.framework.Assert.assertEquals;
+
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.Manifest;
+import android.content.pm.ActivityInfo;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
@@ -76,4 +81,24 @@ public class WindowTest {
         });
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_TOOLKIT_SET_FRAME_RATE_READ_ONLY)
+    public void testFrameRatePowerSavingsBalanced() throws Throwable {
+        mActivityRule.runOnUiThread(() -> {
+            assertTrue(mWindow.isFrameRatePowerSavingsBalanced());
+            mWindow.setFrameRatePowerSavingsBalanced(false);
+            assertFalse(mWindow.isFrameRatePowerSavingsBalanced());
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_LIMITED_HDR)
+    public void testSetGetDesiredHdrHeadroom() throws Throwable {
+        mActivityRule.runOnUiThread(() -> {
+            assertEquals(mWindow.getDesiredHdrHeadroom(), 0.0f);
+            mWindow.setDesiredHdrHeadroom(2.5f);
+            mWindow.setColorMode(ActivityInfo.COLOR_MODE_HDR);
+            assertEquals(mWindow.getDesiredHdrHeadroom(), 2.5f);
+        });
+    }
 }

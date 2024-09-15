@@ -28,6 +28,7 @@ android_test {
     static_libs: [
         "ctstestrunner-axt",
         "androidx.test.rules",
+        "compatibility-device-util-axt",
     ],
     srcs: [
         "src/**/*.java",

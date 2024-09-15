@@ -16,6 +16,8 @@
 
 package com.android.bedstead.harrier.annotations.meta;
 
+import com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope;
+
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -50,4 +52,14 @@ public @interface ParameterizedAnnotation {
      * annotation.
      */
     Class<? extends Annotation>[] shadows() default {};
+
+    /**
+     * Annotations of different scope is applied to the test method together. Whereas annotations of
+     * same scope will not be applied together to the same test method.
+     *
+     * <p>For example, if a test is annotated A1, A2, A3, A4 - and A1 and A2 are of scope S1, and A3
+     * and A4 are of scope S2 then it will result in the following tests: MyTest[A1][A3]
+     * MyTest[A1][A4] MyTest[A2][A3] MyTest[A2][A4].
+     */
+    ParameterizedAnnotationScope scope();
 }

@@ -34,6 +34,8 @@
         <option name="teardown-command" value="rm -rf /data/local/tmp/cts"/>
         <option name="run-command" value="cmd thermalservice override-status 0" />
         <option name="teardown-command" value="cmd thermalservice reset" />
+        <option name="run-command" value="cmd sdk_sandbox append-test-allowlist content-provider ctstest remotectstest android.content.cts.testpagingprovider android.content.cts.dummyprovider" />
+        <option name="teardown-command" value="cmd sdk_sandbox clear-test-allowlists" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.DeviceSetup">
@@ -61,7 +63,6 @@
         <option name="test-file-name" value="CtsSyncAccountAccessStubs.apk" />
         <option name="test-file-name" value="CtsBinderPermissionTestService.apk" />
         <option name="test-file-name" value="CtsContentMockRestrictedApp.apk" />
-        <option name="test-file-name" value="CtsIntentResolutionTestApp.apk" />
 
     </target_preparer>
 

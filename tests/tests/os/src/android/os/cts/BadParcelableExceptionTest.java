@@ -17,7 +17,9 @@ package android.os.cts;
 
 import junit.framework.TestCase;
 import android.os.BadParcelableException;
+import android.platform.test.annotations.AppModeSdkSandbox;
 
+@AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class BadParcelableExceptionTest extends TestCase {
     public void testBadParcelableException(){
         BadParcelableException ne = null;
