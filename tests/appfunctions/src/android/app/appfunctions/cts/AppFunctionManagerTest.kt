@@ -17,6 +17,9 @@
 package android.app.appfunctions.cts
 
 import android.app.appfunctions.AppFunctionManager
+import android.app.appfunctions.AppFunctionRuntimeMetadata
+import android.app.appfunctions.AppFunctionStaticMetadataHelper
+import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.flags.Flags
@@ -24,6 +27,11 @@ import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceive
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
 import android.app.appsearch.GenericDocument
+import android.app.appsearch.GlobalSearchSessionShim
+import android.app.appsearch.SearchResult
+import android.app.appsearch.SearchResultsShim
+import android.app.appsearch.SearchSpec
+import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
@@ -37,9 +45,13 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
@@ -61,17 +73,24 @@ class AppFunctionManagerTest {
             context,
             "appfunctions",
             "execute_app_function_timeout_millis",
-            "1000"
+            "1000",
         )
 
     private lateinit var mManager: AppFunctionManager
 
     @Before
-    fun setup() {
+    fun setup() = runTest {
         TestAppFunctionServiceLifecycleReceiver.reset()
         val manager = context.getSystemService(AppFunctionManager::class.java)
         assumeNotNull(manager)
         mManager = manager
+        installPackage(TEST_APP_PATH)
+        assertMetadataIndexed(setOf(TEST_HELPER_PKG, CTS_PACKAGE))
+    }
+
+    @After
+    fun tearDown() {
+        uninstallPackage(TEST_HELPER_PKG)
     }
 
     @Test
@@ -83,7 +102,7 @@ class AppFunctionManagerTest {
     @Test
     @Throws(Exception::class)
     fun executeAppFunction_failed_noSuchMethod() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noSuchMethod").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "noSuchMethod").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -105,7 +124,7 @@ class AppFunctionManagerTest {
                 .setPropertyLong("b", 2)
                 .build()
         val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add_invokeCallbackTwice")
+            ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "add_invokeCallbackTwice")
                 .setParameters(parameters)
                 .build()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
@@ -141,9 +160,7 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
-                .setParameters(parameters)
-                .build()
+            ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -162,7 +179,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_otherNonExistingTargetPackage() {
-        val request = ExecuteAppFunctionRequest.Builder("other.package", "someMethod").build()
+        val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -178,8 +195,8 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_otherExistingTargetPackage() {
-        val request = ExecuteAppFunctionRequest.Builder(PKG, "someMethod").build()
+    fun executeAppFunction_otherExistingTargetPackage() = runTest {
+        val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "add").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -198,7 +215,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_throwsException() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "throwException").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "throwException").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -213,7 +230,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_onRemoteProcessKilled() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "kill").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "kill").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -230,7 +247,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_timedOut() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "notInvokeCallback").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "notInvokeCallback").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -250,7 +267,7 @@ class AppFunctionManagerTest {
                 .setPropertyLong("b", 2)
                 .build()
         val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "addAsync")
+            ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "addAsync")
                 .setParameters(parameters)
                 .build()
 
@@ -288,7 +305,7 @@ class AppFunctionManagerTest {
     @Postsubmit(reason = "new test")
     @Throws(Exception::class)
     fun executeAppFunction_runInManagedProfile_fail() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -302,7 +319,7 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -315,7 +332,7 @@ class AppFunctionManagerTest {
     @EnsureHasDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_deviceOwner_fail() {
-        val request = ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "noOp").build()
+        val request = ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "noOp").build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -338,9 +355,7 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest.Builder(TARGET_PACKAGE, "add")
-                .setParameters(parameters)
-                .build()
+            ExecuteAppFunctionRequest.Builder(CTS_PACKAGE, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -359,10 +374,8 @@ class AppFunctionManagerTest {
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(
-            request,
-            context.mainExecutor,
-        ) { e: ExecuteAppFunctionResponse ->
+        mManager.executeAppFunction(request, context.mainExecutor) { e: ExecuteAppFunctionResponse
+            ->
             blockingQueue.add(e)
         }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
@@ -380,12 +393,114 @@ class AppFunctionManagerTest {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
     }
 
+    private suspend fun assertMetadataIndexed(installedPackages: Set<String>) {
+        retryAssert {
+            val staticMetadataResult = searchStaticMetadata()
+            assertThat(staticMetadataResult).isNotEmpty()
+            val packages: Set<String?> =
+                (staticMetadataResult.map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }).toSet()
+            assertThat(packages).containsAtLeastElementsIn(installedPackages)
+        }
+    }
+
+    private fun installPackage(path: String) {
+        assertThat(
+                SystemUtil.runShellCommand(
+                    java.lang.String.format(
+                        "pm install -r -i %s -t -g %s",
+                        context.packageName,
+                        path,
+                    )
+                )
+            )
+            .isEqualTo("Success\n")
+    }
+
+    private fun uninstallPackage(packageName: String) {
+        SystemUtil.runShellCommand("pm uninstall $packageName")
+    }
+
+    private fun searchRuntimeMetadata(): List<GenericDocument> {
+        val globalSearchSession: GlobalSearchSessionShim =
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+
+        val searchResults: SearchResultsShim =
+            globalSearchSession.search(
+                "",
+                SearchSpec.Builder()
+                    .addFilterNamespaces(AppFunctionRuntimeMetadata.APP_FUNCTION_RUNTIME_NAMESPACE)
+                    .addFilterPackageNames(APP_FUNCTION_INDEXER_PACKAGE)
+                    .addFilterSchemas(AppFunctionRuntimeMetadata.RUNTIME_SCHEMA_TYPE)
+                    .setVerbatimSearchEnabled(true)
+                    .build(),
+            )
+        return collectAllSearchResults(searchResults)
+    }
+
+    private fun searchStaticMetadata(): List<GenericDocument> {
+        val globalSearchSession: GlobalSearchSessionShim =
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+
+        val searchResults: SearchResultsShim =
+            globalSearchSession.search(
+                "",
+                SearchSpec.Builder()
+                    .addFilterNamespaces(APP_FUNCTION_STATIC_NAMESPACE)
+                    .addFilterPackageNames(APP_FUNCTION_INDEXER_PACKAGE)
+                    .addFilterSchemas(AppFunctionStaticMetadataHelper.STATIC_SCHEMA_TYPE)
+                    .setVerbatimSearchEnabled(true)
+                    .build(),
+            )
+        return collectAllSearchResults(searchResults)
+    }
+
+    private fun collectAllSearchResults(searchResults: SearchResultsShim): List<GenericDocument> {
+        val documents = mutableListOf<GenericDocument>()
+        var results: List<SearchResult>
+        do {
+            results = searchResults.getNextPageAsync().get()
+            for (result in results) {
+                documents.add(result.genericDocument)
+            }
+        } while (results.isNotEmpty())
+        return documents
+    }
+
+    /** Runnable that throws. */
+    fun interface ThrowRunnable {
+        @Throws(Throwable::class) suspend fun run()
+    }
+
     companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
-        const val PKG: String = "android.app.appfunctions.cts.helper"
-        const val TARGET_PACKAGE: String = "android.app.appfunctions.cts"
+        const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
+        const val CTS_PACKAGE: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
         const val LONG_TIMEOUT_SECOND: Long = 5
+        private const val TEST_APP_ROOT_FOLDER = "/data/local/tmp/cts/appfunctions/"
+        private const val TEST_APP_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelper.apk"
+
+        private const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
+        private const val RETRY_MAX_INTERVALS: Long = 10
+        private const val PROPERTY_PACKAGE_NAME = "packageName"
+        private const val APP_FUNCTION_INDEXER_PACKAGE = "android"
+
+        /** Retries an assertion with a delay between attempts. */
+        @Throws(Throwable::class)
+        suspend fun retryAssert(runnable: ThrowRunnable) {
+            var lastError: Throwable? = null
+
+            for (attempt in 0 until RETRY_MAX_INTERVALS) {
+                try {
+                    runnable.run()
+                    return
+                } catch (e: Throwable) {
+                    lastError = e
+                    delay(RETRY_CHECK_INTERVAL_MILLIS)
+                }
+            }
+            throw lastError!!
+        }
     }
 }

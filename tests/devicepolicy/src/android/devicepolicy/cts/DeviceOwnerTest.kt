@@ -347,8 +347,14 @@ class DeviceOwnerTest {
         }
     }
 
+
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#ACTION_DEVICE_OWNER_CHANGED"])
     @EnsureHasNoDpc
+    //Not allowed to set the device owner as long as there are already some accounts on the device. (b/347418954)
+    @EnsureHasNoAccounts(
+        onUser = UserType.ANY,
+        failureMode = FailureMode.SKIP
+    )
     @Postsubmit(reason = "new test")
     @Test
     fun setDeviceOwner_receivesOwnerChangedBroadcast() {
