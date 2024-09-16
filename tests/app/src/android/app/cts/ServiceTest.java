@@ -1807,6 +1807,16 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    private void doBindAndWaitForService(Context context, IsolatedConnectionInfo[] connections,
+            int group, int strong) {
+        for (IsolatedConnectionInfo ci : connections) {
+            if (ci.match(group, strong)) {
+                ci.bind(context);
+                ci.mConnection.waitForService(DELAY);
+            }
+        }
+    }
+
     private void doWaitForService(IsolatedConnectionInfo[] connections, int group,
             int strong) {
         for (IsolatedConnectionInfo ci : connections) {
@@ -2055,32 +2065,20 @@ public class ServiceTest extends ActivityTestsBase {
         boolean passed = false;
 
         try {
-            // Strong connections should be in order with respect to each other.
-            LruOrderItem[] expectedOrderOfGroup0StrongConnections = new LruOrderItem[]{
+            // Start the group 0 processes and wait for them to come up.
+            doBindAndWaitForService(a, connections, 0, BINDING_ANY);
+
+            verifyLruOrder(new LruOrderItem[]{
                     new LruOrderItem(Process.myUid(), 0),
-                    new LruOrderItem(connections[CONN_0_0_S_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_S_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
-            };
-            // Weak connections should be in order with respect to each other.
-            LruOrderItem[] expectedOrderOfGroup0WeakConnections = new LruOrderItem[]{
-                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
                     new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_2], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_1], LruOrderItem.FLAG_SKIP_UNKNOWN),
-                    new LruOrderItem(connections[CONN_0_0_W_0], LruOrderItem.FLAG_SKIP_UNKNOWN),
-            };
-
-            // Start the group 0 processes.
-            doBind(a, connections, 0, BINDING_ANY);
-
-            // Wait for them to come up.
-            doWaitForService(connections, 0, BINDING_ANY);
-
-            // Verify the order of strong and weak connections.
-            verifyLruOrder(expectedOrderOfGroup0StrongConnections);
-            verifyLruOrder(expectedOrderOfGroup0WeakConnections);
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
 
             // Stop the group 0 processes.
             doUnbind(a, connections, 0, BINDING_ANY);
