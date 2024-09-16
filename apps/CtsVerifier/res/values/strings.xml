@@ -2450,18 +2450,18 @@
     <string name="notification_style_test_info">This test checks that Notification Styles are rendered as expected.</string>
     <string name="ns_custom_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, collapse the notification (if it\'s expanded) and verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (A) is clearly visible outside the blue region.
+        \n\u2022 The small icon (A) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="ns_custom_big_content_instructions">A notification with custom (app-provided) content was posted. Open the notification shade, expand the notification (if it\'s collapsed), and verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (B) is clearly visible outside the blue region.
+        \n\u2022 The small icon (B) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 The App Name (\"CTS Verifier\") is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="ns_custom_heads_up_content_instructions">A notification with custom (app-provided) content was shown in heads-up. While in this state, verify that:
         \n\u2022 There is appropriate padding between the blue section and all other visual elements.
-        \n\u2022 The small icon (C) is clearly visible outside the blue region.
+        \n\u2022 The small icon (C) or the app\'s icon is clearly visible outside the blue region.
         \n\u2022 If an expand/collapse affordance is present, it is clearly visible outside the blue region.
         \nIt should look approximately like the image below (when factoring for theme, dynamic color, etc). </string>
     <string name="notification_custom_layout_text">Custom content here!</string>
@@ -2512,7 +2512,7 @@
         not group them together, press Pass.</string>
     <string name="hun_display">If this device supports heads-up notifications,
         verify that a notification just peeked on screen, displaying all of the following: small
-        icon, large icon, notification title, notification text, and two action buttons.
+        icon (or the app\'s icon), large icon, notification title, notification text, and two action buttons.
         If this device does not support heads-up notifications, press Pass.</string>
     <string name="action">Action %1$d</string>
     <string name="no_test_items">No tests available for this device.</string>
