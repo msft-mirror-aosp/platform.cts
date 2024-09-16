@@ -50,6 +50,7 @@ import android.companion.cts.common.assertEmpty
 import android.companion.cts.common.waitFor
 import android.companion.cts.uicommon.CompanionDeviceManagerUi
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.net.MacAddress
 import android.os.Parcelable
 import android.os.SystemClock.sleep
@@ -354,6 +355,12 @@ open class UiAutomationTestBase(
 
                     // Add device filter if not null.
                     deviceFilter?.let { addDeviceFilter(it) }
+
+                    if (Flags.associationDeviceIcon() && selfManaged) {
+                        setDeviceIcon(
+                            Icon.createWithResource(context, R.drawable.ic_cts_device_icon)
+                        )
+                    }
                 }
                 .build()
         callback.clearRecordedInvocations()
