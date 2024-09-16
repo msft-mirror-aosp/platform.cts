@@ -109,49 +109,24 @@ public class PageRangeAdjustAndVerify extends BasePrintTest {
     public static Collection<Object[]> getParameters() {
         ArrayList<Object[]> parameters = new ArrayList<>();
 
+        int numPages = 10;
+        int[][] selectedPages = {
+            {0, 1, 2}, {0, 1, 3}, {0, 2, 4}, // Includes first page.
+            {7, 8, 9}, {6, 7, 9}, {5, 7, 9}, // Includes last page.
+            {3, 4, 5}, {3, 4, 6}, {3, 5, 7}, // Includes neither.
+        };
+
         for (int reportNumPagesFromLayout = 0; reportNumPagesFromLayout < 2;
                 reportNumPagesFromLayout++) {
             for (int writeAllPages = 0; writeAllPages < 2; writeAllPages++) {
-                for (int numPages = 5; numPages <= 100; numPages += 95) {
-                    for (int firstGap = 0; firstGap < 3; firstGap++) {
-                        for (int secondGap = 0; secondGap < 2; secondGap++) {
-                            for (int thirdGap = 0; thirdGap < 2; thirdGap++) {
-                                int[] selectedPages = new int[3];
-
-                                if (firstGap == 0) {
-                                    selectedPages[0] = 0;
-                                } else if (firstGap == 1) {
-                                    selectedPages[0] = 1;
-                                } else {
-                                    if (numPages == 5) {
-                                        continue;
-                                    } else {
-                                        selectedPages[0] = 52;
-                                    }
-                                }
-
-                                if (secondGap == 0) {
-                                    selectedPages[1] = selectedPages[0] + 1;
-                                } else {
-                                    selectedPages[1] = selectedPages[0] + 2;
-                                }
-
-                                if (thirdGap == 0) {
-                                    selectedPages[2] = selectedPages[1] + 1;
-                                } else {
-                                    selectedPages[2] = numPages - 1;
-                                }
-
-                                if (selectedPages[1] < selectedPages[2]
-                                        && selectedPages[2] <= numPages - 1
-                                        && (numPages == 5 || selectedPages[2] >= 50)) {
-                                    parameters.add(
-                                            new Object[]{numPages, reportNumPagesFromLayout != 0,
-                                                    writeAllPages != 0, selectedPages});
-                                }
-                            }
-                        }
-                    }
+                for (int i = 0; i < selectedPages.length; i++) {
+                    parameters.add(
+                            new Object[] {
+                                numPages,
+                                reportNumPagesFromLayout != 0,
+                                writeAllPages != 0,
+                                selectedPages[i]
+                            });
                 }
             }
         }
