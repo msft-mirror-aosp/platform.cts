@@ -145,6 +145,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name="android.security.cts.CVE_2021_0472.PocActivity" />
+
         <activity android:name="android.security.cts.CVE_2021_0327.IntroActivity"
              android:exported="true">
             <intent-filter>
