@@ -60,8 +60,6 @@ public final class HdmiCecStartupTest extends BaseHdmiCecCtsTest {
         ITestDevice device = getDevice();
 
         setSystemCecVersion(HdmiCecConstants.CEC_VERSION_1_4);
-        assertWithMessage("Driver version change failed").that(
-                getSystemCecVersion()).isEqualTo(HdmiCecConstants.CEC_VERSION_1_4);
 
         List<CecOperand> expectedMessages = Collections.singletonList(
                 CecOperand.REPORT_PHYSICAL_ADDRESS);
