@@ -92,7 +92,8 @@ public class AudioDeviceUtils {
      * @param deviceType The AudioDeviceInfo type ID of the desired device.
      * @return a human-readable full device type name.
      */
-    public static String getDeviceTypeName(int deviceType) {
+    public static String getDeviceTypeName(
+        @AudioDeviceInfo.AudioDeviceType int deviceType) {
         String typeName = sDeviceTypeStrings.get(deviceType);
         return typeName != null ? "TYPE_" + typeName : "invalid type";
     }
@@ -101,7 +102,8 @@ public class AudioDeviceUtils {
      * @param deviceType The AudioDeviceInfo type ID of the desired device.
      * @return a human-readable abreviated device type name.
      */
-    public static String getShortDeviceTypeName(int deviceType) {
+    public static String getShortDeviceTypeName(
+        @AudioDeviceInfo.AudioDeviceType int deviceType) {
         String typeName = sDeviceTypeStrings.get(deviceType);
         return typeName != null ? typeName : "invalid type";
     }

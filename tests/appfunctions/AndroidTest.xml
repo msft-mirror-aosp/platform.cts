@@ -30,12 +30,20 @@
         <option name="restore-settings" value="true" />
     </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
-        <option name="cleanup-apks" value="true"/>
-        <option name="test-file-name" value="CtsAppFunctionTestCases.apk"/>
+        <option name="cleanup-apks" value="true" />
+        <option name="test-file-name" value="CtsAppFunctionTestCases.apk" />
+        <option name="test-file-name" value="CtsAppFunctionsTestHelper.apk" />
     </target_preparer>
     <target_preparer class="com.android.compatibility.common.tradefed.targetprep.FilePusher">
         <option name="cleanup" value="true" />
-        <option name="push" value="CtsAppFunctionsTestHelper.apk->/data/local/tmp/cts/appfunctions/CtsAppFunctionsTestHelper.apk"/>
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV1.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppAV1.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV2.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppAV2.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppAV3.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppAV3.apk" />
+        <option name="push"
+            value="CtsAppSearchIndexerTestAppBV1.apk->/data/local/tmp/cts/appfunctions/CtsAppSearchIndexerTestAppBV1.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest">
