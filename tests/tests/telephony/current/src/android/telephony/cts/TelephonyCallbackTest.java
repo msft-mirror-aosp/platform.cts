@@ -33,6 +33,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Looper;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -917,6 +918,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnCallForwardingIndicatorChangedByRegisterTelephonyCallback()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
@@ -1243,6 +1245,7 @@ public class TelephonyCallbackTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testOnActiveDataSubscriptionIdChangedByRegisterTelephonyCallback()
             throws Throwable {
         if (Flags.enforceTelephonyFeatureMappingForPublicApis()) {
