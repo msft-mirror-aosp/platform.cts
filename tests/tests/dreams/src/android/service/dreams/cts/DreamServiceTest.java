@@ -51,22 +51,25 @@ import android.view.Display;
 import android.view.KeyEvent;
 
 import androidx.test.InstrumentationRegistry;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@RunWith(AndroidJUnit4.class)
 public class DreamServiceTest extends ActivityManagerTestBase {
     private static final int TIMEOUT_SECONDS = 2;
+    private static final String DREAM_APP_PACKAGE_NAME = "android.app.dream.cts.app";
     private static final String DREAM_SERVICE_COMPONENT =
-            "android.app.dream.cts.app/.SeparateProcessDreamService";
-
+            DREAM_APP_PACKAGE_NAME + "/.SeparateProcessDreamService";
     private static final String CONTROLLED_DREAM_SERVICE_COMPONENT =
-            "android.app.dream.cts.app/.ControlledTestDreamService";
+            DREAM_APP_PACKAGE_NAME + "/.ControlledTestDreamService";
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -97,8 +100,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     }
 
     @After
-    public void reset() {
+    public void tearDown() {
         mDreamCoordinator.restoreDefaults();
+        stopTestPackage(DREAM_APP_PACKAGE_NAME);
     }
 
     @Test
@@ -137,9 +141,9 @@ public class DreamServiceTest extends ActivityManagerTestBase {
 
     @Test
     public void testMetadataParsing() throws PackageManager.NameNotFoundException {
-        final String dreamComponent = "android.app.dream.cts.app/.TestDreamService";
+        final String dreamComponent = DREAM_APP_PACKAGE_NAME + "/.TestDreamService";
         final String testSettingsActivity =
-                "android.app.dream.cts.app/.TestDreamSettingsActivity";
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamSettingsActivity";
         final DreamService.DreamMetadata metadata = getDreamMetadata(dreamComponent);
 
         assertThat(metadata.settingsActivity).isEqualTo(
@@ -152,7 +156,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     public void testMetadataParsing_invalidSettingsActivity()
             throws PackageManager.NameNotFoundException {
         final String dreamComponent =
-                "android.app.dream.cts.app/.TestDreamServiceWithInvalidSettings";
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamServiceWithInvalidSettings";
         final DreamService.DreamMetadata metadata = getDreamMetadata(dreamComponent);
 
         assertThat(metadata.settingsActivity).isNull();
@@ -163,7 +167,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     public void testMetadataParsing_nonexistentSettingsActivity()
             throws PackageManager.NameNotFoundException {
         final String testDreamClassName =
-                "android.app.dream.cts.app/.TestDreamServiceWithNonexistentSettings";
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamServiceWithNonexistentSettings";
         final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
 
         assertThat(metadata.settingsActivity).isNull();
@@ -174,7 +178,7 @@ public class DreamServiceTest extends ActivityManagerTestBase {
     public void testMetadataParsing_noPackage_nonexistentSettingsActivity()
             throws PackageManager.NameNotFoundException {
         final String testDreamClassName =
-                "android.app.dream.cts.app/.TestDreamServiceNoPackageNonexistentSettings";
+                DREAM_APP_PACKAGE_NAME + "/.TestDreamServiceNoPackageNonexistentSettings";
         final DreamService.DreamMetadata metadata = getDreamMetadata(testDreamClassName);
 
         assertThat(metadata.settingsActivity).isNull();
