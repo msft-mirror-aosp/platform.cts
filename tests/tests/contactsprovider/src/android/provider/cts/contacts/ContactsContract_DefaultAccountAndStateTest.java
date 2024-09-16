@@ -99,12 +99,12 @@ public class ContactsContract_DefaultAccountAndStateTest extends AndroidTestCase
     public void testDefaultContactsAccountClass_invalid() {
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_INVALID,
+                        /*state=*/ -1,
                         null));
 
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_INVALID,
+                        /*state=*/ -1,
                         ACCT_1));
     }
 }
