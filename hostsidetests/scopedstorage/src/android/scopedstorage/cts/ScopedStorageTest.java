@@ -56,6 +56,7 @@ import static android.scopedstorage.cts.lib.TestUtils.getFileUri;
 import static android.scopedstorage.cts.lib.TestUtils.getMoviesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getMusicDir;
 import static android.scopedstorage.cts.lib.TestUtils.getPicturesDir;
+import static android.scopedstorage.cts.lib.TestUtils.mediaStoreVersion;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
 import static android.scopedstorage.cts.lib.TestUtils.pollForExternalStorageState;
 import static android.scopedstorage.cts.lib.TestUtils.pollForManageExternalStorageAllowed;
@@ -1199,6 +1200,11 @@ public class ScopedStorageTest {
         // Can't read/write app specific dir
         assertThat(getExternalFilesDir().list()).isNull();
         assertThat(getExternalFilesDir().exists()).isFalse();
+    }
+
+    @Test
+    public void testMediaStoreVersion() throws Exception {
+        assertNotNull(mediaStoreVersion(APP_A_HAS_READ_MEDIA_ALL));
     }
 
     private static boolean isAtLeastS() {
