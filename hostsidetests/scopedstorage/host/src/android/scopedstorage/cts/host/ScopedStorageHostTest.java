@@ -19,6 +19,7 @@ package android.scopedstorage.cts.host;
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import android.platform.test.annotations.AppModeFull;
 
@@ -363,6 +364,9 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     @Test
     // TODO(b/364875662): Use flag filtering to enable / disable test
     public void testMediaStoreVersion() throws Exception {
+        String flag = executeShellCommand(
+                "aflags list | grep com.android.providers.media.flags.version_lockdown");
+        assumeTrue(flag.contains("enabled"));
         runDeviceTest("testMediaStoreVersion");
     }
 
