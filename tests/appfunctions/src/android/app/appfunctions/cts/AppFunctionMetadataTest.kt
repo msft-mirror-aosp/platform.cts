@@ -34,15 +34,12 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 
-@Ignore
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionMetadataTest {
     @Rule
@@ -197,7 +194,8 @@ class AppFunctionMetadataTest {
                     return
                 } catch (e: Throwable) {
                     lastError = e
-                    delay(RETRY_CHECK_INTERVAL_MILLIS)
+                    // TODO(b/357551503): Figure out the correct rule to make runtest blocking
+                    Thread.sleep(RETRY_CHECK_INTERVAL_MILLIS)
                 }
             }
             throw lastError!!

@@ -29,7 +29,6 @@ import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DebugInputRule
 import com.android.cts.input.UinputBluetoothStylus
 import com.android.cts.input.UinputStylus
-import com.android.cts.input.UinputTouchDevice
 import com.android.cts.input.VirtualDisplayActivityScenario
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -154,7 +153,7 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendBtnTouch(true)
                 uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
-                uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
                 assertNextMotionEventEquals(
@@ -209,7 +208,7 @@ class StylusButtonInputEventTest {
                 uinputStylus.sendBtnTouch(true)
                 uinputStylus.sendPressure(255)
                 uinputStylus.sendBtn(button.key, true)
-                uinputStylus.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PEN)
+                uinputStylus.sendDown(0, pointer)
                 uinputStylus.sync()
 
                 assertNextMotionEventEquals(

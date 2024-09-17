@@ -55,6 +55,7 @@ public class GameFrameRateCtsActivity extends Activity {
     private static final float FPS_TOLERANCE_FOR_FRAME_RATE_OVERRIDE = 5;
     private static final long FRAME_RATE_MIN_WAIT_TIME_NANOSECONDS = 1 * 1_000_000_000L;
     private static final long FRAME_RATE_MAX_WAIT_TIME_NANOSECONDS = 10 * 1_000_000_000L;
+    private static final int MINIMUM_VENDOR_API_LEVEL = 35; // V
 
     private DisplayManager mDisplayManager;
     private SurfaceView mSurfaceView;
@@ -319,6 +320,13 @@ public class GameFrameRateCtsActivity extends Activity {
         }
     }
 
+    private boolean isMinVendorApiLevelAboveV() throws NumberFormatException {
+        String vendorApiLevelStr = SystemProperties.get("ro.vendor.api_level");
+        int apiLevel = Integer.parseInt(vendorApiLevelStr);
+
+        return apiLevel >= MINIMUM_VENDOR_API_LEVEL;
+    }
+
     // Returns a range of frame rate that is accepted to
     // make this test more flexible for VRR devices.
     // For example, a frame rate of 80 is valid for a 120 Hz VRR display,
@@ -497,7 +505,8 @@ public class GameFrameRateCtsActivity extends Activity {
         }
         @Override
         public void test(FrameRateObserver frameRateObserver, float initialRefreshRate,
-                int[] frameRateOverrides) throws InterruptedException, IOException {
+                int[] frameRateOverrides) throws InterruptedException,
+                IOException, NumberFormatException {
             Log.i(TAG, "Starting testGameModeFrameRateOverride");
 
             final String syspropGameDefaultFrameRateOverride =
@@ -523,12 +532,16 @@ public class GameFrameRateCtsActivity extends Activity {
             // 2. "ro.surface_flinger.game_default_frame_rate_override" with a positive int.
             assertFalse(syspropDefaultFrameRateDisabled + "should not be disabled",
                     isDefaultFrameRateDisabled);
-            assertTrue(syspropGameDefaultFrameRateOverride + "should not be null",
-                    gameDefaultFrameRateOptional.isPresent());
 
-            int gameDefaultFrameRateInt = (int) gameDefaultFrameRateOptional.get();
-            assertTrue(syspropGameDefaultFrameRateOverride + "should be a positive integer",
-                    gameDefaultFrameRateInt > 0);
+            int gameDefaultFrameRateInt = 60;
+            if (isMinVendorApiLevelAboveV()) {
+                assertTrue(syspropGameDefaultFrameRateOverride + "should not be null",
+                        gameDefaultFrameRateOptional.isPresent());
+
+                gameDefaultFrameRateInt = (int) gameDefaultFrameRateOptional.get();
+                assertTrue(syspropGameDefaultFrameRateOverride + "should be a positive integer",
+                        gameDefaultFrameRateInt > 0);
+            }
 
             for (int frameRateOverride : frameRateOverrides) {
 

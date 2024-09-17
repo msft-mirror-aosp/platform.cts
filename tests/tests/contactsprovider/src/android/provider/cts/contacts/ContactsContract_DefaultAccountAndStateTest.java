@@ -26,7 +26,7 @@ import android.accounts.Account;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.provider.ContactsContract.RawContacts.DefaultAccountAndState;
+import android.provider.ContactsContract.RawContacts.DefaultAccount.DefaultAccountAndState;
 import android.provider.cts.contacts.account.StaticAccountAuthenticator;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;

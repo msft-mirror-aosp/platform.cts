@@ -115,7 +115,7 @@ class EmulateInputDevice {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
                 touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
-                touchpad.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_FINGER)
+                touchpad.sendDown(0, pointer)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)
@@ -127,7 +127,8 @@ class EmulateInputDevice {
                 val pointer = Point(100, 200)
                 touchpad.sendBtnTouch(true)
                 touchpad.sendBtn(UinputTouchDevice.BTN_TOOL_FINGER, true)
-                touchpad.sendDown(0, pointer, UinputTouchDevice.MT_TOOL_PALM)
+                touchpad.sendDown(0, pointer)
+                touchpad.sendToolType(0, UinputTouchDevice.MT_TOOL_PALM)
                 touchpad.sync()
 
                 touchpad.sendBtnTouch(false)

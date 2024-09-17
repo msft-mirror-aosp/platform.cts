@@ -132,6 +132,10 @@ public class CodecInfoTest {
      * profile. The ability to encode / decode clips of that profile is beyond the scope of the
      * test. The test only checks if at least one profile is advertised.
      */
+    // Some devices running versions older than Android V fail this test.
+    // As this requirement was not enforced earlier, limit the test to Android V and above.
+    @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
+            codeName = "VanillaIceCream")
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
     @Test
     public void testCodecProfileSupport() {
