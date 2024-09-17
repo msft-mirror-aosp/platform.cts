@@ -57,6 +57,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.Optional;
+
 /**
  * Test {@link MediaProjection} compat change dependent logic
  *
@@ -71,7 +73,7 @@ public class MediaProjectionCompatChangeTest {
 
     private static UiDevice sDevice;
     private static boolean sIsWatch;
-    private static boolean sSupportsPartialScreenshare;
+    private static Optional<Boolean> sSupportsPartialScreenshare;
     private static String sEntireScreenString;
     private static String sSingleAppString;
 
@@ -93,12 +95,12 @@ public class MediaProjectionCompatChangeTest {
         sEntireScreenString = getResourceString(context, ENTIRE_SCREEN_STRING_RES_NAME);
         sSingleAppString = getResourceString(context, SINGLE_APP_STRING_RES_NAME);
         sIsWatch = context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);
-        sSupportsPartialScreenshare = testMediaProjectionPermissionDialog(null, sSingleAppString);
     }
 
     @Before
     public void setUpTest() {
         assumeFalse(sIsWatch);
+        initializePartialScreenshareSupport();
     }
 
     @After
@@ -124,7 +126,7 @@ public class MediaProjectionCompatChangeTest {
     @Test
     @EnableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
     public void testMediaProjectionPermissionDialog_overrideUserChoiceConfig() {
-        assumeTrue(sSupportsPartialScreenshare);
+        assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
@@ -146,7 +148,7 @@ public class MediaProjectionCompatChangeTest {
     @Test
     @DisableCompatChanges({OVERRIDE_DISABLE_MEDIA_PROJECTION_SINGLE_APP_OPTION})
     public void testMediaProjectionPermissionDialog_userChoiceConfig() {
-        assumeTrue(sSupportsPartialScreenshare);
+        assumeTrue(sSupportsPartialScreenshare.get());
         boolean correctSpinnerString = testMediaProjectionPermissionDialog(
                 createConfigForUserChoice(), sSingleAppString);
         assertThat(correctSpinnerString).isTrue();
@@ -172,5 +174,12 @@ public class MediaProjectionCompatChangeTest {
         cancelButton.click();
 
         return foundOptionString;
+    }
+
+    private static void initializePartialScreenshareSupport() {
+        if (sSupportsPartialScreenshare.isEmpty()) {
+            sSupportsPartialScreenshare =
+                    Optional.of(testMediaProjectionPermissionDialog(null, sSingleAppString));
+        }
     }
 }
