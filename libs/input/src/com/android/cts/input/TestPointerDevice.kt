@@ -105,7 +105,6 @@ enum class TestPointerDevice {
             drawingTablet.sendDown(
                 id = 0,
                 physicalLocation = pointer,
-                toolType = UinputTouchDevice.MT_TOOL_PEN
             )
             drawingTablet.sync()
         }

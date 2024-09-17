@@ -90,4 +90,5 @@ class UinputTouchPad(
     display,
     createTouchPadRegisterCommand(),
     InputDevice.SOURCE_TOUCHPAD or InputDevice.SOURCE_MOUSE,
+    MT_TOOL_FINGER,
 )
