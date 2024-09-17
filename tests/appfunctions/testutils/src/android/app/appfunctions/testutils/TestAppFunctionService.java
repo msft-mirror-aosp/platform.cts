@@ -45,6 +45,8 @@ public class TestAppFunctionService extends AppFunctionService {
             @NonNull ExecuteAppFunctionRequest request,
             @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
         switch (request.getFunctionIdentifier()) {
+            case "addWithRestrictCallersWithExecuteAppFunctionsTrue":
+            case "addWithRestrictCallersWithExecuteAppFunctionsFalse":
             case "add": {
                 ExecuteAppFunctionResponse result = add(request);
                 callback.accept(result);

@@ -19,7 +19,6 @@ package android.net.wifi.nl80211.cts;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.ActivityManager;
@@ -162,10 +161,9 @@ public class WifiMigrationTest {
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.VANILLA_ICE_CREAM,
             codeName = "VanillaIceCream")
     public void testMigrateLegacyKeystoreToWifiBlobstore() {
-        try {
-            WifiMigration.migrateLegacyKeystoreToWifiBlobstore();
-        } catch (Exception e) {
-            fail();
-        }
+        // Call is expected trigger an exception, since CTS does not have the
+        // required permissions to access Legacy Keystore
+        assertEquals(WifiMigration.KEYSTORE_MIGRATION_FAILURE_ENCOUNTERED_EXCEPTION,
+                WifiMigration.migrateLegacyKeystoreToWifiBlobstore());
     }
 }

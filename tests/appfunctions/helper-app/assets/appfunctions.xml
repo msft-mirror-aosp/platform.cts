@@ -21,8 +21,7 @@
         <schema_category>utils</schema_category>
         <enabled_by_default>true</enabled_by_default>
         <display_name_string_res>10</display_name_string_res>
-        <restrict_callers_with_execute_app_functions>true
-        </restrict_callers_with_execute_app_functions>
+        <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
         <function_id>noOp</function_id>
@@ -31,7 +30,21 @@
         <schema_category>utils</schema_category>
         <enabled_by_default>false</enabled_by_default>
         <display_name_string_res>10</display_name_string_res>
-        <restrict_callers_with_execute_app_functions>true
-        </restrict_callers_with_execute_app_functions>
+        <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
+    </appfunction>
+
+    <appfunction>
+        <function_id>addWithRestrictCallersWithExecuteAppFunctionsFalse</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+        <schema_version>1</schema_version>
+        <schema_category>utils</schema_category>
+        <restrict_callers_with_execute_app_functions>false</restrict_callers_with_execute_app_functions>
+    </appfunction>
+    <appfunction>
+        <function_id>addWithRestrictCallersWithExecuteAppFunctionsTrue</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
+        <schema_version>1</schema_version>
+        <schema_category>utils</schema_category>
+        <restrict_callers_with_execute_app_functions>true</restrict_callers_with_execute_app_functions>
     </appfunction>
 </appfunctions>
