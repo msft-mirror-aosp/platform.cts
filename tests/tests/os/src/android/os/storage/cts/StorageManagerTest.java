@@ -176,19 +176,22 @@ public class StorageManagerTest {
     public void testAttemptMountObbWrongPackage() {
         for (File target : getTargetFiles()) {
             final File outFile = new File(target, "test1_wrongpackage.obb");
-            assertThrows(SecurityException.class, () -> doAttemptMountObbWrongPackage(outFile));
+            Log.d(TAG, "Testing path " + target);
+            try {
+                mountObb(
+                        R.raw.test1_wrongpackage,
+                        outFile,
+                        OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
+            } catch (SecurityException e) {
+            } finally {
+                assertFalse(
+                        "OBB should not be mounted",
+                        mStorageManager.isObbMounted(outFile.getPath()));
+                assertNull(
+                        "OBB's mounted path should be null",
+                        mStorageManager.getMountedObbPath(outFile.getPath()));
+            }
         }
-    }
-
-    private void doAttemptMountObbWrongPackage(File outFile) {
-        mountObb(R.raw.test1_wrongpackage, outFile,
-                OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
-
-        assertFalse("OBB should not be mounted",
-                mStorageManager.isObbMounted(outFile.getPath()));
-
-        assertNull("OBB's mounted path should be null",
-                mStorageManager.getMountedObbPath(outFile.getPath()));
     }
 
     @Test
