@@ -41,6 +41,8 @@ import android.os.Parcel;
 import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.graphics.hwui.flags.Flags;
+
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 
@@ -374,6 +376,10 @@ public class GainmapTest {
         assertAllAre(0.f, gainmap.getEpsilonHdr());
         assertEquals(1.f, gainmap.getMinDisplayRatioForHdrTransition(), EPSILON);
         assertEquals(2.f, gainmap.getDisplayRatioForFullHdr(), EPSILON);
+        if (Flags.isoGainmapApis()) {
+            assertNull(gainmap.getAlternativeImagePrimaries());
+            assertEquals(Gainmap.GAINMAP_DIRECTION_SDR_TO_HDR, gainmap.getGainmapDirection());
+        }
     }
 
     @Test
@@ -387,6 +393,11 @@ public class GainmapTest {
         gainmap.setEpsilonSdr(0.1f, 0.2f, 0.3f);
         gainmap.setEpsilonHdr(0.01f, 0.02f, 0.03f);
 
+        if (Flags.isoGainmapApis()) {
+            gainmap.setAlternativeImagePrimaries(ColorSpace.get(ColorSpace.Named.DISPLAY_P3));
+            gainmap.setGainmapDirection(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR);
+        }
+
         assertEquals(5f, gainmap.getDisplayRatioForFullHdr(), EPSILON);
         assertEquals(3f, gainmap.getMinDisplayRatioForHdrTransition(), EPSILON);
         assertAre(1.1f, 1.2f, 1.3f, gainmap.getGamma());
@@ -394,6 +405,11 @@ public class GainmapTest {
         assertAre(3.1f, 3.2f, 3.3f, gainmap.getRatioMax());
         assertAre(0.1f, 0.2f, 0.3f, gainmap.getEpsilonSdr());
         assertAre(0.01f, 0.02f, 0.03f, gainmap.getEpsilonHdr());
+        if (Flags.isoGainmapApis()) {
+            assertEquals(ColorSpace.get(ColorSpace.Named.DISPLAY_P3),
+                    gainmap.getAlternativeImagePrimaries());
+            assertEquals(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR, gainmap.getGainmapDirection());
+        }
     }
 
     @Test
@@ -406,6 +422,10 @@ public class GainmapTest {
         original.setRatioMax(3.1f, 3.2f, 3.3f);
         original.setEpsilonSdr(0.1f, 0.2f, 0.3f);
         original.setEpsilonHdr(0.01f, 0.02f, 0.03f);
+        if (Flags.isoGainmapApis()) {
+            original.setAlternativeImagePrimaries(ColorSpace.get(ColorSpace.Named.DISPLAY_P3));
+            original.setGainmapDirection(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR);
+        }
 
         Gainmap copy = new Gainmap(original, Bitmap.createBitmap(5, 5, Bitmap.Config.ALPHA_8));
         assertEquals(5f, copy.getDisplayRatioForFullHdr(), EPSILON);
@@ -415,6 +435,11 @@ public class GainmapTest {
         assertAre(3.1f, 3.2f, 3.3f, copy.getRatioMax());
         assertAre(0.1f, 0.2f, 0.3f, copy.getEpsilonSdr());
         assertAre(0.01f, 0.02f, 0.03f, copy.getEpsilonHdr());
+        if (Flags.isoGainmapApis()) {
+            assertEquals(ColorSpace.get(ColorSpace.Named.DISPLAY_P3),
+                    copy.getAlternativeImagePrimaries());
+            assertEquals(Gainmap.GAINMAP_DIRECTION_HDR_TO_SDR, copy.getGainmapDirection());
+        }
 
         assertEquals(10, original.getGainmapContents().getWidth());
         assertEquals(5, copy.getGainmapContents().getWidth());
@@ -455,6 +480,11 @@ public class GainmapTest {
         assertArrayEquals(gainmap.getRatioMin(), unparceledGainmap.getRatioMin(), 0f);
         assertEquals(gainmap.getDisplayRatioForFullHdr(),
                 unparceledGainmap.getDisplayRatioForFullHdr(), 0f);
+        if (Flags.isoGainmapApis()) {
+            assertEquals(gainmap.getAlternativeImagePrimaries(),
+                    unparceledGainmap.getAlternativeImagePrimaries());
+            assertEquals(gainmap.getGainmapDirection(), unparceledGainmap.getGainmapDirection());
+        }
         p.recycle();
     }
 

@@ -69,6 +69,7 @@ android_library {
 
     static_libs: [
         "android.media.audio-aconfig-java",
+        "android.service.chooser.flags-aconfig-java",
         "android-ex-camera2",
         "compatibility-common-util-devicesidelib",
         "cts-sensors-tests",
