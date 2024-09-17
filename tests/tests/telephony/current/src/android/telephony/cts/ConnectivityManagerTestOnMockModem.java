@@ -24,8 +24,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.ConnectivityManager.NetworkCallback;
 import android.net.LinkProperties;
@@ -33,14 +31,11 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Build;
-import android.os.SystemProperties;
 import android.telephony.AccessNetworkConstants;
 import android.telephony.NetworkRegistrationInfo;
 import android.telephony.ServiceState;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
-import android.telephony.TelephonyManager;
-import android.telephony.mockmodem.MockModemManager;
 import android.util.Log;
 
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -59,7 +54,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /** Test MockModemService interfaces. */
-public class ConnectivityManagerTestOnMockModem {
+public class ConnectivityManagerTestOnMockModem extends MockModemTestBase {
     private static final String TAG = "ConnectivityManagerTestOnMockModem";
     private static final int TIMEOUT_NETWORK_VALIDATION = 20000;
     private static final int TIMEOUT_ACTIVATE_NETWORK = 20000;
@@ -71,15 +66,12 @@ public class ConnectivityManagerTestOnMockModem {
     private static Object sIsValidateLock = new Object();
     private static Object sIsOnAvailableLock = new Object();
     private static CMNetworkCallback sNetworkCallback;
-    private static MockModemManager sMockModemManager;
-    private static TelephonyManager sTelephonyManager;
     private static SubscriptionManager sSubscriptionManager;
     private static ConnectivityManager sConnectivityManager;
     private static final String ALLOW_MOCK_MODEM_PROPERTY = "persist.radio.allow_mock_modem";
     private static final String BOOT_ALLOW_MOCK_MODEM_PROPERTY = "ro.boot.radio.allow_mock_modem";
     private static final boolean DEBUG = !"user".equals(Build.TYPE);
     private static final String RESOURCE_PACKAGE_NAME = "android";
-    private static boolean sIsMultiSimDevice;
 
     private static class CMNetworkCallback extends NetworkCallback {
         final CountDownLatch mNetworkLatch = new CountDownLatch(1);
@@ -147,16 +139,7 @@ public class ConnectivityManagerTestOnMockModem {
     @BeforeClass
     public static void beforeAllTests() throws Exception {
         TimeUnit.SECONDS.sleep(10);
-        Log.d(TAG, "ConnectivityManagerTestOnMockModem#beforeAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
-
-        enforceMockModemDeveloperSetting();
-        sTelephonyManager =
-                (TelephonyManager) getContext().getSystemService(Context.TELEPHONY_SERVICE);
-        sIsMultiSimDevice = isMultiSim(sTelephonyManager);
+        if (!MockModemTestBase.beforeAllTestsCheck()) return;
 
         sConnectivityManager =
                 (ConnectivityManager) getContext().getSystemService(ConnectivityManager.class);
@@ -193,82 +176,26 @@ public class ConnectivityManagerTestOnMockModem {
 
         unregisterNetworkCallback();
 
-        sMockModemManager = new MockModemManager();
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.connectMockModemService());
+        MockModemTestBase.createMockModemAndConnectToService();
     }
 
     @AfterClass
     public static void afterAllTests() throws Exception {
-        Log.d(TAG, "ConnectivityManagerTestOnMockModem#afterAllTests()");
-
-        if (!hasTelephonyFeature()) {
-            return;
-        }
-        // Rebind all interfaces which is binding to MockModemService to default.
-        assertNotNull(sMockModemManager);
-        assertTrue(sMockModemManager.disconnectMockModemService());
-        sMockModemManager = null;
+        MockModemTestBase.afterAllTestsBase();
     }
 
     @Before
-    public void beforeTest() throws Exception {
-        assumeTrue(hasTelephonyFeature());
+    public void beforeTest() {
+        super.beforeTest();
         registerNetworkCallback();
     }
 
     @After
     public void afterTest() {
+        super.afterTest();
         // unregister the network call back
         if (sNetworkCallback != null) {
             unregisterNetworkCallback();
-        }
-    }
-
-    private static boolean isMultiSim(TelephonyManager tm) {
-        return tm != null && tm.getPhoneCount() > 1;
-    }
-
-    private static boolean isSimHotSwapCapable() {
-        boolean isSimHotSwapCapable = false;
-        int resourceId =
-                getContext()
-                        .getResources()
-                        .getIdentifier("config_hotswapCapable", "bool", RESOURCE_PACKAGE_NAME);
-
-        if (resourceId > 0) {
-            isSimHotSwapCapable = getContext().getResources().getBoolean(resourceId);
-        } else {
-            Log.d(TAG, "Fail to get the resource Id, using default.");
-        }
-
-        Log.d(TAG, "isSimHotSwapCapable = " + (isSimHotSwapCapable ? "true" : "false"));
-
-        return isSimHotSwapCapable;
-    }
-
-    private static Context getContext() {
-        return InstrumentationRegistry.getInstrumentation().getContext();
-    }
-
-    private static boolean hasTelephonyFeature() {
-        final PackageManager pm = getContext().getPackageManager();
-        if (!pm.hasSystemFeature(PackageManager.FEATURE_TELEPHONY)) {
-            Log.d(TAG, "Skipping test that requires FEATURE_TELEPHONY");
-            return false;
-        }
-        return true;
-    }
-
-    private static void enforceMockModemDeveloperSetting() throws Exception {
-        boolean isAllowed = SystemProperties.getBoolean(ALLOW_MOCK_MODEM_PROPERTY, false);
-        boolean isAllowedForBoot =
-                SystemProperties.getBoolean(BOOT_ALLOW_MOCK_MODEM_PROPERTY, false);
-        // Check for developer settings for user build. Always allow for debug builds
-        if (!(isAllowed || isAllowedForBoot) && !DEBUG) {
-            throw new IllegalStateException(
-                    "!! Enable Mock Modem before running this test !! "
-                            + "Developer options => Allow Mock Modem");
         }
     }
 
