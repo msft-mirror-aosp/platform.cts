@@ -695,18 +695,10 @@ public final class CameraDeviceInfo extends DeviceInfo {
             charsKeyNames.add(CameraCharacteristics.CONTROL_LOW_LIGHT_BOOST_INFO_LUMINANCE_RANGE.getName());
         }
         charsKeyNames.add(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES.getName());
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL.getName());
-        }
-        if (Flags.cameraManualFlashStrengthControl()) {
-            charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_DEFAULT_LEVEL.getName());
-        }
+        charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_MAX_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_SINGLE_STRENGTH_DEFAULT_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_MAX_LEVEL.getName());
+        charsKeyNames.add(CameraCharacteristics.FLASH_TORCH_STRENGTH_DEFAULT_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_AVAILABLE.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_STRENGTH_MAXIMUM_LEVEL.getName());
         charsKeyNames.add(CameraCharacteristics.FLASH_INFO_STRENGTH_DEFAULT_LEVEL.getName());
