@@ -16,10 +16,13 @@
 
 package android.deviceconfig.cts;
 
+import static android.provider.DeviceConfig.DUMP_ARG_NAMESPACE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
@@ -1394,10 +1397,16 @@ public final class DeviceConfigApiTests {
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
     public void testDump_empty() throws Exception {
-        String dump = dump();
-
-        expect.withMessage("dump()").that(dump)
+        expect.withMessage("dump()").that(dump())
             .isEqualTo(DUMP_PREFIX + "0 listeners for 0 namespaces:\n");
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DUMP_IMPROVEMENTS)
+    public void testDump_invalidArgs() throws Exception {
+
+        // Should have 1 extra argument
+        assertThrows(IllegalArgumentException.class, () -> dump(DUMP_ARG_NAMESPACE));
     }
 
     @Test
@@ -1413,16 +1422,47 @@ public final class DeviceConfigApiTests {
         // Next call will remove listener1 from NAMESPACE1
         DeviceConfig.addOnPropertiesChangedListener(NAMESPACE2, Runnable::run, listener1);
 
-        String dump = dump();
-
-        expect.withMessage("dump()").that(dump).isEqualTo(DUMP_PREFIX
+        String dumpForAllListeners = DUMP_PREFIX
                 + "3 listeners for 2 namespaces:\n"
                 + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
                 + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n"
                 + DUMP_PREFIX + NAMESPACE2 + ": 1 listeners\n"
-                + DUMP_PREFIX + DUMP_PREFIX + listener1 + "\n"
-        );
+                + DUMP_PREFIX + DUMP_PREFIX + listener1 + "\n";
+
+        // Dump without args first
+        expect.withMessage("dump()").that(dump()).isEqualTo(dumpForAllListeners);
+
+        // Then argument that would not match
+        String arg0 = DUMP_ARG_NAMESPACE;
+        String arg1 = "ARRRRRRGH!!!!";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(DUMP_PREFIX + "0 listeners for 0 namespaces:\n");
+
+        // Then arg which's a substring of all listeners
+        arg1 = "";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "namespace";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "name";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        arg1 = "space";
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1))
+                .isEqualTo(dumpForAllListeners);
+
+        // Finally, use a specific value
+        arg1 = NAMESPACE1;
+        expect.withMessage("dump(%s, %s)", arg0, arg1).that(dump(arg0, arg1)).isEqualTo(DUMP_PREFIX
+                + "2 listeners for 1 namespaces:\n"
+                + DUMP_PREFIX + NAMESPACE1 + ": 2 listeners\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener2 + "\n"
+                + DUMP_PREFIX + DUMP_PREFIX + listener3 + "\n");
     }
 
     private class TestMonitorCallback implements DeviceConfig.MonitorCallback {
