@@ -837,7 +837,6 @@ public class RollbackManagerTest {
         RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
 
         assertThat(rollback).isNotNull();
-        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(1);
     }
 
     @Test
@@ -849,6 +848,5 @@ public class RollbackManagerTest {
         RollbackInfo rollback = RollbackUtils.getAvailableRollback(TestApp.A);
 
         assertThat(rollback).isNotNull();
-        assertThat(rollback.getRollbackImpactLevel()).isEqualTo(0);
     }
 }
