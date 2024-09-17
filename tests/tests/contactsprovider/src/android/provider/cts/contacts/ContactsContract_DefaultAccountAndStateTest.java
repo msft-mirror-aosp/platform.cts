@@ -16,30 +16,40 @@
 
 package android.provider.cts.contacts;
 
+import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 
 import android.accounts.Account;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.ContactsContract.RawContacts.DefaultAccountAndState;
 import android.provider.cts.contacts.account.StaticAccountAuthenticator;
-import android.test.AndroidTestCase;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
+
+@RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
+@RunWith(AndroidJUnit4.class)
 @MediumTest
-public class ContactsContract_DefaultAccountAndStateTest extends AndroidTestCase {
+public class ContactsContract_DefaultAccountAndStateTest {
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     private static final Account ACCT_1 = new Account("cp removal acct 1",
             StaticAccountAuthenticator.TYPE);
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        super.tearDown();
-    }
-
+    @Test
+    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_cloud() {
         DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
                 DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
@@ -58,6 +68,8 @@ public class ContactsContract_DefaultAccountAndStateTest extends AndroidTestCase
                         DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD, null));
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_local() {
         DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
                 DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
@@ -77,6 +89,8 @@ public class ContactsContract_DefaultAccountAndStateTest extends AndroidTestCase
                         ACCT_1));
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_notSet() {
         DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
                 DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
@@ -96,15 +110,17 @@ public class ContactsContract_DefaultAccountAndStateTest extends AndroidTestCase
                         ACCT_1));
     }
 
+    @Test
+    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     public void testDefaultContactsAccountClass_invalid() {
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_INVALID,
+                        -1, // Invalid state.
                         null));
 
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
-                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_INVALID,
+                        -2, // Invalid state.
                         ACCT_1));
     }
 }
