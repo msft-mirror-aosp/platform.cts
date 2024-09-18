@@ -240,7 +240,6 @@ class PointerIconTest {
 
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
-        fun data(): Iterable<Any> =
-            listOf(TestPointerDevice.MOUSE, TestPointerDevice.DRAWING_TABLET)
+        fun data(): Iterable<Any> = TestPointerDevice.entries
     }
 }
