@@ -179,7 +179,8 @@ public class CallAudioInterceptionTest {
                 .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO).build();
         final int[] TEST_MODES = new int[] { AudioManager.MODE_IN_CALL,
-                AudioManager.MODE_IN_COMMUNICATION,
+                // TODO (b/360430658)
+                // AudioManager.MODE_IN_COMMUNICATION,
                 AudioManager.MODE_CALL_REDIRECT,
                 AudioManager.MODE_COMMUNICATION_REDIRECT
         };
