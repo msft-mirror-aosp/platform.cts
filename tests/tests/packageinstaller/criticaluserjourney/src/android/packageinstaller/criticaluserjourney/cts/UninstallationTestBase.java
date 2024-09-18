@@ -64,7 +64,9 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     public void setup() throws Exception {
         super.setup();
         resetUninstallResult();
-        installTestPackage();
+        if (shouldInstallTestAppInTestBaseSetup()) {
+            installTestPackage();
+        }
         sUninstallResultReceiver = new UninstallResultReceiver();
         getContext().registerReceiver(sUninstallResultReceiver,
                 new IntentFilter(ACTION_UNINSTALL_RESULT), Context.RECEIVER_EXPORTED);
@@ -73,9 +75,19 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     @After
     @Override
     public void tearDown() throws Exception {
-        getContext().unregisterReceiver(sUninstallResultReceiver);
-        sUninstallResultReceiver = null;
+        if (sUninstallResultReceiver != null) {
+            getContext().unregisterReceiver(sUninstallResultReceiver);
+            sUninstallResultReceiver = null;
+        }
         super.tearDown();
+    }
+
+    /*
+     * It the test case extends the test base and it doesn't need to install the test app in setup
+     * method, it can override this method and return false.
+     */
+    protected boolean shouldInstallTestAppInTestBaseSetup() {
+        return true;
     }
 
     private static Intent getUninstallResult() throws Exception {
