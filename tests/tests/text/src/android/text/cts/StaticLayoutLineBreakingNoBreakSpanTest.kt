@@ -17,7 +17,6 @@ package android.text.cts
 
 import android.graphics.Typeface
 import android.graphics.text.LineBreaker
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.Layout
 import android.text.SpannableString
@@ -28,7 +27,6 @@ import android.text.style.LineBreakConfigSpan
 import androidx.test.InstrumentationRegistry
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -66,7 +64,6 @@ class StaticLayoutLineBreakingNoBreakSpanTest {
         }
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     @Test
     fun testLineBreakPreventLineBreak() {
         // Checking precondition of the line break.
