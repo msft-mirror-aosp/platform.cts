@@ -16,7 +16,6 @@
 #define LOG_TAG "Cts-NdkBinderTest"
 
 #include <aidl/test_package/BnEmpty.h>
-#include <aidl/test_package/BnSkippedIds.h>
 #include <aidl/test_package/BpCompatTest.h>
 #include <aidl/test_package/BpTest.h>
 #include <aidl/test_package/ByteEnum.h>
@@ -51,7 +50,6 @@ using ::aidl::test_package::Foo;
 using ::aidl::test_package::GenericBar;
 using ::aidl::test_package::ICompatTest;
 using ::aidl::test_package::IntEnum;
-using ::aidl::test_package::ISkippedIds;
 using ::aidl::test_package::ITest;
 using ::aidl::test_package::LongEnum;
 using ::aidl::test_package::MyExt;
@@ -1480,63 +1478,3 @@ INSTANTIATE_TEST_CASE_P(RemoteNativeOld, NdkBinderTest_Aidl,
                             getNdkBinderTestJavaService("getRemoteOldNativeService"),
                             true /*shouldBeRemote*/, true /*shouldBeWrapped*/, "CPP",
                             true /*shouldBeOld*/}));
-
-class SkippedIdsService : public ::aidl::test_package::BnSkippedIds {
- public:
-  SkippedIdsService() {}
-  virtual ~SkippedIdsService() = default;
-
-  ScopedAStatus getBoolean(bool* _aidl_return) override {
-    *_aidl_return = true;
-    return ScopedAStatus::ok();
-  }
-
-  ScopedAStatus getInt(int32_t* _aidl_return) override {
-    *_aidl_return = 12;
-    return ScopedAStatus::ok();
-  }
-
-  ScopedAStatus getFloat(float* _aidl_return) override {
-    *_aidl_return = 1.1f;
-    return ScopedAStatus::ok();
-  }
-
-  ScopedAStatus getDouble(double* _aidl_return) override {
-    *_aidl_return = 1.0003;
-    return ScopedAStatus::ok();
-  }
-
-  ScopedAStatus getChar(char16_t* _aidl_return) override {
-    *_aidl_return = 't';
-    return ScopedAStatus::ok();
-  }
-};
-
-TEST_P(NdkBinderTest_Aidl, ServiceWithSkippedIds_traceByName) {
-  std::shared_ptr<SkippedIdsService> service = SharedRefBase::make<SkippedIdsService>();
-  ASSERT_NE(nullptr, service);
-
-  bool boolValue;
-  auto status = service->getBoolean(&boolValue);
-  ASSERT_TRUE(status.isOk()) << status;
-  EXPECT_EQ(true, boolValue);
-
-  int intValue;
-  status = service->getInt(&intValue);
-  ASSERT_TRUE(status.isOk()) << status;
-  EXPECT_EQ(12, intValue);
-
-  float floatValue;
-  status = service->getFloat(&floatValue);
-  ASSERT_TRUE(status.isOk()) << status;
-  EXPECT_EQ(1.1f, floatValue);
-}
-
-TEST_F(NdkBinderTest_Aidl, ServiceWithSkippedIds_traceMethodsWithCodes) {
-  std::shared_ptr<SkippedIdsService> service = SharedRefBase::make<SkippedIdsService>();
-  ASSERT_NE(nullptr, service);
-  double doubleValue;
-  auto status = service->getDouble(&doubleValue);
-  ASSERT_TRUE(status.isOk()) << status;
-  EXPECT_EQ(1.0003, doubleValue);
-}

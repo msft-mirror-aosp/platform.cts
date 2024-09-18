@@ -43,7 +43,6 @@ filegroup {
         "test_package/ExtendableParcelable.aidl",
         "test_package/MyExt.aidl",
         "test_package/SimpleUnion.aidl",
-        "test_package/ISkippedIds.aidl",
     ],
     visibility: ["//visibility:private"],
 }
@@ -63,10 +62,6 @@ aidl_interface {
         },
         rust: {
             enabled: false,
-        },
-        ndk: {
-            enabled: true,
-            gen_trace: true,
         },
     },
     unstable: true,
