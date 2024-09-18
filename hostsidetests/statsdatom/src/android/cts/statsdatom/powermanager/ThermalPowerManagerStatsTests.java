@@ -61,9 +61,9 @@ import java.util.List;
  * atest CtsStatsdAtomHostTestCases:PowerManagerStatsTests
  */
 @RunWith(DeviceJUnit4ClassRunner.class)
-public class PowerManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
+public class ThermalPowerManagerStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String DEVICE_TEST_PKG = "com.android.server.cts.device.statsdatom";
-    private static final String DEVICE_TEST_CLASS = ".PowerManagerTests";
+    private static final String DEVICE_TEST_CLASS = ".ThermalPowerManagerTests";
     private static final String ADPF_ATOM_APP_PKG = "com.android.server.cts.device.statsdatom";
     private static final String ADPF_ATOM_APP_APK = "CtsStatsdAdpfApp.apk";
 
