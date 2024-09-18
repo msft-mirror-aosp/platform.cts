@@ -34,6 +34,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.test.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.UserHelper;
+
 import org.apache.http.util.EncodingUtils;
 
 import java.io.ByteArrayInputStream;
@@ -211,7 +213,10 @@ public final class SharedWebViewTestEnvironment {
     public static IHostAppInvoker.Stub createHostAppInvoker(
             Context applicationContext, boolean allowUiAutomation) {
         return new IHostAppInvoker.Stub() {
-            private Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+            private final Instrumentation mInstrumentation =
+                    InstrumentationRegistry.getInstrumentation();
+            private final UserHelper mUserHelper = new UserHelper(mInstrumentation.getContext());
+            private final int mDisplayId = mUserHelper.getMainDisplayId();
             private UiAutomation mUiAutomation;
 
             @Override
@@ -231,11 +236,15 @@ public final class SharedWebViewTestEnvironment {
             @Override
             public void sendTapSync(int x, int y) {
                 long downTime = SystemClock.uptimeMillis();
-                sendPointerSync(
-                        MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0));
+                MotionEvent event =
+                        MotionEvent.obtain(downTime, downTime, MotionEvent.ACTION_DOWN, x, y, 0);
+                event.setDisplayId(mDisplayId);
+                sendPointerSync(event);
 
                 long upTime = SystemClock.uptimeMillis();
-                sendPointerSync(MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP, x, y, 0));
+                event = MotionEvent.obtain(upTime, upTime, MotionEvent.ACTION_UP, x, y, 0);
+                event.setDisplayId(mDisplayId);
+                sendPointerSync(event);
             }
 
             @Override
