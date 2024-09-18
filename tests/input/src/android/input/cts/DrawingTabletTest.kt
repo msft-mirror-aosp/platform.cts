@@ -110,7 +110,7 @@ class DrawingTabletTest {
 
         // Inject and verify HOVER_ENTER
         drawingTablet.sendBtnTouch(false)
-        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0], UinputTouchDevice.MT_TOOL_PEN)
+        drawingTablet.sendDown(pointerId, INJECTION_POINTS[0])
         drawingTablet.sync()
 
         verifier.assertReceivedMotion(
@@ -164,7 +164,7 @@ class DrawingTabletTest {
         for (i in INJECTION_POINTS.indices) {
             val pointerId = 0
             drawingTablet.sendBtnTouch(true)
-            drawingTablet.sendDown(pointerId, INJECTION_POINTS[i], UinputTouchDevice.MT_TOOL_PEN)
+            drawingTablet.sendDown(pointerId, INJECTION_POINTS[i])
             drawingTablet.sync()
 
             drawingTablet.sendBtnTouch(false)
