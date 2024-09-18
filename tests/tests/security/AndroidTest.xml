@@ -56,6 +56,7 @@
         <option name="push" value="CtsAppThatRequestCustomCameraPermission.apk->/data/local/tmp/cts/permissions/CtsAppThatRequestCustomCameraPermission.apk" />
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
         <option name="push" value="CtsEmptyApp.apk->/data/local/tmp/cts/security/CtsEmptyApp.apk" />
+        <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
