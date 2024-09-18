@@ -5575,7 +5575,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.microphone" />
-            <meta-data android:name="test_excluded_features" android:value="android.software.leanback" />
+            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.watch:android.software.leanback" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioManager#registerAudioDeviceCallback|
@@ -5592,7 +5592,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.microphone" />
-            <meta-data android:name="test_excluded_features" android:value="android.software.leanback" />
+            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.watch:android.software.leanback" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioRecord#addOnRoutingChangedListener|
@@ -5705,7 +5705,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.audio.output" />
-            <meta-data android:name="test_excluded_features" android:value="android.software.leanback" />
+            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.watch:android.software.leanback" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioManager#registerAudioDeviceCallback|
@@ -5722,7 +5722,7 @@
             </intent-filter>
             <meta-data android:name="test_category" android:value="@string/test_category_audio" />
             <meta-data android:name="test_required_features" android:value="android.hardware.audio.output" />
-            <meta-data android:name="test_excluded_features" android:value="android.software.leanback" />
+            <meta-data android:name="test_excluded_features" android:value="android.hardware.type.watch:android.software.leanback" />
             <meta-data android:name="display_mode" android:value="multi_display_mode" />
             <meta-data android:name="ApiTest"
                 android:value="android.media.AudioTrack#addOnRoutingChangedListener|

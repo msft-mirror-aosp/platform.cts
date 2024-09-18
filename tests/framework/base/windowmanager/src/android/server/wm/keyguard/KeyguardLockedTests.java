@@ -58,6 +58,7 @@ import android.widget.LinearLayout;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.FlakyTest;
+import androidx.test.uiautomator.UiDevice;
 
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.PollingCheck;
@@ -82,6 +83,8 @@ public class KeyguardLockedTests extends KeyguardTestBase {
     private final CtsTouchUtils mCtsTouchUtils =
             new CtsTouchUtils(InstrumentationRegistry.getTargetContext());
 
+    private UiDevice mUiDevice;
+
     @Before
     @Override
     public void setUp() throws Exception {
@@ -89,6 +92,7 @@ public class KeyguardLockedTests extends KeyguardTestBase {
         assumeTrue(supportsSecureLock());
         assumeRunNotOnVisibleBackgroundNonProfileUser(
                 "Keyguard not supported for visible background users");
+        mUiDevice = UiDevice.getInstance(getInstrumentation());
     }
 
     @Test
@@ -421,6 +425,10 @@ public class KeyguardLockedTests extends KeyguardTestBase {
                 "Keyguard is showing", mWmState.getKeyguardControllerState().isKeyguardShowing());
         lockScreenSession.unlockDevice().enterAndConfirmLockCredential();
         mWmState.waitAndAssertKeyguardGone();
+
+        // Wait for the UI idle, make sure the application is idle and input windows is up-to-date.
+        getInstrumentation().getUiAutomation().syncInputTransactions();
+        mUiDevice.waitForIdle();
 
         final ImeEventStream stream = mockImeSession.openEventStream();
 
