@@ -145,6 +145,7 @@ public class SettingsPanelTest {
 
     @Test
     public void nfcPanel_doneClosesPanel() {
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC));
         assumeTrue(packageNameForAction(Settings.Panel.ACTION_NFC).equals(mSettingsPackage));
 
         // Launch panel
@@ -198,6 +199,7 @@ public class SettingsPanelTest {
 
     @Test
     public void nfcPanel_seeMoreButton_launchesIntoSettings() {
+        assumeTrue(mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_NFC));
         assumeTrue(packageNameForAction(Settings.Panel.ACTION_NFC).equals(mSettingsPackage));
 
         // Launch panel
