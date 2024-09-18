@@ -35,6 +35,7 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
+import android.view.Window;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -165,6 +166,10 @@ public class GameFrameRateCtsActivity extends Activity {
                     new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.MATCH_PARENT));
             mSurfaceView.getHolder().addCallback(mSurfaceHolderCallback);
+            if (android.view.flags.Flags.toolkitSetFrameRateReadOnly()) {
+                Window window = getWindow();
+                window.setFrameRatePowerSavingsBalanced(false);
+            }
         }
     }
 

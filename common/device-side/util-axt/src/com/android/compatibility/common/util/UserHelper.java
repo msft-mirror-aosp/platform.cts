@@ -30,8 +30,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import androidx.annotation.Nullable;
-import androidx.test.InstrumentationRegistry;
-
+import androidx.test.core.app.ApplicationProvider;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -58,10 +57,10 @@ public final class UserHelper {
     private final int mDisplayId;
 
     /**
-     * Creates a helper using {@link InstrumentationRegistry#getTargetContext()}.
+     * Creates a helper using {@link ApplicationProvider#getApplicationContext()}.
      */
     public UserHelper() {
-        this(InstrumentationRegistry.getTargetContext());
+        this(ApplicationProvider.getApplicationContext());
     }
 
     /**

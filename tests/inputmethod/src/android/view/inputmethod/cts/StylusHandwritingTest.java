@@ -1921,6 +1921,8 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         assumeTrue(Flags.useHandwritingListenerForTooltype());
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         UinputTouchDevice stylus = null;
+        int displayId = 0;
+        String initialUserRotation = null;
         try (MockImeSession imeSession = MockImeSession.create(
                 instrumentation.getContext(),
                 instrumentation.getUiAutomation(),
@@ -1957,6 +1959,10 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             });
             addVirtualStylusIdForTestSession();
             View clickableView = clickableViewRef.get();
+            Context context = clickableView.getContext();
+            displayId = context.getDisplayId();
+            initialUserRotation = getInitialRotationAndAwaitExpectedRotation(displayId, context);
+
             expectBindInput(stream, Process.myPid(), TIMEOUT);
             // click on view with stylus to launch new activity
             stylus = new UinputStylus(instrumentation, clickableView.getDisplay());
@@ -1980,6 +1986,9 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         } finally {
             if (stylus != null) {
                 stylus.close();
+            }
+            if (initialUserRotation != null) {
+                TestUtils.setRotation(displayId, initialUserRotation);
             }
         }
     }

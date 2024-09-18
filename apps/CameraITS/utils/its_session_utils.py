@@ -2815,6 +2815,17 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
                            "Valid strings: 'ON', 'OFF'.")
 
 
+def get_build_fingerprint(device_id):
+  """Return the build fingerprint of the device."""
+  cmd = f'adb -s {device_id} shell getprop ro.build.fingerprint'
+  try:
+    build_fingerprint = subprocess.check_output(cmd.split()).decode('utf-8').strip()
+    logging.debug('Build fingerprint: %s', build_fingerprint)
+  except (subprocess.CalledProcessError, ValueError) as exp_errors:
+    raise AssertionError('No build_fingerprint.') from exp_errors
+  return build_fingerprint
+
+
 def get_build_sdk_version(device_id):
   """Return the int build version of the device."""
   cmd = f'adb -s {device_id} shell getprop ro.build.version.sdk'

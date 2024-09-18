@@ -31,8 +31,12 @@ import android.security.Flags;
 
 import androidx.annotation.NonNull;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
+
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,6 +46,10 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
             DeviceFlagsValueProvider.createCheckFlagsRule();
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @NonNull
     private String mSettingsPackage;
@@ -369,6 +377,7 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
      */
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
     public void testActivitySandwichWithSystem_launchBlocked() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 
@@ -402,6 +411,7 @@ public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
      */
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_ASM_OPT_SYSTEM_INTO_ENFORCEMENT)
+    @RequireNotAutomotive(reason = "MANAGE_UNKNOWN_APP_SOURCES is not supported by Car Settings")
     public void testActivitySandwichWithSystem_launchAllowed() {
         BackgroundActivityLaunchTest.assumeSdkNewerThanUpsideDownCake();
 

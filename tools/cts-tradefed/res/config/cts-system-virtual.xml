@@ -871,6 +871,9 @@
   <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.HealthConnectManagerTest#testReadMedicalResources_byRequest_filtersByMedicalResourceTypeAndBothDataSources"/>
   <option name="compatibility:exclude-filter" value="CtsHealthFitnessDeviceTestCases android.healthconnect.cts.ReadMedicalResourcesRequestTest#testRequestBuilder_addInvalidDataSourceId_throws"/>
   <option name="compatibility:exclude-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateEstimatedNetworkBytes"/>
+  <option name="compatibility:exclude-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PrivappPermissionsTest#privappPermissionsNeedToBeWhitelisted"/>
+  <option name="compatibility:exclude-filter" value="CtsStagedInstallHostTestCases com.android.tests.stagedinstall.host.StagedInstallTest#testAfterRotationNewKeyCanUpdateFurther"/>
+
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:exclude-filter:dEQP-EGL.*" />
