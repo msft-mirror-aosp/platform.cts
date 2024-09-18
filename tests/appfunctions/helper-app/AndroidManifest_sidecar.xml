@@ -16,10 +16,10 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="android.app.appfunctions.cts.helper" >
+    package="android.app.appfunctions.cts.helper.sidecar" >
     <application android:debuggable="true">
-        <!-- Platform's AppFunctionService. -->
-        <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"
+        <!-- Sidecar's AppFunctionService. -->
+        <service android:name="android.app.appfunctions.testutils.TestSidecarAppFunctionService"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
             android:exported="true">
             <property
