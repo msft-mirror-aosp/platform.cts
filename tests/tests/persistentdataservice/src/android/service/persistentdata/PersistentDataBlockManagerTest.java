@@ -25,6 +25,7 @@ import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.SystemProperties;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
@@ -47,6 +48,7 @@ public class PersistentDataBlockManagerTest {
     private static final PersistentDataBlockManager sPersistentDataBlockManager =
             sContext.getSystemService(PersistentDataBlockManager.class);
     public static final int FACTORY_RESET_SECRET_SIZE = 32;
+    public static final String PERSISTENT_DATA_BLOCK_PROPERTY = "ro.frp.pst";
 
     @EnsureHasPermission(android.Manifest.permission.ACCESS_PDB_STATE)
     @Test
@@ -67,14 +69,19 @@ public class PersistentDataBlockManagerTest {
                 sPersistentDataBlockManager::getPersistentDataPackageName);
     }
 
-    private static boolean hasVSePolicy() {
-        return getFirstApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM;
+    private static boolean deviceHasPersistentDataBlock() {
+        return !SystemProperties.get(PERSISTENT_DATA_BLOCK_PROPERTY).equals("");
+    }
+
+    private static boolean shouldSupportFrpActiveApi() {
+        return getFirstApiLevel() >= Build.VERSION_CODES.VANILLA_ICE_CREAM
+                && deviceHasPersistentDataBlock();
     }
 
     @EnsureDoesNotHavePermission(android.Manifest.permission.ACCESS_PDB_STATE)
     @Test
     public void checkFactoryResetProtection() {
-        assumeTrue(hasVSePolicy());
+        assumeTrue(shouldSupportFrpActiveApi());
 
         assertThat(sPersistentDataBlockManager).isNotNull();
         assertThat(sPersistentDataBlockManager.isFactoryResetProtectionActive()).isFalse();
@@ -83,7 +90,7 @@ public class PersistentDataBlockManagerTest {
     @EnsureDoesNotHavePermission(android.Manifest.permission.ACCESS_PDB_STATE)
     @Test
     public void verifyOtherMethodsCannotBeCalledByNonPrivilegedApps() {
-        assumeTrue(hasVSePolicy());
+        assumeTrue(shouldSupportFrpActiveApi());
 
         assertThat(sPersistentDataBlockManager).isNotNull();
         assertThrows(SecurityException.class,
