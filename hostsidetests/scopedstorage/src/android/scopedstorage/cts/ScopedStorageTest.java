@@ -56,6 +56,7 @@ import static android.scopedstorage.cts.lib.TestUtils.getFileUri;
 import static android.scopedstorage.cts.lib.TestUtils.getMoviesDir;
 import static android.scopedstorage.cts.lib.TestUtils.getMusicDir;
 import static android.scopedstorage.cts.lib.TestUtils.getPicturesDir;
+import static android.scopedstorage.cts.lib.TestUtils.installApp;
 import static android.scopedstorage.cts.lib.TestUtils.mediaStoreVersion;
 import static android.scopedstorage.cts.lib.TestUtils.openWithMediaProvider;
 import static android.scopedstorage.cts.lib.TestUtils.pollForExternalStorageState;
@@ -1203,8 +1204,16 @@ public class ScopedStorageTest {
     }
 
     @Test
-    public void testMediaStoreVersion() throws Exception {
-        assertNotNull(mediaStoreVersion(APP_A_HAS_READ_MEDIA_ALL));
+    public void testMediaStoreVersionLockdown() throws Exception {
+        assertThat(mediaStoreVersion(APP_A_HAS_READ_MEDIA_ALL))
+                .isNotEqualTo(mediaStoreVersion(APP_B_NO_PERMS));
+
+        String initialAppAVersion = mediaStoreVersion(APP_A_HAS_READ_MEDIA_ALL);
+        // It seems that because install is done via shell command in host tests, uninstalls must
+        // also use shell command
+        executeShellCommand("pm uninstall " + APP_A_HAS_READ_MEDIA_ALL.getPackageName());
+        installApp(APP_A_HAS_READ_MEDIA_ALL);
+        assertThat(initialAppAVersion).isNotEqualTo(mediaStoreVersion(APP_A_HAS_READ_MEDIA_ALL));
     }
 
     private static boolean isAtLeastS() {

@@ -103,13 +103,15 @@ public class PackageInstallerCujTestBase {
     public static final String BUTTON_SETTINGS_LABEL = "Settings";
     public static final String BUTTON_UPDATE_LABEL = "Update";
     public static final String BUTTON_UPDATE_ANYWAY_LABEL = "Update anyway";
+    public static final String CLONE_LABEL = "Clone";
+    public static final String DELETE_LABEL = "delete";
     public static final String INSTALLING_LABEL = "Installing";
-    public static final String PACKAGE_INSTALLER_LABEL = "Package Installer";
     public static final String TOGGLE_ALLOW_LABEL = "allow";
     public static final String TOGGLE_ALLOW_FROM_LABEL = "Allow from";
     public static final String TOGGLE_ALLOW_PERMISSION_LABEL = "allow permission";
     public static final String TOGGLE_INSTALL_UNKNOWN_APPS_LABEL = "install unknown apps";
     public static final String UNINSTALL_LABEL = "uninstall";
+    public static final String WORK_PROFILE_LABEL = "work profile";
     public static final String TEXTVIEW_WIDGET_CLASSNAME = "android.widget.TextView";
 
     public static final long FIND_OBJECT_TIMEOUT_MS = 30 * 1000L;
@@ -456,12 +458,24 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
-     * Install the test apk {@code apkName}.
+     * Install the test apk {@code apkName} for all users.
      */
     public static void installPackage(@NonNull String apkName) throws IOException {
         Log.d(TAG, "installPackage(): apkName= " + apkName);
         SystemUtil.runShellCommand("pm install -t "
                 + new File(TEST_APK_LOCATION, apkName).getCanonicalPath());
+    }
+
+    /**
+     * Install the installed {@code packageName} on the user {@code user}.
+     */
+    public static void installExistingPackageOnUser(String packageName, int userId) {
+        Log.d(TAG, "installExistingPackageAsUser(): packageName= " + packageName
+                + ", userId= " + userId);
+        assertThat(SystemUtil.runShellCommand(
+                String.format("pm install-existing --user %s %s", userId, packageName)))
+                .isEqualTo(
+                        String.format("Package %s installed for user: %s\n", packageName, userId));
     }
 
     /**
@@ -473,18 +487,34 @@ public class PackageInstallerCujTestBase {
     }
 
     /**
+     * If the test package {@link #TEST_APP_PACKAGE_NAME} is installed on the {@code userContext},
+     * return true. Otherwise, return false.
+     */
+    public static boolean isTestPackageInstalledOnUser(@NonNull Context userContext) {
+        return isInstalled(userContext, TEST_APP_PACKAGE_NAME);
+    }
+
+    /**
      * If the test package {@code packageName} is installed, return true. Otherwise,
      * return false.
      */
     public static boolean isInstalled(@NonNull String packageName) {
+        return isInstalled(getContext(), packageName);
+    }
+
+    /**
+     * If the test package {@code packageName} is installed on the {@code context},
+     * return true. Otherwise, return false.
+     */
+    public static boolean isInstalled(@NonNull Context context, @NonNull String packageName) {
         Log.d(TAG, "Testing if package " + packageName + " is installed for user "
-                + getContext().getUser());
+                + context.getUser());
         try {
-            getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
+            context.getPackageManager().getPackageInfo(packageName, /* flags= */ 0);
             return true;
         } catch (PackageManager.NameNotFoundException e) {
             Log.v(TAG, "Package " + packageName + " not installed for user "
-                    + getContext().getUser() + ": " + e);
+                    + context.getUser() + ": " + e);
             return false;
         }
     }

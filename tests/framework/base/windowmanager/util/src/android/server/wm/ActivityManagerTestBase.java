@@ -19,10 +19,6 @@ package android.server.wm;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.app.Instrumentation.ActivityMonitor;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -201,19 +197,6 @@ public abstract class ActivityManagerTestBase {
     private static final String LOG_SEPARATOR = "LOG_SEPARATOR";
     // Use one of the test tags as a separator
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
-
-    /**
-     * Array of activity types excluding the HOME type.
-     *
-     * @deprecated This constant is discouraged. Use {@link #stopTestPackage} or
-     * {@link #finishAndRemoveCurrentTestActivityTasks} instead.
-     */
-    // TODO(b/355452977): Remove all the usages of this constant.
-    @Deprecated
-    protected static final int[] ALL_ACTIVITY_TYPE_BUT_HOME = {
-            ACTIVITY_TYPE_STANDARD, ACTIVITY_TYPE_ASSISTANT, ACTIVITY_TYPE_RECENTS,
-            ACTIVITY_TYPE_UNDEFINED
-    };
 
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
@@ -878,11 +861,6 @@ public abstract class ActivityManagerTestBase {
      */
     protected void finishAndRemoveCurrentTestActivityTasks() {
         mAm.getAppTasks().forEach(ActivityManager.AppTask::finishAndRemoveTask);
-        waitForIdle();
-    }
-
-    protected void removeRootTasksWithActivityTypes(int... activityTypes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksWithActivityTypes(activityTypes));
         waitForIdle();
     }
 

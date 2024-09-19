@@ -27,6 +27,7 @@
     </queries>
     <application>
         <uses-library android:name="android.test.runner"/>
+        <!-- Platform's AppFunctionService. -->
         <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
             android:exported="true"

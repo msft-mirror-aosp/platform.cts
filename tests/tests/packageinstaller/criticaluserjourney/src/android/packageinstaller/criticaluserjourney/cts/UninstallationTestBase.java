@@ -40,6 +40,7 @@ import android.content.pm.PackageInstaller;
 import android.net.Uri;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.test.uiautomator.By;
 
 import org.junit.After;
@@ -165,6 +166,7 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     private static void getUninstallResultAndStartConfirmedActivity() throws Exception {
         final Intent result = getUninstallResult();
         Intent extraIntent = result.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
+        assertThat(extraIntent).isNotNull();
         extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
         getContext().startActivity(extraIntent);
         resetUninstallResult();
@@ -203,13 +205,43 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
         startUninstallationViaIntent(Intent.ACTION_UNINSTALL_PACKAGE, packageName);
     }
 
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} on {@code context} via
+     * startActivity with ACTION_DELETE.
+     */
+    public static void startUninstallationViaIntentActionDeleteForUser(Context context)
+            throws Exception {
+        startUninstallationViaIntentForUser(context, Intent.ACTION_DELETE);
+    }
+
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} on {@code context} via
+     * startActivity with ACTION_UNINSTALL_PACKAGE.
+     */
+    public static void startUninstallationViaIntentActionUninstallPackageForUser(Context context)
+            throws Exception {
+        startUninstallationViaIntentForUser(context, Intent.ACTION_UNINSTALL_PACKAGE);
+    }
+
+    private static void startUninstallationViaIntentForUser(Context context, String action)
+            throws Exception {
+        final Intent intent = getIntentAndGrantPermission(action, TEST_APP_PACKAGE_NAME);
+        intent.putExtra(Intent.EXTRA_USER, context.getUser());
+        getContext().startActivity(intent);
+    }
+
     private static void startUninstallationViaIntent(String action, String packageName)
             throws Exception {
+        final Intent intent = getIntentAndGrantPermission(action, packageName);
+        getContext().startActivity(intent);
+    }
+
+    private static Intent getIntentAndGrantPermission(String action, String packageName) {
         final Intent intent = new Intent(action);
         intent.setData(Uri.fromParts("package", packageName, null));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         intent.setFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK);
-        getContext().startActivity(intent);
+        return intent;
     }
 
     /**
@@ -217,6 +249,26 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void clickUninstallOkButton() throws Exception {
         assertUninstallDialog();
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+    }
+
+    /**
+     * Click the OK button for uninstalling the clone app and wait for the uninstallation dialog
+     * to disappear.
+     */
+    public static void clickUninstallCloneOkButton() throws Exception {
+        findPackageInstallerObject(TEST_APP_LABEL + " " + CLONE_LABEL);
+        findPackageInstallerObject(By.textContains(DELETE_LABEL), /* checkNull= */ true);
+        clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
+    }
+
+    /**
+     * Click the OK button for uninstalling the test app from the work profile and
+     * wait for the uninstallation dialog to disappear.
+     */
+    public static void clickUninstallAppFromWorkProfileOkButton() throws Exception {
+        assertUninstallDialog();
+        findPackageInstallerObject(By.textContains(WORK_PROFILE_LABEL), /* checkNull= */ true);
         clickAndWaitForNewWindow(findPackageInstallerObject(BUTTON_OK_LABEL));
     }
 
@@ -251,6 +303,21 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     public static void assertUninstallFailureAborted() throws Exception {
         assertThat(getUninstallStatus()).isEqualTo(STATUS_FAILURE_ABORTED);
         resetUninstallResult();
+    }
+
+
+    /**
+     * Assert the test package is installed on the {@code userContext}
+     */
+    public static void assertTestPackageInstalledOnUser(@NonNull Context userContext) {
+        assertThat(isTestPackageInstalledOnUser(userContext)).isTrue();
+    }
+
+    /**
+     * Assert the test package is NOT installed on the {@code userContext}
+     */
+    public static void assertTestPackageNotInstalledOnUser(@NonNull Context userContext) {
+        assertThat(isTestPackageInstalledOnUser(userContext)).isFalse();
     }
 
     public static class UninstallResultReceiver extends BroadcastReceiver {

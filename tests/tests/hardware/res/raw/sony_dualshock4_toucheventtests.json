@@ -31,7 +31,10 @@
     "source" : "TOUCHPAD",
     "events": [
       {"action": "DOWN", "axes": {"AXIS_X": 1106, "AXIS_Y": 488}},
-      {"action": "MOVE", "axes": {"AXIS_X": 1106, "AXIS_Y": 488}},
+      {
+        "action": "MOVE",
+        "axes": {"AXIS_X": 1106, "AXIS_RELATIVE_X": 0, "AXIS_Y": 488, "AXIS_RELATIVE_Y": 0}
+      },
       {"action": "UP", "axes": {"AXIS_X": 1106, "AXIS_Y": 488}}
     ]
   },
@@ -63,10 +66,9 @@
         "action": "DOWN",
         "axes": {"AXIS_X": 938, "AXIS_Y": 549}
       },
-      // TODO(b/329585708): Add AXIS_RELATIVE_(X|Y) values back to these tests.
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 935, "AXIS_Y": 549}
+        "axes": {"AXIS_X": 935, "AXIS_RELATIVE_X": -3, "AXIS_Y": 549, "AXIS_RELATIVE_Y": 0}
       },
       {
         "action": "BUTTON_PRESS",
@@ -75,7 +77,7 @@
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 935, "AXIS_Y": 549},
+        "axes": {"AXIS_X": 935, "AXIS_RELATIVE_X": 0, "AXIS_Y": 549, "AXIS_RELATIVE_Y": 0},
         "buttonState": ["PRIMARY"]
       },
       {
@@ -130,27 +132,27 @@
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 64, "AXIS_Y": 25}
+        "axes": {"AXIS_X": 64, "AXIS_RELATIVE_X": 1, "AXIS_Y": 25, "AXIS_RELATIVE_Y": 0}
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 651,"AXIS_Y": 240}
+        "axes": {"AXIS_X": 651, "AXIS_RELATIVE_X": 587, "AXIS_Y": 240, "AXIS_RELATIVE_Y": 215}
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 713, "AXIS_Y": 269}
+        "axes": {"AXIS_X": 713, "AXIS_RELATIVE_X": 62, "AXIS_Y": 269, "AXIS_RELATIVE_Y": 29}
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 1759, "AXIS_Y": 781}
+        "axes": {"AXIS_X": 1759, "AXIS_RELATIVE_X": 1046, "AXIS_Y": 781, "AXIS_RELATIVE_Y": 512}
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 1794, "AXIS_Y": 809}
+        "axes": {"AXIS_X": 1794, "AXIS_RELATIVE_X": 35, "AXIS_Y": 809, "AXIS_RELATIVE_Y": 28}
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 1794, "AXIS_Y": 809}
+        "axes": {"AXIS_X": 1794, "AXIS_RELATIVE_X": 0, "AXIS_Y": 809, "AXIS_RELATIVE_Y": 0}
       },
       {
         "action": "UP",
@@ -206,7 +208,7 @@
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 1467, "AXIS_Y": 84}
+        "axes": {"AXIS_X": 1467, "AXIS_RELATIVE_X": -1, "AXIS_Y": 84, "AXIS_RELATIVE_Y": 0}
       },
       {
         "action": "POINTER_DOWN",
@@ -219,36 +221,36 @@
       {
         "action": "MOVE",
         "axes": [
-          {"AXIS_X": 1467, "AXIS_Y": 86},
-          {"AXIS_X": 255, "AXIS_Y": 140}
+          {"AXIS_X": 1467, "AXIS_RELATIVE_X": 0, "AXIS_Y": 86, "AXIS_RELATIVE_Y": 2},
+          {"AXIS_X": 255, "AXIS_RELATIVE_X": 0, "AXIS_Y": 140, "AXIS_RELATIVE_Y": 2}
         ]
       },
       {
         "action": "MOVE",
         "axes": [
-          {"AXIS_X": 1467, "AXIS_Y": 87},
-          {"AXIS_X": 255, "AXIS_Y": 142}
+          {"AXIS_X": 1467, "AXIS_RELATIVE_X": 0, "AXIS_Y": 87, "AXIS_RELATIVE_Y": 1},
+          {"AXIS_X": 255, "AXIS_RELATIVE_X": 0, "AXIS_Y": 142, "AXIS_RELATIVE_Y": 2}
         ]
       },
       {
         "action": "MOVE",
         "axes": [
-          {"AXIS_X": 1402, "AXIS_Y": 861},
-          {"AXIS_X": 288, "AXIS_Y": 840}
+          {"AXIS_X": 1402, "AXIS_RELATIVE_X": -65, "AXIS_Y": 861, "AXIS_RELATIVE_Y": 774},
+          {"AXIS_X": 288, "AXIS_RELATIVE_X": 33, "AXIS_Y": 840, "AXIS_RELATIVE_Y": 698}
         ]
       },
       {
         "action": "MOVE",
         "axes": [
-          {"AXIS_X": 1402, "AXIS_Y": 866},
-          {"AXIS_X": 289, "AXIS_Y": 846}
+          {"AXIS_X": 1402, "AXIS_RELATIVE_X": 0, "AXIS_Y": 866, "AXIS_RELATIVE_Y": 5},
+          {"AXIS_X": 289, "AXIS_RELATIVE_X": 1, "AXIS_Y": 846, "AXIS_RELATIVE_Y": 6}
         ]
       },
       {
         "action": "MOVE",
         "axes": [
-          {"AXIS_X": 1402, "AXIS_Y": 866},
-          {"AXIS_X": 291, "AXIS_Y": 852}
+          {"AXIS_X": 1402, "AXIS_RELATIVE_X": 0, "AXIS_Y": 866, "AXIS_RELATIVE_Y": 0},
+          {"AXIS_X": 291, "AXIS_RELATIVE_X": 2, "AXIS_Y": 852, "AXIS_RELATIVE_Y": 6}
         ]
       },
       {
@@ -261,7 +263,7 @@
       },
       {
         "action": "MOVE",
-        "axes": {"AXIS_X": 291, "AXIS_Y": 852}
+        "axes": {"AXIS_X": 291, "AXIS_RELATIVE_X": 0, "AXIS_Y": 852, "AXIS_RELATIVE_Y": 0}
       },
       {
         "action": "UP",

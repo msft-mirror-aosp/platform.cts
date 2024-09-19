@@ -2329,6 +2329,7 @@
     <string name="attention_filter_priority_mimic_alarms_only">Please enable Priority-Only \"Do not disturb\"
         by tapping the Quick Settings tile.  Then, long press the same tile and customize the setting to allow sounds
         from Alarms and Media (if applicable) only.</string>
+    <string name="attention_ringer_mode_not_silent">Please set the ringer mode to normal or vibrate by pressing a volume key and then selecting a mode icon above the volume slider.</string>
     <string name="attention_create_contacts">Create contacts for notification annotations.</string>
     <string name="attention_delete_contacts">Delete test contacts.</string>
     <string name="attention_default_order">Check that ranker defaults to time order.</string>
