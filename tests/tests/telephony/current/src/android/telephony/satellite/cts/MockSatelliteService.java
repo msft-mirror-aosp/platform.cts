@@ -35,7 +35,6 @@ import android.telephony.satellite.stub.PointingInfo;
 import android.telephony.satellite.stub.SatelliteCapabilities;
 import android.telephony.satellite.stub.SatelliteDatagram;
 import android.telephony.satellite.stub.SatelliteImplBase;
-import android.telephony.satellite.stub.SatelliteModemEnableRequestAttributes;
 import android.telephony.satellite.stub.SatelliteModemState;
 import android.telephony.satellite.stub.SatelliteResult;
 import android.telephony.satellite.stub.SatelliteService;
@@ -199,14 +198,12 @@ public class MockSatelliteService extends SatelliteImplBase {
     }
 
     @Override
-    public void requestSatelliteEnabled(SatelliteModemEnableRequestAttributes enableAttributes,
-            @NonNull IIntegerConsumer errorCallback) {
+    public void requestSatelliteEnabled(boolean enableSatellite, boolean enableDemoMode,
+            boolean isEmergency, @NonNull IIntegerConsumer errorCallback) {
         logd("requestSatelliteEnabled: mErrorCode=" + mErrorCode
-                + ", isEnabled=" + enableAttributes.isEnabled
-                + ", isDemoMode=" + enableAttributes.isDemoMode
-                + ", isEmergency= " + enableAttributes.isEmergencyMode
-                + ", iccId=" + enableAttributes.satelliteSubscriptionInfo.iccId
-                + ", niddApn=" + enableAttributes.satelliteSubscriptionInfo.niddApn
+                + ", enableSatellite=" + enableSatellite
+                + ", enableDemoMode=" + enableDemoMode
+                + ", isEmergency= " + isEmergency
                 + ", mShouldRespondTelephony=" + mShouldRespondTelephony.get());
         if (mErrorCode != SatelliteResult.SATELLITE_RESULT_SUCCESS) {
             if (mShouldRespondTelephony.get()) {
@@ -215,16 +212,15 @@ public class MockSatelliteService extends SatelliteImplBase {
             return;
         }
 
-        if (enableAttributes.isEnabled) {
+        if (enableSatellite) {
             enableSatellite(errorCallback);
         } else {
             disableSatellite(errorCallback);
         }
-        mIsEmergnecy = enableAttributes.isEmergencyMode;
+        mIsEmergnecy = isEmergency;
 
         if (mLocalListener != null) {
-            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(
-                    enableAttributes.isEmergencyMode));
+            runWithExecutor(() -> mLocalListener.onRequestSatelliteEnabled(enableSatellite));
         } else {
             loge("requestSatelliteEnabled: mLocalListener is null");
         }
