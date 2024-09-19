@@ -16,12 +16,9 @@
 package android.graphics.cts
 
 import android.graphics.Paint
-import android.platform.test.annotations.RequiresFlagsDisabled
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.filters.SmallTest
 import androidx.test.runner.AndroidJUnit4
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -35,15 +32,8 @@ class PaintDefaultsTest {
     @JvmField
     val mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
 
-    @RequiresFlagsEnabled(Flags.FLAG_DEPRECATE_UI_FONTS)
     @Test
     fun testElegantTextDefaultEnabled() {
         assertThat(Paint().isElegantTextHeight).isTrue()
-    }
-
-    @RequiresFlagsDisabled(Flags.FLAG_DEPRECATE_UI_FONTS)
-    @Test
-    fun testElegantTextDefaultDisabled() {
-        assertThat(Paint().isElegantTextHeight).isFalse()
     }
 }

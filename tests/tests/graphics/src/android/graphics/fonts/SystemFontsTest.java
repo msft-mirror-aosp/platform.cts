@@ -16,8 +16,6 @@
 
 package android.graphics.fonts;
 
-import static com.android.text.flags.Flags.FLAG_NEW_FONTS_FALLBACK_XML;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertFalse;
@@ -30,7 +28,6 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.text.PositionedGlyphs;
 import android.graphics.text.TextRunShaper;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.system.ErrnoException;
@@ -147,7 +144,6 @@ public class SystemFontsTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testWeightAdjustment() {
         String text = "Hello, World.";
@@ -166,7 +162,6 @@ public class SystemFontsTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testItalicAdjustment() {
         String text = "Hello, World.";
@@ -185,7 +180,6 @@ public class SystemFontsTest {
         }
     }
 
-    @RequiresFlagsEnabled(FLAG_NEW_FONTS_FALLBACK_XML)
     @Test
     public void testAdjustmentPreserveWidth() {
         String text = "Hello, World.";
