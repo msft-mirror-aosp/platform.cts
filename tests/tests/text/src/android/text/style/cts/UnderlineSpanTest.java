@@ -16,14 +16,11 @@
 
 package android.text.style.cts;
 
-import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import android.os.Parcel;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.text.SpannableString;
@@ -192,22 +189,5 @@ public class UnderlineSpanTest {
             super.updateDrawState(ds);
             ds.setElegantTextHeight(true);
         }
-    }
-
-    // Identical to the normal UnderlineSpan test, except that a subclass of UnderlineSpan is used
-    // that draws an underline and sets the font to elegant style. Since we may actually be
-    // changing fonts at the span boundary, this should increase width. Note that this subclass is
-    // not declared entirely correctly, and since it may affect metrics it should also extend
-    // MetricAffectingSpan, but we need to keep it behaving correctly for backward compatibility.
-    @Test
-    @RequiresFlagsDisabled(FLAG_DEPRECATE_UI_FONTS)
-    public void testAffectsWidth_ElegantSubclass() {
-        // Roboto kerns between "P" and "."
-        final SpannableString text = new SpannableString("P.");
-        final float origLineWidth = textWidth(text);
-        // Underline just the "P".
-        text.setSpan(new ElegantUnderlineSpan(), 0, 1, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        final float underlinedLineWidth = textWidth(text);
-        assertTrue(underlinedLineWidth > origLineWidth + 1.0f);
     }
 }
