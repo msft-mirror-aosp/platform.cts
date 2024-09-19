@@ -40,6 +40,9 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.SurfaceView;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
@@ -50,10 +53,13 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +70,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PHOTOPICKER)
 public class EmbeddedPhotoPickerTest {
     private static final String RESOURCE_ID_REGEX_PREFIX = ".*:id/";
     private static final String LAUNCH_EMBEDDED_BUTTON_ID =
@@ -84,6 +91,9 @@ public class EmbeddedPhotoPickerTest {
     private EmbeddedTestActivity mActivity;
 
     private Intent mIntent = new Intent(ACTION_EMBEDDED_PHOTOPICKER_SERVICE);
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
