@@ -940,7 +940,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is now in the fullscreen/freeform stack (when
         // no fullscreen/freeform stack existed before)
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
@@ -956,7 +956,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed in the fullscreen/freeform stack,
         // behind the top fullscreen/freeform activity
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 testAppWindowingMode, ACTIVITY_TYPE_STANDARD, pipWindowingMode);
     }
@@ -973,7 +973,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
@@ -1337,7 +1337,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Dismiss it
         separateTestJournal();
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         waitForExitPipToFullscreen(PIP_ACTIVITY);
         waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
 
@@ -2110,6 +2110,12 @@ public class PinnedStackTests extends ActivityManagerTestBase {
             mWmState.assertDoesNotContainStack("Must not contain pinned stack.",
                     WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
         }
+    }
+
+    private void removeRootTasksInPinnedWindowingModes() {
+        runWithShellPermission(
+                () -> mAtm.removeRootTasksInWindowingModes(new int[]{WINDOWING_MODE_PINNED}));
+        waitForIdle();
     }
 
     public static class TestActivity extends Activity { }
