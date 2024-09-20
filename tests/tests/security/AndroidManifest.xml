@@ -344,6 +344,9 @@
 
         <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
 
+        <service android:name="android.security.cts.CVE_2024_34734.PocService"
+          android:foregroundServiceType="microphone" />
+
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"
