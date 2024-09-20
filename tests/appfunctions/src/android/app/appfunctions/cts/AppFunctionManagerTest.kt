@@ -57,6 +57,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -182,6 +183,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_sidecarManager_platformAppFunctionService_success() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -214,6 +216,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             val parameters: GenericDocument =
@@ -245,6 +248,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_platformManager_sidecarAppFunctionService_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             val parameters: GenericDocument =
