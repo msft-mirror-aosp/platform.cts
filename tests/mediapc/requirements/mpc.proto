@@ -25,7 +25,8 @@ option go_package = "cts/test/mediapc/requirements/mpc_go_proto";
 // (version 30). The special value of 0 designates that the device is not of a
 // media performance class.
 enum MediaPerformanceClass {
-  MEDIA_PERFORMANCE_CLASS_UNSPECIFIED = 0;
+  MEDIA_PERFORMANCE_CLASS_UNSPECIFIED = 0
+      ;
   MEDIA_PERFORMANCE_CLASS_INVALID = -1;
   // As specified in
   // https://source.android.com/docs/compatibility/11/android-11-cdd#227_handheld_media_performance_class
