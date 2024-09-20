@@ -33,6 +33,11 @@ MCTS_TEST_SUITES_DEFAULT = [
     "mcts-mediaprovider",
 ]
 
+CTS_TEST_SUITES_DEFAULT = [
+    "cts",
+    "general-tests",
+]
+
 java_library_host {
     name: "CtsAppSecurityUtils",
     defaults: ["cts_defaults"],
@@ -91,8 +96,6 @@ java_defaults {
     java_resource_dirs: ["res"],
 
     per_testcase_directory: true,
-
-    test_suites: TEST_SUITES_DEFAULT,
 }
 
 java_test_host {
@@ -400,6 +403,8 @@ java_test_host {
     name: "CtsUseEmbeddedDexHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    test_suites: TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/UseEmbeddedDexTest.java",
     ],
@@ -418,6 +423,8 @@ java_test_host {
 java_test_host {
     name: "CtsPackageManagerHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     srcs: [
         "src/**/ApplicationVisibilityTest.java",
@@ -546,7 +553,7 @@ java_test_host {
 java_test_host {
     name: "CtsInstantAppsHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
-    test_suites: TEST_SUITES_DEFAULT + ["sts"],
+    test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
     srcs: [
         "src/**/EphemeralTest.java",
         "src/**/InstantAppUserTest.java",
@@ -573,6 +580,8 @@ java_test_host {
     name: "CtsAdoptableHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    test_suites: TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/*Adoptable*.java",
     ],
@@ -582,6 +591,8 @@ java_test_host {
 java_test_host {
     name: "CtsDirectBootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: TEST_SUITES_DEFAULT,
 
     srcs: [
         "src/**/*DirectBoot*.java",
@@ -596,6 +607,8 @@ java_test_host {
 java_test_host {
     name: "CtsStorageHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: TEST_SUITES_DEFAULT,
 
     static_libs: [
         "flag-junit-host",
@@ -647,6 +660,8 @@ java_test_host {
     name: "CtsResumeOnRebootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    test_suites: TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/*ResumeOnReboot*.java",
         "src/**/BootCountTrackerRule.java",
@@ -665,6 +680,9 @@ java_test_host {
 java_test_host {
     name: "CtsApkVerityInstallHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/ApkVerityInstallTest.java",
     ],
@@ -681,6 +699,9 @@ java_test_host {
 java_test_host {
     name: "CtsCorruptApkHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
+
     data: [
         ":CtsCorruptApkTests_b71360999",
         ":CtsCorruptApkTests_b71361168",
@@ -699,6 +720,8 @@ java_test_host {
 java_test_host {
     name: "CtsOverlayHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
+
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     srcs: [
         "src/**/OverlayHostTest.java",
