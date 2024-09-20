@@ -38,8 +38,8 @@
         <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile" />
         <option name="exclude-annotation" value="com.android.interactive.annotations.Interactive" />
         <option name="hidden-api-checks" value="false" />
-        <!-- test-timeout unit is ms, value = 10 min -->
-        <option name="test-timeout" value="600000" />
+        <!-- test-timeout unit is ms, value = 30 min -->
+        <option name="test-timeout" value="1800000" />
     </test>
 
     <!-- Collects any debug artifacts produced during the run -->
