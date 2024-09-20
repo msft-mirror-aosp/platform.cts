@@ -26,7 +26,6 @@ import android.graphics.text.LineBreakConfig.LINE_BREAK_STYLE_UNSPECIFIED
 import android.graphics.text.LineBreakConfig.LINE_BREAK_WORD_STYLE_UNSPECIFIED
 import android.graphics.text.MeasuredText
 import android.os.Parcel
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.MeasuredParagraph
@@ -41,7 +40,6 @@ import android.text.style.LocaleSpan
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
 import androidx.test.platform.app.InstrumentationRegistry
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import java.util.Locale
 import junit.framework.Assert.assertEquals
@@ -94,7 +92,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan() {
         val config = LineBreakConfig.Builder()
                 .setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_LOOSE)
@@ -115,7 +112,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_getSpanTypeId() {
         val config = LineBreakConfig.Builder()
                 .setLineBreakStyle(LineBreakConfig.LINE_BREAK_STYLE_LOOSE)
@@ -127,7 +123,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_override() {
         // Span overview of this test case
         // |------------------------------------------------|: Test String
@@ -173,7 +168,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_partialOverride() {
         // |------------------------------------------------|: Test String
         //
@@ -221,7 +215,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_partialOverride2() {
         // |--------------------------------------------------------|: Test String
         //
@@ -272,7 +265,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_partialOverride3() {
         // |--------------------------------------------------------|: Test String
         //
@@ -325,7 +317,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_MetricAffectingSpanMixture() {
         // |--------------------------------------------------------|: Test String
         //
@@ -375,7 +366,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_MetricAffectingSpanMixture2() {
         // |--------------------------------------------------------|: Test String
         //
@@ -456,7 +446,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_parcelable() {
         val strictConfig = LineBreakConfig.Builder()
                 .setLineBreakStyle(LINE_BREAK_STYLE_STRICT)
@@ -495,7 +484,6 @@ class LineBreakConfigSpanTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_NO_BREAK_NO_HYPHENATION_SPAN)
     fun testLineBreakConfigSpan_resource() {
         val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
 
