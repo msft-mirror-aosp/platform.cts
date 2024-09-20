@@ -27,14 +27,16 @@ import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 import androidx.media3.common.Player.PositionInfo;
 
+import java.time.Duration;
+
 public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
 
-  private static final int MESSAGE_INTERVAL_MS = 2000;
+  private static final Duration MESSAGE_INTERVAL = Duration.ofSeconds(2);
 
   private boolean mRewindDone;
   private boolean mIsControllerLocked;
 
-  public LockPlaybackControllerTestPlayerListener(long sendMessagePosition) {
+  public LockPlaybackControllerTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -48,7 +50,7 @@ public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
     // Update the variable if rewind has been executed
     mRewindDone = (newPosition.positionMs < oldPosition.positionMs);
     // Add change in duration due to seek
-    mExpectedTotalTime += (mSendMessagePosition - newPosition.positionMs);
+    mExpectedTotalTime += (mSendMessagePosition.toMillis() - newPosition.positionMs);
   }
 
   @Override
@@ -75,7 +77,7 @@ public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
           // Rewind by 5 sec
           mActivity.mExoRewindButton.performClick();
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition)
+        .setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -85,7 +87,7 @@ public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
           // Lock the playback controller
           mActivity.mLockControllerButton.performClick();
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + MESSAGE_INTERVAL_MS)
+        .setPosition(mSendMessagePosition.plus(MESSAGE_INTERVAL).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -94,7 +96,7 @@ public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
           // Try to rewind while the controller UI is locked
           mActivity.mExoRewindButton.performClick();
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + 2 * MESSAGE_INTERVAL_MS)
+        .setPosition(mSendMessagePosition.plus(MESSAGE_INTERVAL.multipliedBy(2)).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -103,7 +105,7 @@ public class LockPlaybackControllerTestPlayerListener extends PlayerListener {
           // Unlock the playback controller
           mActivity.mLockControllerButton.performClick();
         }).setLooper(Looper.getMainLooper())
-        .setPosition(mSendMessagePosition + 3 * MESSAGE_INTERVAL_MS)
+        .setPosition(mSendMessagePosition.plus(MESSAGE_INTERVAL.multipliedBy(3)).toMillis())
         .setDeleteAfterDelivery(true)
         .send();
   }

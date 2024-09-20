@@ -25,11 +25,13 @@ import android.os.Looper;
 import androidx.annotation.NonNull;
 import androidx.media3.common.Player;
 
+import java.time.Duration;
+
 public class PipModeTestPlayerListener extends PlayerListener {
 
-  private static final int PIP_DURATION_MS = 5000;
+  private static final Duration PIP_DURATION = Duration.ofSeconds(5);
 
-  public PipModeTestPlayerListener(long sendMessagePosition) {
+  public PipModeTestPlayerListener(Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
   }
@@ -54,7 +56,7 @@ public class PipModeTestPlayerListener extends PlayerListener {
           // Switch to picture in picture minimized playback mode
           mActivity.enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
           mActivity.mConfiguredPipMode = true;
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition)
+        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition.toMillis())
         .setDeleteAfterDelivery(true)
         .send();
     mActivity.mPlayer.createMessage((messageType, payload) -> {
@@ -66,8 +68,8 @@ public class PipModeTestPlayerListener extends PlayerListener {
           startIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
           mActivity.startActivity(startIntent);
           mActivity.mConfiguredPipMode = false;
-        }).setLooper(Looper.getMainLooper()).setPosition(mSendMessagePosition + PIP_DURATION_MS)
-        .setDeleteAfterDelivery(true)
-        .send();
+        }).setLooper(Looper.getMainLooper())
+        .setPosition(mSendMessagePosition.plus(PIP_DURATION).toMillis())
+        .setDeleteAfterDelivery(true).send();
   }
 }

@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,8 +44,24 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
 
+  private static final Duration PLAYLIST_DURATION_FIFTEEN_MIN = Duration.ofMinutes(15);
+  private static final Duration PLAYLIST_DURATION_THIRTY_MIN = Duration.ofMinutes(30);
+  private static final Duration SEEK_DURATION = Duration.ofSeconds(10);
+  private static final Duration SEEK_MESSAGE_POSITION = Duration.ofSeconds(150);
+  private static final int SEEK_ITERATIONS = 30;
+  // A delay of about 1 to 2 seconds is observed after each seek on slower devices. Hence, the seek
+  // overhead is 30 (Number of seek iterations) * 2 (Overhead for each seek) = 60 seconds.
+  private static final Duration SEEK_OVERHEAD_PER_CLIP = OVERHEAD_PER_SEEK.multipliedBy(
+      SEEK_ITERATIONS);
+  private static final int RANDOM_SEEK_ITERATIONS = 10;
+  // Number of seek iterations is 30 and the seek duration is 10 seconds. We seek forward 10 times,
+  // backward 10 times and then randomly backwards or forwards 10 times on each media item. While
+  // performing 10 random seeks, if all 10 seeks are in backward direction then we need an extra
+  // overhead of 10 (Number of random seek iterations) * 10 (Duration of each seek) = 100 seconds.
+  private static final Duration RANDOM_SEEK_OVERHEAD_PER_CLIP = SEEK_DURATION.multipliedBy(
+      RANDOM_SEEK_ITERATIONS);
+  private static final int NUMBER_OF_VIDEO_TRACKS = 6;
   private static final String MEDIA_DIR = WorkDir.getMediaDirString();
-
   private static final String MKA_ELEPHANTDREAM_OPUS_2CH_48Khz_5MIN_URI_STRING =
       MEDIA_DIR + "ElephantsDream_opus_2ch_48Khz_5min.mka";
   private static final String MP4_TEARSOFSTEEL_AAC_2CH_48Khz_5MIN_URI_STRING =
@@ -69,7 +86,7 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   CujTestParam mCujTestParam;
 
   public CtsMediaLargeFormPlaybackTest(CujTestParam cujTestParam, String testType) {
-    super(cujTestParam.playerListener());
+    super(cujTestParam.getPlayerListener());
     mCujTestParam = cujTestParam;
   }
 
@@ -80,33 +97,39 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   public static Collection<Object[]> input() {
     // CujTestParam, testId
     final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
-        {CujTestParam.builder().setMediaUrls(prepare_5minAudioList()).setTimeoutMilliSeconds(930000)
+        {CujTestParam.builder().setMediaUrls(prepare_15minAudioPlaylist())
+            .setDuration(PLAYLIST_DURATION_FIFTEEN_MIN).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new PlaybackTestPlayerListener()).build(),
-            "Audio_5min_PlaybackTest"},
-        {CujTestParam.builder().setMediaUrls(prepareVP9_640x480_5minVideoList())
-            .setTimeoutMilliSeconds(930000)
-            .setPlayerListener(new PlaybackTestPlayerListener()).build(), "VP9_640x480_5min"},
-        {CujTestParam.builder().setMediaUrls(prepareVP9_640x480_5minVideoList())
-            .setTimeoutMilliSeconds(1230000)
-            .setPlayerListener(new SeekTestPlayerListener(30, 10000, 30000)).build(),
-            "VP9_640x480_5min_seekTest"},
-        {CujTestParam.builder().setMediaUrls(prepare_30minAudioList())
-            .setTimeoutMilliSeconds(1830000)
+            "Audio_5min_3clips_PlaybackTest"},
+        {CujTestParam.builder().setMediaUrls(prepareVP9_640x480_15minVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_FIFTEEN_MIN).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new PlaybackTestPlayerListener()).build(),
+            "VP9_640x480_5min_3clips_PlaybackTest"},
+        {CujTestParam.builder().setMediaUrls(prepareVP9_640x480_15minVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_FIFTEEN_MIN).setOverhead(TEST_OVERHEAD.plus(
+                (SEEK_OVERHEAD_PER_CLIP.plus(RANDOM_SEEK_OVERHEAD_PER_CLIP)).multipliedBy(
+                    prepareVP9_640x480_15minVideoPlaylist().size()))).setPlayerListener(
+                new SeekTestPlayerListener(SEEK_ITERATIONS, SEEK_DURATION,
+                    SEEK_MESSAGE_POSITION)).build(), "VP9_640x480_5min_3clips_seekTest"},
+        {CujTestParam.builder().setMediaUrls(prepare_30minAudioPlaylist())
+            .setDuration(PLAYLIST_DURATION_THIRTY_MIN).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new PlaybackTestPlayerListener()).build(),
             "Audio_30min_PlaybackTest"},
-        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_30minVideoList())
-            .setTimeoutMilliSeconds(1830000)
+        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_30minVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_THIRTY_MIN).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new PlaybackTestPlayerListener()).build(), "Avc_1080p_30min"},
-        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_30minVideoList())
-            .setTimeoutMilliSeconds(1930000)
-            .setPlayerListener(new SeekTestPlayerListener(30, 10000, 30000)).build(),
-            "Avc_1080p_30min_seekTest"},
-        {CujTestParam.builder().setMediaUrls(prepareVp9_Local_DASH_3minVideoList())
-            .setTimeoutMilliSeconds(210000)
-            .setPlayerListener(new AdaptivePlaybackTestPlayerListener(6, 15000)).build(),
-            "Vp9_DASH_3min_adaptivePlaybackTest"},
-        {CujTestParam.builder().setMediaUrls(prepareHevc_720p_30secVideoListForSpeedChangeTest())
-            .setTimeoutMilliSeconds(60000)
+        {CujTestParam.builder().setMediaUrls(prepareAvc_1080p_30minVideoPlaylist())
+            .setDuration(PLAYLIST_DURATION_THIRTY_MIN).setOverhead(
+                TEST_OVERHEAD.plus(SEEK_OVERHEAD_PER_CLIP).plus(RANDOM_SEEK_OVERHEAD_PER_CLIP))
+            .setPlayerListener(new SeekTestPlayerListener(SEEK_ITERATIONS, SEEK_DURATION,
+                SEEK_MESSAGE_POSITION)).build(), "Avc_1080p_30min_seekTest"},
+        {CujTestParam.builder().setMediaUrls(prepareVp9_Local_DASH_3minVideoPlaylist())
+            .setDuration(Duration.ofMinutes(3) /* clipDuration */).setOverhead(TEST_OVERHEAD)
+            .setPlayerListener(new AdaptivePlaybackTestPlayerListener(NUMBER_OF_VIDEO_TRACKS,
+                Duration.ofSeconds(15))).build(), "Vp9_DASH_3min_adaptivePlaybackTest"},
+        {CujTestParam.builder()
+            .setMediaUrls(prepareHevc_720p_30secVideoPlaylistForSpeedChangeTest())
+            .setDuration(Duration.ofSeconds(30) /* clipDuration */).setOverhead(TEST_OVERHEAD)
             .setPlayerListener(new SpeedChangeTestPlayerListener()).build(),
             "Hevc_720p_30sec_SpeedChangeTest"},
     }));
@@ -114,9 +137,9 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare 5min audio list.
+   * Prepare 15min audio playlist. The playlist has 3 clips each of 5min.
    */
-  public static List<String> prepare_5minAudioList() {
+  public static List<String> prepare_15minAudioPlaylist() {
     List<String> videoInput = Arrays.asList(
         MKA_ELEPHANTDREAM_OPUS_2CH_48Khz_5MIN_URI_STRING,
         MP4_TEARSOFSTEEL_AAC_2CH_48Khz_5MIN_URI_STRING,
@@ -125,9 +148,9 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   }
 
   /**
-   * Prepare Vp9 640x480 5min video list.
+   * Prepare Vp9 640x480 15min video playlist. The playlist has 3 clips each of 5min.
    */
-  public static List<String> prepareVP9_640x480_5minVideoList() {
+  public static List<String> prepareVP9_640x480_15minVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         WEBM_ELEPHANTDREAM_640x480_VP9_5MIN_URI_STRING,
         WEBM_TEARSOFSTEEL_640X480_VP9_5MIN_URI_STRING,
@@ -138,16 +161,16 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   /**
    * Prepare 30min audio list.
    */
-  public static List<String> prepare_30minAudioList() {
-    List<String> videoInput = Arrays.asList(
+  public static List<String> prepare_30minAudioPlaylist() {
+    List<String> audioInput = Arrays.asList(
         MP3_ELEPHANTSDREAM_BIGBUCKBUNNY_CONCAT_2CH_44Khz_30MIN_URI_STRING);
-    return videoInput;
+    return audioInput;
   }
 
   /**
    * Prepare Avc 1080p 30min video list.
    */
-  public static List<String> prepareAvc_1080p_30minVideoList() {
+  public static List<String> prepareAvc_1080p_30minVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         MP4_ELEPHANTSDREAM_BIGBUCKBUNNY_CONCAT_1080P_AVC_30MIN_URI_STRING);
     return videoInput;
@@ -156,16 +179,16 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   /**
    * Prepare Vp9 DASH 3min video list.
    */
-  public static List<String> prepareVp9_Local_DASH_3minVideoList() {
+  public static List<String> prepareVp9_Local_DASH_3minVideoPlaylist() {
     List<String> videoInput = Arrays.asList(
         WEBM_ELEPHANTSDREAM_DASH_3MIN_URI_STRING);
     return videoInput;
   }
 
   /**
-   * Prepare Hevc 720p 30sec video list for Speech change test
+   * Prepare Hevc 720p 30sec video list for Speed change test
    */
-  public static List<String> prepareHevc_720p_30secVideoListForSpeedChangeTest() {
+  public static List<String> prepareHevc_720p_30secVideoPlaylistForSpeedChangeTest() {
     List<String> videoInput = Arrays.asList(
         WEBM_TEARSOFSTEEL_640x480_VP9_30S_URI_STRING);
     return videoInput;
@@ -180,6 +203,7 @@ public class CtsMediaLargeFormPlaybackTest extends CujTestBase {
   @PlatinumTest(focusArea = "media")
   @Test
   public void testVideoPlayback() throws Exception {
-    play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
+    play(mCujTestParam.getMediaUrls(),
+        mCujTestParam.getDuration().plus(mCujTestParam.getOverhead()));
   }
 }

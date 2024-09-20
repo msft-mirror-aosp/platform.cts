@@ -29,6 +29,7 @@ import androidx.media3.common.TrackSelectionParameters;
 import androidx.media3.common.Tracks;
 import androidx.media3.common.VideoSize;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class AdaptivePlaybackTestPlayerListener extends PlayerListener {
   private Tracks.Group mVideoTrackGroup;
   private List<Format> mVideoFormatList;
 
-  public AdaptivePlaybackTestPlayerListener(int numOfVideoTrack, long sendMessagePosition) {
+  public AdaptivePlaybackTestPlayerListener(int numOfVideoTrack, Duration sendMessagePosition) {
     super();
     this.mSendMessagePosition = sendMessagePosition;
     this.mNumOfVideoTrack = numOfVideoTrack;
@@ -86,7 +87,7 @@ public class AdaptivePlaybackTestPlayerListener extends PlayerListener {
     final int totalNumOfVideoTrackChange = mNumOfVideoTrack * 2;
     // Create messages to be executed at different positions
     for (int count = 1; count < totalNumOfVideoTrackChange; count++) {
-      createAdaptivePlaybackMessage(mSendMessagePosition * (count));
+      createAdaptivePlaybackMessage(mSendMessagePosition.toMillis() * count);
     }
   }
 

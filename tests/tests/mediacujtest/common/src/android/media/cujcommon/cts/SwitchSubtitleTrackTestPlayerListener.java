@@ -24,11 +24,14 @@ import androidx.media3.common.Player;
 import androidx.media3.common.TrackSelectionOverride;
 import androidx.media3.common.TrackSelectionParameters;
 
+import java.time.Duration;
+
 public class SwitchSubtitleTrackTestPlayerListener extends PlayerListener {
 
   private final int mNumOfSubtitleTrack;
 
-  public SwitchSubtitleTrackTestPlayerListener(int numOfSubtitleTrack, long sendMessagePosition) {
+  public SwitchSubtitleTrackTestPlayerListener(int numOfSubtitleTrack,
+      Duration sendMessagePosition) {
     super();
     this.mNumOfSubtitleTrack = numOfSubtitleTrack;
     this.mSendMessagePosition = sendMessagePosition;
@@ -78,7 +81,7 @@ public class SwitchSubtitleTrackTestPlayerListener extends PlayerListener {
     // First trackGroupIndex is selected at the time of playback start, so changing
     // track from second track group Index onwards.
     for (int trackGroupIndex = 1; trackGroupIndex < mNumOfSubtitleTrack; trackGroupIndex++) {
-      createSwitchTrackMessage(mSendMessagePosition * trackGroupIndex, trackGroupIndex,
+      createSwitchTrackMessage(mSendMessagePosition.multipliedBy(trackGroupIndex), trackGroupIndex,
           0 /* TrackIndex */);
     }
   }
