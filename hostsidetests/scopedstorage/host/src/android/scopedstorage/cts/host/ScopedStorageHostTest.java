@@ -366,8 +366,9 @@ public class ScopedStorageHostTest extends BaseHostTestCase {
     public void testMediaStoreVersion() throws Exception {
         String flag = executeShellCommand(
                 "aflags list | grep com.android.providers.media.flags.version_lockdown");
-        assumeTrue(flag.contains("enabled"));
-        runDeviceTest("testMediaStoreVersion");
+        // This change targets Baklava / API 36
+        assumeTrue(flag.contains("enabled") && getDevice().getApiLevel() > 35);
+        runDeviceTest("testMediaStoreVersionLockdown");
     }
 
     private void grantPermissionsToPackage(String packageName, String... perms) throws Exception {
