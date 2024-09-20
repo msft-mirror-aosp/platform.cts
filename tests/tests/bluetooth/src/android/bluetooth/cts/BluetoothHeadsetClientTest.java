@@ -225,10 +225,11 @@ public class BluetoothHeadsetClientTest {
     @Test
     public void createNetworkServiceStateFromParcel() {
         assumeTrue(mHasBluetooth && mIsHeadsetClientSupported);
-        BluetoothDevice testDevice = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
+        String testDeviceAddr = "00:11:22:AA:BB:CC";
+        BluetoothDevice testDevice = mAdapter.getRemoteDevice(testDeviceAddr);
 
         Parcel p = Parcel.obtain();
-        p.writeParcelable(testDevice, 0); // Device
+        p.writeString(testDeviceAddr); // Device address
         p.writeInt(0); // Service Available
         p.writeString(""); // Operator Name
         p.writeInt(0); // General Signal Strength
