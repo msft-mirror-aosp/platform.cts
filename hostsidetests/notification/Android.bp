@@ -1,4 +1,4 @@
-// Copyright (C) 2016 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,37 +13,34 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_framework_android_multiuser",
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_system_ui_please_use_a_more_specific_subteam_if_possible_",
 }
 
 java_test_host {
-    name: "CtsMultiUserHostTestCases",
+    name: "CtsNotificationHostTestCases",
     defaults: ["cts_defaults"],
-    srcs: ["src/**/*.java"],
+    // Only compile source java files in this apk.
+    srcs: [
+        "src/**/*.java",
+    ],
     libs: [
-        "tools-common-prebuilt",
+        "compatibility-host-util",
         "cts-tradefed",
         "tradefed",
-        "platform-test-annotations-host",
-        "compatibility-host-util",
-    ],
-    data: [
-        ":CtsMultiuserApp",
-        ":CtsMultiuserDpc",
+        "truth",
     ],
     // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
     ],
-}
-
-java_library_host {
-    name: "cts-multi-user-test-utils",
-    srcs: ["src/android/host/multiuser/BaseMultiUserTest.java"],
-    libs: [
-        "cts-tradefed",
-        "tradefed",
+    static_libs: [
+        "cts-statsd-atom-host-test-utils",
+        "cts-multi-user-test-utils",
+        "flag-junit-host",
+    ],
+    data: [
+        ":CtsNotificationListenerApp",
     ],
 }
