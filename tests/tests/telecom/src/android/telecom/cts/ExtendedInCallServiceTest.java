@@ -495,10 +495,6 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
             return;
         }
-        if (hasAutomotiveFeature()) {
-            // TODO(b/365612739): temporarily disabled, fix and re-enable this test for auto
-            return;
-        }
 
         placeAndVerifyCall();
         final MockConnection connection = verifyConnectionForOutgoingCall();
