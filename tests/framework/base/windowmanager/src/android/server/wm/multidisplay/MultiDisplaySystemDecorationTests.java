@@ -267,48 +267,22 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
     }
 
     /**
-     * Tests sending a secondary home intent to a virtual display with system decoration support.
-     * The currently configured secondary home activity should be resumed.
-     */
-    @Test
-    public void testSendSecondaryHomeIntentActivityOnDisplayWithDecorations() {
-        createManagedHomeActivitySession(SINGLE_SECONDARY_HOME_ACTIVITY);
-
-        // Create new simulated display with system decoration support.
-        final DisplayContent display = createManagedVirtualDisplaySession()
-                .setSimulateDisplay(true)
-                .setShowSystemDecorations(true)
-                .createDisplay();
-        assertSecondaryHomeResumedOnDisplay(getDefaultSecondaryHomeComponent(), display.mId);
-
-        // Launch a random activity on the display.
-        final VirtualDisplayLauncher virtualLauncher =
-                mObjectTracker.manage(new VirtualDisplayLauncher());
-        virtualLauncher.launchActivityOnDisplay(TEST_ACTIVITY, display);
-        waitAndAssertActivityStateOnDisplay(TEST_ACTIVITY, STATE_RESUMED, display.mId,
-                "Top activity must be on secondary display");
-
-        // Send a SECONDARY_HOME intent to that display and check that the home activity is resumed.
-        sendHomeIntentToDisplay(Intent.CATEGORY_SECONDARY_HOME, display.mId);
-        assertSecondaryHomeResumedOnDisplay(getDefaultSecondaryHomeComponent(), display.mId);
-    }
-
-    /**
      * Tests sending a primary home intent to a virtual display with system decoration support.
      * The currently configured secondary home activity should be resumed because the display does
      * not support primary home.
      */
     @Test
     public void testSendPrimaryHomeIntentActivityOnDisplayWithDecorations() {
-        createManagedHomeActivitySession(SINGLE_SECONDARY_HOME_ACTIVITY);
+        createManagedHomeActivitySession(SECONDARY_HOME_ACTIVITY);
+        final ComponentName homeActivity =
+                getCurrentSecondaryHomeComponent(SECONDARY_HOME_ACTIVITY);
 
         // Create new simulated display with system decoration support.
         final DisplayContent display = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .setShowSystemDecorations(true)
                 .createDisplay();
-        assertSecondaryHomeResumedOnDisplay(getDefaultSecondaryHomeComponent(), display.mId);
-
+        assertSecondaryHomeResumedOnDisplay(homeActivity, display.mId);
         // Launch a random activity on the display.
         final VirtualDisplayLauncher virtualLauncher =
                 mObjectTracker.manage(new VirtualDisplayLauncher());
@@ -320,7 +294,7 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
         // The secondary home activity should be resumed because the target display does not support
         // primary home but it supports secondary home.
         sendHomeIntentToDisplay(Intent.CATEGORY_HOME, display.mId);
-        assertSecondaryHomeResumedOnDisplay(getDefaultSecondaryHomeComponent(), display.mId);
+        assertSecondaryHomeResumedOnDisplay(homeActivity, display.mId);
     }
 
     /**
@@ -343,18 +317,9 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
     @Test
     public void testLaunchSecondaryHomeActivityOnDisplayWithDecorations() {
         createManagedHomeActivitySession(SECONDARY_HOME_ACTIVITY);
-        boolean useSystemProvidedLauncher = mContext.getResources().getBoolean(
-                Resources.getSystem().getIdentifier("config_useSystemProvidedLauncherForSecondary",
-                        "bool", "android"));
 
-        if (useSystemProvidedLauncher) {
-            // Default secondary home activity should be automatically launched on the new display
-            // if forced by the config.
-            assertSecondaryHomeResumedOnNewDisplay(getDefaultSecondaryHomeComponent());
-        } else {
-            // Provided secondary home activity should be automatically launched on the new display.
-            assertSecondaryHomeResumedOnNewDisplay(SECONDARY_HOME_ACTIVITY);
-        }
+        assertSecondaryHomeResumedOnNewDisplay(
+                getCurrentSecondaryHomeComponent(SECONDARY_HOME_ACTIVITY));
     }
 
     private void sendHomeIntentToDisplay(String category, int displayId) {
@@ -373,6 +338,14 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
                 .createDisplay();
 
         assertSecondaryHomeResumedOnDisplay(homeComponentName, newDisplay.mId);
+    }
+
+    public ComponentName getCurrentSecondaryHomeComponent(ComponentName homeComponent) {
+        boolean useSystemProvidedLauncher = mContext.getResources().getBoolean(
+                Resources.getSystem().getIdentifier(
+                        "config_useSystemProvidedLauncherForSecondary",
+                        "bool", "android"));
+        return useSystemProvidedLauncher ? getDefaultSecondaryHomeComponent() : homeComponent;
     }
 
     private void assertSecondaryHomeResumedOnDisplay(ComponentName homeComponentName,
