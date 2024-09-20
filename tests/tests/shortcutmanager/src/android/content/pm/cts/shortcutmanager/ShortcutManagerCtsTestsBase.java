@@ -83,6 +83,8 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
     private int mUserId;
     private UserHandle mUserHandle;
 
+    static protected int mMaxShortcuts;
+
     private String mOriginalLauncher;
 
     protected Context mPackageContext1;
@@ -179,6 +181,8 @@ public abstract class ShortcutManagerCtsTestsBase extends InstrumentationTestCas
             assertEquals("for " + getCurrentCallingPackage(),
                     0, getManager().getManifestShortcuts().size());
         });
+
+        mMaxShortcuts = getManager().getMaxShortcutCountPerActivity();
     }
 
     @Override
