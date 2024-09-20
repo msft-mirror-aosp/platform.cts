@@ -575,7 +575,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         bounds.transitionBounds = getTransitionAppBounds();
         bounds.testableBounds = activity.getActivityTestableRegion();
         launchHomeActivityNoWait();
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+        finishAndRemoveCurrentTestActivityTasks();
         mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
         return bounds;
     }
