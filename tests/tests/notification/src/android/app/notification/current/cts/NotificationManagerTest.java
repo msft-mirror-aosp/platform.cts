@@ -3668,6 +3668,27 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         }
     }
 
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
+    public void testCanPostPromotedNotifications() {
+        assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), true);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
+
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), false);
+            });
+        }
+    }
+
     private static class EventCallback extends Handler {
         private static final int BROADCAST_RECEIVED = 1;
         private static final int SERVICE_STARTED = 2;
