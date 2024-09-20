@@ -51,6 +51,7 @@ import android.inputmethodservice.cts.common.test.ShellCommandUtils;
 import android.inputmethodservice.cts.devicetest.SequenceMatcher.MatchResult;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -107,6 +108,7 @@ public class InputMethodServiceDeviceTest {
     public void testSwitchToNextInputMethod() throws Throwable {
         final TestHelper helper = new TestHelper();
         final long startActivityTime = SystemClock.uptimeMillis();
+        final int testUserId = UserHandle.myUserId();
         helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
                 EditTextAppConstants.URI);
         pollingCheck(() -> helper.queryAllEvents()
@@ -115,13 +117,13 @@ public class InputMethodServiceDeviceTest {
                 TIMEOUT, "CtsInputMethod1.onStartInput is called");
         helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME).click();
 
-        pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme())
+        pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme(testUserId))
                         .equals(Ime1Constants.IME_ID),
                 TIMEOUT, "CtsInputMethod1 is current IME");
         helper.shell(ShellCommandUtils.broadcastIntent(
                 ACTION_IME_COMMAND, Ime1Constants.PACKAGE,
                 "-e", EXTRA_COMMAND, COMMAND_SWITCH_TO_NEXT_INPUT));
-        pollingCheck(() -> !helper.shell(ShellCommandUtils.getCurrentIme())
+        pollingCheck(() -> !helper.shell(ShellCommandUtils.getCurrentIme(testUserId))
                         .equals(Ime1Constants.IME_ID),
                 TIMEOUT, "CtsInputMethod1 shouldn't be current IME");
     }
@@ -133,12 +135,13 @@ public class InputMethodServiceDeviceTest {
     public void switchToPreviousInputMethod() throws Throwable {
         final TestHelper helper = new TestHelper();
         final long startActivityTime = SystemClock.uptimeMillis();
+        final int testUserId = UserHandle.myUserId();
         helper.launchActivity(EditTextAppConstants.PACKAGE, EditTextAppConstants.CLASS,
                 EditTextAppConstants.URI);
         helper.findUiObject(EditTextAppConstants.EDIT_TEXT_RES_NAME).click();
 
-        final String initialIme = helper.shell(ShellCommandUtils.getCurrentIme());
-        helper.shell(ShellCommandUtils.setCurrentImeSync(Ime2Constants.IME_ID));
+        final String initialIme = helper.shell(ShellCommandUtils.getCurrentIme(testUserId));
+        helper.shell(ShellCommandUtils.setCurrentImeSync(Ime2Constants.IME_ID, testUserId));
         pollingCheck(() -> helper.queryAllEvents()
                         .filter(isNewerThan(startActivityTime))
                         .anyMatch(isFrom(Ime2Constants.CLASS).and(isType(ON_START_INPUT))),
@@ -146,7 +149,7 @@ public class InputMethodServiceDeviceTest {
         helper.shell(ShellCommandUtils.broadcastIntent(
                 ACTION_IME_COMMAND, Ime2Constants.PACKAGE,
                 "-e", EXTRA_COMMAND, COMMAND_SWITCH_TO_PREVIOUS_INPUT));
-        pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme())
+        pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme(testUserId))
                         .equals(initialIme),
                 TIMEOUT, initialIme + " is current IME");
     }
@@ -192,8 +195,8 @@ public class InputMethodServiceDeviceTest {
                     ACTION_IME_COMMAND, Ime1Constants.PACKAGE,
                     "-e", EXTRA_COMMAND, COMMAND_SWITCH_INPUT_METHOD,
                     "-e", EXTRA_ARG_STRING1, Ime2Constants.IME_ID));
-
-            pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme())
+            final int testUserId = UserHandle.myUserId();
+            pollingCheck(() -> helper.shell(ShellCommandUtils.getCurrentIme(testUserId))
                             .equals(Ime2Constants.IME_ID),
                     TIMEOUT, "CtsInputMethod2 is current IME");
 
@@ -252,7 +255,8 @@ public class InputMethodServiceDeviceTest {
         final long imeForceStopTime = SystemClock.uptimeMillis();
         helper.shell(ShellCommandUtils.uninstallPackage(Ime1Constants.PACKAGE));
 
-        helper.shell(ShellCommandUtils.setCurrentImeSync(Ime2Constants.IME_ID));
+        helper.shell(ShellCommandUtils.setCurrentImeSync(Ime2Constants.IME_ID,
+                UserHandle.myUserId()));
         editText.click();
         pollingCheck(() -> helper.queryAllEvents()
                         .filter(isNewerThan(imeForceStopTime))
