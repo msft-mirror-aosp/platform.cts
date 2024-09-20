@@ -385,6 +385,8 @@ java_test_host {
     name: "CtsAppDataIsolationHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    test_suites: TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/AppDataIsolationTests.java",
     ],
