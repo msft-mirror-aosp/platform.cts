@@ -153,6 +153,7 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import com.google.common.truth.Truth;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -165,12 +166,13 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Build/Install/Run:
- * atest CtsWindowManagerDeviceActivity:PinnedStackTests
+ * atest CtsWindowManagerDeviceOther:PinnedStackTests
  */
 @Presubmit
 @android.server.wm.annotation.Group2
 public class PinnedStackTests extends ActivityManagerTestBase {
     private static final String TAG = PinnedStackTests.class.getSimpleName();
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_PIP_ACTIVITY.getPackageName();
 
     private static final String APP_OPS_OP_ENTER_PICTURE_IN_PICTURE = "PICTURE_IN_PICTURE";
     private static final int APP_OPS_MODE_IGNORED = 1;
@@ -200,6 +202,11 @@ public class PinnedStackTests extends ActivityManagerTestBase {
         super.setUp();
         assumeTrue(supportsPip());
         assumeFalse("PiP in HSUM not supported", UserManager.isHeadlessSystemUserMode());
+    }
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
     }
 
     @Test
@@ -933,7 +940,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is now in the fullscreen/freeform stack (when
         // no fullscreen/freeform stack existed before)
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
@@ -949,7 +956,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed in the fullscreen/freeform stack,
         // behind the top fullscreen/freeform activity
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 testAppWindowingMode, ACTIVITY_TYPE_STANDARD, pipWindowingMode);
     }
@@ -966,16 +973,13 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Remove the stack and ensure that the task is placed on top of the hidden
         // fullscreen/freeform stack, but that the home stack is still focused
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         assertPinnedStackStateOnMoveToBackStack(PIP_ACTIVITY,
                 WINDOWING_MODE_UNDEFINED, ACTIVITY_TYPE_HOME, windowingMode);
     }
 
     @Test
     public void testMovePipToBackWithNoFullscreenOrFreeformStack() {
-        // Start with a clean slate, remove all the stacks but home
-        removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-
         // Launch a pip activity
         launchActivity(PIP_ACTIVITY);
         int windowingMode = mWmState.getTaskByActivity(PIP_ACTIVITY).getWindowingMode();
@@ -1333,7 +1337,7 @@ public class PinnedStackTests extends ActivityManagerTestBase {
 
         // Dismiss it
         separateTestJournal();
-        removeRootTasksInWindowingModes(WINDOWING_MODE_PINNED);
+        removeRootTasksInPinnedWindowingModes();
         waitForExitPipToFullscreen(PIP_ACTIVITY);
         waitForValidPictureInPictureCallbacks(PIP_ACTIVITY);
 
@@ -2106,6 +2110,12 @@ public class PinnedStackTests extends ActivityManagerTestBase {
             mWmState.assertDoesNotContainStack("Must not contain pinned stack.",
                     WINDOWING_MODE_PINNED, ACTIVITY_TYPE_STANDARD);
         }
+    }
+
+    private void removeRootTasksInPinnedWindowingModes() {
+        runWithShellPermission(
+                () -> mAtm.removeRootTasksInWindowingModes(new int[]{WINDOWING_MODE_PINNED}));
+        waitForIdle();
     }
 
     public static class TestActivity extends Activity { }

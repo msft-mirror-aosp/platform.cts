@@ -46,6 +46,7 @@ _FIG_SIZE = (10, 6)
 # Allowed tablets for low light scenes
 # List entries must be entered in lowercase
 TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
+    'hwcmr09',  # Huawei MediaPad M5
     'gta8wifi',  # Samsung Galaxy Tab A8
     'gta8',  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi',  # Samsung Galaxy Tab A9+
@@ -56,6 +57,7 @@ TABLET_LOW_LIGHT_SCENES_ALLOWLIST = (
 # Tablet brightness mapping strings for (rear, front) facing camera tests
 # List entries must be entered in lowercase
 TABLET_BRIGHTNESS = {
+    'hwcmr09': ('4', '8'),  # Huawei MediaPad M5
     'gta8wifi': ('6', '12'),  # Samsung Galaxy Tab A8
     'gta8': ('6', '12'),  # Samsung Galaxy Tab A8 LTE
     'gta9pwifi': ('6', '12'),  # Samsung Galaxy Tab A9+

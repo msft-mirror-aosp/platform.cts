@@ -26,6 +26,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "android.provider.flags-aconfig-java",
         "androidx.test.rules",
     ],
 

@@ -2329,6 +2329,7 @@
     <string name="attention_filter_priority_mimic_alarms_only">Please enable Priority-Only \"Do not disturb\"
         by tapping the Quick Settings tile.  Then, long press the same tile and customize the setting to allow sounds
         from Alarms and Media (if applicable) only.</string>
+    <string name="attention_ringer_mode_not_silent">Please set the ringer mode to normal or vibrate by pressing a volume key and then selecting a mode icon above the volume slider.</string>
     <string name="attention_create_contacts">Create contacts for notification annotations.</string>
     <string name="attention_delete_contacts">Delete test contacts.</string>
     <string name="attention_default_order">Check that ranker defaults to time order.</string>
@@ -5786,22 +5787,22 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_info">This test verifies that the DUT can achieve the required or
         recommended loopback latency as defined by CDD § 5.6 (Audio Latency) and
         § 5.10 (Professional Audio).
-        \nTo pass the test, the DUT needs to meet the latency requirement on ALL 3 of the
+        \n\nTo pass the test, the DUT needs to meet the latency requirement on ALL 3 of the
         following audio paths (if present):
-          \n- the internal speaker and microphone.
-          \n- a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a 3.5mm headset jack.
-          \n- a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a USB audio adapter.
+          \n• the internal speaker and microphone.
+          \n• a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a 3.5mm headset jack.
+          \n• a <a href="https://source.android.com/devices/audio/latency/loopback">Loopback Plug</a>  connected to a USB audio adapter.
           (or alternatively USB interface with patch cords connecting the input and output jacks).
-          \nPlease connect these Loopback mechanisms (the same Loopback Plug can be used at different times
+          \n\nPlease connect these Loopback mechanisms (the same Loopback Plug can be used at different times
           for the headset jack and USB audio adapter) and proceed with the instructions
           on the screen. The volume may need to be adjusted for each audio path.
-          \nNote that for the Speaker/Microphone path, it may be necessary to remove any phone case on the device.
-          \nThe system will measure the input-output audio latency by injecting an audio signal into
+          \n\nNote that for the Speaker/Microphone path, it may be necessary to remove any phone case on the device.
+          \n\nThe system will measure the input-output audio latency by injecting an audio signal into
           the output and compute the time between generating the signal and recording it back.
           You can vary the Audio Level slider to ensure the pulse will feed back at adequate levels.
           Repeat until a sufficient confidence is achieved. When each route test is completed, the
           measured and required latencies will be displayed.
-          \nWhen all test routes have passed, the test as a whole can be passed.
+          \n\nWhen all test routes have passed, the test as a whole can be passed.
     </string>
     <string name="audio_loopback_instructions">
           Please connect a "Loopback Plug" and press "Loopback Plug Ready".
@@ -5810,6 +5811,10 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <string name="audio_loopback_calibrate_button">Calibrate Audio</string>
     <string name="audio_loopback_devsupport_button">Audio Devices</string>
+
+    <string name="audio_loopback_speakermic">Speaker/Mic</string>
+    <string name="audio_loopback_headset">Analog Headset</string>
+    <string name="audio_loopback_usb">USB Audio</string>
 
     <string name="audio_loopback_level_text">Audio Level</string>
     <string name="audio_loopback_test_btn">Test</string>
@@ -5837,25 +5842,48 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_mmap">MMAP:</string>
     <string name="audio_loopback_mcp">MPC:</string>
     <string name="audio_loopback_lowlatency">Low Latency:</string>
-    <string name="audio_loopback_proaudio">Pro Audio:</string>
-    <string name="audio_loopback_speakermic">Speaker/Mic</string>
-    <string name="audio_loopback_headsetjack">Headset Jack</string>
-    <string name="audio_loopback_usb">USB</string>
+    <string name="audio_loopback_basiclatency">Basic Latency:</string>
+    <string name="audio_loopback_mpclatency">MPC Latency</string>
+    <string name="audio_loopback_proaudiolatency">"Pro Audio Latency"</string>
 
-    <!-- result codes -->
-    <string name="audio_loopback_resultcode_none">Result: None.</string>
-    <string name="audio_loopback_resultcode_pass">Result: Pass.</string>
-    <string name="audio_loopback_resultcode_nointernal">Result: Fail - Speaker/Mic path not tested.</string>
-    <string name="audio_loopback_notmet">not met.</string>
-    <string name="audio_loopback_resultcode_failbasic">Result: Fail - Basic latency</string>
-    <string name="audio_loopback_resultcode_failmpc">Result: Fail - Media Performance Class latency</string>
-    <string name="audio_loopback_resultcode_failpro">Result: Fail - Pro Audio max latency on one path</string>
-    <string name="audio_loopback_resultcode_failproanalog">Result: Fail - Pro Audio analog latency</string>
-    <string name="audio_loopback_resultcode_failprousb">Result: Fail - Pro Audio USB latency</string>
-    <string name="audio_loopback_resultcode_fail24bit">Result: Fail - 24-bit playback requirement no met.</string>
-    <string name="audio_loopback_resultcode_failproaudiowired">Result: Fail - Pro Audio latency. At least one wired path must be tested.</string>
-    <string name="audio_loopback_resultcode_warningtimestamp">Result: Warning - Timestamp latency accuracy not met.</string>
-    <string name="audio_loopback_resultcode_invalid">Result: Invalid result code.</string>
+    <string name="audio_general_proaudio">Pro Audio</string>
+    <string name="audio_general_mpc">MCP</string>
+    <string name="audio_general_basicaudio">Basic Audio</string>
+
+    <string name="ctsv_general_pass">PASS</string>
+    <string name="ctsv_general_fail">FAIL</string>
+    <string name="ctsv_general_cantwritereportlog">Warning - Can\'t write ReportLog File.</string>
+    <string name="ctsv_general_failsuffix"> - FAIL</string>
+    <string name="ctsv_general_specification">Specification</string>
+    <string name="ctsv_general_mssuffix"> ms.</string>
+
+    <string name="ctsv_loopback_features">Features</string>
+    <string name="ctsv_loopback_platform">Platform</string>
+
+    <string name="ctsv_loopback_meetsproaudio">Meets Pro Audio Specification</string>
+    <string name="ctsv_loopback_meetsmpclevel">Meets MPC Level</string>
+    <string name="ctsv_loopback_meetsbasicaudio">Meets Basic Audio Specification</string>
+
+    <string name="ctsv_loopback_testspeakermic">"Not Tested. Please test the Speaker/Mic route."</string>
+
+    <string name="ctsv_loopback_testanalogjack">Not Tested. Please test the Analog Headset Jack.</string>
+    <string name="ctsv_loopback_noanalogjacksupport">The DUT does not support an Analog Headset Jack.</string>
+    <string name="ctsv_loopback_unknownanalogsupport">Support for an Analog Headset Jack could not be determined. Please test if present.</string>
+
+    <string name="ctsv_loopback_testusb">Not Tested. Please test USB Audio.</string>
+    <string name="ctsv_loopback_nousbsupport">The DUT does not support USB Audio</string>
+    <string name="ctsv_loopback_unknownusbsupport">Support for USB Audio could not be determined. Please test if present.</string>
+
+    <string name="ctsv_loopback_testallroutes">Please test all supported routes.</string>
+
+    <string name="ctsv_loopback_criteria">Criteria: </string>
+    <string name="ctsv_loopback_forbasiclatency">For Basic Latency</string>
+    <string name="ctsv_loopback_formpclevel">For MPC Level</string>
+    <string name="ctsv_loopback_forproaudio">For Pro Audio</string>
+
+    <string name="ctsv_loopback_atleastoneroute" formatted="false">  - At least one route must be &lt;= </string>
+    <string name="ctsv_loopback_analogheadsetspec">  - Analog Headset Latency &lt;= </string>
+    <string name="ctsv_loopback_usbspec">  - USB Audio Latency &lt;= </string>
 
     <!-- Status Strings -->
     <string name="audio_loopback_noanalog">The DUT does not support an Analog Headset Jack. This Test phase is automatically PASSED.</string>
@@ -5865,6 +5893,17 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_loopback_unknownusb">Support for USB Audio could not be determined. If USB Audio is supported, Connect the USB
         port to an appropriate USB audio test peripheral with loopback set up. Press the Start
         button and allow the test to proceed.</string>
+
+    <string name="audio_loopback_routenotavailable">Route Not Available</string>
+    <string name="audio_loopback_testnotrun">Test Not Run</string>
+    <string name="audio_loopback_insufficientconfidence" formatted="false">Test Finished\nConfidence too low (%.2f &lt; %.2f). No Results.</string>
+    <string name="audio_loopback_latencytoolow" formatted="false">Test Finished\nLatency unrealistically low (%.2f &lt; %.2f). No Results.</string>
+    <string name="audio_loopback_testphaseresult" formatted="false">Test %d Finished\\nLatency: %.2f ms\\nConfidence: %.2f\\nTimestampLatency: %.2f\\n</string>
+    <string name="audio_loopback_phaserunning" formatted="false">[phase: %d] - Test Running &#8230;</string>
+    <string name="audio_loopback_phaseanalyzing" formatted="false">[phase: %d] - Analyzing &#8230;"</string>
+    <string name="audio_loopback_erroropeningstream">Test Error opening streams.</string>
+    <string name="audio_loopback_errorwhilerecording">Test Error while recording.</string>
+    <string name="audio_loopback_failedduetoerrors">Test FAILED due to errors.</string>
 
     <!-- Multichannel Mixdown Test -->
     <string name="audio_multichannel_mixdown_test">Multichannel Mixdown Test</string>
@@ -6091,47 +6130,42 @@ You should be prompted to select credentials; choose the ones you just installed
 
     <!-- Analog Headset Test -->
     <string name="audio_headset_audio_test">Analog Headset Audio Test</string>
-    <string name="analog_headset_query">Does this Android device have an analog headset jack?</string>
-    <string name="analog_headset_play">Play</string>
-    <string name="analog_headset_stop">Stop</string>
-    <string name="analog_headset_playback_prompt">Play a test tone and verify correct playback</string>
-    <string name="analog_headset_playback_query">Was the audio correctly played through the headset?</string>
     <string name="analog_headset_keycodes_label">Headset key codes</string>
     <string name="analog_headset_headsethook">HEADSETHOOK</string>
     <string name="analog_headset_volup">VOLUME_UP</string>
     <string name="analog_headset_voldown">VOLUME_DOWN</string>
     <string name="analog_headset_test">Analog Headset Test</string>
-    <string name="analog_headset_pass_noheadset">"PASS - No headset port available"</string>
-    <string name="analog_headset_headset_unknown">FAIL - Headset State Unknown</string>
     <string name="analog_headset_pass">PASS</string>
     <string name="analog_headset_port_detected">"Headset port detected"</string>
     <string name="analog_headset_port_notsupported">"Headset not support on this device."</string>
     <string name="analog_headset_press_buttons">Press each button on the headset verify recognition</string>
     <string name="analog_headset_no_buttons">No buttons detected</string>
     <string name="analog_headset_headset_connected">Analog headset connected</string>
-    <string name="analog_headset_no_headset">No Analog Headset - Connect headset to 3.5mm jack</string>
+    <string name="analog_headset_no_headset">Connect headset to 3.5mm jack</string>
     <string name="analog_headset_action_received">ACTION_HEADSET_PLUG received - </string>
     <string name="analog_headset_unplugged">Unplugged</string>
     <string name="analog_headset_plugged">Plugged</string>
-    <string name="analog_headset_mic"> [mic]</string>
     <string name="analog_headset_reportnojack">No analog Jack. PASS</string>
-    <string name="analog_headset_no_jack">No analog jack detected. Please connect a headset, or PASS</string>
     <string name="analog_headset_connect_headset">Please connect an analog headset</string>
-    <string name="analog_headset_play_audio">Please test audio through the analog headset</string>
     <string name="analog_headset_test_buttons">Please test transport buttons</string>
+    <string name="analog_headset_playback_moved">Testing of audio signal integrity has moved to the Audio Datapaths Analog Jack Test</string>
+    <string name="analog_headset_supportundertermined">Supoort for an Analog Headset could not be determing. Please run test if applicable."</string>
+    <string name="analog_headset_heasdsetunknown">Headset Unknown</string>
+    <string name="analog_headset_nosupportpass">No headset support or headsetup support undetermined. PASS</string>
+    <string name="analog_headset_dutdoesntsupportheadset">"The DUT does not support an Analog Headset. PASS"</string>
+    <string name="analog_headset_supportsheadset">The DUT supports an Analog Headset. Please run test.</string>
 
     <string name="analog_headset_test_info">This test tests the following functionality with respect to wired analog headsets.\n
-        1. Correct audio playback.\n
         2. Plug intents.\n
         3. Headset keycodes.\n
         \nTo execute test:\n
         1. Plug in an Android-compatible, analog headset. Verify connection/recognition.\n
-        2. Play test tone and verify correct behavior.\n
-        3. Press headset buttons until all are recognized on the test screen.\n
+        2. Press headset buttons until all are recognized on the test screen.\n
         \nTo run this test it is necessary to have an Android device with a 3.5mm analog headset jack and a compatible analog headset with Hook, Volume Up and Volume Down buttons.\n
         \n(see <a href="https://source.android.com/devices/accessories/headset/plug-headset-spec">3.5 mm Headset: Accessory Specification</a> and
         <a href="https://source.android.com/compatibility/android-cdd#7_8_2_1_analog_audio_ports">Android CDD § 7.8.2.1. Analog Audio Ports</a>)
     </string>
+
     <!-- Audio AEC Test -->
     <string name="audio_aec_test">Audio Acoustic Echo Cancellation (AEC) Test</string>
     <string name="audio_aec_info">

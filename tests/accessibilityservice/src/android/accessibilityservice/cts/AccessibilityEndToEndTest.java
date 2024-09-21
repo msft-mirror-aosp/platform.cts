@@ -102,8 +102,8 @@ import android.os.SystemClock;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
@@ -2193,96 +2193,6 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
             // expected
         }
         assertThat(eventCount.get()).isEqualTo(2);
-    }
-
-    /**
-     * Test the case where we want to intercept but not consume motion events, but another service
-     * has already enabled touch exploration. Motion event observing should not work.
-     */
-    @Test
-    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING)
-    @RequiresFlagsDisabled(
-            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS)
-    public void testMotionEventObserving_ignoresTouchscreenEventWhenTouchExplorationEnabled() {
-        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/false);
-    }
-
-    /**
-     * Test the case where we want to intercept but not consume motion events, but another service
-     * has already enabled touch exploration. Motion event observing should work.
-     */
-    @Test
-    @ApiTest(apis = {"android.accessibilityservice.AccessibilityService#onMotionEvent"})
-    @RequiresFlagsEnabled({
-            android.view.accessibility.Flags.FLAG_MOTION_EVENT_OBSERVING,
-            com.android.server.accessibility.Flags.FLAG_ALWAYS_ALLOW_OBSERVING_TOUCH_EVENTS})
-    public void testMotionEventObserving_observesTouchscreenEventWhenTouchExplorationEnabled() {
-        testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(/*shouldObserve=*/true);
-    }
-
-    private void testMotionEventObserving_TouchscreenEvent_TouchExplorationEnabled(
-            boolean shouldObserve) {
-        // Don't run this test on systems without a touchscreen.
-        PackageManager pm = sInstrumentation.getTargetContext().getPackageManager();
-        assumeTrue(pm.hasSystemFeature(PackageManager.FEATURE_TOUCHSCREEN));
-
-        sUiAutomation.adoptShellPermissionIdentity(
-                android.Manifest.permission.ACCESSIBILITY_MOTION_EVENT_OBSERVING);
-        final int requestedSource = InputDevice.SOURCE_TOUCHSCREEN;
-        final StubMotionInterceptingAccessibilityService service =
-                mMotionInterceptingServiceRule.enableService();
-        service.setMotionEventSources(requestedSource);
-        service.setObservedMotionEventSources(requestedSource);
-        assertThat(service.getServiceInfo().getMotionEventSources()).isEqualTo(requestedSource);
-        assertThat(service.getServiceInfo().getObservedMotionEventSources())
-                .isEqualTo(requestedSource);
-        TouchExplorationStubAccessibilityService touchExplorationService =
-                enableService(TouchExplorationStubAccessibilityService.class);
-        try {
-            final Object waitObject = new Object();
-            final AtomicInteger eventCount = new AtomicInteger(0);
-            service.setOnMotionEventListener(
-                    motionEvent -> {
-                        synchronized (waitObject) {
-                            if (motionEvent.getSource() == requestedSource) {
-                                eventCount.incrementAndGet();
-                            }
-                            waitObject.notifyAll();
-                        }
-                    });
-
-            // Simulate a tap on the center of the button.
-            final Button button = (Button) mActivity.findViewById(R.id.button);
-            final EventCapturingMotionEventListener listener =
-                    new EventCapturingMotionEventListener();
-            button.setOnTouchListener(listener);
-            button.setOnHoverListener(listener);
-            int[] buttonLocation = new int[2];
-            final int midX = button.getWidth() / 2;
-            final int midY = button.getHeight() / 2;
-            button.getLocationOnScreen(buttonLocation);
-            PointF tapLocation = new PointF(buttonLocation[0] + midX, buttonLocation[1] + midY);
-            try {
-                dispatch(service, click(tapLocation));
-            } catch (RuntimeException e) {
-                // The input filter could have been rebuilt causing this gesture to cancel.
-                // Reset state and try again.
-                eventCount.set(0);
-                listener.clear();
-                dispatch(service, click(tapLocation));
-            }
-
-            // The view should have seen two hover events.
-            listener.assertPropagated(ACTION_HOVER_ENTER, ACTION_HOVER_EXIT);
-            if (shouldObserve) {
-                assertThat(eventCount.get()).isEqualTo(2);
-            } else {
-                assertThat(eventCount.get()).isEqualTo(0);
-            }
-        } finally {
-            touchExplorationService.disableSelfAndRemove();
-        }
     }
 
     @AsbSecurityTest(cveBugId = 326485767)

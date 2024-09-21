@@ -25,7 +25,7 @@ import androidx.test.InstrumentationRegistry;
 
 import org.junit.Test;
 
-public class PowerManagerTests {
+public class ThermalPowerManagerTests {
     @Test
     public void testGetCurrentThermalStatus() {
         Context context = InstrumentationRegistry.getContext();

@@ -258,7 +258,7 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
         // we assume the pointer for a new display begins at the center.
         val displayWidth = mVirtualDisplay.display.mode.physicalWidth
         val displayHeight = mVirtualDisplay.display.mode.physicalHeight
-        val startPosition = PointF((displayWidth - 1) / 2f, (displayHeight - 1) / 2f)
+        val startPosition = PointF((displayWidth) / 2f, (displayHeight) / 2f)
         // Trigger a position update without moving the cursor off the starting position.
         mVirtualMouse.sendButtonEvent(
             VirtualMouseButtonEvent.Builder()

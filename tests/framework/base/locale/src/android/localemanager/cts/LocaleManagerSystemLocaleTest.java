@@ -29,8 +29,8 @@ import android.content.Context;
 import android.os.LocaleList;
 import android.server.wm.ActivityManagerTestBase;
 
-import androidx.test.InstrumentationRegistry;
-import androidx.test.runner.AndroidJUnit4;
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -45,7 +45,6 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 public class LocaleManagerSystemLocaleTest extends ActivityManagerTestBase {
-    private static Context sContext;
     private static LocaleManager sLocaleManager;
 
     /* System locales that were set on the device prior to running tests */
@@ -53,8 +52,8 @@ public class LocaleManagerSystemLocaleTest extends ActivityManagerTestBase {
 
     @BeforeClass
     public static void setUpClass() {
-        sContext = InstrumentationRegistry.getTargetContext();
-        sLocaleManager = sContext.getSystemService(LocaleManager.class);
+        final Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        sLocaleManager = context.getSystemService(LocaleManager.class);
 
         // Set custom system locales for these tests.
         // Store the existing system locales and reset back to it in tearDown.
@@ -71,6 +70,7 @@ public class LocaleManagerSystemLocaleTest extends ActivityManagerTestBase {
                 Manifest.permission.CHANGE_CONFIGURATION, Manifest.permission.WRITE_SETTINGS);
     }
 
+    @Override
     @Before
     public void setUp() throws Exception {
         // Unlocks the device if locked, since we have tests where the app/activity needs

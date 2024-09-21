@@ -14,8 +14,11 @@
 """Verify feature combinations for stabilization, 10-bit, and frame rate."""
 
 import concurrent.futures
+from datetime import datetime
+from google.protobuf import text_format
 import logging
 import os
+import time
 
 from mobly import test_runner
 
@@ -25,6 +28,7 @@ import capture_request_utils
 import its_session_utils
 import preview_processing_utils
 import video_processing_utils
+import feature_combination_info_pb2
 
 _BIT_HLG10 = 0x01  # bit 1 for feature mask
 _BIT_STABILIZATION = 0x02  # bit 2 for feature mask
@@ -70,6 +74,75 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     with concurrent.futures.ThreadPoolExecutor() as executor:
       self._test_feature_combination(executor)
 
+  def _create_feature_combo_proto(self):
+    """Start logging feature combination info for a particular camera in proto"""
+    feature_combo_for_camera = (
+        feature_combination_info_pb2.FeatureCombinationForCamera())
+    feature_combo_for_camera.camera_id = self.camera_id
+
+    return feature_combo_for_camera
+
+  def _add_feature_combo_entry_to_proto(self, feature_combo_for_camera,
+                                output_surfaces,
+                                is_supported,
+                                fps_range,
+                                stabilization):
+    """Log whether a feature combination is supported"""
+    entry = feature_combination_info_pb2.FeatureCombinationEntry()
+    entry.is_supported = is_supported
+    for surface in output_surfaces:
+      config_entry = feature_combination_info_pb2.OutputConfiguration()
+      config_entry.image_format = surface['format_code']
+      config_entry.size.width = surface['width']
+      config_entry.size.height = surface['height']
+      config_entry.stream_usecase = feature_combination_info_pb2.DEFAULT
+      config_entry.dynamic_range_profile = (
+          feature_combination_info_pb2.HLG10 if surface['hlg10']
+          else feature_combination_info_pb2.STANDARD)
+      entry.session_configuration.output_configurations.append(config_entry)
+    entry.session_configuration.stabilization = (
+        feature_combination_info_pb2.PREVIEW_STABILIZATION if stabilization
+        else feature_combination_info_pb2.OFF)
+    entry.session_configuration.frame_rate_range.max = fps_range[1]
+    entry.session_configuration.frame_rate_range.min = fps_range[0]
+
+    feature_combo_for_camera.entries.append(entry)
+
+  def _write_feature_combo_proto_to_file(self, file_name, feature_combo_for_camera):
+    """Finish logging feature combination info and write to file"""
+    debug_mode = self.debug_mode
+    database = feature_combination_info_pb2.FeatureCombinationDatabase()
+    database.build_fingerprint = (
+        its_session_utils.get_build_fingerprint(self.dut.serial))
+    database.timestamp_in_sec = int(time.time())
+    database.feature_combination_for_camera.append(feature_combo_for_camera)
+
+    with open(file_name, "wb") as f:
+      f.write(database.SerializeToString())
+
+    if debug_mode:
+      txtpb_file_name = file_name.replace(".pb", ".txtpb")
+      with open(txtpb_file_name, "w") as tf:
+        tf.write(text_format.MessageToString(database))
+
+  def _finish_combination(self, combination_name, is_stabilized, passed,
+                          recording_obj, gyro_events, test_name, log_path, facing,
+                          output_surfaces, fps_range):
+    """Finish verifying a feature combination, verifying preview stabilization if necessary."""
+    result = {'name': combination_name,
+              'output_surfaces': output_surfaces,
+              'fps_range': fps_range,
+              'is_stabilized': is_stabilized,
+              'passed': passed}
+    if is_stabilized:
+      stabilization_result = preview_processing_utils.verify_preview_stabilization(
+          recording_obj, gyro_events, test_name, log_path, facing)
+      if stabilization_result['failure']:
+        result['stabilization_failure'] = stabilization_result['failure']
+        result['passed'] = False
+
+    return result
+
   def _test_feature_combination(self, executor):
     """Tests features using an injected ThreadPoolExecutor for analysis.
 
@@ -82,6 +155,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
     with its_session_utils.ItsSession(
         device_id=self.dut.serial,
         camera_id=self.camera_id) as cam:
+      log_feature_combo_support = self.log_feature_combo_support
 
       # Skip if the device doesn't support feature combination query
       props = cam.get_camera_properties()
@@ -93,7 +167,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
         )
       should_run = (feature_combination_query_version >=
                     its_session_utils.ANDROID15_API_LEVEL or
-                    self.feature_combo_verify)
+                    log_feature_combo_support)
       camera_properties_utils.skip_unless(should_run)
 
       # Log ffmpeg version being used
@@ -132,8 +206,12 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       fps_ranges = camera_properties_utils.get_ae_target_fps_ranges(props)
 
       test_failures = []
-      preview_verification_futures = []
-      combination_names = []
+      feature_verification_futures = []
+      current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+      proto_file_name = f'{self.dut.serial}_camera_{self.camera_id}_{current_time}.pb'
+      logging.debug("proto_file_name " + proto_file_name)
+      if log_feature_combo_support:
+        database = self._create_feature_combo_proto()
       for stream_combination in combinations:
         streams_name = stream_combination['name']
         min_frame_duration = 0
@@ -169,7 +247,8 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               'format is %s, min_frame_duration is %d}',
               stream['format'], config[0]['minFrameDuration'])
           configured_streams.append(
-              {'format': stream['format'], 'width': size[0], 'height': size[1]})
+              {'formatStr': stream['format'], 'format': fmt,
+               'width': size[0], 'height': size[1]})
 
         if skip:
           continue
@@ -193,9 +272,10 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
             # Construct output surfaces
             output_surfaces = []
             for configured_stream in configured_streams:
-              hlg10_stream = (configured_stream['format'] ==
+              hlg10_stream = (configured_stream['formatStr'] ==
                               its_session_utils.PRIVATE_FORMAT and hlg10)
-              output_surfaces.append({'format': configured_stream['format'],
+              output_surfaces.append({'format': configured_stream['formatStr'],
+                                      'format_code': configured_stream['format'],
                                       'width': configured_stream['width'],
                                       'height': configured_stream['height'],
                                       'hlg10': hlg10_stream})
@@ -210,7 +290,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                                   f'[{fps_range[0]}, {fps_range[1]}])')
               logging.debug('combination name: %s', combination_name)
 
-              if not self.feature_combo_verify:
+              if not log_feature_combo_support:
                 # Is the feature combination supported?
                 supported = cam.is_stream_combination_supported(
                     output_surfaces, settings)
@@ -218,6 +298,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                   logging.debug('%s not supported', combination_name)
                   break
 
+              passed = True
               is_stabilized = False
               if (stabilize ==
                   camera_properties_utils.STABILIZATION_MODE_PREVIEW):
@@ -226,15 +307,15 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
               # If a superset of features are already tested, skip.
               skip_test = its_session_utils.check_and_update_features_tested(
                   features_tested, hlg10, is_stabilized)
-              if skip_test:
+              if not log_feature_combo_support and skip_test:
                 continue
 
-              # TODO: b/341299485 - parallelize preview recording
               recording_obj = (
                   preview_processing_utils.collect_data_with_surfaces(
                       cam, self.tablet_device, output_surfaces, is_stabilized,
                       rot_rig=rot_rig, fps_range=fps_range))
 
+              gyro_events = None
               if is_stabilized:
                 # Get gyro events
                 logging.debug('Reading out inertial sensor events')
@@ -262,6 +343,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'({fps_range[0]}-{_FPS_ATOL_CODEC}, '
                     f'{fps_range[1]}+{_FPS_ATOL_CODEC})')
                 test_failures.append(failure_msg)
+                passed = False
 
               # Verify FPS by inspecting the result metadata
               capture_results = recording_obj['captureMetadata']
@@ -284,14 +366,7 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'({fps_range[0]}-{_FPS_ATOL_METADATA}, '
                     f'{fps_range[1]}+{_FPS_ATOL_METADATA})')
                 test_failures.append(failure_msg)
-
-              # Schedule stabilization verification to run asynchronously
-              if is_stabilized:
-                future = executor.submit(
-                    preview_processing_utils.verify_preview_stabilization,
-                    recording_obj, gyro_events, _NAME, log_path, facing)
-                preview_verification_futures.append(future)
-                combination_names.append(combination_name)
+                passed = False
 
               # Verify color space
               color_space = video_processing_utils.get_video_colorspace(
@@ -302,19 +377,39 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
                     f'{combination_name}: video color space {color_space} '
                     'is missing COLORSPACE_HDR')
                 test_failures.append(failure_msg)
+                passed = False
 
-      # Verify preview stabilization
-      for future, name in zip(preview_verification_futures, combination_names):
-        stabilization_result = future.result()
-        logging.debug('Stabilization result for %s: %s',
-                      name, stabilization_result)
-        if stabilization_result['failure']:
-          failure_msg = f'{name}: {stabilization_result["failure"]}'
+              # Schedule finishing up of verification to run asynchronously
+              future = executor.submit(
+                  self._finish_combination, combination_name, is_stabilized, passed,
+                  recording_obj, gyro_events, _NAME, log_path, facing, output_surfaces,
+                  fps_range)
+              feature_verification_futures.append(future)
+
+      # Verify feature combination results
+      for future in feature_verification_futures:
+        result = future.result()
+        logging.debug('Verification result: %s', result)
+        if 'stabilization_failure' in result:
+          failure_msg = f"{name}: {result['stabilization_failure']}"
           test_failures.append(failure_msg)
+
+        if log_feature_combo_support:
+          self._add_feature_combo_entry_to_proto(
+              database, result['output_surfaces'], result['passed'],
+              result['fps_range'], result['is_stabilized'])
+
+      # Write the feature combination proto to file
+      if log_feature_combo_support:
+        self._write_feature_combo_proto_to_file(
+            proto_file_name, database)
 
       # Assert PASS/FAIL criteria
       if test_failures:
-        raise AssertionError(test_failures)
+        if log_feature_combo_support:
+          logging.debug(test_failures)
+        else:
+          raise AssertionError(test_failures)
 
 if __name__ == '__main__':
   test_runner.main()

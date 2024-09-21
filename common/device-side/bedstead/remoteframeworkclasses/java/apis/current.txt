@@ -32615,6 +32615,7 @@ package android.os {
     field public static final String EXTRA_TECHNOLOGY = "technology";
     field public static final String EXTRA_TEMPERATURE = "temperature";
     field public static final String EXTRA_VOLTAGE = "voltage";
+    field public static final String EXTRA_CAPACITY_LEVEL = "android.os.extra.CAPACITY_LEVEL";
   }
 
   public class Binder implements android.os.IBinder {

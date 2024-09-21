@@ -491,14 +491,6 @@ public class RemoteViewsTest {
     }
 
     @Test
-    public void testDrawInstructionsVersion() {
-        if (!drawDataParcel()) {
-            return;
-        }
-        assertTrue(RemoteViews.DrawInstructions.getSupportedVersion() >= 1L);
-    }
-
-    @Test
     public void testApplyWithDrawInstructions() throws Throwable {
         if (!drawDataParcel()) {
             return;

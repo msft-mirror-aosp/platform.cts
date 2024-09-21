@@ -19,10 +19,6 @@ package android.server.wm;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.OPSTR_SYSTEM_ALERT_WINDOW;
 import static android.app.Instrumentation.ActivityMonitor;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
-import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -60,7 +56,6 @@ import static android.server.wm.ActivityLauncher.KEY_NEW_TASK;
 import static android.server.wm.ActivityLauncher.KEY_TARGET_COMPONENT;
 import static android.server.wm.ComponentNameUtils.getActivityName;
 import static android.server.wm.ComponentNameUtils.getLogTag;
-import static android.server.wm.KeepLegacyTaskCleanupAllowlist.shouldKeepLegacyTaskCleanup;
 import static android.server.wm.ShellCommandHelper.executeShellCommand;
 import static android.server.wm.ShellCommandHelper.executeShellCommandAndGetStdout;
 import static android.server.wm.StateLogger.log;
@@ -202,11 +197,6 @@ public abstract class ActivityManagerTestBase {
     private static final String LOG_SEPARATOR = "LOG_SEPARATOR";
     // Use one of the test tags as a separator
     private static final int EVENT_LOG_SEPARATOR_TAG = 42;
-
-    protected static final int[] ALL_ACTIVITY_TYPE_BUT_HOME = {
-            ACTIVITY_TYPE_STANDARD, ACTIVITY_TYPE_ASSISTANT, ACTIVITY_TYPE_RECENTS,
-            ACTIVITY_TYPE_UNDEFINED
-    };
 
     private static final String TEST_PACKAGE = TEST_ACTIVITY.getPackageName();
     private static final String SECOND_TEST_PACKAGE = SECOND_ACTIVITY.getPackageName();
@@ -689,14 +679,9 @@ public abstract class ActivityManagerTestBase {
 
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            // Remove all tasks and then wait for allActivitiesResumed.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        } else {
-            // Stop any residual tasks from the test package.
-            forceStopAllTestPackages();
-        }
+        finishAndRemoveCurrentTestActivityTasks();
+        // Stop any residual tasks from the test package.
+        forceStopAllTestPackages();
 
         runWithShellPermission(() -> {
             // TaskOrganizer ctor requires MANAGE_ACTIVITY_TASKS permission
@@ -707,16 +692,6 @@ public abstract class ActivityManagerTestBase {
         });
         mSplitScreenActivityUtils = new SplitScreenActivityUtils(mWmState, mTaskOrganizer);
 
-        // removeRootTaskWithActivityTypes() removes all the tasks apart from home. In a few cases,
-        // the systemUI might have a few tasks that need to be displayed all the time.
-        // For such tasks, systemUI might have a restart-logic that restarts those tasks. Those
-        // restarts can interfere with the test state. To avoid that, its better to wait for all
-        // the activities to come in the resumed state.
-        // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed,
-                    "Root Tasks should be either empty or resumed");
-        }
         mUserHelper = new UserHelper(mContext);
         mUserId = mContext.getUserId();
     }
@@ -728,17 +703,15 @@ public abstract class ActivityManagerTestBase {
         if (mTaskOrganizer != null) {
             mTaskOrganizer.unregisterOrganizerIfNeeded();
         }
-        // Synchronous execution of removeRootTasksWithActivityTypes() ensures that all
-        // activities but home are cleaned up from the root task at the end of each test. Am force
-        // stop shell commands might be asynchronous and could interrupt the task cleanup
-        // process if executed first.
+
         UiDeviceUtils.wakeUpAndUnlock(mContext);
         launchHomeActivityNoWait();
 
-        if (shouldKeepLegacyTaskCleanup(getClass())) {
-            // TODO(b/355452977): Remove this legacy task cleanup block once all tests are migrated.
-            removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
-        }
+        // Synchronous execution of finishAndRemoveCurrentTestActivityTasks() ensures that activity
+        // tasks associated with this test package are cleaned up at the end of each test. Am force
+        // stop shell commands might be asynchronous and could interrupt the task cleanup process
+        // if executed first.
+        finishAndRemoveCurrentTestActivityTasks();
         forceStopAllTestPackages();
 
         if (mShouldWaitForAllNonHomeActivitiesToDestroyed) {
@@ -816,17 +789,17 @@ public abstract class ActivityManagerTestBase {
     }
 
     protected Intent createHomeIntent(String category) {
-        int resId = Resources.getSystem().getIdentifier(
-                "config_secondaryHomePackage", "string", "android");
         final Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addCategory(category);
-        intent.setPackage(mContext.getResources().getString(resId));
         return intent;
     }
 
     protected ComponentName getDefaultSecondaryHomeComponent() {
         assumeTrue(supportsMultiDisplay());
         final Intent intent = createHomeIntent(Intent.CATEGORY_SECONDARY_HOME);
+        int resId = Resources.getSystem().getIdentifier(
+                "config_secondaryHomePackage", "string", "android");
+        intent.setPackage(mContext.getResources().getString(resId));
         final ResolveInfo resolveInfo =
                 mContext.getPackageManager().resolveActivity(intent, MATCH_DEFAULT_ONLY);
         assertNotNull("Should have default secondary home activity", resolveInfo);
@@ -874,13 +847,20 @@ public abstract class ActivityManagerTestBase {
         TouchHelper.injectKey(keyCode, longPress, sync);
     }
 
-    protected void removeRootTasksWithActivityTypes(int... activityTypes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksWithActivityTypes(activityTypes));
-        waitForIdle();
-    }
-
-    protected void removeRootTasksInWindowingModes(int... windowingModes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksInWindowingModes(windowingModes));
+    /**
+     * Finishes and removes the activity tasks associated with this test package.
+     * <p>
+     * This method is intended for self-instrumenting tests bundled with activities.
+     * It finishes all activities in each task and removes them from the recent tasks list,
+     * ensuring a clean state for test execution.
+     * <p>
+     * For test app packages, consider using {@link #stopTestPackage} instead.
+     *
+     * @see ActivityManager#getAppTasks()
+     * @see ActivityManager.AppTask#finishAndRemoveTask()
+     */
+    protected void finishAndRemoveCurrentTestActivityTasks() {
+        mAm.getAppTasks().forEach(ActivityManager.AppTask::finishAndRemoveTask);
         waitForIdle();
     }
 
@@ -1513,7 +1493,7 @@ public abstract class ActivityManagerTestBase {
         return mObjectTracker.manage(new LockScreenSession(mInstrumentation, mWmState) {
             @Override
             public void close() {
-                removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPE_BUT_HOME);
+                finishAndRemoveCurrentTestActivityTasks();
                 super.close();
             }
         });

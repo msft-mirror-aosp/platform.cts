@@ -22,7 +22,6 @@ import static org.junit.Assume.assumeTrue;
 
 import android.os.Binder;
 import android.provider.DeviceConfig;
-import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
 
 import androidx.test.InstrumentationRegistry;
@@ -34,7 +33,9 @@ import com.android.modules.utils.build.SdkLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 
 import java.util.concurrent.Executor;
@@ -58,6 +59,8 @@ public final class DeviceConfigApiPermissionTests {
 
     private int mInitialSyncDisabledMode;
 
+    @Rule public final TestName testName = new TestName();
+
     /**
      * Checks that the test runs on UpsideDownCake.
      */
@@ -80,10 +83,15 @@ public final class DeviceConfigApiPermissionTests {
                 DeviceConfig.setSyncDisabledMode(mInitialSyncDisabledMode));
     }
 
+    @After
+    public void unregisterListeners() {
+        OnPropertiesChangedListenerForTests
+                .unregisterAfter(DeviceConfigApiPermissionTests.class, testName);
+    }
+
     /**
      * Checks that when application does not have WRITE_DEVICE_CONFIG
      * permissions it cannot access any write DeviceConfig API methods
-     * @throws Exception
      */
     @Test
     public void testDeviceConfigWithoutPermissions() {
@@ -103,7 +111,6 @@ public final class DeviceConfigApiPermissionTests {
     /**
      * Checks that when application has only WRITE_DEVICE_CONFIG permission it can access only
      * setProperty() methods
-     * @throws Exception
      */
     @Test
     public void testDeviceConfigWithWritePermission() {
@@ -125,7 +132,6 @@ public final class DeviceConfigApiPermissionTests {
     /**
      * Checks that when application has only READ_DEVICE_CONFIG permission it can access only
      * getProperty() and addOnPropertiesChangeListener() methods
-     * @throws Exception
      */
     @Test
     public void testDeviceConfigWithReadPermission() {
@@ -153,7 +159,6 @@ public final class DeviceConfigApiPermissionTests {
     /**
      * Checks that when application has both READ_DEVICE_CONFIG and WRITE_DEVICE_CONFIG permissions
      * it can access all methods
-     * @throws Exception
      */
     @Test
     public void testDeviceConfigWithAllPermissions() {
@@ -190,7 +195,6 @@ public final class DeviceConfigApiPermissionTests {
     /**
      * Checks that when application that does not have read permission can still read from
      * public namespaces in DeviceConfig
-     * @throws Exception
      */
     @Test
     public void testDeviceConfigPublicNamespacesWithoutReadPermission() {
@@ -271,9 +275,10 @@ public final class DeviceConfigApiPermissionTests {
         }
     }
 
-    class TestOnPropertiesListener implements OnPropertiesChangedListener {
-        public void onPropertiesChanged(Properties properties) {
+    private final class TestOnPropertiesListener extends OnPropertiesChangedListenerForTests {
 
+        TestOnPropertiesListener() {
+            super(testName);
         }
     }
 

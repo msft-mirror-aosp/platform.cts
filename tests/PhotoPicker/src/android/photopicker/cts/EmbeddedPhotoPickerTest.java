@@ -40,6 +40,9 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.SurfaceView;
 import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
@@ -50,10 +53,13 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -64,6 +70,7 @@ import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PHOTOPICKER)
 public class EmbeddedPhotoPickerTest {
     private static final String RESOURCE_ID_REGEX_PREFIX = ".*:id/";
     private static final String LAUNCH_EMBEDDED_BUTTON_ID =
@@ -84,6 +91,10 @@ public class EmbeddedPhotoPickerTest {
     private EmbeddedTestActivity mActivity;
 
     private Intent mIntent = new Intent(ACTION_EMBEDDED_PHOTOPICKER_SERVICE);
+    private CountDownLatch mSessionCountDownLatch;
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -227,8 +238,7 @@ public class EmbeddedPhotoPickerTest {
 
         // 3. Set the expanded state to true and assert that the "Photos" tab is visible
         mActivity.getSession().notifyPhotoPickerExpanded(true);
-        photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
-        assertThat(photosTab.exists()).isTrue();
+        assertPhotosTabExists();
         assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
     }
 
@@ -243,6 +253,7 @@ public class EmbeddedPhotoPickerTest {
         // 2. Set the expanded state to true so that navigation bar is visible and the view that
         // constitutes the surface package can be extracted
         mActivity.getSession().notifyPhotoPickerExpanded(true);
+        assertPhotosTabExists();
         UiObject2 surfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
                 .getParent().getParent().getParent();
         assertThat(surfacePackage).isNotNull();
@@ -255,6 +266,7 @@ public class EmbeddedPhotoPickerTest {
                 surfaceView.getHeight() / 2);
 
         // 4. Get the new surface package and its dimensions
+        assertPhotosTabExists();
         UiObject2 newSurfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
                 .getParent().getParent().getParent();
         assertThat(newSurfacePackage).isNotNull();
@@ -276,6 +288,7 @@ public class EmbeddedPhotoPickerTest {
 
         // 2. For the 'Done' button to show up, notify picker expanded and click a media item
         mActivity.getSession().notifyPhotoPickerExpanded(true);
+        assertPhotosTabExists();
         clickAndWait(sDevice, getMediaItem(sDevice));
 
         // 3. Set a new count down latch for 'onSelectionComplete' client invocation
@@ -349,9 +362,11 @@ public class EmbeddedPhotoPickerTest {
     private void launchEmbeddedSession() throws Exception {
         assertUiObjectExistsWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
         assertUiObjectExistsWithId(EMBEDDED_SURFACE_ID, sDevice);
+        mSessionCountDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSessionOpenedClientInvocation(mSessionCountDownLatch);
         findAndClickUiObjectWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
+        assertThat(mSessionCountDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
     }
-
 
     private void launchTestActivity() {
         final Intent intent = new Intent(mContext, EmbeddedTestActivity.class);
@@ -396,5 +411,17 @@ public class EmbeddedPhotoPickerTest {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         return res == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Asserts that the "Photos" tab exists in the UI and is visible within a timeout of 1 second.
+     * This method relies on finding a UI element that matches the text specified by
+     * {@link #PHOTOS_TAB_LABEL}.
+     *
+     * @throws AssertionError If the "Photos" tab is not found within the specified timeout.
+     */
+    private void assertPhotosTabExists() {
+        UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
+        assertThat(photosTab.waitForExists(1000)).isTrue();
     }
 }
