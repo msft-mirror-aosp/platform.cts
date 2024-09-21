@@ -19,7 +19,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.android.bedstead.testapp.DialerApp">
     <application android:testOnly="true" android:label="DialerApp">
-        <activity android:name="android.app.Activity"
+        <activity android:name=".DialerActivity"
                   android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.DIAL" />

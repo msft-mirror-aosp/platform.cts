@@ -64,7 +64,7 @@ class ExecuteAppFunctionResponseTest {
             ExecuteAppFunctionResponse.newFailure(
                 ExecuteAppFunctionResponse.RESULT_OK,
                 "test error message",
-                null
+                null,
             )
         }
     }
@@ -76,7 +76,7 @@ class ExecuteAppFunctionResponseTest {
             ExecuteAppFunctionResponse.newFailure(
                 ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
                 null,
-                null
+                null,
             )
 
         val restoredResponse = parcelAndUnparcel(response)
@@ -99,7 +99,7 @@ class ExecuteAppFunctionResponseTest {
             ExecuteAppFunctionResponse.newFailure(
                 ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR,
                 "test error message",
-                extras
+                extras,
             )
 
         val restoredResponse = parcelAndUnparcel(response)
