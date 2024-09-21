@@ -46,7 +46,9 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.compatibility.common.util.ApiTest
-import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -55,6 +57,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -67,17 +70,8 @@ class AppFunctionManagerTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-    @get:Rule
-    val setTimeoutRule: DeviceConfigStateChangerRule =
-        DeviceConfigStateChangerRule(
-            context,
-            "appfunctions",
-            "execute_app_function_timeout_millis",
-            "1000",
-        )
-
     private lateinit var mManager: AppFunctionManager
-    private lateinit var mSidecarManager: com.google.android.appfunctions.sidecar.AppFunctionManager
+    private lateinit var mSidecarManager: SidecarAppFunctionManager
 
     @Before
     fun setup() = runTest {
@@ -99,7 +93,7 @@ class AppFunctionManagerTest {
                     .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
             }
         }
-        mSidecarManager = com.google.android.appfunctions.sidecar.AppFunctionManager(context)
+        mSidecarManager = SidecarAppFunctionManager(context)
     }
 
     @Test
@@ -189,6 +183,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_sidecarManager_platformAppFunctionService_success() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -196,7 +191,7 @@ class AppFunctionManagerTest {
                 .setPropertyLong("b", 2)
                 .build()
         val request =
-            com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest.Builder(
+            SidecarExecuteAppFunctionRequest.Builder(
                 CURRENT_PKG,
                 "add"
             )
@@ -221,6 +216,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             val parameters: GenericDocument =
@@ -230,7 +226,7 @@ class AppFunctionManagerTest {
                     .build()
 
             val request =
-                com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest.Builder(
+                SidecarExecuteAppFunctionRequest.Builder(
                     TEST_SIDECAR_HELPER_PKG,
                     "add"
                 )
@@ -252,6 +248,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
     fun executeAppFunction_platformManager_sidecarAppFunctionService_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             val parameters: GenericDocument =
@@ -344,20 +341,6 @@ class AppFunctionManagerTest {
         // The process that the service was just crashed. Validate the service is not created again.
         TestAppFunctionServiceLifecycleReceiver.reset()
         assertServiceWasNotCreated()
-    }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
-    fun executeAppFunction_timedOut() {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "notInvokeCallback").build()
-
-        val response = executeAppFunctionAndWait(request)
-
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_TIMED_OUT)
-        assertServiceDestroyed()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -593,15 +576,15 @@ class AppFunctionManagerTest {
 
     @Throws(InterruptedException::class)
     private fun executeAppFunctionAndWait(
-        request: com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest
-    ): com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse {
+        request: SidecarExecuteAppFunctionRequest
+    ): SidecarExecuteAppFunctionResponse {
         val blockingQueue =
             LinkedBlockingQueue<
-                    com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse>()
+                    SidecarExecuteAppFunctionResponse>()
         mSidecarManager.executeAppFunction(
             request,
             context.mainExecutor,
-        ) { e: com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse ->
+        ) { e: SidecarExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))

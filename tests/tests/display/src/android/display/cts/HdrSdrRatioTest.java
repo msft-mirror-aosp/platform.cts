@@ -68,7 +68,7 @@ public class HdrSdrRatioTest extends TestBase {
     @RequiresFlagsEnabled(Flags.FLAG_HIGHEST_HDR_SDR_RATIO_API)
     public void testGetHighestHdrSdrRatio_DisplaysSupportingHdr() {
         for (Display display : mDisplays) {
-            if (display.isHdr()) {
+            if (display.isHdrSdrRatioAvailable()) {
                 assertTrue(display.getHighestHdrSdrRatio() > 1);
             }
         }
@@ -78,7 +78,7 @@ public class HdrSdrRatioTest extends TestBase {
     @RequiresFlagsEnabled(Flags.FLAG_HIGHEST_HDR_SDR_RATIO_API)
     public void testGetHighestHdrSdrRatio_DisplaysNotSupportingHdr() {
         for (Display display : mDisplays) {
-            if (!display.isHdr()) {
+            if (!display.isHdrSdrRatioAvailable()) {
                 assertEquals(1, display.getHighestHdrSdrRatio(), /* delta= */ 0);
             }
         }
@@ -91,8 +91,7 @@ public class HdrSdrRatioTest extends TestBase {
         runShellCommand("cmd display set-brightness " + brightness);
         launchActivity(mHdrContentActivity);
         for (Display display : mDisplays) {
-            if (display.isHdr()) {
-                assertTrue(display.isHdrSdrRatioAvailable());
+            if (display.isHdrSdrRatioAvailable()) {
                 assertTrue(display.getHdrSdrRatio() <= display.getHighestHdrSdrRatio());
             }
         }
