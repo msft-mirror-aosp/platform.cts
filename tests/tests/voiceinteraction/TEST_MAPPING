@@ -1,20 +1,10 @@
 {
   "presubmit": [
     {
-      "name": "CtsVoiceInteractionTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsVoiceInteractionTestCases"
     },
     {
-      "name": "CtsLocalVoiceInteraction",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsLocalVoiceInteraction"
     }
   ],
   "presubmit-large" : [
@@ -35,20 +25,10 @@
   ],
   "hwasan-postsubmit": [
     {
-      "name": "CtsVoiceInteractionTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsVoiceInteractionTestCases"
     },
     {
-      "name": "CtsLocalVoiceInteraction",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      "name": "CtsLocalVoiceInteraction"
     }
   ]
 }

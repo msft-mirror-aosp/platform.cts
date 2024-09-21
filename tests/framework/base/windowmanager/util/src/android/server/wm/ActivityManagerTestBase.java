@@ -864,11 +864,6 @@ public abstract class ActivityManagerTestBase {
         waitForIdle();
     }
 
-    protected void removeRootTasksInWindowingModes(int... windowingModes) {
-        runWithShellPermission(() -> mAtm.removeRootTasksInWindowingModes(windowingModes));
-        waitForIdle();
-    }
-
     protected void removeRootTask(int taskId) {
         runWithShellPermission(() -> mAtm.removeTask(taskId));
         waitForIdle();

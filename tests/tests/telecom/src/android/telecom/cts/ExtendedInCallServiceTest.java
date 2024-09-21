@@ -20,6 +20,7 @@ import static android.telecom.cts.TestUtils.*;
 
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
+import static com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity;
 
 import android.app.UiModeManager;
 import android.content.Context;
@@ -29,6 +30,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.OutcomeReceiver;
 import android.os.ParcelUuid;
+import android.os.UserManager;
 import android.telecom.Call;
 import android.telecom.CallAudioState;
 import android.telecom.CallEndpoint;
@@ -40,6 +42,7 @@ import android.telecom.InCallService;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 
 import androidx.test.filters.FlakyTest;
 
@@ -417,6 +420,17 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             return;
         }
 
+        // Only the main user is able to perform actions on the BlockedNumberProvider:
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        final boolean[] isMainUser = {false};
+        assertNotNull(userManager);
+        runWithShellPermissionIdentity(() -> isMainUser[0] = userManager.isMainUser());
+        if (!isMainUser[0]) {
+            Log.i(TAG, "testIncomingCallFromBlockedNumber_IsRejected: skipping test since "
+                    + "the current user is not the main user");
+            return;
+        }
+
         Uri blockedUri = null;
 
         try {
@@ -493,10 +507,6 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
 
     public void testSwitchCallEndpoint() {
         if (!mShouldTestTelecom || !Flags.earlyUpdateInternalCallAudioState()) {
-            return;
-        }
-        if (hasAutomotiveFeature()) {
-            // TODO(b/365612739): temporarily disabled, fix and re-enable this test for auto
             return;
         }
 

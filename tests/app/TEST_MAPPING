@@ -1,18 +1,12 @@
 {
   "presubmit-large": [
     {
-      "name": "CtsAppTestCases",
-      "options": [
-        {
-          "exclude-annotation": "android.platform.test.annotations.FlakyTest"
-        },
-        {
-          "exclude-annotation": "androidx.test.filters.LargeTest"
-        },
-        {
-          "exclude-annotation": "androidx.test.filters.FlakyTest"
-        }
-      ]
+      // large runs all tests except the ones still too big for presubmit
+      "name": "CtsAppTestCases_all-except-large"
+    },
+    // These tests fail often, splitting into own module for better tracking
+    {
+      "name": "CtsAppTestCases_activitymanagerprocessstatetest"
     }
   ],
   "postsubmit": [
