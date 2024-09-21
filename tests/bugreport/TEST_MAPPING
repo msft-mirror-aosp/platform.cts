@@ -1,12 +1,7 @@
 {
   "presubmit": [
     {
-      "name": "CtsBugreportTestCases",
-      "options": [
-        {
-          "exclude-annotation": "androidx.test.filters.LargeTest"
-        }
-      ]
+      "name": "CtsBugreportTestCases_android_server_os"
     }
   ],
   "postsubmit": [
