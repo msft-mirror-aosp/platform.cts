@@ -173,6 +173,8 @@ public class ActivityLaunchUtils {
                         // Attempt to close any newly-appeared system dialogs which can prevent the
                         // home screen activity from becoming visible, active, and focused.
                         execShellCommand(uiAutomation, AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND);
+                        execShellCommand(uiAutomation, INPUT_KEYEVENT_KEYCODE_BACK);
+                        execShellCommand(uiAutomation, AM_START_HOME_ACTIVITY_COMMAND);
                         return false;
                     });
         } catch (Exception error) {
