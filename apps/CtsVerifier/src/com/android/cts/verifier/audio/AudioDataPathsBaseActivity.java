@@ -29,7 +29,6 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.webkit.WebView;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -81,8 +80,7 @@ public abstract class AudioDataPathsBaseActivity
     protected View mCancelButton;
     protected View mClearResultsBtn;
 
-    private Button mCalibrateButton;
-    private Button mDevicesButton;
+    protected AudioLoopbackUtilitiesHandler mUtiltitiesHandler;
 
     private TextView mRoutesTx;
     private View mResultsView;
@@ -144,11 +142,8 @@ public abstract class AudioDataPathsBaseActivity
         ((TextView) findViewById(R.id.audio_datapaths_MMAP_exclusive))
                 .setText(mSupportsMMAPExclusive ? yesString : noString);
 
-        mCalibrateButton = findViewById(R.id.audio_datapaths_calibrate_button);
-        mCalibrateButton.setOnClickListener(this);
-
-        mDevicesButton = findViewById(R.id.audio_datapaths_devices_button);
-        mDevicesButton.setOnClickListener(this);
+        // Utilities
+        mUtiltitiesHandler = new AudioLoopbackUtilitiesHandler(this);
 
         mStartBtn = findViewById(R.id.audio_datapaths_start);
         mStartBtn.setOnClickListener(this);
@@ -649,7 +644,9 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         private void logEnding(int api) {
-            Log.d(TAG, "END_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+            Log.d(TAG, "END_SUB_TEST: " + getDescription()
+                    + ", " + audioApiToString(api)
+                    + "," + getTestStateString(api)); // has leading space!
         }
 
         //
@@ -1384,8 +1381,7 @@ public abstract class AudioDataPathsBaseActivity
             mTestStep = TESTSTEP_NONE;
             mTestCanceledByUser = false;
 
-            mCalibrateButton.setEnabled(false);
-            mDevicesButton.setEnabled(false);
+            mUtiltitiesHandler.setEnabled(false);
 
             (mTimer = new Timer()).scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -1483,8 +1479,7 @@ public abstract class AudioDataPathsBaseActivity
                     mTextFormatter.put(mResultsView);
                     showResultsView();
 
-                    mCalibrateButton.setEnabled(true);
-                    mDevicesButton.setEnabled(true);
+                    mUtiltitiesHandler.setEnabled(true);
                 }
             });
         }
@@ -1692,10 +1687,6 @@ public abstract class AudioDataPathsBaseActivity
             mTestManager.clearTestState();
             showDeviceView();
             mTestManager.displayTestDevices();
-        } else if (id == R.id.audio_datapaths_calibrate_button) {
-            (new AudioLoopbackCalibrationDialog(this)).show();
-        } else if (id == R.id.audio_datapaths_devices_button) {
-            (new AudioDevicesDialog(this)).show();
         }
     }
 

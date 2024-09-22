@@ -39,6 +39,7 @@ class MotionEventBuilder(val action: Int, val source: Int) {
     private var flags = 0
     private var rawXCursorPosition: Float? = null
     private var rawYCursorPosition: Float? = null
+    private var classification = MotionEvent.CLASSIFICATION_NONE
     private val edgeFlags = 0
     private val pointers = mutableListOf<PointerBuilder>()
 
@@ -60,6 +61,7 @@ class MotionEventBuilder(val action: Int, val source: Int) {
         this.rawYCursorPosition = rawYCursorPosition
     }
     fun pointer(pointer: PointerBuilder) = apply { pointers.add(pointer) }
+    fun classification(classification: Int) = apply { this.classification = classification }
 
     fun build(): MotionEvent {
         val pointerProperties = pointers.map { it.buildProperties() }
@@ -75,7 +77,7 @@ class MotionEventBuilder(val action: Int, val source: Int) {
         return MotionEvent.obtain(
             downTime, eventTime, action, pointerProperties.size, pointerProperties.toTypedArray(),
             pointerCoords.toTypedArray(), metaState, buttonState, xPrecision, yPrecision, deviceId,
-            edgeFlags, source, displayId, flags, MotionEvent.CLASSIFICATION_NONE
+            edgeFlags, source, displayId, flags, classification
         )!!
     }
 }

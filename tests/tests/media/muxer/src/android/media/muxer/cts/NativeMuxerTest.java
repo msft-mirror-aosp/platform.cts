@@ -98,13 +98,13 @@ public class NativeMuxerTest extends MediaTestBase {
     @Test
     public void testMuxerAvc() throws Exception {
         // IMPORTANT: this file must not have B-frames
-        testMuxer("video_1280x720_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
+        testMuxer("video_1280x720_mp4_h264_1000kbps_25fps_aac_stereo_128kbps_44100hz.mp4", true);
     }
 
     @Test
     public void testMuxerH263() throws Exception {
         // IMPORTANT: this file must not have B-frames
-        testMuxer("video_176x144_3gp_h263_300kbps_25fps_aac_stereo_128kbps_11025hz.3gp");
+        testMuxer("video_176x144_3gp_h263_300kbps_25fps_aac_stereo_128kbps_11025hz.3gp", true);
     }
 
     @Test
@@ -144,7 +144,7 @@ public class NativeMuxerTest extends MediaTestBase {
     @Test
     public void testMuxerMpeg4() throws Exception {
         // IMPORTANT: this file must not have B-frames
-        testMuxer("video_176x144_mp4_mpeg4_300kbps_25fps_aac_stereo_128kbps_44100hz.mp4");
+        testMuxer("video_176x144_mp4_mpeg4_300kbps_25fps_aac_stereo_128kbps_44100hz.mp4", true);
     }
 
     @Test
@@ -199,7 +199,8 @@ public class NativeMuxerTest extends MediaTestBase {
             MediaFormat format2 = remux.getTrackFormat(i);
             Log.i("@@@", "org: " + format1);
             Log.i("@@@", "remux: " + format2);
-            assertTrue("different formats", compareFormats(format1, format2, maxDurationDiffUs));
+            assertTrue("different formats: orig " + format1 + " remux " + format2,
+                            compareFormats(format1, format2, maxDurationDiffUs));
         }
 
         org.release();
