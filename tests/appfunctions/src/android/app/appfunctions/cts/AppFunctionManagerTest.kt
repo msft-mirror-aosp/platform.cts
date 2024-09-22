@@ -18,6 +18,7 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
+import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
@@ -41,11 +42,13 @@ import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.nene.TestApis.permissions
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.nene.TestApis.permissions
 import com.android.compatibility.common.util.ApiTest
-import com.android.compatibility.common.util.DeviceConfigStateChangerRule
+import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -54,6 +57,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -66,16 +70,8 @@ class AppFunctionManagerTest {
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
 
-    @get:Rule
-    val setTimeoutRule: DeviceConfigStateChangerRule =
-        DeviceConfigStateChangerRule(
-            context,
-            "appfunctions",
-            "execute_app_function_timeout_millis",
-            "1000",
-        )
-
     private lateinit var mManager: AppFunctionManager
+    private lateinit var mSidecarManager: SidecarAppFunctionManager
 
     @Before
     fun setup() = runTest {
@@ -86,8 +82,18 @@ class AppFunctionManagerTest {
         retryAssert {
             // Doing containsAtLeast instead of containsExactly here in case there app preloaded
             // apps having app functions.
-            assertThat(getAllStaticMetadataPackages()).containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG)
+            assertThat(getAllStaticMetadataPackages()).containsAtLeast(
+                CURRENT_PKG,
+                TEST_HELPER_PKG,
+                TEST_SIDECAR_HELPER_PKG
+            )
+            // required permission because runtime metadata is only visible to owner package
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                assertThat(getAllRuntimeMetadataPackages())
+                    .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
+            }
         }
+        mSidecarManager = SidecarAppFunctionManager(context)
     }
 
     @Test
@@ -149,7 +155,7 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_success() {
+    fun executeAppFunction_platformManager_platformAppFunctionService_success() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyLong("a", 1)
@@ -157,9 +163,7 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
-                .setParameters(parameters)
-                .build()
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -172,6 +176,104 @@ class AppFunctionManagerTest {
             .isEqualTo(3)
         assertServiceDestroyed()
     }
+
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+    )
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
+    fun executeAppFunction_sidecarManager_platformAppFunctionService_success() {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                .setPropertyLong("a", 1)
+                .setPropertyLong("b", 2)
+                .build()
+        val request =
+            SidecarExecuteAppFunctionRequest.Builder(
+                CURRENT_PKG,
+                "add"
+            )
+                .setParameters(parameters)
+                .build()
+
+        val response = executeAppFunctionAndWait(request)
+
+        assertThat(response.isSuccess).isTrue()
+        assertThat(
+            response.resultDocument.getPropertyLong(
+                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+            )
+        )
+            .isEqualTo(3)
+        assertServiceDestroyed()
+    }
+
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
+    )
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
+    fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() =
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+
+            val request =
+                SidecarExecuteAppFunctionRequest.Builder(
+                    TEST_SIDECAR_HELPER_PKG,
+                    "add"
+                )
+                    .setParameters(parameters)
+                    .build()
+
+            val response = executeAppFunctionAndWait(request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
+            )
+                .isEqualTo(3)
+        }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    @Ignore("Enable it when the system image preloads the sidecar")
+    fun executeAppFunction_platformManager_sidecarAppFunctionService_success() =
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                    TEST_SIDECAR_HELPER_PKG,
+                    "add"
+                )
+                    .setParameters(parameters)
+                    .build()
+            val response = executeAppFunctionAndWait(request)
+
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
+            )
+                .isEqualTo(3)
+        }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
@@ -239,20 +341,6 @@ class AppFunctionManagerTest {
         // The process that the service was just crashed. Validate the service is not created again.
         TestAppFunctionServiceLifecycleReceiver.reset()
         assertServiceWasNotCreated()
-    }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @EnsureHasNoDeviceOwner
-    @Throws(Exception::class)
-    fun executeAppFunction_timedOut() {
-        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "notInvokeCallback").build()
-
-        val response = executeAppFunctionAndWait(request)
-
-        assertThat(response.isSuccess).isFalse()
-        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_TIMED_OUT)
-        assertServiceDestroyed()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -354,9 +442,7 @@ class AppFunctionManagerTest {
                 .build()
 
         val request =
-            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
-                .setParameters(parameters)
-                .build()
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
         val response = executeAppFunctionAndWait(request)
 
@@ -376,25 +462,27 @@ class AppFunctionManagerTest {
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsFalse_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-            val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
-                "addWithRestrictCallersWithExecuteAppFunctionsFalse"
-            )
-            .setParameters(parameters).build()
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        TEST_HELPER_PKG,
+                        "addWithRestrictCallersWithExecuteAppFunctionsFalse",
+                    )
+                    .setParameters(parameters)
+                    .build()
 
             val response = executeAppFunctionAndWait(request)
 
             assertThat(response.errorMessage).isNull()
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
 
@@ -403,22 +491,19 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
-                "random_function"
-            )
-            .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
 
             val response = executeAppFunctionAndWait(request)
 
             assertThat(response.isSuccess).isFalse()
-            assertThat(
-                response.resultCode
-            )
+            assertThat(response.resultCode)
                 .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
             assertThat(response.errorMessage)
-                .contains("Document (android\$apps-db/app_functions,"
-                    + " android.app.appfunctions.cts.helper/random_function) not found");
+                .contains(
+                    "Document (android\$apps-db/app_functions," +
+                        " android.app.appfunctions.cts.helper/random_function) not found"
+                )
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -427,25 +512,27 @@ class AppFunctionManagerTest {
     fun executeAppFunction_withExecuteAppFunctionTrustedPermission_restrictCallersWithExecuteAppFunctionsTrue_success() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
             val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-            val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
-                "addWithRestrictCallersWithExecuteAppFunctionsTrue"
-            )
-            .setParameters(parameters).build()
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        TEST_HELPER_PKG,
+                        "addWithRestrictCallersWithExecuteAppFunctionsTrue",
+                    )
+                    .setParameters(parameters)
+                    .build()
 
             val response = executeAppFunctionAndWait(request)
 
             assertThat(response.errorMessage).isNull()
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
 
@@ -455,15 +542,17 @@ class AppFunctionManagerTest {
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsTrue_resultDenied() =
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
             val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-            val request = ExecuteAppFunctionRequest.Builder(
-                TEST_HELPER_PKG,
-                "addWithRestrictCallersWithExecuteAppFunctionsTrue"
-            )
-            .setParameters(parameters).build()
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                ExecuteAppFunctionRequest.Builder(
+                        TEST_HELPER_PKG,
+                        "addWithRestrictCallersWithExecuteAppFunctionsTrue",
+                    )
+                    .setParameters(parameters)
+                    .build()
 
             val response = executeAppFunctionAndWait(request)
 
@@ -485,6 +574,22 @@ class AppFunctionManagerTest {
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
+    @Throws(InterruptedException::class)
+    private fun executeAppFunctionAndWait(
+        request: SidecarExecuteAppFunctionRequest
+    ): SidecarExecuteAppFunctionResponse {
+        val blockingQueue =
+            LinkedBlockingQueue<
+                    SidecarExecuteAppFunctionResponse>()
+        mSidecarManager.executeAppFunction(
+            request,
+            context.mainExecutor,
+        ) { e: SidecarExecuteAppFunctionResponse ->
+            blockingQueue.add(e)
+        }
+        return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
+    }
+
     /** Verifies that the service is unbound by asserting the service was destroyed. */
     @Throws(InterruptedException::class)
     private fun assertServiceDestroyed() {
@@ -499,6 +604,9 @@ class AppFunctionManagerTest {
 
     private fun getAllStaticMetadataPackages() =
         searchStaticMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
+
+    private fun getAllRuntimeMetadataPackages() =
+        searchRuntimeMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
 
     private fun searchStaticMetadata(): List<GenericDocument> {
         val globalSearchSession: GlobalSearchSessionShim =
@@ -517,6 +625,22 @@ class AppFunctionManagerTest {
         return collectAllSearchResults(searchResults)
     }
 
+    private fun searchRuntimeMetadata(): List<GenericDocument> {
+        val globalSearchSession: GlobalSearchSessionShim =
+            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
+
+        val searchResults: SearchResultsShim =
+            globalSearchSession.search(
+                "",
+                SearchSpec.Builder()
+                    .addFilterNamespaces(AppFunctionRuntimeMetadata.APP_FUNCTION_RUNTIME_NAMESPACE)
+                    .addFilterSchemas(AppFunctionRuntimeMetadata.RUNTIME_SCHEMA_TYPE)
+                    .setVerbatimSearchEnabled(true)
+                    .build(),
+            )
+        return collectAllSearchResults(searchResults)
+    }
+
     /** Runnable that throws. */
     fun interface ThrowRunnable {
         @Throws(Throwable::class) suspend fun run()
@@ -525,6 +649,7 @@ class AppFunctionManagerTest {
     private companion object {
         @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
 
+        const val TEST_SIDECAR_HELPER_PKG: String = "android.app.appfunctions.cts.helper.sidecar"
         const val TEST_HELPER_PKG: String = "android.app.appfunctions.cts.helper"
         const val CURRENT_PKG: String = "android.app.appfunctions.cts"
         const val SHORT_TIMEOUT_SECOND: Long = 1
@@ -534,15 +659,14 @@ class AppFunctionManagerTest {
             Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
         const val TEST_APP_ROOT_FOLDER = "/data/local/tmp/cts/appfunctions/"
         const val TEST_APP_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelper.apk"
+        const val TEST_SIDECAR_APP_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelper.apk"
         const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
         const val RETRY_MAX_INTERVALS: Long = 10
         const val PROPERTY_PACKAGE_NAME = "packageName"
         const val APP_FUNCTION_INDEXER_PACKAGE = "android"
 
         fun runWithShellPermission(vararg permissions: String, block: () -> Unit) {
-            permissions().withPermission(*permissions).use {
-                block()
-            }
+            permissions().withPermission(*permissions).use { block() }
         }
 
         /** Retries an assertion with a delay between attempts. */

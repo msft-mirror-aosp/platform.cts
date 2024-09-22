@@ -33,7 +33,6 @@ import android.app.ActivityTaskManager;
 import android.app.Instrumentation;
 import android.app.KeyguardManager;
 import android.content.Context;
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.os.PowerManager;
@@ -348,7 +347,7 @@ public final class TestUtils {
         x += xy[0];
         y += xy[1];
 
-        return device.touchDown(x, y, UinputTouchDevice.MT_TOOL_PEN, 255/* pressure */);
+        return device.touchDown(x, y, 255/* pressure */);
     }
 
     /**

@@ -66,6 +66,13 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
 
     private DeviceOwner mDeviceOwner = null;
 
+    @Override
+    protected boolean shouldInstallTestAppInTestBaseSetup() {
+        // In the test case, it needs the device admin app, don't need to install the test
+        // app first.
+        return false;
+    }
+
     @Before
     @Override
     public void setup() throws Exception {
@@ -102,7 +109,7 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
 
         waitForUiIdle();
 
-        clearPackageInstallerNotifications();
+        clearAllPackageInstallerUninstallFailureNotification();
 
         clickUninstallDeviceAdminAppOkButton();
 
@@ -117,7 +124,7 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
 
         waitForUiIdle();
 
-        clearPackageInstallerNotifications();
+        clearAllPackageInstallerUninstallFailureNotification();
 
         clickUninstallDeviceAdminAppOkButton();
 
@@ -166,7 +173,19 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
         assertDeviceAdminAppIsInstalled();
     }
 
-    private static void clearPackageInstallerNotifications() throws Exception {
+    private static void clearAllPackageInstallerUninstallFailureNotification() throws Exception {
+        boolean result = clearPackageInstallerUninstallFailureNotification();
+        while (result) {
+            result = clearPackageInstallerUninstallFailureNotification();
+        }
+    }
+
+    /**
+     * Clear the notifications that the package name is {@link #getPackageInstallerPackageName()}
+     * and the channel id is uninstallation failure. Return {@code true} if there is matched
+     * notification. Return {@code false} if there is no matched notification.
+     */
+    private static boolean clearPackageInstallerUninstallFailureNotification() throws Exception {
         try (NotificationListener notificationListener =
                      TestApis.notifications().createListener()) {
             final Notification notification = getPackageInstallerUninstallFailureNotification(
@@ -177,8 +196,10 @@ public class UninstallDeviceAdminAppTest extends UninstallationTestBase {
                 Log.d(TAG, "notification = " + notification + ", when= "
                         + notification.getNotification().when);
                 notification.cancel();
+                return true;
             }
         }
+        return false;
     }
 
     private static void assertCanNotUninstallNotificationAndClearIt() throws Exception {

@@ -1,12 +1,7 @@
 {
   "presubmit": [
     {
-      "name": "CtsPackageManagerHostTestCases",
-      "options": [
-        {
-          "include-filter": "android.appsecurity.cts.SplitTests"
-        }
-      ]
+      "name": "CtsPackageManagerHostTestCases_cts_splittests"
     }
   ]
 }

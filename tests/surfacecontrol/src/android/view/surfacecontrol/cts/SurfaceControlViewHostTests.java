@@ -45,6 +45,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -96,6 +97,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.PopupWindow;
+import android.window.InputTransferToken;
 import android.window.WindowInfosListenerForTest.WindowInfo;
 
 import androidx.annotation.NonNull;
@@ -122,6 +124,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -1672,6 +1675,40 @@ public class SurfaceControlViewHostTests extends ActivityManagerTestBase impleme
     public void testEmbeddedWindowCanTransferTouchGestureToHost_transferTouchGesture()
             throws Throwable {
         testEmbeddedWindowCanTransferTouchGestureToHost(true);
+    }
+
+    @Test
+    public void testEmbeddedCannotStealTouchGestureFromHost() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        // Ask the embedded process to request gesture transfer from the host and then 
+        // verify that the call throws a security exception. We need to do the assertion
+        // in the test process to handle the assertion correctly.
+        assertTrue(mTestService.requestTouchGestureTransferFromHostThrows(hostInputTransferToken));
+    }
+
+    @Test
+    public void testHostCannotStealTouchGestureFromEmbedded() throws Throwable {
+        mTestService = getService();
+        assertNotNull(mTestService);
+
+        addSurfaceView(DEFAULT_SURFACE_VIEW_WIDTH, DEFAULT_SURFACE_VIEW_HEIGHT);
+        mSvCreatedLatch.await(5, TimeUnit.SECONDS);
+
+        InputTransferToken hostInputTransferToken = Objects.requireNonNull(
+                mSurfaceView.getRootSurfaceControl()).getInputTransferToken();
+        InputTransferToken surfacePackageInputTransferToken =
+                mRemoteSurfacePackage.getInputTransferToken();
+        WindowManager wm = mActivity.getSystemService(WindowManager.class);
+        assertThrows(SecurityException.class,
+                () -> wm.transferTouchGesture(surfacePackageInputTransferToken,
+                        hostInputTransferToken));
     }
 
     @Test

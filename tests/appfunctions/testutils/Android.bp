@@ -22,6 +22,9 @@ java_library {
         "src/**/*.java",
         "src/**/*.kt",
     ],
+    static_libs: [
+        "com.google.android.appfunctions.sidecar.impl",
+    ],
     libs: [
         "mockito",
         "androidx.test.ext.junit",
