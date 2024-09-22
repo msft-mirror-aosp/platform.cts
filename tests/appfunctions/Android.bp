@@ -36,6 +36,7 @@ android_test {
         "CtsAppSearchTestUtils",
         "flag-junit",
         "platform-test-annotations",
+        "com.google.android.appfunctions.sidecar.impl",
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
         "Harrier",
@@ -55,6 +56,11 @@ android_test {
     ],
     data: [
         ":CtsAppFunctionsTestHelper",
+        ":CtsAppFunctionsSidecarTestHelper",
+        ":CtsAppSearchIndexerTestAppAV1",
+        ":CtsAppSearchIndexerTestAppAV2",
+        ":CtsAppSearchIndexerTestAppAV3",
+        ":CtsAppSearchIndexerTestAppBV1",
     ],
 }
 
@@ -73,4 +79,21 @@ android_test_helper_app {
     ],
     asset_dirs: ["helper-app/assets"],
     manifest: "helper-app/AndroidManifest.xml",
+}
+
+android_test_helper_app {
+    name: "CtsAppFunctionsSidecarTestHelper",
+    defaults: ["cts_defaults"],
+    static_libs: [
+        "CtsAppFunctionsTestUtils",
+        "androidx.test.ext.junit",
+        "androidx.test.rules",
+        "compatibility-device-util-axt",
+        "testng",
+        "com.google.android.appfunctions.sidecar.impl",
+    ],
+    test_suites: [
+        "general-tests",
+    ],
+    manifest: "helper-app/AndroidManifest_sidecar.xml",
 }

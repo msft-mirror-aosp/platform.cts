@@ -26,104 +26,18 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <!-- Has Headset Buttons -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/analog_headset_query"
-                    android:id="@+id/analog_headset_query"/>
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginLeft="10dp">
-                    <Button
-                        android:text="@string/audio_general_yes"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:id="@+id/headset_analog_port_yes"/>
-                    <Button
-                        android:text="@string/audio_general_no"
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:id="@+id/headset_analog_port_no"/>
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Device Connection -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/headset_analog_name"/>
-
-            <!-- Player Controls -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginLeft="10dp">
-                <Button
-                    android:text="@string/analog_headset_play"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:id="@+id/headset_analog_play"/>
-                <Button
-                    android:text="@string/analog_headset_stop"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:id="@+id/headset_analog_stop"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Playback Status -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/analog_headset_playback_status"/>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginLeft="10dp">
-                <Button
-                    android:text="@string/audio_general_yes"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:id="@+id/headset_analog_play_yes"/>
-                <Button
-                    android:text="@string/audio_general_no"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:id="@+id/headset_analog_play_no"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- Device Connection -->
-        <!--
+         <!-- Device Connection -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/headset_analog_plug_message"/>
+            android:textSize="20sp"
+            android:id="@+id/headset_analog_jackstatus"/>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/headset_analog_name"/>
-        -->
+            android:paddingTop="5dp"
+            android:text="@string/analog_headset_playback_moved"/>
 
         <!-- Keycodes -->
         <LinearLayout
@@ -170,7 +84,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/headset_results"
-            android:textSize="20dp"/>
+            android:textSize="20sp"/>
 
         <include layout="@layout/pass_fail_buttons" />
 

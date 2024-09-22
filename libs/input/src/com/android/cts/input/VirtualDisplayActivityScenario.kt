@@ -26,6 +26,7 @@ import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE
 import android.hardware.display.VirtualDisplay
+import android.hardware.display.VirtualDisplayConfig
 import android.media.ImageReader
 import android.os.Handler
 import android.os.Looper
@@ -33,6 +34,7 @@ import android.os.Process
 import android.server.wm.WindowManagerStateHelper
 import android.util.Size
 import android.view.Surface
+import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.VirtualDisplayActivityScenario.Companion.CAPTURE_SECURE_VIDEO_OUTPUT
@@ -44,6 +46,7 @@ import com.android.cts.input.VirtualDisplayActivityScenario.Companion.VIRTUAL_DI
 import java.nio.ByteBuffer
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import junit.framework.AssertionFailedError
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.rules.ExternalResource
@@ -137,11 +140,13 @@ interface VirtualDisplayActivityScenario<A : Activity> {
                 testName: TestName,
                 useSecureDisplay: Boolean = false,
                 size: Size = Size(DEFAULT_WIDTH, DEFAULT_HEIGHT),
+                virtualDeviceRule: VirtualDeviceRule? = null,
             ): Rule<A> = Rule(
                 A::class.java,
                 testName,
                 useSecureDisplay,
                 size,
+                virtualDeviceRule,
             )
         }
 
@@ -149,8 +154,9 @@ interface VirtualDisplayActivityScenario<A : Activity> {
             type: Class<A>,
             testName: TestName,
             useSecureDisplay: Boolean,
-            size: Size
-        ) : this(Impl(type, testName, useSecureDisplay, size))
+            size: Size,
+            virtualDeviceRule: VirtualDeviceRule? = null,
+        ) : this(Impl(type, testName, useSecureDisplay, size, virtualDeviceRule))
 
         override fun before() {
             impl.start()
@@ -170,6 +176,10 @@ private class Impl<A : Activity>(
     val testName: TestName,
     val useSecureDisplay: Boolean,
     val size: Size,
+    // If provided, creates the VirtualDisplay using VDM instead of DisplayManager.
+    // TODO(b/366492484): Remove reliance on VDM when we achieve feature parity between VDM
+    //   and display + input APIs.
+    val virtualDeviceRule: VirtualDeviceRule? = null,
 ) : VirtualDisplayActivityScenario<A> {
 
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
@@ -181,7 +191,13 @@ private class Impl<A : Activity>(
     /** Set up the virtual display and start the activity A on that display. */
     fun start() {
         assumeTrue(supportsMultiDisplay())
-        createDisplay()
+        reader = ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2)
+
+        if (virtualDeviceRule != null) {
+            createDisplayUsingVirtualDeviceManager()
+        } else {
+            createDisplay()
+        }
 
         val bundle = ActivityOptions.makeBasic().setLaunchDisplayId(displayId).toBundle()
         val intent =
@@ -236,36 +252,55 @@ private class Impl<A : Activity>(
                 displayManager.unregisterDisplayListener(this)
             }
         }, Handler(Looper.getMainLooper()))
-        reader = ImageReader.newInstance(size.width, size.height, PixelFormat.RGBA_8888, 2)
-        if (useSecureDisplay) {
-            virtualDisplay = runWithCaptureSecurePermissionIdentityOverride {
-                displayManager.createVirtualDisplay(
-                    VIRTUAL_DISPLAY_NAME,
-                    size.width,
-                    size.height,
-                    DENSITY,
-                    reader.surface,
-                    VIRTUAL_DISPLAY_FLAG_SECURE or
-                            VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
-                            VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
-                )
-            }
-        } else {
+
+        val runWithPermissions =
+            if (useSecureDisplay) this::runWithSecureDisplayPermission else ::defaultRunner
+        val flags = VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
+                VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT or
+                (if (useSecureDisplay) VIRTUAL_DISPLAY_FLAG_SECURE else 0)
+
+        runWithPermissions {
             virtualDisplay = displayManager.createVirtualDisplay(
-                VIRTUAL_DISPLAY_NAME,
-                size.width,
-                size.height,
-                DENSITY,
-                reader.surface,
-                VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+                VIRTUAL_DISPLAY_NAME, size.width, size.height, DENSITY, reader.surface, flags
             )
         }
         assertTrue(displayCreated.await(5, TimeUnit.SECONDS))
     }
 
-    private fun runWithCaptureSecurePermissionIdentityOverride(
-        command: () -> VirtualDisplay
-    ): VirtualDisplay {
+    private fun createDisplayUsingVirtualDeviceManager() {
+        val runWithPermissions =
+            if (useSecureDisplay) this::runWithSecureDisplayPermission else ::defaultRunner
+        val flags = VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH or
+                VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT or
+                (if (useSecureDisplay) VIRTUAL_DISPLAY_FLAG_SECURE else 0)
+
+        runWithPermissions {
+            val virtualDevice = virtualDeviceRule!!.createManagedVirtualDevice()
+            virtualDevice.setShowPointerIcon(true)
+            virtualDisplay =
+                virtualDevice.createVirtualDisplay(
+                    VirtualDisplayConfig.Builder(
+                        VIRTUAL_DISPLAY_NAME,
+                        size.width,
+                        size.height,
+                        DENSITY,
+                    )
+                        .setSurface(reader.surface)
+                        .setFlags(flags)
+                        .build(),
+                    /*executor*/
+                    null,
+                    /*callback*/
+                    null,
+                ) ?: throw AssertionFailedError("Failed to create virtual display")
+        }
+    }
+
+    /**
+     * NOTE: Running a test with the [CAPTURE_SECURE_VIDEO_OUTPUT] permission requires the test
+     * suite to be run as root.
+     */
+    private fun runWithSecureDisplayPermission(command: () -> Unit) {
         instrumentation.uiAutomation.addOverridePermissionState(
             Process.myUid(),
             CAPTURE_SECURE_VIDEO_OUTPUT,
@@ -322,3 +357,5 @@ private class Impl<A : Activity>(
         return bitmap
     }
 }
+
+private fun defaultRunner(command: () -> Unit) = command()

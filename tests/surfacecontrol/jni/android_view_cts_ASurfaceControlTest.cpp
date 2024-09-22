@@ -49,6 +49,11 @@ static struct {
     jmethodID onTransactionComplete;
 } gTransactionCompleteListenerClassInfo;
 
+static struct {
+    jclass clazz;
+    jmethodID onBufferRelease;
+} gBufferReleaseCallbackClassInfo;
+
 static AHardwareBuffer* allocateBuffer(int32_t width, int32_t height) {
     AHardwareBuffer* buffer = nullptr;
     AHardwareBuffer_Desc desc = {};
@@ -238,6 +243,81 @@ jlong SurfaceControl_fromJava(JNIEnv* env, jclass, jobject surfaceControlObj) {
 
 void SurfaceControl_release(JNIEnv* /*env*/, jclass, jlong surfaceControl) {
     ASurfaceControl_release(reinterpret_cast<ASurfaceControl*>(surfaceControl));
+}
+
+class ReleaseCallbackWrapper {
+public:
+    explicit ReleaseCallbackWrapper(JNIEnv* env, jobject jObject) {
+        env->GetJavaVM(&mVm);
+        mJavaCallbackObject = env->NewGlobalRef(jObject);
+        if (!mJavaCallbackObject) {
+            ALOGE("Failed to make ReleaseCallbackWrapper global ref");
+        }
+    }
+
+    ~ReleaseCallbackWrapper() { getenv()->DeleteGlobalRef(mJavaCallbackObject); }
+
+    void callback() {
+        JNIEnv* env = getenv();
+        env->CallVoidMethod(mJavaCallbackObject, gBufferReleaseCallbackClassInfo.onBufferRelease);
+    }
+
+    static void callbackThunk(void* context, int /* release_fence_fd */) {
+        if (!context) {
+            ALOGE("Invalid context passed to callback");
+        }
+        ReleaseCallbackWrapper* listener = reinterpret_cast<ReleaseCallbackWrapper*>(context);
+        listener->callback();
+        delete listener;
+    }
+
+private:
+    jobject mJavaCallbackObject;
+    JavaVM* mVm;
+
+    JNIEnv* getenv() {
+        JNIEnv* env;
+        int result = mVm->GetEnv(reinterpret_cast<void**>(&env), JNI_VERSION_1_6);
+        if (result == JNI_EDETACHED) {
+            if (mVm->AttachCurrentThreadAsDaemon(&env, nullptr) != JNI_OK) {
+                ALOGE("Failed to AttachCurrentThread!");
+            }
+        } else if (result != JNI_OK) {
+            ALOGE("Failed to get JNIEnv for JavaVM: %p", mVm);
+        }
+
+        return env;
+    }
+};
+
+jlong SurfaceTransaction_setSolidBufferWithRelease(JNIEnv* env, jclass /* clazz */,
+                                                   jlong surfaceControl, jlong surfaceTransaction,
+                                                   jint width, jint height, jint color,
+                                                   jobject jCallback) {
+    AHardwareBuffer* buffer = nullptr;
+    int fence = -1;
+
+    bool err = getSolidBuffer(width, height, color, &buffer, &fence);
+    if (err) {
+        return 0;
+    }
+
+    if (jCallback == nullptr) {
+        ALOGE("jCallback is null!");
+    }
+    void* context = new ReleaseCallbackWrapper(env, jCallback);
+    ASurfaceTransaction_setBufferWithRelease(reinterpret_cast<ASurfaceTransaction*>(
+                                                     surfaceTransaction),
+                                             reinterpret_cast<ASurfaceControl*>(surfaceControl),
+                                             buffer, fence, context,
+                                             ReleaseCallbackWrapper::callbackThunk);
+
+    ASurfaceTransaction_setBufferDataSpace(reinterpret_cast<ASurfaceTransaction*>(
+                                                   surfaceTransaction),
+                                           reinterpret_cast<ASurfaceControl*>(surfaceControl),
+                                           ADATASPACE_UNKNOWN);
+
+    return reinterpret_cast<jlong>(buffer);
 }
 
 jlong SurfaceTransaction_setSolidBuffer(JNIEnv* /*env*/, jclass,
@@ -699,6 +779,9 @@ static const JNINativeMethod JNI_METHODS[] = {
          (void*)SurfaceControl_fromJava},
         {"nSurfaceTransaction_setSolidBuffer", "(JJIII)J",
          (void*)SurfaceTransaction_setSolidBuffer},
+        {"nSurfaceTransaction_setSolidBufferWithRelease",
+         "(JJIIILandroid/view/cts/util/ASurfaceControlTestUtils$BufferReleaseCallback;)J",
+         (void*)SurfaceTransaction_setSolidBufferWithRelease},
         {"nSurfaceTransaction_setBuffer", "(JJJ)V", (void*)SurfaceTransaction_setBuffer},
         {"nSurfaceTransaction_setQuadrantBuffer", "(JJIIIIII)J",
          (void*)SurfaceTransaction_setQuadrantBuffer},
@@ -762,6 +845,13 @@ jint register_android_view_cts_ASurfaceControlTest(JNIEnv* env) {
             static_cast<jclass>(env->NewGlobalRef(transactionCompleteListenerClazz));
     gTransactionCompleteListenerClassInfo.onTransactionComplete =
             env->GetMethodID(transactionCompleteListenerClazz, "onTransactionComplete", "(JJ)V");
+
+    jclass bufferReleaseCallbackClazz =
+            env->FindClass("android/view/cts/util/ASurfaceControlTestUtils$BufferReleaseCallback");
+    gBufferReleaseCallbackClassInfo.clazz =
+            static_cast<jclass>(env->NewGlobalRef(bufferReleaseCallbackClazz));
+    gBufferReleaseCallbackClassInfo.onBufferRelease =
+            env->GetMethodID(bufferReleaseCallbackClazz, "onBufferRelease", "()V");
 
     gFrameTimelineClassInfo.clazz = static_cast<jclass>(env->NewGlobalRef(
             env->FindClass("android/view/cts/util/FrameCallbackData$FrameTimeline")));

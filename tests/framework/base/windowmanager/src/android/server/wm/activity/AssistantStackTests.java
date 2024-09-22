@@ -56,6 +56,7 @@ import android.provider.Settings;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WaitForValidActivityState;
 import android.server.wm.WindowManagerState;
+import android.server.wm.app.Components;
 import android.server.wm.settings.SettingsSession;
 
 import org.junit.Ignore;
@@ -67,7 +68,7 @@ import org.junit.Test;
  */
 @Presubmit
 public class AssistantStackTests extends ActivityManagerTestBase {
-
+    private static final String TEST_APP_PACKAGE = Components.getPackageName();
     private int mAssistantDisplayId = DEFAULT_DISPLAY;
 
     public void setUp() throws Exception {
@@ -201,7 +202,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
         // started in setUp() will not allow any other activities to start. Therefore we should
         // remove it before launching a fullscreen activity.
         if (isAssistantOnTopOfDream()) {
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+            removeRootTasksWithAssistantTypeActivity();
         }
 
         // Launch an assistant activity on top of an existing activity, and ensure that the activity
@@ -245,7 +246,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             assistantSession.setVoiceInteractionService(ASSISTANT_VOICE_INTERACTION_SERVICE);
 
             // Go home, launch the assistant and check to see that home is visible
-            removeRootTasksInWindowingModes(WINDOWING_MODE_FULLSCREEN);
+            stopTestPackage(TEST_APP_PACKAGE);
             pressHomeButton();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
@@ -260,7 +261,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
             // Launch a fullscreen app and then launch the assistant and check to see that it is
             // also visible
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+            removeRootTasksWithAssistantTypeActivity();
             launchActivityOnDisplay(TEST_ACTIVITY, WINDOWING_MODE_FULLSCREEN, mAssistantDisplayId);
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
                     extraString(EXTRA_ASSISTANT_IS_TRANSLUCENT, "true"));
@@ -271,7 +272,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
 
             // Go home, launch assistant, launch app into fullscreen with activity present, and go
             // back.Ensure home is visible.
-            removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+            removeRootTasksWithAssistantTypeActivity();
             pressHomeButton();
             resumeAppSwitches();
             launchActivityNoWait(LAUNCH_ASSISTANT_ACTIVITY_INTO_STACK,
@@ -318,7 +319,7 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             // that it
             // is also visible
             if (supportsSplitScreenMultiWindow() &&  assistantRunsOnPrimaryDisplay()) {
-                removeRootTasksWithActivityTypes(ACTIVITY_TYPE_ASSISTANT);
+                removeRootTasksWithAssistantTypeActivity();
                 launchActivitiesInSplitScreen(
                         getLaunchActivityBuilder().setTargetActivity(DOCKED_ACTIVITY),
                         getLaunchActivityBuilder().setTargetActivity(TEST_ACTIVITY));
@@ -480,5 +481,12 @@ public class AssistantStackTests extends ActivityManagerTestBase {
             return true;
         }
         return false;
+    }
+
+    private void removeRootTasksWithAssistantTypeActivity() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(new int[]{ACTIVITY_TYPE_ASSISTANT});
+        });
+        waitForIdle();
     }
 }

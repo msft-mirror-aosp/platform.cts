@@ -34,6 +34,7 @@ import android.media.audiofx.HapticGenerator;
 import android.media.cts.Utils;
 import android.net.Uri;
 import android.os.Build;
+import android.os.UserHandle;
 import android.os.VibrationEffect;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
@@ -100,7 +101,9 @@ public class RingtoneTest extends InstrumentationTestCase {
 
     private void enableAppOps() {
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user ");
+        cmd.append(UserHandle.myUserId());
+        cmd.append(" ");
         cmd.append(getInstrumentation().getContext().getPackageName());
         cmd.append(" android:write_settings allow");
         getInstrumentation().getUiAutomation().executeShellCommand(cmd.toString());

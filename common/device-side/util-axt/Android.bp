@@ -19,7 +19,7 @@ package {
 java_defaults {
     name: "compatibility-device-util-axt-default",
     sdk_version: "test_current",
-    min_sdk_version: "21",
+    min_sdk_version: "24",
     dxflags: ["--multi-dex"],
 
     srcs: [

@@ -1363,7 +1363,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
      */
     private void startActivity(ComponentName componentName, String... extraTrueNames) {
         startActivityUnchecked(componentName, extraTrueNames);
-        assertActivityFocused(componentName);
+        assertActivityFocusedOnMainDisplay(componentName);
     }
 
     /**
