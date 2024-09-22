@@ -179,9 +179,9 @@ android_test {
     team: "trendy_team_system_performance",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
-        "org.apache.http.legacy",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "org.apache.http.legacy.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.uiautomator_uiautomator",

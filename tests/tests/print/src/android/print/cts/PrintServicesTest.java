@@ -520,6 +520,8 @@ public class PrintServicesTest extends BasePrintTest {
             eventually(() -> runOnMainThread(
                     () -> assertEquals(2, firstService.callGetActivePrintJobs().size())));
 
+            waitForPrinterDiscoverySessionDestroyCallbackCalled(2);
+
             // Create print job in second service
             resetCounters();
             runOnMainThread(() -> pm.print("job3", adapter, null));
@@ -559,7 +561,7 @@ public class PrintServicesTest extends BasePrintTest {
             eventually(() -> runOnMainThread(() -> assertTrue(job2.isCancelled())));
             runOnMainThread(() -> assertEquals(1, firstService.callGetActivePrintJobs().size()));
 
-            waitForPrinterDiscoverySessionDestroyCallbackCalled(1);
+            waitForPrinterDiscoverySessionDestroyCallbackCalled(2);
         } finally {
             clearPrintSpoolerData();
         }

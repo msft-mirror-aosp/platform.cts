@@ -175,21 +175,23 @@ public class StorageManagerTest {
     @AppModeFull(reason = "Instant apps cannot access external storage")
     public void testAttemptMountObbWrongPackage() {
         for (File target : getTargetFiles()) {
-            target = new File(target, "test1_wrongpackage.obb");
+            final File outFile = new File(target, "test1_wrongpackage.obb");
             Log.d(TAG, "Testing path " + target);
-            doAttemptMountObbWrongPackage(target);
+            try {
+                mountObb(
+                        R.raw.test1_wrongpackage,
+                        outFile,
+                        OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
+            } catch (SecurityException e) {
+            } finally {
+                assertFalse(
+                        "OBB should not be mounted",
+                        mStorageManager.isObbMounted(outFile.getPath()));
+                assertNull(
+                        "OBB's mounted path should be null",
+                        mStorageManager.getMountedObbPath(outFile.getPath()));
+            }
         }
-    }
-
-    private void doAttemptMountObbWrongPackage(File outFile) {
-        mountObb(R.raw.test1_wrongpackage, outFile,
-                OnObbStateChangeListener.ERROR_PERMISSION_DENIED);
-
-        assertFalse("OBB should not be mounted",
-                mStorageManager.isObbMounted(outFile.getPath()));
-
-        assertNull("OBB's mounted path should be null",
-                mStorageManager.getMountedObbPath(outFile.getPath()));
     }
 
     @Test
