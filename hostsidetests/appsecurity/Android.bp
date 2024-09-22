@@ -119,7 +119,7 @@ java_test_host {
         "sts-host-util",
     ],
 
-    test_suites: TEST_SUITES_DEFAULT + ["sts"],
+    test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
 
     data: [
         // AppSecurityTests
@@ -247,7 +247,7 @@ java_test_host {
         "sts-host-util",
     ],
 
-    test_suites: MCTS_TEST_SUITES_DEFAULT,
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     test_config: "AndroidTestMcts.xml",
 
@@ -396,7 +396,7 @@ java_test_host {
         ":CtsAppDataIsolationAppSharedA",
         ":CtsAppDataIsolationAppSharedB",
     ],
-    test_suites: MCTS_TEST_SUITES_DEFAULT,
+    test_suites: CTS_TEST_SUITES_DEFAULT,
     test_config: "AppDataIsolationTests.xml",
 }
 
