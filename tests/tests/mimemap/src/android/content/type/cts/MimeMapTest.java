@@ -16,7 +16,16 @@
 
 package android.content.type.cts;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import android.content.type.cts.StockAndroidMimeMapFactory;
+
+import libcore.content.type.MimeMap;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -26,14 +35,6 @@ import java.net.URLConnection;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeMap;
-import libcore.content.type.MimeMap;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 /**
  * Tests {@link MimeMap#getDefault()}.
@@ -206,6 +207,12 @@ public class MimeMapTest {
     @Test public void x509CaCert() {
         assertMimeTypeFromExtension("application/x-x509-ca-cert", "crt");
         assertMimeTypeFromExtension("application/x-x509-ca-cert", "der");
+    }
+
+    // http://b/183687627
+    @Test public void webarchive_mht() {
+        assertExtensionFromMimeType("mht", "multipart/related");
+        assertMimeTypeFromExtension("multipart/related", "mht");
     }
 
     // http://b/122734564

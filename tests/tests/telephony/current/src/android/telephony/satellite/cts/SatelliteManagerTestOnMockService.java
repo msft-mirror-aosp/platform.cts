@@ -18,7 +18,9 @@ package android.telephony.satellite.cts;
 
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_ENTITLEMENT;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_COMMUNICATION_RESTRICTION_REASON_GEOLOCATION;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ACCESS_BARRED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_DISABLE_IN_PROGRESS;
+import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_ENABLE_IN_PROGRESS;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_MODEM_ERROR;
 import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_NO_RESOURCES;
@@ -164,7 +166,7 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private static final String OVERRIDING_COUNTRY_CODES = "US";
     private static final String SATELLITE_COUNTRY_CODES = "US,UK,CA";
     private static final String SATELLITE_S2_FILE = "google_us_san_sat_s2.dat";
-    private static final String TEST_PROVIDER = LocationManager.GPS_PROVIDER;
+    private static final String TEST_PROVIDER = LocationManager.FUSED_PROVIDER;
     private static final float LOCATION_ACCURACY = 95;
     private static LocationManager sLocationManager;
 
@@ -324,6 +326,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerResult);
             assertTrue(callback.waitUntilResult(1));
 
+            // Bypass geofence by enforcing SatelliteAccessController to use on-device data with
+            // mock location
+            assertTrue(sMockSatelliteServiceManager.setCountryCodes(false, null, null, null, 0));
+            assertTrue(sMockSatelliteServiceManager.setSatelliteAccessControlOverlayConfigs(
+                    false, true, SATELLITE_S2_FILE, TimeUnit.MINUTES.toNanos(10), "US"));
+
+            // Set location provider and current location to Google San Diego office
+            registerTestLocationProvider();
+            setTestProviderLocation(32.909808231041644, -117.18185788819781);
+            verifyIsSatelliteAllowed(true);
+
             int i = 0;
             while (requestSatelliteEnabledWithResult(true, EXTERNAL_DEPENDENT_TIMEOUT)
                     != SatelliteManager.SATELLITE_RESULT_SUCCESS && i < 3) {
@@ -468,6 +481,59 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
             assertTrue(sMockSatelliteServiceManager.waitForEventMockPointingUiActivityStarted(1));
         }
         assertTrue(sMockSatelliteServiceManager.restoreSatellitePointingUiClassName());
+    }
+
+    @Test
+    public void testSatelliteRequestEnabled() {
+        if (!shouldTestSatelliteWithMockService()) return;
+        assumeTrue(sMockSatelliteServiceManager != null);
+        grantSatellitePermission();
+
+        /*
+         * When the LocationManager is disabled :
+         * 1) Set location inside or outside of geofence
+         * 2) Check both requestSatelliteEnabled and requestIsCommunicationAllowedForCurrentLocation
+         *  - result is SATELLITE_RESULT_LOCATION_DISABLED
+         */
+        // LocationManager is disabled
+        sLocationManager.setLocationEnabledForUser(false, Process.myUserHandle());
+
+        // Set current location inside of the geofence data (San Diego office)
+        setTestProviderLocation(32.909808231041644, -117.18185788819781);
+        verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
+
+        int result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
+
+        // Set current location outside of the geofence data (Bangalore office)
+        setTestProviderLocation(12.997138153769894, 77.66099948612018);
+        verifySatelliteNotAllowedErrorReason(SATELLITE_RESULT_LOCATION_DISABLED);
+
+        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_LOCATION_DISABLED, result);
+
+        /*
+         * When the LocationManager is enabled and cache is valid :
+         * 1) Set location outside of geofence
+         * - The result of requestIsCommunicationAllowedForCurrentLocation is true due to cache
+         * - The result of requestSatelliteEnabled is SATELLITE_RESULT_ACCESS_BARRED
+         * 2) Check the result of requestIsCommunicationAllowedForCurrentLocation once more
+         * - Since the cache is updated as false in
+         */
+        // LocationManager is disabled and cache is valid
+        sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
+        assertTrue(sMockSatelliteServiceManager
+                .setIsSatelliteCommunicationAllowedForCurrentLocationCache("cache_allowed"));
+
+        // Set current location outside of the geofence data (Bangalore office)
+        setTestProviderLocation(12.997138153769894, 77.66099948612018);
+        verifyIsSatelliteAllowed(true);
+
+        result = requestSatelliteEnabledWithResult(true, TIMEOUT);
+        assertEquals(SATELLITE_RESULT_ACCESS_BARRED, result);
+
+        verifyIsSatelliteAllowed(false);
+        revokeSatellitePermission();
     }
 
     @Test
@@ -7333,8 +7399,17 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         assertEquals(allowed, result.first);
     }
 
+    private void verifySatelliteNotAllowedErrorReason(int expectedError) {
+        grantSatellitePermission();
+        Pair<Boolean, Integer> result =
+                requestIsCommunicationAllowedForCurrentLocation();
+        assertNotNull(result.second);
+        assertEquals(expectedError, (int) result.second);
+    }
+
     private static void registerTestLocationProvider() {
         requestMockLocationPermission(true);
+        sLocationManager.setLocationEnabledForUser(true, Process.myUserHandle());
         sLocationManager.addTestProvider(TEST_PROVIDER,
                 new ProviderProperties.Builder().build());
         sLocationManager.setTestProviderEnabled(TEST_PROVIDER, true);

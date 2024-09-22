@@ -56,6 +56,7 @@ public class EmbeddedTestActivity extends Activity {
     private CountDownLatch mItemsDeselectedClientInvocationLatch;
     private CountDownLatch mItemsSelectedClientInvocationLatch;
     private CountDownLatch mSelectionCompleteClientInvocationLatch;
+    private CountDownLatch mSessionOpenedClientInvocationLatch;
 
     /**
      * Client callbacks that the service will use to interact with the client
@@ -90,6 +91,9 @@ public class EmbeddedTestActivity extends Activity {
                 @NonNull EmbeddedPhotoPickerSession session) {
             mSession = session;
             mSurfaceView.setChildSurfacePackage(session.getSurfacePackage());
+            if (mSessionOpenedClientInvocationLatch != null) {
+                mSessionOpenedClientInvocationLatch.countDown();
+            }
         }
 
         @Override
@@ -221,5 +225,19 @@ public class EmbeddedTestActivity extends Activity {
     public void setCountDownLatchForSelectionCompleteClientInvocation(
             @NonNull CountDownLatch selectionCompleteClientInvocationLatch) {
         mSelectionCompleteClientInvocationLatch = selectionCompleteClientInvocationLatch;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onSessionOpened(EmbeddedPhotoPickerSession)} to enable
+     * verifying its invocation within a given time frame.
+     *
+     * @param sessionOpenedClientInvocation the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onSessionOpened(EmbeddedPhotoPickerSession)} ()} is invoked.
+     */
+    public void setCountDownLatchForSessionOpenedClientInvocation(
+            @NonNull CountDownLatch sessionOpenedClientInvocation) {
+        mSessionOpenedClientInvocationLatch = sessionOpenedClientInvocation;
     }
 }
