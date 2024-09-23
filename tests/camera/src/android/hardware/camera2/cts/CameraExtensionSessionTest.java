@@ -2252,20 +2252,14 @@ public class CameraExtensionSessionTest extends Camera2ParameterizedTestCase {
             updatePreviewSurfaceTexture();
             List<Integer> supportedExtensions = extensionChars.getSupportedExtensions();
             for (Integer extension : supportedExtensions) {
-                final Range<Float> zoomRatioRange;
+                Range<Float> zoomRatioRange;
                 final float maxZoom;
-                if (Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                    zoomRatioRange =
-                            extensionChars.get(extension,
-                                    CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
-                    assertNotNull(
-                            "Zoom ratio range must be present in CameraExtensionCharacteristics",
-                            zoomRatioRange);
-                    maxZoom = zoomRatioRange.getUpper();
-                } else {
+                zoomRatioRange = extensionChars.get(extension,
+                    CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                if (zoomRatioRange == null) {
                     zoomRatioRange = staticMeta.getZoomRatioRangeChecked();
-                    maxZoom = staticMeta.getAvailableMaxDigitalZoomChecked();
                 }
+                maxZoom = zoomRatioRange.getUpper();
 
                 if (zoomRatioRange.getUpper().equals(zoomRatioRange.getLower())) {
                     continue;
