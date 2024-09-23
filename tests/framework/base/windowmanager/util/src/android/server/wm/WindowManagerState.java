@@ -101,7 +101,9 @@ public class WindowManagerState {
     public static final String STATE_INITIALIZING = "INITIALIZING";
     public static final String STATE_STARTED = "STARTED";
     public static final String STATE_RESUMED = "RESUMED";
+    public static final String STATE_PAUSING = "PAUSING";
     public static final String STATE_PAUSED = "PAUSED";
+    public static final String STATE_STOPPING = "STOPPING";
     public static final String STATE_STOPPED = "STOPPED";
     public static final String STATE_DESTROYED = "DESTROYED";
     public static final String TRANSIT_ACTIVITY_OPEN = "TRANSIT_ACTIVITY_OPEN";
@@ -821,15 +823,6 @@ public class WindowManagerState {
 
     public boolean isTaskDisplayAreaIgnoringOrientationRequest(ComponentName activityName) {
         return getTaskDisplayArea(activityName).isIgnoringOrientationRequest();
-    }
-
-    public boolean containsStartedActivities() {
-        for (Task rootTask : mRootTasks) {
-            final Activity activity = rootTask.getActivity(
-                    (a) -> !a.state.equals(STATE_STOPPED) && !a.state.equals(STATE_DESTROYED));
-            if (activity != null) return true;
-        }
-        return false;
     }
 
     public boolean hasActivityState(ComponentName activityName, String activityState) {
