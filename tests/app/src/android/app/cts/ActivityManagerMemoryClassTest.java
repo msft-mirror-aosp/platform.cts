@@ -183,6 +183,8 @@ public class ActivityManagerMemoryClassTest
             expectedMemorySizeForXLargeScreen.put(520, 576);
             // Backport of DENSITY_390 to android14-tests-dev
             expectedMemorySizeForXLargeScreen.put(390, 240);
+            // Backport of DENSITY_250 to android14-tests-dev
+            expectedMemorySizeForXLargeScreen.put(250, 144);
         }
 
         public static Integer getExpectedMemorySize(

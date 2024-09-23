@@ -33,8 +33,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -44,6 +42,9 @@ import com.android.cts.verifier.audio.wavelib.DspFftServer;
 import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Tests Audio Device roundtrip latency by using a loopback plug.
@@ -322,7 +323,7 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
         double[] mAverageEnergyPerBand = new double[mBands];
         int[] mInBoundPointsPerBand = new int[mBands];
         public boolean mIsBaseMeasurement = false;
-        public Results(String label) {
+        Results(String label) {
             mLabel = label;
         }
 
@@ -384,11 +385,11 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
      */
     private void computeResults() {
 
-        Results resultsBase = new Results("Base");
+        Results resultsBase = new Results("base");
         computeResultsForVector(mFreqAverageBase, resultsBase, true, baseBandSpecsArray);
-        Results resultsLeft = new Results("Left");
+        Results resultsLeft = new Results("left");
         computeResultsForVector(mFreqAverageLeft, resultsLeft, false, bandSpecsArray);
-        Results resultsRight = new Results("Right");
+        Results resultsRight = new Results("right");
         computeResultsForVector(mFreqAverageRight, resultsRight, false, bandSpecsArray);
         if (resultsLeft.testAll() && resultsRight.testAll() && resultsBase.testAll()) {
             //enable button
@@ -487,36 +488,26 @@ public class AudioFrequencySpeakerActivity extends AudioFrequencyActivity implem
     }
 
     private void storeTestResults(Results results) {
-        String channelLabel = "channel_" + results.mLabel;
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        for (int b = 0; b < mBands; b++) {
-            String bandLabel = String.format(channelLabel + "_%d", b);
-            reportLog.addValue(
-                    bandLabel + "_Level",
-                    results.mAverageEnergyPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    bandLabel + "_pointsinbound",
-                    results.mInBoundPointsPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.COUNT);
-
-            reportLog.addValue(
-                    bandLabel + "_pointstotal",
-                    results.mPointsPerBand[b],
-                    ResultType.NEUTRAL,
-                    ResultUnit.COUNT);
+        try {
+            CtsVerifierReportLog reportLog = getReportLog();
+            JSONArray bandsArray = new JSONArray();
+            JSONObject resultsObject = new JSONObject();
+            for (int b = 0; b < mBands; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_LEVEL, results.mAverageEnergyPerBand[b]);
+                bandObject.put(KEY_POINTS_IN_BOUND, results.mInBoundPointsPerBand[b]);
+                bandObject.put(KEY_POINTS_TOTAL, results.mPointsPerBand[b]);
+                bandsArray.put(bandObject);
+            }
+            resultsObject.put(KEY_BANDS, bandsArray);
+            resultsObject.put(KEY_MAGNITUDE_SPECTRUM_LOG, new JSONArray(results.mValuesLog));
+            reportLog.addValue(results.mLabel, resultsObject);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+            appendResultsToScreen(LOG_ERROR_STR);
         }
 
-        reportLog.addValues(channelLabel + "_magnitudeSpectrumLog",
-                results.mValuesLog,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
-
-        Log.v(TAG, "Results Stored");
+        Log.v(TAG, "Results Recorded");
     }
 
     @Override // PassFailButtons

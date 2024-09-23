@@ -56,16 +56,37 @@ public class ContactsContract_DefaultAccountAndStateTest {
                 ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
                 defaultContactsAccount.getState());
-        assertEquals(ACCT_1, defaultContactsAccount.getCloudAccount());
+        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
 
         defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD,
                 defaultContactsAccount.getState());
-        assertEquals(ACCT_1, defaultContactsAccount.getCloudAccount());
+        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
 
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
                         DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_CLOUD, null));
+    }
+
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
+    public void testDefaultContactsAccountClass_sim() {
+        DefaultAccountAndState defaultContactsAccount = new DefaultAccountAndState(
+                DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
+                ACCT_1);
+        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
+                defaultContactsAccount.getState());
+        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
+
+        defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
+        assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
+                defaultContactsAccount.getState());
+        assertEquals(ACCT_1, defaultContactsAccount.getAccount());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                new DefaultAccountAndState(
+                        DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM, null));
     }
 
     @Test
@@ -76,12 +97,12 @@ public class ContactsContract_DefaultAccountAndStateTest {
                 null);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
                 defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getCloudAccount());
+        assertNull(defaultContactsAccount.getAccount());
 
         defaultContactsAccount = DefaultAccountAndState.ofLocal();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_LOCAL,
                 defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getCloudAccount());
+        assertNull(defaultContactsAccount.getAccount());
 
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(
@@ -97,12 +118,12 @@ public class ContactsContract_DefaultAccountAndStateTest {
                 null);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
                 defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getCloudAccount());
+        assertNull(defaultContactsAccount.getAccount());
 
         defaultContactsAccount = DefaultAccountAndState.ofNotSet();
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_NOT_SET,
                 defaultContactsAccount.getState());
-        assertNull(defaultContactsAccount.getCloudAccount());
+        assertNull(defaultContactsAccount.getAccount());
 
         assertThrows(IllegalArgumentException.class, () ->
                 new DefaultAccountAndState(

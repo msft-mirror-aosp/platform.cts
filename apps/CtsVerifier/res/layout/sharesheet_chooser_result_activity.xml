@@ -28,7 +28,7 @@
         <TextView android:id="@+id/instructions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#fff"
+            android:textColor="?android:attr/textColorPrimary"
             android:textSize="20sp"
             />
 

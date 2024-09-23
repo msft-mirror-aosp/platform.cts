@@ -17,11 +17,13 @@
 package android.app.notification.current.cts;
 
 import static android.app.Notification.FLAG_BUBBLE;
+import static android.app.Notification.FLAG_PROMOTED_ONGOING;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -1225,6 +1227,15 @@ public class NotificationTest {
         assertNotNull(remoteInputActionPair);
         assertEquals(freeformRemoteInput, remoteInputActionPair.first);
         assertEquals(actionWithFreeformRemoteInput, remoteInputActionPair.second);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testPromotedOngoingFlag() {
+        Notification notification = new Notification.Builder(mContext, "test")
+                .setFlag(FLAG_PROMOTED_ONGOING, true)
+                .build();
+        assertNotEquals(0, (notification.flags & FLAG_PROMOTED_ONGOING));
     }
 
     private static void assertMessageEquals(
