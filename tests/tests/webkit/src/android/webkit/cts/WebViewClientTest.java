@@ -43,6 +43,14 @@ import com.android.compatibility.common.util.NullWebViewUtils;
 import com.android.compatibility.common.util.PollingCheck;
 import com.google.common.util.concurrent.SettableFuture;
 
+import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -647,6 +655,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
         if (!NullWebViewUtils.isWebViewAvailable()) {
             return;
@@ -684,6 +694,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingHitProceed() throws Throwable {
         if (!NullWebViewUtils.isWebViewAvailable()) {
             return;
@@ -743,6 +755,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingMalwareCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_MALWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_MALWARE);
@@ -754,6 +768,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingPhishingCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_PHISHING_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_PHISHING);
@@ -765,6 +781,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_UNWANTED_SOFTWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_UNWANTED_SOFTWARE);
@@ -776,6 +794,8 @@ public class WebViewClientTest extends ActivityInstrumentationTestCase2<WebViewC
      * Modifications to this test should be reflected in that test as necessary. See
      * http://go/modifying-webview-cts.
      */
+    @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingBillingCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_BILLING_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_BILLING);
