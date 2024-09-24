@@ -139,4 +139,7 @@
     <!-- b/238155422 -->
     <option name="compatibility:include-filter" value="CtsNetTestCases android.net.cts.ConnectivityManagerTest#testSetAirplaneMode" />
 
+    <!-- b/353142444 -->
+    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppChoreographer" />
+    <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppBackpressure" />
 </configuration>
