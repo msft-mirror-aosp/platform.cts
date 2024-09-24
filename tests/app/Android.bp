@@ -357,6 +357,22 @@ test_module_config {
 }
 
 test_module_config {
+    name: "CtsAppTestCases_all-except-large",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    exclude_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
+    name: "CtsAppTestCases_activitymanagerprocessstatetest",
+    base: "CtsAppTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.app.cts.ActivityManagerProcessStateTest"],
+    exclude_annotations: ["androidx.test.filters.LargeTest"],
+}
+
+test_module_config {
     name: "CtsAppFgsTestCases_pm_Presubmit",
     base: "CtsAppFgsTestCases",
     test_suites: ["general-tests"],

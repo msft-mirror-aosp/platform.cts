@@ -13,6 +13,7 @@
 // limitations under the License.
 
 package {
+    default_team: "trendy_team_android_media_codec_framework",
     // See: http://go/android-license-faq
     default_applicable_licenses: [
         "Android-Apache-2.0",
@@ -22,7 +23,6 @@ package {
 
 android_test {
     name: "CtsMediaCodecTestCases",
-    team: "trendy_team_android_media_audio_framework",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",
@@ -65,7 +65,6 @@ android_test {
 
 android_test {
     name: "MctsMediaCodecTestCases",
-    team: "trendy_team_android_media_audio_framework",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",

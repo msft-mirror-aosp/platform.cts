@@ -73,7 +73,6 @@ android_test {
 
 android_test {
     name: "MctsMediaDrmFrameworkTestCases",
-    team: "trendy_team_android_media_drm",
     defaults: ["cts_defaults"],
     // include both the 32 and 64 bit versions
     compile_multilib: "both",

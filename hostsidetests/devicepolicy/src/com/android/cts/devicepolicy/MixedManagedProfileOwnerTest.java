@@ -182,12 +182,6 @@ public final class MixedManagedProfileOwnerTest extends DeviceAndProfileOwnerTes
         super.testAlwaysOnVpnUnsupportedPackageReplaced();
     }
 
-    @Override
-    @Test
-    public void testSetSystemSetting() {
-        // Managed profile owner cannot set currently allowlisted system settings.
-    }
-
     @Test
     public void testCannotClearProfileOwner() throws Exception {
         runDeviceTestsAsUser(DEVICE_ADMIN_PKG, CLEAR_PROFILE_OWNER_NEGATIVE_TEST_CLASS, mUserId);
