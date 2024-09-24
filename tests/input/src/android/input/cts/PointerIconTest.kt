@@ -233,7 +233,8 @@ class PointerIconTest {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun data(): Iterable<Any> =
-            listOf(PointerDevice.MOUSE, PointerDevice.DRAWING_TABLET)
+            // NOTE: PointerIconTest for MOUSE is temporarily ignored due to b/369000028.
+            listOf(PointerDevice.DRAWING_TABLET)
     }
 }
 
