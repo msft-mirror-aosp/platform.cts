@@ -78,6 +78,8 @@
         <option name="push" value="SplitBluetoothPermissionTestApp.apk->/data/local/tmp/cts/security/SplitBluetoothPermissionTestApp.apk" />
         <option name="push" value="CertBlocklistTestApp.apk->/data/local/tmp/cts/security/CertBlocklistTestApp.apk" />
         <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
+        <option name="push" value="CtsMultiuserCPInitial.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderInitial.apk" />
+        <option name="push" value="CtsMultiuserCPOther.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderOther.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">

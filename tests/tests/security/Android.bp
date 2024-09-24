@@ -26,6 +26,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
         "android-common",
         "android.security.flags-aconfig-java",
         "ctstestserver",
@@ -42,6 +43,7 @@ android_test {
         "hamcrest-library",
         "NeneInternal",
         "CameraPermissionTestLib",
+        "Harrier",
     ],
     libs: [
         "android.test.runner.stubs.system",
@@ -105,6 +107,8 @@ android_test {
         ":CertBlocklistTestApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
         ":TestIntrusionDetectionApp",
+        ":CtsMultiuserCPInitial",
+        ":CtsMultiuserCPOther",
     ],
 }
 
