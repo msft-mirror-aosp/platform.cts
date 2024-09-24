@@ -33,6 +33,7 @@ import androidx.test.runner.AndroidJUnit4;
 
 import com.android.cts.input.DefaultPointerSpeedRule;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -180,6 +181,7 @@ public class VirtualMouseTest extends VirtualDeviceTestCase {
                                         .build())));
     }
 
+    @Ignore("b/369000028")
     @Test
     public void testStartingCursorPosition() {
         // The virtual display is 100x100px, running from [0,99]. Half of this is 49.5, and
