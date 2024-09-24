@@ -720,7 +720,7 @@ public class NfcAdapterTest {
             cb = new NfcControllerAlwaysOnListener(countDownLatch);
             nfcAdapter.registerControllerAlwaysOnListener(
                     Executors.newSingleThreadExecutor(), cb);
-            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.ENABLE_TRANSPARENT);
+            nfcOemExtension.setControllerAlwaysOnMode(NfcOemExtension.ENABLE_TRANSPARENT);
             assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
             nfcAdapter.unregisterControllerAlwaysOnListener(cb);
 
@@ -728,7 +728,7 @@ public class NfcAdapterTest {
             cb = new NfcControllerAlwaysOnListener(countDownLatch);
             nfcAdapter.registerControllerAlwaysOnListener(
                     Executors.newSingleThreadExecutor(), cb);
-            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.DISABLE);
+            nfcOemExtension.setControllerAlwaysOnMode(NfcOemExtension.DISABLE);
             assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
             nfcAdapter.unregisterControllerAlwaysOnListener(cb);
         } finally {

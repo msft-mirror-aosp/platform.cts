@@ -111,12 +111,25 @@ public class WindowManagerStateHelper extends WindowManagerState {
     }
 
     public void waitForAllStoppedActivities() {
-        if (!Condition.waitFor("all started activities have been removed", () -> {
+        Condition.waitFor("all activities to be stopped", () -> {
             computeState();
-            return !containsStartedActivities();
-        })) {
-            fail("All started activities have been removed");
-        }
+            for (Task rootTask : getRootTasks()) {
+                final Activity notStopped = rootTask.getActivity(a -> switch (a.state) {
+                    case STATE_RESUMED, STATE_STARTED, STATE_PAUSING, STATE_PAUSED, STATE_STOPPING:
+                        logAlways("Not stopped: " + a);
+                        yield true;
+                    case STATE_STOPPED, STATE_DESTROYED:
+                        yield false;
+                    default: // FINISHING, DESTROYING, INITIALIZING
+                        logE("Weird state: " + a);
+                        yield false;
+                });
+                if (notStopped != null) {
+                    return false;
+                }
+            }
+            return true;
+        });
     }
 
     public void waitForAllNonHomeActivitiesToDestroyed() {
