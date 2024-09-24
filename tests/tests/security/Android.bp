@@ -25,6 +25,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
         "android-common",
         "ctstestserver",
         "ctstestrunner-axt",
@@ -38,6 +39,7 @@ android_test {
         "hamcrest-library",
         "NeneInternal",
         "cts-wm-util",
+        "Harrier",
     ],
     libs: [
         "android.test.runner",
@@ -97,6 +99,8 @@ android_test {
         ":CtsAppThatRequestCustomCameraPermission",
         ":CtsWallpaperBalTestApp",
         ":CtsEmptyApp",
+        ":CtsMultiuserContentProviderInitial",
+        ":CtsMultiuserContentProviderOther",
     ],
 }
 
