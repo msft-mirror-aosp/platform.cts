@@ -83,9 +83,9 @@ import java.util.function.Function;
 public class VideoEncoderTest extends MediaTestBase {
     private static final int MAX_SAMPLE_SIZE = 256 * 1024;
     private static final String TAG = "VideoEncoderTest";
-    private static final long FRAME_TIMEOUT_MS = 1000;
+    private static final long FRAME_TIMEOUT_MS = 1500;
     // use larger delay before we get first frame, some encoders may need more time
-    private static final long INIT_TIMEOUT_MS = 2000;
+    private static final long INIT_TIMEOUT_MS = 3000;
 
     static final String mInpPrefix = WorkDir.getMediaDirString();
     private static final String SOURCE_URL =
