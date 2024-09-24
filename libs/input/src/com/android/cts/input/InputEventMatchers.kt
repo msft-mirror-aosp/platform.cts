@@ -231,6 +231,27 @@ fun withKeyCode(keyCode: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyE
     }
 }
 
+fun withModifierState(modifierState: Int): Matcher<KeyEvent> =
+    object : TypeSafeMatcher<KeyEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With modifier state = $modifierState")
+    }
+
+    override fun matchesSafely(event: KeyEvent): Boolean {
+        return (event.metaState and modifierState) == modifierState
+    }
+}
+
+fun withKeyAction(keyAction: Int): Matcher<KeyEvent> = object : TypeSafeMatcher<KeyEvent>() {
+    override fun describeTo(description: Description) {
+        description.appendText("With key action = $keyAction")
+    }
+
+    override fun matchesSafely(event: KeyEvent): Boolean {
+        return event.action == keyAction
+    }
+}
+
 fun withEdgeFlags(edgeFlags: Int): Matcher<MotionEvent> = object : TypeSafeMatcher<MotionEvent>() {
     override fun describeTo(description: Description) {
         description.appendText("With edge flags = 0x${edgeFlags.toString(16)}")
