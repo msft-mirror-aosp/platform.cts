@@ -182,7 +182,8 @@ public class MidiJavaTestActivity extends MidiTestActivityBase {
             // Setup the USB Loopback Device
             mUSBLoopbackDevice.closePorts();
 
-            if (mIODevice.mSendDevInfo != null) {
+            // Some bluetooth devices do not require USB loopback
+            if (mIODevice.mSendDevInfo != null && mUSBLoopbackDevice.mSendDevInfo != null) {
                 mMidiManager.openDevice(
                         mUSBLoopbackDevice.mSendDevInfo, new USBLoopbackOpenListener(), null);
             }
