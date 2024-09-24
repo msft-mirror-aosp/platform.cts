@@ -50,6 +50,9 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
     private UserReference mPrimaryUser;
     private UserReference mWorkProfileUser;
 
+    private UninstallResultReceiver mPrimaryUninstallResultReceiver;
+    private UninstallResultReceiver mWorkProfileUninstallResultReceiver;
+
     @ClassRule
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
@@ -57,8 +60,11 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
     @Before
     @Override
     public void setup() throws Exception {
-        super.setup();
+        setupTestEnvironment();
+
         assumeTrue(UserManager.supportsMultipleUsers());
+
+        // Prepare the users and the user contexts
         mPrimaryUser = sDeviceState.initialUser();
         mWorkProfileUser = sDeviceState.workProfile();
 
@@ -70,25 +76,45 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
                 /* flags= */ 0);
         mWorkProfileUserContext = getContext().createContextAsUser(mWorkProfileUser.userHandle(),
                 /* flags= */ 0);
+
+        // Register the uninstall result receivers
+        mPrimaryUninstallResultReceiver = new UninstallResultReceiver();
+        mPrimaryUninstallResultReceiver.registerReceiver(mPrimaryUserContext);
+        mWorkProfileUninstallResultReceiver = new UninstallResultReceiver();
+        mWorkProfileUninstallResultReceiver.registerReceiver(mWorkProfileUserContext);
+
+        // Install the test package and assert it is installed on both users
+        installTestPackage();
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
     }
 
     @After
     @Override
     public void tearDown() throws Exception {
+        if (mPrimaryUninstallResultReceiver != null) {
+            mPrimaryUserContext.unregisterReceiver(mPrimaryUninstallResultReceiver);
+            mPrimaryUninstallResultReceiver = null;
+        }
+
+        if (mWorkProfileUninstallResultReceiver != null) {
+            mWorkProfileUserContext.unregisterReceiver(mWorkProfileUninstallResultReceiver);
+            mWorkProfileUninstallResultReceiver = null;
+        }
+
         getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
         mPrimaryUserContext = null;
         mWorkProfileUserContext = null;
         mPrimaryUser = null;
         mWorkProfileUser = null;
-        super.tearDown();
+
+        uninstallTestPackage();
+        // to avoid any UI is still on the screen
+        pressBack();
     }
 
     @Test
     public void actionDeleteIntent_uninstallOnWorkProfile_okButton_success() throws Exception {
-        installTestPackage();
-        assertTestPackageInstalledOnUser(mPrimaryUserContext);
-        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
-
         startUninstallationViaIntentActionDeleteForUser(mWorkProfileUserContext);
 
         waitForUiIdle();
@@ -101,10 +127,6 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
 
     @Test
     public void actionDeleteIntent_uninstallOnPrimaryUser_okButton_success() throws Exception {
-        installTestPackage();
-        assertTestPackageInstalledOnUser(mPrimaryUserContext);
-        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
-
         startUninstallationViaIntentActionDeleteForUser(mPrimaryUserContext);
 
         waitForUiIdle();
@@ -118,10 +140,6 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
     @Test
     public void uninstallPackageIntent_uninstallOnWorkProfile_okButton_success()
             throws Exception {
-        installTestPackage();
-        assertTestPackageInstalledOnUser(mPrimaryUserContext);
-        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
-
         startUninstallationViaIntentActionUninstallPackageForUser(mWorkProfileUserContext);
 
         waitForUiIdle();
@@ -134,16 +152,104 @@ public class UninstallationWithMultiUsersTest extends UninstallationTestBase {
 
     @Test
     public void uninstallPackageIntent_uninstallOnPrimaryUser_okButton_success() throws Exception {
-        installTestPackage();
-        assertTestPackageInstalledOnUser(mPrimaryUserContext);
-        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
-
         startUninstallationViaIntentActionUninstallPackageForUser(mPrimaryUserContext);
 
         waitForUiIdle();
 
         clickUninstallOkButton();
 
+        assertTestPackageNotInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
+    }
+
+    @Test
+    public void installerApi_noDeletePackages_uninstallOnWorkProfile_okButton_success()
+            throws Exception {
+        startUninstallationViaPackageInstallerApiForUser(mWorkProfileUserContext,
+                mWorkProfileUninstallResultReceiver);
+
+        waitForUiIdle();
+
+        clickUninstallAppFromWorkProfileOkButton();
+
+        assertUninstallSuccess(mWorkProfileUninstallResultReceiver);
+        assertTestPackageNotInstalledOnUser(mWorkProfileUserContext);
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+    }
+
+    @Test
+    public void installerApi_noDeletePackages_uninstallOnPrimaryUser_okButton_success()
+            throws Exception {
+        startUninstallationViaPackageInstallerApiForUser(mPrimaryUserContext,
+                mPrimaryUninstallResultReceiver);
+
+        waitForUiIdle();
+
+        clickUninstallOkButton();
+
+        assertUninstallSuccess(mPrimaryUninstallResultReceiver);
+        assertTestPackageNotInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
+    }
+
+    @Test
+    public void installerApi_deletePackages_differentInstaller_workProfile_okButton_success()
+            throws Exception {
+        startUninstallationViaPackageInstallerApiWithDeletePackagesForUser(mWorkProfileUserContext,
+                mWorkProfileUninstallResultReceiver, /* isSameInstaller= */ false);
+
+        waitForUiIdle();
+
+        clickUninstallAppFromWorkProfileOkButton();
+
+        assertUninstallSuccess(mWorkProfileUninstallResultReceiver);
+        assertTestPackageNotInstalledOnUser(mWorkProfileUserContext);
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+    }
+
+    @Test
+    public void installerApi_deletePackages_differentInstaller_primaryUser_okButton_success()
+            throws Exception {
+        startUninstallationViaPackageInstallerApiWithDeletePackagesForUser(mPrimaryUserContext,
+                mPrimaryUninstallResultReceiver, /* isSameInstaller= */ false);
+
+        waitForUiIdle();
+
+        clickUninstallOkButton();
+
+        assertUninstallSuccess(mPrimaryUninstallResultReceiver);
+        assertTestPackageNotInstalledOnUser(mPrimaryUserContext);
+        assertTestPackageInstalledOnUser(mWorkProfileUserContext);
+    }
+
+    @Test
+    public void installerApi_deletePackages_sameInstaller_workProfile_noConfirmedDialog_success()
+            throws Exception {
+        // if the installer is not the test case, even if the test is granted the DELETE_PACKAGES
+        // permission, it also needs the user confirmation to approve the uninstallation.
+        // Set the test case to be the installer of the test app
+        installTestPackageWithInstallerPackageName();
+
+        startUninstallationViaPackageInstallerApiWithDeletePackagesForUser(mWorkProfileUserContext,
+                mWorkProfileUninstallResultReceiver, /* isSameInstaller= */ true);
+
+        assertUninstallSuccess(mWorkProfileUninstallResultReceiver);
+        assertTestPackageNotInstalledOnUser(mWorkProfileUserContext);
+        assertTestPackageInstalledOnUser(mPrimaryUserContext);
+    }
+
+    @Test
+    public void installerApi_deletePackages_sameInstaller_primaryUser_noConfirmedDialog_success()
+            throws Exception {
+        // if the installer is not the test case, even if the test is granted the DELETE_PACKAGES
+        // permission, it also needs the user confirmation to approve the uninstallation.
+        // Set the test case to be the installer of the test app
+        installTestPackageWithInstallerPackageName();
+
+        startUninstallationViaPackageInstallerApiWithDeletePackagesForUser(mPrimaryUserContext,
+                mPrimaryUninstallResultReceiver, /* isSameInstaller= */ true);
+
+        assertUninstallSuccess(mPrimaryUninstallResultReceiver);
         assertTestPackageNotInstalledOnUser(mPrimaryUserContext);
         assertTestPackageInstalledOnUser(mWorkProfileUserContext);
     }
