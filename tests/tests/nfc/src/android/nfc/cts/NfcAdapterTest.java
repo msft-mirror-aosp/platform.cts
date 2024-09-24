@@ -30,11 +30,13 @@ import android.content.pm.PackageManager;
 import android.nfc.AvailableNfcAntenna;
 import android.nfc.Flags;
 import android.nfc.INfcAdapter;
+import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAntennaInfo;
 import android.nfc.NfcOemExtension;
 import android.nfc.Tag;
 import android.nfc.TechListParcel;
+import android.nfc.cardemulation.ApduServiceInfo;
 import android.nfc.cardemulation.CardEmulation;
 import android.os.Build;
 import android.os.Bundle;
@@ -63,6 +65,7 @@ import org.mockito.internal.util.reflection.FieldReader;
 import org.mockito.internal.util.reflection.FieldSetter;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -835,6 +838,28 @@ public class NfcAdapterTest {
         @Override
         public void onRfDiscoveryStarted(boolean isDiscoveryStarted) {
             mTagDetectedCountDownLatch.countDown();
+        }
+
+        @Override
+        public void onGetOemAppSearchIntent(@NonNull List<String> packages,
+                                            @NonNull Consumer<Intent> intentConsumer) {
+        }
+
+        @Override
+        public void onNdefMessage(@NonNull Tag tag, @NonNull NdefMessage message,
+                                  @NonNull Consumer<Boolean> hasOemExecutableContent) {
+        }
+
+        @Override
+        public void onLaunchHceAppChooserActivity(@NonNull String selectedAid,
+                                                  @NonNull List<ApduServiceInfo> services,
+                                                  @NonNull ComponentName failedComponent,
+                                                  @NonNull String category) {
+        }
+
+        @Override
+        public void onLaunchHceTapAgainDialog(@NonNull ApduServiceInfo service,
+                                              @NonNull String category) {
         }
     }
 
