@@ -25,6 +25,7 @@ android_test {
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "androidx.test.runner",
+        "androidx.test.uiautomator_uiautomator",
         "android-common",
         "ctstestserver",
         "ctstestrunner-axt",
@@ -35,6 +36,7 @@ android_test {
         "platform-test-annotations",
         "sts-device-util",
         "hamcrest-library",
+        "Harrier",
     ],
     libs: [
         "android.test.runner",
@@ -85,6 +87,8 @@ android_test {
         ":CtsEmptyApp",
         ":DynamicPermissionTestAttackerApp",
         ":UpdatedDynamicPermissionTestAttackerApp",
+        ":CtsMultiuserContentProviderInitial",
+        ":CtsMultiuserContentProviderOther",
     ],
 }
 
