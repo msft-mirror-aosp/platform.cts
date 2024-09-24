@@ -778,6 +778,7 @@ extern "C" jboolean Java_android_media_cts_NativeDecoderTest_testMuxerNative(JNI
 
     int numtracks = AMediaExtractor_getTrackCount(ex);
     ALOGI("input tracks: %d", numtracks);
+    std::vector<size_t> muxer_track_indices;
     for (int i = 0; i < numtracks; i++) {
         AMediaFormat *format = AMediaExtractor_getTrackFormat(ex, i);
         const char *s = AMediaFormat_toString(format);
@@ -788,6 +789,7 @@ extern "C" jboolean Java_android_media_cts_NativeDecoderTest_testMuxerNative(JNI
             return false;
         } else if (!strncmp(mime, "audio/", 6) || !strncmp(mime, "video/", 6)) {
             ssize_t tidx = AMediaMuxer_addTrack(muxer, format);
+            muxer_track_indices.push_back(tidx);
             ALOGI("track %d -> %zd format %s", i, tidx, s);
             AMediaExtractor_selectTrack(ex, i);
         } else {
@@ -818,6 +820,21 @@ extern "C" jboolean Java_android_media_cts_NativeDecoderTest_testMuxerNative(JNI
         AMediaExtractor_advance(ex);
     }
 
+
+    // signal EOS on those tracks.
+    // since the duration is not guaranteed to be the sum of the sample sizes
+    {
+        info.size = 0;
+        info.flags = AMEDIACODEC_BUFFER_FLAG_END_OF_STREAM;
+        for (int i = 0; i < numtracks; i++) {
+            AMediaFormat *format = AMediaExtractor_getTrackFormat(ex, i);
+            if (AMediaFormat_getInt64(format, AMEDIAFORMAT_KEY_DURATION,
+                                      &info.presentationTimeUs)) {
+                AMediaMuxer_writeSampleData(muxer, muxer_track_indices.at(i),
+                                            buf, &info);
+            }
+        }
+    }
     AMediaExtractor_delete(ex);
     AMediaMuxer_stop(muxer);
     AMediaMuxer_delete(muxer);
