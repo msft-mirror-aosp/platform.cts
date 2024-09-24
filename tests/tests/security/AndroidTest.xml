@@ -60,6 +60,8 @@
         <option name="push" value="DynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/DynamicPermissionTestAttackerApp.apk" />
         <option name="push" value="CtsEmptyApp.apk->/data/local/tmp/cts/security/CtsEmptyApp.apk" />
         <option name="push" value="UpdatedDynamicPermissionTestAttackerApp.apk->/data/local/tmp/cts/security/UpdatedDynamicPermissionTestAttackerApp.apk" />
+        <option name="push" value="CtsMultiuserContentProviderInitial.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderInitial.apk" />
+        <option name="push" value="CtsMultiuserContentProviderOther.apk->/data/local/tmp/cts/security/CtsMultiuserContentProviderOther.apk" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
