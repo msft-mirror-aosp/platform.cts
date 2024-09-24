@@ -183,6 +183,10 @@
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
     <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases[instant] android.graphics.cts.ImageDecoderTest#testDecode10BitHeifWithLowRam" />
 
+    <!-- b/353142444 -->
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppChoreographer" />
+    <option name="compatibility:exclude-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppBackpressure" />
+
     <!-- b/337678518#comment25 Missing vendor_required_attestation_certificates.xml -->
     <option name="compatibility:exclude-filter" value="CtsCompanionDeviceManagerMultiDeviceTestCases" />
 
