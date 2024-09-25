@@ -482,7 +482,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             final String marker = getTestMarker();
 
             final AtomicReference<View> testEditorViewRef = new AtomicReference<>();
-            TestActivity.startSync(activity -> {
+            final var testActivity = new TestActivity.Starter().startSync(activity -> {
                 final LinearLayout layout = new LinearLayout(activity);
                 layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -509,7 +509,7 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                 testEditorViewRef.set(testEditor);
                 layout.addView(testEditor);
                 return layout;
-            });
+            }, TestActivity.class);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -517,8 +517,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
             assertFalse("InputMethodManager#isFullscreenMode() must return false",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
 
             // In order to have an IME be shown in the fullscreen mode,
             // SOFT_INPUT_STATE_ALWAYS_VISIBLE is insufficient.  An explicit API call is necessary.
@@ -537,8 +537,8 @@ public class InputConnectionHandlerTest extends EndToEndImeTestBase {
                     thread.getThreadId(), callingThreadId.get());
 
             assertTrue("InputMethodManager#isFullscreenMode() must return true",
-                    getOnMainSync(() -> InstrumentationRegistry.getInstrumentation().getContext()
-                            .getSystemService(InputMethodManager.class).isFullscreenMode()));
+                    getOnMainSync(() -> testActivity.getSystemService(
+                            InputMethodManager.class).isFullscreenMode()));
             assertTrue(expectCommand(stream, imeSession.callVerifyExtractViewNotNull(), TIMEOUT)
                     .getReturnBooleanValue());
         }
