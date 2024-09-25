@@ -41,14 +41,10 @@ import androidx.annotation.NonNull;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.TestUtils;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -87,10 +83,6 @@ public class UsageReportingTest {
     private TestTaskOrganizer mTaskOrganizer;
     @NonNull
     private SplitScreenActivityUtils mSplitScreenActivityUtils;
-
-    @ClassRule
-    @Rule
-    public static final DeviceState sDeviceState = new DeviceState();
 
     @Before
     public void setUp() throws Exception {
@@ -154,8 +146,6 @@ public class UsageReportingTest {
     }
 
     @Test
-    @RequireNotVisibleBackgroundUsers(reason = "KEYCODE_SLEEP doesn't support visible background"
-            + " user")
     public void testUsageReportingMissingStop() throws Exception {
         launchActivity(ACTIVITY_ONE_COMPONENT);
 
@@ -237,8 +227,6 @@ public class UsageReportingTest {
     }
 
     @Test
-    @RequireNotVisibleBackgroundUsers(reason = "KEYCODE_SLEEP doesn't support visible background"
-            + " user")
     public void testMultipleTokenMissingStop() throws Exception {
         launchActivity(ACTIVITY_ONE_COMPONENT);
 
