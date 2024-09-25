@@ -28,17 +28,38 @@ import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionId
 import com.android.compatibility.common.util.TestUtils.waitOn
 import java.util.concurrent.TimeUnit
 
-private fun rotateFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
-    return when (display.rotation) {
+
+// Attempt to transform coordinates from the logical display (screen) space to the physical display
+// space. To do this, we assume the unrotated logical display has the same aspect ratio as the
+// physical display. This will not work for cases where the aspect ration of the logical display
+// is different than that of the physical display.
+@Suppress("DEPRECATION")
+private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Display): Point {
+    val unrotatedLogicalPoint = when (display.rotation) {
         Surface.ROTATION_0 -> Point(x, y)
-        Surface.ROTATION_90 -> Point(display.mode.physicalWidth - 1 - y, x)
+        Surface.ROTATION_90 -> Point(display.height - 1 - y, x)
         Surface.ROTATION_180 -> Point(
-            display.mode.physicalWidth - 1 - x,
-            display.mode.physicalHeight - 1 - y
+            display.width - 1 - x,
+            display.height - 1 - y
         )
-        Surface.ROTATION_270 -> Point(y, display.mode.physicalHeight - 1 - x)
+
+        Surface.ROTATION_270 -> Point(y, display.width - 1 - x)
         else -> throw IllegalStateException("unexpected display rotation ${display.rotation}")
     }
+
+    val unrotatedLogicalWidth = when (display.rotation) {
+        Surface.ROTATION_0, Surface.ROTATION_180 -> display.width
+        else -> display.height
+    }
+    val unrotatedLogicalHeight = when (display.rotation) {
+        Surface.ROTATION_0, Surface.ROTATION_180 -> display.height
+        else -> display.width
+    }
+
+    return Point(
+        unrotatedLogicalPoint.x * display.mode.physicalWidth / unrotatedLogicalWidth,
+        unrotatedLogicalPoint.y * display.mode.physicalHeight / unrotatedLogicalHeight,
+    )
 }
 
 /**
@@ -222,7 +243,7 @@ open class UinputTouchDevice(
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, rotateFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
             sync()
         }
 
@@ -236,7 +257,7 @@ open class UinputTouchDevice(
             if (!active) {
                 throw IllegalStateException("Pointer $id is not active, can't move to ($x, $y)")
             }
-            sendMove(id, rotateFromScreenToTouchDeviceSpace(x, y, display))
+            sendMove(id, transformFromScreenToTouchDeviceSpace(x, y, display))
             sync()
         }
 
