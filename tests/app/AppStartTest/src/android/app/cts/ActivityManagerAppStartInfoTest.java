@@ -146,7 +146,8 @@ public final class ActivityManagerAppStartInfoTest {
                 ApplicationStartInfo.START_REASON_LAUNCHER,
                 ApplicationStartInfo.START_TYPE_COLD,
                 ApplicationStartInfo.LAUNCH_MODE_STANDARD,
-                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN);
+                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN,
+                ApplicationStartInfo.START_COMPONENT_ACTIVITY);
 
         verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
@@ -170,7 +171,8 @@ public final class ActivityManagerAppStartInfoTest {
                 ApplicationStartInfo.START_REASON_START_ACTIVITY,
                 ApplicationStartInfo.START_TYPE_COLD,
                 ApplicationStartInfo.LAUNCH_MODE_STANDARD,
-                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN);
+                ApplicationStartInfo.STARTUP_STATE_FIRST_FRAME_DRAWN,
+                ApplicationStartInfo.START_COMPONENT_ACTIVITY);
 
         verifyIds(info, 0, mStubPackageUid, mStubPackageUid, mStubPackageUid);
     }
@@ -490,7 +492,7 @@ public final class ActivityManagerAppStartInfoTest {
      */
     private void verify(ApplicationStartInfo info,
             String packageName, String processName, Intent intent,
-            int reason, int startType, int launchMode, int startupState) {
+            int reason, int startType, int launchMode, int startupState, int startComponent) {
         assertNotNull(info);
 
         if (packageName != null) {
@@ -509,6 +511,10 @@ public final class ActivityManagerAppStartInfoTest {
         assertEquals(startType, info.getStartType());
         assertEquals(launchMode, info.getLaunchMode());
         assertEquals(startupState, info.getStartupState());
+
+        if (android.app.Flags.appStartInfoComponent()) {
+            assertEquals(startComponent, info.getStartComponent());
+        }
 
         // Check that the appropriate timestamps exist based on the startup state
         // and that they're in the right order.
