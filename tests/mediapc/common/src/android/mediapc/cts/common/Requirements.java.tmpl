@@ -247,7 +247,7 @@ public final class Requirements {
 
             {{UpperCamelCase $r.GetName}}Requirement req =
                 new {{UpperCamelCase $r.GetName}}Requirement(
-                    "{{SafeReqID $r.GetId }}"
+                    "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}"
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
@@ -304,7 +304,7 @@ public final class Requirements {
             {{- end}}{{/* range $m_id, $m */}}
             {{UpperCamelCase $r.GetName}}Requirement req =
                 new {{UpperCamelCase $r.GetName}}Requirement(
-                    "{{SafeReqID $r.GetId }}"
+                    "{{ SafeReqID $r.GetId }}{{ SafeTestConfigID $t_id }}"
                     {{- range $m_id, $m := $r.GetMeasurements }},
                     {{LowerCamelCase $m_id}}
                     {{- end}});
