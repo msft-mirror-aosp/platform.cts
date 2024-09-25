@@ -42,8 +42,8 @@ import android.net.wifi.WifiSsid;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.EnsureWifiEnabled;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
@@ -59,7 +59,6 @@ import com.android.bedstead.harrier.policies.DisallowWifiTethering;
 import com.android.bedstead.harrier.policies.Wifi;
 import com.android.bedstead.harrier.policies.AddNetwork;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.nene.certificates.Certificates;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.FakeKeys;
 import com.android.interactive.Step;
