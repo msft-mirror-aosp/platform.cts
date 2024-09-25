@@ -75,6 +75,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.cts.mockime.ImeCommand;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
@@ -107,6 +108,14 @@ public class InputMethodStartInputLifecycleTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long NOT_EXPECT_TIMEOUT = TimeUnit.SECONDS.toMillis(1);
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testInputConnectionStateWhenScreenStateChanges() throws Exception {
