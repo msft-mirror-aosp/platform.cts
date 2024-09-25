@@ -32,7 +32,6 @@ android_test {
         "permission-test-util-lib",
         "androidx.test.uiautomator_uiautomator",
         "sts-device-util",
-        "Harrier",
     ],
     libs: [
         "android.test.base.stubs.system",
