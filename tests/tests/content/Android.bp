@@ -311,6 +311,11 @@ android_test {
         ":HelloInstallerAppAbsent",
         ":HelloInstallerAppAbsentUpdated",
         ":CtsDeviceAdminTestApp",
+        ":CtsTestVerifierApp",
+        ":CtsTestVerifierAppCrash",
+        ":CtsTestVerifierAppReject",
+        ":CtsTestVerifierAppTimeout",
+        ":CtsTestVerifierAppIncompleteUnknown",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
