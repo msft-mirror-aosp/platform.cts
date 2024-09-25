@@ -31,7 +31,6 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
@@ -135,7 +134,7 @@ public class MediaProjectionMirroringTest {
             mContext.getPackageManager().revokeRuntimePermission(
                     mContext.getPackageName(),
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
-                    new UserHandle(ActivityManager.getCurrentUser()));
+                    new UserHandle(mContext.getUserId()));
         });
         mMediaProjection = null;
         if (DEBUG_MODE) {
