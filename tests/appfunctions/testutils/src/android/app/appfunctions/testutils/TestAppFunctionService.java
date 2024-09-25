@@ -16,14 +16,19 @@
 
 package android.app.appfunctions.testutils;
 
+import android.os.Handler;
+import android.os.CancellationSignal;
 import android.app.appfunctions.AppFunctionService;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
+import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
@@ -32,12 +37,34 @@ import java.util.function.Consumer;
  * simple functions for testing purposes.
  */
 public class TestAppFunctionService extends AppFunctionService {
-    private final Executor mExecutor = Executors.newSingleThreadExecutor();
+    private final ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+
+    private Future<Void> mCancellableFuture = null;
 
     @Override
     public void onCreate() {
         super.onCreate();
         TestAppFunctionServiceLifecycleReceiver.notifyOnCreateInvoked(this);
+    }
+
+    @Override
+    public void onExecuteFunction(
+            @NonNull ExecuteAppFunctionRequest request,
+            @NonNull CancellationSignal cancellationSignal,
+            @NonNull Consumer<ExecuteAppFunctionResponse> callback) {
+
+        cancellationSignal.setOnCancelListener(
+                () -> {
+                    TestAppFunctionServiceLifecycleReceiver.notifyOnOperationCancelled(this);
+                    cancelOperation();
+        });
+        onExecuteFunction(request, callback);
+    }
+
+    private void cancelOperation() {
+        if (mCancellableFuture != null) {
+            mCancellableFuture.cancel(true);
+        }
     }
 
     @Override
@@ -88,6 +115,25 @@ public class TestAppFunctionService extends AppFunctionService {
                                 ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT,
                                 "Function does not exist",
                                 /* extras= */ null));
+                break;
+            }
+            case "longRunningFunction": {
+                mCancellableFuture = mExecutor.submit(() -> {
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e) {
+                        callback.accept(
+                                ExecuteAppFunctionResponse.newFailure(
+                                        ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR,
+                                        /* errorMessage= */ "Operation Interrupted",
+                                        /* extras= */ null));
+                        return null;
+                    }
+                    callback.accept(
+                            ExecuteAppFunctionResponse.newSuccess(
+                                    buildEmptyGenericDocument(), /* extras= */ null));
+                    return null;
+                });
                 break;
             }
             default:
