@@ -29,10 +29,11 @@ import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.util.Log;
 
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
@@ -52,7 +53,7 @@ import java.util.Collection;
  * as cars with passenger displays), whether or not such users can be started on default display.
  *
  * <p>NOTE: subclasses still need to explicitly add the
- * {@link com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers}
+ * {@link RequireVisibleBackgroundUsers}
  * annotation, as {@code DeviceState} doesn't scan annotations from superclasses (TODO(b/266571920):
  * remove this comment and annotations from subclasses if that's changed).
  */
