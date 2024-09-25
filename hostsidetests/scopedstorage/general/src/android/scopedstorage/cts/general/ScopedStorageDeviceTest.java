@@ -136,8 +136,8 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
-import android.os.storage.StorageManager;
 import android.os.SystemProperties;
+import android.os.storage.StorageManager;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.RedactionTestHelper;
@@ -148,7 +148,6 @@ import android.system.StructStat;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -1326,7 +1325,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 /* permission */ null, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO, /* forWrite */ true);
     }
 
-    @FlakyTest(bugId = 324388050)
     @Test
     public void testAccessMediaLocationInvalidation() throws Exception {
         File imgFile = new File(getDcimDir(), "access_media_location.jpg");
@@ -1413,7 +1411,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         }
     }
 
-    @FlakyTest(bugId = 324551195)
     @Test
     public void testAppReinstallInvalidation() throws Exception {
         File file = new File(getDcimDir(), "app_reinstall.jpg");
