@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package android.mediav2.cts;
+package android.app.appfunctions.testutils
 
-import android.mediav2.common.cts.WorkDirBase;
+import org.junit.AssumptionViolatedException
 
-/**
- * Return the primary shared/external storage directory used by the tests
- * Note: Path returned includes File.separator() at the end.
- */
-class WorkDir extends WorkDirBase {
-    static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaV2TestCases-5.0");
+/** Contains testing utilities related to AppFunction's Sidecar library. */
+object SidecarUtil {
+    /** Assumes sidecar library is available. */
+    fun assumeSidecarAvailable() {
+        try {
+            Class.forName("com.google.android.appfunctions.sidecar.AppFunctionManager")
+        } catch (e: ClassNotFoundException) {
+            throw AssumptionViolatedException("AppFunctions Sidecar library does not exist")
+        }
     }
 }
