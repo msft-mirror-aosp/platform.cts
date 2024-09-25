@@ -29,7 +29,6 @@ import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
-import android.provider.StageOtaFlags;
 import android.provider.flags.Flags;
 
 import androidx.test.InstrumentationRegistry;
@@ -174,12 +173,6 @@ public final class DeviceConfigApiTests {
         nullifyProperty(NAMESPACE3, KEY4);
         nullifyProperty(NAMESPACE4, KEY4);
         DeviceConfig.setSyncDisabledMode(mInitialSyncDisabledMode);
-    }
-
-    @Test
-    @RequiresFlagsEnabled(Flags.FLAG_STAGE_FLAGS_FOR_BUILD)
-    public void testStageFlagsForBuild() {
-        StageOtaFlags.stageBooleanAconfigFlagsForBuild(new HashMap(), "testbuildid");
     }
 
     /**
