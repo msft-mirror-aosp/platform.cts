@@ -18,7 +18,6 @@ package android.mediapc.cts;
 
 import static android.mediapc.cts.CodecTestBase.selectHardwareCodecs;
 import static android.mediapc.cts.CodecTestBase.PER_TEST_TIMEOUT_SMALL_TEST_MS;
-import static android.mediav2.common.cts.CodecTestBase.BOARD_FIRST_SDK_IS_AT_LEAST_202404;
 
 import android.media.MediaFormat;
 import android.mediapc.cts.Av1FilmGrainValidationTestBase.FrameMetadata;
@@ -62,8 +61,6 @@ public class Av1FilmGrainValidationTest {
     @Test(timeout = PER_TEST_TIMEOUT_SMALL_TEST_MS)
     @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
     public void testAv1FilmGrainRequirement() {
-        Assume.assumeTrue("Skipping, Only intended for devices with SDK >= 202404",
-                BOARD_FIRST_SDK_IS_AT_LEAST_202404);
         int width = 854;
         int height = 480;
         String mediaType = MediaFormat.MIMETYPE_VIDEO_AV1;
