@@ -119,7 +119,6 @@ import androidx.test.uiautomator.BySelector;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.Until;
 
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.CtsTouchUtils;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEvent;
@@ -402,14 +401,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 NO_OP_PRE_BACK_PRESS_PROCEDURE);
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
@@ -822,70 +813,30 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Unspecified_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_UNSPECIFIED);
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Visible_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_VISIBLE);
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_AlwaysVisible_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Hidden_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_HIDDEN);
     }
 
-    @RequireNotVisibleBackgroundUsers(reason =
-            "Background visible user devices (primarily Android auto) currently doesn't support "
-            + "per display interactiveness. So when the screen Off event is sent, "
-            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
-            + "screens are on. It also doesn't trigger the code path related to global "
-            + "wakefulness in power manager. The test will be enabled once per display "
-            + "interactiveness is supported and power manager to IME communication is enabled on "
-            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_AlwaysHidden_EditorDialogLostFocusAfterUnlocked() throws Exception {
