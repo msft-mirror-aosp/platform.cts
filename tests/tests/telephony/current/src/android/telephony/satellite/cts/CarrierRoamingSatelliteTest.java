@@ -52,7 +52,6 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
 
         assumeTrue(shouldTestSatelliteWithMockService());
         beforeAllTestsBase();
-        insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
     }
 
     /**
@@ -62,7 +61,6 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @AfterClass
     public static void afterAllTests() throws Exception {
         logd(TAG, "afterAllTests");
-        removeSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
         afterAllTestsBase();
     }
 
@@ -79,8 +77,8 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ENABLED_SATELLITE_FLAG)
     public void testCarrierRoamingNtnModeListener() throws Exception {
-        CarrierRoamingNtnModeListenerTest listener =
-                new CarrierRoamingNtnModeListenerTest();
+        insertSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
+        CarrierRoamingNtnModeListenerTest listener = new CarrierRoamingNtnModeListenerTest();
         listener.clearModeChanges();
 
         adoptShellIdentity();
@@ -100,6 +98,7 @@ public class CarrierRoamingSatelliteTest extends CarrierRoamingSatelliteTestBase
             assertTrue(listener.waitForModeChanged(1));
             assertFalse(listener.getNtnMode());
         } finally {
+            removeSatelliteEnabledSim(SLOT_ID_0, MOCK_SIM_PROFILE_ID_TWN_CHT);
             sTelephonyManager.unregisterTelephonyCallback(listener);
             dropShellIdentity();
         }
