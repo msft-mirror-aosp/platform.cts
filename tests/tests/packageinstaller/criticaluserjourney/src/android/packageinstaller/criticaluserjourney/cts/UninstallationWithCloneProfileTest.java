@@ -26,7 +26,7 @@ import android.platform.test.annotations.AppModeNonSdkSandbox;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasCloneProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasCloneProfile;
 import com.android.bedstead.nene.users.UserReference;
 
 import org.junit.After;

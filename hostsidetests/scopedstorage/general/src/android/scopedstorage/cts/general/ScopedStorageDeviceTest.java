@@ -136,8 +136,8 @@ import android.os.Environment;
 import android.os.FileUtils;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
-import android.os.storage.StorageManager;
 import android.os.SystemProperties;
+import android.os.storage.StorageManager;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.scopedstorage.cts.lib.RedactionTestHelper;
@@ -148,7 +148,6 @@ import android.system.StructStat;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-import androidx.test.filters.FlakyTest;
 import androidx.test.filters.SdkSuppress;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -1041,6 +1040,9 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             // Close so upper fs open will not use direct_io
             writePfd.close();
 
+            // Give time to kernel to clean up VFS cache
+            Thread.sleep(100);
+
             // Upper fs open and read without direct_io
             try (ParcelFileDescriptor readPfd = ParcelFileDescriptor.open(file, MODE_READ_WRITE)) {
                 Os.pread(readPfd.getFileDescriptor(), readBuffer, 0, 10, 0);
@@ -1064,8 +1066,14 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
 
             deleteWithMediaProvider(file);
 
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
+
             assertThat(file.exists()).isFalse();
             assertThat(file.createNewFile()).isTrue();
+
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
         } finally {
             file.delete();
         }
@@ -1088,10 +1096,20 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             updateDisplayNameWithMediaProvider(uri,
                     Environment.DIRECTORY_DCIM, oldDisplayName, newDisplayName);
 
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
+
             assertThat(oldFile.exists()).isFalse();
             assertThat(oldFile.createNewFile()).isTrue();
+
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
+
             assertThat(newFile.exists()).isTrue();
             assertThat(newFile.createNewFile()).isFalse();
+
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
         } finally {
             oldFile.delete();
             newFile.delete();
@@ -1326,7 +1344,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                 /* permission */ null, AppOpsManager.OPSTR_WRITE_MEDIA_VIDEO, /* forWrite */ true);
     }
 
-    @FlakyTest(bugId = 324388050)
     @Test
     public void testAccessMediaLocationInvalidation() throws Exception {
         File imgFile = new File(getDcimDir(), "access_media_location.jpg");
@@ -1413,7 +1430,6 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         }
     }
 
-    @FlakyTest(bugId = 324551195)
     @Test
     public void testAppReinstallInvalidation() throws Exception {
         File file = new File(getDcimDir(), "app_reinstall.jpg");
@@ -1788,6 +1804,10 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
             assertThat(videoFile2.createNewFile()).isTrue();
             // App can't rename a file to videoFile1 which is owned by APP B.
             assertCantRenameFile(videoFile2, videoFile1);
+
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
+
             // TODO(b/146346138): Test that app with right URI permission should be able to rename
             // the corresponding file
         } finally {

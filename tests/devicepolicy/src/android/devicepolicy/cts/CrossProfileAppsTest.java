@@ -59,7 +59,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.harrier.annotations.EnsureHasNoProfile;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoProfile;
 import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.PermissionTest;
