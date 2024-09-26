@@ -79,6 +79,7 @@ public class MultiCodecPerfTestBase {
     static Map<String, String> m2160pPc14TestFiles = new HashMap<>();
     static Map<String, String> m2160pPc1410bitTestFiles = new HashMap<>();
     static Map<String, String> m1080pWidevineTestFiles = new HashMap<>();
+    static Map<String, String> m1080pWidevine10bitTestFiles = new HashMap<>();
     static Map<String, String> m2160pPc14WidevineTestFiles = new HashMap<>();
     static Map<String, String> m2160pPc1410bitWidevineTestFiles = new HashMap<>();
 
@@ -128,6 +129,16 @@ public class MultiCodecPerfTestBase {
                 .put(MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_1920x1080_4mbps_30fps_vp9_cenc.webm");
         m1080pWidevineTestFiles
                 .put(MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_1920x1080_4mbps_30fps_av1_cenc.mp4");
+
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_HEVC,
+                        "bbb_1920x1080_4mbps_30fps_hevc_10bit_cenc.mp4");
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_VP9,
+                        "bbb_1920x1080_4mbps_30fps_vp9_10bit_cenc.webm");
+        m1080pWidevine10bitTestFiles
+                .put(MediaFormat.MIMETYPE_VIDEO_AV1,
+                        "bbb_1920x1080_4mbps_30fps_av1_10bit_cenc.mp4");
 
         m2160pPc14WidevineTestFiles
                 .put(MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_3840x2160_18mbps_30fps_avc_cenc.mp4");

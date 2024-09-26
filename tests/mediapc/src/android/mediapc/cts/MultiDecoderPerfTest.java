@@ -132,7 +132,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     /**
      * This test validates that the decoder can support at least 6 SDR non-secure concurrent
      * instances with 3 sessions at 1080p 30 fps and 3 sessions at 4k 30fps / 2 SDR secure
-     * concurrent instances at 4k 30 fps. Also ensures that all the concurrent sessions succeed
+     * concurrent instances at 1080 30 fps. Also ensures that all the concurrent sessions succeed
      * in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -145,7 +145,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
 
         if (isSecureSupportedCodec(mDecoderName, mMediaType)) {
-            testCodec(m2160pPc14WidevineTestFiles, 2160, 3840,
+            testCodec(m1080pWidevineTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else {
             testCodec(m2160pPc14TestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES);
@@ -154,17 +154,17 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test validates that the decoder can support at least 2 HDR secure concurrent instances
-     * at 4k 30 fps. Also ensures that all the concurrent sessions succeed in decoding with
+     * at 1080 30 fps. Also ensures that all the concurrent sessions succeed in decoding with
      * meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-9"})
-    public void test4kHbd() throws Exception {
+    public void test1080pHbd() throws Exception {
         Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMediaType));
-        testCodec(m2160pPc1410bitWidevineTestFiles, 2160, 3840,
+        testCodec(m1080pWidevine10bitTestFiles, 2160, 3840,
                 REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
     }
 
@@ -224,6 +224,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
                 r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig1080P().to(pce);
                 r5_1__H_1_1.setConcurrentSessions(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
             } else {
 
                 if (isMPCCodec(mMediaType)) {
@@ -243,6 +244,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
                     }
                     r5_1__H_1_1.setConcurrentSessions(maxInstances);
                     r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                    r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
                 }
             }
         }
