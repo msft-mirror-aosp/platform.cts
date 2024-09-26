@@ -20,6 +20,9 @@ android_test {
     name: "CtsAppFunctionTestCases",
     team: "trendy_team_system_intelligence",
     defaults: ["cts_defaults"],
+    libs: [
+        "com.google.android.appfunctions.sidecar.stubs",
+    ],
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.core",
@@ -36,7 +39,6 @@ android_test {
         "CtsAppSearchTestUtils",
         "flag-junit",
         "platform-test-annotations",
-        "com.google.android.appfunctions.sidecar.impl",
         "truth",
         "android.app.appfunctions.flags-aconfig-java",
         "Harrier",
@@ -84,13 +86,15 @@ android_test_helper_app {
 android_test_helper_app {
     name: "CtsAppFunctionsSidecarTestHelper",
     defaults: ["cts_defaults"],
+    libs: [
+        "com.google.android.appfunctions.sidecar.stubs",
+    ],
     static_libs: [
         "CtsAppFunctionsTestUtils",
         "androidx.test.ext.junit",
         "androidx.test.rules",
         "compatibility-device-util-axt",
         "testng",
-        "com.google.android.appfunctions.sidecar.impl",
     ],
     test_suites: [
         "general-tests",
