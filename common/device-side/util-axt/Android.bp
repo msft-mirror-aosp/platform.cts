@@ -50,7 +50,7 @@ java_defaults {
     jarjar_rules: "protobuf-jarjar-rules.txt",
 }
 
-java_library_static {
+java_library {
     name: "compatibility-device-util-axt",
     defaults: ["compatibility-device-util-axt-default"],
     static_libs: [
@@ -68,6 +68,15 @@ java_library {
     static_libs: [
         "mockito",
     ],
+    lint: {
+        baseline_filename: "lint-baseline.xml",
+    },
+}
+
+java_library {
+    name: "compatibility-device-util-axt-ravenwood",
+    defaults: ["compatibility-device-util-axt-default"],
+    libs: ["mockito-ravenwood-prebuilt"],
     lint: {
         baseline_filename: "lint-baseline.xml",
     },
