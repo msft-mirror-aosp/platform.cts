@@ -32,7 +32,7 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.mockime.ImeEventStream;
 import com.android.cts.mockime.ImeSettings;

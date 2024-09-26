@@ -108,7 +108,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
@@ -3697,6 +3697,27 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 fail("notification callback should fail!");
             }
         } catch (InterruptedException e) {
+        }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
+    public void testCanPostPromotedNotifications() {
+        assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), true);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
+
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), false);
+            });
         }
     }
 

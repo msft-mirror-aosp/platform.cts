@@ -34,6 +34,7 @@ import android.app.GameState;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.gamemanager.cts.util.TestUtil;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -115,6 +116,11 @@ public class GameManagerTest {
 
     @Before
     public void setUp() {
+        final Instrumentation instrumentation = getInstrumentation();
+        mContext = instrumentation.getContext();
+        assumeTrue(TestUtil.shouldTestGameFeatures(mContext));
+        mGameManager = mContext.getSystemService(GameManager.class);
+
         TestUtil.uninstallPackage(NOT_GAME_TEST_APP_PACKAGE_NAME);
         TestUtil.uninstallPackage(GAME_TEST_APP_PACKAGE_NAME);
         TestUtil.uninstallPackage(GAME_TEST_APP_WITH_BATTERY_PACKAGE_NAME);
@@ -125,9 +131,6 @@ public class GameManagerTest {
             mActivity = activity;
         });
 
-        final Instrumentation instrumentation = getInstrumentation();
-        mContext = instrumentation.getContext();
-        mGameManager = mContext.getSystemService(GameManager.class);
         mUiDevice = UiDevice.getInstance(instrumentation);
     }
 
