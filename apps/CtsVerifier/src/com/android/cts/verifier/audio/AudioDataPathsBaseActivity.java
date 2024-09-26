@@ -272,6 +272,7 @@ public abstract class AudioDataPathsBaseActivity
 
         int mAnalysisChannel = 0;
         int mInputPreset;
+        int mModuleIndex;
 
         AudioDeviceInfo mOutDeviceInfo;
         AudioDeviceInfo mInDeviceInfo;
@@ -424,6 +425,14 @@ public abstract class AudioDataPathsBaseActivity
             return clonedModule;
         }
 
+        public int getModuleIndex() {
+            return mModuleIndex;
+        }
+
+        public void setModuleIndex(int index) {
+            this.mModuleIndex = index;
+        }
+
         public void setAnalysisType(int type) {
             mAnalysisType = type;
         }
@@ -479,7 +488,8 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         String getDescription() {
-            return mDescription + "-" + transferTypeToString(mTransferType)
+            return "(" + getModuleIndex() + ") " + mDescription
+                    + "-" + transferTypeToString(mTransferType)
                     + ":" + performanceModeToString(mOutPerformanceMode);
         }
 
@@ -634,12 +644,20 @@ public abstract class AudioDataPathsBaseActivity
             }
         }
 
+        private void logBeginning(int api) {
+            Log.d(TAG, "BEGIN_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+        }
+
+        private void logEnding(int api) {
+            Log.d(TAG, "END_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+        }
+
         //
         // Process
         //
         // TEMP
         private int startTest(int api) {
-            Log.d(TAG, "startTest(" + api + ") - " + getDescription());
+            logBeginning(api);
             if (mOutDeviceInfo != null && mInDeviceInfo != null) {
                 mAnalyzer.reset();
                 mAnalyzer.setSampleRate(mInSampleRate);
@@ -900,6 +918,8 @@ public abstract class AudioDataPathsBaseActivity
                 }
                 textFormatter.closeTextColor();
 
+                textFormatter.appendText(", ");
+
                 if (mAnalysisType == TYPE_SIGNAL_PRESENCE) {
                     // Do we want a threshold value for jitter in crosstalk tests?
                     boolean passJitter =
@@ -1135,6 +1155,11 @@ public abstract class AudioDataPathsBaseActivity
             mTestModules.clear();
         }
 
+        private void addIndexedTestModule(TestModule module) {
+            module.setModuleIndex(mTestModules.size());
+            mTestModules.add(module);
+        }
+
         public void addTestModule(TestModule module) {
             // We're going to expand each module to three, one for each transfer type
 
@@ -1145,7 +1170,7 @@ public abstract class AudioDataPathsBaseActivity
             // Test Performance Mode None for both Output and Input
             module.mOutPerformanceMode = module.mInPerformanceMode =
                     BuilderBase.PERFORMANCE_MODE_NONE;
-            mTestModules.add(module);
+            addIndexedTestModule(module);
 
             //
             // BuilderBase.PERFORMANCE_MODE_LOWLATENCY
@@ -1157,7 +1182,7 @@ public abstract class AudioDataPathsBaseActivity
                 clonedModule.mOutPerformanceMode = module.mInPerformanceMode =
                         BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
                 clonedModule.mSectionTitle = null;
-                mTestModules.add(clonedModule);
+                addIndexedTestModule(clonedModule);
             } catch (CloneNotSupportedException ex) {
                 Log.e(TAG, "Couldn't clone TestModule - PERFORMANCE_MODE_LOWLATENCY");
             }
@@ -1173,7 +1198,7 @@ public abstract class AudioDataPathsBaseActivity
                     // Test Performance Mode LowLatency for both Output and Input
                     moduleMMAP.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
-                    mTestModules.add(moduleMMAP);
+                    addIndexedTestModule(moduleMMAP);
                     moduleMMAP.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_SHARED");
@@ -1188,7 +1213,7 @@ public abstract class AudioDataPathsBaseActivity
                     // Test Performance Mode LowLatency for both Output and Input
                     moduleExclusive.mOutPerformanceMode = module.mInPerformanceMode =
                             BuilderBase.PERFORMANCE_MODE_LOWLATENCY;
-                    mTestModules.add(moduleExclusive);
+                    addIndexedTestModule(moduleExclusive);
                     moduleExclusive.mSectionTitle = null;
                 } catch (CloneNotSupportedException ex) {
                     Log.e(TAG, "Couldn't clone TestModule - TRANSFER_MMAP_EXCLUSIVE");
@@ -1479,15 +1504,18 @@ public abstract class AudioDataPathsBaseActivity
                 }
 
                 TestModule testModule = getActiveTestModule();
-                if (testModule != null && testModule.canRun()) {
-                    testModule.setTestResults(mApi, mAnalyzer);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            displayTestDevices();
-                            mWaveView.resetPersistentMaxMagnitude();
-                        }
-                    });
+                if (testModule != null) {
+                    if (testModule.canRun()) {
+                        testModule.setTestResults(mApi, mAnalyzer);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                displayTestDevices();
+                                mWaveView.resetPersistentMaxMagnitude();
+                            }
+                        });
+                    }
+                    testModule.logEnding(mApi);
                 }
             }
         }
@@ -1534,7 +1562,7 @@ public abstract class AudioDataPathsBaseActivity
         TextFormatter generateReport(TextFormatter textFormatter) {
             textFormatter.openHeading(3);
             textFormatter.appendText("Test API: ");
-            textFormatter.appendText(mApi == TEST_API_JAVA ? "Java" : "Native");
+            textFormatter.appendText(audioApiToString(mApi));
             textFormatter.closeHeading(3);
 
             for (TestModule module : mTestModules) {
