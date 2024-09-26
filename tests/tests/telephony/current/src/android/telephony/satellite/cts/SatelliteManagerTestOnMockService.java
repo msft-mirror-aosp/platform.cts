@@ -31,6 +31,7 @@ import static android.telephony.satellite.SatelliteManager.SATELLITE_RESULT_SUCC
 
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_ALIGNED_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_DEMO_POINTING_NOT_ALIGNED_DURATION_MILLIS;
+import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS;
 import static com.android.internal.telephony.satellite.SatelliteController.TIMEOUT_TYPE_WAIT_FOR_SATELLITE_ENABLING_RESPONSE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -6063,12 +6064,13 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testRequestSatelliteSubscriberProvisionStatus:");
-        beforeSatelliteForCarrierTest();
+        beforeSatelliteForOemTest();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         /* Test when this carrier is supported ESOS in the carrier config */
         PersistableBundle bundle = new PersistableBundle();
         bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
         overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-        waitFor(TimeUnit.MINUTES.toMillis(1));
 
         grantSatellitePermission();
         try {
@@ -6087,6 +6089,9 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 }
             }
         } finally {
+            assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                    TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+            afterSatelliteForOemTest();
             revokeSatellitePermission();
         }
     }
@@ -6097,69 +6102,14 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
         if (!shouldTestSatelliteWithMockService()) return;
 
         logd("testSatelliteSubscriptionProvisionStateChanged:");
-        // TODO(b/351911296): fix to CTS failed
-        beforeSatelliteForCarrierTest();
-        /* Test when this carrier is supported ESOS in the carrier config */
-        PersistableBundle bundle = new PersistableBundle();
-        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
-        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-        waitFor(TimeUnit.MINUTES.toMillis(1));
+        beforeSatelliteForOemTest();
+        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
 
-        grantSatellitePermission();
-        SatelliteSubscriptionProvisionStateChangedTest callback = null;
-        try {
-            callback = new SatelliteSubscriptionProvisionStateChangedTest();
-            long registerError = sSatelliteManager.registerForProvisionStateChanged(
-                    getContext().getMainExecutor(), callback);
-            assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
-            Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
-                    requestSatelliteSubscriberProvisionStatus();
-            if (pairResult == null) {
-                fail("requestSatelliteSubscriberProvisionStatus "
-                        + "List<SatelliteSubscriberProvisionStatus> null");
-                revokeSatellitePermission();
-                return;
-            }
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                registerSubscriberIdProvisionCallback();
+        assertTrue(provisionSatelliteForSubscriberId(callback));
 
-            if (pairResult.first.size() > 0) {
-                List<SatelliteSubscriberInfo> requestProvisioningList = new ArrayList<>();
-                for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
-                    SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
-                    // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
-                    if (info.getSubId() == sTestSubIDForCarrierSatellite) {
-                        assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
-                                info.getSubscriberIdType());
-                    }
-
-                    // Add not provisioned SatelliteSubscriberInfo.
-                    if (!status.getProvisionStatus()) {
-                        requestProvisioningList.add(info);
-                    }
-                }
-                // Request provisioning with SatelliteSubscriberInfo that has not been provisioned
-                // before, and verify that onSatelliteSubscriptionProvisionStateChanged is called.
-                if (requestProvisioningList.size() > 0) {
-                    Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
-                            requestProvisioningList);
-                    assertTrue(callback.waitUntilResult(1));
-                    assertTrue(pairResultForProvisionSatellite.first);
-                    assertTrue(callback.getResultList().get(0).getProvisionStatus());
-                }
-
-                // Request provisioning with the same SatelliteSubscriberInfo that was previously
-                // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not
-                // called.
-                Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
-                        requestProvisioningList);
-                assertFalse(callback.waitUntilResult(1));
-                assertTrue(pairResultForProvisionSatellite.first);
-            }
-        } finally {
-            if (callback != null) {
-                sSatelliteManager.unregisterForProvisionStateChanged(callback);
-            }
-            revokeSatellitePermission();
-        }
+        afterSubscriberIdTest(callback);
     }
 
     @Test
@@ -6214,7 +6164,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 PersistableBundle bundle = new PersistableBundle();
                 bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
                 overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-                waitFor(TimeUnit.MINUTES.toMillis(1));
             }
             receiver.clearQueue();
             // When the default SMS subId changes, check if the
@@ -6256,7 +6205,6 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 if (!eSosSupported) {
                     bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
                     overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
-                    waitFor(TimeUnit.MINUTES.toMillis(1));
                 }
                 // When only is ntn only sim exists for supporting the satellite, check if the
                 // ACTION_SATELLITE_SUBSCRIBER_ID_LIST_CHANGED intent has been sent.
@@ -6269,6 +6217,142 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
                 revokeSatellitePermission();
             }
         }
+    }
+
+    private SatelliteSubscriptionProvisionStateChangedTest registerSubscriberIdProvisionCallback() {
+        logd("getSubscriberIdProvisionCallback");
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
+        /* Test when this carrier is supported ESOS in the carrier config */
+        PersistableBundle bundle = new PersistableBundle();
+        bundle.putBoolean(CarrierConfigManager.KEY_SATELLITE_ESOS_SUPPORTED_BOOL, true);
+        overrideCarrierConfig(sTestSubIDForCarrierSatellite, bundle);
+
+        grantSatellitePermission();
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                new SatelliteSubscriptionProvisionStateChangedTest();
+        long registerError = sSatelliteManager.registerForProvisionStateChanged(
+                getContext().getMainExecutor(), callback);
+        assertEquals(SatelliteManager.SATELLITE_RESULT_SUCCESS, registerError);
+
+        return callback;
+    }
+
+    private void afterSubscriberIdTest(SatelliteSubscriptionProvisionStateChangedTest callback) {
+        if (callback != null) {
+            sSatelliteManager.unregisterForProvisionStateChanged(callback);
+        }
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
+        afterSatelliteForOemTest();
+        revokeSatellitePermission();
+    }
+
+    private List<SatelliteSubscriberInfo> getSatelliteSubscriberInfoList(boolean provisioned) {
+        List<SatelliteSubscriberInfo> list = new ArrayList<>();
+        Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                requestSatelliteSubscriberProvisionStatus();
+        if (pairResult == null) {
+            return list;
+        }
+        for (SatelliteSubscriberProvisionStatus status : pairResult.first) {
+            SatelliteSubscriberInfo info = status.getSatelliteSubscriberInfo();
+            // Check SubscriberIdType is the SatelliteSubscriberInfo.IMSI_MSISDN
+            if (info.getSubId() == sTestSubIDForCarrierSatellite) {
+                assertEquals(SatelliteSubscriberInfo.IMSI_MSISDN,
+                        info.getSubscriberIdType());
+            }
+
+            if (provisioned == status.getProvisionStatus()) {
+                list.add(info);
+            }
+        }
+        return list;
+    }
+
+    private void deprovisionSatelliteForSubscriberId(
+            SatelliteSubscriptionProvisionStateChangedTest callback) {
+        List<SatelliteSubscriberInfo> requestDeprovisionSubscriberId =
+                getSatelliteSubscriberInfoList(true);
+        if (requestDeprovisionSubscriberId.size() == 0) {
+            logd("already deprovision this subscriberId");
+            return;
+        }
+        callback.clearProvisionedStates();
+        Pair<Boolean, Integer> pairResult = deprovisionSatellite(requestDeprovisionSubscriberId);
+        assertTrue(callback.waitUntilResult(1));
+        assertTrue(pairResult.first);
+        assertFalse(callback.getResultList().get(0).getProvisionStatus());
+
+        // Request deprovisioning with the same SatelliteSubscriberInfo that was previously
+        // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not called.
+        pairResult = deprovisionSatellite(requestDeprovisionSubscriberId);
+        assertFalse(callback.waitUntilResult(1));
+        assertTrue(pairResult.first);
+        callback.clearProvisionedStates();
+    }
+
+    private boolean provisionSatelliteForSubscriberId(
+            SatelliteSubscriptionProvisionStateChangedTest callback) {
+        Pair<List<SatelliteSubscriberProvisionStatus>, Integer> pairResult =
+                requestSatelliteSubscriberProvisionStatus();
+        if (pairResult == null) {
+            fail("requestSatelliteSubscriberProvisionStatus "
+                    + "List<SatelliteSubscriberProvisionStatus> null");
+            return false;
+        }
+        if (pairResult.first.size() > 0) {
+            // Get the not provisioned subscriberId List.
+            List<SatelliteSubscriberInfo> notProvisionedSubscriberList =
+                    getSatelliteSubscriberInfoList(false);
+            // If all subscriberIds already provisioned then trigger deprovision.
+            if (notProvisionedSubscriberList.size() == 0) {
+                deprovisionSatelliteForSubscriberId(callback);
+            }
+
+            // Get the not provisioned subscriberId List again.
+            notProvisionedSubscriberList = getSatelliteSubscriberInfoList(false);
+            // Request provisioning with SatelliteSubscriberInfo that has not been provisioned
+            // before, and verify that onSatelliteSubscriptionProvisionStateChanged is called.
+            if (notProvisionedSubscriberList.size() > 0) {
+                Pair<Boolean, Integer> pairResultForProvisionSatellite = provisionSatellite(
+                        notProvisionedSubscriberList);
+                assertTrue(callback.waitUntilResult(1));
+                assertTrue(pairResultForProvisionSatellite.first);
+                assertTrue(callback.getResultList().get(0).getProvisionStatus());
+
+                // Request provisioning with the same SatelliteSubscriberInfo that was previously
+                // requested, and verify that onSatelliteSubscriptionProvisionStateChanged is not
+                // called.
+                pairResultForProvisionSatellite = provisionSatellite(
+                        notProvisionedSubscriberList);
+                assertFalse(callback.waitUntilResult(1));
+                assertTrue(pairResultForProvisionSatellite.first);
+            } else {
+                logd("provisionSatelliteForSubscriberId: no provisioning list");
+                return false;
+            }
+        }
+
+        logd("provisionSatelliteForSubscriberId true");
+        return true;
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_CARRIER_ROAMING_NB_IOT_NTN)
+    public void testDeprovisionSatellite() {
+        if (!shouldTestSatelliteWithMockService()) return;
+
+        logd("testDeprovisionSatellite:");
+        beforeSatelliteForOemTest();
+        assumeTrue(sTestSubIDForCarrierSatellite != SubscriptionManager.INVALID_SUBSCRIPTION_ID);
+
+        SatelliteSubscriptionProvisionStateChangedTest callback =
+                registerSubscriberIdProvisionCallback();
+        assertTrue(provisionSatelliteForSubscriberId(callback));
+        deprovisionSatelliteForSubscriberId(callback);
+
+        afterSubscriberIdTest(callback);
     }
 
     /*
@@ -7453,6 +7537,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     private SatelliteReceiverTest setUpSatelliteReceiverTest() {
         SatelliteReceiverTest receiver = new SatelliteReceiverTest();
         sTestSubIDForCarrierSatellite = getActiveSubIDForCarrierSatelliteTest();
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(false,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 5));
         Context context = getContext();
         assertTrue(sMockSatelliteServiceManager.setSatelliteSubscriberIdListChangedIntentComponent(
                 "package"));
@@ -7464,6 +7550,8 @@ public class SatelliteManagerTestOnMockService extends SatelliteManagerTestBase 
     }
 
     private void resetSatelliteReceiverTest(Context context, SatelliteReceiverTest receiver) {
+        assertTrue(sMockSatelliteServiceManager.setSatelliteControllerTimeoutDuration(true,
+                TIMEOUT_TYPE_EVALUATE_ESOS_PROFILES_PRIORITIZATION_DURATION_MILLIS, 0));
         assertTrue(sMockSatelliteServiceManager
                 .setSatelliteSubscriberIdListChangedIntentComponent("reset"));
         context.unregisterReceiver(receiver);

@@ -1686,20 +1686,51 @@ public class SatelliteManagerTestBase {
                 new OutcomeReceiver<>() {
                     @Override
                     public void onResult(Boolean result) {
-                        logd("onResult: result=" + result);
+                        logd("provisionSatellite: onResult: result=" + result);
                         requestResult.set(result);
                         latch.countDown();
                     }
 
                     @Override
                     public void onError(SatelliteManager.SatelliteException exception) {
-                        logd("onError: onError=" + exception);
+                        logd("provisionSatellite: onError: onError=" + exception);
                         errorCode.set(exception.getErrorCode());
                         latch.countDown();
                     }
                 };
 
         sSatelliteManager.provisionSatellite(list, getContext().getMainExecutor(), receiver);
+        try {
+            assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
+        } catch (InterruptedException e) {
+            fail(e.toString());
+        }
+        return new Pair<>(requestResult.get(), errorCode.get());
+    }
+
+    protected static Pair<Boolean, Integer> deprovisionSatellite(
+            List<SatelliteSubscriberInfo> list) {
+        final AtomicReference<Boolean> requestResult = new AtomicReference<>();
+        final AtomicReference<Integer> errorCode = new AtomicReference<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        OutcomeReceiver<Boolean, SatelliteManager.SatelliteException> receiver =
+                new OutcomeReceiver<>() {
+                    @Override
+                    public void onResult(Boolean result) {
+                        logd("deprovisionSatellite: onResult: result=" + result);
+                        requestResult.set(result);
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(SatelliteManager.SatelliteException exception) {
+                        logd("deprovisionSatellite: onError: onError=" + exception);
+                        errorCode.set(exception.getErrorCode());
+                        latch.countDown();
+                    }
+                };
+
+        sSatelliteManager.deprovisionSatellite(list, getContext().getMainExecutor(), receiver);
         try {
             assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
         } catch (InterruptedException e) {
