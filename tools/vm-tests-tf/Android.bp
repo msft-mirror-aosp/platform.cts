@@ -28,6 +28,8 @@ java_library {
         javacflags: [
             "-Xep:IdentityBinaryExpression:WARN",
             "-Xep:BadShiftAmount:WARN",
+            "-Xep:UnusedMethod:WARN",
+            "-Xep:UnusedVariable:WARN",
         ],
     },
 }
