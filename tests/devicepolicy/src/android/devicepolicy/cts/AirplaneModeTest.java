@@ -28,8 +28,8 @@ import static org.testng.Assert.assertThrows;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -38,7 +38,6 @@ import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParame
 import com.android.bedstead.harrier.policies.DisallowAirplaneMode;
 import com.android.bedstead.harrier.policies.DisallowAirplaneModePermissionBased;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestAppPermissionContext;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.interactive.Step;

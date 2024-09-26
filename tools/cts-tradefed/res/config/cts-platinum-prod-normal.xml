@@ -1171,8 +1171,6 @@
     <option name="compatibility:include-filter" value="CtsCompilationTestCases android.compilation.cts.CompilationTest#testSecondaryDexReporting"/>
     <!-- CtsContactsProviderTestCases -->
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_AllUriTest#testNonSelect"/>
-    <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsProvider2_AccountRemovalTest#testAccountRemoval_doesNotDeleteSimAccountContacts"/>
-    <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsProvider2_AccountRemovalTest#testAccountRemoval_hasDeleteLogsForContacts"/>
     <!-- CtsContentCaptureServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsContentCaptureServiceTestCases android.contentcaptureservice.cts.BlankActivityTest#testOutsideOfPackageContentCaptureEnable_updateAllowList"/>
     <!-- CtsContentProviderTestsWithVisibility -->

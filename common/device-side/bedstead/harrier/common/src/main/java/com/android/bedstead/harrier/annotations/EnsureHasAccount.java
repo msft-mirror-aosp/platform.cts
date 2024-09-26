@@ -21,6 +21,7 @@ import static com.android.bedstead.harrier.annotations.EnsureHasNoAccounts.ENSUR
 import static com.android.bedstead.nene.userrestrictions.CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS;
 
 import com.android.bedstead.harrier.UserType;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
