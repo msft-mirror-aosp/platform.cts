@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2024 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package android.media.muxer.cts;
+package test_package;
 
-import android.media.cts.WorkDirBase;
-
-class WorkDir extends WorkDirBase {
-    public static final String getMediaDirString() {
-        return getMediaDirString("CtsMediaMuxerTestCases-2.2");
-    }
+// RECOMMENDED NOT TO ASSIGN IDS LIKE THIS INTERFACE
+interface ISkippedIds {
+    boolean getBoolean() = 1 ;
+    int getInt() = 6;
+    float getFloat() = 99;
+    char getChar() = 100;
+    double getDouble() = 101;
 }
