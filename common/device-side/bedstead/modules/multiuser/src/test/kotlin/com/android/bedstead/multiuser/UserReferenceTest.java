@@ -550,6 +550,30 @@ public class UserReferenceTest {
     @Test
     @EnsurePasswordNotSet
     @RequireNotHeadlessSystemUserMode(reason = "b/248248444")
+    public void setScreenLockDisabled() {
+        try {
+            TestApis.users().instrumented().setScreenLockDisabled(true);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isTrue();
+
+            TestApis.users().instrumented().setPassword(PASSWORD);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isFalse();
+
+            TestApis.users().instrumented().clearPassword();
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isTrue();
+
+            TestApis.users().instrumented().setScreenLockDisabled(false);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isFalse();
+        } finally {
+            TestApis.users().instrumented().setScreenLockDisabled(false);
+            if (TestApis.users().instrumented().password() != null) {
+                TestApis.users().instrumented().clearPassword(PASSWORD);
+            }
+        }
+    }
+
+    @Test
+    @EnsurePasswordNotSet
+    @RequireNotHeadlessSystemUserMode(reason = "b/248248444")
     public void setPassword_hasLockCredential() {
         try {
             TestApis.users().instrumented().setPassword(PASSWORD);
