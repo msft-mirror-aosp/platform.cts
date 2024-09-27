@@ -1,7 +1,6 @@
 package android.nfc.cts;
 
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
-
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -24,17 +23,10 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.nfc.AvailableNfcAntenna;
-import android.nfc.Flags;
-import android.nfc.INfcAdapter;
-import android.nfc.NfcAdapter;
-import android.nfc.NfcAntennaInfo;
-import android.nfc.NfcOemExtension;
-import android.nfc.Tag;
-import android.nfc.TechListParcel;
+import android.nfc.*;
 import android.nfc.cardemulation.CardEmulation;
-import android.os.Build;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.platform.test.annotations.RequiresFlagsDisabled;
@@ -181,7 +173,7 @@ public class NfcAdapterTest {
     @Test
     public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
         NfcAdapter adapter = createMockedInstance();
-        when(mService.enableReaderOption(anyBoolean(), anyString())).thenReturn(true);
+        when(mService.enableReaderOption(anyBoolean())).thenReturn(true);
         boolean result = adapter.enableReaderOption(true);
         Assert.assertTrue(result);
         resetMockedInstance();
