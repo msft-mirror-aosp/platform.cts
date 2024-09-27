@@ -171,6 +171,8 @@ android_test {
     ],
     static_libs: [
         "android.content.res.flags-aconfig-java",
+        "flag-junit",
+        "junit-params",
     ],
     srcs: [
         "src/android/content/om/**/*.java",
