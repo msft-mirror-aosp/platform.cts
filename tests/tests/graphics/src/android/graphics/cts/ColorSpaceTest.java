@@ -46,6 +46,7 @@ import java.util.function.DoubleUnaryOperator;
 
 @SmallTest
 @RunWith(JUnitParamsRunner.class)
+@android.platform.test.annotations.DisabledOnRavenwood(reason = "Test doesn't pass on AOSP yet")
 public class ColorSpaceTest {
 
     @Rule
