@@ -172,7 +172,7 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
             final ImeEventStream stream = imeSession.openEventStream();
 
             final String marker = getTestMarker();
-            final EditText editText = launchTestActivity(marker);
+            launchTestActivity(marker);
 
             // Wait until the MockIme gets bound to the TestActivity.
             expectBindInput(stream, Process.myPid(), TIMEOUT);
@@ -771,7 +771,6 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
     @Test
     public void testKeyboardStateAfterImeFocusableFlagChanged() throws Exception {
-        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
             final AtomicReference<EditText> editTextRef = new AtomicReference<>();
@@ -802,7 +801,6 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
             // Set testActivity window to be IME focusable.
             testActivity.getWindow().getDecorView().post(() -> {
-                final WindowManager.LayoutParams params = testActivity.getWindow().getAttributes();
                 testActivity.getWindow().clearFlags(FLAG_ALT_FOCUSABLE_IM);
                 editTextRef.get().requestFocus();
             });
@@ -922,7 +920,6 @@ public class FocusHandlingTest extends EndToEndImeTestBase {
 
     @Test
     public void testRequestFocusOnWindowFocusChanged() throws Exception {
-        final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         try (MockImeSession imeSession = createTestImeSession()) {
             final ImeEventStream stream = imeSession.openEventStream();
             final String marker = getTestMarker();
