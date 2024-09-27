@@ -20,7 +20,7 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
