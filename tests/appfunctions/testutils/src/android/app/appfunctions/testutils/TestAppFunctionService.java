@@ -74,7 +74,7 @@ public class TestAppFunctionService extends AppFunctionService {
         switch (request.getFunctionIdentifier()) {
             case "addWithRestrictCallersWithExecuteAppFunctionsTrue":
             case "addWithRestrictCallersWithExecuteAppFunctionsFalse":
-            case "add": {
+            case "add", "add_disabledByDefault": {
                 ExecuteAppFunctionResponse result = add(request);
                 callback.accept(result);
                 break;
