@@ -52,7 +52,7 @@ public class Within implements VerificationMode {
                 final List<Invocation> actualInvocations = data.getAllInvocations();
                 // Iterate over all invocations so far to see if we have a match
                 for (Invocation invocation : actualInvocations) {
-                    if (data.getWanted().matches(invocation)) {
+                    if (data.getTarget().matches(invocation)) {
                         // Found our match within our timeout. Mark all invocations as verified
                         markAllInvocationsAsVerified(data);
                         // and return
@@ -71,7 +71,7 @@ public class Within implements VerificationMode {
         }
 
         throw new MockitoAssertionError(
-                "Timed out while waiting " + mTimeout + "ms for " + data.getWanted().toString());
+                "Timed out while waiting " + mTimeout + "ms for " + data.getTarget().toString());
     }
 
     // TODO: Uncomment once upgraded to 2.7.13
@@ -85,7 +85,7 @@ public class Within implements VerificationMode {
     private void markAllInvocationsAsVerified(VerificationData data) {
         for (Invocation invocation : data.getAllInvocations()) {
             invocation.markVerified();
-            data.getWanted().captureArgumentsFrom(invocation);
+            data.getTarget().captureArgumentsFrom(invocation);
         }
     }
 }
