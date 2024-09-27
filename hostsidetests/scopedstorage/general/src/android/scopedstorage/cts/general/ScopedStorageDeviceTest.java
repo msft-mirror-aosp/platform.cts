@@ -1781,6 +1781,15 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
         final File videoFile1 = new File(getDcimDir(), VIDEO_FILE_NAME);
         final File videoFile2 = new File(getMoviesDir(), VIDEO_FILE_NAME);
         try {
+            // Make sure files aren't there before trying to create them
+            // They could have been created as part of other tests during this test run
+            // and not cleaned up properly
+            videoFile1.delete();
+            videoFile2.delete();
+
+            // Give time to kernel to update dentry cache
+            Thread.sleep(100);
+
             assertThat(createFileAs(APP_B_NO_PERMS, videoFile1.getAbsolutePath())).isTrue();
             // App can't rename a file owned by APP B.
             assertCantRenameFile(videoFile1, videoFile2);
