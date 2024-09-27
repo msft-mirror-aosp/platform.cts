@@ -100,7 +100,6 @@ import android.media.tv.tuner.frontend.FrontendSettings;
 import android.media.tv.tuner.frontend.FrontendStatus;
 import android.media.tv.tuner.frontend.FrontendStatus.Atsc3PlpTuningInfo;
 import android.media.tv.tuner.frontend.FrontendStatusReadiness;
-import android.media.tv.tuner.frontend.IptvFrontendCapabilities;
 import android.media.tv.tuner.frontend.IptvFrontendSettings;
 import android.media.tv.tuner.frontend.Isdbs3FrontendCapabilities;
 import android.media.tv.tuner.frontend.Isdbs3FrontendSettings;
@@ -3511,12 +3510,11 @@ public class TunerTest {
                     return settings;
                 }
                 case FrontendSettings.TYPE_IPTV: {
-                    IptvFrontendCapabilities iptvCaps = (IptvFrontendCapabilities) caps;
-                    int protocol = getFirstCapable(iptvCaps.getProtocolCapability());
+                    String url = "http://localhost/test/my/url";
                     IptvFrontendSettings settings =
                             new IptvFrontendSettings
                                     .Builder()
-                                    .setProtocol(protocol)
+                                    .setContentUrl(url)
                                     .build();
                     return settings;
                 }
