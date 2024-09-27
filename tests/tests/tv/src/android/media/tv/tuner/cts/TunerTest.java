@@ -148,7 +148,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
@@ -382,46 +381,30 @@ public class TunerTest {
 
     private class TunerTestOnTuneEventListener implements OnTuneEventListener {
         public static final int INVALID_TUNE_EVENT = -1;
-        private static final int SLEEP_TIME_MS = 3000;
         private static final int TIMEOUT_MS = 3000;
-        private final ReentrantLock mLock = new ReentrantLock();
         private final ConditionVariable mCV = new ConditionVariable();
         private int mLastTuneEvent = INVALID_TUNE_EVENT;
 
         @Override
         public void onTuneEvent(int tuneEvent) {
-            synchronized (mLock) {
-                mLastTuneEvent = tuneEvent;
-                mCV.open();
-            }
+            mLastTuneEvent = tuneEvent;
+            mCV.open();
         }
 
         public void resetLastTuneEvent() {
-            synchronized (mLock) {
-                mLastTuneEvent = INVALID_TUNE_EVENT;
-            }
+            mLastTuneEvent = INVALID_TUNE_EVENT;
+            mCV.close();
         }
 
         public int getLastTuneEvent() {
-            try {
-                // yield to let the callback handling execute
-                Thread.sleep(SLEEP_TIME_MS);
-            } catch (Exception e) {
-                // ignore exception
-            }
-            synchronized (mLock) {
-                mCV.block(TIMEOUT_MS);
-                mCV.close();
-                return mLastTuneEvent;
-            }
+            mCV.block(TIMEOUT_MS);
+            return mLastTuneEvent;
         }
     }
 
     private class TunerTestLnbCallback implements LnbCallback {
         public static final int INVALID_LNB_EVENT = -1;
-        private static final int SLEEP_TIME_MS = 100;
         private static final int TIMEOUT_MS = 500;
-        private final ReentrantLock mDMLock = new ReentrantLock();
         private final ConditionVariable mDMCV = new ConditionVariable();
         private boolean mOnDiseqcMessageCalled = false;
 
@@ -432,31 +415,18 @@ public class TunerTest {
         // will test this instead
         @Override
         public void onDiseqcMessage(byte[] diseqcMessage) {
-            synchronized (mDMLock) {
-                mOnDiseqcMessageCalled = true;
-                mDMCV.open();
-            }
+            mOnDiseqcMessageCalled = true;
+            mDMCV.open();
         }
 
         public void resetOnDiseqcMessageCalled() {
-            synchronized (mDMLock) {
-                mOnDiseqcMessageCalled = false;
-            }
+            mOnDiseqcMessageCalled = false;
+            mDMCV.close();
         }
 
         public boolean getOnDiseqcMessageCalled() {
-            try {
-                // yield to let the callback handling execute
-                Thread.sleep(SLEEP_TIME_MS);
-            } catch (Exception e) {
-                // ignore exception
-            }
-
-            synchronized (mDMLock) {
-                mDMCV.block(TIMEOUT_MS);
-                mDMCV.close();
-                return mOnDiseqcMessageCalled;
-            }
+            mDMCV.block(TIMEOUT_MS);
+            return mOnDiseqcMessageCalled;
         }
     }
 
