@@ -23,6 +23,10 @@ import static android.view.Display.DEFAULT_DISPLAY;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.After;
+import org.junit.Before;
 
 import android.app.Activity;
 import android.app.ActivityOptions;
@@ -34,6 +38,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.provider.Settings;
 import android.server.wm.cts.R;
 import android.util.Range;
 
@@ -67,6 +72,36 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
                     "getprop " + DISABLE_CUSTOM_TASK_ANIMATION_PROPERTY).replace("\n", "")) != 0;
         } catch (NumberFormatException e) {
             return DISABLE_CUSTOM_TASK_ANIMATION_DEFAULT;
+        }
+    }
+
+    private static final int MAX_ANIMATION_TIMEOUT = 2; // Seconds
+
+    private boolean isCustomTaskAnimationDisabled = DISABLE_CUSTOM_TASK_ANIMATION_DEFAULT;
+
+    private static final float DEFAULT_SCALE = 1f;
+
+    private static final float INVALID_SCALE = -1f;
+
+    private float currentTransitionScale = INVALID_SCALE;
+
+    @Before
+    public void setUp() throws Exception {
+        isCustomTaskAnimationDisabled = customTaskAnimationDisabled();
+        currentTransitionScale = Settings.Global.getFloat(mContext.getContentResolver(),
+                Settings.Global.TRANSITION_ANIMATION_SCALE, DEFAULT_SCALE);
+        if (currentTransitionScale != DEFAULT_SCALE) {
+            Settings.Global.putFloat(mContext.getContentResolver(),
+                    Settings.Global.TRANSITION_ANIMATION_SCALE, DEFAULT_SCALE);
+        }
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        if (currentTransitionScale != INVALID_SCALE ||
+                currentTransitionScale != DEFAULT_SCALE) {
+            Settings.Global.putFloat(mContext.getContentResolver(),
+                    Settings.Global.TRANSITION_ANIMATION_SCALE, currentTransitionScale);
         }
     }
 
@@ -104,7 +139,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         waitAndAssertTopResumedActivity(new ComponentName(mContext, TransitionActivity.class),
                 DEFAULT_DISPLAY, "Activity must be launched");
 
-        latch.await(2, TimeUnit.SECONDS);
+        assertTrue("Did not receive OnAnimationFinishedListener within " + MAX_ANIMATION_TIMEOUT
+                + " seconds", latch.await(MAX_ANIMATION_TIMEOUT, TimeUnit.SECONDS));
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
         assertTrue("Actual transition duration should be in the range "
                 + "<" + minDurationMs + ", " + maxDurationMs + "> ms, "
@@ -113,7 +149,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     @Test
     public void testTaskTransitionDurationNoShortenAsExpected() throws Exception {
-        assumeFalse(customTaskAnimationDisabled());
+        assumeFalse(isCustomTaskAnimationDisabled);
 
         final long expectedDurationMs = CUSTOM_ANIMATION_DURATION - 100L;
         final long minDurationMs = expectedDurationMs;
@@ -143,7 +179,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
                 "Activity must be launched");
 
-        latch.await(2, TimeUnit.SECONDS);
+        assertTrue("Did not receive OnAnimationFinishedListener within " + MAX_ANIMATION_TIMEOUT
+                + " seconds", latch.await(MAX_ANIMATION_TIMEOUT, TimeUnit.SECONDS));
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
         assertTrue("Actual transition duration should be in the range "
                 + "<" + minDurationMs + ", " + maxDurationMs + "> ms, "
@@ -152,7 +189,7 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
 
     @Test
     public void testTaskTransitionOverrideDisabled() throws Exception {
-        assumeTrue(customTaskAnimationDisabled());
+        assumeTrue(isCustomTaskAnimationDisabled);
 
         final long expectedDurationMs = DEFAULT_ANIMATION_DURATION - 100L;
         final long minDurationMs = expectedDurationMs;
@@ -184,7 +221,8 @@ public class ActivityTransitionTests extends ActivityManagerTestBase {
         waitAndAssertTopResumedActivity(TEST_ACTIVITY, DEFAULT_DISPLAY,
                 "Activity must be launched");
 
-        latch.await(2, TimeUnit.SECONDS);
+        assertTrue("Did not receive OnAnimationFinishedListener within " + MAX_ANIMATION_TIMEOUT
+                + " seconds", latch.await(MAX_ANIMATION_TIMEOUT, TimeUnit.SECONDS));
         final long totalTime = transitionEndTime.get() - transitionStartTime.get();
         assertTrue("Actual transition duration should be in the range "
                 + "<" + minDurationMs + ", " + maxDurationMs + "> ms, "
