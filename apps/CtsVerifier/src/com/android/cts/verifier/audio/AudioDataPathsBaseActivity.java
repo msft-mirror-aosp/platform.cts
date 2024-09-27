@@ -649,7 +649,9 @@ public abstract class AudioDataPathsBaseActivity
         }
 
         private void logEnding(int api) {
-            Log.d(TAG, "END_SUB_TEST: " + getDescription() + ", " + audioApiToString(api));
+            Log.d(TAG, "END_SUB_TEST: " + getDescription()
+                    + ", " + audioApiToString(api)
+                    + "," + getTestStateString(api)); // has leading space!
         }
 
         //
