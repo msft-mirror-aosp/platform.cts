@@ -28,12 +28,10 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
-import android.hardware.display.DisplayManager;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
-import android.view.Display;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -106,8 +104,6 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
 
             // Set up a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
-            Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)
-                    .getDisplay(dc.mId);
 
             // Launch a test activity on the simulated display.
             TestActivity testActivity = new TestActivity.Starter().withDisplayId(dc.mId)
