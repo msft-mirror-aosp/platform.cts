@@ -19,6 +19,7 @@ package android.app.usage.cts;
 import static android.server.wm.SplitScreenActivityUtils.supportsSplitScreenMultiWindow;
 
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import static java.util.Objects.requireNonNull;
@@ -28,6 +29,8 @@ import android.app.Instrumentation;
 import android.app.usage.UsageStatsManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.UserManager;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.LockScreenSession;
@@ -85,7 +88,7 @@ public class UsageReportingTest {
     private SplitScreenActivityUtils mSplitScreenActivityUtils;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
         mUiDevice = UiDevice.getInstance(mInstrumentation);
         mContext = mInstrumentation.getContext();
@@ -147,6 +150,10 @@ public class UsageReportingTest {
 
     @Test
     public void testUsageReportingMissingStop() throws Exception {
+        // TODO(b/330610015): This test should be re-enabled once PowerManager#isInteractive
+        //  is fixed on form factors with visible background user.
+        assumeFalse(isAutomotiveWithVisibleBackgroundUser());
+
         launchActivity(ACTIVITY_ONE_COMPONENT);
 
         final Activity activity;
@@ -228,6 +235,10 @@ public class UsageReportingTest {
 
     @Test
     public void testMultipleTokenMissingStop() throws Exception {
+        // TODO(b/330610015): This test should be re-enabled once PowerManager#isInteractive
+        //  is fixed on form factors with visible background user.
+        assumeFalse(isAutomotiveWithVisibleBackgroundUser());
+
         launchActivity(ACTIVITY_ONE_COMPONENT);
 
         final Activity activity;
@@ -239,7 +250,6 @@ public class UsageReportingTest {
         mUsageStatsManager.reportUsageStart(activity, TOKEN_1);
         assertAppOrTokenUsed(FULL_TOKEN_0, true);
         assertAppOrTokenUsed(FULL_TOKEN_1, true);
-
 
         // Send the device to sleep to get onStop called for the token reporting activities.
         mUiDevice.executeShellCommand(DEVICE_SLEEP_COMMAND);
@@ -406,4 +416,12 @@ public class UsageReportingTest {
                 .setWaitForLaunched(true)
                 .execute();
     }
+
+    private boolean isAutomotiveWithVisibleBackgroundUser() {
+        PackageManager packageManager = mContext.getPackageManager();
+        UserManager userManager = mContext.getSystemService(UserManager.class);
+        return packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)
+                && userManager.isVisibleBackgroundUsersSupported();
+    }
+
 }
