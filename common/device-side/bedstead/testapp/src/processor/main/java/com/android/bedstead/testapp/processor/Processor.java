@@ -128,10 +128,6 @@ public final class Processor extends AbstractProcessor {
             ClassName.get(
                     "com.android.bedstead.testapp",
                     "Utils");
-    private static final ClassName NENE_EXCEPTION_CLASSNAME =
-            ClassName.get(
-                    "com.android.bedstead.nene.exceptions",
-                    "NeneException");
     private static final ClassName TEST_APP_INSTANCE_CLASSNAME =
             ClassName.get("com.android.bedstead.testapp", "TestAppInstance");
     private static final ClassName COMPONENT_REFERENCE_CLASSNAME =
