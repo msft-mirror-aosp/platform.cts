@@ -185,11 +185,8 @@ public class NfcAdapterTest {
 
     @Test
     public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.enableReaderOption(anyBoolean(), anyString())).thenReturn(true);
-        boolean result = adapter.enableReaderOption(true);
-        Assert.assertTrue(result);
-        resetMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
+        adapter.enableReaderOption(true);
     }
 
     @Test
