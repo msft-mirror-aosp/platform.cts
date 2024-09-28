@@ -671,13 +671,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
                     editorMatcher("onStartInputView", marker),
                     NOT_EXPECT_TIMEOUT);
 
-            final int touchSlop = getTouchSlop();
-            final int startX = editText.getWidth() / 2;
-            final int startY = editText.getHeight() / 2;
-            final int endX = startX + 2 * touchSlop;
-            final int endY = startY;
-            final int number = 5;
-
             // Try to init handwriting for multiple times.
             for (int i = 0; i < 3; ++i) {
                 addVirtualStylusIdForTestSession();
@@ -1589,9 +1582,7 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
 
             final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
             final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
-            final Pair<EditText, EditText> pair =
-                    launchTestActivityNoEditorFocus(focusedMarker, unfocusedMarker);
-            final EditText firstEditText = pair.first;
+            launchTestActivityNoEditorFocus(focusedMarker, unfocusedMarker);
 
             // Send any KeyEvent when editor isn't focused.
             instrumentation.sendKeyDownUpSync(KeyEvent.KEYCODE_0);
@@ -2683,7 +2674,6 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
         assumeFalse("Skipping test on devices that have stylus connected.",
                 hasSupportedStylus());
 
-        final InputMethodManager imm = mContext.getSystemService(InputMethodManager.class);
         try (MockImeSession imeSession = MockImeSession.create(
                 InstrumentationRegistry.getInstrumentation().getContext(),
                 InstrumentationRegistry.getInstrumentation().getUiAutomation(),

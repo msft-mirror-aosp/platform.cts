@@ -78,13 +78,12 @@ def strip_appn_data(jpeg):
     jpeg with APPN marker(s) and data stripped off.
   """
 
-  length = 0
   i = 0
   # find APPN markers and strip off payloads at beginning of jpeg
   while i < len(jpeg) - 1:
     if [jpeg[i], jpeg[i + 1]] in _JPEG_APPN_MARKERS:
-      length = jpeg[i + 2] * 256 + jpeg[i + 3] + 2
-      logging.debug('stripped APPN length:%d', length)
+      length = int(jpeg[i + 2]) * 256 + int(jpeg[i + 3]) + 2
+      logging.debug('stripped APPN length: %d', length)
       jpeg = np.concatenate((jpeg[0:i], jpeg[length:]), axis=None)
     elif ([jpeg[i], jpeg[i + 1]] == _JPEG_DQT_MARKER or
           [jpeg[i], jpeg[i + 1]] == _JPEG_DHT_MARKER):
@@ -142,7 +141,8 @@ def extract_dqts(jpeg, debug=False):
     if debug:
       logging.debug('DQT %d start: %d, marker: %s, length: %s', i, dqt,
                     jpeg[dqt:dqt + 2], jpeg[dqt + 2:dqt + 4])
-    dqt_size = jpeg[dqt + 2] * 256 + jpeg[dqt + 3] - 2  # strip off size marker
+    # strip off size marker
+    dqt_size = int(jpeg[dqt + 2]) * 256 + int(jpeg[dqt + 3]) - 2
     if dqt_size % 2 == 0:  # even payload means luma & chroma
       logging.debug(' both luma & chroma DQT matrices in marker')
       dqt_size = (dqt_size - 2) // 2  # subtact off luma/chroma markers
