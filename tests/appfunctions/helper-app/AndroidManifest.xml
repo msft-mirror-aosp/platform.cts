@@ -18,6 +18,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="android.app.appfunctions.cts.helper" >
     <application android:debuggable="true">
+        <uses-library
+            android:name="com.google.android.appfunctions.sidecar"
+            android:required="false" />
         <!-- Platform's AppFunctionService. -->
         <service android:name="android.app.appfunctions.testutils.TestAppFunctionService"
             android:permission="android.permission.BIND_APP_FUNCTION_SERVICE"
@@ -33,5 +36,4 @@
             android:name="android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"
             android:exported="false"/>
     </application>
-
 </manifest>

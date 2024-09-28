@@ -45,7 +45,7 @@ DEFAULT_YUV_TO_RGB_CCM = numpy.matrix([[1.000, 0.000, 1.402],
                                        [1.000, -0.344, -0.714],
                                        [1.000, 1.772, 0.000]])
 
-DEFAULT_YUV_OFFSETS = numpy.array([0, 128, 128])
+DEFAULT_YUV_OFFSETS = numpy.array([0, 128, 128], dtype=numpy.uint8)
 MAX_LUT_SIZE = 65536
 DEFAULT_GAMMA_LUT = numpy.array([
     math.floor((MAX_LUT_SIZE-1) * math.pow(i/(MAX_LUT_SIZE-1), 1/2.2) + 0.5)

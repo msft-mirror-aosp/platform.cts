@@ -27,18 +27,11 @@ import java.util.concurrent.TimeUnit;
 public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     private static final String ACTION_SERVICE_ON_CREATE = "oncreate";
     private static final String ACTION_SERVICE_ON_DESTROY = "ondestroy";
+    private static final String ACTION_SERVICE_OP_CANCELLED = "oncancel";
 
     private static volatile CountDownLatch sOnCreateLatch = new CountDownLatch(1);
     private static volatile CountDownLatch sOnDestroyedLatch = new CountDownLatch(1);
-
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (ACTION_SERVICE_ON_CREATE.equals(intent.getAction())) {
-            sOnCreateLatch.countDown();
-        } else if (ACTION_SERVICE_ON_DESTROY.equals(intent.getAction())) {
-            sOnDestroyedLatch.countDown();
-        }
-    }
+    private static volatile CountDownLatch sOnOpCancelledLatch = new CountDownLatch(1);
 
     /**
      * Resets the latch and enables another wait cycle. Should never call this method with any other
@@ -47,6 +40,7 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     public static void reset() {
         sOnCreateLatch = new CountDownLatch(1);
         sOnDestroyedLatch = new CountDownLatch(1);
+        sOnOpCancelledLatch = new CountDownLatch(1);
     }
 
     /**
@@ -61,6 +55,20 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     public static boolean waitForServiceOnDestroy(long timeout, TimeUnit unit)
             throws InterruptedException {
         return sOnDestroyedLatch.await(timeout, unit);
+    }
+
+    /**
+     * Blocks the current thread until the operation is cancelled by the caller, or the
+     * specified timeout elapses.
+     *
+     * @param timeout The duration to wait for.
+     * @param unit The unit of time for the timeout value.
+     * @return True if the onDestroy was invoked within the timeout, false otherwise.
+     * @throws InterruptedException If the current thread is interrupted while waiting.
+     */
+    public static boolean waitForOperationCancellation(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return sOnOpCancelledLatch.await(timeout, unit);
     }
 
     /**
@@ -87,10 +95,26 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
         notifyEvent(context, ACTION_SERVICE_ON_DESTROY);
     }
 
+    /** Notifies that the operation is cancelled by the caller. */
+    public static void notifyOnOperationCancelled(Context context) {
+        notifyEvent(context, ACTION_SERVICE_OP_CANCELLED);
+    }
+
     private static void notifyEvent(Context context, String action) {
         Intent intent = new Intent(context, TestAppFunctionServiceLifecycleReceiver.class);
         intent.setAction(action);
         intent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         context.sendBroadcast(intent);
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (ACTION_SERVICE_ON_CREATE.equals(intent.getAction())) {
+            sOnCreateLatch.countDown();
+        } else if (ACTION_SERVICE_ON_DESTROY.equals(intent.getAction())) {
+            sOnDestroyedLatch.countDown();
+        } else if (ACTION_SERVICE_OP_CANCELLED.equals(intent.getAction())) {
+            sOnOpCancelledLatch.countDown();
+        }
     }
 }

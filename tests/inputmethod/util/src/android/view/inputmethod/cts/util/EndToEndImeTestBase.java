@@ -49,7 +49,7 @@ import org.junit.rules.TestName;
 import java.lang.reflect.Method;
 import java.util.List;
 
-public class EndToEndImeTestBase {
+public abstract class EndToEndImeTestBase {
 
     // Required for Bedstead annotations to take effect.
     @ClassRule

@@ -33,8 +33,6 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.android.compatibility.common.util.ResultType;
-import com.android.compatibility.common.util.ResultUnit;
 import com.android.cts.verifier.CtsVerifierReportLog;
 import com.android.cts.verifier.R;
 import com.android.cts.verifier.audio.wavelib.DspBufferComplex;
@@ -44,6 +42,9 @@ import com.android.cts.verifier.audio.wavelib.DspFftServer;
 import com.android.cts.verifier.audio.wavelib.DspWindow;
 import com.android.cts.verifier.audio.wavelib.PipeShort;
 import com.android.cts.verifier.audio.wavelib.VectorAverage;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * Tests Audio Device roundtrip latency by using a loopback plug.
@@ -116,12 +117,12 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
             } else if (id == R.id.audio_wired_yes) {
                 Log.i(TAG, "User confirms wired Port existence");
                 mLoopbackPlugReady.setEnabled(true);
-                recordHeasetPortFound(true);
+                recordHeadsetPortFound(true);
                 mWiredPortYes.setEnabled(false);
                 mWiredPortNo.setEnabled(false);
             } else if (id == R.id.audio_wired_no) {
                 Log.i(TAG, "User denies wired Port existence");
-                recordHeasetPortFound(false);
+                recordHeadsetPortFound(false);
                 getPassButton().setEnabled(true);
                 mWiredPortYes.setEnabled(false);
                 mWiredPortNo.setEnabled(false);
@@ -300,7 +301,7 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
         int[] mPointsPerBand = new int[mBands];
         double[] mAverageEnergyPerBand = new double[mBands];
         int[] mInBoundPointsPerBand = new int[mBands];
-        public Results(String label) {
+        Results(String label) {
             mLabel = label;
         }
 
@@ -358,9 +359,9 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
      * compute test results
      */
     private void computeResults() {
-        Results resultsLeft = new Results("Left");
+        Results resultsLeft = new Results("left");
         computeResultsForVector(mFreqAverage0, resultsLeft);
-        Results resultsRight = new Results("Right");
+        Results resultsRight = new Results("right");
         computeResultsForVector(mFreqAverage1, resultsRight);
         if (resultsLeft.testAll() && resultsRight.testAll()) {
             String strSuccess = getResources().getString(R.string.audio_general_test_passed);
@@ -457,34 +458,24 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
     }
 
     private void storeTestResults(Results results) {
-        String channelLabel = "channel_" + results.mLabel;
-
-        CtsVerifierReportLog reportLog = getReportLog();
-        for (int b = 0; b < mBands; b++) {
-            String bandLabel = String.format(channelLabel + "_%d", b);
-            reportLog.addValue(
-                    bandLabel + "_Level",
-                    results.mAverageEnergyPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.NONE);
-
-            reportLog.addValue(
-                    bandLabel + "_pointsinbound",
-                    results.mInBoundPointsPerBand[b],
-                    ResultType.HIGHER_BETTER,
-                    ResultUnit.COUNT);
-
-            reportLog.addValue(
-                    bandLabel + "_pointstotal",
-                    results.mPointsPerBand[b],
-                    ResultType.NEUTRAL,
-                    ResultUnit.COUNT);
+        try {
+            CtsVerifierReportLog reportLog = getReportLog();
+            JSONArray bandsArray = new JSONArray();
+            JSONObject resultsObject = new JSONObject();
+            for (int b = 0; b < mBands; b++) {
+                JSONObject bandObject = new JSONObject();
+                bandObject.put(KEY_LEVEL, results.mAverageEnergyPerBand[b]);
+                bandObject.put(KEY_POINTS_IN_BOUND, results.mInBoundPointsPerBand[b]);
+                bandObject.put(KEY_POINTS_TOTAL, results.mPointsPerBand[b]);
+                bandsArray.put(bandObject);
+            }
+            resultsObject.put(KEY_BANDS, bandsArray);
+            resultsObject.put(KEY_MAGNITUDE_SPECTRUM_LOG, new JSONArray(results.mValuesLog));
+            reportLog.addValue(results.mLabel, resultsObject);
+        } catch (Exception e) {
+            Log.e(TAG, LOG_ERROR_STR, e);
+            appendResultsToScreen(LOG_ERROR_STR);
         }
-
-        reportLog.addValues(channelLabel + "_magnitudeSpectrumLog",
-                results.mValuesLog,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
 
         Log.v(TAG, "Results Recorded");
     }
@@ -492,14 +483,6 @@ public class AudioFrequencyLineActivity extends AudioFrequencyActivity implement
     @Override // PassFailButtons
     public void recordTestResults() {
         getReportLog().submit();
-    }
-
-    private void recordHeasetPortFound(boolean found) {
-        getReportLog().addValue(
-                "User Reported Headset Port",
-                found ? 1.0 : 0,
-                ResultType.NEUTRAL,
-                ResultUnit.NONE);
     }
 
     private void startRecording() {

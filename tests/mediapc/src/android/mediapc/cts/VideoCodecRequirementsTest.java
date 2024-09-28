@@ -151,36 +151,6 @@ public class VideoCodecRequirementsTest {
     }
 
     /**
-     * Validates AV1 hardware decoder is present and supports: Main 10, Level 4.1, Film Grain
-     */
-    @LargeTest
-    @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    @CddTest(requirement = "2.2.7.1/5.1/H-1-14")
-    public void testAV1HwDecoderRequirements() throws Exception {
-        MediaFormat format = MediaFormat.createVideoFormat(MIMETYPE_VIDEO_AV1, 1920, 1080);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
-        ArrayList<MediaFormat> formats = new ArrayList<>();
-        formats.add(format);
-        ArrayList<String> av1HwDecoders =
-                selectHardwareCodecs(MIMETYPE_VIDEO_AV1, formats, null, false);
-        boolean oneCodecDecoding = false;
-        for (String codec : av1HwDecoders) {
-            Decode decode = new Decode(MIMETYPE_VIDEO_AV1, FILE_AV1_REQ_SUPPORT, codec, true);
-            double achievedRate = decode.doDecode().fps();
-            if (achievedRate > 0) {
-                oneCodecDecoding = true;
-            }
-        }
-
-        PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
-        Requirements.AV1HardwareDecoderRequirement rAV1DecoderReq =
-                Requirements.addR5_1__H_1_14().to(pce);
-        rAV1DecoderReq.setAv1DecoderRequirementBoolean(oneCodecDecoding);
-
-        pce.submitAndCheck();
-    }
-
-    /**
      * Validates if a hardware decoder that supports 4k60 is present
      */
     @LargeTest

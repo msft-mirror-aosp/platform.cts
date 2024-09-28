@@ -18,7 +18,8 @@ package com.android.bedstead.harrier.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE;
 
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoUserAnnotation;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoUserAnnotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -27,15 +27,26 @@ import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
+@RequireNotVisibleBackgroundUsers(reason = "collapsePanels(), togglePanel() and "
+        + " handleSystemKey() don't support visible background user")
 public class StatusBarManagerApi30Test {
     private StatusBarManager mStatusBarManager;
     private Context mContext;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private boolean isWatch() {
         return mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WATCH);

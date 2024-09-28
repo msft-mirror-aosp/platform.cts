@@ -145,6 +145,15 @@ public class PackageInstallerCujTestBase {
 
     @Before
     public void setup() throws Exception {
+        setupTestEnvironment();
+    }
+
+    /**
+     * 1. Assume the device is running on the supported device and the system has the installed
+     * system package Installer.
+     * 2. Uninstall the {@link #TEST_APP_PACKAGE_NAME} and assert it is not installed.
+     */
+    public static void setupTestEnvironment() {
         assumeFalse("The device is not supported", isNotSupportedDevice());
 
         assumeFalse("The device doesn't have package installer",

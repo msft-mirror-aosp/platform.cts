@@ -19,7 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
@@ -39,6 +39,7 @@ import java.lang.annotation.Target;
  * <p>This annotation by default opts a test into multi-user presubmit. New tests should also be
  * annotated {@link Postsubmit} until they are shown to meet the multi-user presubmit
  * requirements.
+ * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

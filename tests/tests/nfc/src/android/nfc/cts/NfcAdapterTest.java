@@ -185,11 +185,8 @@ public class NfcAdapterTest {
 
     @Test
     public void testEnableReaderOption() throws NoSuchFieldException, RemoteException {
-        NfcAdapter adapter = createMockedInstance();
-        when(mService.enableReaderOption(anyBoolean(), anyString())).thenReturn(true);
-        boolean result = adapter.enableReaderOption(true);
-        Assert.assertTrue(result);
-        resetMockedInstance();
+        NfcAdapter adapter = getDefaultAdapter();
+        adapter.enableReaderOption(true);
     }
 
     @Test
@@ -720,7 +717,7 @@ public class NfcAdapterTest {
             cb = new NfcControllerAlwaysOnListener(countDownLatch);
             nfcAdapter.registerControllerAlwaysOnListener(
                     Executors.newSingleThreadExecutor(), cb);
-            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.ENABLE_TRANSPARENT);
+            nfcOemExtension.setControllerAlwaysOnMode(NfcOemExtension.ENABLE_TRANSPARENT);
             assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
             nfcAdapter.unregisterControllerAlwaysOnListener(cb);
 
@@ -728,7 +725,7 @@ public class NfcAdapterTest {
             cb = new NfcControllerAlwaysOnListener(countDownLatch);
             nfcAdapter.registerControllerAlwaysOnListener(
                     Executors.newSingleThreadExecutor(), cb);
-            nfcOemExtension.setControllerAlwaysOn(NfcOemExtension.DISABLE);
+            nfcOemExtension.setControllerAlwaysOnMode(NfcOemExtension.DISABLE);
             assertTrue(countDownLatch.await(1, TimeUnit.SECONDS));
             nfcAdapter.unregisterControllerAlwaysOnListener(cb);
         } finally {

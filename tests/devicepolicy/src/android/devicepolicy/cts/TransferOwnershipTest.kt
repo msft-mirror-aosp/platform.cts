@@ -32,17 +32,14 @@ import com.android.bedstead.harrier.policies.TransferOwnershipForDeviceOwner
 import com.android.bedstead.harrier.policies.TransferOwnershipForProfileOwner
 import com.android.bedstead.nene.TestApis
 import com.android.compatibility.common.util.ApiTest
-import com.android.eventlib.truth.EventLogsSubject
 import com.android.eventlib.truth.EventLogsSubject.assertThat
 import com.android.queryable.queries.BundleQuery
 import com.android.queryable.queries.ReceiverQuery
-import com.google.common.truth.Truth
 import com.google.common.truth.Truth.assertThat
 import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.testng.Assert
 import org.testng.Assert.assertThrows
 
 // TODO(b/298202673: Add tests for behavior for all policies)

@@ -19,7 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
-import com.android.bedstead.harrier.annotations.meta.EnsureHasUserAnnotation;
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
@@ -35,6 +35,7 @@ import java.lang.annotation.Target;
  * to ensure that the device enters the correct state for the method. If there is not already a
  * secondary user on the device, and the device does not support creating additional users, then
  * the test will be skipped.
+ * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

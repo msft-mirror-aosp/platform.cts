@@ -16,7 +16,6 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
-import static android.Manifest.permission.DELETE_PACKAGES;
 import static android.app.PendingIntent.FLAG_MUTABLE;
 import static android.app.PendingIntent.FLAG_UPDATE_CURRENT;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
@@ -30,6 +29,7 @@ import static android.content.pm.PackageInstaller.STATUS_SUCCESS;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -46,6 +46,7 @@ import androidx.test.uiautomator.By;
 import org.junit.After;
 import org.junit.Before;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -57,20 +58,17 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     private static final String ACTION_UNINSTALL_RESULT =
             "android.packageinstaller.criticaluserjourney.cts.action.UNINSTALL_RESULT";
 
-    private static CompletableFuture<Intent> sUninstallResult;
     private static UninstallResultReceiver sUninstallResultReceiver;
 
     @Before
     @Override
     public void setup() throws Exception {
         super.setup();
-        resetUninstallResult();
         if (shouldInstallTestAppInTestBaseSetup()) {
             installTestPackage();
         }
         sUninstallResultReceiver = new UninstallResultReceiver();
-        getContext().registerReceiver(sUninstallResultReceiver,
-                new IntentFilter(ACTION_UNINSTALL_RESULT), Context.RECEIVER_EXPORTED);
+        sUninstallResultReceiver.registerReceiver(getContext());
     }
 
     @After
@@ -92,21 +90,25 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static Intent getUninstallResult() throws Exception {
-        return sUninstallResult.get(10, TimeUnit.SECONDS);
+        return sUninstallResultReceiver.getUninstallResult();
     }
 
     private static int getUninstallStatus() throws Exception {
-        return getUninstallResult().getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID);
+        return sUninstallResultReceiver.getUninstallStatus();
     }
 
     private static void resetUninstallResult() {
-        sUninstallResult = new CompletableFuture<>();
+        sUninstallResultReceiver.resetUninstallResult();
     }
 
     private static IntentSender getIntentSender() {
+        return getIntentSender(getContext());
+    }
+
+    private static IntentSender getIntentSender(Context context) {
         Intent intent = new Intent(ACTION_UNINSTALL_RESULT).setPackage(
-                getContext().getPackageName()).addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
-        PendingIntent pending = PendingIntent.getBroadcast(getContext(), 0, intent,
+                context.getPackageName()).addFlags(Intent.FLAG_RECEIVER_FOREGROUND);
+        PendingIntent pending = PendingIntent.getBroadcast(context, 0, intent,
                 FLAG_UPDATE_CURRENT | FLAG_MUTABLE);
         return pending.getIntentSender();
     }
@@ -127,11 +129,17 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
      */
     public static void startUninstallationViaPackageInstallerApiWithDeletePackages(
             boolean isSameInstaller, String packageName) throws Exception {
+
+        // Preserve original adopted permissions and restore it later
+        Set<String> originalAdoptedPermissions = getInstrumentation().getUiAutomation()
+                .getAdoptedShellPermissions();
         try {
-            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(DELETE_PACKAGES);
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    Manifest.permission.DELETE_PACKAGES);
             getPackageManager().getPackageInstaller().uninstall(packageName, getIntentSender());
         } finally {
-            getInstrumentation().getUiAutomation().dropShellPermissionIdentity();
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    originalAdoptedPermissions.toArray(new String[0]));
         }
 
         if (isSameInstaller) {
@@ -140,6 +148,41 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
         } else {
             assertThat(getUninstallStatus()).isEqualTo(STATUS_PENDING_USER_ACTION);
             getUninstallResultAndStartConfirmedActivity();
+        }
+    }
+
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via PackageInstaller#uninstall
+     * api with granting DELETE_PACKAGES permission, execute with the {@code context}, and verify
+     * the result for the {@code uninstallResultReceiver}.
+     */
+    public static void startUninstallationViaPackageInstallerApiWithDeletePackagesForUser(
+            Context context, UninstallResultReceiver uninstallResultReceiver,
+            boolean isSameInstaller) throws Exception {
+
+        // Preserve original adopted permissions and restore it later
+        Set<String> originalAdoptedPermissions = getInstrumentation().getUiAutomation()
+                .getAdoptedShellPermissions();
+        try {
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    Manifest.permission.DELETE_PACKAGES,
+                    Manifest.permission.INTERACT_ACROSS_USERS,
+                    Manifest.permission.INTERACT_ACROSS_USERS_FULL);
+            context.getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
+                    getIntentSender(context));
+        } finally {
+            getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
+                    originalAdoptedPermissions.toArray(new String[0]));
+        }
+
+        if (isSameInstaller) {
+            // Grant DELETE_PACKAGES permission, the test app will be uninstalled silently.
+            assertThat(uninstallResultReceiver.getUninstallStatus()).isNotEqualTo(
+                    STATUS_PENDING_USER_ACTION);
+        } else {
+            assertThat(uninstallResultReceiver.getUninstallStatus()).isEqualTo(
+                    STATUS_PENDING_USER_ACTION);
+            getUninstallResultAndStartConfirmedActivityForUser(context, uninstallResultReceiver);
         }
     }
 
@@ -164,12 +207,41 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     private static void getUninstallResultAndStartConfirmedActivity() throws Exception {
-        final Intent result = getUninstallResult();
+        Intent extraIntent = getExtraIntentFromUninstallResult(getUninstallResult());
+        getContext().startActivity(extraIntent);
+        resetUninstallResult();
+    }
+
+    @NonNull
+    private static Intent getExtraIntentFromUninstallResult(Intent result) {
         Intent extraIntent = result.getParcelableExtra(Intent.EXTRA_INTENT, Intent.class);
         assertThat(extraIntent).isNotNull();
         extraIntent.addFlags(FLAG_ACTIVITY_CLEAR_TASK | FLAG_ACTIVITY_NEW_TASK);
+        return extraIntent;
+    }
+
+    /**
+     * Start the uninstallation for {@link #TEST_APP_PACKAGE_NAME} via PackageInstaller#uninstall
+     * api with the {@code context} and verify the result for the {@code uninstallResultReceiver}.
+     */
+    public static void startUninstallationViaPackageInstallerApiForUser(Context context,
+            UninstallResultReceiver uninstallResultReceiver) throws Exception {
+        context.getPackageManager().getPackageInstaller().uninstall(TEST_APP_PACKAGE_NAME,
+                getIntentSender(context));
+
+        assertThat(uninstallResultReceiver.getUninstallStatus()).isEqualTo(
+                STATUS_PENDING_USER_ACTION);
+
+        getUninstallResultAndStartConfirmedActivityForUser(context, uninstallResultReceiver);
+    }
+
+    private static void getUninstallResultAndStartConfirmedActivityForUser(Context context,
+            UninstallResultReceiver uninstallResultReceiver) throws Exception {
+        Intent extraIntent = getExtraIntentFromUninstallResult(
+                uninstallResultReceiver.getUninstallResult());
+        extraIntent.putExtra(Intent.EXTRA_USER, context.getUser());
         getContext().startActivity(extraIntent);
-        resetUninstallResult();
+        uninstallResultReceiver.resetUninstallResult();
     }
 
     /**
@@ -290,6 +362,16 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
     }
 
     /**
+     * Assert the uninstall status for {@code uninstallResult} is PackageInstaller#STATUS_SUCCESS.
+     */
+    public static void assertUninstallSuccess(UninstallResultReceiver uninstallResultReceiver)
+            throws Exception {
+        assertThat(uninstallResultReceiver.getUninstallStatus()).isEqualTo(STATUS_SUCCESS);
+        uninstallResultReceiver.resetUninstallResult();
+    }
+
+
+    /**
      * Assert the uninstall status is PackageInstaller#STATUS_FAILURE_BLOCKED.
      */
     public static void assertUninstallFailureBlocked() throws Exception {
@@ -304,7 +386,6 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
         assertThat(getUninstallStatus()).isEqualTo(STATUS_FAILURE_ABORTED);
         resetUninstallResult();
     }
-
 
     /**
      * Assert the test package is installed on the {@code userContext}
@@ -322,10 +403,42 @@ public class UninstallationTestBase extends PackageInstallerCujTestBase {
 
     public static class UninstallResultReceiver extends BroadcastReceiver {
 
+        CompletableFuture<Intent> mUninstallResult = new CompletableFuture<>();
+
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.i(TAG, "UninstallResultReceiver Received intent " + prettyPrint(intent));
-            sUninstallResult.complete(intent);
+            mUninstallResult.complete(intent);
+        }
+
+        /**
+         * Register the receiver on the {@code context}
+         */
+        public void registerReceiver(Context context) {
+            context.registerReceiver(this, new IntentFilter(ACTION_UNINSTALL_RESULT),
+                    Context.RECEIVER_EXPORTED);
+        }
+
+        /**
+         * Get the uninstall status from the {@code uninstallResult}
+         */
+        public int getUninstallStatus() throws Exception {
+            return getUninstallResult().getIntExtra(EXTRA_STATUS, STATUS_FAILURE_INVALID);
+        }
+
+        /**
+         * Get the uninstall result
+         */
+        public Intent getUninstallResult()
+                throws Exception {
+            return mUninstallResult.get(10, TimeUnit.SECONDS);
+        }
+
+        /**
+         * Reset the uninstall result
+         */
+        public void resetUninstallResult() {
+            mUninstallResult = new CompletableFuture<>();
         }
 
         private static String prettyPrint(Intent intent) {

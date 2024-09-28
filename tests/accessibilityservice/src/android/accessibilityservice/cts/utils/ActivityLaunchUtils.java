@@ -18,6 +18,7 @@ import static android.accessibility.cts.common.ShellCommandBuilder.execShellComm
 import static android.accessibilityservice.cts.utils.AsyncUtils.DEFAULT_TIMEOUT_MS;
 import static android.accessibilityservice.cts.utils.CtsTestUtils.isAutomotive;
 import static android.content.pm.PackageManager.FEATURE_ACTIVITIES_ON_SECONDARY_DISPLAYS;
+import static android.os.UserHandle.USER_ALL;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -64,8 +65,9 @@ public class ActivityLaunchUtils {
     private static final String LOG_TAG = "ActivityLaunchUtils";
     private static final String AM_START_HOME_ACTIVITY_COMMAND =
             "am start -a android.intent.action.MAIN -c android.intent.category.HOME";
+    // Close the system dialogs for all users
     public static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOG_COMMAND =
-            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS";
+            "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
     public static final String INPUT_KEYEVENT_KEYCODE_BACK =
             "input keyevent KEYCODE_BACK";
     public static final String INPUT_KEYEVENT_KEYCODE_MENU =

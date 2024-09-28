@@ -2,6 +2,16 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
+filegroup {
+    name: "bedstead-multiuser-common-srcs",
+    srcs: [
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/*.kt",
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/*.java",
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/meta/*.kt",
+        "src/main/kotlin/com/android/bedstead/multiuser/annotations/meta/*.java",
+    ],
+}
+
 //TODO(b/334025286) below filegroup is temporary until multiuser is fully decoupled
 filegroup {
     name: "bedstead-multiuser-harrier-temporary-srcs",

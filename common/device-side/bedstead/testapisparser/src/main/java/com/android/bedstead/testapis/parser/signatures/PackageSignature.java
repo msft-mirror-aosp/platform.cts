@@ -16,7 +16,7 @@
 
 package com.android.bedstead.testapis.parser.signatures;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * Represents a minimal representation of a package for comparison purposes.
@@ -25,9 +25,9 @@ public final class PackageSignature {
 
     private final String mName;
 
-    private final Set<ClassSignature> mClassSignatures;
+    private final List<ClassSignature> mClassSignatures;
 
-    public PackageSignature(String name, Set<ClassSignature> classSignature) {
+    public PackageSignature(String name, List<ClassSignature> classSignature) {
         mName = name;
         mClassSignatures = classSignature;
     }
@@ -36,7 +36,7 @@ public final class PackageSignature {
         return mName;
     }
 
-    public Set<ClassSignature> getClassSignatures() {
+    public List<ClassSignature> getClassSignatures() {
         return mClassSignatures;
     }
 

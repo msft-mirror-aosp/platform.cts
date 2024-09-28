@@ -17,11 +17,15 @@
 package android.app.notification.current.cts;
 
 import static android.app.Notification.FLAG_BUBBLE;
+import static android.app.Notification.FLAG_PROMOTED_ONGOING;
 import static android.graphics.drawable.Icon.TYPE_ADAPTIVE_BITMAP;
 import static android.graphics.drawable.Icon.TYPE_RESOURCE;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -51,6 +55,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.os.StrictMode;
 import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Pair;
 import android.widget.RemoteViews;
 
@@ -59,6 +65,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -92,6 +99,8 @@ public class NotificationTest {
     private static final String SETTING_TEXT = "work chats";
     private static final String SHORT_CRITICAL_TEXT = "short critical text";
     private static final boolean ALLOW_SYS_GEN_CONTEXTUAL_ACTIONS = false;
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -1135,6 +1144,203 @@ public class NotificationTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testProgressStyle_recoverAllAttributesFromParcel() {
+        final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
+        final Icon progressTrackerIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_tracker_icon.png"));
+        final Icon progressStartIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_start_icon.png"));
+        final Icon progressEndIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_end_icon.png"));
+        expectedProgressStyle
+                .setProgressTrackerIcon(progressTrackerIcon)
+                .setProgressStartIcon(progressStartIcon)
+                .setProgressEndIcon(progressEndIcon)
+                .setStyledByProgress(false)
+                .setProgress(5)
+                .addProgressSegment(new Notification.ProgressStyle.Segment(10)
+                        .setColor(Color.BLUE).setStableId(100))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(100)
+                        .setStableId(1))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(20)
+                        .setColor(Color.GREEN))
+                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                        .setColor(Color.YELLOW).setStableId(10))
+                .addProgressStep(new Notification.ProgressStyle.Step(18)
+                        .setColor(Color.RED))
+                .addProgressStep(new Notification.ProgressStyle.Step(25))
+                .setProgressIndeterminate(true);
+
+        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
+                .setSmallIcon(1)
+                .setContentTitle(CONTENT_TITLE)
+                .setStyle(expectedProgressStyle)
+                .build();
+
+        final Parcel parcel = Parcel.obtain();
+        mNotification.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+
+        final Notification recoveredNotification = new Notification(parcel);
+        final Notification.Style recoveredStyle = Notification.Builder.recoverBuilder(
+                mContext, recoveredNotification).getStyle();
+        assertThat(recoveredStyle).isInstanceOf(Notification.ProgressStyle.class);
+        assertProgressStylesAreEqual(expectedProgressStyle,
+                (Notification.ProgressStyle) recoveredStyle);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testProgressStyle_recoverAllAttributesFromNotification() {
+        final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
+        final Icon progressTrackerIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_tracker_icon.png"));
+        final Icon progressStartIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_start_icon.png"));
+        final Icon progressEndIcon = Icon.createWithContentUri(
+                Uri.parse("content://android.app.stubs.assets/progress_end_icon.png"));
+        expectedProgressStyle
+                .setProgressTrackerIcon(progressTrackerIcon)
+                .setProgressStartIcon(progressStartIcon)
+                .setProgressEndIcon(progressEndIcon)
+                .setStyledByProgress(false)
+                .setProgress(5)
+                .addProgressSegment(new Notification.ProgressStyle.Segment(10)
+                        .setColor(Color.BLUE).setStableId(100))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(100)
+                        .setStableId(1))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(20)
+                        .setColor(Color.GREEN))
+                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                        .setColor(Color.YELLOW).setStableId(10))
+                .addProgressStep(new Notification.ProgressStyle.Step(18)
+                        .setColor(Color.RED))
+                .addProgressStep(new Notification.ProgressStyle.Step(25))
+                .setProgressIndeterminate(true);
+
+        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
+                .setSmallIcon(1)
+                .setContentTitle(CONTENT_TITLE)
+                .setStyle(expectedProgressStyle)
+                .build();
+
+        final Notification.Style recoveredStyle = Notification.Builder.recoverBuilder(
+                mContext, mNotification).getStyle();
+        assertThat(recoveredStyle).isInstanceOf(Notification.ProgressStyle.class);
+        assertProgressStylesAreEqual(expectedProgressStyle,
+                (Notification.ProgressStyle) recoveredStyle);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testProgressStyle_ignoresInvalidSegments() {
+        final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
+        expectedProgressStyle
+                .addProgressSegment(new Notification.ProgressStyle.Segment(10)
+                        .setColor(Color.BLUE)
+                        .setStableId(100))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(-100)
+                        .setStableId(1))
+                .addProgressSegment(new Notification.ProgressStyle.Segment(20)
+                        .setColor(Color.GREEN))
+                    .addProgressSegment(new Notification.ProgressStyle.Segment(0)
+                        .setColor(Color.CYAN))
+                 .addProgressSegment(new Notification.ProgressStyle.Segment(10));
+
+        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
+                .setSmallIcon(1)
+                .setContentTitle(CONTENT_TITLE)
+                .setStyle(expectedProgressStyle)
+                .build();
+
+        final Notification.ProgressStyle recoveredStyle =
+                (Notification.ProgressStyle) Notification.Builder.recoverBuilder(
+                mContext, mNotification).getStyle();
+
+        assertThat(recoveredStyle.getProgressSegments()).isEqualTo(List.of(
+                new Notification.ProgressStyle.Segment(10)
+                        .setColor(Color.BLUE)
+                        .setStableId(100),
+                new Notification.ProgressStyle.Segment(20)
+                        .setColor(Color.GREEN),
+                new Notification.ProgressStyle.Segment(10)
+        ));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testProgressStyle_ignoresInvalidSteps() {
+        final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
+        expectedProgressStyle
+                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                        .setColor(Color.BLUE)
+                        .setStableId(100))
+                .addProgressStep(new Notification.ProgressStyle.Step(-100)
+                        .setStableId(1))
+                .addProgressStep(new Notification.ProgressStyle.Step(20)
+                        .setColor(Color.GREEN))
+                .addProgressStep(new Notification.ProgressStyle.Step(0)
+                        .setColor(Color.CYAN))
+                .addProgressStep(new Notification.ProgressStyle.Step(10));
+
+        mNotification = new Notification.Builder(mContext, CHANNEL.getId())
+                .setSmallIcon(1)
+                .setContentTitle(CONTENT_TITLE)
+                .setStyle(expectedProgressStyle)
+                .build();
+
+        final Notification.ProgressStyle recoveredStyle =
+                (Notification.ProgressStyle) Notification.Builder.recoverBuilder(
+                        mContext, mNotification).getStyle();
+
+        assertThat(recoveredStyle.getProgressSteps()).isEqualTo(List.of(
+                        new Notification.ProgressStyle.Step(10)
+                                .setColor(Color.BLUE)
+                                .setStableId(100),
+                        new Notification.ProgressStyle.Step(20)
+                                .setColor(Color.GREEN),
+                        new Notification.ProgressStyle.Step(0)
+                                .setColor(Color.CYAN),
+                new Notification.ProgressStyle.Step(10)
+        ));
+    }
+
+    private void assertProgressStylesAreEqual(Notification.ProgressStyle expected,
+            Notification.ProgressStyle actual) {
+        assertThat(actual.getProgressSteps()).isEqualTo(expected.getProgressSteps());
+        assertThat(actual.getProgressSegments()).isEqualTo(expected.getProgressSegments());
+        assertThat(actual.getProgressMax()).isEqualTo(expected.getProgressMax());
+        assertThat(actual.getProgress()).isEqualTo(expected.getProgress());
+        final Icon actualProgressTrackerIcon = actual.getProgressTrackerIcon();
+        final Icon expectedProgressTrackerIcon = expected.getProgressTrackerIcon();
+        assertURIIconsAreEqual(actualProgressTrackerIcon, expectedProgressTrackerIcon);
+        final Icon actualProgressStartIcon = actual.getProgressStartIcon();
+        final Icon expectedProgressStartIcon = expected.getProgressStartIcon();
+        assertURIIconsAreEqual(actualProgressStartIcon, expectedProgressStartIcon);
+        final Icon actualProgressEndIcon = actual.getProgressEndIcon();
+        final Icon expectedProgressEndIcon = expected.getProgressEndIcon();
+        assertURIIconsAreEqual(actualProgressEndIcon, expectedProgressEndIcon);
+    }
+
+    /**
+     * Since {@link Icon#sameAs} is not available in CTS, our Icon equality check capability
+     * is limited. That's why, we compare Icons created with {@link Icon#createWithContentUri}.
+     */
+    private void assertURIIconsAreEqual(Icon actual, Icon expected) {
+        if (actual == expected) {
+            return;
+        }
+
+        // both of them should be available.
+        assertThat(actual == null || expected == null).isFalse();
+
+        assertThat(actual.getType()).isEqualTo(expected.getType());
+        assertThat(actual.getType()).isEqualTo(Icon.TYPE_URI);
+        assertThat(actual.getUri()).isEqualTo(actual.getUri());
+    }
+
+    @Test
     public void testFreeformRemoteInputActionPair_noRemoteInput() {
         PendingIntent intent = PendingIntent.getActivity(
                 mContext, 0, new Intent("test1"), PendingIntent.FLAG_IMMUTABLE);
@@ -1225,6 +1431,15 @@ public class NotificationTest {
         assertNotNull(remoteInputActionPair);
         assertEquals(freeformRemoteInput, remoteInputActionPair.first);
         assertEquals(actionWithFreeformRemoteInput, remoteInputActionPair.second);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
+    public void testPromotedOngoingFlag() {
+        Notification notification = new Notification.Builder(mContext, "test")
+                .setFlag(FLAG_PROMOTED_ONGOING, true)
+                .build();
+        assertNotEquals(0, (notification.flags & FLAG_PROMOTED_ONGOING));
     }
 
     private static void assertMessageEquals(

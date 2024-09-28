@@ -291,6 +291,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
             throws InterruptedException, RemoteException {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK));
         // Set secure lock credentials
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();
@@ -354,6 +356,8 @@ public class DreamServiceTest extends ActivityManagerTestBase {
             throws InterruptedException, RemoteException {
         assumeFalse(mContext.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_AUTOMOTIVE));
+        assumeFalse(mContext.getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK));
         // Set secure lock credentials
         final LockScreenSession lockScreenSession = createManagedLockScreenSession();
         lockScreenSession.setLockCredential();

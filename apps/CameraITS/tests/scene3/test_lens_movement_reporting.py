@@ -32,8 +32,11 @@ import opencv_processing_utils
 _FRAME_ATOL_MS = 10
 _LENS_INTRINSIC_CAL_FX_IDX = 0
 _LENS_INTRINSIC_CAL_FY_IDX = 1
-_LENS_INTRINSIC_CAL_RTOL = 0.01
+_LENS_INTRINSIC_CAL_RTOL = 0.001
 _MIN_AF_FD_RTOL = 0.2  # AF value must 20% larger than min_fd
+# Min focus distance should be within 10% of chart distance to
+# skip the LENS_INTRINSIC_CALIBRATION check
+_MIN_FD_THRESHOLD = 0.1
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_PER_FD = 12
 _POSITION_RTOL = 0.10  # 10%
@@ -121,6 +124,7 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
           camera_properties_utils.lens_approx_calibrated(props))
       lens_calibrated = camera_properties_utils.lens_calibrated(props)
       logging.debug('lens_calibrated: %d', lens_calibrated)
+      min_focus_distance = props['android.lens.info.minimumFocusDistance']
 
       # Load scene
       its_session_utils.load_scene(
@@ -221,9 +225,17 @@ class LensMovementReportingTest(its_base_test.ItsBaseTest):
                              f'{af_fd}, min: {min_fd}, RTOL: {_MIN_AF_FD_RTOL}')
 
       # Check LENS_INTRINSIC_CALIBRATION
+      # Check min focus distance is within 10% of chart distance
+      skip_check = False
+      # Convert min_focus_distance from diopters to cm
+      min_focus_distance_cm = (1/min_focus_distance) * 100
+      if math.isclose(min_focus_distance_cm, self.chart_distance,
+                      rel_tol=_MIN_FD_THRESHOLD):
+        skip_check = True
       if (its_session_utils.get_first_api_level(self.dut.serial) >=
           its_session_utils.ANDROID15_API_LEVEL and
-          camera_properties_utils.intrinsic_calibration(props)):
+          camera_properties_utils.intrinsic_calibration(props) and
+          not skip_check):
         logging.debug('Assert LENS_INTRINSIC_CALIBRATION changes with lens '
                       'location on non-moving frames.')
         last_af_frame_cal = data_af_fd[max(data_af_fd.keys())][

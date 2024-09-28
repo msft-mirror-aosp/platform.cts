@@ -49,6 +49,7 @@ android_library {
         ":bedstead-permissions-common-srcs",
 
         ":bedstead-enterprise-common-srcs",
+        ":bedstead-multiuser-common-srcs",
     ],
 
     libs: [

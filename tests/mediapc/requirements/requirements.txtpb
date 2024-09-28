@@ -2094,6 +2094,15 @@ requirements {
       proto_field_number: 3
     }
   }
+  measurements: {
+    key: "av1_frames_without_film_grain"
+    value: {
+      description: "Number of frames without film grain effect."
+      measurement_type: MEASUREMENT_TYPE_INT
+      comparison: COMPARISON_INFO_ONLY
+      proto_field_number: 4
+    }
+  }
   specs {
     key: 33
     value {

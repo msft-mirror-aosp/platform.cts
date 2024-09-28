@@ -62,10 +62,8 @@ public class MethodAnalyzer extends MethodVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         // Add an annotation for the method.
+        // TODO(slotus): Filter out some annotations.
         String type = Type.getType(desc).getClassName();
-        if (!shouldRecordAnnotation(type)) {
-            return super.visitAnnotation(desc, visible);
-        }
         Pair<String, String> packageClass = Utils.getPackageClass(type);
         ClassProfile annotationClass = mModule.getOrCreateClass(
                 packageClass.getFirst(), packageClass.getSecond(), mApiCoverage);
@@ -125,11 +123,6 @@ public class MethodAnalyzer extends MethodVisitor {
                 return false;
             }
         }
-        return true;
-    }
-
-    private static boolean shouldRecordAnnotation(String name) {
-        // TODO(slotus): Filter out some annotations.
         return true;
     }
 }

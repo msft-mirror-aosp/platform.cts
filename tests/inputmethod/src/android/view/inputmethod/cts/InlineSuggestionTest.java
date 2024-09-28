@@ -45,7 +45,6 @@ import java.util.function.Consumer;
 @RunWith(AndroidJUnit4.class)
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class InlineSuggestionTest {
-    private static final String TAG = "InlineSuggestionTest";
 
     private InlinePresentationSpec mInlinePresentationSpec = new InlinePresentationSpec.Builder(
             new Size(100, 100), new Size(400, 100)).build();

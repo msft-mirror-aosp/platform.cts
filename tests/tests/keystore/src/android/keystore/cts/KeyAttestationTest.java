@@ -1107,7 +1107,6 @@ public class KeyAttestationTest {
                 + " / challenge " + Arrays.toString(challenge)
                 + " / purposes " + purpose
                 + " / devicePropertiesAttestation " + devicePropertiesAttestation);
-
         String keystoreAlias = "test_key";
         Date startTime = new Date();
         KeyGenParameterSpec.Builder builder =
@@ -1117,7 +1116,34 @@ public class KeyAttestationTest {
                         .setAttestationChallenge(challenge)
                         .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
 
-        generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        try {
+            generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        } catch (Throwable e) {
+            boolean isIdAttestationFailure =
+                    (e.getCause() instanceof KeyStoreException)
+                            && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
+                            == ((KeyStoreException) e.getCause()).getNumericErrorCode();
+            if (devicePropertiesAttestation && isIdAttestationFailure) {
+                if (getContext().getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+                    throw new Exception("Unexpected failure while generating key."
+                        + "\nIn case of AOSP/GSI builds, system provided properties could be"
+                        + " different from provisioned properties in KeyMaster/KeyMint. In"
+                        + " such cases, make sure attestation specific properties"
+                        + " (Build.*_FOR_ATTESTATION) are configured correctly.", e);
+                } else {
+                    Log.i(TAG, "key attestation with device IDs not supported; test skipped");
+                    return;
+                }
+            }
+
+            throw new Exception("Failed on curve " + curve + " challenge ["
+                    + new String(challenge) + "], purposes "
+                    + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
+                    + devicePropertiesAttestation,
+                    e);
+
+        }
 
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);

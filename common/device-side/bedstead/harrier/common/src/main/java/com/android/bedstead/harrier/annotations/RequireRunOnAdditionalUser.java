@@ -45,6 +45,7 @@ import java.lang.annotation.Target;
  * <p>This annotation by default opts a test into multi-user presubmit. New tests should also be
  * annotated {@link Postsubmit} until they are shown to meet the multi-user presubmit
  * requirements.
+ * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

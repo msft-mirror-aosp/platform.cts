@@ -24,12 +24,10 @@ import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.logging.Logger;
 
 /** Pair of two {@link RateDistortionCurve}s used for calculating a Bjontegaard-Delta (BD) value. */
 @AutoValue
 public abstract class RateDistortionCurvePair {
-    private static final Logger LOGGER = Logger.getLogger(RateDistortionCurvePair.class.getName());
 
     private static final Mean MEAN = new Mean();
 

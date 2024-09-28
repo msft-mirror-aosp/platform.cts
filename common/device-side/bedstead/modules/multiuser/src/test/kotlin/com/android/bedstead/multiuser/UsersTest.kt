@@ -24,8 +24,8 @@ import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser
 import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner

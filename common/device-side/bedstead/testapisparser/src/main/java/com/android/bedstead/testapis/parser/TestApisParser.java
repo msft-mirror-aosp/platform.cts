@@ -25,10 +25,10 @@ import com.google.common.io.Resources;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Deque;
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
+import java.util.List;
 
 /**
  * Helper class to parse {@code test-current.txt} and fetch TestApis.
@@ -49,10 +49,10 @@ public final class TestApisParser {
     }
 
     /**
-     * Parse all TestApis into a {@code Set} of {@link PackageSignature}.
+     * Parse all TestApis into a {@code List} of {@link PackageSignature}.
      */
-    public static Set<PackageSignature> parse() {
-        Set<PackageSignature> packageSignatures = new HashSet<>();
+    public static List<PackageSignature> parse() {
+        List<PackageSignature> packageSignatures = new ArrayList<>();
 
         String[] lines = API_TXT.split("\n");
 
@@ -60,9 +60,9 @@ public final class TestApisParser {
 
         String packageName = null;
         String className = null;
-        Set<ClassSignature> classSignatures = null;
+        List<ClassSignature> classSignatures = null;
         ConstructorSignature constructorSignature = null;
-        Set<MethodSignature> methodSignatures = null;
+        List<MethodSignature> methodSignatures = null;
 
         // Marks a class to be ignored as it has an unhandled case
         // TODO(b/337769574): add support for generic types and enums
@@ -84,7 +84,7 @@ public final class TestApisParser {
                     packageName = line.replaceAll("package", "")
                             .replaceAll("\\{", "").trim();
 
-                    classSignatures = new HashSet<>();
+                    classSignatures = new ArrayList<>();
                 } else if (line.contains("class ")) {
                     stack.addFirst('{');
 
@@ -97,7 +97,7 @@ public final class TestApisParser {
                         continue;
                     }
 
-                    methodSignatures = new HashSet<>();
+                    methodSignatures = new ArrayList<>();
                 } else if (line.contains("interface ")) {
                     stack.addFirst('{');
 
@@ -110,7 +110,7 @@ public final class TestApisParser {
                         continue;
                     }
 
-                    methodSignatures = new HashSet<>();
+                    methodSignatures = new ArrayList<>();
                 } else if (line.contains("ctor ")) {
                     if (ignoringClass) {
                         continue;
@@ -131,22 +131,31 @@ public final class TestApisParser {
                             !line.contains("?")) {
                         MethodSignature methodSignature = MethodSignature.forApiString(className,
                                 line);
-                        methodSignatures.add(methodSignature);
+                        if (!methodSignatures.contains(methodSignature)) {
+                            methodSignatures.add(methodSignature);
+                        }
                     }
                 } else if (line.endsWith("}")) {
                     stack.removeFirst();
 
                     if (stack.isEmpty()) {
-                        packageSignatures.add(new PackageSignature(packageName, classSignatures));
+                        PackageSignature packageSignature = new PackageSignature(
+                                packageName, classSignatures);
+                        if (!packageSignatures.contains(packageSignature)) {
+                            packageSignatures.add(packageSignature);
+                        }
                     } else {
                         if (ignoringClass) {
                             ignoringClass = false;
                             continue;
                         }
 
-                        classSignatures.add(
-                                new ClassSignature(packageName, className, constructorSignature,
-                                        methodSignatures));
+                        ClassSignature classSignature = new ClassSignature(packageName, className,
+                                constructorSignature, methodSignatures);
+
+                        if (!classSignatures.contains(classSignature)) {
+                            classSignatures.add(classSignature);
+                        }
 
                         constructorSignature = null;
                     }

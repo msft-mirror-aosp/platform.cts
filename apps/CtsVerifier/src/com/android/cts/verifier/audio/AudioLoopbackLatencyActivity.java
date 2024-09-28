@@ -24,6 +24,10 @@ import android.media.AudioDeviceCallback;
 import android.media.AudioDeviceInfo;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
+import android.mediapc.cts.common.PerformanceClassEvaluator;
+import android.mediapc.cts.common.Requirements;
+import android.mediapc.cts.common.Requirements.RoundTripAudioLatencyRequirement;
+import android.mediapc.cts.common.Requirements.TwentyFourBitAudioRequirement;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -57,13 +61,14 @@ import org.hyphonate.megaaudio.common.StreamBase;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.rules.TestName;
 
 import java.util.Locale;
 
 /**
  * CtsVerifier Audio Loopback Latency Test
  */
-@CddTest(requirements = {"5.10/C-1-2,C-1-5", "5.6/H-1-3"})
+@CddTest(requirements = {"5.10/C-1-2,C-1-5", "5.6/H-1-2", "5.6/H-1-3"})
 public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
     private static final String TAG = "AudioLoopbackLatencyActivity";
     private static final boolean LOG = false;
@@ -166,6 +171,8 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
 
     private TestSpec[] mTestSpecs = new TestSpec[NUM_TEST_ROUTES];
     private volatile UsbDeviceReport mUsbDeviceReport;
+
+    final TestName mTestName = new TestName();
 
     class TestSpec {
         private static final String TAG = "AudioLoopbackLatencyActivity.TestSpec";
@@ -433,6 +440,19 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             } catch (JSONException e) {
                 Log.e(TAG, LOG_ERROR_STR, e);
             }
+        }
+
+        void recordPerformanceClassTestResults() {
+            PerformanceClassEvaluator pce = new PerformanceClassEvaluator(mTestName);
+            RoundTripAudioLatencyRequirement roundTripAudioLatencyRequirement =
+                    Requirements.addR5_6__H_1_2().to(pce);
+            TwentyFourBitAudioRequirement twentyFourBitAudioRequirement =
+                    Requirements.addR5_6__H_1_3().to(pce);
+
+            roundTripAudioLatencyRequirement.setRoundTripAudioLatencyMs(mMeanLatencyMS);
+            twentyFourBitAudioRequirement.setTwentyFourBitAudioSupported(mHas24BitHardwareSupport);
+
+            pce.submitAndVerify();
         }
     }
 
@@ -850,6 +870,7 @@ public class AudioLoopbackLatencyActivity extends PassFailButtons.Activity {
             CtsVerifierReportLog reportLog = getReportLog();
             recordGlobalResults(reportLog);
             mTestSpecs[bestRoute].recordTestResults(reportLog);
+            mTestSpecs[bestRoute].recordPerformanceClassTestResults();
             recordAllRoutes(reportLog);
             reportLog.submit();
         }
