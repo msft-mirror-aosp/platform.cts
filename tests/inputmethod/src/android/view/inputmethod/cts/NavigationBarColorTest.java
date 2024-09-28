@@ -69,11 +69,13 @@ import com.android.cts.mockime.MockImeSession;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.concurrent.TimeUnit;
 
 @MediumTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
+@RunWith(AndroidJUnit4.class)
 public class NavigationBarColorTest extends EndToEndImeTestBase {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(5);
     private static final long LAYOUT_STABLE_THRESHOLD = TimeUnit.SECONDS.toMillis(3);

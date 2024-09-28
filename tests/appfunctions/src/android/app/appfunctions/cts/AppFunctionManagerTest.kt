@@ -29,12 +29,14 @@ import android.app.appfunctions.testutils.SidecarUtil
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appsearch.GenericDocument
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
+import android.os.CancellationSignal
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -83,11 +85,8 @@ class AppFunctionManagerTest {
         retryAssert {
             // Doing containsAtLeast instead of containsExactly here in case there app preloaded
             // apps having app functions.
-            assertThat(getAllStaticMetadataPackages()).containsAtLeast(
-                CURRENT_PKG,
-                TEST_HELPER_PKG,
-                TEST_SIDECAR_HELPER_PKG
-            )
+            assertThat(getAllStaticMetadataPackages())
+                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
             // required permission because runtime metadata is only visible to owner package
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 assertThat(getAllRuntimeMetadataPackages())
@@ -235,10 +234,7 @@ class AppFunctionManagerTest {
                     .setPropertyLong("b", 2)
                     .build()
             val request =
-                SidecarExecuteAppFunctionRequest.Builder(
-                    TEST_SIDECAR_HELPER_PKG,
-                    "add"
-                )
+                SidecarExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
                     .setParameters(parameters)
                     .build()
 
@@ -253,10 +249,10 @@ class AppFunctionManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
     }
@@ -275,10 +271,7 @@ class AppFunctionManagerTest {
                     .setPropertyLong("b", 2)
                     .build()
             val request =
-                ExecuteAppFunctionRequest.Builder(
-                    TEST_SIDECAR_HELPER_PKG,
-                    "add"
-                )
+                ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
                     .setParameters(parameters)
                     .build()
 
@@ -286,10 +279,10 @@ class AppFunctionManagerTest {
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
     }
@@ -581,16 +574,44 @@ class AppFunctionManagerTest {
             assertServiceWasNotCreated()
         }
 
-    @Throws(InterruptedException::class)
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun executeAppFunction_cancellationSignal_resultCancelled() {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "longRunningFunction")
+                .setParameters(parameters).build()
+        val cancellationSignal = CancellationSignal()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
+            e: ExecuteAppFunctionResponse ->
+            blockingQueue.add(e)
+        }
+
+        cancellationSignal.cancel()
+
+        assertOperationCancelled()
+        val response = blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+        assertThat(response?.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response?.errorMessage).isEqualTo("Operation Interrupted")
+        assertServiceDestroyed()
+    }
+
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(request, context.mainExecutor) { e: ExecuteAppFunctionResponse
-            ->
+        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
+            e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
+    }
+
+    private fun assertOperationCancelled() {
+        assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
     /** Verifies that the service is unbound by asserting the service was destroyed. */
@@ -644,7 +665,6 @@ class AppFunctionManagerTest {
         return collectAllSearchResults(searchResults)
     }
 
-    /** Runnable that throws. */
     fun interface ThrowRunnable {
         @Throws(Throwable::class) suspend fun run()
     }

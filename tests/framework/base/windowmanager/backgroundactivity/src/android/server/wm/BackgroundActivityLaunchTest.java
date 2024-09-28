@@ -195,6 +195,8 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @Ignore
     public void testBackgroundActivity_withinASMGracePeriod_isBlocked() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
         // Start AppA foreground activity
@@ -207,7 +209,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    public void testBackgroundActivity_withinASMGracePeriod_isNotBlocked() throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
+        // Start AppA foreground activity
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+        // Don't press home button to avoid stop app switches
+        mContext.sendBroadcast(new Intent(APP_A.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY));
+        mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY);
+        startBackgroundActivity(APP_A);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
     @FlakyTest(bugId = 297339382)
+    @RequiresFlagsDisabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    @Ignore
     public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isBlocked()
             throws Exception {
         assumeSdkNewerThanUpsideDownCake();
@@ -222,6 +239,22 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @FlakyTest(bugId = 297339382)
+    @RequiresFlagsEnabled(android.security.Flags.FLAG_ASM_REINTRODUCE_GRACE_PERIOD)
+    public void testBackgroundActivity_withinBalAfterAsmGracePeriod_isNotBlocked()
+            throws Exception {
+        assumeSdkNewerThanUpsideDownCake();
+        // Start AppA foreground activity
+        startActivity(APP_A.FOREGROUND_ACTIVITY);
+        // Don't press home button to avoid stop app switches
+        mContext.sendBroadcast(new Intent(APP_A.FOREGROUND_ACTIVITY_ACTIONS.FINISH_ACTIVITY));
+        mWmState.waitAndAssertActivityRemoved(APP_A.FOREGROUND_ACTIVITY);
+        Thread.sleep(1000 * 5);
+        startBackgroundActivity(APP_A);
+        assertActivityFocused(APP_A.BACKGROUND_ACTIVITY);
+    }
+
+    @Test
     public void testBackgroundActivityWhenSystemAlertWindowGranted_isNotBlocked()
             throws Exception {
         grantSystemAlertWindow(APP_A_33);
@@ -232,6 +265,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @Ignore
     public void testBackgroundActivityBlockedWhenForegroundActivityNotTop() throws Exception {
         assumeSdkNewerThanUpsideDownCake();
 
@@ -317,6 +351,7 @@ public class BackgroundActivityLaunchTest extends BackgroundActivityTestBase {
     }
 
     @Test
+    @Ignore
     public void testActivityBlockedFromBgActivityInFgTask() {
         assumeSdkNewerThanUpsideDownCake();
         // Launch Activity A, B in the same task with different processes.

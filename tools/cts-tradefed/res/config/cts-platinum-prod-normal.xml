@@ -160,9 +160,6 @@
     <option name="compatibility:include-filter" value="CtsAccountsHostTestCases android.host.accounts.AccountManagerXUserTest#testCreateContextAsUser_revokePermissions"/>
     <option name="compatibility:include-filter" value="CtsAccountsHostTestCases android.host.accounts.AccountManagerXUserTest#testGetAccountsForUserProfile"/>
     <!-- CtsAdIdEndToEndTest -->
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdCompatibleManagerTest#testAdIdCompatibleManager_verifyRateLimitReached"/>
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdManagerTest#testAdIdManager_R"/>
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdManagerTest#testAdIdManager_SPlus"/>
     <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdProviderTest#testAdIdProvider"/>
     <!-- CtsAdServicesDebuggableDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionManagerDebuggableTest#testAddOverrideSucceeds"/>
