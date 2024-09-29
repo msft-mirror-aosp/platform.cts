@@ -19,7 +19,7 @@ package com.android.bedstead.harrier.annotations;
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnUserAnnotation;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
@@ -40,6 +40,7 @@ import java.lang.annotation.Target;
  * system users, see {@link RequireRunOnSystemUser} - or to run on the first user used by a
  * human (which will be the primary user on non-headless-system-user devices, or a secondary user
  * otherwise), use {@link RequireRunOnInitialUser}.
+ * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

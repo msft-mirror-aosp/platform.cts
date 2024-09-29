@@ -160,9 +160,6 @@
     <option name="compatibility:include-filter" value="CtsAccountsHostTestCases android.host.accounts.AccountManagerXUserTest#testCreateContextAsUser_revokePermissions"/>
     <option name="compatibility:include-filter" value="CtsAccountsHostTestCases android.host.accounts.AccountManagerXUserTest#testGetAccountsForUserProfile"/>
     <!-- CtsAdIdEndToEndTest -->
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdCompatibleManagerTest#testAdIdCompatibleManager_verifyRateLimitReached"/>
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdManagerTest#testAdIdManager_R"/>
-    <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdManagerTest#testAdIdManager_SPlus"/>
     <option name="compatibility:include-filter" value="CtsAdIdEndToEndTest com.android.adservices.tests.adid.AdIdProviderTest#testAdIdProvider"/>
     <!-- CtsAdServicesDebuggableDeviceTestCases -->
     <option name="compatibility:include-filter" value="CtsAdServicesDebuggableDeviceTestCases android.adservices.debuggablects.AdSelectionManagerDebuggableTest#testAddOverrideSucceeds"/>
@@ -1171,8 +1168,6 @@
     <option name="compatibility:include-filter" value="CtsCompilationTestCases android.compilation.cts.CompilationTest#testSecondaryDexReporting"/>
     <!-- CtsContactsProviderTestCases -->
     <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_AllUriTest#testNonSelect"/>
-    <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsProvider2_AccountRemovalTest#testAccountRemoval_doesNotDeleteSimAccountContacts"/>
-    <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsProvider2_AccountRemovalTest#testAccountRemoval_hasDeleteLogsForContacts"/>
     <!-- CtsContentCaptureServiceTestCases -->
     <option name="compatibility:include-filter" value="CtsContentCaptureServiceTestCases android.contentcaptureservice.cts.BlankActivityTest#testOutsideOfPackageContentCaptureEnable_updateAllowList"/>
     <!-- CtsContentProviderTestsWithVisibility -->

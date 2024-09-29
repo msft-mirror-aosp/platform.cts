@@ -20,7 +20,8 @@ import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrec
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
@@ -36,6 +37,7 @@ import java.lang.annotation.Target;
  *
  * <p>Optionally, you can guarantee that these methods do not run outside of a Clone
  * profile by using {@code Devicestate}.
+ * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)

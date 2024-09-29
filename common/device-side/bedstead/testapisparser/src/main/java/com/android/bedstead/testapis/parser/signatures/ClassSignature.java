@@ -16,8 +16,8 @@
 
 package com.android.bedstead.testapis.parser.signatures;
 
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.lang.model.util.Elements;
 
@@ -30,10 +30,10 @@ public final class ClassSignature {
     private final String mPackageName;
     private final ConstructorSignature
             mConstructorSignature;
-    private final Set<MethodSignature> mMethodSignatures;
+    private final List<MethodSignature> mMethodSignatures;
 
     public ClassSignature(String packageName, String name,
-            ConstructorSignature constructorSignature, Set<MethodSignature> methodSignatures) {
+            ConstructorSignature constructorSignature, List<MethodSignature> methodSignatures) {
         mPackageName = packageName;
         mName = name;
         mConstructorSignature = constructorSignature;
@@ -48,7 +48,7 @@ public final class ClassSignature {
         return mName;
     }
 
-    public Set<MethodSignature> getMethodSignatures() {
+    public List<MethodSignature> getMethodSignatures() {
         return mMethodSignatures;
     }
 

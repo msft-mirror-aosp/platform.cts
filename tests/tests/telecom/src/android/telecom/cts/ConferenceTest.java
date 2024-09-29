@@ -364,10 +364,6 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         if (!mShouldTestTelecom) {
             return;
         }
-        if (hasAutomotiveFeature()) {
-            // TODO(b/368115376): temporarily disabled, fix and re-enable this test for auto
-            return;
-        }
         Conference failedConference = Conference.createFailedConference(
                 new DisconnectCause(DisconnectCause.CANCELED), TEST_PHONE_ACCOUNT_HANDLE);
         assertEquals(Connection.STATE_DISCONNECTED, failedConference.getState());
@@ -516,10 +512,6 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
      */
     public void testGetCurrentCallEndpoint() {
         if (!mShouldTestTelecom) {
-            return;
-        }
-        if (hasAutomotiveFeature()) {
-            // TODO(b/368115376): temporarily disabled, fix and re-enable this test for auto
             return;
         }
         final Call conf = mInCallService.getLastConferenceCall();

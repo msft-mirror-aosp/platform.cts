@@ -33,7 +33,6 @@ import android.app.AppOpsManager.OPSTR_RECORD_AUDIO
 import android.app.AppOpsManager.OPSTR_SEND_SMS
 import android.app.AppOpsManager.OPSTR_WRITE_CONTACTS
 import android.app.AppOpsManager.OnOpNotedCallback
-import android.app.AppOpsManager.strOpToOp
 import android.app.AsyncNotedAppOp
 import android.app.PendingIntent
 import android.app.SyncNotedAppOp
@@ -85,7 +84,7 @@ import android.util.Size
 import androidx.test.filters.FlakyTest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
 import com.android.compatibility.common.util.SystemUtil.waitForBroadcasts
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.CompletableFuture
@@ -151,12 +150,12 @@ class AppOpsLoggingTest {
     private val asyncNoted = mutableListOf<AsyncNotedAppOp>()
 
     @Before
-    fun setLocationEnabled() {
-        val locationManager = context.getSystemService(LocationManager::class.java)!!
-        runWithShellPermissionIdentity {
-            wasLocationEnabled = locationManager.isLocationEnabled
-            locationManager.setLocationEnabledForUser(true, myUserHandle)
-        }
+    fun setUp() {
+        loadNativeCode()
+        setLocationEnabled()
+        connectToService()
+        setNotedAppOpsCollector()
+        clearCollectedNotedOps()
     }
 
     @After
@@ -167,18 +166,18 @@ class AppOpsLoggingTest {
         }
     }
 
-    @Before
+    fun setLocationEnabled() {
+        val locationManager = context.getSystemService(LocationManager::class.java)!!
+        runWithShellPermissionIdentity {
+            wasLocationEnabled = locationManager.isLocationEnabled
+            locationManager.setLocationEnabledForUser(true, myUserHandle)
+        }
+    }
+
     fun loadNativeCode() {
         System.loadLibrary("NDKCtsAppOpsTestCases_jni")
     }
 
-    @Before
-    fun setNotedAppOpsCollectorAndClearCollectedNoteOps() {
-        setNotedAppOpsCollector()
-        clearCollectedNotedOps()
-    }
-
-    @Before
     fun connectToService() {
         val serviceIntent = Intent()
         serviceIntent.component = ComponentName(TEST_SERVICE_PKG,
@@ -756,18 +755,26 @@ class AppOpsLoggingTest {
                                 session.capture(captureRequest, null, handler)
                             }
 
-                            override fun onConfigureFailed(session: CameraCaptureSession) {}
+                            override fun onConfigureFailed(session: CameraCaptureSession) {
+                                Log.i("AppOpsLoggingTest", "CameraCaptureSession configure failed")
+                            }
                         })
 
                 imageReader.setOnImageAvailableListener({
+                    Log.i("AppOpsLoggingTest", "Image available")
                     cameraDevice.close()
                     openedCamera.complete(cameraDevice)
                 }, handler)
                 cameraDevice.createCaptureSession(sessionConfiguration)
             }
 
-            override fun onDisconnected(ameraDevice: CameraDevice) {}
-            override fun onError(cameraDevice: CameraDevice, i: Int) {}
+            override fun onDisconnected(cameraDevice: CameraDevice) {
+                Log.i("AppOpsLoggingTest", "CameraDevice disconnected")
+            }
+
+            override fun onError(cameraDevice: CameraDevice, i: Int) {
+                Log.i("AppOpsLoggingTest", "CameraDevice error: $i")
+            }
         }
 
         cameraManager!!.openCamera(cameraId, context.mainExecutor, cameraDeviceCallback)

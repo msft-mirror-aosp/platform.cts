@@ -37,18 +37,18 @@ import android.view.Display;
 
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
 import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet;
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode;
-import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
-import com.android.bedstead.harrier.annotations.RequireRunNotOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.harrier.annotations.RequireVisibleBackgroundUsers;
+import com.android.bedstead.multiuser.annotations.RequireVisibleBackgroundUsers;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -545,6 +545,30 @@ public class UserReferenceTest {
         }
 
         assertThat(TestApis.users().all()).doesNotContain(additionalUser);
+    }
+
+    @Test
+    @EnsurePasswordNotSet
+    @RequireNotHeadlessSystemUserMode(reason = "b/248248444")
+    public void setScreenLockDisabled() {
+        try {
+            TestApis.users().instrumented().setScreenLockDisabled(true);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isTrue();
+
+            TestApis.users().instrumented().setPassword(PASSWORD);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isFalse();
+
+            TestApis.users().instrumented().clearPassword();
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isTrue();
+
+            TestApis.users().instrumented().setScreenLockDisabled(false);
+            assertThat(TestApis.users().instrumented().getScreenLockDisabled()).isFalse();
+        } finally {
+            TestApis.users().instrumented().setScreenLockDisabled(false);
+            if (TestApis.users().instrumented().password() != null) {
+                TestApis.users().instrumented().clearPassword(PASSWORD);
+            }
+        }
     }
 
     @Test
