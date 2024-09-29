@@ -232,8 +232,6 @@
             </intent-filter>
         </receiver>
 
-        <activity android:name="android.security.cts.ActivityManagerTest$ActivityOptionsActivity" />
-        <activity android:name="android.security.cts.ActivityManagerTest$BaseActivity" />
         <activity android:name="android.security.cts.ActivityManagerTest$WaitEnterAnimActivity" />
 
         <activity android:name="android.security.cts.PackageInstallerTest$BackgroundLaunchActivity"
@@ -345,6 +343,9 @@
         </service>
 
         <activity android:name="android.security.cts.CVE_2024_0024.PocActivity" />
+
+        <service android:name="android.security.cts.CVE_2024_34734.PocService"
+          android:foregroundServiceType="microphone" />
 
     </application>
 

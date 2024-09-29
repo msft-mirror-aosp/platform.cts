@@ -42,7 +42,7 @@
                 android:text="@string/provisioning_byod_screenshot_capture_title"
                 android:padding="8dp"
                 android:textSize="18sp"
-                android:textColor="#ffffff"/>
+                android:textColor="?android:attr/textColorPrimary"/>
 
             <Button
                 android:id="@+id/provisioning_byod_screenshot_capture_button"

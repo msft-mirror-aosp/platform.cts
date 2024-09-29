@@ -233,9 +233,7 @@ public abstract class MidiTestActivityBase
         // Bluetooth
         mBTInputDeviceLbl.setText(mBTTestModule.getInputName());
         mBTOutputDeviceLbl.setText(mBTTestModule.getOutputName());
-        // use mUSBTestModule.isTestReady() as a proxy for knowing the interface loopback
-        // is connected
-        mBTTestBtn.setEnabled(mBTTestModule.isTestReady() && mUSBTestModule.isTestReady());
+        mBTTestBtn.setEnabled(mBTTestModule.isTestReady());
     }
 
     //
