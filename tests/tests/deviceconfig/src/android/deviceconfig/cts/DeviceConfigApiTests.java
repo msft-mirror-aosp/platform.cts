@@ -25,9 +25,11 @@ import static org.junit.Assume.assumeTrue;
 import android.content.Context;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.OnPropertiesChangedListener;
 import android.provider.DeviceConfig.Properties;
+import android.provider.flags.Flags;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;

@@ -27,6 +27,7 @@ import android.media.session.MediaSessionManager.RemoteUserInfo;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.ParcelFileDescriptor;
+import android.os.UserHandle;
 import android.util.Log;
 
 import com.android.compatibility.common.util.AmUtils;
@@ -66,7 +67,9 @@ public class Utils {
             Instrumentation instrumentation, boolean enable) {
         UiAutomation uiAutomation = instrumentation.getUiAutomation();
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user ");
+        cmd.append(UserHandle.myUserId());
+        cmd.append(" ");
         cmd.append(packageName);
         cmd.append(" ");
         cmd.append(operation);
