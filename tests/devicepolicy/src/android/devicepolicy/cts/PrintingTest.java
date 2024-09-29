@@ -34,8 +34,8 @@ import android.print.PrintManager;
 import com.android.activitycontext.ActivityContext;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireFeature;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
@@ -46,7 +46,6 @@ import com.android.bedstead.nene.TestApis;
 import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;

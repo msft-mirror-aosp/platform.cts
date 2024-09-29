@@ -36,6 +36,7 @@ import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnSys
 import com.android.bedstead.enterprise.annotations.parameterized.IncludeRunOnUnaffiliatedProfileOwnerAdditionalUser;
 import com.android.bedstead.harrier.policies.AffiliatedProfileOwnerOnlyUserRestrictions;
 import com.android.bedstead.harrier.policies.UserRestrictions;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
 import com.android.bedstead.nene.devicepolicy.DeviceOwnerType;
@@ -316,7 +317,7 @@ public final class UserRestrictionsTest {
     @CannotSetPolicyTest(
             policy = com.android.bedstead.harrier.policies.DeviceOwnerOnlyUserRestrictions.class)
     @Postsubmit(reason = "new test")
-    @com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode(
+    @RequireNotHeadlessSystemUserMode(
             reason = "Since ag/I94c63d0492034af39608c3d81700f71e89e37d0e we special case main user "
                     + "which is not taken care of in tests currently")
     public void addUserRestriction_deviceOwnerOnlyRestriction_throwsSecurityException(

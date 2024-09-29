@@ -25,15 +25,18 @@ import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.SidecarUtil
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appsearch.GenericDocument
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
+import android.os.CancellationSignal
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -52,12 +55,13 @@ import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as Sid
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.runTest
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,7 +75,6 @@ class AppFunctionManagerTest {
         get() = ApplicationProvider.getApplicationContext()
 
     private lateinit var mManager: AppFunctionManager
-    private lateinit var mSidecarManager: SidecarAppFunctionManager
 
     @Before
     fun setup() = runTest {
@@ -82,18 +85,14 @@ class AppFunctionManagerTest {
         retryAssert {
             // Doing containsAtLeast instead of containsExactly here in case there app preloaded
             // apps having app functions.
-            assertThat(getAllStaticMetadataPackages()).containsAtLeast(
-                CURRENT_PKG,
-                TEST_HELPER_PKG,
-                TEST_SIDECAR_HELPER_PKG
-            )
+            assertThat(getAllStaticMetadataPackages())
+                .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
             // required permission because runtime metadata is only visible to owner package
             runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
                 assertThat(getAllRuntimeMetadataPackages())
                     .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
             }
         }
-        mSidecarManager = SidecarAppFunctionManager(context)
     }
 
     @Test
@@ -161,7 +160,6 @@ class AppFunctionManagerTest {
                 .setPropertyLong("a", 1)
                 .setPropertyLong("b", 2)
                 .build()
-
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
@@ -183,31 +181,41 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    @Ignore("Enable it when the system image preloads the sidecar")
-    fun executeAppFunction_sidecarManager_platformAppFunctionService_success() {
-        val parameters: GenericDocument =
-            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                .setPropertyLong("a", 1)
-                .setPropertyLong("b", 2)
-                .build()
-        val request =
-            SidecarExecuteAppFunctionRequest.Builder(
-                CURRENT_PKG,
-                "add"
-            )
-                .setParameters(parameters)
-                .build()
+    fun executeAppFunction_sidecarManager_platformAppFunctionService_success() = runTest {
+        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            // Only run test if sidecar library is available.
+            SidecarUtil.assumeSidecarAvailable()
+            val parameters: GenericDocument =
+                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                    .setPropertyLong("a", 1)
+                    .setPropertyLong("b", 2)
+                    .build()
+            val request =
+                SidecarExecuteAppFunctionRequest.Builder(
+                    CURRENT_PKG,
+                    "add"
+                )
+                    .setParameters(parameters)
+                    .build()
 
-        val response = executeAppFunctionAndWait(request)
+            val response =
+                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
+                    SidecarAppFunctionManager(context).executeAppFunction(
+                        request,
+                        context.mainExecutor,
+                        { response -> continuation.resume(response) }
+                    )
+                }
 
-        assertThat(response.isSuccess).isTrue()
-        assertThat(
-            response.resultDocument.getPropertyLong(
-                ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+            assertThat(response.isSuccess).isTrue()
+            assertThat(
+                response.resultDocument.getPropertyLong(
+                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                )
             )
-        )
-            .isEqualTo(3)
-        assertServiceDestroyed()
+                .isEqualTo(3)
+            assertServiceDestroyed()
+        }
     }
 
     @ApiTest(
@@ -216,64 +224,68 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    @Ignore("Enable it when the system image preloads the sidecar")
-    fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+    fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() = runTest {
+        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            // Only run test if sidecar library is available.
+            SidecarUtil.assumeSidecarAvailable()
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
                     .setPropertyLong("b", 2)
                     .build()
-
             val request =
-                SidecarExecuteAppFunctionRequest.Builder(
-                    TEST_SIDECAR_HELPER_PKG,
-                    "add"
-                )
+                SidecarExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
                     .setParameters(parameters)
                     .build()
 
-            val response = executeAppFunctionAndWait(request)
+            val response =
+                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
+                    SidecarAppFunctionManager(context).executeAppFunction(
+                        request,
+                        context.mainExecutor,
+                        { response -> continuation.resume(response) }
+                )
+            }
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
+    }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    @Ignore("Enable it when the system image preloads the sidecar")
-    fun executeAppFunction_platformManager_sidecarAppFunctionService_success() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+    fun executeAppFunction_platformManager_sidecarAppFunctionService_success() = runTest {
+        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            // Only run test if sidecar library is available.
+            SidecarUtil.assumeSidecarAvailable()
             val parameters: GenericDocument =
                 GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                     .setPropertyLong("a", 1)
                     .setPropertyLong("b", 2)
                     .build()
-
             val request =
-                ExecuteAppFunctionRequest.Builder(
-                    TEST_SIDECAR_HELPER_PKG,
-                    "add"
-                )
+                ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
                     .setParameters(parameters)
                     .build()
+
             val response = executeAppFunctionAndWait(request)
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
         }
+    }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
@@ -562,32 +574,44 @@ class AppFunctionManagerTest {
             assertServiceWasNotCreated()
         }
 
-    @Throws(InterruptedException::class)
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun executeAppFunction_cancellationSignal_resultCancelled() {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "longRunningFunction")
+                .setParameters(parameters).build()
+        val cancellationSignal = CancellationSignal()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
+            e: ExecuteAppFunctionResponse ->
+            blockingQueue.add(e)
+        }
+
+        cancellationSignal.cancel()
+
+        assertOperationCancelled()
+        val response = blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
+        assertThat(response?.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
+        assertThat(response?.errorMessage).isEqualTo("Operation Interrupted")
+        assertServiceDestroyed()
+    }
+
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(request, context.mainExecutor) { e: ExecuteAppFunctionResponse
-            ->
+        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
+            e: ExecuteAppFunctionResponse ->
             blockingQueue.add(e)
         }
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
-    @Throws(InterruptedException::class)
-    private fun executeAppFunctionAndWait(
-        request: SidecarExecuteAppFunctionRequest
-    ): SidecarExecuteAppFunctionResponse {
-        val blockingQueue =
-            LinkedBlockingQueue<
-                    SidecarExecuteAppFunctionResponse>()
-        mSidecarManager.executeAppFunction(
-            request,
-            context.mainExecutor,
-        ) { e: SidecarExecuteAppFunctionResponse ->
-            blockingQueue.add(e)
-        }
-        return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
+    private fun assertOperationCancelled() {
+        assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
     /** Verifies that the service is unbound by asserting the service was destroyed. */
@@ -641,7 +665,6 @@ class AppFunctionManagerTest {
         return collectAllSearchResults(searchResults)
     }
 
-    /** Runnable that throws. */
     fun interface ThrowRunnable {
         @Throws(Throwable::class) suspend fun run()
     }
@@ -657,15 +680,19 @@ class AppFunctionManagerTest {
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
         const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
             Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
-        const val TEST_APP_ROOT_FOLDER = "/data/local/tmp/cts/appfunctions/"
-        const val TEST_APP_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelper.apk"
-        const val TEST_SIDECAR_APP_PATH = TEST_APP_ROOT_FOLDER + "CtsAppFunctionsTestHelper.apk"
         const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
         const val RETRY_MAX_INTERVALS: Long = 10
         const val PROPERTY_PACKAGE_NAME = "packageName"
         const val APP_FUNCTION_INDEXER_PACKAGE = "android"
 
         fun runWithShellPermission(vararg permissions: String, block: () -> Unit) {
+            permissions().withPermission(*permissions).use { block() }
+        }
+
+        suspend fun suspendWithShellPermission(
+            vararg permissions: String,
+            block: suspend () -> Unit
+        ) {
             permissions().withPermission(*permissions).use { block() }
         }
 

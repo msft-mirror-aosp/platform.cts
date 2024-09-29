@@ -21,8 +21,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.math3.analysis.interpolation.AkimaSplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 
-import java.util.logging.Logger;
-
 /**
  * Calculator for the Bjontegaard-Delta rate between two rate-distortion curves for an arbitrary
  * metric.
@@ -36,7 +34,6 @@ import java.util.logging.Logger;
  * http://wftp3.itu.int/av-arch/video-site/0104_Aus/VCEG-M34.xls
  */
 public class BdRateCalculator {
-    private static final Logger LOGGER = Logger.getLogger(BdRateCalculator.class.getName());
 
     private BdRateCalculator() {}
 

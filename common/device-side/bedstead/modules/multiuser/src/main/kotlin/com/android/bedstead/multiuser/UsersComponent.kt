@@ -25,12 +25,12 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.OtherUser
-import com.android.bedstead.harrier.annotations.RequireUserSupported
-import com.android.bedstead.harrier.annotations.meta.EnsureHasNoProfileAnnotation
-import com.android.bedstead.harrier.annotations.meta.EnsureHasProfileAnnotation
-import com.android.bedstead.harrier.annotations.meta.RequireRunOnProfileAnnotation
+import com.android.bedstead.multiuser.annotations.OtherUser
+import com.android.bedstead.multiuser.annotations.RequireUserSupported
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasNoProfileAnnotation
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasProfileAnnotation
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.packages
