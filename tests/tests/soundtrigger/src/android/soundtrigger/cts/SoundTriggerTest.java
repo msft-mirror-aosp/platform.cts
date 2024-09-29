@@ -16,19 +16,24 @@
 
 package android.soundtrigger.cts;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import android.hardware.soundtrigger.SoundTrigger;
+import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
+import android.hardware.soundtrigger.SoundTrigger.RecognitionConfig;
 import android.media.AudioFormat;
 import android.os.Parcel;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.google.common.collect.ImmutableList;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 import java.util.UUID;
@@ -77,11 +82,11 @@ public class SoundTriggerTest {
     }
 
     private static void verifyKeyphraseMatchesTestParams(SoundTrigger.Keyphrase keyphrase) {
-        assertEquals(keyphrase.getId(), TEST_KEYPHRASE_ID);
-        assertEquals(keyphrase.getRecognitionModes(), TEST_RECOGNITION_MODES);
-        assertEquals(keyphrase.getLocale(), Locale.forLanguageTag("en-US"));
-        assertEquals(keyphrase.getText(), TEST_KEYPHRASE_TEXT);
-        assertArrayEquals(keyphrase.getUsers(), TEST_SUPPORTED_USERS);
+        assertThat(keyphrase.getId()).isEqualTo(TEST_KEYPHRASE_ID);
+        assertThat(keyphrase.getRecognitionModes()).isEqualTo(TEST_RECOGNITION_MODES);
+        assertThat(keyphrase.getLocale()).isEqualTo(Locale.forLanguageTag("en-US"));
+        assertThat(keyphrase.getText()).isEqualTo(TEST_KEYPHRASE_TEXT);
+        assertThat(keyphrase.getUsers()).asList().containsExactly(1, 2, 3).inOrder();
     }
 
     private static SoundTrigger.KeyphraseSoundModel createTestKeyphraseSoundModel() {
@@ -92,13 +97,30 @@ public class SoundTriggerTest {
 
     private static void verifyKeyphraseSoundModelMatchesTestParams(
             SoundTrigger.KeyphraseSoundModel keyphraseSoundModel) {
-        assertEquals(keyphraseSoundModel.getUuid(), TEST_MODEL_UUID);
-        assertEquals(keyphraseSoundModel.getVendorUuid(), TEST_VENDOR_UUID);
+        assertThat(keyphraseSoundModel.getUuid()).isEqualTo(TEST_MODEL_UUID);
+        assertThat(keyphraseSoundModel.getVendorUuid()).isEqualTo(TEST_VENDOR_UUID);
         assertArrayEquals(keyphraseSoundModel.getData(), SoundTriggerTest.TEST_MODEL_DATA);
-        assertArrayEquals(keyphraseSoundModel.getKeyphrases(),
-                new SoundTrigger.Keyphrase[] {createTestKeyphrase()});
-        assertEquals(keyphraseSoundModel.getVersion(), TEST_MODEL_VERSION);
-        assertEquals(keyphraseSoundModel.getType(), SoundTrigger.SoundModel.TYPE_KEYPHRASE);
+        assertThat(keyphraseSoundModel.getKeyphrases())
+                .asList()
+                .containsExactly(createTestKeyphrase())
+                .inOrder();
+        assertThat(keyphraseSoundModel.getVersion()).isEqualTo(TEST_MODEL_VERSION);
+        assertThat(keyphraseSoundModel.getType()).isEqualTo(SoundTrigger.SoundModel.TYPE_KEYPHRASE);
+    }
+
+    private static SoundTrigger.GenericSoundModel createTestGenericSoundModel() {
+        return new SoundTrigger.GenericSoundModel(TEST_MODEL_UUID, TEST_VENDOR_UUID,
+                SoundTriggerTest.TEST_MODEL_DATA, TEST_MODEL_VERSION);
+    }
+
+    private static void verifyGenericSoundModelMatchesTestParams(
+            SoundTrigger.GenericSoundModel genericSoundModel) {
+        assertThat(genericSoundModel.getUuid()).isEqualTo(TEST_MODEL_UUID);
+        assertThat(genericSoundModel.getVendorUuid()).isEqualTo(TEST_VENDOR_UUID);
+        assertArrayEquals(genericSoundModel.getData(), SoundTriggerTest.TEST_MODEL_DATA);
+        assertThat(genericSoundModel.getVersion()).isEqualTo(TEST_MODEL_VERSION);
+        assertThat(genericSoundModel.getType())
+                .isEqualTo(SoundTrigger.SoundModel.TYPE_GENERIC_SOUND);
     }
 
     private SoundTrigger.ModuleProperties createTestModuleProperties() {
@@ -112,25 +134,26 @@ public class SoundTriggerTest {
 
     private static void verifyModulePropertiesMatchesTestParams(
             SoundTrigger.ModuleProperties moduleProperties) {
-        assertEquals(moduleProperties.getId(), TEST_MODULE_ID);
-        assertEquals(moduleProperties.getImplementor(), TEST_IMPLEMENTOR);
-        assertEquals(moduleProperties.getDescription(), TEST_DESCRIPTION);
-        assertEquals(moduleProperties.getUuid(), TEST_MODULE_UUID);
-        assertEquals(moduleProperties.getVersion(), TEST_MODULE_VERSION);
-        assertEquals(moduleProperties.getSupportedModelArch(), TEST_SUPPORTED_MODEL_ARCH);
-        assertEquals(moduleProperties.getMaxSoundModels(), TEST_MAX_SOUND_MODELS);
-        assertEquals(moduleProperties.getMaxKeyphrases(), TEST_MAX_KEYPHRASES);
-        assertEquals(moduleProperties.getMaxUsers(), TEST_MAX_USERS);
-        assertEquals(moduleProperties.getRecognitionModes(), TEST_RECOGNITION_MODES);
-        assertEquals(moduleProperties.isCaptureTransitionSupported(),
-                TEST_SUPPORT_CAPTURE_TRANSITION);
-        assertEquals(moduleProperties.getMaxBufferMillis(), TEST_MAX_BUFFER_SIZE);
-        assertEquals(moduleProperties.isConcurrentCaptureSupported(),
-                TEST_SUPPORTS_CONCURRENT_CAPTURE);
-        assertEquals(moduleProperties.getPowerConsumptionMw(), TEST_POWER_CONSUMPTION_MW);
-        assertEquals(moduleProperties.isTriggerReturnedInEvent(), TEST_RETURNES_TRIGGER_IN_EVENT);
-        assertEquals(moduleProperties.getAudioCapabilities(), TEST_AUDIO_CAPABILITIES);
-        assertEquals(moduleProperties.describeContents(), 0);
+        assertThat(moduleProperties.getId()).isEqualTo(TEST_MODULE_ID);
+        assertThat(moduleProperties.getImplementor()).isEqualTo(TEST_IMPLEMENTOR);
+        assertThat(moduleProperties.getDescription()).isEqualTo(TEST_DESCRIPTION);
+        assertThat(moduleProperties.getUuid()).isEqualTo(TEST_MODULE_UUID);
+        assertThat(moduleProperties.getVersion()).isEqualTo(TEST_MODULE_VERSION);
+        assertThat(moduleProperties.getSupportedModelArch()).isEqualTo(TEST_SUPPORTED_MODEL_ARCH);
+        assertThat(moduleProperties.getMaxSoundModels()).isEqualTo(TEST_MAX_SOUND_MODELS);
+        assertThat(moduleProperties.getMaxKeyphrases()).isEqualTo(TEST_MAX_KEYPHRASES);
+        assertThat(moduleProperties.getMaxUsers()).isEqualTo(TEST_MAX_USERS);
+        assertThat(moduleProperties.getRecognitionModes()).isEqualTo(TEST_RECOGNITION_MODES);
+        assertThat(moduleProperties.isCaptureTransitionSupported())
+                .isEqualTo(TEST_SUPPORT_CAPTURE_TRANSITION);
+        assertThat(moduleProperties.getMaxBufferMillis()).isEqualTo(TEST_MAX_BUFFER_SIZE);
+        assertThat(moduleProperties.isConcurrentCaptureSupported())
+                .isEqualTo(TEST_SUPPORTS_CONCURRENT_CAPTURE);
+        assertThat(moduleProperties.getPowerConsumptionMw()).isEqualTo(TEST_POWER_CONSUMPTION_MW);
+        assertThat(moduleProperties.isTriggerReturnedInEvent())
+                .isEqualTo(TEST_RETURNES_TRIGGER_IN_EVENT);
+        assertThat(moduleProperties.getAudioCapabilities()).isEqualTo(TEST_AUDIO_CAPABILITIES);
+        assertThat(moduleProperties.describeContents()).isEqualTo(0);
     }
 
     @Test
@@ -142,12 +165,12 @@ public class SoundTriggerTest {
 
         parcel.setDataPosition(0);
         SoundTrigger.Keyphrase keyphraseResult = SoundTrigger.Keyphrase.readFromParcel(parcel);
-        assertEquals(keyphraseSrc, keyphraseResult);
+        assertThat(keyphraseSrc).isEqualTo(keyphraseResult);
         verifyKeyphraseMatchesTestParams(keyphraseResult);
 
         parcel.setDataPosition(0);
         keyphraseResult = SoundTrigger.Keyphrase.CREATOR.createFromParcel(parcel);
-        assertEquals(keyphraseSrc, keyphraseResult);
+        assertThat(keyphraseSrc).isEqualTo(keyphraseResult);
         verifyKeyphraseMatchesTestParams(keyphraseResult);
     }
 
@@ -161,14 +184,27 @@ public class SoundTriggerTest {
         parcel.setDataPosition(0);
         SoundTrigger.KeyphraseSoundModel keyphraseSoundModelResult =
                 SoundTrigger.KeyphraseSoundModel.readFromParcel(parcel);
-        assertEquals(keyphraseSoundModelSrc, keyphraseSoundModelResult);
+        assertThat(keyphraseSoundModelSrc).isEqualTo(keyphraseSoundModelResult);
         verifyKeyphraseSoundModelMatchesTestParams(keyphraseSoundModelResult);
 
         parcel.setDataPosition(0);
         keyphraseSoundModelResult = SoundTrigger.KeyphraseSoundModel.CREATOR.createFromParcel(
                 parcel);
-        assertEquals(keyphraseSoundModelSrc, keyphraseSoundModelResult);
+        assertThat(keyphraseSoundModelSrc).isEqualTo(keyphraseSoundModelResult);
         verifyKeyphraseSoundModelMatchesTestParams(keyphraseSoundModelResult);
+    }
+
+    @Test
+    public void testGenericSoundModelParcelUnparcel() {
+        SoundTrigger.GenericSoundModel genericSoundModelSrc = createTestGenericSoundModel();
+        Parcel parcel = Parcel.obtain();
+        genericSoundModelSrc.writeToParcel(parcel, 0);
+
+        parcel.setDataPosition(0);
+        SoundTrigger.GenericSoundModel genericSoundModelResult =
+                SoundTrigger.GenericSoundModel.CREATOR.createFromParcel(parcel);
+        assertThat(genericSoundModelSrc).isEqualTo(genericSoundModelResult);
+        verifyGenericSoundModelMatchesTestParams(genericSoundModelResult);
     }
 
     @Test
@@ -180,7 +216,7 @@ public class SoundTriggerTest {
         parcel.setDataPosition(0);
         SoundTrigger.ModuleProperties modulePropertiesResult =
                 SoundTrigger.ModuleProperties.CREATOR.createFromParcel(parcel);
-        assertEquals(modulePropertiesSrc, modulePropertiesResult);
+        assertThat(modulePropertiesSrc).isEqualTo(modulePropertiesResult);
         verifyModulePropertiesMatchesTestParams(modulePropertiesResult);
     }
 
@@ -193,9 +229,9 @@ public class SoundTriggerTest {
         parcel.setDataPosition(0);
         SoundTrigger.ModelParamRange modelParamRangeResult =
                 SoundTrigger.ModelParamRange.CREATOR.createFromParcel(parcel);
-        assertEquals(modelParamRangeSrc, modelParamRangeResult);
-        assertEquals(modelParamRangeResult.getStart(), -1);
-        assertEquals(modelParamRangeResult.getEnd(), 10);
+        assertThat(modelParamRangeSrc).isEqualTo(modelParamRangeResult);
+        assertThat(modelParamRangeResult.getStart()).isEqualTo(-1);
+        assertThat(modelParamRangeResult.getEnd()).isEqualTo(10);
     }
 
     @Test
@@ -212,9 +248,46 @@ public class SoundTriggerTest {
                 audioFormat,
                 TEST_MODEL_DATA,
                 12345 /* halEventReceivedMillis */);
-        assertEquals(recognitionEvent.getCaptureFormat(), audioFormat);
-        assertEquals(recognitionEvent.getCaptureSession(), 101);
+        assertThat(recognitionEvent.getCaptureFormat()).isEqualTo(audioFormat);
+        assertThat(recognitionEvent.getCaptureSession()).isEqualTo(101);
         assertArrayEquals(recognitionEvent.getData(), TEST_MODEL_DATA);
-        assertEquals(recognitionEvent.getHalEventReceivedMillis(), 12345);
+        assertThat(recognitionEvent.getHalEventReceivedMillis()).isEqualTo(12345);
+    }
+
+    @Test
+    public void testRecognitionConfigBuilderDefaultValues() {
+        RecognitionConfig recognitionConfig = new RecognitionConfig.Builder().build();
+        assertThat(recognitionConfig.isCaptureRequested()).isFalse();
+        assertThat(recognitionConfig.isAllowMultipleTriggers()).isFalse();
+        assertThat(recognitionConfig.getKeyphrases()).isNotNull();
+        assertThat(recognitionConfig.getKeyphrases()).isEmpty();
+        assertThat(recognitionConfig.getData()).isNotNull();
+        assertThat(recognitionConfig.getData()).hasLength(0);
+        assertThat(recognitionConfig.getAudioCapabilities()).isEqualTo(0);
+    }
+
+    @Test
+    public void testRecognitionConfigBuilderCustomizedValues() {
+        byte[] data = new byte[] {0, 1, 2, 3, 4};
+        List<KeyphraseRecognitionExtra> keyphrases =
+            ImmutableList.of(
+                new KeyphraseRecognitionExtra(1, SoundTrigger.RECOGNITION_MODE_VOICE_TRIGGER, 1));
+        RecognitionConfig recognitionConfig =
+                new RecognitionConfig.Builder()
+                        .setCaptureRequested(true)
+                        .setAllowMultipleTriggers(true)
+                        .setKeyphrases(keyphrases)
+                        .setData(data)
+                        .setAudioCapabilities(1)
+                        .build();
+
+        assertThat(recognitionConfig.isCaptureRequested()).isTrue();
+        assertThat(recognitionConfig.isAllowMultipleTriggers()).isTrue();
+        assertThat(recognitionConfig.getKeyphrases()).isEqualTo(keyphrases);
+        assertThat(recognitionConfig.getData())
+                .asList()
+                .containsExactly((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4)
+                .inOrder();
+        assertThat(recognitionConfig.getAudioCapabilities()).isEqualTo(1);
     }
 }

@@ -73,6 +73,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-gateway-service-package-name -s ";
     private static final String SET_SATELLITE_LISTENING_TIMEOUT_DURATION_CMD =
             "cmd phone set-satellite-listening-timeout-duration -t ";
+    private static final String SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD =
+            "cmd phone set-satellite-ignore-cellular-service-state -d ";
     private static final String SET_SATELLITE_POINTING_UI_CLASS_NAME_CMD =
             "cmd phone set-satellite-pointing-ui-class-name";
     private static final String SET_DATAGRAM_CONTROLLER_TIMEOUT_DURATION_CMD =
@@ -1029,6 +1031,19 @@ class MockSatelliteServiceManager {
             return "true".equals(result);
         } catch (Exception e) {
             loge("setSatelliteListeningTimeoutDuration: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteIgnoreCellularServiceState(boolean enabled) {
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(mInstrumentation,
+                            SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD + enabled);
+            logd("setSatelliteIgnoreCellularServiceState: result = " + result);
+            return "true".equals(result);
+        } catch (Exception e) {
+            loge("setSatelliteIgnoreCellularServiceState: e=" + e);
             return false;
         }
     }

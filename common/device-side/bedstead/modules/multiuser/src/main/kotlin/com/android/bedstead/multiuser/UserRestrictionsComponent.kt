@@ -22,8 +22,8 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.exceptions.AdbException
