@@ -108,6 +108,21 @@ public class SoundTriggerTest {
         assertThat(keyphraseSoundModel.getType()).isEqualTo(SoundTrigger.SoundModel.TYPE_KEYPHRASE);
     }
 
+    private static SoundTrigger.GenericSoundModel createTestGenericSoundModel() {
+        return new SoundTrigger.GenericSoundModel(TEST_MODEL_UUID, TEST_VENDOR_UUID,
+                SoundTriggerTest.TEST_MODEL_DATA, TEST_MODEL_VERSION);
+    }
+
+    private static void verifyGenericSoundModelMatchesTestParams(
+            SoundTrigger.GenericSoundModel genericSoundModel) {
+        assertThat(genericSoundModel.getUuid()).isEqualTo(TEST_MODEL_UUID);
+        assertThat(genericSoundModel.getVendorUuid()).isEqualTo(TEST_VENDOR_UUID);
+        assertArrayEquals(genericSoundModel.getData(), SoundTriggerTest.TEST_MODEL_DATA);
+        assertThat(genericSoundModel.getVersion()).isEqualTo(TEST_MODEL_VERSION);
+        assertThat(genericSoundModel.getType())
+                .isEqualTo(SoundTrigger.SoundModel.TYPE_GENERIC_SOUND);
+    }
+
     private SoundTrigger.ModuleProperties createTestModuleProperties() {
         return new SoundTrigger.ModuleProperties(TEST_MODULE_ID, TEST_IMPLEMENTOR, TEST_DESCRIPTION,
                 TEST_MODULE_UUID.toString(), TEST_MODULE_VERSION, TEST_SUPPORTED_MODEL_ARCH,
@@ -177,6 +192,19 @@ public class SoundTriggerTest {
                 parcel);
         assertThat(keyphraseSoundModelSrc).isEqualTo(keyphraseSoundModelResult);
         verifyKeyphraseSoundModelMatchesTestParams(keyphraseSoundModelResult);
+    }
+
+    @Test
+    public void testGenericSoundModelParcelUnparcel() {
+        SoundTrigger.GenericSoundModel genericSoundModelSrc = createTestGenericSoundModel();
+        Parcel parcel = Parcel.obtain();
+        genericSoundModelSrc.writeToParcel(parcel, 0);
+
+        parcel.setDataPosition(0);
+        SoundTrigger.GenericSoundModel genericSoundModelResult =
+                SoundTrigger.GenericSoundModel.CREATOR.createFromParcel(parcel);
+        assertThat(genericSoundModelSrc).isEqualTo(genericSoundModelResult);
+        verifyGenericSoundModelMatchesTestParams(genericSoundModelResult);
     }
 
     @Test
