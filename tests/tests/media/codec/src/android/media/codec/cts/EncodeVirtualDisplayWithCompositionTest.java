@@ -28,7 +28,6 @@ import androidx.test.filters.SmallTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -42,7 +41,6 @@ import org.junit.runner.RunWith;
 @SmallTest
 @RequiresDevice
 @FrameworkSpecificTest     // exercises hw codecs, fails in windowing on pure older releases
-@NonMainlineTest           // exercises hw codecs, fails in windowing on pure older releases
 @RunWith(AndroidJUnit4.class)
 public class EncodeVirtualDisplayWithCompositionTest {
     private static final String TAG = "EncodeVirtualDisplayWithCompositionTest";
