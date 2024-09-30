@@ -72,6 +72,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.window.flags.Flags;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -106,6 +107,8 @@ public class SurfaceControlInputReceiverTests {
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
+    @Ignore("Need to update platform because the test relies on incorrect information "
+            + "from WindowInfoListener.")
     public void testLocalSurfaceControlReceivesInput() throws InterruptedException {
         SurfaceControl sc = new SurfaceControl.Builder()
                 .setName("Local Child SurfaceControl")
@@ -237,6 +240,8 @@ public class SurfaceControlInputReceiverTests {
 
     @RequiresFlagsEnabled(Flags.FLAG_SURFACE_CONTROL_INPUT_RECEIVER)
     @Test
+    @Ignore("Need to update platform because the test relies on incorrect information "
+            + "from WindowInfoListener.")
     public void testNonBatchedSurfaceControlReceivesInput() throws InterruptedException {
         SurfaceControl sc = new SurfaceControl.Builder()
                 .setName("Local Child SurfaceControl")
