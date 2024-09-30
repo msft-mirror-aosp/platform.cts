@@ -44,7 +44,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit;
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionManagerTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionManagerTest {
     private Context mContext;
 
