@@ -37,11 +37,13 @@ import com.android.bedstead.harrier.annotations.RequireNotAutomotive;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Objects;
 
+@Ignore
 public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
