@@ -259,11 +259,11 @@ fun startApp(packageName: String) {
     waitForIdle()
 }
 
-fun goHome() {
+fun goBack() {
     val context = InstrumentationRegistry.getTargetContext()
     val userHelper = UserHelper(context)
     val displayId = userHelper.getMainDisplayId()
-    runShellCommandOrThrow("input keyevent KEYCODE_HOME -d $displayId")
+    runShellCommandOrThrow("input -d $displayId keyevent KEYCODE_BACK")
     waitForIdle()
 }
 
