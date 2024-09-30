@@ -302,6 +302,29 @@ class AppFunctionManagerTest {
         }
     }
 
+    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    fun isAppFunctionEnabled_sidecar() = runTest {
+        SidecarUtil.assumeSidecarAvailable()
+
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+    }
+
+    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"])
+    @Test
+    fun setAppFunctionEnabled_sidecar() = runTest {
+        SidecarUtil.assumeSidecarAvailable()
+
+        val functionUnderTest = "add"
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        sidecarSetAppFunctionEnabled(
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED
+        )
+
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
+    }
+
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
@@ -783,6 +806,38 @@ class AppFunctionManagerTest {
             targetPackage,
             context.mainExecutor,
             continuation.asOutcomeReceiver(),
+        )
+    }
+
+    private suspend fun sidecarIsAppFunctionEnabled(
+        targetPackage: String,
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context).isAppFunctionEnabled(
+            functionIdentifier,
+            targetPackage,
+            context.mainExecutor,
+            continuation.asOutcomeReceiver(),
+        )
+    }
+
+    private suspend fun sidecarSetAppFunctionEnabled(
+        functionIdentifier: String,
+        @EnabledState state: Int,
+    ): Unit = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context).setAppFunctionEnabled(
+            functionIdentifier,
+            state,
+            context.mainExecutor,
+            object : OutcomeReceiver<Void, Exception> {
+                override fun onResult(result: Void?) {
+                    continuation.resume(Unit)
+                }
+
+                override fun onError(error: Exception) {
+                    continuation.resumeWithException(error)
+                }
+            },
         )
     }
 
