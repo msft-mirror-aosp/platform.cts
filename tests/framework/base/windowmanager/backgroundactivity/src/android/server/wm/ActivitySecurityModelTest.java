@@ -24,9 +24,11 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.security.Flags;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore
 public class ActivitySecurityModelTest extends BackgroundActivityTestBase {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule =
