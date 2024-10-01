@@ -57,6 +57,7 @@ public class EmbeddedTestActivity extends Activity {
     private CountDownLatch mItemsSelectedClientInvocationLatch;
     private CountDownLatch mSelectionCompleteClientInvocationLatch;
     private CountDownLatch mSessionOpenedClientInvocationLatch;
+    private CountDownLatch mSessionErrorClientInvocationLatch;
 
     /**
      * Client callbacks that the service will use to interact with the client
@@ -84,6 +85,10 @@ public class EmbeddedTestActivity extends Activity {
         public void onSessionError(@NonNull Throwable cause) {
             mSession = null;
             mSelectedUris.clear();
+
+            if (mSessionErrorClientInvocationLatch != null) {
+                mSessionErrorClientInvocationLatch.countDown();
+            }
         }
 
         @Override
@@ -239,5 +244,19 @@ public class EmbeddedTestActivity extends Activity {
     public void setCountDownLatchForSessionOpenedClientInvocation(
             @NonNull CountDownLatch sessionOpenedClientInvocation) {
         mSessionOpenedClientInvocationLatch = sessionOpenedClientInvocation;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onSessionError(Throwable)} to enable verifying its
+     * invocation within a given time frame.
+     *
+     * @param sessionErrorClientInvocationLatch the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onSessionError(Throwable)} is invoked.
+     */
+    public void setCountDownLatchForSessionErrorClientInvocation(
+            @NonNull CountDownLatch sessionErrorClientInvocationLatch) {
+        mSessionErrorClientInvocationLatch = sessionErrorClientInvocationLatch;
     }
 }
