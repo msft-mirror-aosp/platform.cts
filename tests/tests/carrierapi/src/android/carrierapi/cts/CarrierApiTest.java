@@ -69,6 +69,11 @@ import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.telephony.data.NetworkSlicingConfig;
+import android.telephony.ims.ImsException;
+import android.telephony.ims.ImsManager;
+import android.telephony.ims.ImsMmTelManager;
+import android.telephony.ims.ImsStateCallback;
+import android.telephony.ims.RegistrationManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -126,6 +131,8 @@ public class CarrierApiTest extends BaseCarrierApiTest {
     private Uri mStatusContentUri;
     private String selfPackageName;
     private HandlerThread mListenerThread;
+    private ImsManager mImsManager;
+    private ImsMmTelManager mMmTelManager;
 
     // The minimum allocatable logical channel number, per TS 102 221 Section 11.1.17.1
     private static final int MIN_LOGICAL_CHANNEL = 1;
@@ -214,6 +221,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         mStatusProvider =
                 context.getContentResolver().acquireContentProviderClient(mStatusContentUri);
         mPackageManager = context.getPackageManager();
+        mImsManager = context.getSystemService(ImsManager.class);
+        final int subId = SubscriptionManager.getDefaultSubscriptionId();
+        mMmTelManager = mImsManager.getImsMmTelManager(subId);
         mListenerThread = new HandlerThread("CarrierApiTest");
         mListenerThread.start();
     }
@@ -529,6 +539,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // identifier will be accessible to apps with carrier privileges in Q, but this may change
         // in a future release.
         try {
+            final int subId = mTelephonyManager.getSubscriptionId();
             mTelephonyManager.getDeviceId();
             mTelephonyManager.getImei();
             mTelephonyManager.getMeid();
@@ -548,8 +559,9 @@ public class CarrierApiTest extends BaseCarrierApiTest {
             mTelephonyManager.getManualNetworkSelectionPlmn();
             mTelephonyManager.setForbiddenPlmns(new ArrayList<String>());
             // TODO(b/235490259): test all slots once TM#isModemEnabledForSlot allows
+
             mTelephonyManager.isModemEnabledForSlot(
-                    SubscriptionManager.getSlotIndex(mTelephonyManager.getSubscriptionId()));
+                    SubscriptionManager.getSlotIndex(subId));
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
         }
@@ -563,6 +575,7 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // identifier will be accessible to apps with carrier privileges in Q, but this may change
         // in a future release.
         try {
+            final int subId = mTelephonyManager.getSubscriptionId();
             mTelephonyManager.getDeviceId();
             mTelephonyManager.getDeviceSoftwareVersion();
 
@@ -594,6 +607,54 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 mTelephonyManager.getVoiceMailNumber();
                 mTelephonyManager.getVisualVoicemailPackageName();
                 mTelephonyManager.getVoiceMailAlphaTag();
+            }
+
+            if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
+                try {
+                    mMmTelManager.createForSubscriptionId(subId);
+
+                    RegistrationManager.RegistrationCallback rc =
+                            new RegistrationManager.RegistrationCallback() {};
+
+                    mMmTelManager.registerImsRegistrationCallback(r -> r.run(), rc);
+                    mMmTelManager.unregisterImsRegistrationCallback(rc);
+                    mMmTelManager.registerImsEmergencyRegistrationCallback(r -> r.run(), rc);
+                    mMmTelManager.unregisterImsEmergencyRegistrationCallback(rc);
+                    mMmTelManager.getRegistrationTransportType(r -> r.run(), (i) -> {});
+
+                    ImsMmTelManager.CapabilityCallback cc =
+                            new ImsMmTelManager.CapabilityCallback() {};
+
+                    mMmTelManager.registerMmTelCapabilityCallback(r -> r.run(), cc);
+
+                    mMmTelManager.unregisterMmTelCapabilityCallback(cc);
+                    mMmTelManager.isAdvancedCallingSettingEnabled();
+                    mMmTelManager.isVtSettingEnabled();
+                    mMmTelManager.setVoWiFiSettingEnabled(mMmTelManager.isVoWiFiSettingEnabled());
+                    mMmTelManager.setCrossSimCallingEnabled(
+                            mMmTelManager.isCrossSimCallingEnabled());
+                    mMmTelManager.setVoWiFiRoamingSettingEnabled(
+                            mMmTelManager.isVoWiFiRoamingSettingEnabled());
+                    mMmTelManager.setVoWiFiModeSetting(mMmTelManager.getVoWiFiModeSetting());
+                    mMmTelManager.isTtyOverVolteEnabled();
+
+                    ImsStateCallback ic = new ImsStateCallback() {
+                        @Override
+                        public void onUnavailable(int reason) {
+                        }
+                        @Override
+                        public void onAvailable() {
+                        }
+                        @Override
+                        public void onError() {
+                        }
+                    };
+
+                    mMmTelManager.registerImsStateCallback(r -> r.run(), ic);
+                    mMmTelManager.unregisterImsStateCallback(ic);
+                } catch (ImsException ie) {
+                    fail(ie.toString());
+                }
             }
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);

@@ -24,7 +24,6 @@ import android.os.Parcel;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,7 +32,6 @@ import org.junit.runner.RunWith;
  * Test {@link android.media.browse.MediaBrowser.MediaItem}.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaItemTest {
     private static final String DESCRIPTION = "test_description";

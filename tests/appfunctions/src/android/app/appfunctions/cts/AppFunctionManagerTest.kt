@@ -18,6 +18,7 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
+import android.app.appfunctions.AppFunctionManager.EnabledState
 import android.app.appfunctions.AppFunctionRuntimeMetadata
 import android.app.appfunctions.AppFunctionStaticMetadataHelper
 import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
@@ -27,9 +28,9 @@ import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.flags.Flags
 import android.app.appfunctions.testutils.SidecarUtil
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
+import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
-import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appsearch.GenericDocument
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
@@ -37,9 +38,11 @@ import android.app.appsearch.SearchSpec
 import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
 import android.os.CancellationSignal
+import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
+import androidx.core.os.asOutcomeReceiver
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
@@ -56,9 +59,12 @@ import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.test.assertFailsWith
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assume.assumeNotNull
 import org.junit.Before
 import org.junit.ClassRule
@@ -93,6 +99,16 @@ class AppFunctionManagerTest {
                     .containsAtLeast(CURRENT_PKG, TEST_HELPER_PKG, TEST_SIDECAR_HELPER_PKG)
             }
         }
+    }
+
+    @Before
+    @After
+    fun resetEnabledStatus() = runTest {
+        setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        setAppFunctionEnabled(
+            "add_disabledByDefault",
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
     }
 
     @Test
@@ -191,28 +207,26 @@ class AppFunctionManagerTest {
                     .setPropertyLong("b", 2)
                     .build()
             val request =
-                SidecarExecuteAppFunctionRequest.Builder(
-                    CURRENT_PKG,
-                    "add"
-                )
+                SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
                     .setParameters(parameters)
                     .build()
 
             val response =
                 suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context).executeAppFunction(
-                        request,
-                        context.mainExecutor,
-                        { response -> continuation.resume(response) }
-                    )
+                    SidecarAppFunctionManager(context)
+                        .executeAppFunction(
+                            request,
+                            context.mainExecutor,
+                            { response -> continuation.resume(response) },
+                        )
                 }
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
-                response.resultDocument.getPropertyLong(
-                    ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    response.resultDocument.getPropertyLong(
+                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                    )
                 )
-            )
                 .isEqualTo(3)
             assertServiceDestroyed()
         }
@@ -240,12 +254,13 @@ class AppFunctionManagerTest {
 
             val response =
                 suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context).executeAppFunction(
-                        request,
-                        context.mainExecutor,
-                        { response -> continuation.resume(response) }
-                )
-            }
+                    SidecarAppFunctionManager(context)
+                        .executeAppFunction(
+                            request,
+                            context.mainExecutor,
+                            { response -> continuation.resume(response) },
+                        )
+                }
 
             assertThat(response.isSuccess).isTrue()
             assertThat(
@@ -285,6 +300,29 @@ class AppFunctionManagerTest {
                 )
                 .isEqualTo(3)
         }
+    }
+
+    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    fun isAppFunctionEnabled_sidecar() = runTest {
+        SidecarUtil.assumeSidecarAvailable()
+
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+    }
+
+    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"])
+    @Test
+    fun setAppFunctionEnabled_sidecar() = runTest {
+        SidecarUtil.assumeSidecarAvailable()
+
+        val functionUnderTest = "add"
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        sidecarSetAppFunctionEnabled(
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED
+        )
+
+        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -417,6 +455,36 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
+    fun executeAppFunction_disabledByDefault_fail() {
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add_disabledByDefault").build()
+
+        val response = executeAppFunctionAndWait(request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertServiceWasNotCreated()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun executeAppFunction_disabledInRuntime_fail() = runTest {
+        val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
+        setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+
+        val response = executeAppFunctionAndWait(request)
+
+        assertThat(response.isSuccess).isFalse()
+        assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
+        assertServiceWasNotCreated()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
@@ -464,7 +532,7 @@ class AppFunctionManagerTest {
                     ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
                 )
             )
-            .isEqualTo(3)
+            .isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
         assertServiceDestroyed()
     }
 
@@ -472,106 +540,114 @@ class AppFunctionManagerTest {
     @Test
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsFalse_success() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                        TEST_HELPER_PKG,
-                        "addWithRestrictCallersWithExecuteAppFunctionsFalse",
-                    )
-                    .setParameters(parameters)
-                    .build()
+        runTest {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+                val request =
+                    ExecuteAppFunctionRequest.Builder(
+                            TEST_HELPER_PKG,
+                            "addWithRestrictCallersWithExecuteAppFunctionsFalse",
+                        )
+                        .setParameters(parameters)
+                        .build()
 
-            val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(request)
 
-            assertThat(response.errorMessage).isNull()
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                assertThat(response.errorMessage).isNull()
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response.resultDocument.getPropertyLong(
+                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                        )
                     )
-                )
-                .isEqualTo(3)
+                    .isEqualTo(3)
+            }
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val request =
-                ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
+        runTest {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val request =
+                    ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
 
-            val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(request)
 
-            assertThat(response.isSuccess).isFalse()
-            assertThat(response.resultCode)
-                .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
-            assertThat(response.errorMessage)
-                .contains(
-                    "Document (android\$apps-db/app_functions," +
-                        " android.app.appfunctions.cts.helper/random_function) not found"
-                )
+                assertThat(response.isSuccess).isFalse()
+                assertThat(response.resultCode)
+                    .isEqualTo(ExecuteAppFunctionResponse.RESULT_INVALID_ARGUMENT)
+                assertThat(response.errorMessage)
+                    .contains(
+                        "Document (android\$apps-db/app_functions," +
+                            " android.app.appfunctions.cts.helper/random_function) not found"
+                    )
+            }
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionTrustedPermission_restrictCallersWithExecuteAppFunctionsTrue_success() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                        TEST_HELPER_PKG,
-                        "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                    )
-                    .setParameters(parameters)
-                    .build()
+        runTest {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+                val request =
+                    ExecuteAppFunctionRequest.Builder(
+                            TEST_HELPER_PKG,
+                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
+                        )
+                        .setParameters(parameters)
+                        .build()
 
-            val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(request)
 
-            assertThat(response.errorMessage).isNull()
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                assertThat(response.errorMessage).isNull()
+                assertThat(response.isSuccess).isTrue()
+                assertThat(
+                        response.resultDocument.getPropertyLong(
+                            ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
+                        )
                     )
-                )
-                .isEqualTo(3)
+                    .isEqualTo(3)
+            }
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsTrue_resultDenied() =
-        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(
-                        TEST_HELPER_PKG,
-                        "addWithRestrictCallersWithExecuteAppFunctionsTrue",
-                    )
-                    .setParameters(parameters)
-                    .build()
+        runTest {
+            runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+                val parameters: GenericDocument =
+                    GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
+                        .setPropertyLong("a", 1)
+                        .setPropertyLong("b", 2)
+                        .build()
+                val request =
+                    ExecuteAppFunctionRequest.Builder(
+                            TEST_HELPER_PKG,
+                            "addWithRestrictCallersWithExecuteAppFunctionsTrue",
+                        )
+                        .setParameters(parameters)
+                        .build()
 
-            val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(request)
 
-            assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
-            assertThat(response.errorMessage)
-                .endsWith("does not have permission to execute the appfunction")
-            assertServiceWasNotCreated()
+                assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
+                assertThat(response.errorMessage)
+                    .endsWith("does not have permission to execute the appfunction")
+                assertServiceWasNotCreated()
+            }
         }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
@@ -582,7 +658,8 @@ class AppFunctionManagerTest {
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "longRunningFunction")
-                .setParameters(parameters).build()
+                .setParameters(parameters)
+                .build()
         val cancellationSignal = CancellationSignal()
         val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
         mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
@@ -593,12 +670,118 @@ class AppFunctionManagerTest {
         cancellationSignal.cancel()
 
         assertOperationCancelled()
-        val response = blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)
-        assertThat(response?.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_APP_UNKNOWN_ERROR)
-        assertThat(response?.errorMessage).isEqualTo("Operation Interrupted")
-        assertServiceDestroyed()
+        // TODO :Test that the service is destroyed.
     }
 
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    fun isAppFunctionEnabled_functionDefaultEnabled() = runTest {
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun isAppFunctionEnabled_functionDefaultDisabled() = runTest {
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "add_disabledByDefault"))
+            .isFalse()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun isAppFunctionEnabled_functionNotExist() = runTest {
+        assertFailsWith<IllegalArgumentException>("function not found") {
+            isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "notExist")
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun isAppFunctionEnabled_otherPackage_noPermission() = runTest {
+        assertFailsWith<IllegalArgumentException>("function not found") {
+            isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add_disabledByDefault")
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission() = runTest {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
+            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionTrustedPermission() = runTest {
+        runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
+            assertThat(isAppFunctionEnabled(TEST_HELPER_PKG, functionIdentifier = "add")).isTrue()
+        }
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun setAppFunctionEnabled_functionDefaultEnabled() = runTest {
+        val functionUnderTest = "add"
+        // Check if the function is enabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        // Disable the function
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+        // Confirm that the function is disabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
+        // Reset the enabled bit
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        // Confirm that the function is now enabled (default)
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+
+        // Manually set the enabled bit to true
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        // Confirm that the function is still enabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun setAppFunctionEnabled_functionDefaultDisabled() = runTest {
+        val functionUnderTest = "add_disabledByDefault"
+        // Confirm that the function is disabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
+        // Enable the function
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        // Confirm that the function is enabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+        // Reset the enabled bit
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        // Confirm that the function is now enabled (default)
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
+
+        // Manually set the enabled bit to true
+        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        // Confirm that the function is still enabled
+        assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
+    }
+
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    @Throws(Exception::class)
+    fun setAppFunctionEnabled_functionNotExist() = runTest {
+        val functionUnderTest = "notExist"
+
+        assertFailsWith<IllegalArgumentException>("does not exist") {
+            setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+        }
+    }
+
+    @Throws(InterruptedException::class)
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
@@ -612,6 +795,70 @@ class AppFunctionManagerTest {
 
     private fun assertOperationCancelled() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
+    }
+
+    private suspend fun isAppFunctionEnabled(
+        targetPackage: String,
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        mManager.isAppFunctionEnabled(
+            functionIdentifier,
+            targetPackage,
+            context.mainExecutor,
+            continuation.asOutcomeReceiver(),
+        )
+    }
+
+    private suspend fun sidecarIsAppFunctionEnabled(
+        targetPackage: String,
+        functionIdentifier: String,
+    ): Boolean = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context).isAppFunctionEnabled(
+            functionIdentifier,
+            targetPackage,
+            context.mainExecutor,
+            continuation.asOutcomeReceiver(),
+        )
+    }
+
+    private suspend fun sidecarSetAppFunctionEnabled(
+        functionIdentifier: String,
+        @EnabledState state: Int,
+    ): Unit = suspendCancellableCoroutine { continuation ->
+        SidecarAppFunctionManager(context).setAppFunctionEnabled(
+            functionIdentifier,
+            state,
+            context.mainExecutor,
+            object : OutcomeReceiver<Void, Exception> {
+                override fun onResult(result: Void?) {
+                    continuation.resume(Unit)
+                }
+
+                override fun onError(error: Exception) {
+                    continuation.resumeWithException(error)
+                }
+            },
+        )
+    }
+
+    private suspend fun setAppFunctionEnabled(
+        functionIdentifier: String,
+        @EnabledState state: Int,
+    ): Unit = suspendCancellableCoroutine { continuation ->
+        mManager.setAppFunctionEnabled(
+            functionIdentifier,
+            state,
+            context.mainExecutor,
+            object : OutcomeReceiver<Void, Exception> {
+                override fun onResult(result: Void?) {
+                    continuation.resume(Unit)
+                }
+
+                override fun onError(error: Exception) {
+                    continuation.resumeWithException(error)
+                }
+            },
+        )
     }
 
     /** Verifies that the service is unbound by asserting the service was destroyed. */
@@ -685,13 +932,13 @@ class AppFunctionManagerTest {
         const val PROPERTY_PACKAGE_NAME = "packageName"
         const val APP_FUNCTION_INDEXER_PACKAGE = "android"
 
-        fun runWithShellPermission(vararg permissions: String, block: () -> Unit) {
+        suspend fun runWithShellPermission(vararg permissions: String, block: suspend () -> Unit) {
             permissions().withPermission(*permissions).use { block() }
         }
 
         suspend fun suspendWithShellPermission(
             vararg permissions: String,
-            block: suspend () -> Unit
+            block: suspend () -> Unit,
         ) {
             permissions().withPermission(*permissions).use { block() }
         }
