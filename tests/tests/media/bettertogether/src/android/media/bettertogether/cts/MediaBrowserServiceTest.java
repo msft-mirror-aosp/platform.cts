@@ -56,7 +56,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.flags.Flags;
 
 import org.junit.After;
@@ -75,7 +74,6 @@ import java.util.concurrent.TimeUnit;
  * Test {@link android.service.media.MediaBrowserService}.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 @AppModeNonSdkSandbox(reason = "SDK sandbox does not need MediaBrowser.")
 public class MediaBrowserServiceTest {
