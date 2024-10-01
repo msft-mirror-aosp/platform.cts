@@ -23,6 +23,7 @@ import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.KeyguardManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -222,11 +223,22 @@ public class EncryptionAppTest extends InstrumentationTestCase {
         mDevice.waitForIdle();
         mDevice.wakeUp();
         mDevice.waitForIdle();
-        // Press back in case the PIN pad is already showing.
-        mDevice.pressBack();
-        mDevice.waitForIdle();
-        mDevice.pressMenu();
-        mDevice.waitForIdle();
+
+        // Launch activity because KeyguardManager#requestDismissKeyguard()
+        // must be invoked with an activity.
+        mActivity =
+            launchActivity(
+                getInstrumentation().getTargetContext().getPackageName(),
+                AwareActivity.class,
+                null);
+        KeyguardManager keyguardManager =
+            mDe.getSystemService(KeyguardManager.class);
+        keyguardManager.requestDismissKeyguard(mActivity, null);
+        // Close activity to avoid interference with other parts of the test
+        // that also use this activity.
+        mActivity.finish();
+        mActivity = null;
+
         enterTestPin();
         mDevice.waitForIdle();
         mDevice.pressHome();
@@ -240,7 +252,7 @@ public class EncryptionAppTest extends InstrumentationTestCase {
                 return;
             }
             Log.d(TAG, msg + " retry=" + retry);
-            SystemClock.sleep(50);
+            SystemClock.sleep(200);
         } while (retry++ < 5);
         if (!waitFor.getAsBoolean()) {
             fail(msg + " FAILED");
@@ -248,11 +260,14 @@ public class EncryptionAppTest extends InstrumentationTestCase {
     }
 
     private void summonKeyguard() throws Exception {
-        final PowerManager pm = mDe.getSystemService(PowerManager.class);
+        final KeyguardManager keyguardManager =
+            mDe.getSystemService(KeyguardManager.class);
         mDevice.pressKeyCode(KeyEvent.KEYCODE_SLEEP);
         getInstrumentation().getUiAutomation().performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_LOCK_SCREEN);
-        waitFor("display to turn off", () -> pm != null && !pm.isInteractive());
+        waitFor(
+            "display to turn off",
+            () -> keyguardManager != null && keyguardManager.isKeyguardLocked());
     }
 
     public void assertLocked() throws Exception {
