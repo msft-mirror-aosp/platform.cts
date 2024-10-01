@@ -713,6 +713,11 @@
   <option name="compatibility:include-filter" value="CtsJobSchedulerTestCases android.jobscheduler.cts.DataTransferTest#testUpdateEstimatedNetworkBytes"/>
   <option name="compatibility:include-filter" value="CtsPermissionPolicyTestCases android.permissionpolicy.cts.PrivappPermissionsTest#privappPermissionsNeedToBeWhitelisted"/>
   <option name="compatibility:include-filter" value="CtsStagedInstallHostTestCases com.android.tests.stagedinstall.host.StagedInstallTest#testAfterRotationNewKeyCanUpdateFurther"/>
+  <option name="compatibility:include-filter" value="CtsProviderUiTestCases android.providerui.cts.MediaStoreUiTest#testOpenDocumentTree_enabledForAndroidMediaDir[2]	"/>
+  <option name="compatibility:include-filter" value="CtsContactsProviderTestCases android.provider.cts.contacts.ContactsContract_DefaultAccountAndStateTest#testDefaultContactsAccountClass_sim"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.AllDataFragmentTest#allDataFragment_clickOnPermissionType_navigatesToEntriesAndAccess	"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.AllDataFragmentTest#allDataFragment_clickOnDataSourcesIcon_navigatesToDataSources"/>
+  <option name="compatibility:include-filter" value="CtsHealthConnectControllerTestCases android.healthconnect.cts.ui.AllDataFragmentTest#allDataFragment_deletesAllData"/>
 
   //Module Args
   <option name="compatibility:module-arg" value="CtsDeqpTestCases:include-filter:dEQP-EGL.*" />

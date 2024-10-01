@@ -28,7 +28,6 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import android.app.ActivityManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -79,7 +78,7 @@ public class MediaProjectionManagerTest {
             mContext.getPackageManager().revokeRuntimePermission(
                     mContext.getPackageName(),
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
-                    new UserHandle(ActivityManager.getCurrentUser()));
+                    new UserHandle(mContext.getUserId()));
         });
         mProjectionManager = mContext.getSystemService(MediaProjectionManager.class);
         mMediaProjection = null;
