@@ -2106,6 +2106,73 @@ public class AccessibilityEndToEndTest extends StsExtraBusinessLogicTestCase {
     }
 
     @Test
+    @ApiTest(
+            apis = {
+                "android.view.accessibility.AccessibilityNodeInfo#setSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#getSelection",
+                "android.view.accessibility.AccessibilityNodeInfo#Selection",
+                "android.view.accessibility.AccessibilityNodeInfo#SelectionPosition"
+            })
+    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_A11Y_SELECTION_API)
+    public void testExtendedSelectionInterop() throws Exception {
+        final String text = "Hello World!";
+        sUiAutomation.executeAndWaitForEvent(
+                () ->
+                        sInstrumentation.runOnMainSync(
+                                () -> {
+                                    EditText myView = mActivity.findViewById(R.id.edittext);
+                                    if (myView == null) {
+                                        myView = new EditText(getContext());
+                                        ((LinearLayout) mActivity.findViewById(R.id.containerView))
+                                                .addView(myView);
+                                    }
+                                    myView.setTextIsSelectable(true);
+                                    myView.setText(text);
+                                }),
+                filterForEventType(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED),
+                DEFAULT_TIMEOUT_MS);
+
+        sUiAutomation.executeAndWaitForEvent(
+                () ->
+                        sInstrumentation.runOnMainSync(
+                                () -> {
+                                    AccessibilityNodeInfo viewNode =
+                                            sUiAutomation
+                                                    .getRootInActiveWindow()
+                                                    .findAccessibilityNodeInfosByText(text)
+                                                    .getFirst();
+
+                                    Bundle b = new Bundle();
+                                    b.putInt(
+                                            AccessibilityNodeInfo
+                                                    .ACTION_ARGUMENT_SELECTION_START_INT,
+                                            0);
+                                    b.putInt(
+                                            AccessibilityNodeInfo.ACTION_ARGUMENT_SELECTION_END_INT,
+                                            4);
+                                    assertTrue(
+                                            viewNode.performAction(
+                                                    AccessibilityNodeInfo.ACTION_SET_SELECTION, b));
+                                }),
+                filterForEventType(AccessibilityEvent.TYPE_VIEW_TEXT_SELECTION_CHANGED),
+                DEFAULT_TIMEOUT_MS);
+
+        AccessibilityNodeInfo myViewNode =
+                sUiAutomation
+                        .getRootInActiveWindow()
+                        .findAccessibilityNodeInfosByText(text)
+                        .getFirst();
+
+        assertThat(myViewNode.getTextSelectionStart()).isEqualTo(0);
+        assertThat(myViewNode.getTextSelectionEnd()).isEqualTo(4);
+        assertThat(myViewNode.getSelection()).isNotNull();
+        assertThat(myViewNode.getSelection().getStart().getNode()).isEqualTo(myViewNode);
+        assertThat(myViewNode.getSelection().getEnd().getNode()).isEqualTo(myViewNode);
+        assertThat(myViewNode.getSelection().getStart().getOffset()).isEqualTo(0);
+        assertThat(myViewNode.getSelection().getEnd().getOffset()).isEqualTo(4);
+    }
+
+    @Test
     @ApiTest(apis = {
             "android.view.accessibility.AccessibilityNodeInfo#setContainerTitle"})
     public void testSetContainerTitle() {
