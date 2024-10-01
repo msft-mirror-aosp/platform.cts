@@ -25,7 +25,6 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
 
-import android.content.res.Resources;
 import android.media.MediaRoute2Info;
 import android.media.RoutingSessionInfo;
 import android.os.Bundle;
@@ -64,6 +63,7 @@ public class RoutingSessionInfoTest {
     public static final String TEST_VALUE = "test_value";
 
     public static final int TEST_VOLUME_MAX = 100;
+    public static final int TEST_VOLUME_HANDLING = PLAYBACK_VOLUME_VARIABLE;
     public static final int TEST_VOLUME = 65;
     @Test
     public void testBuilderConstructorWithInvalidValues() {
@@ -188,6 +188,7 @@ public class RoutingSessionInfoTest {
                 .addTransferableRoute(TEST_ROUTE_ID_6)
                 .addTransferableRoute(TEST_ROUTE_ID_7)
                 .setVolumeMax(TEST_VOLUME_MAX)
+                .setVolumeHandling(TEST_VOLUME_HANDLING)
                 .setVolume(TEST_VOLUME)
                 .setControlHints(controlHints)
                 .build();
@@ -208,9 +209,8 @@ public class RoutingSessionInfoTest {
         assertThat(sessionInfo.getTransferableRoutes())
                 .containsExactly(TEST_ROUTE_ID_6, TEST_ROUTE_ID_7).inOrder();
 
-        //Note: Individual tests for volume handling were added below, as its value depends on
-        // config_volumeAdjustmentForRemoteGroupSessions. See b/228021646 for more details.
         assertThat(sessionInfo.getVolumeMax()).isEqualTo(TEST_VOLUME_MAX);
+        assertThat(sessionInfo.getVolumeHandling()).isEqualTo(TEST_VOLUME_HANDLING);
         assertThat(sessionInfo.getVolume()).isEqualTo(TEST_VOLUME);
 
         Bundle controlHintsOut = sessionInfo.getControlHints();
@@ -509,10 +509,6 @@ public class RoutingSessionInfoTest {
                 .clearTransferableRoutes()
                 .build()).isNotEqualTo(sessionInfo);
 
-        /*
-        Note: Using session with only one selected route, as volume handling of group sessions
-        depends config_volumeAdjustmentForRemoteGroupSessions. See b/228021646.
-        */
         RoutingSessionInfo.Builder oneRouteSession = new RoutingSessionInfo.Builder(sessionInfo)
                 .clearSelectedRoutes()
                 .setVolumeHandling(PLAYBACK_VOLUME_FIXED)
@@ -585,37 +581,6 @@ public class RoutingSessionInfoTest {
                 .addTransferableRoute(TEST_ROUTE_ID_6)
                 .build();
         assertThat(sessionInfo.describeContents()).isEqualTo(0);
-    }
-
-    @Test
-    public void testGroupVolumeHandling() {
-        //Note: Volume handling for group sessions depends on
-        // config_volumeAdjustmentForRemoteGroupSessions. See b/228021646 for details.
-
-        RoutingSessionInfo sessionInfo = new RoutingSessionInfo.Builder(
-                TEST_ID, TEST_CLIENT_PACKAGE_NAME)
-                .setName(TEST_NAME)
-                .addSelectedRoute(TEST_ROUTE_ID_0)
-                .addSelectedRoute(TEST_ROUTE_ID_1)
-                .setVolumeHandling(PLAYBACK_VOLUME_VARIABLE)
-                .build();
-
-        // Resources.getSystem().getIdentifier() is necessary to avoid the inlining of the resource
-        // id int, which is not guaranteed to match across Android builds on which CTS runs. See
-        // b/288602351 for more context.
-        int volumeAdjustmentForRemoteGroupSessionsResourceId =
-                Resources.getSystem()
-                        .getIdentifier(
-                                "config_volumeAdjustmentForRemoteGroupSessions",
-                                "bool",
-                                /* defPackage= */ "android");
-        boolean volumeAdjustmentForRemoteGroupSessions =
-                Resources.getSystem().getBoolean(volumeAdjustmentForRemoteGroupSessionsResourceId);
-
-        int expectedVolumeHandling = volumeAdjustmentForRemoteGroupSessions
-                ? PLAYBACK_VOLUME_VARIABLE : PLAYBACK_VOLUME_FIXED;
-
-        assertThat(sessionInfo.getVolumeHandling()).isEqualTo(expectedVolumeHandling);
     }
 
     @Test
