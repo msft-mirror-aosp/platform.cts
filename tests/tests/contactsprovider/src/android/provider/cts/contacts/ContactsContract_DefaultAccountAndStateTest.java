@@ -79,7 +79,7 @@ public class ContactsContract_DefaultAccountAndStateTest {
                 defaultContactsAccount.getState());
         assertEquals(ACCT_1, defaultContactsAccount.getAccount());
 
-        defaultContactsAccount = DefaultAccountAndState.ofCloud(ACCT_1);
+        defaultContactsAccount = DefaultAccountAndState.ofSim(ACCT_1);
         assertEquals(DefaultAccountAndState.DEFAULT_ACCOUNT_STATE_SIM,
                 defaultContactsAccount.getState());
         assertEquals(ACCT_1, defaultContactsAccount.getAccount());
