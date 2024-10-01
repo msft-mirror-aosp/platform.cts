@@ -1122,7 +1122,7 @@ public class CtsSharesheetDeviceTest {
     }
 
     private void closeSharesheet() {
-        mDevice.pressBack();
+        mDevice.pressHome();
         waitAndAssertPkgNotVisible(mSharesheetPkg);
         waitForIdle();
     }
