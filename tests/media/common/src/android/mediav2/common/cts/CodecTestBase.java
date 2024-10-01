@@ -188,6 +188,8 @@ public abstract class CodecTestBase {
     // max poll counter before test aborts and returns error
     public static final int RETRY_LIMIT = 100;
     public static final String INVALID_CODEC = "unknown.codec_";
+    public static final String MIMETYPE_VIDEO_VC1 = "video/wvc1";
+    public static final String MIMETYPE_VIDEO_WMV = "video/x-ms-wmv";
     static final int[] MPEG2_PROFILES = new int[]{MPEG2ProfileSimple, MPEG2ProfileMain,
             MPEG2Profile422, MPEG2ProfileSNR, MPEG2ProfileSpatial, MPEG2ProfileHigh};
     static final int[] MPEG4_PROFILES = new int[]{MPEG4ProfileSimple, MPEG4ProfileSimpleScalable,
