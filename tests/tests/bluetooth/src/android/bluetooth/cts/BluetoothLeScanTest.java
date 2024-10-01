@@ -242,57 +242,59 @@ public class BluetoothLeScanTest {
         return null;
     }
 
-//    /**
-//     * Test of opportunistic BLE scans.
-//     * Temporarily disable this test because it is interfered by the GmsCore;
-//     * it fails when it obtains results from GmsCore explicit scan.
-//     * TODO(b/70865144): re-enable this test.
-//     */
-//    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
-//    @MediumTest
-//    @Test
-//    public void opportunisticScan() {
-//        ScanSettings opportunisticScanSettings = new ScanSettings.Builder()
-//                .setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC)
-//                .build();
-//        BleScanCallback emptyScanCallback = new BleScanCallback();
-//        assertTrue("opportunistic scan shouldn't have scan results",
-//                emptyScanCallback.getScanResults().isEmpty());
-//
-//        // No scans are really started with opportunistic scans only.
-//        mScanner.startScan(Collections.<ScanFilter>emptyList(), opportunisticScanSettings,
-//                emptyScanCallback);
-//        sleep(SCAN_DURATION_MILLIS);
-//        Log.d(TAG, "result: " + emptyScanCallback.getScanResults());
-//        assertTrue("opportunistic scan shouldn't have scan results",
-//                emptyScanCallback.getScanResults().isEmpty());
-//
-//        BleScanCallback regularScanCallback = new BleScanCallback();
-//        ScanSettings regularScanSettings = new ScanSettings.Builder()
-//                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
-//        List<ScanFilter> filters = new ArrayList<>();
-//        ScanFilter filter = createScanFilter();
-//        if (filter != null) {
-//            filters.add(filter);
-//        } else {
-//            Log.d(TAG, "no appropriate filter can be set");
-//        }
-//        mScanner.startScan(filters, regularScanSettings, regularScanCallback);
-//        sleep(SCAN_DURATION_MILLIS);
-//        // With normal BLE scan client, opportunistic scan client will get scan results.
-//        assertTrue("opportunistic scan results shouldn't be empty",
-//                !emptyScanCallback.getScanResults().isEmpty());
-//
-//        // No more scan results for opportunistic scan clients once the normal BLE scan clients
-//        // stops.
-//        mScanner.stopScan(regularScanCallback);
-//        // In case we got scan results before scan was completely stopped.
-//        sleep(SCAN_STOP_TIMEOUT);
-//        emptyScanCallback.clear();
-//        sleep(SCAN_DURATION_MILLIS);
-//        assertTrue("opportunistic scan shouldn't have scan results",
-//                emptyScanCallback.getScanResults().isEmpty());
-//    }
+    /**
+     * Test of opportunistic BLE scans.
+     * Temporarily disable this test because it is interfered by the GmsCore;
+     * it fails when it obtains results from GmsCore explicit scan.
+     */
+    @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
+    @MediumTest
+    @Test
+    public void opportunisticScan() {
+        InstrumentationRegistry.getInstrumentation().getUiAutomation()
+                .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);
+
+        ScanSettings opportunisticScanSettings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_OPPORTUNISTIC)
+                .build();
+        BleScanCallback emptyScanCallback = new BleScanCallback();
+        assertTrue("opportunistic scan shouldn't have scan results",
+                emptyScanCallback.getScanResults().isEmpty());
+
+        // No scans are really started with opportunistic scans only.
+        mScanner.startScan(Collections.<ScanFilter>emptyList(), opportunisticScanSettings,
+                emptyScanCallback);
+        TestUtils.sleep(SCAN_DURATION_MILLIS);
+        Log.d(TAG, "result: " + emptyScanCallback.getScanResults());
+        assertTrue("opportunistic scan shouldn't have scan results",
+                emptyScanCallback.getScanResults().isEmpty());
+
+        BleScanCallback regularScanCallback = new BleScanCallback();
+        ScanSettings regularScanSettings = new ScanSettings.Builder()
+                .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        List<ScanFilter> filters = new ArrayList<>();
+        ScanFilter filter = createScanFilter();
+        if (filter != null) {
+            filters.add(filter);
+        } else {
+            Log.d(TAG, "no appropriate filter can be set");
+        }
+        mScanner.startScan(filters, regularScanSettings, regularScanCallback);
+        TestUtils.sleep(SCAN_DURATION_MILLIS);
+        // With normal BLE scan client, opportunistic scan client will get scan results.
+        assertTrue("opportunistic scan results shouldn't be empty",
+                !emptyScanCallback.getScanResults().isEmpty());
+
+        // No more scan results for opportunistic scan clients once the normal BLE scan clients
+        // stops.
+        mScanner.stopScan(regularScanCallback);
+        // In case we got scan results before scan was completely stopped.
+        TestUtils.sleep(SCAN_STOP_TIMEOUT);
+        emptyScanCallback.clear();
+        TestUtils.sleep(SCAN_DURATION_MILLIS);
+        assertTrue("opportunistic scan shouldn't have scan results",
+                emptyScanCallback.getScanResults().isEmpty());
+    }
 
     /**
      * Test case for BLE Batch scan.
