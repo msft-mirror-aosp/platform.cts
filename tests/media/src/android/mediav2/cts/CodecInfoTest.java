@@ -69,7 +69,6 @@ import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.VsrTest;
 
 import org.junit.Assume;
@@ -188,7 +187,6 @@ public class CodecInfoTest {
     @Test
     // TODO (b/228237404) Remove the following once there is a reliable way to query HDR
     // display capabilities at native level, till then limit the test to vendor codecs
-    @NonMainlineTest
     @FrameworkSpecificTest
     @CddTest(requirements = "5.1.7/C-2-1")
     @ApiTest(apis = "android.media.MediaCodecInfo.CodecCapabilities#profileLevels")
