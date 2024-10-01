@@ -1253,6 +1253,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     View.VISIBLE, TIMEOUT);
             expectImeVisible(TIMEOUT);
 
+            WindowInsets initialRootWindowInsets =
+                    testActivity.getWindow().getDecorView().getRootWindowInsets();
+
             // Launch another test activity from another process with popup dialog.
             MockTestActivityUtil.launchSync(instant, TIMEOUT,
                     Map.of(MockTestActivityUtil.EXTRA_KEY_SHOW_DIALOG, "true"));
@@ -1266,32 +1269,22 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG,
                     mUserHelper.getUserId());
 
-            final CountDownLatch imeVisibilityUpdateLatch = new CountDownLatch(1);
-            AtomicReference<Boolean> imeInsetsVisible = new AtomicReference<>();
-            TestUtils.runOnMainSync(
-                    () -> testActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                            (v, insets) -> {
-                                if (insets.hasInsets()) {
-                                    imeInsetsVisible.set(insets.isVisible(WindowInsets.Type.ime()));
-                                    imeVisibilityUpdateLatch.countDown();
-                                }
-                                return v.onApplyWindowInsets(insets);
-                            }));
             // Verify keyboard visibility should aligned with IME insets visibility.
             TestUtils.waitOnMainUntil(
                     () -> testActivity.getWindow().getDecorView().getVisibility() == VISIBLE
                             && testActivity.getWindow().getDecorView().hasWindowFocus(), TIMEOUT);
-            assertTrue("Waiting for onApplyWindowInsets timed out",
-                    imeVisibilityUpdateLatch.await(5, TimeUnit.SECONDS));
             // Wait for layout being stable in case insets visibility might not align with the
             // input view visibility.
             waitForInputViewLayoutStable(stream, LAYOUT_STABLE_THRESHOLD);
 
-            if (imeInsetsVisible.get()) {
+            if (initialRootWindowInsets.isVisible(WindowInsets.Type.ime())) {
                 expectImeVisible(TIMEOUT);
             } else {
                 expectImeInvisible(TIMEOUT);
             }
+            assertEquals(initialRootWindowInsets.getInsets(WindowInsets.Type.ime()),
+                    testActivity.getWindow().getDecorView().getRootWindowInsets().getInsets(
+                            WindowInsets.Type.ime()));
         }
     }
 
