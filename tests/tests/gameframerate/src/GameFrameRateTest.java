@@ -202,7 +202,6 @@ public final class GameFrameRateTest {
 
     private void testGameModeFrameRateOverride(FrameRateObserver frameRateObserver)
             throws InterruptedException, IOException {
-        assumeTrue(mDisplayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_REAR).length == 0);
         GameFrameRateCtsActivity activity = mActivityRule.getActivity();
         List<Display.Mode> modesToTest = getModesToTest();
 
