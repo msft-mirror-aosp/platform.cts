@@ -21,7 +21,6 @@ import android.app.job.JobParameters;
 import android.app.job.JobScheduler;
 import android.content.ClipData;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.PersistableBundle;
 import android.os.UserHandle;
@@ -198,8 +197,7 @@ public class JobParametersTest extends BaseJobSchedulerTest {
                                 + " " + kJobServiceComponent.getPackageName()
                                 + " " + JOB_ID));
 
-        // In automotive device, always-on screen and endless battery charging are assumed.
-        if (BatteryUtils.hasBattery() && !isAutomotiveDevice()) {
+        if (BatteryUtils.hasBattery()) {
             setBatteryState(false, 100);
             verifyStopReason(new JobInfo.Builder(JOB_ID, kJobServiceComponent)
                             .setRequiresBatteryNotLow(true).build(),
@@ -260,10 +258,6 @@ public class JobParametersTest extends BaseJobSchedulerTest {
     // JobParameters.getTriggeredContentAuthorities() tested in TriggerContentTest.
     // JobParameters.getTriggeredContentUris() tested in TriggerContentTest.
     // JobParameters.isOverrideDeadlineExpired() tested in TimingConstraintTest.
-
-    private boolean isAutomotiveDevice() {
-        return getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE);
-    }
 
     private interface ExceptionRunnable {
         void run() throws Exception;
