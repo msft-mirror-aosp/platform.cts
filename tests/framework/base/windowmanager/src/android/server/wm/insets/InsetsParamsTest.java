@@ -20,6 +20,8 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeTrue;
+
 import android.app.ActivityOptions;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.Context;
@@ -84,6 +86,7 @@ public class InsetsParamsTest extends MultiDisplayTestBase {
     @Test
     public void testInsetsParams_providesInsets() throws Exception {
         // Inject insets on a new display so we don't mess with any existing insets.
+        assumeTrue(supportsMultiDisplay());
         WindowManagerState.DisplayContent displayContent = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true)
                 .setOwnContentOnly(true)
