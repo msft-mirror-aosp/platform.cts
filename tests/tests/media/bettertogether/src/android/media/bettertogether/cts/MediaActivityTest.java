@@ -44,7 +44,6 @@ import androidx.test.filters.LargeTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -64,7 +63,6 @@ import java.util.concurrent.TimeUnit;
  * Test {@link MediaSessionTestActivity} which has called {@link Activity#setMediaController}.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @LargeTest
 @RunWith(AndroidJUnit4.class)
 public class MediaActivityTest {
