@@ -16,6 +16,8 @@
 
 package android.server.wm;
 
+import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
+import static android.server.wm.CtsWindowInfoUtils.waitForWindowVisible;
 import static android.server.wm.UiDeviceUtils.pressUnlockButton;
 import static android.server.wm.UiDeviceUtils.pressWakeupButton;
 import static android.server.wm.WindowManagerState.STATE_RESUMED;
@@ -156,7 +158,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateAndVerifyDisplayHash() {
+    public void testGenerateAndVerifyDisplayHash() throws InterruptedException {
         setupChildView();
 
         // A solid color image has expected hash of all 0s
@@ -173,7 +175,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateAndVerifyDisplayHash_BoundsInView() {
+    public void testGenerateAndVerifyDisplayHash_BoundsInView() throws InterruptedException {
         setupChildView();
 
         Rect bounds = new Rect(10, 20, mTestViewSize.x / 2, mTestViewSize.y / 2);
@@ -187,7 +189,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateAndVerifyDisplayHash_EmptyBounds() {
+    public void testGenerateAndVerifyDisplayHash_EmptyBounds() throws InterruptedException {
         setupChildView();
 
         mTestView.generateDisplayHash(mPhashAlgorithm, new Rect(), mExecutor,
@@ -198,7 +200,8 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateAndVerifyDisplayHash_BoundsBiggerThanView() {
+    public void testGenerateAndVerifyDisplayHash_BoundsBiggerThanView()
+            throws InterruptedException {
         setupChildView();
 
         Rect bounds = new Rect(0, 0, mTestViewSize.x + 100, mTestViewSize.y + 100);
@@ -213,7 +216,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateDisplayHash_BoundsOutOfView() {
+    public void testGenerateDisplayHash_BoundsOutOfView() throws InterruptedException {
         setupChildView();
 
         Rect bounds = new Rect(mTestViewSize.x + 1, mTestViewSize.y + 1, mTestViewSize.x + 100,
@@ -255,7 +258,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateDisplayHash_WindowOffscreen() {
+    public void testGenerateDisplayHash_WindowOffscreen() throws InterruptedException {
         final WindowManager wm = mActivity.getWindowManager();
         final WindowManager.LayoutParams windowParams = new WindowManager.LayoutParams();
 
@@ -306,6 +309,7 @@ public class DisplayHashManagerTest {
             wm.updateViewLayout(mMainView, windowParams);
         });
         mInstrumentation.waitForIdleSync();
+        waitForStableWindowGeometry(5, TimeUnit.SECONDS);
 
         mSyncDisplayHashResultCallback.reset();
         mTestView.generateDisplayHash(mPhashAlgorithm, null, mExecutor,
@@ -316,7 +320,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateDisplayHash_InvalidHashAlgorithm() {
+    public void testGenerateDisplayHash_InvalidHashAlgorithm() throws InterruptedException {
         setupChildView();
 
         mTestView.generateDisplayHash("fake hash", null, mExecutor,
@@ -326,7 +330,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testVerifyDisplayHash_ValidDisplayHash() {
+    public void testVerifyDisplayHash_ValidDisplayHash() throws InterruptedException {
         setupChildView();
 
         DisplayHash displayHash = generateDisplayHash(null);
@@ -341,7 +345,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testVerifyDisplayHash_InvalidDisplayHash() {
+    public void testVerifyDisplayHash_InvalidDisplayHash() throws InterruptedException {
         setupChildView();
 
         DisplayHash displayHash = generateDisplayHash(null);
@@ -370,7 +374,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateDisplayHash_Throttle() {
+    public void testGenerateDisplayHash_Throttle() throws InterruptedException {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mDisplayHashManager.setDisplayHashThrottlingEnabled(true));
 
@@ -388,7 +392,7 @@ public class DisplayHashManagerTest {
     }
 
     @Test
-    public void testGenerateAndVerifyDisplayHash_MultiColor() {
+    public void testGenerateAndVerifyDisplayHash_MultiColor() throws InterruptedException {
         final CountDownLatch committedCallbackLatch = new CountDownLatch(1);
         final SurfaceControl.Transaction t = new SurfaceControl.Transaction();
         t.addTransactionCommittedListener(mExecutor, committedCallbackLatch::countDown);
@@ -424,6 +428,7 @@ public class DisplayHashManagerTest {
         ComponentName componentName = ComponentName.unflattenFromString(
                 "android.server.wm/android.server.wm.DisplayHashManagerTest$TestActivity");
         waitForActivityResumed(TIMEOUT_MS, componentName);
+        waitForWindowVisible(mTestView);
 
         byte[] expectedImageHash = new byte[]{-1, -1, 127, -1, -1, -1, 127, 127};
 
@@ -476,7 +481,7 @@ public class DisplayHashManagerTest {
         return displayHash;
     }
 
-    private void setupChildView() {
+    private void setupChildView() throws InterruptedException {
         final CountDownLatch committedCallbackLatch = new CountDownLatch(1);
         final SurfaceControl.Transaction t = new SurfaceControl.Transaction();
         t.addTransactionCommittedListener(mExecutor, committedCallbackLatch::countDown);
@@ -497,6 +502,7 @@ public class DisplayHashManagerTest {
         } catch (InterruptedException e) {
         }
         waitForAllActivitiesResumed();
+        waitForWindowVisible(mTestView);
     }
 
     public static class TestActivity extends Activity {
