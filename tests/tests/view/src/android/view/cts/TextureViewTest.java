@@ -22,12 +22,12 @@ import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
-import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assert.fail;
 
 import android.Manifest;
@@ -143,15 +143,11 @@ public class TextureViewTest {
         activity.waitForSurface();
         activity.initGl();
         int updatedCount;
-        // If the caption bar is present, the surface update counts increase by 1
-        int extraSurfaceOffset =
-                window.getDecorView().getRootWindowInsets().getInsets(captionBar()).top == 0
-                ? 0 : 1;
-        updatedCount = activity.waitForSurfaceUpdateCount(0 + extraSurfaceOffset);
-        assertEquals(0 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(0);
+        assertEquals(0, updatedCount);
         activity.drawColor(Color.GREEN);
-        updatedCount = activity.waitForSurfaceUpdateCount(1 + extraSurfaceOffset);
-        assertEquals(1 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(1);
+        assertEquals(1, updatedCount);
         assertEquals(Color.WHITE, getPixel(window, center));
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule,
                 activity.findViewById(android.R.id.content), () -> activity.removeCover());
@@ -159,8 +155,8 @@ public class TextureViewTest {
         int color = waitForChange(window, center, Color.WHITE);
         assertEquals(Color.GREEN, color);
         activity.drawColor(Color.BLUE);
-        updatedCount = activity.waitForSurfaceUpdateCount(2 + extraSurfaceOffset);
-        assertEquals(2 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(2);
+        assertEquals(2, updatedCount);
         color = waitForChange(window, center, color);
         assertEquals(Color.BLUE, color);
     }
@@ -796,6 +792,16 @@ public class TextureViewTest {
 
         final Bitmap bitmap = activity.getContents(compareFunction.getConfig(),
                 compareFunction.getColorSpace());
+
+        assumeFalse(
+                "Got a fixed-point bitmap, skipping extended fp16 test",
+                Bitmap.Config.RGBA_F16.equals(compareFunction.getConfig())
+                        && !Bitmap.Config.RGBA_F16.equals(bitmap.getConfig()));
+
+        assumeFalse(
+                "FP16 not supported by the driver, skipping extended fp16 test",
+                activity.eglFloatExtensionUnsupported()
+                        && Bitmap.Config.RGBA_F16.equals(compareFunction.getConfig()));
 
         // If GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING is GL_SRGB, then glClear will treat the input
         // color as linear and write a converted sRGB color into the framebuffer.
