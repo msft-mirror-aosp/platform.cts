@@ -1233,7 +1233,9 @@ public class TestUtils {
     }
 
     public static boolean isAttestationSupported() {
-        return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.O;
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        return Build.VERSION.DEVICE_INITIAL_SDK_INT >= Build.VERSION_CODES.O
+                && hasSecureLockScreen(context);
     }
 
     public static boolean isPropertyEmptyOrUnknown(String property) {
