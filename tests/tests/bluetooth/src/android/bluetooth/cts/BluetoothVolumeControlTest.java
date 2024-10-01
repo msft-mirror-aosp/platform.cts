@@ -35,15 +35,12 @@ import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothVolumeControl;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
-
-import com.android.bluetooth.flags.Flags;
 
 import org.junit.After;
 import org.junit.Before;
@@ -277,7 +274,6 @@ public class BluetoothVolumeControlTest {
         enforceConnectAndPrivileged(() -> mBluetoothVolumeControl.setVolumeOffset(mTestDevice, 0));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_VOLUME_CONTROL_FOR_CONNECTED_DEVICES)
     @Test
     public void setDeviceVolume() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
@@ -402,7 +398,6 @@ public class BluetoothVolumeControlTest {
         assertTrue(mAudioDescriptionChangedCallbackCalled);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_BROADCAST_VOLUME_CONTROL_FOR_CONNECTED_DEVICES)
     @Test
     public void deviceVolumeChangedCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
