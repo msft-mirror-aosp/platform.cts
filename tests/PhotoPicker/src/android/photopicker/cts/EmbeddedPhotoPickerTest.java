@@ -194,18 +194,16 @@ public class EmbeddedPhotoPickerTest {
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
-
-        // 2. Get media item and perform click
-        clickAndWait(sDevice, getMediaItem(sDevice));
-
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
+        // 2. Set a new count down latch for 'onSessionError' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSessionErrorClientInvocation(countDownLatch);
 
         // 3. Kill the PhotoPicker process
         sDevice.executeShellCommand("am force-stop " + getExplicitPackageName());
 
+        // 4. Assert that 'onSessionError' is invoked and the session is null
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(mActivity.getSession()).isNull();
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
     }
 
     @Test
