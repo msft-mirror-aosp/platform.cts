@@ -34,7 +34,9 @@ import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -71,7 +73,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun installPackageWithAppFunction_runtimeMetadataExist() = runTest {
+    fun installPackageWithAppFunction_runtimeMetadataExist() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
 
         retryAssert {
@@ -81,7 +83,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun updatePackage_runtimeMetadataUpdated() = runTest {
+    fun updatePackage_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         retryAssert {
             assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
@@ -100,7 +102,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun uninstallPackageWithAppFunctions_runtimeMetadataRemoved() = runTest {
+    fun uninstallPackageWithAppFunctions_runtimeMetadataRemoved() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         retryAssert {
             assertThat(queryAppFunctionInfos(TEST_APP_A_PKG))
@@ -113,7 +115,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun installTwoPackageWithAppFunctions_runtimeMetadataExist() = runTest {
+    fun installTwoPackageWithAppFunctions_runtimeMetadataExist() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
 
@@ -126,7 +128,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated() = runTest {
+    fun twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
         retryAssert {
@@ -150,7 +152,7 @@ class AppFunctionMetadataTest {
     }
 
     @Test
-    fun twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated() = runTest {
+    fun twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
         retryAssert {
@@ -238,11 +240,12 @@ class AppFunctionMetadataTest {
                     return
                 } catch (e: Throwable) {
                     lastError = e
-                    // TODO(b/357551503): Figure out the correct rule to make runtest blocking
-                    Thread.sleep(RETRY_CHECK_INTERVAL_MILLIS)
+                    delay(RETRY_CHECK_INTERVAL_MILLIS)
                 }
             }
             throw lastError!!
         }
     }
 }
+
+private fun doBlocking(block: suspend CoroutineScope.() -> Unit) = runBlocking(block = block)
