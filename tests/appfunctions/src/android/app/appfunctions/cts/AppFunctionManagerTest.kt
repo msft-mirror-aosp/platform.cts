@@ -52,6 +52,7 @@ import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.compatibility.common.util.ApiTest
+import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
 import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
 import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
@@ -76,6 +77,15 @@ import org.junit.runner.RunWith
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionManagerTest {
     @get:Rule val checkFlagsRule: CheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule()
+
+    @get:Rule
+    val setCancellationTimeoutRule: DeviceConfigStateChangerRule =
+        DeviceConfigStateChangerRule(
+            context,
+            "appfunctions",
+            "execute_app_function_cancellation_timeout_millis",
+            "3000",
+        )
 
     private val context: Context
         get() = ApplicationProvider.getApplicationContext()
@@ -302,7 +312,9 @@ class AppFunctionManagerTest {
         }
     }
 
-    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"])
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"]
+    )
     @Test
     fun isAppFunctionEnabled_sidecar() = runTest {
         SidecarUtil.assumeSidecarAvailable()
@@ -310,7 +322,9 @@ class AppFunctionManagerTest {
         assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
     }
 
-    @ApiTest(apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"])
+    @ApiTest(
+        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"]
+    )
     @Test
     fun setAppFunctionEnabled_sidecar() = runTest {
         SidecarUtil.assumeSidecarAvailable()
@@ -319,7 +333,7 @@ class AppFunctionManagerTest {
         assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
         sidecarSetAppFunctionEnabled(
             functionUnderTest,
-            AppFunctionManager.APP_FUNCTION_STATE_DISABLED
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
         )
 
         assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
@@ -653,7 +667,7 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
-    fun executeAppFunction_cancellationSignal_resultCancelled() {
+    fun executeAppFunction_cancellationSignal_cancelled_unbind() {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
         val request =
@@ -669,8 +683,34 @@ class AppFunctionManagerTest {
 
         cancellationSignal.cancel()
 
-        assertOperationCancelled()
-        // TODO :Test that the service is destroyed.
+        assertCancelListenerTriggered()
+        assertServiceDestroyed()
+        assertThat(blockingQueue).isEmpty()
+    }
+
+    @Throws(InterruptedException::class)
+    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
+    @Test
+    @EnsureHasNoDeviceOwner
+    fun executeAppFunction_cancellationSignal_cancellationTimedOut_unbind() {
+        val parameters: GenericDocument =
+            GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "").build()
+        val request =
+            ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "notInvokeCallback")
+                .setParameters(parameters)
+                .build()
+        val cancellationSignal = CancellationSignal()
+        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
+        mManager.executeAppFunction(request, context.mainExecutor, cancellationSignal) {
+            e: ExecuteAppFunctionResponse ->
+            blockingQueue.add(e)
+        }
+
+        cancellationSignal.cancel()
+
+        assertCancelListenerTriggered()
+        assertServiceDestroyed()
+        assertThat(blockingQueue).isEmpty()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
@@ -781,7 +821,6 @@ class AppFunctionManagerTest {
         }
     }
 
-    @Throws(InterruptedException::class)
     private fun executeAppFunctionAndWait(
         request: ExecuteAppFunctionRequest
     ): ExecuteAppFunctionResponse {
@@ -793,7 +832,7 @@ class AppFunctionManagerTest {
         return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
-    private fun assertOperationCancelled() {
+    private fun assertCancelListenerTriggered() {
         assertThat(waitForOperationCancellation(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS)).isTrue()
     }
 
@@ -813,32 +852,34 @@ class AppFunctionManagerTest {
         targetPackage: String,
         functionIdentifier: String,
     ): Boolean = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context).isAppFunctionEnabled(
-            functionIdentifier,
-            targetPackage,
-            context.mainExecutor,
-            continuation.asOutcomeReceiver(),
-        )
+        SidecarAppFunctionManager(context)
+            .isAppFunctionEnabled(
+                functionIdentifier,
+                targetPackage,
+                context.mainExecutor,
+                continuation.asOutcomeReceiver(),
+            )
     }
 
     private suspend fun sidecarSetAppFunctionEnabled(
         functionIdentifier: String,
         @EnabledState state: Int,
     ): Unit = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context).setAppFunctionEnabled(
-            functionIdentifier,
-            state,
-            context.mainExecutor,
-            object : OutcomeReceiver<Void, Exception> {
-                override fun onResult(result: Void?) {
-                    continuation.resume(Unit)
-                }
+        SidecarAppFunctionManager(context)
+            .setAppFunctionEnabled(
+                functionIdentifier,
+                state,
+                context.mainExecutor,
+                object : OutcomeReceiver<Void, Exception> {
+                    override fun onResult(result: Void?) {
+                        continuation.resume(Unit)
+                    }
 
-                override fun onError(error: Exception) {
-                    continuation.resumeWithException(error)
-                }
-            },
-        )
+                    override fun onError(error: Exception) {
+                        continuation.resumeWithException(error)
+                    }
+                },
+            )
     }
 
     private suspend fun setAppFunctionEnabled(
