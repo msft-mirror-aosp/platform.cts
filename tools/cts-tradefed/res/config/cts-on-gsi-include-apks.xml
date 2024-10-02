@@ -143,4 +143,9 @@
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppChoreographer" />
     <option name="compatibility:include-filter" value="CtsGraphicsTestCases android.graphics.cts.FrameRateOverrideTest#testAppBackpressure" />
 
+    <!-- b/353141490 -->
+    <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayModeGetRefreshRateDisplayModeReturnsPhysicalRefreshRate" />
+    <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeChoreographer" />
+    <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeBackpressure" />
+    <option name="compatibility:include-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayGetRefreshRate" />
 </configuration>

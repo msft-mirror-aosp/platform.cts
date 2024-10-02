@@ -202,6 +202,12 @@
     <!-- b/349072303 -->
     <option name="compatibility:exclude-filter" value="CtsHardwareTestCases android.hardware.cts.LowRamDeviceTest#testMinDataPartitionSize" />
 
+    <!-- b/353141490 -->
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayModeGetRefreshRateDisplayModeReturnsPhysicalRefreshRate" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeChoreographer" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeBackpressure" />
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest#testGameModeDisplayGetRefreshRate" />
+
     <!-- b/361909833 -->
     <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.AdSelectionTest#testGetAdSelectionService_lowRamDevice_throwsIllegalStateException" />
     <option name="compatibility:exclude-filter" value="CtsAdServicesDeviceTestCases android.adservices.cts.CustomAudienceTest#testGetCustomAudienceService_lowRamDevice_throwsIllegalStateException" />
