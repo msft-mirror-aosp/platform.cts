@@ -30,6 +30,10 @@ import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.bedstead.harrier.BedsteadJUnit4
+import com.android.bedstead.harrier.DeviceState
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
@@ -39,9 +43,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)
 class AppFunctionMetadataTest {
     @Rule
@@ -73,6 +80,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun installPackageWithAppFunction_runtimeMetadataExist() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
 
@@ -83,6 +92,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun updatePackage_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         retryAssert {
@@ -102,6 +113,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun uninstallPackageWithAppFunctions_runtimeMetadataRemoved() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         retryAssert {
@@ -115,6 +128,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun installTwoPackageWithAppFunctions_runtimeMetadataExist() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
@@ -128,6 +143,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun twoPackagesInstalled_updateOneOfThem_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
@@ -152,6 +169,8 @@ class AppFunctionMetadataTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun twoPackagesInstalled_uninstallOneOfThem_runtimeMetadataUpdated() = doBlocking {
         installPackage(TEST_APP_A_V2_PATH)
         installPackage(TEST_APP_B_V1_PATH)
@@ -213,6 +232,8 @@ class AppFunctionMetadataTest {
     data class AppFunctionInfo(val packageName: String, val functionId: String)
 
     private companion object {
+        @JvmField @ClassRule @Rule val sDeviceState: DeviceState = DeviceState()
+
         const val TEST_APP_ROOT_FOLDER: String = "/data/local/tmp/cts/appfunctions/"
         const val TEST_APP_A_V1_PATH: String =
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppAV1.apk"

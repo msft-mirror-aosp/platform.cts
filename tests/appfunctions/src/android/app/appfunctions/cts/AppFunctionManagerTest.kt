@@ -50,6 +50,8 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.bedstead.nene.TestApis.permissions
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
@@ -123,12 +125,16 @@ class AppFunctionManagerTest {
     }
 
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun checkManagerNotNull() {
         assertThat(mManager).isNotNull()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_failed_noSuchMethod() {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
@@ -145,6 +151,8 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_onlyInvokeCallbackOnce() {
         val parameters: GenericDocument =
@@ -180,6 +188,8 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_platformManager_platformAppFunctionService_success() {
         val parameters: GenericDocument =
@@ -207,6 +217,8 @@ class AppFunctionManagerTest {
     )
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_platformAppFunctionService_success() = doBlocking {
         suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
@@ -248,6 +260,8 @@ class AppFunctionManagerTest {
     )
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() = doBlocking {
         suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
@@ -286,6 +300,8 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_platformManager_sidecarAppFunctionService_success() = doBlocking {
         suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
@@ -317,6 +333,8 @@ class AppFunctionManagerTest {
         apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"]
     )
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun isAppFunctionEnabled_sidecar() = doBlocking {
         SidecarUtil.assumeSidecarAvailable()
 
@@ -327,6 +345,8 @@ class AppFunctionManagerTest {
         apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"]
     )
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun setAppFunctionEnabled_sidecar() = doBlocking {
         SidecarUtil.assumeSidecarAvailable()
 
@@ -343,6 +363,8 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_otherNonExistingTargetPackage() {
         val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
@@ -360,6 +382,8 @@ class AppFunctionManagerTest {
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
     fun executeAppFunction_otherExistingTargetPackage() {
         val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
@@ -378,6 +402,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_throwsException() {
@@ -393,6 +419,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_onRemoteProcessKilled() {
@@ -410,6 +438,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_success_async() {
@@ -437,6 +467,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_emptyPackage() {
@@ -468,6 +500,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_disabledByDefault_fail() {
@@ -483,6 +517,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_disabledInRuntime_fail() = doBlocking {
@@ -498,6 +534,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() {
@@ -511,6 +549,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_deviceOwner_fail() {
@@ -525,6 +565,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun executeAppFunction_largeTransactionSuccess() {
@@ -553,6 +595,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsFalse_success() =
         doBlocking {
@@ -585,6 +629,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_functionMetadataNotFound_failsWithInvalidArgument() =
         doBlocking {
@@ -607,6 +653,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionTrustedPermission_restrictCallersWithExecuteAppFunctionsTrue_success() =
         doBlocking {
@@ -639,6 +687,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_withExecuteAppFunctionPermission_restrictCallersWithExecuteAppFunctionsTrue_resultDenied() =
         doBlocking {
@@ -667,6 +717,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_cancellationSignal_cancelled_unbind() {
         val parameters: GenericDocument =
@@ -692,6 +744,8 @@ class AppFunctionManagerTest {
     @Throws(InterruptedException::class)
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun executeAppFunction_cancellationSignal_cancellationTimedOut_unbind() {
         val parameters: GenericDocument =
@@ -716,12 +770,16 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     fun isAppFunctionEnabled_functionDefaultEnabled() = doBlocking {
         assertThat(isAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
     }
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionIdentifier = "add_disabledByDefault"))
@@ -739,6 +797,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_otherPackage_noPermission() = doBlocking {
         assertFailsWith<IllegalArgumentException>("function not found") {
@@ -748,6 +808,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionPermission() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_PERMISSION) {
@@ -757,6 +819,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#isAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     fun isAppFunctionEnabled_otherPackage_hasExecuteAppFunctionTrustedPermission() = doBlocking {
         runWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
@@ -766,6 +830,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun setAppFunctionEnabled_functionDefaultEnabled() = doBlocking {
@@ -789,6 +855,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun setAppFunctionEnabled_functionDefaultDisabled() = doBlocking {
@@ -812,6 +880,8 @@ class AppFunctionManagerTest {
 
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#setAppFunctionEnabled"])
     @Test
+    @IncludeRunOnSecondaryUser
+    @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
     fun setAppFunctionEnabled_functionNotExist() = doBlocking {
