@@ -1160,13 +1160,13 @@ public class NotificationTest {
                 .setStyledByProgress(false)
                 .setProgress(5)
                 .addProgressSegment(new Notification.ProgressStyle.Segment(10)
-                        .setColor(Color.BLUE).setStableId(100))
+                        .setColor(Color.BLUE).setId(100))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(100)
-                        .setStableId(1))
+                        .setId(1))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN))
                 .addProgressStep(new Notification.ProgressStyle.Step(10)
-                        .setColor(Color.YELLOW).setStableId(10))
+                        .setColor(Color.YELLOW).setId(10))
                 .addProgressStep(new Notification.ProgressStyle.Step(18)
                         .setColor(Color.RED))
                 .addProgressStep(new Notification.ProgressStyle.Step(25))
@@ -1207,13 +1207,13 @@ public class NotificationTest {
                 .setStyledByProgress(false)
                 .setProgress(5)
                 .addProgressSegment(new Notification.ProgressStyle.Segment(10)
-                        .setColor(Color.BLUE).setStableId(100))
+                        .setColor(Color.BLUE).setId(100))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(100)
-                        .setStableId(1))
+                        .setId(1))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN))
                 .addProgressStep(new Notification.ProgressStyle.Step(10)
-                        .setColor(Color.YELLOW).setStableId(10))
+                        .setColor(Color.YELLOW).setId(10))
                 .addProgressStep(new Notification.ProgressStyle.Step(18)
                         .setColor(Color.RED))
                 .addProgressStep(new Notification.ProgressStyle.Step(25))
@@ -1239,9 +1239,9 @@ public class NotificationTest {
         expectedProgressStyle
                 .addProgressSegment(new Notification.ProgressStyle.Segment(10)
                         .setColor(Color.BLUE)
-                        .setStableId(100))
+                        .setId(100))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(-100)
-                        .setStableId(1))
+                        .setId(1))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN))
                     .addProgressSegment(new Notification.ProgressStyle.Segment(0)
@@ -1261,7 +1261,7 @@ public class NotificationTest {
         assertThat(recoveredStyle.getProgressSegments()).isEqualTo(List.of(
                 new Notification.ProgressStyle.Segment(10)
                         .setColor(Color.BLUE)
-                        .setStableId(100),
+                        .setId(100),
                 new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN),
                 new Notification.ProgressStyle.Segment(10)
@@ -1275,9 +1275,9 @@ public class NotificationTest {
         expectedProgressStyle
                 .addProgressStep(new Notification.ProgressStyle.Step(10)
                         .setColor(Color.BLUE)
-                        .setStableId(100))
+                        .setId(100))
                 .addProgressStep(new Notification.ProgressStyle.Step(-100)
-                        .setStableId(1))
+                        .setId(1))
                 .addProgressStep(new Notification.ProgressStyle.Step(20)
                         .setColor(Color.GREEN))
                 .addProgressStep(new Notification.ProgressStyle.Step(0)
@@ -1297,7 +1297,7 @@ public class NotificationTest {
         assertThat(recoveredStyle.getProgressSteps()).isEqualTo(List.of(
                         new Notification.ProgressStyle.Step(10)
                                 .setColor(Color.BLUE)
-                                .setStableId(100),
+                                .setId(100),
                         new Notification.ProgressStyle.Step(20)
                                 .setColor(Color.GREEN),
                         new Notification.ProgressStyle.Step(0)
