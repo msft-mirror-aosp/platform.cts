@@ -39,8 +39,6 @@ import android.window.OnBackInvokedCallback;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
 
-import com.android.compatibility.common.util.CddTest;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -127,7 +125,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-5,H-0-6,H-0-8" })
     public void invokesCallback_invoked() throws InterruptedException {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -161,7 +158,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-7" })
     public void invokesCallback_cancelled() throws InterruptedException {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -185,7 +181,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-5,H-0-6" })
     public void invokesCallbackInButtonsNav_invoked() throws InterruptedException {
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
@@ -208,7 +203,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-7" })
     public void invokesCallbackInButtonsNav_cancelled() throws InterruptedException {
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
