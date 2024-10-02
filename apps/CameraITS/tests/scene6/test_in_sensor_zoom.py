@@ -125,7 +125,7 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         inv_scale_factor = rw / aw
         if aw / rw != ah / rh:
           raise AssertionError('RAW_CROP_REGION width and height aspect ratio'
-                               f' != active array AR, region size: {rw} x {rh} '
+                               f' != active array AR, region size: {rw} x {rh}'
                                f' active array size: {aw} x {ah}')
         # Find any ArUco marker in img
         try:
@@ -166,7 +166,9 @@ class InSensorZoomTest(its_base_test.ItsBaseTest):
         msg = f'RMS diff for CROPPED_RAW use case: {rms_diff:.4f}'
         logging.debug('%s', msg)
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE:
-          raise AssertionError('RMS diff of downscaled cropped RAW & full > 1%')
+          raise AssertionError(
+              f'RMS diff {rms_diff:.4f} of downscaled cropped RAW & full, '
+              f'ATOL: {_THRESHOLD_MAX_RMS_DIFF_CROPPED_RAW_USE_CASE}')
 
 
 if __name__ == '__main__':
