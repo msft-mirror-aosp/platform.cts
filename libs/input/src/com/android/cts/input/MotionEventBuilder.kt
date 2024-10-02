@@ -67,9 +67,10 @@ class MotionEventBuilder(val action: Int, val source: Int) {
         val pointerProperties = pointers.map { it.buildProperties() }
         val pointerCoords = pointers.map { it.buildCoords() }
 
-        // Mouse cursor position handling (same logic as native code)
+        // If the mouse cursor position is not explicitly specified, use the X and Y coordinates of
+        // the first pointer, if this is a mouse event.
         if (isFromSource(source, InputDevice.SOURCE_MOUSE) &&
-            (rawXCursorPosition != null || rawYCursorPosition != null)) {
+            (rawXCursorPosition == null || rawYCursorPosition == null)) {
             rawXCursorPosition = pointerCoords[0].x
             rawYCursorPosition = pointerCoords[0].y
         }
