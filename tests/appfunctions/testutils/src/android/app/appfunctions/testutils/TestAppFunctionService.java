@@ -16,20 +16,17 @@
 
 package android.app.appfunctions.testutils;
 
-import android.os.Handler;
-import android.os.CancellationSignal;
 import android.app.appfunctions.AppFunctionService;
 import android.app.appfunctions.ExecuteAppFunctionRequest;
 import android.app.appfunctions.ExecuteAppFunctionResponse;
 import android.app.appsearch.GenericDocument;
-import android.os.Looper;
-import android.util.Log;
+import android.os.CancellationSignal;
 
 import androidx.annotation.NonNull;
 
-import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 /**
