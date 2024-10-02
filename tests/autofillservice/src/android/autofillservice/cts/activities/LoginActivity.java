@@ -72,7 +72,6 @@ public class LoginActivity extends AbstractAutoFillActivity {
     private Button mSaveButton;
     private Button mCancelButton;
     private Button mClearButton;
-    public Button mInvisibleButton;
     FillExpectation mExpectation;
 
     // State used to synchronously get the result of a login attempt.
@@ -106,7 +105,6 @@ public class LoginActivity extends AbstractAutoFillActivity {
         mSaveButton = findViewById(R.id.save);
         mClearButton = findViewById(R.id.clear);
         mCancelButton = findViewById(R.id.cancel);
-        mInvisibleButton = findViewById(R.id.make_views_invisible);
         mUsernameLabel = findViewById(R.id.username_label);
         mUsernameEditText = findViewById(R.id.username);
         mPasswordLabel = findViewById(R.id.password_label);
@@ -122,12 +120,6 @@ public class LoginActivity extends AbstractAutoFillActivity {
             getAutofillManager().cancel();
         });
         mCancelButton.setOnClickListener((OnClickListener) v -> finish());
-
-        // This class is subclassed with various different layouts. So we add a check to see if the
-        // layout inflated has the invisible button first.
-        if (mInvisibleButton != null) {
-            mInvisibleButton.setOnClickListener((v) -> makeEditTextViewsInvisible());
-        }
 
         sCurrentActivity = this;
     }
@@ -161,14 +153,6 @@ public class LoginActivity extends AbstractAutoFillActivity {
             mOutput.setText(AUTHENTICATION_MESSAGE);
             setLoginMessage(AUTHENTICATION_MESSAGE);
         }
-    }
-
-    private void makeEditTextViewsInvisible() {
-        // Make the views invisible
-        Log.v(TAG, "makeEditTextViewsInvisible() onClick()");
-        mPasswordEditText.setVisibility(View.INVISIBLE);
-        mUsernameEditText.setVisibility(View.INVISIBLE);
-        Log.v(TAG, "makeEditTextViewsInvisible() username and password views are invisible");
     }
 
     private void setLoginMessage(String message) {

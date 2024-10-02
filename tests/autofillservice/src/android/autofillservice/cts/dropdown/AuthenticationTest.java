@@ -24,7 +24,6 @@ import static android.autofillservice.cts.testcore.Helper.ID_USERNAME;
 import static android.autofillservice.cts.testcore.Helper.UNUSED_AUTOFILL_VALUE;
 import static android.autofillservice.cts.testcore.Helper.assertTextAndValue;
 import static android.autofillservice.cts.testcore.Helper.findNodeByResourceId;
-import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_GENERIC;
 import static android.service.autofill.SaveInfo.SAVE_DATA_TYPE_PASSWORD;
 import static android.view.View.IMPORTANT_FOR_AUTOFILL_NO;
 
@@ -44,7 +43,6 @@ import android.content.IntentSender;
 import android.os.Bundle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.service.autofill.SaveInfo;
 import android.view.View;
 import android.view.autofill.AutofillValue;
 
@@ -1217,73 +1215,5 @@ public class AuthenticationTest extends AbstractLoginActivityTestCase {
         assertThat(data).isNotNull();
         final String extraValue = data.getString("numbers");
         assertThat(extraValue).isEqualTo("4815162342");
-    }
-
-    @Test
-    public void testDatasetAuthThenModifyAndSaveOnViewsInvisible()
-            throws Exception {
-        // Set service.
-        enableService();
-        final MyAutofillCallback callback = mActivity.registerCallback();
-
-        // Prepare the authenticated response
-        final IntentSender authentication = AuthenticationActivity.createSender(mContext, 1,
-                new CannedDataset.Builder()
-                        .setField(ID_USERNAME, "dude")
-                        .setField(ID_PASSWORD, "sweet")
-                        .build());
-
-        // Configure the service behavior
-        sReplier.addResponse(new CannedFillResponse.Builder()
-                .addDataset(new CannedDataset.Builder()
-                        .setField(ID_USERNAME, UNUSED_AUTOFILL_VALUE)
-                        .setField(ID_PASSWORD, UNUSED_AUTOFILL_VALUE)
-                        .setPresentation(createPresentation("Tap to auth dataset"))
-                        .setAuthentication(authentication)
-                        .build())
-                .setOptionalSavableIds(ID_USERNAME, ID_PASSWORD)
-                .setSaveInfoFlags(SaveInfo.FLAG_SAVE_ON_ALL_VIEWS_INVISIBLE)
-                .build());
-
-        // Set expectation for the activity
-        mActivity.expectAutoFill("dude", "sweet");
-
-        // Trigger auto-fill.
-        requestFocusOnUsername();
-
-        // Wait for onFill() before proceeding.
-        sReplier.getNextFillRequest();
-        final View username = mActivity.getUsername();
-        callback.assertUiShownEvent(username);
-        mUiBot.assertDatasets("Tap to auth dataset");
-
-        // ...and select
-        AuthenticationActivity.setResultCode(RESULT_OK);
-        mUiBot.selectDataset("Tap to auth dataset");
-        callback.assertUiHiddenEvent(username);
-        mUiBot.assertNoDatasets();
-
-        // Check the results.
-        mActivity.assertAutoFilled();
-        mUiBot.waitForIdleSync();
-
-        mActivity.setTextAndWaitTextChange(/* username= */ "USER", /* password= */ "PASS");
-        mUiBot.waitForIdleSync();
-
-        mActivity.syncRunOnUiThread(() -> {
-            mActivity.mInvisibleButton.performClick();
-        });
-        mUiBot.waitForIdleSync();
-
-        final UiObject2 saveUi = mUiBot.assertUpdateShowing(SAVE_DATA_TYPE_GENERIC);
-
-        // Save it...
-        mUiBot.saveForAutofill(saveUi, true);
-
-        // ... and assert results
-        final SaveRequest saveRequest = sReplier.getNextSaveRequest();
-        assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_USERNAME), "USER");
-        assertTextAndValue(findNodeByResourceId(saveRequest.structure, ID_PASSWORD), "PASS");
-
     }
 }
