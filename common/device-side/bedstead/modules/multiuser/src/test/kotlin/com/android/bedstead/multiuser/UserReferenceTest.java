@@ -21,6 +21,8 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS;
 import static android.os.Build.VERSION_CODES.Q;
 import static android.os.Build.VERSION_CODES.S;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
 import static com.android.bedstead.nene.types.OptionalBoolean.FALSE;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -102,13 +104,13 @@ public class UserReferenceTest {
     @Test
     @EnsureHasSecondaryUser
     public void exists_doesExist_returnsTrue() {
-        assertThat(sDeviceState.secondaryUser().exists()).isTrue();
+        assertThat(secondaryUser(sDeviceState).exists()).isTrue();
     }
 
     @Test
     @EnsureHasAdditionalUser
     public void remove_userExists_removesUser() {
-        UserReference user = sDeviceState.additionalUser();
+        UserReference user = additionalUser(sDeviceState);
 
         user.remove();
 
@@ -132,28 +134,28 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void start_userNotStarted_userIsUnlocked() {
-        sDeviceState.additionalUser().stop();
+        additionalUser(sDeviceState).stop();
 
-        sDeviceState.additionalUser().start();
+        additionalUser(sDeviceState).start();
 
-        assertThat(sDeviceState.additionalUser().isUnlocked()).isTrue();
+        assertThat(additionalUser(sDeviceState).isUnlocked()).isTrue();
     }
 
     @Test
     @EnsureHasSecondaryUser
     public void start_userAlreadyStarted_doesNothing() {
-        sDeviceState.secondaryUser().start();
+        secondaryUser(sDeviceState).start();
 
-        sDeviceState.secondaryUser().start();
+        secondaryUser(sDeviceState).start();
 
-        assertThat(sDeviceState.secondaryUser().isUnlocked()).isTrue();
+        assertThat(secondaryUser(sDeviceState).isUnlocked()).isTrue();
     }
 
     @Test
     @EnsureHasAdditionalUser
     @RequireNotVisibleBackgroundUsers(reason = "because otherwise it wouldn't throw")
     public void start_onDisplay_notSupported_throwsException() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
 
         assertThrows(UnsupportedOperationException.class,
                 () -> user.startVisibleOnDisplay(Display.DEFAULT_DISPLAY));
@@ -166,7 +168,7 @@ public class UserReferenceTest {
     @EnsureHasAdditionalUser
     @RequireVisibleBackgroundUsers(reason = "because that's what being tested")
     public void start_onDisplay_success() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
         int displayId = getDisplayIdForStartingVisibleBackgroundUser();
 
         user.startVisibleOnDisplay(displayId);
@@ -184,7 +186,7 @@ public class UserReferenceTest {
     @EnsureHasAdditionalUser
     @RequireVisibleBackgroundUsers(reason = "because that's what being tested")
     public void start_onDisplay_userAlreadyStarted_doesNothing() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
         int displayId = getDisplayIdForStartingVisibleBackgroundUser();
 
         user.startVisibleOnDisplay(displayId);
@@ -208,20 +210,20 @@ public class UserReferenceTest {
     @EnsureHasSecondaryUser
     @RequireRunNotOnSecondaryUser
     public void stop_userStarted_userIsStopped() {
-        sDeviceState.secondaryUser().stop();
+        secondaryUser(sDeviceState).stop();
 
-        assertThat(sDeviceState.secondaryUser().isRunning()).isFalse();
+        assertThat(secondaryUser(sDeviceState).isRunning()).isFalse();
     }
 
     @Test
     @EnsureHasSecondaryUser
     @RequireRunNotOnSecondaryUser
     public void stop_userNotStarted_doesNothing() {
-        sDeviceState.secondaryUser().stop();
+        secondaryUser(sDeviceState).stop();
 
-        sDeviceState.secondaryUser().stop();
+        secondaryUser(sDeviceState).stop();
 
-        assertThat(sDeviceState.secondaryUser().isRunning()).isFalse();
+        assertThat(secondaryUser(sDeviceState).isRunning()).isFalse();
     }
 
     @Test
@@ -229,9 +231,9 @@ public class UserReferenceTest {
     @RequireRunNotOnSecondaryUser
     @RequireSdkVersion(min = Q)
     public void switchTo_userIsSwitched() {
-        sDeviceState.secondaryUser().switchTo();
+        secondaryUser(sDeviceState).switchTo();
 
-        assertThat(TestApis.users().current()).isEqualTo(sDeviceState.secondaryUser());
+        assertThat(TestApis.users().current()).isEqualTo(secondaryUser(sDeviceState));
     }
 
     @Test
@@ -309,7 +311,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasSecondaryUser
     public void isPrimary_isNotPrimary_returnsFalse() {
-        UserReference user = sDeviceState.secondaryUser();
+        UserReference user = secondaryUser(sDeviceState);
 
         assertThat(user.isPrimary()).isFalse();
     }
@@ -324,17 +326,17 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isRunning_userNotStarted_returnsFalse() {
-        sDeviceState.additionalUser().stop();
+        additionalUser(sDeviceState).stop();
 
-        assertThat(sDeviceState.additionalUser().isRunning()).isFalse();
+        assertThat(additionalUser(sDeviceState).isRunning()).isFalse();
     }
 
     @Test
     @EnsureHasAdditionalUser
     public void isRunning_userIsRunning_returnsTrue() {
-        sDeviceState.additionalUser().start();
+        additionalUser(sDeviceState).start();
 
-        assertThat(sDeviceState.additionalUser().isRunning()).isTrue();
+        assertThat(additionalUser(sDeviceState).isRunning()).isTrue();
     }
 
     @Test
@@ -357,7 +359,7 @@ public class UserReferenceTest {
     public void isVisible_visibleBgUser_returnsTrue() {
         int displayId = getDisplayIdForStartingVisibleBackgroundUser();
 
-        UserReference user = sDeviceState.additionalUser().startVisibleOnDisplay(displayId);
+        UserReference user = additionalUser(sDeviceState).startVisibleOnDisplay(displayId);
 
         try {
             assertWithMessage("%s is visible", user).that(user.isVisible()).isTrue();
@@ -370,7 +372,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isVisible_nonStartedUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
 
         assertWithMessage("%s is visible", user).that(user.isVisible()).isFalse();
     }
@@ -378,7 +380,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isVisible_bgUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().start();
+        UserReference user = additionalUser(sDeviceState).start();
 
         assertWithMessage("%s is visible", user).that(user.isVisible()).isFalse();
     }
@@ -404,7 +406,7 @@ public class UserReferenceTest {
     public void isVisibleBagroundNonProfileUser_visibleBgUser_returnsTrue() {
         int displayId = getDisplayIdForStartingVisibleBackgroundUser();
 
-        UserReference user = sDeviceState.additionalUser().startVisibleOnDisplay(displayId);
+        UserReference user = additionalUser(sDeviceState).startVisibleOnDisplay(displayId);
 
         try {
             assertWithMessage("%s is visible bg user", user)
@@ -418,7 +420,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isVisibleBagroundNonProfileUser_nonStartedUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
 
         assertWithMessage("%s is visible bg user", user)
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
@@ -427,7 +429,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isVisibleBagroundNonProfileUser_bgUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().start();
+        UserReference user = additionalUser(sDeviceState).start();
 
         assertWithMessage("%s is visible bg user", user)
                 .that(user.isVisibleBagroundNonProfileUser()).isFalse();
@@ -461,7 +463,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isForeground_nonStartedUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().stop();
+        UserReference user = additionalUser(sDeviceState).stop();
 
         assertWithMessage("%s is foreground", user).that(user.isForeground()).isFalse();
     }
@@ -469,7 +471,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isForeground_bgUser_returnsFalse() {
-        UserReference user = sDeviceState.additionalUser().start();
+        UserReference user = additionalUser(sDeviceState).start();
 
         assertWithMessage("%s is foreground", user).that(user.isForeground()).isFalse();
     }
@@ -480,7 +482,7 @@ public class UserReferenceTest {
     public void isForeground_visibleBgUser_returnsFalse() {
         int displayId = getDisplayIdForStartingVisibleBackgroundUser();
 
-        UserReference user = sDeviceState.additionalUser().startVisibleOnDisplay(displayId);
+        UserReference user = additionalUser(sDeviceState).startVisibleOnDisplay(displayId);
 
         try {
             assertWithMessage("%s is foreground", user).that(user.isForeground()).isFalse();
@@ -500,9 +502,9 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void isUnlocked_userIsUnlocked_returnsTrue() {
-        sDeviceState.additionalUser().start();
+        additionalUser(sDeviceState).start();
 
-        assertThat(sDeviceState.additionalUser().isUnlocked()).isTrue();
+        assertThat(additionalUser(sDeviceState).isUnlocked()).isTrue();
     }
 
     // TODO(b/203542772): add tests for locked state
@@ -538,7 +540,7 @@ public class UserReferenceTest {
     @Test
     @EnsureHasAdditionalUser
     public void autoclose_removesUser() {
-        UserReference additionalUser = sDeviceState.additionalUser();
+        UserReference additionalUser = additionalUser(sDeviceState);
 
         try (UserReference user = additionalUser) {
             // We intentionally don't do anything here, just rely on the auto-close behaviour

@@ -17,6 +17,7 @@
 package android.accounts.cts.multiuser;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -54,7 +55,7 @@ public final class AccountManagerTest {
     public void hasFeature_crossUser_withoutPermission_throwsException() {
         AccountManager otherUserAccountManager =
                 TestApis.context().androidContextAsUser(
-                        sDeviceState.additionalUser()).getSystemService(
+                        additionalUser(sDeviceState)).getSystemService(
                                 AccountManager.class);
 
         assertThrows(SecurityException.class, () ->
@@ -70,7 +71,7 @@ public final class AccountManagerTest {
     public void hasFeature_crossUser_accountHasFeature_returnsTrue() throws Exception {
         AccountManager otherUserAccountManager =
                 TestApis.context().androidContextAsUser(
-                        sDeviceState.additionalUser()).getSystemService(
+                        additionalUser(sDeviceState)).getSystemService(
                                 AccountManager.class);
 
         assertThat(otherUserAccountManager.hasFeatures(
@@ -85,7 +86,7 @@ public final class AccountManagerTest {
     public void hasFeature_crossUser_accountDoesNotHaveFeature_returnsFalse() throws Exception {
         AccountManager otherUserAccountManager =
                 TestApis.context().androidContextAsUser(
-                        sDeviceState.additionalUser()).getSystemService(
+                        additionalUser(sDeviceState)).getSystemService(
                                 AccountManager.class);
 
         assertThat(otherUserAccountManager.hasFeatures(

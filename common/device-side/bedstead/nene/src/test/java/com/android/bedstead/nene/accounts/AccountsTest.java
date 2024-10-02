@@ -17,6 +17,7 @@
 package com.android.bedstead.nene.accounts;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.additionalUser;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -50,7 +51,7 @@ public final class AccountsTest {
     @EnsureHasAccount(onUser = ADDITIONAL_USER)
     @Ignore("/b271540793")
     public void allOnDevice_includesAccountOnOtherUser() {
-        assertThat(TestApis.accounts().all(sDeviceState.additionalUser()))
+        assertThat(TestApis.accounts().all(additionalUser(sDeviceState)))
                 .contains(sDeviceState.account());
     }
 }

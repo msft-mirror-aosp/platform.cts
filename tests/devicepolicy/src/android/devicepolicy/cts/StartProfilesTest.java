@@ -16,6 +16,8 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.secondaryUser;
+import static com.android.bedstead.multiuser.MultiUserDeviceStateExtensionsKt.tvProfile;
 import static com.android.bedstead.permissions.CommonPermissions.CREATE_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
@@ -205,7 +207,7 @@ public final class StartProfilesTest {
     @EnsureHasPermission({INTERACT_ACROSS_USERS_FULL, INTERACT_ACROSS_USERS, CREATE_USERS})
     public void startProfile_startingFullUser_throwsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> sActivityManager.startProfile(sDeviceState.secondaryUser().userHandle()));
+                () -> sActivityManager.startProfile(secondaryUser(sDeviceState).userHandle()));
     }
 
     @Test
@@ -215,7 +217,7 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     public void stopProfile_stoppingFullUser_throwsException() {
         assertThrows(IllegalArgumentException.class,
-                () -> sActivityManager.stopProfile(sDeviceState.secondaryUser().userHandle()));
+                () -> sActivityManager.stopProfile(secondaryUser(sDeviceState).userHandle()));
     }
 
     @Test
@@ -225,17 +227,17 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     public void startProfile_tvProfile_profileIsStarted() {
         try (BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(sDeviceState.tvProfile()))) {
-            sDeviceState.tvProfile().stop();
+                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(tvProfile(sDeviceState)))) {
+            tvProfile(sDeviceState).stop();
         }
 
         try (BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_ACCESSIBLE, userIsEqual(sDeviceState.tvProfile()))) {
+                Intent.ACTION_PROFILE_ACCESSIBLE, userIsEqual(tvProfile(sDeviceState)))) {
             assertThat(
-                    sActivityManager.startProfile(sDeviceState.tvProfile().userHandle())).isTrue();
+                    sActivityManager.startProfile(tvProfile(sDeviceState).userHandle())).isTrue();
         }
 
-        assertThat(sUserManager.isUserRunning(sDeviceState.tvProfile().userHandle())).isTrue();
+        assertThat(sUserManager.isUserRunning(tvProfile(sDeviceState).userHandle())).isTrue();
     }
 
     @Test
@@ -245,12 +247,12 @@ public final class StartProfilesTest {
     @Postsubmit(reason = "b/181207615 flaky")
     public void stopProfile_tvProfile_profileIsStopped() {
         BlockingBroadcastReceiver broadcastReceiver = sDeviceState.registerBroadcastReceiver(
-                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(sDeviceState.tvProfile()));
+                Intent.ACTION_PROFILE_INACCESSIBLE, userIsEqual(tvProfile(sDeviceState)));
 
         assertThat(
-                sActivityManager.stopProfile(sDeviceState.tvProfile().userHandle())).isTrue();
+                sActivityManager.stopProfile(tvProfile(sDeviceState).userHandle())).isTrue();
         broadcastReceiver.awaitForBroadcast();
 
-        assertThat(sUserManager.isUserRunning(sDeviceState.tvProfile().userHandle())).isFalse();
+        assertThat(sUserManager.isUserRunning(tvProfile(sDeviceState).userHandle())).isFalse();
     }
 }
