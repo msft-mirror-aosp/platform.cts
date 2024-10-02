@@ -23,13 +23,18 @@ import android.hardware.soundtrigger.SoundTrigger;
 import android.hardware.soundtrigger.SoundTrigger.KeyphraseRecognitionExtra;
 import android.hardware.soundtrigger.SoundTrigger.RecognitionConfig;
 import android.media.AudioFormat;
+import android.media.soundtrigger.Flags;
 import android.os.Parcel;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.common.collect.ImmutableList;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -70,6 +75,10 @@ public class SoundTriggerTest {
             SoundTrigger.ModuleProperties.AUDIO_CAPABILITY_ECHO_CANCELLATION
                     | SoundTrigger.ModuleProperties.AUDIO_CAPABILITY_NOISE_SUPPRESSION;
     private static final byte[] TEST_MODEL_DATA = new byte[1024];
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @BeforeClass
     public static void setUpClass() {
@@ -194,6 +203,7 @@ public class SoundTriggerTest {
         verifyKeyphraseSoundModelMatchesTestParams(keyphraseSoundModelResult);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_GENERIC_MODEL_API)
     @Test
     public void testGenericSoundModelParcelUnparcel() {
         SoundTrigger.GenericSoundModel genericSoundModelSrc = createTestGenericSoundModel();
@@ -254,6 +264,7 @@ public class SoundTriggerTest {
         assertThat(recognitionEvent.getHalEventReceivedMillis()).isEqualTo(12345);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
     @Test
     public void testRecognitionConfigBuilderDefaultValues() {
         RecognitionConfig recognitionConfig = new RecognitionConfig.Builder().build();
@@ -266,6 +277,7 @@ public class SoundTriggerTest {
         assertThat(recognitionConfig.getAudioCapabilities()).isEqualTo(0);
     }
 
+    @RequiresFlagsEnabled(Flags.FLAG_MANAGER_API)
     @Test
     public void testRecognitionConfigBuilderCustomizedValues() {
         byte[] data = new byte[] {0, 1, 2, 3, 4};
