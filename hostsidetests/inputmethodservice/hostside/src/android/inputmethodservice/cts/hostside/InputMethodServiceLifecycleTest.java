@@ -61,14 +61,20 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     private static final long PACKAGE_OP_TIMEOUT = TimeUnit.SECONDS.toMillis(15);
     private static final long POLLING_INTERVAL = 100;
 
+    /** The device's current user id */
+    private int mCurrentUserId;
+
     /**
      * Set up test case.
      */
     @Before
     public void setUp() throws Exception {
         cleanUpTestImes();
-        installPackage(DeviceTestConstants.APK, "-r");
+
         shell(ShellCommandUtils.deleteContent(EventTableConstants.CONTENT_URI));
+        mCurrentUserId = getDevice().getCurrentUser();
+        installPackageAsUser(DeviceTestConstants.APK,
+                true /* grantPermission */, mCurrentUserId, "-r");
     }
 
     /**
@@ -76,7 +82,7 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      */
     @After
     public void tearDown() throws Exception {
-        shell(ShellCommandUtils.resetImes());
+        shell(ShellCommandUtils.resetImes(mCurrentUserId));
     }
 
     /**
@@ -86,14 +92,14 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      *
      * <p>Note: For installing IME APKs use {@link #installImePackageSync(String, String)}
      * instead.</p>
+     *
      * @param apkFileName App apk to install
      * @param packageName packageName of the installed apk
-     * @param options adb shell install options.
-     * @throws Exception
+     * @param options     adb shell install options.
      */
     private void installPackageSync(
             String apkFileName, String packageName, String... options) throws Exception {
-        installPackage(apkFileName, options);
+        installPackageAsUser(apkFileName, true /* grantPermission */, mCurrentUserId, options);
         pollingCheck(() ->
                         shell(ShellCommandUtils.listPackage(packageName)).contains(packageName),
                 PACKAGE_OP_TIMEOUT,
@@ -104,10 +110,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      * Install IME packages synchronously.
      *
      * <p>This method verifies that IME is available in IMMS.</p>
-     * @param apkFileName IME apk to install
-     * @param imeId of the IME being installed.
+     *
+     * @param apkFileName    IME apk to install
+     * @param imeId          of the IME being installed.
      * @param forceQueryable True to enable ime becoming visible on the device.
-     * @throws Exception
      */
     private void installImePackageSync(String apkFileName, String imeId, boolean forceQueryable)
             throws Exception {
@@ -115,6 +121,7 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         options.setApkFileName(apkFileName);
         options.setInstallArgs("-r");
         options.setForceQueryable(forceQueryable);
+        options.setUserId(mCurrentUserId);
         installPackage(options);
         waitUntilImesAreAvailable(imeId);
     }
@@ -143,10 +150,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
         installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_TO_HANDWRITING_INPUT));
     }
@@ -177,12 +184,12 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID, imeForceQueryable);
         installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID, imeForceQueryable);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
         // Make sure that there is at least one more IME that specifies
         // supportsSwitchingToNextInputMethod="true"
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_NEXT_INPUT));
     }
@@ -231,10 +238,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID, imeForceQueryable);
         installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID, imeForceQueryable);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_SWITCH_PREVIOUS_INPUT));
     }
@@ -282,10 +289,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
         installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_IME_STOPPED));
     }
@@ -316,9 +323,9 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
                 EditTextAppConstants.APK, EditTextAppConstants.PACKAGE, instant);
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(DeviceTestConstants.TEST_INPUT_UNBINDS_ON_APP_STOPPED));
     }
@@ -354,10 +361,10 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         installImePackageSync(Ime1Constants.APK, Ime1Constants.IME_ID);
         installImePackageSync(Ime2Constants.APK, Ime2Constants.IME_ID);
         shell(ShellCommandUtils.waitForBroadcastBarrier());
-        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID));
-        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID));
+        shell(ShellCommandUtils.enableIme(Ime1Constants.IME_ID, mCurrentUserId));
+        shell(ShellCommandUtils.enableIme(Ime2Constants.IME_ID, mCurrentUserId));
         waitUntilImesAreEnabled(Ime1Constants.IME_ID, Ime2Constants.IME_ID);
-        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID));
+        shell(ShellCommandUtils.setCurrentImeSync(Ime1Constants.IME_ID, mCurrentUserId));
 
         assertTrue(runDeviceTestMethod(
                 DeviceTestConstants.TEST_IME_SWITCHING_WITHOUT_WINDOW_FOCUS_AFTER_DISPLAY_OFF_ON));
@@ -369,9 +376,15 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      *
      * <p>Regression test for Bug 160391516.</p>
      */
+    // TODO(b/330610015): Consider re-enabling this test for automotive with visible background user
+    //  once PowerManager#isInteractive is fixed on form factors with visible background user
+    //  (note: this may not be necessary since IME hostside tests are going to be decommissioned by
+    //  b/323251870.
     @AppModeFull
     @Test
     public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnFull() throws Exception {
+        assumeFalse("This test is disabled on automotive with visible background users enabled",
+                isAutomotiveWithVisibleBackgroundUser());
         testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(false);
     }
 
@@ -381,9 +394,15 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      *
      * <p>Regression test for Bug 160391516.</p>
      */
+    // TODO(b/330610015): Consider re-enabling this test for automotive with visible background user
+    //  once PowerManager#isInteractive is fixed on form factors with visible background user
+    //  (note: this may not be necessary since IME hostside tests are going to be decommissioned by
+    //  b/323251870.
     @AppModeInstant
     @Test
     public void testImeSwitchingWithoutWindowFocusAfterDisplayOffOnInstant() throws Exception {
+        assumeFalse("This test is disabled on automotive with visible background users enabled",
+                isAutomotiveWithVisibleBackgroundUser());
         testImeSwitchingWithoutWindowFocusAfterDisplayOffOn(true);
     }
 
@@ -420,7 +439,7 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
     /**
      * Makes sure that the given IME is not in the stored in the secure settings as the current IME.
      *
-     * @param imeId IME ID to be monitored
+     * @param imeId   IME ID to be monitored
      * @param timeout timeout in millisecond
      */
     private void assertImeNotSelectedInSecureSettings(String imeId, long timeout) throws Exception {
@@ -429,7 +448,7 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
                 throw new TimeoutException(imeId + " is still the current IME even after "
                         + timeout + " msec.");
             }
-            if (!imeId.equals(shell(ShellCommandUtils.getCurrentIme()))) {
+            if (!imeId.equals(shell(ShellCommandUtils.getCurrentIme(mCurrentUserId)))) {
                 break;
             }
             RunUtil.getDefault().sleep(POLLING_INTERVAL);
@@ -439,7 +458,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
 
     /**
      * Wait until IMEs are available in IMMS.
-     * @throws Exception
      */
     private void waitUntilImesAreAvailable(String... imeIds) throws Exception {
         waitUntilImesAreAvailableOrEnabled(false, imeIds);
@@ -447,7 +465,6 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
 
     /**
      * Wait until IMEs are enabled in IMMS.
-     * @throws Exception
      */
     private void waitUntilImesAreEnabled(String... imeIds) throws Exception {
         waitUntilImesAreAvailableOrEnabled(true, imeIds);
@@ -461,8 +478,8 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
      * runs. Other types of exceptions are not suppressed.</p>
      *
      * @param maxTries maximal amount of attempt that should be performed before throwing the
-     * {@link AssertionError}, if applicable
-     * @param action the action to perform
+     *                 {@link AssertionError}, if applicable
+     * @param action   the action to perform
      */
     private static void runWithRetries(int maxTries, ThrowingRunnable action) throws Exception {
         for (int attempt = 1; true; attempt++) {
@@ -481,14 +498,19 @@ public class InputMethodServiceLifecycleTest extends BaseHostJUnit4Test {
         }
     }
 
-
     private void waitUntilImesAreAvailableOrEnabled(
             boolean shouldBeEnabled, String... imeIds) throws Exception {
         final String cmd = shouldBeEnabled
-                ? ShellCommandUtils.getEnabledImes() : ShellCommandUtils.getAvailableImes();
+                ? ShellCommandUtils.getEnabledImes(mCurrentUserId)
+                : ShellCommandUtils.getAvailableImes(mCurrentUserId);
         for (String imeId : imeIds) {
             pollingCheck(() -> shell(cmd).contains(imeId), PACKAGE_OP_TIMEOUT,
                     imeId + " should be " + (shouldBeEnabled ? "enabled." : "available."));
         }
+    }
+
+    private boolean isAutomotiveWithVisibleBackgroundUser() throws Exception {
+        return getDevice().hasFeature("android.hardware.type.automotive")
+                && "true".equalsIgnoreCase(shell("cmd user is-visible-background-users-supported"));
     }
 }
