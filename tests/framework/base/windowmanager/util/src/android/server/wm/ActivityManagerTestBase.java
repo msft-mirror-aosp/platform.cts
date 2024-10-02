@@ -256,6 +256,12 @@ public abstract class ActivityManagerTestBase {
     private static final String AM_BROADCAST_CLOSE_SYSTEM_DIALOGS =
             "am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS --user " + USER_ALL;
 
+  private static final String ASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service assign-extra-display ";
+
+    private static final String UNASSIGN_USER_TO_EXTRA_DISPLAY =
+            "cmd car_service unassign-extra-display ";
+
     protected static final String LOCK_CREDENTIAL = "1234";
 
     private static final int UI_MODE_TYPE_MASK = 0x0f;
@@ -281,6 +287,7 @@ public abstract class ActivityManagerTestBase {
     protected final DisplayManager mDm = mContext.getSystemService(DisplayManager.class);
     protected final WindowManager mWm = mContext.getSystemService(WindowManager.class);
     protected final KeyguardManager mKm = mContext.getSystemService(KeyguardManager.class);
+    private final UserHelper mUserHelper = new UserHelper(mContext);
 
     /** The tracker to manage objects (especially {@link AutoCloseable}) in a test method. */
     protected final ObjectTracker mObjectTracker = new ObjectTracker();
@@ -301,7 +308,6 @@ public abstract class ActivityManagerTestBase {
 
     /** Indicate to wait for all non-home activities to be destroyed when test finished. */
     protected boolean mShouldWaitForAllNonHomeActivitiesToDestroyed = false;
-    private UserHelper mUserHelper;
     protected int mUserId;
 
     /**
@@ -725,7 +731,6 @@ public abstract class ActivityManagerTestBase {
         // the activities to come in the resumed state.
         mWmState.waitForWithAmState(WindowManagerState::allActivitiesResumed, "Root Tasks should "
                 + "be either empty or resumed");
-        mUserHelper = new UserHelper(mContext);
         mUserId = mContext.getUserId();
     }
 
@@ -910,6 +915,14 @@ public abstract class ActivityManagerTestBase {
     protected void launchActivityNoWait(final ComponentName activityName,
             final CliIntentExtra... extras) {
         executeShellCommand(getAmStartCmd(activityName, extras));
+    }
+
+    protected void assignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(ASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
+    }
+
+    protected void unassignUserToExtraDisplay(int userId, int displayId) {
+        executeShellCommand(UNASSIGN_USER_TO_EXTRA_DISPLAY + userId + " " + displayId);
     }
 
     protected void launchActivityInNewTask(final ComponentName activityName) {
@@ -3383,6 +3396,19 @@ public abstract class ActivityManagerTestBase {
         return mContext.getPackageManager()
                 .hasSystemFeature(/* PackageManager.FEATURE_CAR_SPLITSCREEN_MULTITASKING */
                         "android.software.car.splitscreen_multitasking") && isCar();
+    }
+
+    /**
+     * Checks whether the device supports the visible background user.
+     *
+     * <p>The visible background user feature allows full users to be started in background
+     * visible on their assigned displays.
+     *
+     * <p>Note that this feature is typically only supported on automotive system with passenger
+     * displays. For most devices, this method returns {@code false}.
+     */
+    protected boolean isVisibleBackgroundUserSupported() {
+        return mUserHelper.isVisibleBackgroundUserSupported();
     }
 
     /**
