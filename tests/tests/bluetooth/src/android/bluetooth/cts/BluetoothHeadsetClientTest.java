@@ -229,7 +229,7 @@ public class BluetoothHeadsetClientTest {
         BluetoothDevice testDevice = mAdapter.getRemoteDevice(testDeviceAddr);
 
         Parcel p = Parcel.obtain();
-        p.writeString(testDeviceAddr); // Device address
+        testDevice.writeToParcel(p, 0);
         p.writeInt(0); // Service Available
         p.writeString(""); // Operator Name
         p.writeInt(0); // General Signal Strength
