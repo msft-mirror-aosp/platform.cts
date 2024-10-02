@@ -43,6 +43,7 @@ import com.android.compatibility.common.util.CddTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -244,12 +245,11 @@ public class BluetoothLeScanTest {
 
     /**
      * Test of opportunistic BLE scans.
-     * Temporarily disable this test because it is interfered by the GmsCore;
-     * it fails when it obtains results from GmsCore explicit scan.
      */
     @CddTest(requirements = {"7.4.3/C-2-1", "7.4.3/C-3-2"})
     @MediumTest
     @Test
+    @Ignore("b/70865144 - Test fails because it obtains results from GmsCore explicit scan.")
     public void opportunisticScan() {
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
                 .adoptShellPermissionIdentity(android.Manifest.permission.BLUETOOTH_SCAN);

@@ -55,9 +55,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -109,7 +111,7 @@ public class KeyGeneratorTest {
     }
 
     private static Object[] kmTypes_x_algorithms() {
-        return new Object[][] {
+        var permutations = new ArrayList<>(List.of(new Object[][] {
             {KmType.SB, "AES"},
             {KmType.SB, "HmacSHA256"},
 
@@ -118,24 +120,33 @@ public class KeyGeneratorTest {
             {KmType.TEE, "HmacSHA224"},
             {KmType.TEE, "HmacSHA256"},
             {KmType.TEE, "HmacSHA384"},
-            {KmType.TEE, "HmacSHA512"},
-        };
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
     }
 
     private static Object[] kmTypes_x_hmacAlgorithms() {
-        return new Object[][] {
+        var permutations = new ArrayList<>(List.of(new Object[][] {
             {KmType.SB, "HmacSHA256"},
 
             {KmType.TEE, "HmacSHA1"},
             {KmType.TEE, "HmacSHA224"},
             {KmType.TEE, "HmacSHA256"},
             {KmType.TEE, "HmacSHA384"},
-            {KmType.TEE, "HmacSHA512"},
-        };
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        return permutations.toArray();
     }
 
     private static Object[] kmTypes_x_signingAlgorithms() {
-        return kmTypes_x_hmacAlgorithms();
+        var permutations = new ArrayList<>(Arrays.asList(kmTypes_x_hmacAlgorithms()));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
     }
 
     private Context getContext() {
