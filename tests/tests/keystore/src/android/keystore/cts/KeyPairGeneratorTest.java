@@ -39,17 +39,17 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.internal.util.HexDump;
-
-import libcore.java.security.TestKeyStore;
-import libcore.javax.net.ssl.TestKeyManager;
-import libcore.javax.net.ssl.TestSSLContext;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import junitparams.naming.TestCaseName;
+
+import libcore.java.security.TestKeyStore;
+import libcore.javax.net.ssl.TestKeyManager;
+import libcore.javax.net.ssl.TestSSLContext;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -164,12 +164,12 @@ public class KeyPairGeneratorTest {
     }
 
     private static Object[] kmTypes_x_algorithms() {
-        return new Object[] {
-            new Object[] {KmType.SB, "EC"},
-            new Object[] {KmType.SB, "RSA"},
+        return new Object[][] {
+            {KmType.SB, "EC"},
+            {KmType.SB, "RSA"},
 
-            new Object[] {KmType.TEE, "EC"},
-            new Object[] {KmType.TEE, "RSA"},
+            {KmType.TEE, "EC"},
+            {KmType.TEE, "RSA"},
         };
     }
 
@@ -452,6 +452,44 @@ public class KeyPairGeneratorTest {
                 TestUtils.getKeyInfo(keyPair.getPrivate()).getKeySize());
         assertEquals(maxUsageCount,
                 TestUtils.getKeyInfo(keyPair.getPrivate()).getRemainingUsageCount());
+    }
+
+    @Test
+    @Parameters(method = "kmTypes_x_algorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm) throws Exception {
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyPairGenerator generator = getGenerator(algorithm);
+            generator.initialize(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            generator.generateKeyPair();
+        }
+    }
+
+    @Test
+    @Parameters(method = "kmTypes_x_algorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
+            throws Exception {
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyPairGenerator generator = getGenerator(algorithm);
+            generator.initialize(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_BIOMETRIC_STRONG
+                            | KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            generator.generateKeyPair();
+        }
     }
 
     @SuppressWarnings("deprecation")

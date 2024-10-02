@@ -16,6 +16,7 @@
 import logging
 import os
 
+import cv2
 from mobly import test_runner
 import numpy as np
 
@@ -24,9 +25,9 @@ import camera_properties_utils
 import capture_request_utils
 import image_processing_utils
 import its_session_utils
+import opencv_processing_utils
 import zoom_capture_utils
 
-_CIRCLISH_RTOL = 0.065  # contour area vs ideal circle area pi*((w+h)/4)**2
 _FPS_30_60 = (30, 60)
 _FPS_SELECTION_ATOL = 0.01
 _FPS_ATOL = 0.8
@@ -236,11 +237,14 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                 z_list = np.insert(z_list, 0, 1)  # make reference zoom 1x
               logging.debug('Testing zoom range: %s', z_list)
 
-              # do captures over zoom range and find circles with cv2
+              # do captures over zoom range and find ArUco markers with cv2
               img_name_stem = f'{os.path.join(self.log_path, _NAME)}'
               req = capture_request_utils.auto_capture_request()
 
               test_data = []
+              all_aruco_ids = []
+              all_aruco_corners = []
+              images = []
               fmt_str = configured_streams[1]['format']
               for i, z in enumerate(z_list):
                 req['android.control.zoomRatio'] = z
@@ -270,30 +274,43 @@ class SessionCharacteristicsZoomTest(its_base_test.ItsBaseTest):
                      zoom_capture_utils.OFFSET_RTOL)
                 )
 
-                # Scale circlish RTOL for low zoom ratios
-                if z < 1:
-                  circlish_rtol = _CIRCLISH_RTOL / z
-                else:
-                  circlish_rtol = _CIRCLISH_RTOL
-
-                # Find the center circle in img and check if it's cropped
-                circle = zoom_capture_utils.find_center_circle(
-                    img, img_name, size, z, z_list[0],
-                    circlish_rtol=circlish_rtol, debug=debug)
-
-                # Zoom is too large to find center circle
-                if circle is None:
+                # Find ArUco markers
+                bgr_img = cv2.cvtColor(
+                    image_processing_utils.convert_image_to_uint8(img),
+                    cv2.COLOR_RGB2BGR
+                )
+                try:
+                  corners, ids, _ = opencv_processing_utils.find_aruco_markers(
+                      bgr_img,
+                      (f'{img_name_stem}_{z:.2f}_'
+                       f'ArUco.{zoom_capture_utils.JPEG_STR}'),
+                      aruco_marker_count=1
+                  )
+                except AssertionError as e:
+                  logging.debug(
+                      'Could not find ArUco marker at zoom ratio %.2f: %s',
+                      z, e
+                  )
                   break
+                all_aruco_corners.append([corner[0] for corner in corners])
+                all_aruco_ids.append([id[0] for id in ids])
+                images.append(bgr_img)
+
                 test_data.append(
                     zoom_capture_utils.ZoomTestData(
                         result_zoom=z,
-                        circle=circle,
                         radius_tol=radius_tol,
                         offset_tol=offset_tol,
                         focal_length=cap_fl
                     )
                 )
 
+              # Find ArUco markers in all captures and update test data
+              zoom_capture_utils.update_zoom_test_data_with_shared_aruco_marker(
+                  test_data, all_aruco_ids, all_aruco_corners, size)
+              # Mark ArUco marker center and image center
+              opencv_processing_utils.mark_zoom_images(
+                  images, test_data, img_name_stem)
               if not zoom_capture_utils.verify_zoom_results(
                   test_data, size, z_max, z_min):
                 failure_msg = (
