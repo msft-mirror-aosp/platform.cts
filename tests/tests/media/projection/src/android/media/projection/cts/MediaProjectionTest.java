@@ -45,7 +45,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -64,7 +64,7 @@ import java.util.concurrent.TimeUnit;
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionTest {
     private static final String TAG = "MediaProjectionTest";
     private static final int RECORDING_WIDTH = 500;
