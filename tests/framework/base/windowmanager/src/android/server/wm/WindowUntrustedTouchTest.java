@@ -40,6 +40,7 @@ import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.app.Instrumentation;
+import android.app.KeyguardManager;
 import android.app.NotificationManager;
 import android.app.WindowConfiguration;
 import android.content.ComponentName;
@@ -54,6 +55,7 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
 import android.provider.Settings;
@@ -89,6 +91,7 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -160,6 +163,7 @@ public class WindowUntrustedTouchTest {
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
     private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+    private KeyguardManager mKm;
 
     @Rule
     public TestName testNameRule = new TestName();
@@ -209,6 +213,7 @@ public class WindowUntrustedTouchTest {
         mWindowManager = mContext.getSystemService(WindowManager.class);
         mActivityManager = mContext.getSystemService(ActivityManager.class);
         mNotificationManager = mContext.getSystemService(NotificationManager.class);
+        mKm = mContext.getSystemService(KeyguardManager.class);
 
         mPreviousSawAppOp = AppOpsUtils.getOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW);
         AppOpsUtils.setOpMode(APP_SELF, OPSTR_SYSTEM_ALERT_WINDOW, MODE_ALLOWED);
@@ -217,8 +222,11 @@ public class WindowUntrustedTouchTest {
         SystemUtil.runWithShellPermissionIdentity(
                 () -> mNotificationManager.setToastRateLimitingEnabled(false));
 
-        pressWakeupButton();
-        pressUnlockButton();
+        if (isKeyguardLocked() || !Objects.requireNonNull(
+                mContext.getSystemService(PowerManager.class)).isInteractive()) {
+            pressWakeupButton();
+            pressUnlockButton();
+        }
     }
 
     @After
@@ -1116,6 +1124,10 @@ public class WindowUntrustedTouchTest {
 
     private static ComponentName repackage(String packageName, ComponentName baseComponent) {
         return new ComponentName(packageName, baseComponent.getClassName());
+    }
+
+    private boolean isKeyguardLocked() {
+        return mKm != null && mKm.isKeyguardLocked();
     }
 
     public static class TestActivity extends Activity {
