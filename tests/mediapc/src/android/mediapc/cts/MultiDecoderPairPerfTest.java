@@ -179,7 +179,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
         boolean bothSecure = isFirstSecure & isSecondSecure;
 
         if (bothSecure) {
-            testCodec(null, m2160pPc14WidevineTestFiles, 2160, 3840,
+            testCodec(null, m1080pWidevineTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else if (onlyOneSecure) {
             testCodec(m2160pPc14TestFiles, m2160pPc14WidevineTestFiles, 2160, 3840,
@@ -208,7 +208,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
         boolean bothSecure = isFirstSecure & isSecondSecure;
 
         if (bothSecure) {
-            testCodec(null, m2160pPc1410bitWidevineTestFiles, 2160, 3840,
+            testCodec(null, m1080pWidevine10bitTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else if (onlyOneSecure) {
             // 2 non-secure 4k HDR, 1 secure 4k SDR , 1 non-secure 1080p SDR
@@ -290,14 +290,11 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
 
         PerformanceClassEvaluator pce = new PerformanceClassEvaluator(this.mTestName);
         if (secureWithUnsecure) {
-            VideoDecoderSessionsRequirement r5_1__H_1_10;
-            if (height > 1080) {
-                r5_1__H_1_10 = Requirements.addR5_1__H_1_10().withConfig4K().to(pce);
-                r5_1__H_1_10.setFrameDropsPerSec(frameDropsPerSec);
-            } else {
-                r5_1__H_1_10 = Requirements.addR5_1__H_1_10().withConfig1080P().to(pce);
-            }
+            VideoDecoderSessionsRequirement r5_1__H_1_10 = (height > 1080)
+                    ? Requirements.addR5_1__H_1_10().withConfig4K().to(pce)
+                    : Requirements.addR5_1__H_1_10().withConfig1080P().to(pce);
             r5_1__H_1_10.setConcurrentFps(achievedFrameRate);
+            r5_1__H_1_10.setFrameDropsPerSec(frameDropsPerSec);
         } else if (bothSecure) {
             SecureVideoDecoderSessionsRequirement r5_1__H_1_9 = (height > 1080)
                     ? Requirements.addR5_1__H_1_9().withConfigHdr().to(pce)
@@ -318,6 +315,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
                 r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig1080P().to(pce);
                 r5_1__H_1_1.setConcurrentSessions(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
             } else {
 
                 if (isMPCCodec(mFirstPair.first, mSecondPair.first)) {
@@ -337,6 +335,7 @@ public class MultiDecoderPairPerfTest extends MultiCodecPerfTestBase {
                     }
                     r5_1__H_1_1.setConcurrentSessions(maxInstances);
                     r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                    r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
                 }
             }
         }
