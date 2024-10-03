@@ -61,6 +61,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Settings;
 import android.server.wm.IgnoreOrientationRequestSession;
+import android.server.wm.UiDeviceUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -322,6 +323,116 @@ public class VirtualDisplayTest {
     }
 
     /**
+     * Ensures that detaching the display surface turns the display off and attaching a surface will
+     * turn it on only if the power group is already on.
+     */
+    @Test
+    public void testSetSurface_togglesDisplayState() throws Exception {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        Display display = virtualDisplay.getDisplay();
+        launchTestActivityOnDisplay(display.getDisplayId());
+
+        try {
+            assertEquals(display.getState(), Display.STATE_ON);
+            {
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                virtualDisplay.setSurface(null);
+                assertTrue(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_OFF);
+            }
+            {
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                virtualDisplay.setSurface(mSurface);
+                assertTrue(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_ON);
+            }
+        } finally {
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    /**
+     * Ensures that the power group state is propagated to the display state and that attaching the
+     * display surface does not turn on the display if the power group is off.
+     */
+    @Test
+    public void testSetSurface_powerGroupOff_doesNotTurnOnDisplay() throws Exception {
+        VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                WIDTH, HEIGHT, DENSITY, mSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+        Display display = virtualDisplay.getDisplay();
+        launchTestActivityOnDisplay(display.getDisplayId());
+
+        try {
+            assertEquals(display.getState(), Display.STATE_ON);
+            {
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                UiDeviceUtils.pressSleepButton();
+                assertTrue(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_OFF);
+            }
+            {
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                virtualDisplay.setSurface(null);
+                assertFalse(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_OFF);
+            }
+            {
+                // Attaching a surface does not turn on the display because the power group is off.
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                virtualDisplay.setSurface(mSurface);
+                assertFalse(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_OFF);
+            }
+            {
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
+                UiDeviceUtils.pressWakeupButton();
+                assertTrue(waiter.stateChanged());
+                assertEquals(display.getState(), Display.STATE_ON);
+            }
+        } finally {
+            UiDeviceUtils.pressWakeupButton();
+            virtualDisplay.release();
+        }
+        assertDisplayUnregistered(display);
+    }
+
+    /**
+     * Ensures that the power group state is reflected in the display state upon its creation.
+     */
+    @Test
+    public void testCreateDisplay_nonNullSurface_powerGroupOff_displayStateIsOff() {
+        VirtualDisplay virtualDisplay = null;
+        Display display = null;
+        try {
+            UiDeviceUtils.pressSleepButton();
+            virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
+                    WIDTH, HEIGHT, DENSITY, mSurface,
+                    DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                            | DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
+                            | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY);
+            display = virtualDisplay.getDisplay();
+            launchTestActivityOnDisplay(display.getDisplayId());
+            assertEquals(display.getState(), Display.STATE_OFF);
+        } finally {
+            UiDeviceUtils.pressWakeupButton();
+            if (virtualDisplay != null) {
+                virtualDisplay.release();
+            }
+        }
+        if (display != null) {
+            assertDisplayUnregistered(display);
+        }
+    }
+
+    /**
      * Ensures that an application can create a private virtual display with a requested
      * refresh rate and show its own windows on it.
      */
@@ -415,13 +526,13 @@ public class VirtualDisplayTest {
         try (IgnoreOrientationRequestSession unused =
                      new IgnoreOrientationRequestSession(/* enable= */ false)) {
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                 assertTrue(waiter.rotationChanged());
                 assertEquals(getExpectedPortraitRotation(), display.getRotation());
             }
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 assertTrue(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
@@ -448,13 +559,13 @@ public class VirtualDisplayTest {
         SimpleActivity activity = launchTestActivityOnDisplay(display.getDisplayId());
         try {
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
                 assertFalse(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
             }
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
                 assertFalse(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
@@ -501,7 +612,7 @@ public class VirtualDisplayTest {
         launchTestActivityOnDisplay(display.getDisplayId());
         try {
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 virtualDisplay.setRotation(Surface.ROTATION_270);
                 assertTrue(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_270, display.getRotation());
@@ -510,13 +621,13 @@ public class VirtualDisplayTest {
             {
                 // Set the current rotation as the new rotation and check that this does NOT
                 // result in a rotation event.
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 virtualDisplay.setRotation(Surface.ROTATION_270);
                 assertFalse(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_270, display.getRotation());
             }
             {
-                RotationChangeWaiter waiter = new RotationChangeWaiter(display);
+                DisplayChangeWaiter waiter = new DisplayChangeWaiter(display);
                 virtualDisplay.setRotation(Surface.ROTATION_0);
                 assertTrue(waiter.rotationChanged());
                 assertEquals(Surface.ROTATION_0, display.getRotation());
@@ -685,12 +796,14 @@ public class VirtualDisplayTest {
         }
     }
 
-    private final class RotationChangeWaiter {
+    private final class DisplayChangeWaiter {
         private static final int DISPLAY_CHANGE_TIMEOUT_SECS = 3;
 
         private final Display mDisplay;
         private int mCurrentRotation;
+        private int mCurrentState;
         final CountDownLatch mRotationChangedLatch = new CountDownLatch(1);
+        final CountDownLatch mStateChangedLatch = new CountDownLatch(1);
 
         private final DisplayManager.DisplayListener mListener =
                 new DisplayManager.DisplayListener() {
@@ -702,17 +815,24 @@ public class VirtualDisplayTest {
 
                     @Override
                     public void onDisplayChanged(int displayId) {
-                        if (mDisplay.getDisplayId() == displayId
-                                && mCurrentRotation != mDisplay.getRotation()) {
+                        if (mDisplay.getDisplayId() != displayId) {
+                            return;
+                        }
+                        if (mCurrentRotation != mDisplay.getRotation()) {
                             mCurrentRotation = mDisplay.getRotation();
                             mRotationChangedLatch.countDown();
+                        }
+                        if (mCurrentState != mDisplay.getState()) {
+                            mCurrentState = mDisplay.getState();
+                            mStateChangedLatch.countDown();
                         }
                     }
                 };
 
-        RotationChangeWaiter(Display display) {
+        DisplayChangeWaiter(Display display) {
             mDisplay = display;
             mCurrentRotation = mDisplay.getRotation();
+            mCurrentState = mDisplay.getState();
             Handler handler = new Handler(Looper.getMainLooper());
             mDisplayManager.registerDisplayListener(mListener, handler);
         }
@@ -720,6 +840,14 @@ public class VirtualDisplayTest {
         boolean rotationChanged() throws Exception {
             try {
                 return mRotationChangedLatch.await(DISPLAY_CHANGE_TIMEOUT_SECS, TimeUnit.SECONDS);
+            } finally {
+                mDisplayManager.unregisterDisplayListener(mListener);
+            }
+        }
+
+        boolean stateChanged() throws Exception {
+            try {
+                return mStateChangedLatch.await(DISPLAY_CHANGE_TIMEOUT_SECS, TimeUnit.SECONDS);
             } finally {
                 mDisplayManager.unregisterDisplayListener(mListener);
             }
