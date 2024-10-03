@@ -1165,11 +1165,11 @@ public class NotificationTest {
                         .setId(1))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN))
-                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                .addProgressPoint(new Notification.ProgressStyle.Point(10)
                         .setColor(Color.YELLOW).setId(10))
-                .addProgressStep(new Notification.ProgressStyle.Step(18)
+                .addProgressPoint(new Notification.ProgressStyle.Point(18)
                         .setColor(Color.RED))
-                .addProgressStep(new Notification.ProgressStyle.Step(25))
+                .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
@@ -1212,11 +1212,11 @@ public class NotificationTest {
                         .setId(1))
                 .addProgressSegment(new Notification.ProgressStyle.Segment(20)
                         .setColor(Color.GREEN))
-                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                .addProgressPoint(new Notification.ProgressStyle.Point(10)
                         .setColor(Color.YELLOW).setId(10))
-                .addProgressStep(new Notification.ProgressStyle.Step(18)
+                .addProgressPoint(new Notification.ProgressStyle.Point(18)
                         .setColor(Color.RED))
-                .addProgressStep(new Notification.ProgressStyle.Step(25))
+                .addProgressPoint(new Notification.ProgressStyle.Point(25))
                 .setProgressIndeterminate(true);
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
@@ -1270,19 +1270,19 @@ public class NotificationTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_API_RICH_ONGOING)
-    public void testProgressStyle_ignoresInvalidSteps() {
+    public void testProgressStyle_ignoresInvalidPoints() {
         final Notification.ProgressStyle expectedProgressStyle = new Notification.ProgressStyle();
         expectedProgressStyle
-                .addProgressStep(new Notification.ProgressStyle.Step(10)
+                .addProgressPoint(new Notification.ProgressStyle.Point(10)
                         .setColor(Color.BLUE)
                         .setId(100))
-                .addProgressStep(new Notification.ProgressStyle.Step(-100)
+                .addProgressPoint(new Notification.ProgressStyle.Point(-100)
                         .setId(1))
-                .addProgressStep(new Notification.ProgressStyle.Step(20)
+                .addProgressPoint(new Notification.ProgressStyle.Point(20)
                         .setColor(Color.GREEN))
-                .addProgressStep(new Notification.ProgressStyle.Step(0)
+                .addProgressPoint(new Notification.ProgressStyle.Point(0)
                         .setColor(Color.CYAN))
-                .addProgressStep(new Notification.ProgressStyle.Step(10));
+                .addProgressPoint(new Notification.ProgressStyle.Point(10));
 
         mNotification = new Notification.Builder(mContext, CHANNEL.getId())
                 .setSmallIcon(1)
@@ -1294,21 +1294,21 @@ public class NotificationTest {
                 (Notification.ProgressStyle) Notification.Builder.recoverBuilder(
                         mContext, mNotification).getStyle();
 
-        assertThat(recoveredStyle.getProgressSteps()).isEqualTo(List.of(
-                        new Notification.ProgressStyle.Step(10)
+        assertThat(recoveredStyle.getProgressPoints()).isEqualTo(List.of(
+                        new Notification.ProgressStyle.Point(10)
                                 .setColor(Color.BLUE)
                                 .setId(100),
-                        new Notification.ProgressStyle.Step(20)
+                        new Notification.ProgressStyle.Point(20)
                                 .setColor(Color.GREEN),
-                        new Notification.ProgressStyle.Step(0)
+                        new Notification.ProgressStyle.Point(0)
                                 .setColor(Color.CYAN),
-                new Notification.ProgressStyle.Step(10)
+                new Notification.ProgressStyle.Point(10)
         ));
     }
 
     private void assertProgressStylesAreEqual(Notification.ProgressStyle expected,
             Notification.ProgressStyle actual) {
-        assertThat(actual.getProgressSteps()).isEqualTo(expected.getProgressSteps());
+        assertThat(actual.getProgressPoints()).isEqualTo(expected.getProgressPoints());
         assertThat(actual.getProgressSegments()).isEqualTo(expected.getProgressSegments());
         assertThat(actual.getProgressMax()).isEqualTo(expected.getProgressMax());
         assertThat(actual.getProgress()).isEqualTo(expected.getProgress());
