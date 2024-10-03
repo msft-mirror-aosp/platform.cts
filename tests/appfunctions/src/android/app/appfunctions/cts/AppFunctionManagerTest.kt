@@ -41,12 +41,12 @@ import androidx.core.os.asOutcomeReceiver
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.google.common.truth.Truth.assertThat
