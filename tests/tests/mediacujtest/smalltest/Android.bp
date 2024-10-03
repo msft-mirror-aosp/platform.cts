@@ -31,6 +31,7 @@ android_test {
         "androidx.media3.media3-exoplayer",
         "androidx.media3.media3-ui",
         "ctsmediacujcommon",
+        "cts-media-common",
     ],
     srcs: [
         "src/**/*.java",
