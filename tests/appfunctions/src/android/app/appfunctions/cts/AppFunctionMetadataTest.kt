@@ -17,9 +17,9 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.appfunctions.AppFunctionRuntimeMetadata
-import android.app.appfunctions.cts.AppFunctionManagerTest.ThrowRunnable
 import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
 import android.app.appfunctions.flags.Flags
+import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
 import android.app.appsearch.GlobalSearchSessionShim
 import android.app.appsearch.SearchResultsShim
 import android.app.appsearch.SearchSpec
@@ -39,7 +39,6 @@ import com.android.compatibility.common.util.DeviceConfigStateChangerRule
 import com.android.compatibility.common.util.SystemUtil
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
@@ -245,27 +244,8 @@ class AppFunctionMetadataTest {
             TEST_APP_ROOT_FOLDER + "CtsAppSearchIndexerTestAppBV1.apk"
         const val TEST_APP_A_PKG: String = "com.android.cts.appsearch.indexertestapp.a"
         const val TEST_APP_B_PKG: String = "com.android.cts.appsearch.indexertestapp.b"
-        const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
-        const val RETRY_MAX_INTERVALS: Long = 10
         const val PROPERTY_FUNCTION_ID: String = "functionId"
         const val PROPERTY_PACKAGE_NAME: String = "packageName"
-
-        /** Retries an assertion with a delay between attempts. */
-        @Throws(Throwable::class)
-        suspend fun retryAssert(runnable: ThrowRunnable) {
-            var lastError: Throwable? = null
-
-            for (attempt in 0 until RETRY_MAX_INTERVALS) {
-                try {
-                    runnable.run()
-                    return
-                } catch (e: Throwable) {
-                    lastError = e
-                    delay(RETRY_CHECK_INTERVAL_MILLIS)
-                }
-            }
-            throw lastError!!
-        }
     }
 }
 

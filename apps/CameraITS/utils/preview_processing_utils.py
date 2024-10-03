@@ -336,7 +336,11 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
     preview_test_size: str; wxh resolution of the size to be tested
   """
   resolution_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
-  supported_preview_sizes = cam.get_all_supported_preview_sizes(camera_id)
+  supported_preview_sizes = (
+      video_processing_utils.get_sizes_supported_by_preview_and_video(
+          cam, camera_id))
+  logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
+
   if aspect_ratio is None:
     supported_preview_sizes = [size for size in supported_preview_sizes
                                if resolution_to_area(size)
@@ -347,7 +351,7 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
                                >= video_processing_utils.LOWEST_RES_TESTED_AREA
                                and is_aspect_ratio_match(size, aspect_ratio)]
 
-  logging.debug('Supported preview resolutions: %s', supported_preview_sizes)
+  logging.debug('Filtered preview resolutions: %s', supported_preview_sizes)
 
   if _HIGH_RES_SIZE in supported_preview_sizes:
     preview_test_size = _HIGH_RES_SIZE
@@ -360,6 +364,8 @@ def get_max_preview_test_size(cam, camera_id, aspect_ratio=None):
             and resolution_to_area(size) >= _PREVIEW_MIN_TESTED_AREA
         )
     ]
+    if not capped_supported_preview_sizes:
+      raise AssertionError('capped_supported_preview_sizes is empty.')
     preview_test_size = capped_supported_preview_sizes[-1]
 
   logging.debug('Selected preview resolution: %s', preview_test_size)
