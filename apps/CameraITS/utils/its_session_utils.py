@@ -179,6 +179,23 @@ def check_apk_installed(device_id, package_name):
     )
 
 
+def get_array_size(buffer):
+  """Get buffer size based on different NumPy versions' functions.
+
+  Args:
+    buffer: A NumPy array.
+
+  Returns:
+    The size of the buffer.
+  """
+  np_version = numpy.__version__
+  if np_version.startswith(('1.25', '1.26', '2.')):
+    buffer_size = numpy.prod(buffer.shape)
+  else:
+    buffer_size = numpy.product(buffer.shape)
+  return buffer_size
+
+
 class ItsSession(object):
   """Controls a device over adb to run ITS scripts.
 
@@ -1471,7 +1488,7 @@ class ItsSession(object):
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.product(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[self._camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -1502,7 +1519,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.product(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2021,7 +2038,7 @@ class ItsSession(object):
         # and cannot be accessed.
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.product(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -2039,7 +2056,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.product(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
