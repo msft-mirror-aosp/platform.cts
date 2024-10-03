@@ -17,22 +17,6 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-TEST_SUITES_DEFAULT = [
-    "cts",
-    "general-tests",
-    "mts-documentsui",
-    "mts-mainline-infra",
-    "mts-mediaprovider",
-]
-
-MCTS_TEST_SUITES_DEFAULT = [
-    "cts",
-    "general-tests",
-    "mcts-documentsui",
-    "mcts-mainline-infra",
-    "mcts-mediaprovider",
-]
-
 CTS_TEST_SUITES_DEFAULT = [
     "cts",
     "general-tests",
@@ -227,140 +211,10 @@ java_test_host {
 }
 
 java_test_host {
-    name: "MctsAppSecurityHostTestCases",
-    defaults: ["appsecurity_cts_defaults"],
-
-    srcs: [
-        "src/**/ApexSignatureVerificationTest.java",
-        "src/**/AppSecurityTests.java",
-        "src/**/DeviceIdentifierTest.java",
-        "src/**/KeySetHostTest.java",
-        "src/**/ListeningPortsTest.java",
-        "src/**/PkgInstallSignatureVerificationTest.java",
-        "src/**/StatsdAppSecurityAtomTest.java",
-        "src/**/RoleSecurityTest.java",
-    ],
-
-    static_libs: [
-        "flag-junit-host",
-        "android.security.flags-aconfig-java-host",
-        "sts-host-util",
-    ],
-
-    test_suites: CTS_TEST_SUITES_DEFAULT,
-
-    test_config: "AndroidTestMcts.xml",
-
-    data: [
-        // AppSecurityTests
-        ":CtsAppAccessData",
-        ":CtsAppWithData",
-        ":CtsDuplicatePermission_SamePermissionGroup",
-        ":CtsDuplicatePermissionDeclareApp_DifferentProtectionLevel",
-        ":CtsDuplicatePermissionDeclareApp_SameProtectionLevel",
-        ":CtsDuplicatePermissionDeclareApp",
-        ":CtsInstrumentationAppDiffCert",
-        ":CtsMalformedDuplicatePermission_DifferentPermissionGroup",
-        ":CtsPermissionDeclareApp",
-        ":CtsPermissionDeclareAppCompat",
-        ":CtsSimpleAppInstall",
-        ":CtsSimpleAppInstallDiffCert",
-        ":CtsTargetInstrumentationApp",
-        ":CtsUsePermissionDiffCert",
-        // DeviceIdentifierTest
-        ":CtsAccessDeviceIdentifiers",
-        // KeySetHostTest
-        ":CtsKeySetPermDefSigningA",
-        ":CtsKeySetPermDefSigningB",
-        ":CtsKeySetPermUseSigningA",
-        ":CtsKeySetPermUseSigningB",
-        ":CtsKeySetSharedUserSigningAUpgradeB",
-        ":CtsKeySetSharedUserSigningBUpgradeB",
-        ":CtsKeySetSigningAAndBUpgradeA",
-        ":CtsKeySetSigningAAndCUpgradeB",
-        ":CtsKeySetSigningABadUpgradeB",
-        ":CtsKeySetSigningANoDefUpgradeB",
-        ":CtsKeySetSigningAUpgradeA",
-        ":CtsKeySetSigningAUpgradeAOrB",
-        ":CtsKeySetSigningAUpgradeB",
-        ":CtsKeySetSigningAUpgradeEcA",
-        ":CtsKeySetSigningAUpgradeNone",
-        ":CtsKeySetSigningBUpgradeA",
-        ":CtsKeySetSigningBUpgradeB",
-        ":CtsKeySetSigningCBadAUpgradeAB",
-        ":CtsKeySetSigningEcAUpgradeA",
-        ":CtsKeySetTestApp",
-        // ListeningPortsTest
-        ":CtsListeningPortsTest",
-        // PkgInstallSignatureVerificationTest deps
-        ":CtsSignatureQueryService",
-        ":CtsSignatureQueryServiceTest",
-        ":CtsV3SigningSchemeRotationTest",
-        ":CtsSignatureQueryService_v2-tgt-33",
-        ":CtsSignatureQueryService_v2",
-        ":CtsSignatureQueryService_v3-tgt-33",
-        ":CtsSignatureQueryService_v3",
-        ":CtsSignatureQueryServiceTest",
-        ":CtsSignatureQueryServiceTest_v2",
-        ":CtsSignatureQueryServiceTest_v2-tgt-33",
-        ":v1v2-ec-p256-two-signers-targetSdk-30",
-        ":v3-ec-p256-1-companion-usesperm",
-        ":v3-ec-p256-1-sharedUid",
-        ":v3-ec-p256-1-sharedUid-companion2",
-        ":v3-ec-p256_2-companion-uses-knownSigner",
-        ":v3-ec-p256-2-sharedUid-companion",
-        ":v3-ec-p256_3-companion-uses-knownSigner",
-        ":v3-ec-p256-with-por_1_2_3-1-no-caps-2-default-declperm",
-        ":v3-ec-p256-with-por-1_2_3_4_5-default-caps",
-        ":v3-ec-p256-with-por_1_2_3-no-caps-declperm",
-        ":v3-ec-p256-with-por_1_2_4-companion-usesperm",
-        ":v3-ec-p256-with-por_1_2-companion-uses-knownSigner",
-        ":v3-ec-p256-with-por_1_2-default-caps",
-        ":v3-ec-p256-with-por_1_2-default-caps-sharedUid",
-        ":v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion",
-        ":v3-ec-p256-with-por_1_2-default-caps-sharedUid-companion3",
-        ":v3-ec-p256-with-por_1_2-no-perm-cap-sharedUid",
-        ":v3-ec-p256-with-por_1_2-no-shUid-cap-declperm2",
-        ":v3-ec-p256-with-por_1_2-no-shUid-cap-sharedUid",
-        ":v3-ec-p256-with-por_1_2-no-shUid-cap-sharedUid-companion",
-        ":v3-ec-p256-with-por_1_2-no-shUid-cap-sharedUid-companion2",
-        ":v3-por_Y_1_2-default-caps-sharedUid",
-        ":v3-por_Z_1_2-default-caps-sharedUid-companion",
-        ":v3-rsa-2048-decl-knownSigner-ec-p256-1-3",
-        ":v3-rsa-2048-decl-knownSigner-str-const-ec-p256-1",
-        ":v3-rsa-2048-decl-knownSigner-str-res-ec-p256-1",
-        ":v3-rsa-2048-declperm",
-        // StatsdAppSecurityAtomTest
-        ":CtsStatsSecurityApp",
-        // ApkVerityInstallTest
-        ":CtsApkVerityTestApp",
-        ":CtsApkVerityTestAppSplit",
-        // PackageSetInstallerTest
-        ":CtsPkgInstallerPermRequestApp",
-        ":CtsPkgInstallerPermWhitelistApp",
-        // CtsAppDataIsolationAppA
-        ":CtsAppDataIsolationAppA",
-        ":CtsAppDataIsolationAppSharedA",
-        ":CtsAppDataIsolationAppDirectBootA",
-        ":CtsAppDataIsolationAppApi29A",
-        ":CtsAppDataIsolationAppB",
-        ":CtsAppDataIsolationAppSharedB",
-        // ReadableSettingsFieldsTest
-        ":CtsReadSettingsFieldsApp",
-        ":CtsReadSettingsFieldsAppTestOnly",
-        ":CtsReadSettingsFieldsAppTargetQ",
-        ":CtsReadSettingsFieldsAppTargetR",
-        ":CtsReadSettingsFieldsAppTargetS",
-        // UseProcessTest
-        ":CtsUseProcessFailActivity",
-    ],
-}
-
-java_test_host {
     name: "CtsPermissionsHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
-    test_suites: TEST_SUITES_DEFAULT + ["sts"],
+    test_suites: CTS_TEST_SUITES_DEFAULT + ["sts"],
 
     srcs: [
         "src/**/AccessSerialNumberTest.java",
@@ -385,6 +239,8 @@ java_test_host {
     name: "CtsAppDataIsolationHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
+    test_suites: CTS_TEST_SUITES_DEFAULT,
+
     srcs: [
         "src/**/AppDataIsolationTests.java",
     ],
@@ -396,7 +252,6 @@ java_test_host {
         ":CtsAppDataIsolationAppSharedA",
         ":CtsAppDataIsolationAppSharedB",
     ],
-    test_suites: CTS_TEST_SUITES_DEFAULT,
     test_config: "AppDataIsolationTests.xml",
 }
 
@@ -404,7 +259,7 @@ java_test_host {
     name: "CtsUseEmbeddedDexHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
-    test_suites: TEST_SUITES_DEFAULT,
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     srcs: [
         "src/**/UseEmbeddedDexTest.java",
@@ -590,17 +445,6 @@ java_test_host {
 }
 
 java_test_host {
-    name: "MctsAdoptableHostTestCases",
-    defaults: ["appsecurity_cts_defaults"],
-
-    srcs: [
-        "src/**/*Adoptable*.java",
-    ],
-    test_config: "AdoptableTestsMcts.xml",
-    test_suites: MCTS_TEST_SUITES_DEFAULT,
-}
-
-java_test_host {
     name: "CtsDirectBootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
@@ -649,38 +493,6 @@ java_test_host {
     test_config: "StorageTests.xml",
 }
 
-java_test_host {
-    name: "MctsStorageHostTestCases",
-    defaults: ["appsecurity_cts_defaults"],
-
-    static_libs: [
-        "flag-junit-host",
-        "android.app.usage.flags-aconfig-java-host",
-    ],
-    srcs: [
-        "src/**/*Storage*.java",
-    ],
-    data: [
-        ":CtsExternalStorageApp",
-        ":CtsReadExternalStorageApp",
-        ":CtsWriteExternalStorageApp",
-        ":CtsWriteExternalStorageApp2",
-        ":CtsMultiUserStorageApp",
-        ":CtsMediaStorageApp",
-        ":CtsMediaStorageApp28",
-        ":CtsMediaStorageApp29",
-        ":CtsMediaStorageApp31",
-        ":CtsNoAppDataStorageApp",
-        ":CtsStorageStatsApp",
-        ":CtsStorageAppA",
-        ":CtsStorageAppB",
-        ":CtsStorageAppC",
-        ":CtsStorageAppC_dm",
-    ],
-    test_config: "StorageTestsMcts.xml",
-    test_suites: MCTS_TEST_SUITES_DEFAULT,
-}
-
 genrule {
     name: "CtsStorageAppC_profile",
     defaults: ["profile_defaults"],
@@ -704,7 +516,7 @@ java_test_host {
     name: "CtsResumeOnRebootHostTestCases",
     defaults: ["appsecurity_cts_defaults"],
 
-    test_suites: TEST_SUITES_DEFAULT,
+    test_suites: CTS_TEST_SUITES_DEFAULT,
 
     srcs: [
         "src/**/*ResumeOnReboot*.java",

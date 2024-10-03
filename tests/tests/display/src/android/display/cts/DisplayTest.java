@@ -882,7 +882,11 @@ public class DisplayTest extends TestBase {
     @Test
     public void testMode() {
         Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        assertEquals(2, display.getSupportedModes().length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
         assertEquals(display.getSupportedModes()[0], mode);
         assertEquals(SECONDARY_DISPLAY_WIDTH, mode.getPhysicalWidth());
@@ -999,11 +1003,14 @@ public class DisplayTest extends TestBase {
 
         enableAppOps();
         final Display display = getSecondaryDisplay(mDisplayManager.getDisplays());
-        Display.Mode[] modes = display.getSupportedModes();
-        assertEquals(2, modes.length);
+        List<Display.Mode> modes = Arrays
+                .stream(display.getSupportedModes())
+                .filter(mode -> !mode.isSynthetic()) // filter out synthetic modes
+                .toList();
+        assertEquals(2, modes.size());
         Display.Mode mode = display.getMode();
-        assertEquals(modes[0], mode);
-        final Display.Mode newMode = modes[1];
+        assertEquals(modes.get(0), mode);
+        final Display.Mode newMode = modes.get(1);
 
         Handler handler = new Handler(Looper.getMainLooper());
 
