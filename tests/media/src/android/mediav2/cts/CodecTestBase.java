@@ -39,6 +39,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 
 import java.io.File;
@@ -512,6 +513,7 @@ class OutputManager {
 
 abstract class CodecTestBase {
     public static final boolean IS_AT_LEAST_R = ApiLevelUtil.isAtLeast(Build.VERSION_CODES.R);
+    public static final boolean IS_Q = ApiLevelUtil.getApiLevel() == Build.VERSION_CODES.Q;
     private static final String LOG_TAG = CodecTestBase.class.getSimpleName();
 
     static final String CODEC_PREFIX_KEY = "codec-prefix";
@@ -626,6 +628,21 @@ abstract class CodecTestBase {
 
     static boolean hasEncoder(String mime) {
         return CodecTestBase.selectCodecs(mime, null, null, true).size() != 0;
+    }
+
+    static void checkFormatSupport(String codecName, String mediaType, boolean isEncoder,
+            ArrayList<MediaFormat> formats, String[] features) throws IOException {
+        boolean hasSupport = true;
+        if (formats != null) {
+            hasSupport &= areFormatsSupported(codecName, mediaType, formats);
+        }
+        if (features != null) {
+            for (String feature : features) {
+                hasSupport &= isFeatureSupported(codecName, mediaType, feature);
+            }
+        }
+        Assume.assumeTrue("format(s) not supported by codec: " + codecName + " for mediaType : "
+                + mediaType, hasSupport);
     }
 
     static boolean isFeatureSupported(String name, String mime, String feature) throws IOException {
