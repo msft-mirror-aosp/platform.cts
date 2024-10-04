@@ -40,8 +40,8 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="android.photopicker.cts" />
         <option name="runner" value="androidx.test.runner.AndroidJUnitRunner" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
         <option name="instrumentation-arg" key="thisisignored" value="thisisignored --no-window-animation" />
     </test>
     <option name="config-descriptor:metadata" key="parameter" value="multiuser" />

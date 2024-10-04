@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.multiuser.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -28,31 +31,28 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method should run on a secondary user.
+ * Mark that a test method should run on the primary user.
  *
- * <p>Your test configuration should be such that this test is only run where a secondary user is
- * created and the test is being run on that user.
+ * <p>Your test configuration should be such that this test is only run on the primary user
  *
- * <p>Optionally, you can guarantee that these methods do not run outside of a secondary user by
- * using {@code Devicestate}.
+ * <p>Optionally, you can guarantee that these methods do not run outside of the primary
+ * user by using {@code Devicestate}.
  *
- * <p>This annotation by default opts a test into multi-user presubmit. New tests should also be
- * annotated {@link Postsubmit} until they are shown to meet the multi-user presubmit
- * requirements.
- * TODO(b/334025286) move it into multi-user module
+ * <p>Note that in practice this requires that the test runs on the system user, but excludes
+ * headless system users. To mark that a test should run on the system user, including headless
+ * system users, see {@link RequireRunOnSystemUser} - or to run on the first user used by a
+ * human (which will be the primary user on non-headless-system-user devices, or a secondary user
+ * otherwise), use {@link RequireRunOnInitialUser}.
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireRunOnUserAnnotation("android.os.usertype.full.SECONDARY")
+@RequireRunOnUserAnnotation("android.os.usertype.full.SYSTEM")
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
-public @interface RequireRunOnSecondaryUser {
+public @interface RequireRunOnPrimaryUser {
     /**
      * Should we ensure that we are switched to the given user.
      *
      * <p>ANY will be treated as TRUE if no other annotation has forced a switch.
-     *
-     * <p>However, ANY will be treated as FALSE to prevent user switching to a secondary user
-     * on the driver display when testing with a visible background user.
      */
     OptionalBoolean switchedToUser() default TRUE;
 

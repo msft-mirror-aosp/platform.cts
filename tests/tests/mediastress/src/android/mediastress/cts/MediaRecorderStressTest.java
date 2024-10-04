@@ -30,7 +30,6 @@ import android.view.SurfaceHolder;
 import androidx.test.filters.LargeTest;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.UserHelper;
 
 import java.io.BufferedWriter;
@@ -42,7 +41,6 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 public class MediaRecorderStressTest extends ActivityInstrumentationTestCase2<MediaFrameworkTest> {
 
     private static final String TAG = "MediaRecorderStressTest";

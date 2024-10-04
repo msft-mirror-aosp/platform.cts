@@ -18,27 +18,22 @@ package android.app.appfunctions.cts
 
 import android.Manifest
 import android.app.appfunctions.AppFunctionManager
-import android.app.appfunctions.AppFunctionManager.EnabledState
-import android.app.appfunctions.AppFunctionRuntimeMetadata
-import android.app.appfunctions.AppFunctionStaticMetadataHelper
-import android.app.appfunctions.AppFunctionStaticMetadataHelper.APP_FUNCTION_STATIC_NAMESPACE
 import android.app.appfunctions.ExecuteAppFunctionRequest
 import android.app.appfunctions.ExecuteAppFunctionResponse
-import android.app.appfunctions.cts.AppSearchUtils.collectAllSearchResults
+import android.app.appfunctions.cts.AppFunctionUtils.executeAppFunctionAndWait
+import android.app.appfunctions.cts.AppFunctionUtils.getAllRuntimeMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.getAllStaticMetadataPackages
+import android.app.appfunctions.cts.AppFunctionUtils.setAppFunctionEnabled
 import android.app.appfunctions.flags.Flags
-import android.app.appfunctions.testutils.SidecarUtil
+import android.app.appfunctions.testutils.CtsTestUtil.retryAssert
+import android.app.appfunctions.testutils.CtsTestUtil.runWithShellPermission
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForOperationCancellation
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnCreate
 import android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver.waitForServiceOnDestroy
 import android.app.appsearch.GenericDocument
-import android.app.appsearch.GlobalSearchSessionShim
-import android.app.appsearch.SearchResultsShim
-import android.app.appsearch.SearchSpec
-import android.app.appsearch.testutil.GlobalSearchSessionShimImpl
 import android.content.Context
 import android.os.CancellationSignal
-import android.os.OutcomeReceiver
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
@@ -46,26 +41,19 @@ import androidx.core.os.asOutcomeReceiver
 import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser
-import com.android.bedstead.nene.TestApis.permissions
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
 import com.android.compatibility.common.util.DeviceConfigStateChangerRule
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.test.assertFailsWith
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.junit.After
@@ -117,8 +105,9 @@ class AppFunctionManagerTest {
     @Before
     @After
     fun resetEnabledStatus() = doBlocking {
-        setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
         setAppFunctionEnabled(
+            mManager,
             "add_disabledByDefault",
             AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
         )
@@ -136,10 +125,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_failed_noSuchMethod() {
+    fun executeAppFunction_failed_noSuchMethod() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noSuchMethod").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode)
@@ -191,7 +180,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_platformManager_platformAppFunctionService_success() {
+    fun executeAppFunction_platformManager_platformAppFunctionService_success() = doBlocking {
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyLong("a", 1)
@@ -200,7 +189,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -212,164 +201,16 @@ class AppFunctionManagerTest {
         assertServiceDestroyed()
     }
 
-    @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
-    )
-    @Test
-    @EnsureHasNoDeviceOwner
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
-    fun executeAppFunction_sidecarManager_platformAppFunctionService_success() = doBlocking {
-        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            // Only run test if sidecar library is available.
-            SidecarUtil.assumeSidecarAvailable()
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                SidecarExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add")
-                    .setParameters(parameters)
-                    .build()
-
-            val response =
-                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context)
-                        .executeAppFunction(
-                            request,
-                            context.mainExecutor,
-                            { response -> continuation.resume(response) },
-                        )
-                }
-
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
-                )
-                .isEqualTo(3)
-            assertServiceDestroyed()
-        }
-    }
-
-    @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#executeAppFunction"]
-    )
-    @Test
-    @EnsureHasNoDeviceOwner
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
-    fun executeAppFunction_sidecarManager_sidecarAppFunctionService_success() = doBlocking {
-        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            // Only run test if sidecar library is available.
-            SidecarUtil.assumeSidecarAvailable()
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                SidecarExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
-                    .setParameters(parameters)
-                    .build()
-
-            val response =
-                suspendCancellableCoroutine<SidecarExecuteAppFunctionResponse> { continuation ->
-                    SidecarAppFunctionManager(context)
-                        .executeAppFunction(
-                            request,
-                            context.mainExecutor,
-                            { response -> continuation.resume(response) },
-                        )
-                }
-
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
-                )
-                .isEqualTo(3)
-        }
-    }
-
     @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
     @Test
     @EnsureHasNoDeviceOwner
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_platformManager_sidecarAppFunctionService_success() = doBlocking {
-        suspendWithShellPermission(EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION) {
-            // Only run test if sidecar library is available.
-            SidecarUtil.assumeSidecarAvailable()
-            val parameters: GenericDocument =
-                GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
-                    .setPropertyLong("a", 1)
-                    .setPropertyLong("b", 2)
-                    .build()
-            val request =
-                ExecuteAppFunctionRequest.Builder(TEST_SIDECAR_HELPER_PKG, "add")
-                    .setParameters(parameters)
-                    .build()
-
-            val response = executeAppFunctionAndWait(request)
-
-            assertThat(response.isSuccess).isTrue()
-            assertThat(
-                    response.resultDocument.getPropertyLong(
-                        ExecuteAppFunctionResponse.PROPERTY_RETURN_VALUE
-                    )
-                )
-                .isEqualTo(3)
-        }
-    }
-
-    @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#isAppFunctionEnabled"]
-    )
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    fun isAppFunctionEnabled_sidecar() = doBlocking {
-        SidecarUtil.assumeSidecarAvailable()
-
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, "add")).isTrue()
-    }
-
-    @ApiTest(
-        apis = ["com.google.android.appfunctions.sidecar.AppFunctionManager#setAppFUnctionEnabled"]
-    )
-    @Test
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    fun setAppFunctionEnabled_sidecar() = doBlocking {
-        SidecarUtil.assumeSidecarAvailable()
-
-        val functionUnderTest = "add"
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
-        sidecarSetAppFunctionEnabled(
-            functionUnderTest,
-            AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
-        )
-
-        assertThat(sidecarIsAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
-    }
-
-    @ApiTest(apis = ["android.app.appfunctions.AppFunctionManager#executeAppFunction"])
-    @Test
-    @EnsureHasNoDeviceOwner
-    @IncludeRunOnSecondaryUser
-    @IncludeRunOnPrimaryUser
-    @Throws(Exception::class)
-    fun executeAppFunction_otherNonExistingTargetPackage() {
+    fun executeAppFunction_otherNonExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("other.package", "add").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         // Apps without the permission can only invoke functions from themselves.
@@ -385,10 +226,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnSecondaryUser
     @IncludeRunOnPrimaryUser
     @Throws(Exception::class)
-    fun executeAppFunction_otherExistingTargetPackage() {
+    fun executeAppFunction_otherExistingTargetPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "someMethod").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
@@ -406,10 +247,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_throwsException() {
+    fun executeAppFunction_throwsException() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "throwException").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode)
@@ -423,10 +264,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_onRemoteProcessKilled() {
+    fun executeAppFunction_onRemoteProcessKilled() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "kill").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode)
@@ -442,7 +283,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_success_async() {
+    fun executeAppFunction_success_async() = doBlocking {
         val parameters =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
                 .setPropertyLong("a", 1)
@@ -453,7 +294,7 @@ class AppFunctionManagerTest {
                 .setParameters(parameters)
                 .build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -471,10 +312,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_emptyPackage() {
+    fun executeAppFunction_emptyPackage() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder("", "noOp").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode)
@@ -488,10 +329,10 @@ class AppFunctionManagerTest {
     @EnsureHasNoDeviceOwner
     @Postsubmit(reason = "new test")
     @Throws(Exception::class)
-    fun executeAppFunction_runInManagedProfile_fail() {
+    fun executeAppFunction_runInManagedProfile_fail() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
@@ -504,11 +345,11 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_disabledByDefault_fail() {
+    fun executeAppFunction_disabledByDefault_fail() = doBlocking {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add_disabledByDefault").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
@@ -523,9 +364,9 @@ class AppFunctionManagerTest {
     @Throws(Exception::class)
     fun executeAppFunction_disabledInRuntime_fail() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").build()
-        setAppFunctionEnabled("add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+        setAppFunctionEnabled(mManager, "add", AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DISABLED)
@@ -538,10 +379,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() {
+    fun executeAppFunction_hasManagedProfileRunInPersonalProfile_success() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
         assertServiceDestroyed()
@@ -553,10 +394,10 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_deviceOwner_fail() {
+    fun executeAppFunction_deviceOwner_fail() = doBlocking {
         val request = ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "noOp").build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isFalse()
         assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_INTERNAL_ERROR)
@@ -569,7 +410,7 @@ class AppFunctionManagerTest {
     @IncludeRunOnPrimaryUser
     @EnsureHasNoDeviceOwner
     @Throws(Exception::class)
-    fun executeAppFunction_largeTransactionSuccess() {
+    fun executeAppFunction_largeTransactionSuccess() = doBlocking {
         val largeByteArray = ByteArray(1024 * 1024 + 100)
         val parameters: GenericDocument =
             GenericDocument.Builder<GenericDocument.Builder<*>>("", "", "")
@@ -581,7 +422,7 @@ class AppFunctionManagerTest {
         val request =
             ExecuteAppFunctionRequest.Builder(CURRENT_PKG, "add").setParameters(parameters).build()
 
-        val response = executeAppFunctionAndWait(request)
+        val response = executeAppFunctionAndWait(mManager, request)
 
         assertThat(response.isSuccess).isTrue()
         assertThat(
@@ -614,7 +455,7 @@ class AppFunctionManagerTest {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
@@ -638,7 +479,7 @@ class AppFunctionManagerTest {
                 val request =
                     ExecuteAppFunctionRequest.Builder(TEST_HELPER_PKG, "random_function").build()
 
-                val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.isSuccess).isFalse()
                 assertThat(response.resultCode)
@@ -672,7 +513,7 @@ class AppFunctionManagerTest {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.errorMessage).isNull()
                 assertThat(response.isSuccess).isTrue()
@@ -706,7 +547,7 @@ class AppFunctionManagerTest {
                         .setParameters(parameters)
                         .build()
 
-                val response = executeAppFunctionAndWait(request)
+                val response = executeAppFunctionAndWait(mManager, request)
 
                 assertThat(response.resultCode).isEqualTo(ExecuteAppFunctionResponse.RESULT_DENIED)
                 assertThat(response.errorMessage)
@@ -839,16 +680,28 @@ class AppFunctionManagerTest {
         // Check if the function is enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
         // Disable the function
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+        )
         // Confirm that the function is disabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
         // Reset the enabled bit
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
         // Confirm that the function is now enabled (default)
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
 
         // Manually set the enabled bit to true
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
         // Confirm that the function is still enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
     }
@@ -864,16 +717,28 @@ class AppFunctionManagerTest {
         // Confirm that the function is disabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
         // Enable the function
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
         // Confirm that the function is enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
         // Reset the enabled bit
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DEFAULT)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_DEFAULT,
+        )
         // Confirm that the function is now enabled (default)
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isFalse()
 
         // Manually set the enabled bit to true
-        setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_ENABLED)
+        setAppFunctionEnabled(
+            mManager,
+            functionUnderTest,
+            AppFunctionManager.APP_FUNCTION_STATE_ENABLED,
+        )
         // Confirm that the function is still enabled
         assertThat(isAppFunctionEnabled(CURRENT_PKG, functionUnderTest)).isTrue()
     }
@@ -888,19 +753,12 @@ class AppFunctionManagerTest {
         val functionUnderTest = "notExist"
 
         assertFailsWith<IllegalArgumentException>("does not exist") {
-            setAppFunctionEnabled(functionUnderTest, AppFunctionManager.APP_FUNCTION_STATE_DISABLED)
+            setAppFunctionEnabled(
+                mManager,
+                functionUnderTest,
+                AppFunctionManager.APP_FUNCTION_STATE_DISABLED,
+            )
         }
-    }
-
-    private fun executeAppFunctionAndWait(
-        request: ExecuteAppFunctionRequest
-    ): ExecuteAppFunctionResponse {
-        val blockingQueue = LinkedBlockingQueue<ExecuteAppFunctionResponse>()
-        mManager.executeAppFunction(request, context.mainExecutor, CancellationSignal()) {
-            e: ExecuteAppFunctionResponse ->
-            blockingQueue.add(e)
-        }
-        return requireNotNull(blockingQueue.poll(LONG_TIMEOUT_SECOND, TimeUnit.SECONDS))
     }
 
     private fun assertCancelListenerTriggered() {
@@ -919,60 +777,6 @@ class AppFunctionManagerTest {
         )
     }
 
-    private suspend fun sidecarIsAppFunctionEnabled(
-        targetPackage: String,
-        functionIdentifier: String,
-    ): Boolean = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context)
-            .isAppFunctionEnabled(
-                functionIdentifier,
-                targetPackage,
-                context.mainExecutor,
-                continuation.asOutcomeReceiver(),
-            )
-    }
-
-    private suspend fun sidecarSetAppFunctionEnabled(
-        functionIdentifier: String,
-        @EnabledState state: Int,
-    ): Unit = suspendCancellableCoroutine { continuation ->
-        SidecarAppFunctionManager(context)
-            .setAppFunctionEnabled(
-                functionIdentifier,
-                state,
-                context.mainExecutor,
-                object : OutcomeReceiver<Void, Exception> {
-                    override fun onResult(result: Void?) {
-                        continuation.resume(Unit)
-                    }
-
-                    override fun onError(error: Exception) {
-                        continuation.resumeWithException(error)
-                    }
-                },
-            )
-    }
-
-    private suspend fun setAppFunctionEnabled(
-        functionIdentifier: String,
-        @EnabledState state: Int,
-    ): Unit = suspendCancellableCoroutine { continuation ->
-        mManager.setAppFunctionEnabled(
-            functionIdentifier,
-            state,
-            context.mainExecutor,
-            object : OutcomeReceiver<Void, Exception> {
-                override fun onResult(result: Void?) {
-                    continuation.resume(Unit)
-                }
-
-                override fun onError(error: Exception) {
-                    continuation.resumeWithException(error)
-                }
-            },
-        )
-    }
-
     /** Verifies that the service is unbound by asserting the service was destroyed. */
     @Throws(InterruptedException::class)
     private fun assertServiceDestroyed() {
@@ -983,49 +787,6 @@ class AppFunctionManagerTest {
     @Throws(InterruptedException::class)
     private fun assertServiceWasNotCreated() {
         assertThat(waitForServiceOnCreate(SHORT_TIMEOUT_SECOND, TimeUnit.SECONDS)).isFalse()
-    }
-
-    private fun getAllStaticMetadataPackages() =
-        searchStaticMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
-
-    private fun getAllRuntimeMetadataPackages() =
-        searchRuntimeMetadata().map { it.getPropertyString(PROPERTY_PACKAGE_NAME) }.toSet()
-
-    private fun searchStaticMetadata(): List<GenericDocument> {
-        val globalSearchSession: GlobalSearchSessionShim =
-            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
-
-        val searchResults: SearchResultsShim =
-            globalSearchSession.search(
-                "",
-                SearchSpec.Builder()
-                    .addFilterNamespaces(APP_FUNCTION_STATIC_NAMESPACE)
-                    .addFilterPackageNames(APP_FUNCTION_INDEXER_PACKAGE)
-                    .addFilterSchemas(AppFunctionStaticMetadataHelper.STATIC_SCHEMA_TYPE)
-                    .setVerbatimSearchEnabled(true)
-                    .build(),
-            )
-        return collectAllSearchResults(searchResults)
-    }
-
-    private fun searchRuntimeMetadata(): List<GenericDocument> {
-        val globalSearchSession: GlobalSearchSessionShim =
-            GlobalSearchSessionShimImpl.createGlobalSearchSessionAsync().get()
-
-        val searchResults: SearchResultsShim =
-            globalSearchSession.search(
-                "",
-                SearchSpec.Builder()
-                    .addFilterNamespaces(AppFunctionRuntimeMetadata.APP_FUNCTION_RUNTIME_NAMESPACE)
-                    .addFilterSchemas(AppFunctionRuntimeMetadata.RUNTIME_SCHEMA_TYPE)
-                    .setVerbatimSearchEnabled(true)
-                    .build(),
-            )
-        return collectAllSearchResults(searchResults)
-    }
-
-    fun interface ThrowRunnable {
-        @Throws(Throwable::class) suspend fun run()
     }
 
     private companion object {
@@ -1039,38 +800,6 @@ class AppFunctionManagerTest {
         const val EXECUTE_APP_FUNCTIONS_PERMISSION = Manifest.permission.EXECUTE_APP_FUNCTIONS
         const val EXECUTE_APP_FUNCTIONS_TRUSTED_PERMISSION =
             Manifest.permission.EXECUTE_APP_FUNCTIONS_TRUSTED
-        const val RETRY_CHECK_INTERVAL_MILLIS: Long = 500
-        const val RETRY_MAX_INTERVALS: Long = 10
-        const val PROPERTY_PACKAGE_NAME = "packageName"
-        const val APP_FUNCTION_INDEXER_PACKAGE = "android"
-
-        suspend fun runWithShellPermission(vararg permissions: String, block: suspend () -> Unit) {
-            permissions().withPermission(*permissions).use { block() }
-        }
-
-        suspend fun suspendWithShellPermission(
-            vararg permissions: String,
-            block: suspend () -> Unit,
-        ) {
-            permissions().withPermission(*permissions).use { block() }
-        }
-
-        /** Retries an assertion with a delay between attempts. */
-        @Throws(Throwable::class)
-        suspend fun retryAssert(runnable: ThrowRunnable) {
-            var lastError: Throwable? = null
-
-            for (attempt in 0 until RETRY_MAX_INTERVALS) {
-                try {
-                    runnable.run()
-                    return
-                } catch (e: Throwable) {
-                    lastError = e
-                    delay(RETRY_CHECK_INTERVAL_MILLIS)
-                }
-            }
-            throw lastError!!
-        }
     }
 }
 

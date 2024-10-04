@@ -30,9 +30,8 @@ java_library {
         "androidx.core_core-ktx",
         "guava",
         "truth",
+        "bedstead-root",
     ],
-    // For testing @SystemApi(client = MODULE_LIBRARIES) APIs
-    platform_apis: true,
     visibility: [
         "//cts/tests:__subpackages__",
     ],
