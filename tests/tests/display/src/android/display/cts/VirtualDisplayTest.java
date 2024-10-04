@@ -509,7 +509,6 @@ public class VirtualDisplayTest {
 
     @Test
     public void testVirtualDisplayRotatesWithContent() throws Exception {
-        assumeTrue(supportsActivitiesOnSecondaryDisplays());
         assumeTrue(supportsRotation());
 
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
@@ -545,8 +544,6 @@ public class VirtualDisplayTest {
 
     @Test
     public void testVirtualDisplayDoesNotRotateWithContent() throws Exception {
-        assumeTrue(supportsActivitiesOnSecondaryDisplays());
-
         VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,
                 WIDTH, HEIGHT, DENSITY, mSurface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -735,6 +732,7 @@ public class VirtualDisplayTest {
     }
 
     private SimpleActivity launchTestActivityOnDisplay(int displayId) {
+        assumeTrue(supportsActivitiesOnSecondaryDisplays());
         Intent intent = new Intent(getApplicationContext(), SimpleActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         ActivityOptions activityOptions = ActivityOptions.makeBasic();
