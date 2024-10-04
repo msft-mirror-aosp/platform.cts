@@ -38,17 +38,18 @@ import static org.testng.Assert.assertThrows;
 
 import android.app.KeyguardManager;
 import android.app.admin.RemoteDevicePolicyManager;
+import android.app.admin.flags.Flags;
 import android.content.Context;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature;
 import com.android.bedstead.harrier.annotations.RequireFeature;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
-import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.harrier.policies.PasswordQuality;
 import com.android.bedstead.harrier.policies.ResetPasswordWithToken;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
@@ -66,15 +67,11 @@ public final class ResetPasswordWithTokenTest {
     private static final String NOT_COMPLEX_PIN = "1234";
     private static final String VALID_PIN = NOT_COMPLEX_PIN;
     private static final String NUMERIC_PIN_LENGTH_3 = "123";
-    private static final String NUMERIC_PIN_REPEATING_LENGTH_4 = "4444";
-    private static final String NUMERIC_PIN_RANDOM_LENGTH_4 = "3829";
     private static final String NUMERIC_PIN_LENGTH_4 = NOT_COMPLEX_PIN;
-    private static final String NUMERIC_PIN_LENGTH_6 = "264828";
     private static final String ALPHABETIC_PASSWORD_LENGTH_4 = "abcd";
     private static final String ALPHABETIC_PASSWORD_ALL_UPPERCASE_LENGTH_4 = "ABCD";
     private static final String ALPHANUMERIC_PASSWORD_LENGTH_4 = "12ab";
     private static final String ALPHANUMERIC_PASSWORD_WITH_UPPERCASE_LENGTH_4 = "abC1";
-    private static final String ALPHANUMERIC_PASSWORD_LENGTH_8 = "1a2b3c4e";
     private static final String COMPLEX_PASSWORD_WITH_SYMBOL_LENGTH_4 = "12a_";
     private static final String COMPLEX_PASSWORD_WITH_SYMBOL_LENGTH_7 = "abc123.";
 
@@ -95,6 +92,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void setResetPasswordToken_validToken_passwordTokenSet() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         try {
             boolean possible = canSetResetPasswordToken(TOKEN);
 
@@ -109,6 +109,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_validPasswordAndToken_success() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
             assertThat(sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
@@ -121,6 +124,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_badToken_failure() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         assertThat(sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
                 sDeviceState.dpc().componentName(), VALID_PIN, BAD_TOKEN, /* flags = */ 0)).isFalse();
@@ -129,6 +135,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_noPassword_deviceIsNotSecure() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
                 sDeviceState.dpc().componentName(), /* password = */ null, TOKEN, /* flags = */ 0);
@@ -140,6 +149,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_password_deviceIsSecure() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
             sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
@@ -210,6 +222,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = ResetPasswordWithToken.class)
     public void resetPasswordWithToken_validPasswordAndToken_logged() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try (EnterpriseMetricsRecorder metrics = EnterpriseMetricsRecorder.create()) {
             sDeviceState.dpc().devicePolicyManager().resetPasswordWithToken(
@@ -803,6 +818,9 @@ public final class ResetPasswordWithTokenTest {
     @Postsubmit(reason = "new test")
     @PolicyAppliesTest(policy = ResetPasswordWithToken.class)
     public void clearResetPasswordToken_passwordTokenIsResetAndUnableToSetNewPassword() {
+        // TODO(b/371032678): Remove assumption after flag rollout.
+        assumeTrue(!sDeviceState.dpc().isDelegate() || Flags.resetPasswordWithTokenCoexistence());
+
         assumeTrue(RESET_PASSWORD_TOKEN_DISABLED, canSetResetPasswordToken(TOKEN));
         try {
             sDeviceState.dpc().devicePolicyManager().clearResetPasswordToken(sDeviceState.dpc().componentName());
