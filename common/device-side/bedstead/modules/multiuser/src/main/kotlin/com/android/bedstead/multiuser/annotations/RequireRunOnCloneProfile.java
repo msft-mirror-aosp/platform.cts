@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 The Android Open Source Project
+ * Copyright (C) 2021 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.multiuser.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
@@ -30,21 +31,20 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method should run within a private profile.
+ * Mark that a test method should run within a Clone profile.
  *
- * <p>Your test configuration should be such that this test is only run where a private profile is
+ * <p>Your test configuration should be such that this test is only run where a Clone profile is
  * created and the test is being run within that user.
  *
- * <p>Optionally, you can guarantee that these methods do not run outside of a private
+ * <p>Optionally, you can guarantee that these methods do not run outside of a Clone
  * profile by using {@code Devicestate}.
- * TODO(b/334025286) move it into multi-user module
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
-@RequireRunOnProfileAnnotation("android.os.usertype.profile.PRIVATE")
+@RequireRunOnProfileAnnotation("android.os.usertype.profile.CLONE")
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
-public @interface RequireRunOnPrivateProfile {
+public @interface RequireRunOnCloneProfile {
     OptionalBoolean installInstrumentedAppInParent() default ANY;
 
     /**
@@ -54,7 +54,7 @@ public @interface RequireRunOnPrivateProfile {
      */
     OptionalBoolean switchedToParentUser() default TRUE;
 
-    /**
+     /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher

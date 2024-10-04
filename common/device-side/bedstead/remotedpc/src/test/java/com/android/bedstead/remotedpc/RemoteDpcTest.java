@@ -33,7 +33,7 @@ import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
