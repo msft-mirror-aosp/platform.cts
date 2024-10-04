@@ -57,6 +57,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.LocaleList;
+import android.os.UserHandle;
 import android.server.wm.ActivityManagerTestBase;
 
 import androidx.test.InstrumentationRegistry;
@@ -681,9 +682,10 @@ public class LocaleManagerTests extends ActivityManagerTestBase {
     }
 
     private void setTestImeAsActive() throws Exception {
+        int testUserId = UserHandle.myUserId();
         if (sContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) {
-            ShellUtils.runShellCommand("ime enable " + mTestIme + " --user 10");
-            ShellUtils.runShellCommand("ime set " + mTestIme + " --user 10");
+            ShellUtils.runShellCommand("ime enable --user " + testUserId + " " + mTestIme);
+            ShellUtils.runShellCommand("ime set --user " + testUserId + " " + mTestIme);
         } else {
             ShellUtils.runShellCommand("ime enable " + mTestIme);
             ShellUtils.runShellCommand("ime set " + mTestIme);
