@@ -166,8 +166,11 @@ class UsersComponent(locator: BedsteadServiceLocator) : DeviceStateComponent {
         switchedToUser: OptionalBoolean
     ) {
         val resolvedUserType: UserType = RequireUserSupported(userType).logic()
-        val user = users()
-            .findUsersOfType(resolvedUserType).firstOrNull() ?: createUser(resolvedUserType)
+        val user = users().findUsersOfType(resolvedUserType).firstOrNull {
+            // If the existing user is ephemeral, foreground and ensured not to be the current user,
+            // then we need to create a new one because it will be deleted when switched away.
+            !(it.isEphemeral && switchedToUser == OptionalBoolean.FALSE && it.isForeground)
+        } ?: createUser(resolvedUserType)
         user.start()
         if (installInstrumentedApp == OptionalBoolean.TRUE) {
             packages().find(context.getPackageName()).installExisting(user)
