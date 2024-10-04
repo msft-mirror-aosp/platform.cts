@@ -575,7 +575,6 @@ public class CarrierApiTest extends BaseCarrierApiTest {
         // identifier will be accessible to apps with carrier privileges in Q, but this may change
         // in a future release.
         try {
-            final int subId = mTelephonyManager.getSubscriptionId();
             mTelephonyManager.getDeviceId();
             mTelephonyManager.getDeviceSoftwareVersion();
 
@@ -608,53 +607,76 @@ public class CarrierApiTest extends BaseCarrierApiTest {
                 mTelephonyManager.getVisualVoicemailPackageName();
                 mTelephonyManager.getVoiceMailAlphaTag();
             }
+        } catch (SecurityException e) {
+            fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);
+        }
+    }
 
-            if (hasFeature(PackageManager.FEATURE_TELEPHONY_IMS)) {
-                try {
-                    mMmTelManager.createForSubscriptionId(subId);
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_TELEPHONY_FEATURE_MAPPING_FOR_PUBLIC_APIS)
+    public void testImsApisAreAccessibleWithFeatureMapping() {
+        assumeTrue(hasFeature(PackageManager.FEATURE_TELEPHONY_IMS));
+        final int subId = mTelephonyManager.getSubscriptionId();
+        try {
+            mMmTelManager.createForSubscriptionId(subId);
 
-                    RegistrationManager.RegistrationCallback rc =
-                            new RegistrationManager.RegistrationCallback() {};
+            RegistrationManager.RegistrationCallback rc =
+                    new RegistrationManager.RegistrationCallback() {};
+            try {
+                mMmTelManager.registerImsRegistrationCallback(r -> r.run(), rc);
+            } catch (ImsException ignored) {
+            } finally {
+                mMmTelManager.unregisterImsRegistrationCallback(rc);
+            }
+            try {
+                mMmTelManager.registerImsEmergencyRegistrationCallback(r -> r.run(), rc);
+            } catch (ImsException ignored) {
+            } finally {
+                mMmTelManager.unregisterImsEmergencyRegistrationCallback(rc);
+            }
 
-                    mMmTelManager.registerImsRegistrationCallback(r -> r.run(), rc);
-                    mMmTelManager.unregisterImsRegistrationCallback(rc);
-                    mMmTelManager.registerImsEmergencyRegistrationCallback(r -> r.run(), rc);
-                    mMmTelManager.unregisterImsEmergencyRegistrationCallback(rc);
-                    mMmTelManager.getRegistrationTransportType(r -> r.run(), (i) -> {});
+            mMmTelManager.getRegistrationTransportType(r -> r.run(), (i) -> {});
 
-                    ImsMmTelManager.CapabilityCallback cc =
-                            new ImsMmTelManager.CapabilityCallback() {};
+            ImsMmTelManager.CapabilityCallback cc =
+                    new ImsMmTelManager.CapabilityCallback() {};
+            try {
+                mMmTelManager.registerMmTelCapabilityCallback(r -> r.run(), cc);
+            } catch (ImsException ignored) {
+            } finally {
+                mMmTelManager.unregisterMmTelCapabilityCallback(cc);
+            }
 
-                    mMmTelManager.registerMmTelCapabilityCallback(r -> r.run(), cc);
+            mMmTelManager.isAdvancedCallingSettingEnabled();
+            mMmTelManager.isVtSettingEnabled();
+            mMmTelManager.setVoWiFiSettingEnabled(mMmTelManager.isVoWiFiSettingEnabled());
 
-                    mMmTelManager.unregisterMmTelCapabilityCallback(cc);
-                    mMmTelManager.isAdvancedCallingSettingEnabled();
-                    mMmTelManager.isVtSettingEnabled();
-                    mMmTelManager.setVoWiFiSettingEnabled(mMmTelManager.isVoWiFiSettingEnabled());
-                    mMmTelManager.setCrossSimCallingEnabled(
-                            mMmTelManager.isCrossSimCallingEnabled());
-                    mMmTelManager.setVoWiFiRoamingSettingEnabled(
-                            mMmTelManager.isVoWiFiRoamingSettingEnabled());
-                    mMmTelManager.setVoWiFiModeSetting(mMmTelManager.getVoWiFiModeSetting());
-                    mMmTelManager.isTtyOverVolteEnabled();
+            try {
+                mMmTelManager.setCrossSimCallingEnabled(
+                        mMmTelManager.isCrossSimCallingEnabled());
+            } catch (ImsException ignored) {
+            }
 
-                    ImsStateCallback ic = new ImsStateCallback() {
-                        @Override
-                        public void onUnavailable(int reason) {
-                        }
-                        @Override
-                        public void onAvailable() {
-                        }
-                        @Override
-                        public void onError() {
-                        }
-                    };
+            mMmTelManager.setVoWiFiRoamingSettingEnabled(
+                    mMmTelManager.isVoWiFiRoamingSettingEnabled());
+            mMmTelManager.setVoWiFiModeSetting(mMmTelManager.getVoWiFiModeSetting());
+            mMmTelManager.isTtyOverVolteEnabled();
 
-                    mMmTelManager.registerImsStateCallback(r -> r.run(), ic);
-                    mMmTelManager.unregisterImsStateCallback(ic);
-                } catch (ImsException ie) {
-                    fail(ie.toString());
+            ImsStateCallback ic = new ImsStateCallback() {
+                @Override
+                public void onUnavailable(int reason) {
                 }
+                @Override
+                public void onAvailable() {
+                }
+                @Override
+                public void onError() {
+                }
+            };
+            try {
+                mMmTelManager.registerImsStateCallback(r -> r.run(), ic);
+            } catch (ImsException ignored) {
+            } finally {
+                mMmTelManager.unregisterImsStateCallback(ic);
             }
         } catch (SecurityException e) {
             fail(NO_CARRIER_PRIVILEGES_FAILURE_MESSAGE);

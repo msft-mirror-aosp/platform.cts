@@ -1,6 +1,8 @@
 package android.nfc.cts;
 
 import static android.Manifest.permission.NFC_SET_CONTROLLER_ALWAYS_ON;
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE;
+import static android.nfc.cardemulation.CardEmulation.PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET;
 
 import static com.android.compatibility.common.util.PropertyUtil.getVsrApiLevel;
 
@@ -703,6 +705,13 @@ public class NfcAdapterTest {
             nfcOemExtension.isTagPresent();
             nfcOemExtension.pausePolling(1000);
             nfcOemExtension.resumePolling();
+            nfcOemExtension.getRoutingStatus();
+            nfcOemExtension.setAutoChangeEnabled(true);
+            assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
+            if (Flags.nfcOverrideRecoverRoutingTable()) {
+                nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
+                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
+            }
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
