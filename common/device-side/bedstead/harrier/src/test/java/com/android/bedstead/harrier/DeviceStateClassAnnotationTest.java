@@ -27,7 +27,7 @@ import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
 import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser;
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
 import com.android.bedstead.nene.TestApis;

@@ -31,7 +31,7 @@ import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTes
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.testapp.TestAppProvider

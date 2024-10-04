@@ -88,6 +88,24 @@ public class GainmapTests {
         sTestImage = base;
     }
 
+    // A 10x6 base image with a 5x3 (so 1/2 res) gainmap that boosts the center 3 pixels
+    // by 0x40, 0x80, and 0xff respectively
+    private static final Bitmap sTestImageA8;
+    static {
+        Bitmap base = Bitmap.createBitmap(10, 6, Bitmap.Config.ARGB_8888);
+        base.eraseColor(Color.WHITE);
+
+        Bitmap gainmapImage = Bitmap.createBitmap(5, 3, Bitmap.Config.ALPHA_8);
+        gainmapImage.eraseColor(0);
+        gainmapImage.setPixel(1, 1, 0x40000000);
+        gainmapImage.setPixel(2, 1, 0x80000000);
+        gainmapImage.setPixel(3, 1, 0xFF000000);
+
+        Gainmap gainmap = new Gainmap(gainmapImage);
+        base.setGainmap(gainmap);
+        sTestImageA8 = base;
+    }
+
     private static final Picture sTestPicture;
     static {
         sTestPicture = new Picture();
@@ -201,6 +219,8 @@ public class GainmapTests {
         Canvas canvas = new Canvas(result);
         canvas.drawBitmap(sTestImage, 0f, 0f, null);
         assertTestImageResult(result);
+        canvas.drawBitmap(sTestImageA8, 0f, 0f, null);
+        assertTestImageResult(result);
     }
 
     @Test
@@ -208,6 +228,8 @@ public class GainmapTests {
         Bitmap result = Bitmap.createBitmap(10, 6, Bitmap.Config.RGBA_F16, false, BT2020_PQ);
         Canvas canvas = new Canvas(result);
         canvas.drawBitmap(sTestImage, 0f, 0f, null);
+        assertTestImageResult(result);
+        canvas.drawBitmap(sTestImageA8, 0f, 0f, null);
         assertTestImageResult(result);
     }
 
@@ -469,5 +491,53 @@ public class GainmapTests {
         assertTrue(dest.hasGainmap());
         canvas.setBitmap(dest);
         assertFalse(dest.hasGainmap());
+    }
+
+    @Test
+    public void testHardwareHandlingHLG() {
+        Bitmap testImage = sTestImage.copy(Bitmap.Config.HARDWARE, false);
+        assertTrue(testImage.hasGainmap());
+        assertEquals(testImage.getGainmap().getGainmapContents().getConfig(),
+                Bitmap.Config.HARDWARE);
+        Bitmap result = renderWithHardware(BT2020_HLG, canvas -> {
+            canvas.drawBitmap(testImage, 0, 0, null);
+        });
+        assertTestImageResult(result);
+    }
+
+    @Test
+    public void testHardwareHandlingPQ() {
+        Bitmap testImage = sTestImage.copy(Bitmap.Config.HARDWARE, false);
+        assertTrue(testImage.hasGainmap());
+        assertEquals(testImage.getGainmap().getGainmapContents().getConfig(),
+                Bitmap.Config.HARDWARE);
+        Bitmap result = renderWithHardware(BT2020_PQ, canvas -> {
+            canvas.drawBitmap(testImage, 0, 0, null);
+        });
+        assertTestImageResult(result);
+    }
+
+    @Test
+    public void testHardwareA8HandlingHLG() {
+        Bitmap testImage = sTestImageA8.copy(Bitmap.Config.HARDWARE, false);
+        assertTrue(testImage.hasGainmap());
+        assertEquals(testImage.getGainmap().getGainmapContents().getConfig(),
+                Bitmap.Config.HARDWARE);
+        Bitmap result = renderWithHardware(BT2020_HLG, canvas -> {
+            canvas.drawBitmap(testImage, 0, 0, null);
+        });
+        assertTestImageResult(result);
+    }
+
+    @Test
+    public void testHardwareA8HandlingPQ() {
+        Bitmap testImage = sTestImageA8.copy(Bitmap.Config.HARDWARE, false);
+        assertTrue(testImage.hasGainmap());
+        assertEquals(testImage.getGainmap().getGainmapContents().getConfig(),
+                Bitmap.Config.HARDWARE);
+        Bitmap result = renderWithHardware(BT2020_PQ, canvas -> {
+            canvas.drawBitmap(testImage, 0, 0, null);
+        });
+        assertTestImageResult(result);
     }
 }
