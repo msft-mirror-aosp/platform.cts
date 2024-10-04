@@ -26,6 +26,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 
 import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.junit.runners.Parameterized;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -88,6 +90,19 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     @Rule
     public ActivityTestRule<CodecTestActivity> mActivityRule =
             new ActivityTestRule<>(CodecTestActivity.class);
+
+    @Before
+    public void setUp() throws IOException, InterruptedException {
+        MediaFormat format = setUpSource(mTestFile);
+        mExtractor.release();
+        if (IS_Q) {
+            Log.i(LOG_TAG, "Android 10: skip checkFormatSupport() for format " + format);
+        } else {
+            ArrayList<MediaFormat> formatList = new ArrayList<>();
+            formatList.add(format);
+            checkFormatSupport(mCodecName, mMime, false, formatList, null);
+        }
+    }
 
     @Parameterized.Parameters(name = "{index}({0}_{1})")
     public static Collection<Object[]> input() {
@@ -309,6 +324,9 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         mExtractor.release();
         MediaFormat newFormat = setUpSource(mReconfigFile);
         mExtractor.release();
+        ArrayList<MediaFormat> formatList = new ArrayList<>();
+        formatList.add(newFormat);
+        checkFormatSupport(mCodecName, mMime, false, formatList, null);
         final long pts = 500000;
         final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
         boolean[] boolStates = {true, false};
