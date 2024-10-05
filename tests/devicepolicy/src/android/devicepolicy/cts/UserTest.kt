@@ -23,9 +23,9 @@ import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestricti
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.harrier.annotations.Postsubmit
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest

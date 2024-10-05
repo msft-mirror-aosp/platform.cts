@@ -30,6 +30,7 @@ import image_processing_utils
 AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
 ANGLE_CHECK_TOL = 1  # degrees
 ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
+ARUCO_DETECTOR_ATTRIBUTE_NAME = 'ArucoDetector'
 ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
@@ -997,12 +998,19 @@ def find_aruco_markers(
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  # aruco.DetectorParameters() is used in OpenCV 4.7 and above
-  parameters = cv2.aruco.DetectorParameters()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  corners, ids, rejected_params = cv2.aruco.detectMarkers(
-      input_img, aruco_dict, parameters=parameters)
+  parameters = cv2.aruco.DetectorParameters()
+  aruco_detector = None
+  if hasattr(cv2.aruco, ARUCO_DETECTOR_ATTRIBUTE_NAME):
+    aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+  # Use ArucoDetector object if available, else fall back to detectMarkers()
+  if aruco_detector is not None:
+    corners, ids, rejected_params = aruco_detector.detectMarkers(input_img)
+  else:
+    corners, ids, rejected_params = cv2.aruco.detectMarkers(
+        input_img, aruco_dict, parameters=parameters
+    )
   # Early return if sufficient markers found
   if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected.')

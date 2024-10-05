@@ -1750,6 +1750,9 @@ public class ScopedStorageDeviceTest extends ScopedStorageBaseDeviceTest {
                     () -> {
                         cr.openFileDescriptor(uriVideoFile1, "rw");
                     });
+
+            // Give time to kernel to update dentry cache and close listeners to finish its job
+            Thread.sleep(100);
         } finally {
             videoFile1.delete();
             videoFile2.delete();
