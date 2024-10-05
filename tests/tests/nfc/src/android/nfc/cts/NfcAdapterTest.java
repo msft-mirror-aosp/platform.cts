@@ -19,10 +19,12 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.fail;
 
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.app.admin.DevicePolicyManager;
+import android.app.admin.SecurityLog;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -48,19 +50,26 @@ import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.core.app.ApplicationProvider;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.policies.SecurityLogging;
+import com.android.bedstead.nene.TestApis;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.internal.util.reflection.FieldReader;
@@ -73,13 +82,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-@RunWith(JUnit4.class)
+@RunWith(BedsteadJUnit4.class)
 public class NfcAdapterTest {
 
     @Mock private INfcAdapter mService;
     @Mock private DevicePolicyManager mDevicePolicyManager;
     private INfcAdapter mSavedService;
     private Context mContext;
+
+    @ClassRule @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
+
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
@@ -679,6 +692,44 @@ public class NfcAdapterTest {
             cardEmulation.unsetPreferredService(activity);
             adapter.notifyHceDeactivated();
         }
+    }
+
+    @Test
+    @CanSetPolicyTest(policy = {SecurityLogging.class})
+    @RequiresFlagsEnabled(Flags.FLAG_NFC_STATE_CHANGE_SECURITY_LOG_EVENT_ENABLED)
+    public void testSecurityLogWhenChangeNfcState() throws InterruptedException {
+        long testStartTimeNanos = TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
+        ComponentName component = sDeviceState.dpc().componentName();
+        var dpm = sDeviceState.dpc().devicePolicyManager();
+        try {
+            dpm.setSecurityLoggingEnabled(component, false);
+            dpm.setSecurityLoggingEnabled(component, true);
+            NfcAdapter adapter = getDefaultAdapter();
+            boolean result = adapter.enable();
+            adapter.disable();
+            adapter.enable();
+
+            assertTrue(result);
+            for (int i = 0; i < 2; i++) {
+                TestApis.devicePolicy().forceSecurityLogs();
+                var events = dpm.retrieveSecurityLogs(component);
+                if (events == null) {
+                    Log.i("NfcAdapterTest", "event is empty!");
+                    continue;
+                }
+                var filteredEnableEvents = events.stream().filter(
+                        e -> e.getTag() == SecurityLog.TAG_NFC_ENABLED
+                                && e.getTimeNanos() >= testStartTimeNanos).toList();
+                var filteredDisableEvents = events.stream().filter(
+                        e -> e.getTag() == SecurityLog.TAG_NFC_DISABLED
+                                && e.getTimeNanos() >= testStartTimeNanos).toList();
+                if (!filteredEnableEvents.isEmpty() && !filteredDisableEvents.isEmpty()) return;
+            }
+            fail("Can't find expected events");
+        } finally {
+            dpm.setSecurityLoggingEnabled(component, false);
+        }
+
     }
 
     @Test

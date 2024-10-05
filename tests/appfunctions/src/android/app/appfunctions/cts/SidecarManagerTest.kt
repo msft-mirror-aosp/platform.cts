@@ -39,12 +39,9 @@ import androidx.test.core.app.ApplicationProvider
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnPrimaryUser
-import com.android.bedstead.harrier.annotations.parameterized.IncludeRunOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.parameterized.IncludeRunOnSecondaryUser
 import com.android.compatibility.common.util.ApiTest
-import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
-import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 import com.google.common.truth.Truth.assertThat
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -59,6 +56,9 @@ import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import com.google.android.appfunctions.sidecar.AppFunctionManager as SidecarAppFunctionManager
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionRequest as SidecarExecuteAppFunctionRequest
+import com.google.android.appfunctions.sidecar.ExecuteAppFunctionResponse as SidecarExecuteAppFunctionResponse
 
 @RunWith(BedsteadJUnit4::class)
 @RequiresFlagsEnabled(Flags.FLAG_ENABLE_APP_FUNCTION_MANAGER)

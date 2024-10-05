@@ -22,7 +22,7 @@
     </target_preparer>
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <option name="package" value="com.android.bedstead.testapp.test" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
     </test>
 </configuration>

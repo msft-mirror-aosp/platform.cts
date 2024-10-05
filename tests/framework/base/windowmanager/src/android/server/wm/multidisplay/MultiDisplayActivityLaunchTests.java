@@ -210,6 +210,12 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchExternalDisplayActivityWhilePrimaryOff() {
+        // TODO(b/371004199): Skip this test for visible background users,
+        // since the turning off the primary display using the sleep key is only allowed
+        // for the current user, and visible background users cannot put the device to sleep.
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Visible background users cannot sleep the device.");
+
         // Leanback devices may launch a live broadcast app during screen off-on cycles.
         final boolean mayLaunchActivityOnScreenOff = isLeanBack();
 
@@ -228,7 +234,7 @@ public class MultiDisplayActivityLaunchTests extends MultiDisplayTestBase {
             waitAndAssertActivityState(RESIZEABLE_ACTIVITY, STATE_STOPPED,
                     "Activity launched on primary display must be stopped after turning off");
             assertEquals("Unexpected resumed activity",
-                    0, mWmState.getResumedActivitiesCount());
+                    0, mWmState.getResumedActivitiesCountOnDisplay(getMainDisplayId()));
         }
 
         final DisplayContent newDisplay = externalDisplaySession
