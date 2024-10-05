@@ -78,6 +78,7 @@ public final class CompatChangesValidConfigTest extends CompatChangeGatingTestCa
             "FGS_SAW_RESTRICTIONS",
             "FORCE_NON_RESIZE_APP",
             "FORCE_RESIZE_APP",
+            "UNIVERSAL_RESIZABLE_BY_DEFAULT",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP_DEFAULTS",
             "OVERRIDE_CAMERA_RESIZABLE_AND_SDK_CHECK",
             "OVERRIDE_CAMERA_ROTATE_AND_CROP",

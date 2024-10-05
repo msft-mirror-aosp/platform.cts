@@ -33,6 +33,9 @@ android_test {
         "testng",
         "androidx.appcompat_appcompat",
         "CtsAppTestStubsShared",
+        "Nene",
+        "Harrier",
+        "TestApp",
     ],
     srcs: [
         "src/android/nfc/cts/*.java",
