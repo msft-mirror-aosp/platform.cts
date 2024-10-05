@@ -18,6 +18,7 @@ package android.server.wm.activity;
 
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_ASSISTANT;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.app.WindowConfiguration.WINDOWING_MODE_FULLSCREEN;
 import static android.app.WindowConfiguration.WINDOWING_MODE_PINNED;
 import static android.app.WindowConfiguration.WINDOWING_MODE_UNDEFINED;
@@ -369,7 +370,14 @@ public class AssistantStackTests extends ActivityManagerTestBase {
                             == mWmState.getTaskDisplayArea(ANIMATION_TEST_ACTIVITY)
             );
 
+            final int testActivityWindowingMode =
+                    mWmState.getTaskByActivity(ANIMATION_TEST_ACTIVITY).getWindowingMode();
             if (isAssistantOnTopOfDream()) {
+                mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
+            } else if (testActivityWindowingMode == WINDOWING_MODE_FREEFORM) {
+                mWmState.waitAndAssertActivityState(ANIMATION_TEST_ACTIVITY, STATE_RESUMED);
+                mWmState.assertVisibility(ANIMATION_TEST_ACTIVITY, true);
                 mWmState.waitAndAssertActivityState(ASSISTANT_ACTIVITY, STATE_RESUMED);
                 mWmState.assertVisibility(ASSISTANT_ACTIVITY, true);
             } else {
