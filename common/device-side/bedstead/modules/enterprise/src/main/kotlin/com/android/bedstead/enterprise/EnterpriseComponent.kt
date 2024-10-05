@@ -24,7 +24,7 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.components.AccountsComponent
 import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UserTypeResolver

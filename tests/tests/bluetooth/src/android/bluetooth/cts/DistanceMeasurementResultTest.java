@@ -21,6 +21,8 @@ import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.bluetooth.BluetoothStatusCodes.FEATURE_SUPPORTED;
 import static android.bluetooth.le.DistanceMeasurementResult.NADM_ATTACK_IS_VERY_UNLIKELY;
 
+import static com.android.bluetooth.flags.Flags.FLAG_CHANNEL_SOUNDING_25Q2_APIS;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -31,6 +33,7 @@ import android.bluetooth.le.DistanceMeasurementResult;
 import android.content.Context;
 import android.os.Build;
 import android.os.Parcel;
+import android.os.SystemClock;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -186,6 +189,16 @@ public class DistanceMeasurementResultTest {
         assertEquals(60.0, result.getVelocityMetersPerSecond(), 0.0);
     }
 
+    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void setGetMeasurementTimestampNanos() {
+        long timestamp = SystemClock.elapsedRealtimeNanos();
+        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(121.0, 120.0)
+                .setMeasurementTimestampNanos(timestamp).build();
+        assertEquals(timestamp, result.getMeasurementTimestampNanos());
+    }
+
     @RequiresFlagsEnabled(Flags.FLAG_CHANNEL_SOUNDING)
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test
@@ -207,6 +220,24 @@ public class DistanceMeasurementResultTest {
         assertEquals(result.getVelocityMetersPerSecond(),
                 resultFromParcel.getVelocityMetersPerSecond(), 0.0);
     }
+
+    @RequiresFlagsEnabled(FLAG_CHANNEL_SOUNDING_25Q2_APIS)
+    @CddTest(requirements = {"7.4.3/C-2-1"})
+    @Test
+    public void readWriteParcelForCsMeasurementTimestamp() {
+        Parcel parcel = Parcel.obtain();
+        long timestamp = SystemClock.elapsedRealtimeNanos();
+        DistanceMeasurementResult result = new DistanceMeasurementResult.Builder(10.0, 5.0)
+                .setMeasurementTimestampNanos(timestamp)
+                .build();
+        result.writeToParcel(parcel, 0);
+        parcel.setDataPosition(0);
+        DistanceMeasurementResult resultFromParcel =
+                DistanceMeasurementResult.CREATOR.createFromParcel(parcel);
+        assertEquals(result.getMeasurementTimestampNanos(),
+                resultFromParcel.getMeasurementTimestampNanos());
+    }
+
 
     @CddTest(requirements = {"7.4.3/C-2-1"})
     @Test

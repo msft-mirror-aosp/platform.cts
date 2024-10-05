@@ -38,6 +38,7 @@ android_test {
         "ctstestrunner-axt",
         "CtsSoundTriggerInstrumentation",
         "compatibility-device-util-axt",
+        "android.media.soundtrigger-aconfig-java",
         "androidx.test.ext.junit",
     ],
     srcs: ["src/android/soundtrigger/cts/*.java"],
