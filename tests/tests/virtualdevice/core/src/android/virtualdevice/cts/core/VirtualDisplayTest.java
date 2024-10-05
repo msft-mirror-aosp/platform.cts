@@ -424,6 +424,28 @@ public class VirtualDisplayTest {
         mRule.getWmState().assertWindowDisplayed(STATUS_BAR_NAME);
     }
 
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_STATUS_BAR_AND_INSETS)
+    public void addStatusBarAndInsetsOnDisplayOwnedByVirtualDevice_nonTrustedDisplay_throws() {
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(mVirtualDevice,
+                VirtualDeviceRule.createDefaultVirtualDisplayConfigBuilder());
+        Context context = getInstrumentation().getContext().createDisplayContext(
+                virtualDisplay.getDisplay());
+
+        WindowManager.LayoutParams lp =
+                new WindowManager.LayoutParams(WindowManager.LayoutParams.TYPE_STATUS_BAR);
+        lp.setTitle(STATUS_BAR_NAME);
+        lp.packageName = context.getPackageName();
+        lp.setInsetsParams(List.of(
+                new WindowManager.InsetsParams(WindowInsets.Type.statusBars())
+                        .setInsetsSize(Insets.of(0, STATUS_BAR_HEIGHT, 0, 0))));
+
+        WindowManager windowManager = context.getSystemService(WindowManager.class);
+        View statusBar = new View(context);
+        assertThrows(RuntimeException.class, () ->
+                getInstrumentation().runOnMainSync(() -> windowManager.addView(statusBar, lp)));
+    }
+
     private void verifyDisplay(VirtualDisplay virtualDisplay) {
         assertThat(virtualDisplay).isNotNull();
         Display display = virtualDisplay.getDisplay();

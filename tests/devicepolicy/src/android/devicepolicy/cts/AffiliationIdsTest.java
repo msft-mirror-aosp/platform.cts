@@ -16,17 +16,19 @@
 
 package android.devicepolicy.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+import static com.google.common.truth.Truth.assertWithMessage;
+
 import android.app.admin.RemoteDevicePolicyManager;
 import android.content.ComponentName;
-import android.content.Context;
 
+import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.harrier.policies.AffiliationIds;
-import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
+import com.android.modules.utils.ModifiedUtf8;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -34,6 +36,7 @@ import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.testng.Assert;
 
+import java.io.UTFDataFormatException;
 import java.util.Set;
 
 @RunWith(BedsteadJUnit4.class)
@@ -45,6 +48,8 @@ public final class AffiliationIdsTest {
     private ComponentName mAdmin;
     private RemoteDevicePolicyManager mDpm;
 
+    public static final int MAX_MSG_LEN_IN_BYTES = 65535;
+
     @Before
     public void setUp() {
         RemotePolicyManager dpc = sDeviceState.dpc();
@@ -55,9 +60,26 @@ public final class AffiliationIdsTest {
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = AffiliationIds.class)
     public void setAffiliationIds_idTooLong_throws() {
+        String badId = "🙃".repeat(30000);
+
+        // This ID has less than 65k *characters*,
+        assertThat(badId.length()).isAtMost(MAX_MSG_LEN_IN_BYTES);
+        // but more than 65k *bytes*.
+        assertThat(countBytes(badId)).isAtLeast(MAX_MSG_LEN_IN_BYTES);
+
         // String too long for id, cannot be serialized correctly
-        String badId = new String(new char[100000]).replace('\0', 'A');
-        Assert.assertThrows(IllegalArgumentException.class,
+        Assert.assertThrows(
+                IllegalArgumentException.class,
                 () -> mDpm.setAffiliationIds(mAdmin, Set.of(badId)));
+    }
+
+    private long countBytes(String s) {
+        try {
+            return ModifiedUtf8.countBytes(s, /* throw error */ false);
+        } catch (UTFDataFormatException e) {
+            // This error should never be thrown.
+            assertWithMessage("Unexpected error thrown").fail();
+            return 0;
+        }
     }
 }

@@ -316,7 +316,6 @@ public class BluetoothVolumeControlTest {
         assertTrue(!mBluetoothVolumeControl.isVolumeOffsetAvailable(mTestDevice));
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
     @Test
     public void getNumberOfVolumeOffsetInstances() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
@@ -349,7 +348,6 @@ public class BluetoothVolumeControlTest {
         assertTrue(mVolumeOffsetChangedCallbackCalled);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
     @Test
     public void volumeOffsetWithInstanceIdCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
@@ -366,7 +364,6 @@ public class BluetoothVolumeControlTest {
         assertTrue(mVolumeOffsetChangedCallbackCalled);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
     @Test
     public void volumeOffsetAudioLocationCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);
@@ -386,7 +383,6 @@ public class BluetoothVolumeControlTest {
         assertTrue(mAudioLocationChangedCallbackCalled);
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_LEAUDIO_MULTIPLE_VOCS_INSTANCES_API)
     @Test
     public void volumeOffsetAudioDescriptionCallback() {
         assumeTrue(mHasBluetooth && mIsVolumeControlSupported);

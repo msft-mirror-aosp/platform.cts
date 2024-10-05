@@ -316,6 +316,11 @@ public class MultiDisplaySystemDecorationTests extends MultiDisplayTestBase {
      */
     @Test
     public void testLaunchSecondaryHomeActivityOnDisplayWithDecorations() {
+        // TODO (b/370756633) Re-enable the test when secondary home on virtual display is
+        //  supported for visible background users.
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Secondary home on virtual display not supported for visible background users");
+
         createManagedHomeActivitySession(SECONDARY_HOME_ACTIVITY);
 
         assertSecondaryHomeResumedOnNewDisplay(

@@ -21,7 +21,7 @@ import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationSc
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile;
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 

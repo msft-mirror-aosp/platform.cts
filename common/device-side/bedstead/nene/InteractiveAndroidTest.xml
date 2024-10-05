@@ -28,8 +28,8 @@
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >
         <!-- TODO(b/236106868): This should filter -->
         <option name="include-annotation" value="com.android.interactive.annotations.Interactive" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
-        <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser" />
+        <option name="exclude-annotation" value="com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile" />
+        <option name="exclude-annotation" value="com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser" />
         <option name="package" value="com.android.bedstead.nene.test" />
     </test>
 </configuration>

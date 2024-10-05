@@ -28,7 +28,7 @@ import com.android.bedstead.multiuser.annotations.EnsureHasNoPrivateProfile
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasNoTvProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasPrivateProfile
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.multiuser.annotations.EnsureHasTvProfile
 import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.multiuser.annotations.OtherUser
@@ -38,12 +38,12 @@ import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUse
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
-import com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile
+import com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser
-import com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnTvProfile
 import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser
 import com.android.bedstead.multiuser.annotations.RequireUserSupported

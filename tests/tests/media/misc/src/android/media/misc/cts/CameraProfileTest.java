@@ -23,10 +23,8 @@ import android.test.AndroidTestCase;
 import android.util.Log;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 public class CameraProfileTest extends AndroidTestCase {
 
     private static final String TAG = "CameraProfileTest";

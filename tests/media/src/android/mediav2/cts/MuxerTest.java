@@ -38,7 +38,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.After;
 import org.junit.Assume;
@@ -400,7 +399,6 @@ public class MuxerTest {
      * are tested in this class.
      */
     @FrameworkSpecificTest
-    @NonMainlineTest
     @SmallTest
     @RunWith(Parameterized.class)
     public static class TestApi {
@@ -712,7 +710,6 @@ public class MuxerTest {
      * Tests muxing multiple Video/Audio Tracks
      */
     @FrameworkSpecificTest
-    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestMultiTrack {
@@ -857,7 +854,6 @@ public class MuxerTest {
      * validate by re-extracting the muxer output file and compare with original.
      */
     @FrameworkSpecificTest
-    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestOffsetPts {
@@ -975,7 +971,6 @@ public class MuxerTest {
     @ApiTest(apis = {"AMediaMuxer_append", "AMEDIAMUXER_APPEND_IGNORE_LAST_VIDEO_GOP",
             "AMEDIAMUXER_APPEND_TO_EXISTING_DATA"})
     @FrameworkSpecificTest
-    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestSimpleAppend {
@@ -1073,7 +1068,6 @@ public class MuxerTest {
      */
     @CddTest(requirements = {"5.1.3", "5.1.8"})
     @FrameworkSpecificTest
-    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestSimpleMux {
@@ -1229,7 +1223,6 @@ public class MuxerTest {
 
     @ApiTest(apis = {"android.media.MediaMuxer#start", "android.media.MediaMuxer#stop"})
     @FrameworkSpecificTest
-    @NonMainlineTest
     @LargeTest
     @RunWith(Parameterized.class)
     public static class TestAddEmptyTracks {

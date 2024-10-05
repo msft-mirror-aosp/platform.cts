@@ -30,8 +30,8 @@ import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireFeature
 import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser
 import com.android.bedstead.harrier.annotations.UserTest
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis

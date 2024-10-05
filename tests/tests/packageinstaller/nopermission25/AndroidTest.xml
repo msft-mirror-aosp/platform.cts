@@ -21,6 +21,7 @@
     <option name="config-descriptor:metadata" key="parameter" value="not_instant_app" />
     <option name="config-descriptor:metadata" key="parameter" value="not_multi_abi" />
     <option name="config-descriptor:metadata" key="parameter" value="secondary_user" />
+    <option name="config-descriptor:metadata" key="parameter" value="secondary_user_on_secondary_display" />
     <option name="config-descriptor:metadata" key="parameter" value="no_foldable_states" />
 
     <!-- Disable package verification since we're using an older target sdk. -->
@@ -48,7 +49,8 @@
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
-        <option name="run-command" value="appops set android.packageinstaller.nopermission25.cts REQUEST_INSTALL_PACKAGES allow" />
+        <option name="test-user-token" value="%TEST_USER%"/>
+        <option name="run-command" value="appops set --user %TEST_USER% android.packageinstaller.nopermission25.cts REQUEST_INSTALL_PACKAGES allow" />
     </target_preparer>
 
     <test class="com.android.tradefed.testtype.AndroidJUnitTest" >

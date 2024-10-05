@@ -92,7 +92,7 @@ android_ravenwood_test {
         "android-sdk-flags-java",
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
         "android.os.flags-aconfig-java",
         "backstage_power_flags_lib",
         "sdk_sandbox_flags_lib",

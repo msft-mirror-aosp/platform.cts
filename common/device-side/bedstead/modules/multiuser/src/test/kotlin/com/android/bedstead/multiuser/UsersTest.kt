@@ -22,12 +22,12 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.annotations.EnsureHasNoSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnSecondaryUser
-import com.android.bedstead.harrier.annotations.RequireRunOnPrimaryUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
 import com.android.bedstead.multiuser.annotations.EnsureCanAddUser
 import com.android.bedstead.nene.TestApis

@@ -21,11 +21,9 @@ import android.content.Intent;
 import android.test.InstrumentationTestCase;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 public class FaceDetectorTest extends InstrumentationTestCase {
 
     private FaceDetectorStub mActivity;

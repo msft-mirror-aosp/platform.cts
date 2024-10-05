@@ -18,6 +18,7 @@ package android.media.audio.cts.audiorecordpermissiontests;
 
 import static android.media.audio.cts.audiorecordpermissiontests.common.ActionsKt.*;
 import static android.app.AppOpsManager.OP_RECORD_AUDIO;
+import static android.app.AppOpsManager.OPSTR_RECORD_AUDIO;
 import static android.app.AppOpsManager.MODE_ALLOWED;
 import static android.app.AppOpsManager.MODE_IGNORED;
 
@@ -65,6 +66,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+// Note, these tests can't run concurrently with other recording tests
 @AppModeFull(reason = "Test requires intents between multiple apps")
 @RunWith(AndroidJUnit4.class)
 public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
@@ -72,6 +74,8 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     // Keep in sync with test apps
     static final String API_34_PACKAGE = "android.media.audio.cts.CtsRecordServiceApi34";
     // Behavior changes with targetSdk >= 34, so test both cases
+    // For API 33 and prior, we permit apps to continue recording when they lose capabilities
+    // from the foreground state. This is unintended, but we don't want to change behavior for them.
     static final String API_33_PACKAGE = "android.media.audio.cts.CtsRecordServiceApi33";
     static final String API_34_NO_CAP_PACKAGE =
             "android.media.audio.cts.CtsRecordServiceApi34NoCap";
@@ -364,6 +368,176 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
 
     }
 
+    @AsbSecurityTest(cveBugId = {281485019, 268724205})
+    @Test
+    public void testIfRecording_whenSecondRecordingSilencedStopped_OpNotFinished()
+            throws Exception {
+        // Relies on a package with different behavior for starting a new record vs losing caps on
+        // an existing record
+        var TEST_PACKAGE = API_33_PACKAGE;
+
+        startActivity(TEST_PACKAGE);
+
+        assumeTrue(startServiceRecording(TEST_PACKAGE, 0));
+        assertTrue(getOpState(TEST_PACKAGE));
+        final var silenceFirstTrackFuture = getFutureForIntent(mContext,
+                TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE,
+                (Intent x) -> x.getIntExtra(EXTRA_RECORD_ID, -1) == 0);
+        stopActivity(TEST_PACKAGE);
+
+        // Wait for fgd state to settle, but the first track should not be silenced
+        waitForOpState(TEST_PACKAGE, AppOpsManager.MODE_IGNORED);
+        try {
+            silenceFirstTrackFuture.get(FALSE_NEG_SECS, TimeUnit.SECONDS);
+             // fail assumption if the future succeeds, this can happen if the first track is
+             // invalidated.
+            assumeTrue(false);
+        } catch (TimeoutException e) {
+            // expected
+        }
+        // Op should continue to be started, since we don't silence the first track due to exemption
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // This recording will be silenced, since the activity state doesn't permit recording
+        assertFalse(startServiceRecording(TEST_PACKAGE, 1));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // For manual testing of the mic indicator
+        // Thread.sleep(3000);
+
+        // Stop the already silenced recording
+        stopRecording(TEST_PACKAGE, 1);
+
+        // First recording is ongoing, we should still see ops
+        assertTrue(getOpState(TEST_PACKAGE));
+        stopRecording(TEST_PACKAGE, 0);
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // fgd -> start -> stop -> bgd -> fgd -> start -> stop
+    @Test
+    public void testIfStarted_whenProcTransitionDuringPause_OpsStarted() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        // Move out of TOP to a service state
+        stopActivity(TEST_PACKAGE);
+        waitForOpState(TEST_PACKAGE, AppOpsManager.MODE_IGNORED);
+
+        startActivity(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        // Recording now permitted, restart
+        assertTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // Appops should finish after stopping
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // fgd -> start -> bgd -> stop -> fgd -> start -> stop
+    @Test
+    public void testIfStartedWithCap_whenPrevSilenced_OpsStarted() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        final Future silenceFuture = getFutureForIntent(mContext,
+                TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+
+        // Silence recording
+        // Move out of TOP to a service state
+        stopActivity(TEST_PACKAGE);
+
+        silenceFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        startActivity(TEST_PACKAGE);
+        // Recording now permitted, restart
+        assertTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // Appops should finish after stopping
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // fgd -> start -> bgd -> stop -> start -> fgd -> stop
+    @Test
+    public void testIfUnsilenced_whenSilencedRecordRestarted_OpsStarted() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        final Future silenceFuture = getFutureForIntent(mContext,
+                TEST_PACKAGE + ACTION_BEGAN_RECEIVE_SILENCE);
+
+        // Silence recording
+        // Move out of TOP to a service state
+        stopActivity(TEST_PACKAGE);
+
+        silenceFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        // Should be silenced, since we still lack capabilities
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+
+        // Move to fgd, expect unsilence
+        final Future unsilenceFuture = getFutureForIntent(mContext,
+                TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
+
+        startActivity(TEST_PACKAGE);
+        unsilenceFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // Appops should finish after stopping
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
+    // fgd -> start -> stop -> bgd -> start -> fgd -> stop
+    @Test
+    public void testIfUnsilencedStopped_whenSilencedDuringPaused_OpsFinished() throws Exception {
+        var TEST_PACKAGE = API_34_PACKAGE;
+        startActivity(TEST_PACKAGE);
+        assumeTrue(startServiceRecording(TEST_PACKAGE));
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+
+        // Move out of TOP to a bg state
+        stopActivity(TEST_PACKAGE);
+        waitForOpState(TEST_PACKAGE, AppOpsManager.MODE_IGNORED);
+
+        assertFalse(startServiceRecording(TEST_PACKAGE));
+        final Future unsilencedFuture = getFutureForIntent(mContext,
+                TEST_PACKAGE + ACTION_BEGAN_RECEIVE_AUDIO);
+
+        startActivity(TEST_PACKAGE);
+        // Recording now permitted
+        unsilencedFuture.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+        assertTrue(getOpState(TEST_PACKAGE));
+
+        // Appops should finish after stopping
+        stopRecording(TEST_PACKAGE);
+        assertFalse(getOpState(TEST_PACKAGE));
+    }
+
     private IBinder getAttributionProvider(String packageName) throws Exception {
         final var attrFuture = getFutureForIntent(mContext, packageName + ACTION_SEND_ATTRIBUTION);
         mContext.startService(getIntentForAction(packageName, ACTION_REQUEST_ATTRIBUTION));
@@ -420,11 +594,21 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
     }
 
     private boolean startServiceRecording(String packageName) throws Exception {
-        return startServiceRecording(packageName, null);
+        return startServiceRecording(packageName, null, 0);
+    }
+
+    private boolean startServiceRecording(String packageName, int recordId)
+            throws Exception {
+        return startServiceRecording(packageName, null, recordId);
+    }
+
+    private boolean startServiceRecording(String packageName, IBinder attrProvider)
+            throws Exception {
+        return startServiceRecording(packageName, attrProvider, 0);
     }
 
     // return true iff track starts unsilenced
-    private boolean startServiceRecording(String packageName, IBinder attrProvider)
+    private boolean startServiceRecording(String packageName, IBinder attrProvider, int recordId)
             throws Exception {
         final var future =
                 getFutureForIntent(
@@ -432,9 +616,10 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
                         List.of(
                                 packageName + ACTION_BEGAN_RECEIVE_AUDIO,
                                 packageName + ACTION_BEGAN_RECEIVE_SILENCE),
-                        x -> true);
+                        (Intent x) -> x.getIntExtra(EXTRA_RECORD_ID, -1) == recordId);
 
         final Intent intent = getIntentForAction(packageName, ACTION_START_RECORD);
+        intent.putExtra(EXTRA_RECORD_ID, recordId);
         final var extras = new Bundle();
         extras.putBinder(EXTRA_ATTRIBUTION, attrProvider);
         if (attrProvider != null) intent.putExtras(extras);
@@ -448,6 +633,33 @@ public class AudioRecordPermissionTests extends StsExtraBusinessLogicTestCase {
         // We have to wait until the app is actually running to mark it freezer ineligible
         SystemUtil.runShellCommand(mInstrumentation, "am unfreeze --sticky " + packageName);
         return result;
+    }
+
+    private void stopRecording(String packageName) throws Exception {
+        stopRecording(packageName, 0);
+    }
+
+    private void stopRecording(String packageName, int id) throws Exception {
+        final var future = makeFuture(packageName + ACTION_RECORD_STOPPED);
+        assertTrue(mServiceStartedPackages.contains(packageName));
+        mContext.startService(getIntentForAction(packageName, ACTION_STOP_RECORD)
+                .putExtra(EXTRA_RECORD_ID, id));
+        future.get(FUTURE_WAIT_SECS, TimeUnit.SECONDS);
+    }
+
+    // Listener sometimes has issues, and this is slow anyway, so use a hacky poll block
+    private void waitForOpState(String packageName, int state) throws Exception {
+        final var uid = mContext.getPackageManager().getPackageUid(packageName, /* flags= */ 0);
+        final var appOps = mContext.getSystemService(AppOpsManager.class);
+        // AMS proc transition is ~5s
+        for (int i = 0; i < 7 /* 7s */; i++) {
+            final int opState = appOps.unsafeCheckOpNoThrow(OPSTR_RECORD_AUDIO, uid, packageName);
+            Log.i("capy", "op state is: " + opState);
+            if (opState == state) return;
+            Thread.sleep(1000);
+        }
+        // timed out
+        assertTrue(false);
     }
 
     private boolean getOpState(String packageName) throws Exception {

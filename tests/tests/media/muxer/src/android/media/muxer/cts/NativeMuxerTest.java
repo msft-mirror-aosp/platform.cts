@@ -38,7 +38,6 @@ import androidx.test.filters.SmallTest;
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -53,7 +52,6 @@ import java.nio.ByteBuffer;
 import java.util.Set;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 @SmallTest
 @RequiresDevice
 @AppModeFull(reason = "TODO: evaluate and port to instant")

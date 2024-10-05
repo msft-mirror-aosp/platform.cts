@@ -36,7 +36,6 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.codec.flags.Flags;
 
 import org.junit.Rule;
@@ -58,7 +57,6 @@ import java.util.List;
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(Parameterized.class)
 @FrameworkSpecificTest
-@NonMainlineTest
 public class ResourceManagerMultiTest {
 
     private static final String TAG = "ResourceManagerMultiTest";

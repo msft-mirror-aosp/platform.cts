@@ -17,6 +17,10 @@
 package android.server.wm.backnavigation;
 
 import static android.view.Display.DEFAULT_DISPLAY;
+import static android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT;
+import static android.window.OnBackInvokedDispatcher.PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
+
+import static com.android.window.flags.Flags.FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.fail;
@@ -24,16 +28,16 @@ import static junit.framework.Assert.fail;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Instrumentation;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.TouchHelper;
 import android.view.KeyEvent;
 import android.window.BackEvent;
 import android.window.OnBackAnimationCallback;
+import android.window.OnBackInvokedCallback;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.uiautomator.UiDevice;
-
-import com.android.compatibility.common.util.CddTest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +56,7 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     private Instrumentation mInstrumentation;
     private UiDevice mUiDevice;
     private BackInvocationTracker mTracker = new BackInvocationTracker();
+    private BackInvocationTracker mNoUiTracker = new BackInvocationTracker();
     private BackNavigationActivity mActivity;
 
     private final OnBackAnimationCallback mAnimationCallback = new OnBackAnimationCallback() {
@@ -76,6 +81,28 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         }
     };
 
+    private final OnBackAnimationCallback mObserverCallback = new OnBackAnimationCallback() {
+        @Override
+        public void onBackStarted(BackEvent e) {
+            mNoUiTracker.trackBackStarted();
+        }
+
+        @Override
+        public void onBackInvoked() {
+            mNoUiTracker.trackBackInvoked();
+        }
+
+        @Override
+        public void onBackCancelled() {
+            mNoUiTracker.trackBackCancelled();
+        }
+
+        @Override
+        public void onBackProgressed(BackEvent e) {
+            mNoUiTracker.trackBackProgressed(e);
+        }
+    };
+
     @Before
     public void setup() throws Exception {
         super.setUp();
@@ -94,11 +121,10 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
 
         mActivity = activitySession.getActivity();
-        registerBackCallback(mActivity);
+        registerBackCallback(mActivity, mAnimationCallback, PRIORITY_DEFAULT);
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-5,H-0-6,H-0-8" })
     public void invokesCallback_invoked() throws InterruptedException {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -132,7 +158,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-7" })
     public void invokesCallback_cancelled() throws InterruptedException {
         int midHeight = mUiDevice.getDisplayHeight() / 2;
         int midWidth = mUiDevice.getDisplayWidth() / 2;
@@ -156,7 +181,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-5,H-0-6" })
     public void invokesCallbackInButtonsNav_invoked() throws InterruptedException {
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
@@ -179,7 +203,6 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
     }
 
     @Test
-    @CddTest(requirements = { "7.2.3/H-0-7" })
     public void invokesCallbackInButtonsNav_cancelled() throws InterruptedException {
         long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
                 /* longpress = */ false,
@@ -194,6 +217,39 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertInvoked(mTracker.mCancelLatch);
         assertNotInvoked(mTracker.mProgressLatch);
         assertNotInvoked(mTracker.mInvokeLatch);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_PREDICTIVE_BACK_PRIORITY_SYSTEM_NAVIGATION_OBSERVER)
+    public void invokesShadowCallbackInButtonsNav_invoked() throws InterruptedException {
+        registerBackCallback(mActivity, mObserverCallback, PRIORITY_SYSTEM_NAVIGATION_OBSERVER);
+        long downTime = TouchHelper.injectKeyActionDown(KeyEvent.KEYCODE_BACK,
+                /* longpress = */ false,
+                /* sync = */ true);
+
+        assertInvoked(mTracker.mStartLatch);
+        assertNotInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+        assertNotInvoked(mNoUiTracker.mStartLatch);
+        assertNotInvoked(mNoUiTracker.mProgressLatch);
+        assertNotInvoked(mNoUiTracker.mInvokeLatch);
+        assertNotInvoked(mNoUiTracker.mCancelLatch);
+
+        assertTrue(mActivity.mOnUserInteractionCalled);
+
+        TouchHelper.injectKeyActionUp(KeyEvent.KEYCODE_BACK,
+                /* downTime = */ downTime,
+                /* cancelled = */ false,
+                /* sync = */ true);
+
+        assertInvoked(mTracker.mInvokeLatch);
+        assertNotInvoked(mTracker.mProgressLatch);
+        assertNotInvoked(mTracker.mCancelLatch);
+        assertInvoked(mNoUiTracker.mInvokeLatch);
+        assertNotInvoked(mNoUiTracker.mStartLatch);
+        assertNotInvoked(mNoUiTracker.mProgressLatch);
+        assertNotInvoked(mNoUiTracker.mCancelLatch);
     }
 
     @Test
@@ -238,10 +294,11 @@ public class OnBackInvokedCallbackGestureTest extends ActivityManagerTestBase {
         assertTrue(latch.getCount() >= 1);
     }
 
-    private void registerBackCallback(BackNavigationActivity activity) {
+    private void registerBackCallback(BackNavigationActivity activity,
+            OnBackInvokedCallback callback, int priority) {
         CountDownLatch backRegisteredLatch = new CountDownLatch(1);
         activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                0, mAnimationCallback);
+                priority, callback);
         backRegisteredLatch.countDown();
         try {
             if (!backRegisteredLatch.await(100, TimeUnit.MILLISECONDS)) {

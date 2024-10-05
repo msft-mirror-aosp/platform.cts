@@ -23,14 +23,12 @@ import android.platform.test.annotations.AppModeFull;
 import android.test.AndroidTestCase;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class MediaScannerNotificationTest extends AndroidTestCase {
 

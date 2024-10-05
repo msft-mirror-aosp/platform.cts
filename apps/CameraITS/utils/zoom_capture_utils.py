@@ -18,6 +18,7 @@ from collections.abc import Iterable
 import dataclasses
 import logging
 import math
+from typing import Optional
 import cv2
 from matplotlib import animation
 from matplotlib import ticker
@@ -32,6 +33,7 @@ import opencv_processing_utils
 
 _CIRCLE_COLOR = 0  # [0: black, 255: white]
 _CIRCLE_AR_RTOL = 0.15  # contour width vs height (aspect ratio)
+_SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL = 20  # number of pixels
 _CIRCLISH_RTOL = 0.05  # contour area vs ideal circle area pi*((w+h)/4)**2
 _CONTOUR_AREA_LOGGING_THRESH = 0.8  # logging tol to cut down spam in log file
 _CV2_LINE_THICKNESS = 3  # line thickness for drawing on images
@@ -47,11 +49,13 @@ _RADIUS_RTOL_MIN_FD = 0.15
 
 DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
-OFFSET_RTOL = 1.0  # TODO: b/342176245 - enable offset check w/ marker identity
+OFFSET_RTOL = 0.15
+OFFSET_RTOL_SMOOTH_ZOOM = 0.2
 PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
+PREFERRED_BASE_ZOOM_RATIO_RTOL = 0.1
 PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
 RADIUS_RTOL = 0.10
-ZOOM_MAX_THRESH = 10.0
+ZOOM_MAX_THRESH = 9.0  # TODO: b/368666244 - reduce marker size and use 10.0
 ZOOM_MIN_THRESH = 2.0
 ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 
@@ -60,10 +64,12 @@ ZOOM_RTOL = 0.01  # variation of zoom ratio due to floating point
 class ZoomTestData:
   """Class to store zoom-related metadata for a capture."""
   result_zoom: float
-  circle: Iterable[float]  # TODO: b/338638040 - create a dataclass for circles
   radius_tol: float
   offset_tol: float
   focal_length: float
+  # (x, y) coordinates of ArUco marker corners in clockwise order from top left.
+  aruco_corners: Optional[Iterable[float]] = None
+  aruco_offset: Optional[float] = None
   physical_id: int = dataclasses.field(default=None)
 
 
@@ -281,8 +287,119 @@ def preview_zoom_data_to_string(test_data):
   return ', '.join(output)
 
 
-def verify_zoom_results(
-    test_data, size, z_max, z_min, offset_plot_name_stem=None):
+def _get_aruco_marker_x_y_offset(aruco_corners, size):
+  """Get the x and y distances from the ArUco marker to the image center.
+
+  Args:
+    aruco_corners: list of 4 Iterables, each tuple is a (x, y) coordinate of a
+      corner.
+    size: Iterable; the width and height of the images.
+  Returns:
+    The x and y distances from the ArUco marker to the center of the image.
+  """
+  aruco_marker_x, aruco_marker_y = opencv_processing_utils.get_aruco_center(
+      aruco_corners)
+  return aruco_marker_x - size[0] // 2, aruco_marker_y - size[1] // 2
+
+
+def _get_aruco_marker_offset(aruco_corners, size):
+  """Get the distance from the chosen ArUco marker to the center of the image.
+
+  Args:
+    aruco_corners: list of 4 Iterables, each tuple is a (x, y) coordinate of a
+      corner.
+    size: Iterable; the width and height of the images.
+  Returns:
+    The distance from the ArUco marker to the center of the image.
+  """
+  return math.hypot(*_get_aruco_marker_x_y_offset(aruco_corners, size))
+
+
+def _get_shortest_focal_length(props):
+  """Return the first available focal length from properties."""
+  return props['android.lens.info.availableFocalLengths'][0]
+
+
+def _get_average_offset(shared_id, aruco_ids, aruco_corners, size):
+  """Get the average offset a given marker to the image center.
+
+  Args:
+    shared_id: ID of the given marker to find the average offset.
+    aruco_ids: nested Iterables of ArUco marker IDs.
+    aruco_corners: nested Iterables of ArUco marker corners.
+    size: size of the image to calculate image center.
+  Returns:
+    The average offset from the given marker to the image center.
+  """
+  offsets = []
+  for ids, corners in zip(aruco_ids, aruco_corners):
+    index = numpy.where(ids == shared_id)[0][0]
+    corresponding_corners = corners[index]
+    offsets.append(_get_aruco_marker_offset(corresponding_corners, size))
+  return numpy.mean(offsets)
+
+
+def _are_values_non_decreasing(values, abs_tol=0):
+  """Returns True if any values are not decreasing with absolute tolerance."""
+  return all(x < y + abs_tol for x, y in zip(values, values[1:]))
+
+
+def _are_values_non_increasing(values, abs_tol=0):
+  """Returns True if any values are not increasing with absolute tolerance."""
+  return all(x > y - abs_tol for x, y in zip(values, values[1:]))
+
+
+def _verify_offset_monotonicity(offsets):
+  """Returns if values continuously increase or decrease with tolerance."""
+  return (
+      _are_values_non_decreasing(
+          offsets, _SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL) or
+      _are_values_non_increasing(
+          offsets, _SMOOTH_ZOOM_OFFSET_MONOTONICITY_ATOL)
+  )
+
+
+def update_zoom_test_data_with_shared_aruco_marker(
+    test_data, aruco_ids, aruco_corners, size):
+  """Update test_data in place with a shared ArUco marker if available.
+
+  Iterates through the list of aruco_ids and aruco_corners to find the shared
+  ArUco marker that is closest to the center across all captures. If found,
+  updates the test_data with the shared marker and its offset from the
+  image center.
+
+  Args:
+    test_data: list of ZoomTestData.
+    aruco_ids: nested Iterables of ArUco marker IDs.
+    aruco_corners: nested Iterables of ArUco marker corners.
+    size: Iterable; the width and height of the images.
+  """
+  shared_ids = set(list(aruco_ids[0]))
+  for ids in aruco_ids[1:]:
+    shared_ids.intersection_update(list(ids))
+  # Choose shared marker that is closest to the center of the image.
+  if shared_ids:
+    shared_id = min(
+        shared_ids,
+        key=lambda i: _get_average_offset(i, aruco_ids, aruco_corners, size)
+    )
+    logging.debug('Using shared aruco ID %d', shared_id)
+    for i, (ids, corners) in enumerate(zip(aruco_ids, aruco_corners)):
+      index = numpy.where(ids == shared_id)[0][0]
+      corresponding_corners = corners[index]
+      logging.debug('Corners of shared ID: %s', corresponding_corners)
+      test_data[i].aruco_corners = corresponding_corners
+      test_data[i].aruco_offset = (
+          _get_aruco_marker_offset(
+              corresponding_corners, size
+          )
+      )
+  else:
+    raise AssertionError('No shared AruCo marker found across all captures.')
+
+
+def verify_zoom_results(test_data, size, z_max, z_min,
+                        offset_plot_name_stem=None):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
   This test verifies that the center and radius of the circles in the output
@@ -313,53 +430,69 @@ def verify_zoom_results(
   test_data_max_z = max(test_data_zoom_values) / min(test_data_zoom_values)
   logging.debug('test zoom ratio max: %.2f vs threshold %.2f',
                 test_data_max_z, zoom_max_thresh)
-
-  if not math.isclose(test_data_max_z, zoom_max_thresh, rel_tol=ZOOM_RTOL):
+  if not math.isclose(
+      test_data_max_z, zoom_max_thresh, rel_tol=ZOOM_RTOL):
     test_success = False
     e_msg = (f'Max zoom ratio tested: {test_data_max_z:.4f}, '
              f'range advertised min: {z_min}, max: {z_max} '
              f'THRESH: {zoom_max_thresh + ZOOM_RTOL}')
     logging.error(e_msg)
-
   return test_success and verify_zoom_data(
       test_data, size, offset_plot_name_stem=offset_plot_name_stem)
 
 
 def verify_zoom_data(
-    test_data, size, plot_name_stem=None, offset_plot_name_stem=None):
+    test_data, size,
+    plot_name_stem=None, offset_plot_name_stem=None,
+    number_of_cameras_to_test=0):
   """Verify that the output images' zoom level reflects the correct zoom ratios.
 
-  This test verifies that the center and radius of the circles in the output
-  images reflects the zoom ratios being set. The larger the zoom ratio, the
-  larger the circle. And the distance from the center of the circle to the
-  center of the image is proportional to the zoom ratio as well.
+  This test verifies that the center and side length of the ArUco markers in
+  the output images reflects the zoom ratios being set. ArUco marker side length
+  should increase proportionally to the zoom ratio. The distance from the
+  center of the ArUco marker to the center of the image (offset) should either
+  change proportionally to the zoom ratio, or decrease/increase toward the
+  offset of the first capture using the upcoming physical camera, if there is
+  a camera switch.
 
   Args:
     test_data: Iterable[ZoomTestData]
     size: array; the width and height of the images
     plot_name_stem: Optional[str]; log path and name of the plot
     offset_plot_name_stem: Optional[str]; log path and name of the offset plot
+    number_of_cameras_to_test: [Optional][int]; minimum cameras in ZoomTestData
 
   Returns:
     Boolean whether the test passes (True) or not (False)
   """
-  # assert some range is tested before circles get too big
-  test_success = True
+  range_success = True
+
+  # assert that multiple cameras were tested where applicable
+  ids_tested = set([v.physical_id for v in test_data])
+  if len(ids_tested) < number_of_cameras_to_test:
+    range_success = False
+    logging.error('Expected at least %d physical cameras tested, '
+                  'found IDs: %s', number_of_cameras_to_test, ids_tested)
+
+  side_success = True
+  offset_success = True
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
-  radius_0 = float(test_data[0].circle[2])
+  side_0 = opencv_processing_utils.get_aruco_marker_side_length(
+      test_data[0].aruco_corners)
   z_0 = float(test_data[0].result_zoom)
 
   # use 1x ~ 1.1x data as base image if available
   if z_0 < PREFERRED_BASE_ZOOM_RATIO:
-    for i, data in enumerate(test_data):
-      if (test_data[i].result_zoom >= PREFERRED_BASE_ZOOM_RATIO and
-          math.isclose(test_data[i].result_zoom, PREFERRED_BASE_ZOOM_RATIO,
-                       rel_tol=0.1)):
-        radius_0 = float(test_data[i].circle[2])
-        z_0 = float(test_data[i].result_zoom)
+    for data in test_data:
+      if (data.result_zoom >= PREFERRED_BASE_ZOOM_RATIO and
+          math.isclose(data.result_zoom, PREFERRED_BASE_ZOOM_RATIO,
+                       rel_tol=PREFERRED_BASE_ZOOM_RATIO_RTOL)):
+        side_0 = opencv_processing_utils.get_aruco_marker_side_length(
+            data.aruco_corners)
+        z_0 = float(data.result_zoom)
         break
-  logging.debug('z_0: %.3f, radius_0: %.3f', z_0, radius_0)
+  logging.debug('z_0: %.3f, side_0: %.3f', z_0, side_0)
   if plot_name_stem:
     frame_numbers = []
     z_variations = []
@@ -370,25 +503,38 @@ def verify_zoom_data(
   offset_x_values = []
   offset_y_values = []
   hypots = []
+
+  id_to_next_offset = {}
+  offsets_while_transitioning = []
+  previous_id = test_data[0].physical_id
+  # First pass to get transition points
+  for i, data in enumerate(test_data):
+    if i == 0:
+      continue
+    if test_data[i-1].focal_length != data.focal_length:
+      id_to_next_offset[previous_id] = data.aruco_offset
+      previous_id = data.physical_id
+
+  initial_offset = test_data[0].aruco_offset
+  initial_zoom = test_data[0].result_zoom
+  # Second pass to check offset correctness
   for i, data in enumerate(test_data):
     logging.debug(' ')  # add blank line between frames
     logging.debug('Frame# %d {%s}', i, preview_zoom_data_to_string(data))
     logging.debug('Zoom: %.2f, fl: %.2f', data.result_zoom, data.focal_length)
-    offset_x, offset_y = (
-        data.circle[0] - size[0] // 2, data.circle[1] - size[1] // 2
-    )
+    offset_x, offset_y = _get_aruco_marker_x_y_offset(data.aruco_corners, size)
     offset_x_values.append(offset_x)
     offset_y_values.append(offset_y)
-    logging.debug('Circle r: %.1f, center offset x, y: %d, %d',
-                  data.circle[2], offset_x, offset_y)
     z_ratio = data.result_zoom / z_0
 
     # check relative size against zoom[0]
-    radius_ratio = data.circle[2] / radius_0
+    current_side = opencv_processing_utils.get_aruco_marker_side_length(
+        data.aruco_corners)
+    side_ratio = current_side / side_0
 
     # Calculate variations
-    z_variation = z_ratio - radius_ratio
-    relative_variation = abs(z_variation) / max(abs(z_ratio), abs(radius_ratio))
+    z_variation = z_ratio - side_ratio
+    relative_variation = abs(z_variation) / max(abs(z_ratio), abs(side_ratio))
 
     # Store values for plotting
     if plot_name_stem:
@@ -401,49 +547,60 @@ def verify_zoom_data(
         max_rel_variation_zoom = data.result_zoom
 
     logging.debug('r ratio req: %.3f, measured: %.3f',
-                  z_ratio, radius_ratio)
-    msg = (f'{i} Circle radius ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
-           f' {z_ratio:.3f}, circle({data.circle[2]:.3f}/{radius_0:.3f}):'
-           f' {radius_ratio:.3f}, RTOL: {data.radius_tol}'
-           f' z_var: {z_variation:.3f}, rel_var: {relative_variation:.3f}')
-    if not math.isclose(z_ratio, radius_ratio, rel_tol=data.radius_tol):
-      test_success = False
+                  z_ratio, side_ratio)
+    msg = (
+        f'{i} Marker side ratio: result({data.result_zoom:.3f}/{z_0:.3f}):'
+        f' {z_ratio:.3f}, marker({current_side:.3f}/{side_0:.3f}):'
+        f' {side_ratio:.3f}, RTOL: {data.radius_tol}'
+    )
+    if not math.isclose(z_ratio, side_ratio, rel_tol=data.radius_tol):
+      side_success = False
       logging.error(msg)
     else:
       logging.debug(msg)
 
     # check relative offset against init vals w/ no focal length change
     # set init values for first capture or change in physical cam focal length
-    offset_hypot = math.hypot(offset_x, offset_y)
-    hypots.append(offset_hypot)
-    if i == 0 or test_data[i-1].focal_length != data.focal_length:
-      z_init = float(data.result_zoom)
-      offset_hypot_init = offset_hypot
-      logging.debug('offset_hypot_init: %.3f', offset_hypot_init)
+    hypots.append(data.aruco_offset)
+    if i == 0:
+      continue
+    if test_data[i-1].focal_length != data.focal_length:
+      initial_zoom = float(data.result_zoom)
+      initial_offset = data.aruco_offset
+      logging.debug('offset_hypot_init: %.3f', initial_offset)
       d_msg = (f'-- init {i} zoom: {data.result_zoom:.2f}, '
-               f'offset init: {offset_hypot_init:.1f}, '
+               f'offset init: {initial_offset:.1f}, '
                f'zoom: {z_ratio:.1f} ')
       logging.debug(d_msg)
-    else:  # check
-      z_ratio = data.result_zoom / z_init
-      offset_hypot_rel = offset_hypot / z_ratio
+      if offsets_while_transitioning:
+        logging.debug('Offsets while transitioning: %s',
+                      offsets_while_transitioning)
+        if not _verify_offset_monotonicity(offsets_while_transitioning):
+          logging.error('Offsets %s are not monotonic',
+                        offsets_while_transitioning)
+          offset_success = False
+        offsets_while_transitioning.clear()
+    else:
+      offsets_while_transitioning.append(data.aruco_offset)
+      z_ratio = data.result_zoom / initial_zoom
+      offset_hypot_rel = data.aruco_offset / z_ratio
       logging.debug('offset_hypot_rel: %.3f', offset_hypot_rel)
-
       rel_tol = data.offset_tol
-      if not math.isclose(offset_hypot_init, offset_hypot_rel,
+      if not math.isclose(initial_offset, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        test_success = False
+        offset_success = False
         e_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
-                 f'offset init: {offset_hypot_init:.4f}, '
+                 f'offset init: {initial_offset:.4f}, '
                  f'offset rel: {offset_hypot_rel:.4f}, '
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.error(e_msg)
-      else:
+      # TODO: b/346867328 - create alternative offset check
+      if offset_success:
         d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
-                 f'offset init: {offset_hypot_init:.1f}, '
+                 f'offset init: {initial_offset:.1f}, '
                  f'offset rel: {offset_hypot_rel:.1f}, '
-                 f'offset dist: {offset_hypot:.1f}, '
+                 f'offset dist: {data.aruco_offset:.1f}, '
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
         logging.debug(d_msg)
@@ -476,7 +633,7 @@ def verify_zoom_data(
         f'{offset_plot_name_stem}_offset_trajectory.gif'  # GIF animation
     )
 
-  return test_success
+  return range_success and side_success and offset_success
 
 
 def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
@@ -533,7 +690,8 @@ def verify_preview_zoom_results(test_data, size, z_max, z_min, z_step_size,
              f'not close to {z_min:.2f} by {PRV_Z_RTOL:.2f} tolerance.')
     logging.error(e_msg)
 
-  return test_success and verify_zoom_data(test_data, size, plot_name_stem)
+  return test_success and verify_zoom_data(
+      test_data, size, plot_name_stem=plot_name_stem)
 
 
 def get_preview_zoom_params(zoom_range, steps):

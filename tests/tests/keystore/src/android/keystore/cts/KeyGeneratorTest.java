@@ -24,7 +24,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import android.content.Context;
 import android.keystore.cts.util.StrictModeDetector;
@@ -35,7 +34,7 @@ import android.security.keystore.KeyProperties;
 import android.test.MoreAsserts;
 import android.text.TextUtils;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.google.common.collect.ObjectArrays;
 
@@ -56,9 +55,11 @@ import java.security.SecureRandom;
 import java.security.Security;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -110,17 +111,42 @@ public class KeyGeneratorTest {
     }
 
     private static Object[] kmTypes_x_algorithms() {
-        return new Object[] {
-            new Object[] {KmType.SB, "AES"},
-            new Object[] {KmType.SB, "HmacSHA256"},
+        var permutations = new ArrayList<>(List.of(new Object[][] {
+            {KmType.SB, "AES"},
+            {KmType.SB, "HmacSHA256"},
 
-            new Object[] {KmType.TEE, "AES"},
-            new Object[] {KmType.TEE, "HmacSHA1"},
-            new Object[] {KmType.TEE, "HmacSHA224"},
-            new Object[] {KmType.TEE, "HmacSHA256"},
-            new Object[] {KmType.TEE, "HmacSHA384"},
-            new Object[] {KmType.TEE, "HmacSHA512"},
-        };
+            {KmType.TEE, "AES"},
+            {KmType.TEE, "HmacSHA1"},
+            {KmType.TEE, "HmacSHA224"},
+            {KmType.TEE, "HmacSHA256"},
+            {KmType.TEE, "HmacSHA384"},
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
+    }
+
+    private static Object[] kmTypes_x_hmacAlgorithms() {
+        var permutations = new ArrayList<>(List.of(new Object[][] {
+            {KmType.SB, "HmacSHA256"},
+
+            {KmType.TEE, "HmacSHA1"},
+            {KmType.TEE, "HmacSHA224"},
+            {KmType.TEE, "HmacSHA256"},
+            {KmType.TEE, "HmacSHA384"},
+            {KmType.TEE, "HmacSHA512"}
+        }));
+        return permutations.toArray();
+    }
+
+    private static Object[] kmTypes_x_signingAlgorithms() {
+        var permutations = new ArrayList<>(Arrays.asList(kmTypes_x_hmacAlgorithms()));
+        if (TestUtils.supports3DES()) {
+            permutations.add(new Object[] {KmType.TEE, "DESede"});
+        }
+        return permutations.toArray();
     }
 
     private Context getContext() {
@@ -378,12 +404,11 @@ public class KeyGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testHmacKeySupportedSizes(KmType kmType, String algorithm) throws Exception {
         assumeKmSupport(kmType);
         CountingSecureRandom rng = new CountingSecureRandom();
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
 
         for (int i = -16; i <= 1024; i++) {
             try {
@@ -433,12 +458,11 @@ public class KeyGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testHmacKeyOnlyOneDigestCanBeAuthorized(KmType kmType, String algorithm)
             throws Exception {
         assumeKmSupport(kmType);
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
 
         try {
             String digest = TestUtils.getHmacAlgorithmDigest(algorithm);
@@ -583,12 +607,11 @@ public class KeyGeneratorTest {
     }
 
     @Test
-    @Parameters(method = "kmTypes_x_algorithms")
+    @Parameters(method = "kmTypes_x_hmacAlgorithms")
     @TestCaseName(value = "{method}_{0}_{1}")
     public void testInitWithKeyAlgorithmDigestMissingFromAuthorizedDigestFails(
             KmType kmType, String algorithm) {
         assumeKmSupport(kmType);
-        assumeTrue("Not an HMAC algorithm", TestUtils.isHmacAlgorithm(algorithm));
         try {
             KeyGenerator keyGenerator = getKeyGenerator(algorithm);
 
@@ -715,6 +738,45 @@ public class KeyGeneratorTest {
             assertEquals(maxUsageCount, TestUtils.getKeyInfo(key).getRemainingUsageCount());
         } catch (Throwable e) {
             throw new RuntimeException("Failed for " + algorithm, e);
+        }
+    }
+
+    @Test
+    @Parameters(method = "kmTypes_x_signingAlgorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_Lskf(KmType kmType, String algorithm)
+            throws Exception {
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyGenerator keyGenerator = getKeyGenerator(algorithm);
+            keyGenerator.init(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            keyGenerator.generateKey();
+        }
+    }
+
+    @Test
+    @Parameters(method = "kmTypes_x_signingAlgorithms")
+    @TestCaseName(value = "{method}_{0}_{1}")
+    public void testGenerateAuthBoundKey_LskfOrStrongBiometric(KmType kmType, String algorithm)
+            throws Exception {
+        assumeKmSupport(kmType);
+        try (var dl = new DeviceLockSession(InstrumentationRegistry.getInstrumentation())) {
+            KeyGenerator keyGenerator = getKeyGenerator(algorithm);
+            keyGenerator.init(getWorkingSpec(
+                        KeyProperties.PURPOSE_SIGN)
+                    .setIsStrongBoxBacked(isStrongboxKeyMint(kmType))
+                    .setUserAuthenticationRequired(true)
+                    .setUserAuthenticationParameters(0 /* seconds */,
+                            KeyProperties.AUTH_BIOMETRIC_STRONG
+                            | KeyProperties.AUTH_DEVICE_CREDENTIAL)
+                    .build());
+            keyGenerator.generateKey();
         }
     }
 

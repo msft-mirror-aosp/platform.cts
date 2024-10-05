@@ -30,7 +30,7 @@ import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUse
 import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsersOnDefaultDisplay
 import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported
 import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnSingleUser
 import com.android.bedstead.multiuser.annotations.RequireRunOnVisibleBackgroundNonProfileUser
 import com.android.bedstead.multiuser.annotations.RequireUserSupported

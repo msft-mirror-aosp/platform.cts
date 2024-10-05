@@ -60,7 +60,7 @@ class SystemUserState:
     def include_annotations(self, args):
         if args.headless:
             # We want to skip all of the RequireRunOnPrimaryUser ones which get assumption failed
-            return ["com.android.bedstead.harrier.annotations.RequireRunOnSystemUser"]
+            return ["com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser"]
         return []
 
     def initialise(self, device_state):
@@ -93,7 +93,7 @@ class SecondaryUserState:
         return device_state["current_user"] == secondary_user_id
 
     def include_annotations(self, args):
-        return ["com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser"]
+        return ["com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser"]
 
     def initialise(self, device_state):
         self.user_id = device_state["current_user"]
@@ -128,7 +128,7 @@ class AdditionalUserState:
         return is_additional_user(device_state, device_state["users"][device_state["current_user"]])
 
     def include_annotations(self, args):
-        return ["com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser"]
+        return ["com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser"]
 
     def initialise(self, device_state):
         self.user_id = device_state["current_user"]
@@ -149,7 +149,7 @@ class AdditionalUserState:
         return self.user_id
 
     def all_supported_annotations(self, args):
-        return self.include_annotations(args) + ["com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser"]
+        return self.include_annotations(args) + ["com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser"]
 
 class WorkProfileState:
     def __init__(self, args):
@@ -168,7 +168,7 @@ class WorkProfileState:
         return self._has_work_profile(device_state["users"][device_state["current_user"]])
 
     def include_annotations(self, args):
-        return ["com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile"]
+        return ["com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile"]
 
     def initialise(self, device_state):
         self.user_id = device_state["users"][device_state["current_user"]]["work_profile_id"]
@@ -224,7 +224,7 @@ class CloneProfileState:
         return self._has_clone_profile(device_state["users"][device_state["current_user"]])
 
     def include_annotations(self, args):
-        return ["com.android.bedstead.harrier.annotations.RequireRunOnCloneProfile"]
+        return ["com.android.bedstead.multiuser.annotations.RequireRunOnCloneProfile"]
 
     def initialise(self, device_state):
         self.user_id = device_state["users"][device_state["current_user"]]["clone_profile_id"]
@@ -279,7 +279,7 @@ class PrivateProfileState:
         return self._has_private_profile(device_state["users"][device_state["current_user"]])
 
     def include_annotations(self, args):
-        return ["com.android.bedstead.harrier.annotations.RequireRunOnPrivateProfile"]
+        return ["com.android.bedstead.multiuser.annotations.RequireRunOnPrivateProfile"]
 
     def initialise(self, device_state):
         self.user_id = device_state["users"][device_state["current_user"]]["private_profile_id"]

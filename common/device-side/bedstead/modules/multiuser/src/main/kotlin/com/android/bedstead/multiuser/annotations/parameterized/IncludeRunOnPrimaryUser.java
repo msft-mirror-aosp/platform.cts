@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations.parameterized;
+package com.android.bedstead.multiuser.annotations.parameterized;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.EARLY;
 import static com.android.bedstead.harrier.annotations.ParameterizedAnnotationScope.ENTERPRISE;
 
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 
 import java.lang.annotation.ElementType;
@@ -29,13 +30,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Parameterize a test so that it runs on a secondary user.
+ * Parameterize a test so that it runs on the primary user
  */
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @ParameterizedAnnotation(scope = ENTERPRISE)
-@RequireRunOnSecondaryUser
-public @interface IncludeRunOnSecondaryUser {
+@RequireRunOnPrimaryUser
+@EnsureHasNoDelegate
+public @interface IncludeRunOnPrimaryUser {
      /**
      * Priority sets the order that annotations will be resolved.
      *

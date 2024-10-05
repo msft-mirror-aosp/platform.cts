@@ -2099,7 +2099,7 @@ requirements {
     value: {
       description: "Number of frames without film grain effect."
       measurement_type: MEASUREMENT_TYPE_INT
-      comparison: COMPARISON_INFO_ONLY
+      comparison: COMPARISON_EQUAL
       proto_field_number: 4
     }
   }
@@ -2138,6 +2138,12 @@ requirements {
         key: "av1_decoder_requirement_boolean"
         value {
           bool_value: true
+        }
+      }
+      required_values: {
+        key: "av1_frames_without_film_grain"
+        value {
+          int_value: 0
         }
       }
     }

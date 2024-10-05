@@ -42,7 +42,6 @@ import androidx.test.filters.SdkSuppress;
 import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.CddTest;
 
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,7 +74,6 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     private static final String LOG_TAG = CodecDecoderSurfaceTest.class.getSimpleName();
     private static final String MEDIA_DIR = WorkDir.getMediaDirString();
 
-    private final String mReconfigFile;
     private final SupportClass mSupportRequirements;
 
     static {
@@ -83,9 +81,8 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
     }
 
     public CodecDecoderSurfaceTest(String decoder, String mediaType, String testFile,
-            String reconfigFile, SupportClass supportRequirements, String allTestParams) {
+            SupportClass supportRequirements, String allTestParams) {
         super(decoder, mediaType, MEDIA_DIR + testFile, allTestParams);
-        mReconfigFile = MEDIA_DIR + reconfigFile;
         mSupportRequirements = supportRequirements;
     }
 
@@ -104,23 +101,13 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         mCodec.releaseOutputBuffer(bufferIndex, mSurface != null);
     }
 
-    private void decodeAndSavePts(String file, String decoder, long pts, int mode, int frameLimit)
-            throws IOException, InterruptedException {
-        Surface sf = mSurface;
-        mSurface = null; // for reference, decode in non-surface mode
-        mOutputBuff = new OutputManager();
-        mCodec = MediaCodec.createByCodecName(decoder);
-        MediaFormat format = setUpSource(file);
-        configureCodec(format, false, true, false);
-        mCodec.start();
-        mExtractor.seekTo(pts, mode);
-        doWork(frameLimit);
-        queueEOS();
-        waitForAllOutputs();
-        endCodecSession(mCodec);
-        mCodec.release();
-        mExtractor.release();
-        mSurface = sf; // restore surface
+    private OutputManager decodeAndSavePts(String file, String decoder, long pts, int mode,
+            int frameLimit) throws IOException, InterruptedException {
+        CodecDecoderTestBase cdtbA = new CodecDecoderTestBase(mCodecName, mMediaType, null,
+                mAllTestParams);
+        cdtbA.decodeToMemory(file, decoder, new OutputManager(), false, pts, mode, frameLimit,
+                false, true);
+        return cdtbA.getOutputManager();
     }
 
     @Rule
@@ -148,71 +135,51 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         final boolean isEncoder = false;
         final boolean needAudio = false;
         final boolean needVideo = true;
-        // mediaType, test file, reconfig test file, SupportClass
+        // mediaType, test file, SupportClass
         final List<Object[]> exhaustiveArgsList = new ArrayList<>(Arrays.asList(new Object[][]{
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2, "bbb_340x280_768kbps_30fps_mpeg2.mp4",
-                        "bbb_520x390_1mbps_30fps_mpeg2.mp4", CODEC_ALL},
+                        CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2,
-                        "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_2fields.mp4",
-                        "bbb_520x390_1mbps_30fps_mpeg2.mp4", CODEC_ALL},
+                        "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_2fields.mp4", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_MPEG2,
-                        "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_1field.ts",
-                        "bbb_520x390_1mbps_30fps_mpeg2.mp4", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_340x280_768kbps_30fps_avc.mp4",
-                        "bbb_520x390_1mbps_30fps_avc.mp4", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_360x640_768kbps_30fps_avc.mp4",
-                        "bbb_520x390_1mbps_30fps_avc.mp4", CODEC_ALL},
+                        "bbb_512x288_30fps_1mbps_mpeg2_interlaced_nob_1field.ts", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_340x280_768kbps_30fps_avc.mp4", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_360x640_768kbps_30fps_avc.mp4", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_160x1024_1500kbps_30fps_avc.mp4",
-                        "bbb_520x390_1mbps_30fps_avc.mp4", CODEC_OPTIONAL},
+                        CODEC_OPTIONAL},
                 {MediaFormat.MIMETYPE_VIDEO_AVC, "bbb_1280x120_1500kbps_30fps_avc.mp4",
-                        "bbb_340x280_768kbps_30fps_avc.mp4", CODEC_OPTIONAL},
-                {MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_520x390_1mbps_30fps_hevc.mp4",
-                        "bbb_340x280_768kbps_30fps_hevc.mp4", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_128x96_64kbps_12fps_mpeg4.mp4",
-                        "bbb_176x144_192kbps_15fps_mpeg4.mp4", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp",
-                        "bbb_176x144_192kbps_10fps_h263.3gp", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_340x280_768kbps_30fps_vp8.webm",
-                        "bbb_520x390_1mbps_30fps_vp8.webm", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_340x280_768kbps_30fps_vp9.webm",
-                        "bbb_520x390_1mbps_30fps_vp9.webm", CODEC_ALL},
+                        CODEC_OPTIONAL},
+                {MediaFormat.MIMETYPE_VIDEO_HEVC, "bbb_520x390_1mbps_30fps_hevc.mp4", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_MPEG4, "bbb_128x96_64kbps_12fps_mpeg4.mp4", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_H263, "bbb_176x144_128kbps_15fps_h263.3gp", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_VP8, "bbb_340x280_768kbps_30fps_vp8.webm", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_VP9, "bbb_340x280_768kbps_30fps_vp9.webm", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_VP9,
-                        "bbb_340x280_768kbps_30fps_split_non_display_frame_vp9.webm",
-                        "bbb_520x390_1mbps_30fps_split_non_display_frame_vp9.webm", CODEC_ALL},
-                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4",
-                        "bbb_520x390_1mbps_30fps_av1.mp4", CODEC_ALL},
+                        "bbb_340x280_768kbps_30fps_split_non_display_frame_vp9.webm", CODEC_ALL},
+                {MediaFormat.MIMETYPE_VIDEO_AV1, "bbb_340x280_768kbps_30fps_av1.mp4", CODEC_ALL},
                 {MediaFormat.MIMETYPE_VIDEO_AV1,
-                        "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_av1.mp4",
-                        "bbb_520x390_1mbps_30fps_av1.mp4", CODEC_ALL},
+                        "bikes_qcif_color_bt2020_smpte2086Hlg_bt2020Ncl_fr_av1.mp4", CODEC_ALL},
         }));
-        // P010 support was added in Android T, hence limit the following tests to Android T and
-        // above
+        // Framework P010 support added with android T.
+        // These codecs are not required to support P010, but if they advertise support,
+        // we are going to test it.
         if (IS_AT_LEAST_T) {
             exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_340x280_24fps_crf22_avc_10bit.mkv",
-                            "cosmat_520x390_24fps_crf22_avc_10bit.mkv", CODEC_OPTIONAL},
+                            CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_340x280_24fps_crf22_hevc_10bit.mkv",
-                            "cosmat_520x390_24fps_crf22_hevc_10bit.mkv", CODEC_OPTIONAL},
+                            CODEC_OPTIONAL},
                     {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_340x280_24fps_crf22_vp9_10bit.mkv",
-                            "cosmat_520x390_24fps_crf22_vp9_10bit.mkv", CODEC_OPTIONAL},
+                            CODEC_OPTIONAL},
+            }));
+        }
+        // These codecs are always required to support P010.
+        // AV1 10 bit support was mandated as of Android11 CDD 5.3, but we're unable to verify
+        // that with framework before T.
+        if (IS_AT_LEAST_T) {
+            exhaustiveArgsList.addAll(Arrays.asList(new Object[][]{
                     {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_340x280_24fps_512kbps_av1_10bit.mkv",
-                            "cosmat_520x390_24fps_768kbps_av1_10bit.mkv", CODEC_ALL},
-                    {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_340x280_24fps_crf22_avc_10bit.mkv",
-                            "bbb_520x390_1mbps_30fps_avc.mp4", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_340x280_24fps_crf22_hevc_10bit.mkv",
-                            "bbb_520x390_1mbps_30fps_hevc.mp4", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_340x280_24fps_crf22_vp9_10bit.mkv",
-                            "bbb_520x390_1mbps_30fps_vp9.webm", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_340x280_24fps_512kbps_av1_10bit.mkv",
-                            "bbb_520x390_1mbps_30fps_av1.mp4", CODEC_ALL},
-                    {MediaFormat.MIMETYPE_VIDEO_AVC, "cosmat_520x390_24fps_crf22_avc_10bit.mkv",
-                            "bbb_340x280_768kbps_30fps_avc.mp4", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_HEVC, "cosmat_520x390_24fps_crf22_hevc_10bit.mkv",
-                            "bbb_340x280_768kbps_30fps_hevc.mp4", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_VP9, "cosmat_520x390_24fps_crf22_vp9_10bit.mkv",
-                            "bbb_340x280_768kbps_30fps_vp9.webm", CODEC_OPTIONAL},
-                    {MediaFormat.MIMETYPE_VIDEO_AV1, "cosmat_520x390_24fps_768kbps_av1_10bit.mkv",
-                            "bbb_340x280_768kbps_30fps_av1.mp4", CODEC_ALL},
+                            CODEC_ALL},
             }));
         }
         return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, true);
@@ -233,8 +200,8 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         final long pts = 0;
         final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
         {
-            decodeAndSavePts(mTestFile, mCodecName, pts, mode, Integer.MAX_VALUE);
-            OutputManager ref = mOutputBuff;
+            OutputManager ref = decodeAndSavePts(mTestFile, mCodecName, pts, mode,
+                    Integer.MAX_VALUE);
             OutputManager test = new OutputManager(ref.getSharedErrorLogs());
             MediaFormat format = setUpSource(mTestFile);
             mCodec = MediaCodec.createByCodecName(mCodecName);
@@ -397,8 +364,8 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
         boolean[] boolStates = {true, false};
         {
-            decodeAndSavePts(mTestFile, mCodecName, pts, mode, Integer.MAX_VALUE);
-            OutputManager ref = mOutputBuff;
+            OutputManager ref = decodeAndSavePts(mTestFile, mCodecName, pts, mode,
+                    Integer.MAX_VALUE);
             OutputManager test = new OutputManager(ref.getSharedErrorLogs());
             mOutputBuff = test;
             setUpSource(mTestFile);
@@ -460,129 +427,6 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         }
     }
 
-    /**
-     * Checks component and framework behaviour for resolution change in surface mode. The
-     * resolution change is not seamless (AdaptivePlayback) but done via reconfigure.
-     * <p>
-     * The reconfiguring of media codec component happens at various points :-
-     * <ul>
-     *     <li>After initial configuration (stopped state).</li>
-     *     <li>In running state, before queueing any input.</li>
-     *     <li>In running state, after queuing n frames.</li>
-     *     <li>In eos state.</li>
-     * </ul>
-     * In eos state,
-     * <ul>
-     *     <li>reconfigure with same clip.</li>
-     *     <li>reconfigure with different clip (different resolution).</li>
-     * </ul>
-     * <p>
-     * In all situations (pre-reconfigure or post-reconfigure), the test expects the output
-     * timestamps to be strictly increasing. The reconfigure call makes the output received
-     * non-deterministic even for a given input. Hence, besides timestamp checks, no additional
-     * validation is done for outputs received before reconfigure. Post reconfigure, the decode
-     * begins from a sync frame. So the test expects consistent output and this needs to be
-     * identical to the reference. The reference is obtained from the same decoder running in
-     * byte buffer mode.
-     * <p>
-     * The test runs mediacodec in synchronous and asynchronous mode.
-     * <p>
-     * During reconfiguration, the mode of operation is toggled. That is, if first configure
-     * operates the codec in sync mode, then next configure operates the codec in async mode and
-     * so on.
-     */
-    @ApiTest(apis = "android.media.MediaCodec#configure")
-    @LargeTest
-    @Test(timeout = PER_TEST_TIMEOUT_LARGE_TEST_MS)
-    public void testReconfigure() throws IOException, InterruptedException {
-        Assume.assumeTrue("Test needs Android 11", IS_AT_LEAST_R);
-
-        MediaFormat format = setUpSource(mTestFile);
-        mExtractor.release();
-        MediaFormat newFormat = setUpSource(mReconfigFile);
-        mExtractor.release();
-        ArrayList<MediaFormat> formatList = new ArrayList<>();
-        formatList.add(newFormat);
-        checkFormatSupport(mCodecName, mMediaType, false, formatList, null, mSupportRequirements);
-        final long pts = 500000;
-        final int mode = MediaExtractor.SEEK_TO_CLOSEST_SYNC;
-        boolean[] boolStates = {true, false};
-        {
-            decodeAndSavePts(mTestFile, mCodecName, pts, mode, Integer.MAX_VALUE);
-            OutputManager ref = mOutputBuff;
-            decodeAndSavePts(mReconfigFile, mCodecName, pts, mode, Integer.MAX_VALUE);
-            OutputManager configRef = mOutputBuff;
-            OutputManager test = new OutputManager(ref.getSharedErrorLogs());
-            OutputManager configTest = new OutputManager(configRef.getSharedErrorLogs());
-            mCodec = MediaCodec.createByCodecName(mCodecName);
-            mActivity.setScreenParams(getWidth(format), getHeight(format), false);
-            for (boolean isAsync : boolStates) {
-                mOutputBuff = test;
-                setUpSource(mTestFile);
-                mExtractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC);
-                configureCodec(format, isAsync, true, false);
-
-                /* test reconfigure in stopped state */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-
-                /* test reconfigure in running state before queuing input */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-                doWork(23);
-
-                /* test reconfigure codec in running state */
-                reConfigureCodec(format, isAsync, true, false);
-                mCodec.start();
-                test.reset();
-                mExtractor.seekTo(pts, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                endCodecSession(mCodec);
-                if (!(mIsInterlaced ? ref.equalsDequeuedOutput(test) : ref.equals(test))) {
-                    fail("Decoder output in surface mode does not match with output in bytebuffer "
-                            + "mode \n" + mTestConfig + mTestEnv + test.getErrMsg());
-                }
-
-                /* test reconfigure codec at eos state */
-                reConfigureCodec(format, !isAsync, false, false);
-                mCodec.start();
-                test.reset();
-                mExtractor.seekTo(pts, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                endCodecSession(mCodec);
-                if (!(mIsInterlaced ? ref.equalsDequeuedOutput(test) : ref.equals(test))) {
-                    fail("Decoder output in surface mode does not match with output in bytebuffer "
-                            + "mode \n" + mTestConfig + mTestEnv + test.getErrMsg());
-                }
-                mExtractor.release();
-
-                /* test reconfigure codec for new file */
-                mOutputBuff = configTest;
-                setUpSource(mReconfigFile);
-                mActivity.setScreenParams(getWidth(newFormat), getHeight(newFormat), true);
-                reConfigureCodec(newFormat, isAsync, false, false);
-                mCodec.start();
-                configTest.reset();
-                mExtractor.seekTo(pts, mode);
-                doWork(Integer.MAX_VALUE);
-                queueEOS();
-                waitForAllOutputs();
-                endCodecSession(mCodec);
-                if (!(mIsInterlaced ? configRef.equalsDequeuedOutput(configTest) :
-                        configRef.equals(configTest))) {
-                    fail("Decoder output in surface mode does not match with output in bytebuffer "
-                            + "mode \n" + mTestConfig + mTestEnv + configTest.getErrMsg());
-                }
-                mExtractor.release();
-            }
-            mCodec.release();
-        }
-    }
-
     private native boolean nativeTestSimpleDecode(String decoder, Surface surface, String mediaType,
             String testFile, String refFile, int colorFormat, float rmsError, long checksum,
             StringBuilder retMsg);
@@ -599,7 +443,7 @@ public class CodecDecoderSurfaceTest extends CodecDecoderTestBase {
         mExtractor.release();
         mActivity.setScreenParams(getWidth(format), getHeight(format), false);
         boolean isPass = nativeTestSimpleDecode(mCodecName, mSurface, mMediaType, mTestFile,
-                mReconfigFile, format.getInteger(MediaFormat.KEY_COLOR_FORMAT), -1.0f, 0L,
+                null, format.getInteger(MediaFormat.KEY_COLOR_FORMAT), -1.0f, 0L,
                 mTestConfig);
         assertTrue(mTestConfig.toString(), isPass);
     }

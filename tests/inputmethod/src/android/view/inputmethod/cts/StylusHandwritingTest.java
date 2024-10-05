@@ -35,6 +35,7 @@ import static com.android.cts.mockime.ImeEventStreamTestUtils.withDescription;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_END_OF_LINE_TAP;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_TRACK_DISABLED;
 import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_MESSAGE;
+import static com.android.text.flags.Flags.FLAG_HANDWRITING_UNSUPPORTED_SHOW_SOFT_INPUT_FIX;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -1039,6 +1040,68 @@ public class StylusHandwritingTest extends EndToEndImeTestBase {
             // focused and the soft keyboard is shown.
             expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
             expectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartStylusHandwriting", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+            verifyStylusHandwritingWindowIsNotShown(stream, imeSession);
+
+            TestUtils.injectStylusUpEvent(unfocusedEditText, endX, endY);
+        }
+    }
+
+    /**
+     * Inject stylus events on top of an unfocused password EditText with
+     * setShowSoftInputOnFocus(false) and verify keyboard is not shown and handwriting is not
+     * started.
+     */
+    @Test
+    @RequiresFlagsEnabled({FLAG_HANDWRITING_UNSUPPORTED_MESSAGE,
+            FLAG_HANDWRITING_UNSUPPORTED_SHOW_SOFT_INPUT_FIX})
+    public void testHandwriting_unfocusedEditText_password_showSoftInputOnFocusFalse()
+            throws Exception {
+        try (MockImeSession imeSession = MockImeSession.create(
+                InstrumentationRegistry.getInstrumentation().getContext(),
+                InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+
+            final String focusedMarker = getTestMarker(FOCUSED_EDIT_TEXT_TAG);
+            final String unfocusedMarker = getTestMarker(NON_FOCUSED_EDIT_TEXT_TAG);
+            final Pair<EditText, EditText> editTextPair =
+                    launchTestActivity(focusedMarker, unfocusedMarker);
+            final EditText unfocusedEditText = editTextPair.second;
+            unfocusedEditText.post(() -> {
+                unfocusedEditText.setInputType(
+                        InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                unfocusedEditText.setShowSoftInputOnFocus(false);
+            });
+
+            expectEvent(stream, editorMatcher("onStartInput", focusedMarker), TIMEOUT);
+            notExpectEvent(
+                    stream,
+                    editorMatcher("onStartInputView", focusedMarker),
+                    NOT_EXPECT_TIMEOUT);
+
+            addVirtualStylusIdForTestSession();
+            final int touchSlop = getTouchSlop();
+            final int startX = unfocusedEditText.getWidth() / 2;
+            final int startY = 2 * touchSlop;
+            // (endX, endY) is out of bound to avoid that unfocusedEditText is focused due to the
+            // stylus touch.
+            final int endX = startX;
+            final int endY = unfocusedEditText.getHeight() + 2 * touchSlop;
+            final int number = 5;
+
+            TestUtils.injectStylusDownEvent(unfocusedEditText, startX, startY);
+            TestUtils.injectStylusMoveEvents(unfocusedEditText, startX, startY,
+                    endX, endY, number);
+
+            // Handwriting is not started since it is not supported for password fields, but it is
+            // focused. The soft keyboard is not shown since getShowSoftInputOnFocus() is false.
+            expectEvent(stream, editorMatcher("onStartInput", unfocusedMarker), TIMEOUT);
+            notExpectEvent(stream, editorMatcher("onStartInputView", unfocusedMarker),
+                    NOT_EXPECT_TIMEOUT);
             notExpectEvent(
                     stream,
                     editorMatcher("onStartStylusHandwriting", unfocusedMarker),

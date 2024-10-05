@@ -700,8 +700,11 @@ public final class UserReference implements AutoCloseable {
      * True if the user has a lock credential (password, pin or pattern set).
      */
     public boolean hasLockCredential() {
-        return TestApis.context().androidContextAsUser(this)
-                .getSystemService(KeyguardManager.class).isDeviceSecure();
+        try (PermissionContext p = TestApis.permissions().withPermission(
+                INTERACT_ACROSS_USERS_FULL)) {
+            return TestApis.context().androidContextAsUser(this)
+                    .getSystemService(KeyguardManager.class).isDeviceSecure();
+        }
     }
 
     /**

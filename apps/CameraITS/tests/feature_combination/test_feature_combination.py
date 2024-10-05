@@ -95,14 +95,14 @@ class FeatureCombinationTest(its_base_test.ItsBaseTest):
       config_entry.image_format = surface['format_code']
       config_entry.size.width = surface['width']
       config_entry.size.height = surface['height']
-      config_entry.stream_usecase = feature_combination_info_pb2.DEFAULT
+      config_entry.stream_usecase = feature_combination_info_pb2.USECASE_DEFAULT
       config_entry.dynamic_range_profile = (
-          feature_combination_info_pb2.HLG10 if surface['hlg10']
-          else feature_combination_info_pb2.STANDARD)
+          feature_combination_info_pb2.PROFILE_HLG10 if surface['hlg10']
+          else feature_combination_info_pb2.PROFILE_STANDARD)
       entry.session_configuration.output_configurations.append(config_entry)
     entry.session_configuration.stabilization = (
-        feature_combination_info_pb2.PREVIEW_STABILIZATION if stabilization
-        else feature_combination_info_pb2.OFF)
+        feature_combination_info_pb2.STABILIZATION_PREVIEW if stabilization
+        else feature_combination_info_pb2.STABILIZATION_OFF)
     entry.session_configuration.frame_rate_range.max = fps_range[1]
     entry.session_configuration.frame_rate_range.min = fps_range[0]
 

@@ -18,6 +18,8 @@ package android.cts.statsdatom.display;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assume.assumeFalse;
+
 import android.cts.statsdatom.lib.AtomTestUtils;
 import android.cts.statsdatom.lib.ConfigUtils;
 import android.cts.statsdatom.lib.DeviceUtils;
@@ -27,14 +29,22 @@ import com.android.compatibility.common.util.NonApiTest;
 import com.android.os.AtomsProto;
 import com.android.os.StatsLog;
 import com.android.tradefed.build.IBuildInfo;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.RunUtil;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.util.List;
 
+@RunWith(DeviceJUnit4ClassRunner.class)
 @NonApiTest(exemptionReasons = {}, justification = "METRIC")
-public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBuildReceiver {
+public class DisplayWakeReportedStatsTests extends BaseHostJUnit4Test implements IBuildReceiver {
+    private static final String FEATURE_AUTOMOTIVE = "android.hardware.type.automotive";
     private static final int WAKE_REASON_UNKNOWN = 0;
     private static final int WAKE_REASON_APPLICATION = 2;
     private static final int WAKE_REASON_WAKE_KEY = 6;
@@ -42,9 +52,12 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
 
     private IBuildInfo mCtsBuild;
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
+    @Before
+    public void setUp() throws Exception {
+        // com.android.server.cts.device.statsdatom.DisplayWakeReportedTests uses 'input keyevent
+        // SLEEP' which is not correctly supported on Automotive MUMD devices. So tests are skipped
+        // temporarily b/369415968 b/366037029
+        assumeFalse(isAutomotiveWithVisibleBackgroundUser());
         assertThat(mCtsBuild).isNotNull();
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
@@ -56,13 +69,12 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
                 AtomsProto.Atom.DISPLAY_WAKE_REPORTED_FIELD_NUMBER);
     }
 
-    @Override
-    protected void tearDown() throws Exception {
+    @After
+    public void tearDown() throws Exception {
         ConfigUtils.removeConfig(getDevice());
         ReportUtils.clearReports(getDevice());
         DeviceUtils.uninstallStatsdTestApp(getDevice());
         DeviceUtils.turnScreenOn(getDevice());
-        super.tearDown();
     }
 
     @Override
@@ -70,6 +82,7 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
         mCtsBuild = buildInfo;
     }
 
+    @Test
     public void testDisplayWakeReportedFromWakeKey() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithWakeKey");
@@ -77,6 +90,7 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
         assertWakeup(WAKE_REASON_WAKE_KEY, SYSTEM_UID);
     }
 
+    @Test
     public void testDisplayWakeReportedFromWakeLock() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithWakeLock");
@@ -84,6 +98,7 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
         assertWakeup(WAKE_REASON_APPLICATION, DeviceUtils.getStatsdTestAppUid(getDevice()));
     }
 
+    @Test
     public void testDisplayWakeReportedFromWakeUpApi() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithWakeUpApi");
@@ -91,6 +106,7 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
         assertWakeup(WAKE_REASON_UNKNOWN, DeviceUtils.getStatsdTestAppUid(getDevice()));
     }
 
+    @Test
     public void testDisplayWakeReportedFromTurnScreenOnActivity() throws Exception {
         DeviceUtils.runDeviceTestsOnStatsdApp(getDevice(), ".DisplayWakeReportedTests",
                 "testWakeWithTurnScreenOnActivity");
@@ -106,5 +122,10 @@ public class DisplayWakeReportedStatsTests extends DeviceTestCase implements IBu
                 data.get(0).getAtom().getDisplayWakeReported();
         assertThat(displayWakeReported.getWakeUpReason()).isEqualTo(reason);
         assertThat(displayWakeReported.getUid()).isEqualTo(uid);
+    }
+
+    private boolean isAutomotiveWithVisibleBackgroundUser() throws Exception {
+        return getDevice().hasFeature("feature:" + FEATURE_AUTOMOTIVE)
+                && getDevice().isVisibleBackgroundUsersSupported();
     }
 }

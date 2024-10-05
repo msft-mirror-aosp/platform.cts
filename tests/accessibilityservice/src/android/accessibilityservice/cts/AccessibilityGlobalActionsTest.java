@@ -27,9 +27,6 @@ import android.app.Instrumentation;
 import android.app.UiAutomation;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.Presubmit;
-import android.platform.test.annotations.RequiresFlagsEnabled;
-import android.platform.test.flag.junit.CheckFlagsRule;
-import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 
 import androidx.test.filters.LargeTest;
 import androidx.test.filters.MediumTest;
@@ -62,10 +59,6 @@ public class AccessibilityGlobalActionsTest {
     @Rule
     public final AccessibilityDumpOnFailureRule mDumpOnFailureRule =
             new AccessibilityDumpOnFailureRule();
-
-    @Rule
-    public final CheckFlagsRule mCheckFlagsRule =
-            DeviceFlagsValueProvider.createCheckFlagsRule(sUiAutomation);
 
     @BeforeClass
     public static void oneTimeSetup() {
@@ -181,21 +174,5 @@ public class AccessibilityGlobalActionsTest {
     public void testPerformGlobalActionDpadCenter() {
         assertTrue(sUiAutomation.performGlobalAction(
                 AccessibilityService.GLOBAL_ACTION_DPAD_CENTER));
-    }
-
-    @MediumTest
-    @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MENU)
-    public void testPerformGlobalActionMenu() {
-        assertTrue(sUiAutomation.performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_MENU));
-    }
-
-    @MediumTest
-    @Test
-    @RequiresFlagsEnabled(android.view.accessibility.Flags.FLAG_GLOBAL_ACTION_MEDIA_PLAY_PAUSE)
-    public void testPerformGlobalActionMediaPlayPause() {
-        assertTrue(sUiAutomation.performGlobalAction(
-                AccessibilityService.GLOBAL_ACTION_MEDIA_PLAY_PAUSE));
     }
 }

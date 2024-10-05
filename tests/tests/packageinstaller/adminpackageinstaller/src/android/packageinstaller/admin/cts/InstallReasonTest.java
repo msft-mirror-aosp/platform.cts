@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import android.content.pm.PackageManager;
 
-import com.android.bedstead.harrier.annotations.RequireRunOnSystemUser;
+import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 
 import org.junit.Test;

@@ -520,6 +520,10 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
     @Test
     public void testStackFocusSwitchOnStackEmptiedInSleeping() {
         assumeTrue(supportsLockScreen());
+        // TODO(b/371004199): Skip this test for visible background users,
+        // since the sleep operation is not allowed for visible background users.
+        assumeRunNotOnVisibleBackgroundNonProfileUser(
+                "Visible background users cannot sleep the device.");
 
         validateStackFocusSwitchOnStackEmptied(createManagedVirtualDisplaySession(),
                 createManagedLockScreenSession());

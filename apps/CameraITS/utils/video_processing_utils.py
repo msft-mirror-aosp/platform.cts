@@ -66,6 +66,22 @@ VIDEO_QUALITY_SIZE = {
     'QCIF': '176x144',
 }
 
+# Note: b/284232490: 1080p could be 1088. 480p could be 704 or 640 too.
+#       Use for tests not sensitive to variations of 1080p or 480p.
+# TODO: b/370841141 - Remove usage of VIDEO_PREVIEW_QUALITY_SIZE.
+#                     Create and use get_supported_video_sizes instead of
+#                     get_supported_video_qualities.
+VIDEO_PREVIEW_QUALITY_SIZE = {
+    # 'HIGH' and 'LOW' not included as they are DUT-dependent
+    '2160P': '3840x2160',
+    '1080P': '1920x1080',
+    '720P': '1280x720',
+    '480P': '720x480',
+    'CIF': '352x288',
+    'QVGA': '320x240',
+    'QCIF': '176x144',
+}
+
 
 @dataclasses.dataclass
 class CommonPreviewSizeData:
@@ -448,3 +464,48 @@ def get_video_colorspace(log_path, video_file_name):
     return colorspace
   else:
     raise AssertionError('ffprobe failed to provide color space')
+
+
+def get_sizes_supported_by_preview_and_video(cam, camera_id, min_area=0):
+  """Returns common sizes supported by preview and video.
+
+  Args:
+    cam: camera object.
+    camera_id: str; camera ID.
+    min_area: int; Optional filter to eliminate smaller sizes (ex. 640*480).
+
+  Returns:
+    common_sizes: list; common sizes supported by preview and video
+                        in ascending order of area
+  """
+  supported_preview_sizes = set(cam.get_all_supported_preview_sizes(camera_id))
+  supported_video_qualities = cam.get_supported_video_qualities(camera_id)
+  logging.debug('Supported video profiles & IDs: %s', supported_video_qualities)
+
+  # Make set on video size according to compatibility
+  supported_video_sizes = set()
+  for quality in supported_video_qualities:
+    video_quality = quality.split(':')[0]
+    if video_quality in VIDEO_PREVIEW_QUALITY_SIZE:
+      video_size = VIDEO_PREVIEW_QUALITY_SIZE[video_quality]
+      supported_video_sizes.add(video_size)
+  logging.debug('Supported video sizes: %s', supported_video_sizes)
+
+  # Find the intersection of supported preview sizes and video sizes
+  common_sizes = supported_preview_sizes.intersection(supported_video_sizes)
+
+  if not common_sizes:
+    raise AssertionError('No common size between Preview and Video!')
+  # Filter common sizes based on min_area
+  size_to_area = lambda s: int(s.split('x')[0])*int(s.split('x')[1])
+  common_sizes = (
+      [size for size in common_sizes if size_to_area(size) >= min_area]
+  )
+  common_sizes = sorted(common_sizes, key=size_to_area)
+
+  if not common_sizes:
+    raise AssertionError(
+        f'No common size above min_area {min_area} between Preview and Video!'
+    )
+  return common_sizes
+

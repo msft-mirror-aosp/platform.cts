@@ -93,7 +93,7 @@ android_ravenwood_test {
     static_libs: [
         "androidx.annotation_annotation",
         "androidx.test.rules",
-        "compatibility-device-util-axt",
+        "compatibility-device-util-axt-ravenwood",
     ],
     srcs: [
         "src/android/app/cts/ActivityOptionsTest.java",

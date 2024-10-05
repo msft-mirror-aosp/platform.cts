@@ -66,4 +66,16 @@ class UserTypeResolver(locator: BedsteadServiceLocator) {
             ANY -> throw IllegalStateException("ANY UserType can not be used here")
         }
     }
+
+    /**
+     * Calls the provided [action] with the appropriate [UserReference]s for the [UserType].
+     * It will be called for all users if [userType] is [ANY].
+     */
+    inline fun toUser(userType: UserType, crossinline action: (UserReference) -> Unit ) {
+        if (userType == ANY) {
+            users().all().forEach(action)
+        } else {
+            action(toUser(userType))
+        }
+    }
 }

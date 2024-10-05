@@ -121,6 +121,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Cancel" />
+
+        <!-- This button makes username and password edit text views invisible. -->
+        <Button
+            android:id="@+id/make_views_invisible"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Make EditTexts invisible" />
     </LinearLayout>
 
     <TextView
