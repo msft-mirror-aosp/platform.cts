@@ -77,6 +77,11 @@
         <option name="push" value="CtsContentLongUsesPermissionNameTestApp.apk->/data/local/tmp/cts/content/CtsContentLongUsesPermissionNameTestApp.apk" />
         <option name="push" value="CtsContentShellTestApp.apk->/data/local/tmp/cts/content/CtsContentShellTestApp.apk" />
         <option name="push" value="CtsDeviceAdminTestApp.apk->/data/local/tmp/cts/content/CtsDeviceAdminTestApp.apk" />
+        <option name="push" value="CtsTestVerifierApp.apk->/data/local/tmp/cts/content/CtsTestVerifierApp.apk" />
+        <option name="push" value="CtsTestVerifierAppCrash.apk->/data/local/tmp/cts/content/CtsTestVerifierAppCrash.apk" />
+        <option name="push" value="CtsTestVerifierAppReject.apk->/data/local/tmp/cts/content/CtsTestVerifierAppReject.apk" />
+        <option name="push" value="CtsTestVerifierAppTimeout.apk->/data/local/tmp/cts/content/CtsTestVerifierAppTimeout.apk" />
+        <option name="push" value="CtsTestVerifierAppIncompleteUnknown.apk->/data/local/tmp/cts/content/CtsTestVerifierAppIncompleteUnknown.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">
