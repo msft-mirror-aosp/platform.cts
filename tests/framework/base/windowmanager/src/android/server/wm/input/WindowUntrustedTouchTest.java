@@ -58,6 +58,10 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.ComponentNameUtils;
 import android.server.wm.CtsWindowInfoUtils;
@@ -158,6 +162,10 @@ public class WindowUntrustedTouchTest {
     private int mPreviousSawAppOp;
     private final Set<String> mSawWindowsAdded = new ArraySet<>();
     private final AtomicInteger mTouchesReceived = new AtomicInteger(0);
+
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @ClassRule
     public static ActivityManagerTestBase.DisableImmersiveModeConfirmationRule
@@ -422,6 +430,7 @@ public class WindowUntrustedTouchTest {
         assertTouchNotReceived();
     }
 
+    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testWhenOneActivityWindowWithZeroOpacity_allowsTouch()
             throws Throwable {
@@ -430,6 +439,28 @@ public class WindowUntrustedTouchTest {
         mTouchHelper.tapOnViewCenter(mContainer);
 
         assertTouchReceived();
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testWhenOneActivityWindowWithZeroOpacityWithOptIn_allowsTouch()
+            throws Throwable {
+        addActivityOverlay(APP_A, /* opacity */ 0f, /* allowPassThrough */ true);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchReceived();
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testWhenOneActivityWindowWithZeroOpacityNoOptIn_blocksTouch()
+            throws Throwable {
+        addActivityOverlay(APP_A, /* opacity */ 0f, /* allowPassThrough */ false);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchNotReceived();
     }
 
     @Test
@@ -547,9 +578,7 @@ public class WindowUntrustedTouchTest {
         // Creates a new activity with 0 opacity
         BlockingResultReceiver receiver = new BlockingResultReceiver();
         addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
-        // Verify it allows touches
-        mTouchHelper.tapOnViewCenter(mContainer);
-        assertTouchReceived();
+
         // Now get its token and put a child window from another app with it
         IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
         addActivityChildWindow(APP_B, WINDOW_1, token);
@@ -559,6 +588,7 @@ public class WindowUntrustedTouchTest {
         assertTouchNotReceived();
     }
 
+    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testWhenActivityChildWindowWithDifferentTokenFromSameApp_allowsTouch()
             throws Exception {
@@ -572,6 +602,43 @@ public class WindowUntrustedTouchTest {
         mTouchHelper.tapOnViewCenter(mContainer);
 
         assertTouchReceived();
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testWhenActivityChildWindowWithDifferentTokenFromSameAppWithOptIn_allowsTouch()
+            throws Exception {
+        // Creates a new activity with 0 opacity
+        BlockingResultReceiver receiver = new BlockingResultReceiver();
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setAllowPassThroughOnTouchOutside(true);
+        addActivityOverlay(APP_A, /* opacity */ 0f, receiver, options.toBundle());
+        mTouchHelper.tapOnViewCenter(mContainer);
+        assertTouchReceived();
+
+        // Now get its token and put a child window owned by us
+        IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
+        addActivityChildWindow(APP_SELF, WINDOW_1, token);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchReceived();
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testWhenActivityChildWindowWithDifferentTokenFromSameAppNoOptIn_blocksTouch()
+            throws Exception {
+        // Creates a new activity with 0 opacity
+        BlockingResultReceiver receiver = new BlockingResultReceiver();
+        addActivityOverlay(APP_A, /* opacity */ 0f, receiver);
+        // Now get its token and put a child window owned by us
+        IBinder token = receiver.getData(TIMEOUT_MS).getBinder(EXTRA_TOKEN);
+        addActivityChildWindow(APP_SELF, WINDOW_1, token);
+
+        mTouchHelper.tapOnViewCenter(mContainer);
+
+        assertTouchNotReceived();
     }
 
     /** Activity transitions */
@@ -918,6 +985,12 @@ public class WindowUntrustedTouchTest {
         addActivityOverlay(packageName, opacity, /* touchable */ false, /* options */ null);
     }
 
+    private void addActivityOverlay(String packageName, float opacity, boolean allowPassThrough) {
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setAllowPassThroughOnTouchOutside(allowPassThrough);
+        addActivityOverlay(packageName, opacity, /* touchable */ false, options.toBundle());
+    }
+
     private void addActivityOverlay(String packageName, float opacity, boolean touchable,
             @Nullable Bundle options) {
         Bundle extras = new Bundle();
@@ -928,10 +1001,15 @@ public class WindowUntrustedTouchTest {
 
     private void addActivityOverlay(String packageName, float opacity,
             BlockingResultReceiver tokenReceiver) {
+        addActivityOverlay(packageName, opacity, tokenReceiver, /* options */ null);
+    }
+
+    private void addActivityOverlay(String packageName, float opacity,
+            BlockingResultReceiver tokenReceiver, @Nullable Bundle options) {
         Bundle extras = new Bundle();
         extras.putFloat(Components.OverlayActivity.EXTRA_OPACITY, opacity);
         extras.putParcelable(Components.OverlayActivity.EXTRA_TOKEN_RECEIVER, tokenReceiver);
-        addActivityOverlay(packageName, extras, /* options */ null);
+        addActivityOverlay(packageName, extras, options);
     }
 
     private void addActivityOverlay(String packageName, @Nullable Bundle extras,

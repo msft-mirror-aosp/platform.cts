@@ -165,7 +165,7 @@ class YuvJpegCaptureSamenessTest(its_base_test.ItsBaseTest):
                f'YUV: {rms_diff:.4f}')
         logging.debug('%s', msg)
         if rms_diff >= _THRESHOLD_MAX_RMS_DIFF_USE_CASE:
-          logging.error(msg + f', ATOL: {_THRESHOLD_MAX_RMS_DIFF_USE_CASE}')
+          logging.error('%s, ATOL: %.2f', msg, _THRESHOLD_MAX_RMS_DIFF_USE_CASE)
           num_fail += 1
 
       if num_fail > 0:

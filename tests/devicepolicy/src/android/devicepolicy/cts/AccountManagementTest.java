@@ -21,6 +21,7 @@ import static android.app.admin.TargetUser.LOCAL_USER_ID;
 import static android.devicepolicy.cts.utils.PolicyEngineUtils.TRUE_MORE_RESTRICTIVE;
 import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 
+import static com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator.ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
 
@@ -43,25 +44,25 @@ import android.os.Bundle;
 import android.os.UserManager;
 import android.stats.devicepolicy.EventId;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
-import com.android.bedstead.harrier.annotations.EnsureHasAccount;
-import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.EnsureHasAccount;
+import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.AccountManagement;
 import com.android.bedstead.harrier.policies.DisallowModifyAccounts;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
 import com.android.bedstead.nene.exceptions.NeneException;
-import com.android.compatibility.common.util.ApiTest;
 import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
+import com.android.compatibility.common.util.ApiTest;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -334,11 +335,15 @@ public final class AccountManagementTest {
     }
 
     @Postsubmit(reason = "new test")
-    @CanSetPolicyTest(policy = AccountManagement.class)
+    @CanSetPolicyTest(
+            policy = AccountManagement.class,
+            // Make sure @EnsureHasAccounts is invoked after annotations that subsequently call
+            // @EnsureHasNoAccounts (which otherwise removes the account created by
+            // @EnsureHasAccounts before it's expected).
+            priority = ENSURE_HAS_ACCOUNT_AUTHENTICATOR_PRIORITY - 1)
     @EnsureHasAccount
     @EnsureDoesNotHaveUserRestriction(CommonUserRestrictions.DISALLOW_MODIFY_ACCOUNTS)
-    public void removeAccount_withAccountManagementDisabled_throwsException()
-            throws Exception {
+    public void removeAccount_withAccountManagementDisabled_throwsException() {
         try {
             sDeviceState.dpc().devicePolicyManager().setAccountManagementDisabled(
                     sDeviceState.dpc().componentName(),

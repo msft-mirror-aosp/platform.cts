@@ -23,11 +23,16 @@ import static android.server.wm.overlay.Components.TranslucentFloatingActivity.E
 
 import static com.google.common.truth.Truth.assertThat;
 
+import android.app.ActivityOptions;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.WindowManagerState;
 import android.server.wm.overlay.Components;
@@ -36,6 +41,7 @@ import androidx.annotation.Nullable;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -61,6 +67,10 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
 
     private int mTouchCount;
 
+    @Rule
+    public final CheckFlagsRule mCheckFlagsRule =
+            DeviceFlagsValueProvider.createCheckFlagsRule();
+
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -70,6 +80,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     @After
     public void tearDown() {
         stopTestPackage(APP_A);
+        mWmState.waitForAppTransitionIdleOnDisplay(getMainDisplayId());
     }
 
     @Test
@@ -96,6 +107,7 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
+    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskDifferentUid_DoesNotBlocksTouches() {
         launchActivity(TEST_ACTIVITY);
@@ -107,6 +119,33 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testOverlappingActivityInSameTaskDifferentUidNoOptIn_BlocksTouches() {
+        launchActivity(TEST_ACTIVITY);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+
+        launchActivityInSameTask(OVERLAY_IN_DIFFERENT_UID);
+        mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
+        mWmState.assertActivityDisplayed(OVERLAY_IN_DIFFERENT_UID);
+        touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testOverlappingActivityInSameTaskDifferentUidOptIn_AllowsTouches() {
+        launchActivity(TEST_ACTIVITY);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setAllowPassThroughOnTouchOutside(/* allowPassThrough */ true);
+        launchActivityInSameTask(OVERLAY_IN_DIFFERENT_UID, /* extras */ null, options.toBundle());
+        mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
+        mWmState.assertActivityDisplayed(OVERLAY_IN_DIFFERENT_UID);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+    }
+
+    @RequiresFlagsDisabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
     @Test
     public void testOverlappingActivityInSameTaskTrampolineDifferentUid_DoesNotBlockTouches() {
         launchActivity(TEST_ACTIVITY);
@@ -115,6 +154,36 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
         launchActivityInSameTask(TRAMPOLINE_DIFFERENT_UID,
                 Components.TrampolineActivity.buildTrampolineExtra(OVERLAY_IN_DIFFERENT_UID));
         mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
+        mWmState.waitAndAssertActivityRemoved(TRAMPOLINE_DIFFERENT_UID);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testOverlappingActivityInSameTaskTrampolineDifferentUidNoOptIn_BlocksTouches() {
+        launchActivity(TEST_ACTIVITY);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+
+        launchActivityInSameTask(TRAMPOLINE_DIFFERENT_UID,
+                Components.TrampolineActivity.buildTrampolineExtra(OVERLAY_IN_DIFFERENT_UID));
+        mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
+        mWmState.waitAndAssertActivityRemoved(TRAMPOLINE_DIFFERENT_UID);
+        touchButtonsAndAssert(false /*expectTouchesToReachActivity*/);
+    }
+
+    @RequiresFlagsEnabled(com.android.window.flags.Flags.FLAG_TOUCH_PASS_THROUGH_OPT_IN)
+    @Test
+    public void testOverlappingActivityInSameTaskTrampolineDifferentUidOptIn_AllowsTouches() {
+        launchActivity(TEST_ACTIVITY);
+        touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
+
+        final ActivityOptions options = ActivityOptions.makeBasic();
+        options.setAllowPassThroughOnTouchOutside(/* allowPassThrough */ true);
+        launchActivityInSameTask(TRAMPOLINE_DIFFERENT_UID,
+                Components.TrampolineActivity.buildTrampolineExtra(OVERLAY_IN_DIFFERENT_UID),
+                options.toBundle());
+        mWmState.waitAndAssertActivityState(OVERLAY_IN_DIFFERENT_UID, STATE_RESUMED);
+        mWmState.waitAndAssertActivityRemoved(TRAMPOLINE_DIFFERENT_UID);
         touchButtonsAndAssert(true /*expectTouchesToReachActivity*/);
     }
 
@@ -156,14 +225,20 @@ public class ActivityRecordInputSinkTests extends ActivityManagerTestBase {
     }
 
     private void launchActivityInSameTask(ComponentName componentName) {
-        launchActivityInSameTask(componentName, null);
+        launchActivityInSameTask(componentName,  /* extras */ null);
     }
 
     private void launchActivityInSameTask(ComponentName componentName, @Nullable Bundle extras) {
+        launchActivityInSameTask(componentName, extras, /* options */ null);
+    }
+
+    private void launchActivityInSameTask(
+            ComponentName componentName, @Nullable Bundle extras, @Nullable Bundle options) {
         Intent intent = new Intent(ActivityRecordInputSinkTestsActivity.LAUNCH_ACTIVITY_ACTION);
         intent.setPackage(APP_SELF);
         intent.putExtra(ActivityRecordInputSinkTestsActivity.COMPONENT_EXTRA, componentName);
         intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_EXTRA, extras);
+        intent.putExtra(ActivityRecordInputSinkTestsActivity.EXTRA_OPTIONS, options);
         mContext.sendBroadcast(intent);
     }
 

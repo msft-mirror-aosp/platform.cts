@@ -26,6 +26,16 @@
         </restrict_callers_with_execute_app_functions>
     </appfunction>
     <appfunction>
+        <function_id>add_disabledByDefault</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
+        <schema_version>1</schema_version>
+        <schema_category>utils</schema_category>
+        <enabled_by_default>false</enabled_by_default>
+        <display_name_string_res>10</display_name_string_res>
+        <restrict_callers_with_execute_app_functions>true
+        </restrict_callers_with_execute_app_functions>
+    </appfunction>
+    <appfunction>
         <function_id>add_invokeCallbackTwice</function_id>
         <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts</schema_name>
         <schema_version>1</schema_version>
@@ -94,5 +104,9 @@
         <display_name_string_res>10</display_name_string_res>
         <restrict_callers_with_execute_app_functions>true
         </restrict_callers_with_execute_app_functions>
+    </appfunction>
+    <appfunction>
+        <function_id>longRunningFunction</function_id>
+        <schema_name>AppFunctionStaticMetadata-android.app.appfunctions.cts.helper</schema_name>
     </appfunction>
 </appfunctions>

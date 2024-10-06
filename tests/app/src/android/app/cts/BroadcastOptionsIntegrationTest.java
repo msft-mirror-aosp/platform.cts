@@ -49,6 +49,11 @@ public class BroadcastOptionsIntegrationTest {
         final Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
         CtsAppTestUtils.executeShellCmd(instrumentation,
                 "cmd deviceidle whitelist +" + PACKAGE_NAME_APP1);
+        for (String pkg : new String[] { PACKAGE_NAME_APP1, PACKAGE_NAME_APP2 }) {
+            final String cmd = String.format("cmd package unstop --user %d %s",
+                    instrumentation.getTargetContext().getUserId(), pkg);
+            CtsAppTestUtils.executeShellCmd(instrumentation, cmd);
+        }
     }
 
     @After

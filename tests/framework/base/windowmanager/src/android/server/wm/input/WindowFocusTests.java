@@ -366,6 +366,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
      * - The window which lost top-focus can be notified about pointer-capture lost.
      */
     @Test
+    @DebugInputRule.DebugInput(bug = 368807736)
     public void testPointerCapture() {
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
                 DEFAULT_DISPLAY);
