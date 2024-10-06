@@ -30,7 +30,6 @@ import android.view.Choreographer;
 import android.view.SurfaceHolder;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 
 
 /**
@@ -40,7 +39,6 @@ import com.android.compatibility.common.util.NonMainlineTest;
  * data.  This exercises that feature.
  */
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class PresentationSyncTest extends ActivityInstrumentationTestCase2<MediaStubActivity>
         implements SurfaceHolder.Callback {
