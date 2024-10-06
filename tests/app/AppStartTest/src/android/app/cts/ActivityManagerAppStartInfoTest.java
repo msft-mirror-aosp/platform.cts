@@ -330,9 +330,6 @@ public final class ActivityManagerAppStartInfoTest {
         long timestampFirstFromInfo = timestamps.get(FIRST_TIMESTAMP_KEY);
         long timestampLastFromInfo = timestamps.get(LAST_TIMESTAMP_KEY);
 
-        assertNotNull(timestampFirstFromInfo);
-        assertNotNull(timestampLastFromInfo);
-
         assertEquals(timestampFirst, timestampFirstFromInfo);
         assertEquals(timestampLast, timestampLastFromInfo);
     }

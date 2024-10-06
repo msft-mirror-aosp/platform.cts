@@ -35,7 +35,6 @@
         <option name="runtime-hint" value="15m" />
         <!-- MctsXXX  skips the framework and non-mainline tests ... -->
         <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="mcts" />
     </test>
 </configuration>

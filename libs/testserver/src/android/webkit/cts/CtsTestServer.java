@@ -297,17 +297,6 @@ public class CtsTestServer {
     }
 
     /**
-     * {@link HostnameVerifier} that verifies everybody. This permits
-     * the client to trust the web server and call
-     * {@link CtsTestServer#shutdown()}.
-     */
-    private static class CtsHostnameVerifier implements HostnameVerifier {
-        public boolean verify(String hostname, SSLSession session) {
-            return true;
-        }
-    }
-
-    /**
      * Sets a response to be returned when a particular request path is passed in (with the option
      * to specify additional headers).
      *

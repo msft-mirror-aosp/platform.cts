@@ -36,7 +36,6 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.codec.flags.Flags;
 
 import org.junit.Rule;
@@ -58,7 +57,6 @@ import java.util.List;
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(Parameterized.class)
 @FrameworkSpecificTest
-@NonMainlineTest
 public class ResourceManagerMultiTest {
 
     private static final String TAG = "ResourceManagerMultiTest";
@@ -260,11 +258,8 @@ public class ResourceManagerMultiTest {
     @Test
     public void testReclaimResource() throws Exception {
         assumeTrue("The Device should be on at least VNDK U", VNDK_IS_AT_LEAST_U);
-        // Image codecs configured with resolution more than 4K are skipped on gsi builds.
-        // (b/354075153).
-        long resolution = (long) mWidth * mHeight;
-        long resolution4K = 4096 * 2048;
-        if (isGsiImage() && mMimeType.startsWith("image/") && resolution > resolution4K) {
+        // Skip testing image codecs on gsi builds: (b/354075153, b/369105914).
+        if (isGsiImage() && mMimeType.startsWith("image/")) {
             assumeTrue("This test is not applicable for device running GSI image", false);
         } else {
             doTestReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
@@ -282,11 +277,8 @@ public class ResourceManagerMultiTest {
     @RequiresFlagsEnabled(Flags.FLAG_CODEC_IMPORTANCE)
     public void testCodecImportanceReclaimResource() throws Exception {
         assumeTrue("Codec Importance Feature is OFF", codecImportance());
-        // Image codecs configured with resolution more than 4K are skipped on gsi builds.
-        // (b/354075153).
-        long resolution = (long) mWidth * mHeight;
-        long resolution4K = 4096 * 2048;
-        if (isGsiImage() && mMimeType.startsWith("image/") && resolution > resolution4K) {
+        // Skip testing image codecs on gsi builds: (b/354075153, b/369105914).
+        if (isGsiImage() && mMimeType.startsWith("image/")) {
             assumeTrue("This test is not applicable for device running GSI image", false);
         } else {
             doTestCodecImportanceReclaimResource(mCodecName, mMimeType, mWidth, mHeight);

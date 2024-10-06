@@ -149,7 +149,6 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
             if (a0.getTargetDurationNs() == testTargetDuration) {
                 found = true;
                 assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
-                assertThat(a0.getSessionId()).isNotNull();
                 assertThat(a0.getTidCount()).isEqualTo(1);
                 assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagApp);
             }
@@ -199,7 +198,6 @@ public class PerformanceHintManagerStatsTests extends BaseHostJUnit4Test impleme
             if (a0.getTargetDurationNs() == testTargetDuration) {
                 found = true;
                 assertThat(a0.getPackageUid()).isGreaterThan(10000);  // Not a system service UID.
-                assertThat(a0.getSessionId()).isNotNull();
                 assertThat(a0.getTidCount()).isEqualTo(1);
                 assertThat(a0.getSessionTag().getNumber()).isEqualTo(sessionTagGame);
             }

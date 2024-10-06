@@ -61,6 +61,9 @@ import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
 import com.android.compatibility.common.util.MediaUtils;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -80,9 +83,6 @@ import java.util.concurrent.Callable;
 import java.util.function.IntFunction;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 
 @RunWith(JUnitParamsRunner.class)
 public class ImageDecoderTest {
@@ -850,8 +850,6 @@ public class ImageDecoderTest {
             public int height;
             @Override
             public int onPostProcess(Canvas canvas) {
-                assertEquals(this.width,  width);
-                assertEquals(this.height, height);
                 return PixelFormat.UNKNOWN;
             };
         };

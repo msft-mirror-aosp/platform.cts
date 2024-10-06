@@ -49,7 +49,6 @@
         <option name="exclude-annotation" value="com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile" />
         <!-- Handle the CTS/MCTS differentiation -->
         <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="mcts" />
     </test>
     <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">

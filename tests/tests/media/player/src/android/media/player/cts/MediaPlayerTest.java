@@ -68,7 +68,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.MediaUtils;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 import com.android.compatibility.common.util.UserHelper;
 
@@ -108,7 +107,6 @@ import java.util.stream.Stream;
 @SmallTest
 @RequiresDevice
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(AndroidJUnit4.class)
 public class MediaPlayerTest extends MediaPlayerTestBase {

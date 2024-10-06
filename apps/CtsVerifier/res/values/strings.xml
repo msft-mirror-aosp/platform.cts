@@ -5652,8 +5652,8 @@ You should be prompted to select credentials; choose the ones you just installed
     <string name="audio_datapaths_invalid_transfer">Invalid Transfer Type</string>
 
     <string name="perf_mode_none_abreviation">None</string>
-    <string name="perf_mode_lowlatency_abreviation">LwLt</string>
-    <string name="perf_mode_powersave_abreviation">PwSv</string>
+    <string name="perf_mode_lowlatency_abreviation">LowLat</string>
+    <string name="perf_mode_powersave_abreviation">PowSav</string>
     <string name="perf_mode_unknown_abreviation">/?/?/?</string>
 
     <string name="audio_datapaths_calibrate">Calibrate Audio</string>

@@ -56,12 +56,10 @@
         <option name="test-timeout" value="1800000" />
         <option name="runtime-hint" value="4h" />
         <option name="exclude-annotation" value="org.junit.Ignore" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="hidden-api-checks" value="false" />
         <!-- disable isolated storage so tests can access dynamic config stored in /sdcard. -->
         <option name="isolated-storage" value="false" />
         <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="mcts" />
     </test>
 </configuration>

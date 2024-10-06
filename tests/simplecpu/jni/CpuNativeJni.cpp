@@ -19,6 +19,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include <new>
+
 #ifdef __clang__
 #define OPTNONE __attribute__((optnone))
 #else
@@ -191,7 +193,7 @@ int cmpint(const void* p1, const void* p2)
 extern "C" JNIEXPORT jdouble JNICALL Java_android_simplecpu_cts_CpuNative_runSort(JNIEnv* env,
         jclass clazz, jint numberElements, jint repetition)
 {
-    int* data = new int[numberElements];
+    int* data = new(std::nothrow) int[numberElements];
     if (data == NULL) {
         env->ThrowNew(env->FindClass("java/lang/OutOfMemoryError"), "No memory");
         return -1;
@@ -249,9 +251,9 @@ extern "C" JNIEXPORT jdouble JNICALL Java_android_simplecpu_cts_CpuNative_runMat
         JNIEnv* env, jclass clazz, jint n, jint repetition) OPTNONE
 {
     // C = A x B
-    float* A = new float[n * n];
-    float* B = new float[n * n];
-    float* C = new float[n * n];
+    float* A = new(std::nothrow) float[n * n];
+    float* B = new(std::nothrow) float[n * n];
+    float* C = new(std::nothrow) float[n * n];
     if ((A == NULL) || (B == NULL) || (C == NULL)) {
         delete[] A;
         delete[] B;

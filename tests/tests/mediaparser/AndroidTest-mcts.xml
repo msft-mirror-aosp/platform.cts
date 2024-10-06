@@ -34,10 +34,8 @@
         <!-- test-timeout unit is ms -->
         <option name="test-timeout" value="30000" />
         <option name="runtime-hint" value="30ms" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <!-- Handle the CTS/MCTS differentiation -->
         <option name="exclude-annotation" value="com.android.compatibility.common.util.FrameworkSpecificTest" />
-        <option name="exclude-annotation" value="com.android.compatibility.common.util.NonMainlineTest" />
         <option name="instrumentation-arg" key="media-testing-mode" value="mcts" />
     </test>
 </configuration>

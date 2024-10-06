@@ -846,6 +846,8 @@ public class LocationManagerFineTest {
 
             getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(LOCATION_BYPASS);
             try {
+                mManager.setAdasGnssLocationEnabled(true);
+
                 mManager.requestLocationUpdates(
                         GPS_PROVIDER,
                         new LocationRequest.Builder(0).setAdasGnssBypass(true).build(),

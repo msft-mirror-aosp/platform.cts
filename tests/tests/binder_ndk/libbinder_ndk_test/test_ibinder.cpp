@@ -480,3 +480,27 @@ TEST_F(NdkBinderTest_AIBinder, NullArguments) {
   EXPECT_EQ(STATUS_UNEXPECTED_NULL, AIBinder_getExtension(nullptr, nullptr));
   EXPECT_EQ(STATUS_UNEXPECTED_NULL, AIBinder_setExtension(nullptr, nullptr));
 }
+
+TEST_F(NdkBinderTest_AIBinder, SetTransactionCodeMap) {
+  const char* codeToFunction[] = {"function-1", "function-2", "function-3"};
+  const char* interfaceName = "interface_descriptor";
+  AIBinder_Class* clazz =
+      AIBinder_Class_define(interfaceName, EmptyOnCreate, EmptyOnDestroy, EmptyOnTransact);
+  AIBinder_Class_setTransactionCodeToFunctionNameMap(clazz, codeToFunction, 3);
+  EXPECT_EQ(codeToFunction[0], AIBinder_Class_getFunctionName(clazz, 1));
+  EXPECT_EQ(codeToFunction[1], AIBinder_Class_getFunctionName(clazz, 2));
+  EXPECT_EQ(codeToFunction[2], AIBinder_Class_getFunctionName(clazz, 3));
+
+  // check invalid codes which don't have associated function names
+  EXPECT_EQ(nullptr, AIBinder_Class_getFunctionName(clazz, 0));
+  EXPECT_EQ(nullptr, AIBinder_Class_getFunctionName(clazz, 10));
+}
+
+TEST_F(NdkBinderTest_AIBinder, GetFunctionNameOnNullMap) {
+  const char* interfaceName = "interface_descriptor";
+  AIBinder_Class* clazz =
+      AIBinder_Class_define(interfaceName, EmptyOnCreate, EmptyOnDestroy, EmptyOnTransact);
+
+  // AIBinder_Class_setTransactionCodeToFunctionNameMap hasn't been called first.
+  EXPECT_EQ(nullptr, AIBinder_Class_getFunctionName(clazz, 2));
+}
