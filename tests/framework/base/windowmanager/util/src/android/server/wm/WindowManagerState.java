@@ -158,7 +158,7 @@ public class WindowManagerState {
     private String mFocusedApp = null;
     private Boolean mIsHomeRecentsComponent;
     private String mTopResumedActivityRecord = null;
-    final List<String> mResumedActivitiesInRootTasks = new ArrayList<>();
+    final SparseArray<ArrayList<String>> mResumedActivitiesInRootTasks = new SparseArray<>();
     final List<String> mResumedActivitiesInDisplays = new ArrayList<>();
     private Rect mDefaultPinnedStackBounds = new Rect();
     private Rect mPinnedStackMovementBounds = new Rect();
@@ -341,7 +341,7 @@ public class WindowManagerState {
                     || mFocusedApp == null || (mSanityCheckFocusedWindow && mFocusedWindow == null)
                     || !mWindowFramesValid
                     || (mTopResumedActivityRecord == null
-                    || mResumedActivitiesInRootTasks.isEmpty())
+                    || mResumedActivitiesInRootTasks.size() == 0)
                     && !mKeyguardControllerState.keyguardShowing;
         } while (retry && retriesLeft-- > 0);
 
@@ -354,7 +354,7 @@ public class WindowManagerState {
         if (mTopResumedActivityRecord == null) {
             logE("No focused activity found...");
         }
-        if (mResumedActivitiesInRootTasks.isEmpty()) {
+        if (mResumedActivitiesInRootTasks.size() == 0) {
             logE("No resumed activities found...");
         }
         if (mWindowStates.isEmpty()) {
@@ -420,7 +420,10 @@ public class WindowManagerState {
                 addResumedActivity(task.mTasks.get(i));
             }
         } else if (task.mResumedActivity != null) {
-            mResumedActivitiesInRootTasks.add(task.mResumedActivity);
+            final ArrayList<String> resumedActivities =
+                    mResumedActivitiesInRootTasks.get(task.mDisplayId, new ArrayList<>());
+            resumedActivities.add(task.mResumedActivity);
+            mResumedActivitiesInRootTasks.put(task.mDisplayId, resumedActivities);
         }
     }
 
@@ -617,7 +620,18 @@ public class WindowManagerState {
     }
 
     public int getResumedActivitiesCount() {
-        return mResumedActivitiesInRootTasks.size();
+        int count = 0;
+        for (int i = 0; i < mResumedActivitiesInRootTasks.size(); i++) {
+            final ArrayList<String> resumedActivities = mResumedActivitiesInRootTasks.valueAt(i);
+            count += resumedActivities.size();
+        }
+        return count;
+    }
+
+    public int getResumedActivitiesCountOnDisplay(int displayId) {
+        final ArrayList<String> resumedActivitiesOnDisplay =
+                mResumedActivitiesInRootTasks.get(displayId, new ArrayList<>());
+        return resumedActivitiesOnDisplay.size();
     }
 
     public int getResumedActivitiesCountInPackage(String packageName) {

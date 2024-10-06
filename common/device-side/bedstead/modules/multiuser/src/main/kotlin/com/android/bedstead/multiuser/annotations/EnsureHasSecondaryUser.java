@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.multiuser.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
-import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
+import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 
-import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.multiuser.annotations.meta.EnsureHasUserAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
 
 import java.lang.annotation.ElementType;
@@ -28,38 +30,26 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method should run on an additional user.
+ * Mark that a test method should run on a device which has a secondary user.
  *
- * <p>Your test configuration should be such that this test is only run where a secondary user is
- * created, the test is being run on that user, and that user is not the initial user.
- *
- * <p>Optionally, you can guarantee that these methods do not run outside of an additional user by
- * using {@code Devicestate}.
- *
- * <p>This requires the use of {@link com.android.bedstead.harrier.BedsteadJUnit4}. This will
- * replace this annotation with the {@code RequireRunOn} annotation for the additional user.
- *
- * <p>Note that in general this requires the test runs on a secondary user. On headless system user
- * devices, this will require running on a second secondary user.
- *
- * <p>This annotation by default opts a test into multi-user presubmit. New tests should also be
- * annotated {@link Postsubmit} until they are shown to meet the multi-user presubmit
- * requirements.
- * TODO(b/334025286) move it into multi-user module
+ * <p>Your test configuration may be configured so that this test is only run on a device which
+ * has a secondary user that is not the current user. Otherwise, you can use {@code Devicestate}
+ * to ensure that the device enters the correct state for the method. If there is not already a
+ * secondary user on the device, and the device does not support creating additional users, then
+ * the test will be skipped.
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequiresBedsteadJUnit4
+@EnsureHasUserAnnotation("android.os.usertype.full.SECONDARY")
 @UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
-// Note that additional annotations added here will not be applied by default due to special
-// logic (for HSUM) inside BedsteadJUnit4#ANNOTATION_REPLACEMENTS
-public @interface RequireRunOnAdditionalUser {
+public @interface EnsureHasSecondaryUser {
+    /** Whether the instrumented test app should be installed in the secondary user. */
+    OptionalBoolean installInstrumentedApp() default ANY;
+
     /**
-     * Should we ensure that we are switched to the given user.
-     *
-     * <p>ANY will be treated as TRUE if no other annotation has forced a switch.
+     * Should we ensure that we are switched to the given user
      */
-    OptionalBoolean switchedToUser() default TRUE;
+    OptionalBoolean switchedToUser() default ANY;
 
      /**
      * Priority sets the order that annotations will be resolved.
@@ -72,5 +62,6 @@ public @interface RequireRunOnAdditionalUser {
      *
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
-    int priority() default REQUIRE_RUN_ON_PRECEDENCE;
+    // Must be before RequireRunOn to ensure users exist
+    int priority() default REQUIRE_RUN_ON_PRECEDENCE - 1;
 }

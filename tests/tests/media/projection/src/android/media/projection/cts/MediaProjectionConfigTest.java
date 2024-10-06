@@ -21,7 +21,7 @@ import static com.google.common.truth.Truth.assertThat;
 import android.media.projection.MediaProjectionConfig;
 
 import com.android.compatibility.common.util.ApiTest;
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ import org.junit.Test;
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionConfigTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionConfigTest {
 
     @ApiTest(apis = "android.media.projection.MediaProjectionConfig#createConfigForDefaultDisplay")

@@ -4566,15 +4566,16 @@
     <option name="compatibility:include-filter" value="MctsMediaV2TestCases android.mediav2.cts.CodecDecoderDetachedSurfaceTest#testDetachOutputSurface[39_c2.android.hevc.decoder_video/hevc_5]"/>
     <option name="compatibility:include-filter" value="MctsMediaV2TestCases android.mediav2.cts.CodecDecoderTest#testReconfigure[3_c2.android.flac.decoder_audio/flac]"/>
     <!-- MicrodroidHostTestCases -->
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#UpgradedPackageIsAcceptedWithSecretkeeper[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#protectedVmRunsPvmfw[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidBoots[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidRamUsage[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTelemetryPushedAtoms[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedUponUserspaceCrash[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashConfig[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashPayload[protectedVm=true,gki=null]"/>
-    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreNotGeneratedIfNotExportedUponUserspaceCrash[protectedVm=true,gki=null]"/>
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#UpgradedPackageIsAcceptedWithSecretkeeper" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#protectedVmRunsPvmfw_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidBoots_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testMicrodroidRamUsage_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTelemetryPushedAtoms_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedUponUserspaceCrash_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashConfig_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreGeneratedWithCrashPayload_protectedVm_true_gki_null" />
+    <option name="compatibility:include-filter" value="MicrodroidHostTestCases com.android.microdroid.test.MicrodroidHostTests#testTombstonesAreNotGeneratedIfNotExportedUponUserspaceCrash_protectedVm_true_gki_null" />
+
     <!-- MicrodroidTestApp -->
     <option name="compatibility:include-filter" value="MicrodroidTestApp com.android.microdroid.test.MicrodroidCapabilitiesTest#supportForProtectedOrNonProtectedVms"/>
     <option name="compatibility:include-filter" value="MicrodroidTestApp com.android.microdroid.test.MicrodroidTests#accessToCdisIsRestricted[protectedVm=false,gki=null]"/>
