@@ -19,6 +19,7 @@ import android.autofillservice.cts.R;
 import android.autofillservice.cts.testcore.OneTimeTextWatcher;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.view.autofill.AutofillManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,7 +30,7 @@ import android.widget.TextView;
  */
 public class SimpleSaveActivity extends AbstractAutoFillActivity {
 
-    private static final String TAG = "SimpleSaveActivity";
+    private static final String TAG = "AutofillSimpleSaveActivity";
 
     public static final String ID_LABEL = "label";
     public static final String ID_INPUT = "input";
@@ -44,6 +45,7 @@ public class SimpleSaveActivity extends AbstractAutoFillActivity {
     public EditText mPassword;
     public Button mCancel;
     public Button mCommit;
+    public Button mInvisibleButton;
 
     private boolean mAutoCommit = true;
     private boolean mClearFieldsOnSubmit = false;
@@ -67,9 +69,11 @@ public class SimpleSaveActivity extends AbstractAutoFillActivity {
         mPassword = findViewById(R.id.password);
         mCancel = findViewById(R.id.cancel);
         mCommit = findViewById(R.id.commit);
+        mInvisibleButton = findViewById(R.id.make_views_invisible);
 
         mCancel.setOnClickListener((v) -> getAutofillManager().cancel());
         mCommit.setOnClickListener((v) -> onCommit());
+        mInvisibleButton.setOnClickListener((v) -> makeEditTextViewsInvisible());
     }
 
     @Override
@@ -88,6 +92,14 @@ public class SimpleSaveActivity extends AbstractAutoFillActivity {
         } else {
             Log.d(TAG, "onCommit(): NOT calling AFM.commit()");
         }
+    }
+
+    private void makeEditTextViewsInvisible() {
+        // Make the views invisible
+        Log.v(TAG, "makeEditTextViewsInvisible() onClick()");
+        mInput.setVisibility(View.INVISIBLE);
+        mPassword.setVisibility(View.INVISIBLE);
+        Log.v(TAG, "makeEditTextViewsInvisible() username and password views are invisible");
     }
 
     private void resetFields() {

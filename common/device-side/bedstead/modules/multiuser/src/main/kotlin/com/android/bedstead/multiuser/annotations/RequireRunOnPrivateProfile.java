@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The Android Open Source Project
+ * Copyright (C) 2023 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package com.android.bedstead.harrier.annotations;
+package com.android.bedstead.multiuser.annotations;
 
 import static com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.REQUIRE_RUN_ON_PRECEDENCE;
-import static com.android.bedstead.nene.packages.CommonPackages.FEATURE_DEVICE_ADMIN;
 import static com.android.bedstead.nene.types.OptionalBoolean.ANY;
 import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 
-import com.android.bedstead.harrier.annotations.enterprise.AdditionalQueryParameters;
+import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence;
+import com.android.bedstead.harrier.annotations.UsesAnnotationExecutor;
+import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnotation;
 import com.android.bedstead.nene.types.OptionalBoolean;
-import com.android.queryable.annotations.Query;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,54 +31,21 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Mark that a test method should run within a work profile.
+ * Mark that a test method should run within a private profile.
  *
- * <p>Your test configuration should be such that this test is only run where a work profile is
+ * <p>Your test configuration should be such that this test is only run where a private profile is
  * created and the test is being run within that user.
  *
- * <p>Optionally, you can guarantee that these methods do not run outside of a work
+ * <p>Optionally, you can guarantee that these methods do not run outside of a private
  * profile by using {@code Devicestate}.
- *
- * <p>This annotation by default opts a test into multi-user presubmit. New tests should also be
- * annotated {@link Postsubmit} until they are shown to meet the multi-user presubmit requirements.
  */
 @Target({ElementType.METHOD, ElementType.ANNOTATION_TYPE, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@RequireFeature(FEATURE_DEVICE_ADMIN)
-@UsesAnnotationExecutor(UsesAnnotationExecutor.ENTERPRISE)
-public @interface RequireRunOnWorkProfile {
+@RequireNotHeadlessSystemUserMode(reason = "Requires full system user")
+@RequireRunOnProfileAnnotation("android.os.usertype.profile.PRIVATE")
+@UsesAnnotationExecutor(UsesAnnotationExecutor.MULTI_USER)
+public @interface RequireRunOnPrivateProfile {
     OptionalBoolean installInstrumentedAppInParent() default ANY;
-
-    String DEFAULT_KEY = "profileOwner";
-
-    /**
-     * The key used to identify the profile owner.
-     *
-     * <p>This can be used with {@link AdditionalQueryParameters} to modify the requirements for
-     * the DPC. */
-    String dpcKey() default DEFAULT_KEY;
-
-    /**
-     * Requirements for the Profile Owner.
-     *
-     * <p>Defaults to the default version of RemoteDPC.
-     */
-    Query dpc() default @Query();
-
-    /**
-     * Whether the profile owner's DPC should be returned by calls to {@code Devicestate#dpc()}.
-     *
-     * <p>Only one device policy controller per test should be marked as primary.
-     */
-    boolean dpcIsPrimary() default false;
-
-    /** Whether the work profile device will be in COPE mode. */
-    boolean isOrganizationOwned() default false;
-
-    /**
-     * Affiliation ids to be set for the profile owner.
-     */
-    String[] affiliationIds() default {};
 
     /**
      * Should we ensure that we are switched to the parent of the profile.
@@ -87,7 +54,7 @@ public @interface RequireRunOnWorkProfile {
      */
     OptionalBoolean switchedToParentUser() default TRUE;
 
-     /**
+    /**
      * Priority sets the order that annotations will be resolved.
      *
      * <p>Annotations with a lower priority will be resolved before annotations with a higher
@@ -99,6 +66,4 @@ public @interface RequireRunOnWorkProfile {
      * <p>Priority can be set to a {@link AnnotationPriorityRunPrecedence} constant, or to any {@link int}.
      */
     int priority() default REQUIRE_RUN_ON_PRECEDENCE;
-
-    String PROFILE_TYPE = "android.os.usertype.profile.MANAGED";
 }

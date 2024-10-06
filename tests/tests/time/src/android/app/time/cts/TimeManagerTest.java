@@ -26,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.app.Instrumentation;
@@ -55,6 +56,7 @@ import android.os.UserHandle;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.AdoptShellPermissionsRule;
+import com.android.compatibility.common.util.UserHelper;
 
 import org.junit.After;
 import org.junit.Before;
@@ -90,6 +92,8 @@ public class TimeManagerTest {
     private Context mContext;
     private TimeManager mTimeManager;
 
+    private UserHelper mUserHelper;
+
     @Before
     public void before() throws Exception {
         Instrumentation instrumentation = InstrumentationRegistry.getInstrumentation();
@@ -108,6 +112,8 @@ public class TimeManagerTest {
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
         mTimeManager = mContext.getSystemService(TimeManager.class);
         assertNotNull(mTimeManager);
+
+        mUserHelper = new UserHelper(mContext);
 
         // Avoid running tests when device policy doesn't allow user configuration. If this needs to
         // pass then tests will become more complicated or separate cases broken out.
@@ -308,6 +314,11 @@ public class TimeManagerTest {
      */
     @Test
     public void testLocationManagerAffectsTimeZoneCapabilities() throws Exception {
+        // TODO(b/369263839): Remove this assumption once b/369263839 is fixed.
+        // Skipping for visible background users for now due to b/369263839.
+        assumeFalse("Configuration changes are not properly tracked when MLS is modified "
+                + "on a visible background user", mUserHelper.isVisibleBackgroundUser());
+
         AtomicInteger listenerTriggerCount = new AtomicInteger(0);
         TimeManager.TimeZoneDetectorListener listener = listenerTriggerCount::incrementAndGet;
 
@@ -468,6 +479,11 @@ public class TimeManagerTest {
 
     @Test
     public void testSetManualTime() throws Exception {
+        // Skipping for visible background users as DISALLOW_CONFIG_DATE_TIME UserRestriction
+        // is set on a visible background user.
+        assumeFalse("Visible background user is not allowed to config date/time",
+                mUserHelper.isVisibleBackgroundUser());
+
         TimeCapabilitiesAndConfig timeCapabilitiesAndConfig =
                 mTimeManager.getTimeCapabilitiesAndConfig();
         TimeCapabilities capabilities = timeCapabilitiesAndConfig.getCapabilities();
@@ -546,6 +562,11 @@ public class TimeManagerTest {
 
     @Test
     public void testSetManualTimeZone() throws Exception {
+        // Skipping for visible background users as DISALLOW_CONFIG_DATE_TIME UserRestriction
+        // is set on a visible background user.
+        assumeFalse("Visible background user is not allowed to config date/time",
+                mUserHelper.isVisibleBackgroundUser());
+
         TimeZoneCapabilitiesAndConfig timeZoneCapabilitiesAndConfig =
                 mTimeManager.getTimeZoneCapabilitiesAndConfig();
         TimeZoneCapabilities capabilities = timeZoneCapabilitiesAndConfig.getCapabilities();

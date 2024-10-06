@@ -31,7 +31,6 @@ import static org.junit.Assume.assumeTrue;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.ActivityOptions;
 import android.content.Context;
 import android.content.Intent;
@@ -61,7 +60,7 @@ import android.window.WindowInfosListenerForTest.WindowInfo;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.platform.app.InstrumentationRegistry;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import org.junit.After;
 import org.junit.Before;
@@ -87,7 +86,7 @@ import java.util.function.Supplier;
  * <p>Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionMirroringTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionMirroringTest {
     private static final String TAG = "MediaProjectionMirroringTest-FOO";
     private static final int SCREENSHOT_TIMEOUT_MS = 1000;
@@ -136,7 +135,7 @@ public class MediaProjectionMirroringTest {
             mContext.getPackageManager().revokeRuntimePermission(
                     mContext.getPackageName(),
                     android.Manifest.permission.SYSTEM_ALERT_WINDOW,
-                    new UserHandle(ActivityManager.getCurrentUser()));
+                    new UserHandle(mContext.getUserId()));
         });
         mMediaProjection = null;
         if (DEBUG_MODE) {

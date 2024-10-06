@@ -52,7 +52,6 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
@@ -108,7 +107,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testGetActiveSessions() throws Exception {
         assertThrows("Expected security exception for unauthorized call to getActiveSessions",
                 SecurityException.class,
@@ -118,7 +116,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testGetMediaKeyEventSession_throwsSecurityException() {
         assertThrows("Expected security exception for call to getMediaKeyEventSession",
                 SecurityException.class,
@@ -127,7 +124,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testGetMediaKeyEventSessionPackageName_throwsSecurityException() {
         assertThrows("Expected security exception for call to getMediaKeyEventSessionPackageName",
                 SecurityException.class,
@@ -136,7 +132,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testOnMediaKeyEventSessionChangedListener() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -167,7 +162,6 @@ public class MediaSessionManagerTest {
     @Ignore // TODO(b/291800179): Diagnose flakiness and re-enable.
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testOnMediaKeyEventSessionChangedListener_whenSessionIsReleased() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -195,7 +189,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testOnMediaKeyEventSessionChangedListener_noSession_passesEmptyPackageAndNullToken()
             throws InterruptedException {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
@@ -230,7 +223,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testOnMediaKeyEventSessionChangedListener_noPermission_throwsSecurityException() {
         MediaKeyEventSessionListener keyEventSessionListener = new MediaKeyEventSessionListener();
         assertThrows(
@@ -244,7 +236,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testOnMediaKeyEventDispatchedListener() throws Exception {
         getInstrumentation().getUiAutomation().adoptShellPermissionIdentity(
                 Manifest.permission.MEDIA_CONTENT_CONTROL,
@@ -289,7 +280,6 @@ public class MediaSessionManagerTest {
     @Test
     @UiThreadTest
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testAddOnActiveSessionsListener() throws Exception {
         assertThrows("Expected NPE for call to addOnActiveSessionsChangedListener",
                 NullPointerException.class,
@@ -317,7 +307,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testSetOnVolumeKeyLongPressListener() throws Exception {
         Context context = getInstrumentation().getTargetContext();
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK)
@@ -359,7 +348,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testSetOnMediaKeyListener() throws Exception {
         Handler handler = createHandlerWithScheduledLooperQuit();
         MediaSession session = new MediaSession(getInstrumentation().getTargetContext(), TAG);
@@ -422,7 +410,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testRemoteUserInfo() throws Exception {
         final Context context = getInstrumentation().getTargetContext();
         Handler handler = createHandlerWithScheduledLooperQuit();
@@ -595,7 +582,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testCustomClassConfigValuesAreValid() throws Exception {
         Context context = getInstrumentation().getTargetContext();
         String customMediaKeyDispatcher = context.getString(
@@ -617,7 +603,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testIsTrustedForMediaControl_withEnabledNotificationListener() throws Exception {
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {
@@ -631,7 +616,6 @@ public class MediaSessionManagerTest {
 
     @Test
     @FrameworkSpecificTest
-    @NonMainlineTest
     public void testIsTrustedForMediaControl_withInvalidUid() throws Exception {
         List<String> packageNames = getEnabledNotificationListenerPackages();
         for (String packageName : packageNames) {

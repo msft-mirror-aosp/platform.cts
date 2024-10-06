@@ -39,6 +39,7 @@ import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.UiAutomation;
 import android.companion.AssociationInfo;
+import android.companion.AssociationRequest;
 import android.companion.virtual.VirtualDeviceManager;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtual.VirtualDeviceParams;
@@ -106,7 +107,7 @@ public class VirtualDeviceRule implements TestRule {
             new ComponentName("android", "com.android.internal.app.BlockedAppStreamingActivity");
 
     private RuleChain mRuleChain;
-    private final FakeAssociationRule mFakeAssociationRule = new FakeAssociationRule();
+    private final FakeAssociationRule mFakeAssociationRule;
     private final VirtualDeviceTrackerRule mTrackerRule = new VirtualDeviceTrackerRule();
 
     private final Context mContext = getInstrumentation().getTargetContext();
@@ -116,17 +117,25 @@ public class VirtualDeviceRule implements TestRule {
 
     /** Creates a rule with the required permissions for creating virtual devices and displays. */
     public static VirtualDeviceRule createDefault() {
-        return new VirtualDeviceRule(REQUIRED_PERMISSIONS);
+        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
+                REQUIRED_PERMISSIONS);
+    }
+
+    /** Creates a rule with an explicit device profile. */
+    public static VirtualDeviceRule withDeviceProfile(String deviceProfile) {
+        return new VirtualDeviceRule(deviceProfile, REQUIRED_PERMISSIONS);
     }
 
     /** Creates a rule with any additional permission needed for the specific test. */
     public static VirtualDeviceRule withAdditionalPermissions(String... additionalPermissions) {
-        return new VirtualDeviceRule(Stream.concat(
-                Arrays.stream(REQUIRED_PERMISSIONS), Arrays.stream(additionalPermissions))
-                .toArray(String[]::new));
+        return new VirtualDeviceRule(AssociationRequest.DEVICE_PROFILE_APP_STREAMING,
+                Stream.concat(Arrays.stream(REQUIRED_PERMISSIONS),
+                                Arrays.stream(additionalPermissions))
+                        .toArray(String[]::new));
     }
 
-    private VirtualDeviceRule(String... permissions) {
+    private VirtualDeviceRule(String deviceProfile, String... permissions) {
+        mFakeAssociationRule = new FakeAssociationRule(deviceProfile);
         mRuleChain = RuleChain
                 .outerRule(mFakeAssociationRule)
                 .around(DeviceFlagsValueProvider.createCheckFlagsRule())
