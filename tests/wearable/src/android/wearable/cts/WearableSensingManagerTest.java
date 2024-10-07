@@ -94,7 +94,7 @@ public class WearableSensingManagerTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        assumeFalse(isWatch(mContext));  // WearableSensingManagerService is not supported on WearOS
+        assumeFalse(isWatch(mContext)); // WearableSensingManagerService is not supported on WearOS
         mWearableSensingManager =
                 (WearableSensingManager)
                         mContext.getSystemService(Context.WEARABLE_SENSING_SERVICE);
@@ -114,30 +114,37 @@ public class WearableSensingManagerTest {
 
     @Test
     public void noAccessWhenAttemptingprovideDataStream() {
-        assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
-                Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
 
         // Test non system app throws SecurityException
-        assertThrows("no access to provideDataStream from non system component",
+        assertThrows(
+                "no access to provideDataStream from non system component",
                 SecurityException.class,
-                () -> mWearableSensingManager.provideDataStream(
-                        mPipe[0], EXECUTOR, (result) -> {}));
+                () ->
+                        mWearableSensingManager.provideDataStream(
+                                mPipe[0], EXECUTOR, (result) -> {}));
     }
 
     @Test
     public void noAccessWhenAttemptingProvideData() {
-        assertEquals(PackageManager.PERMISSION_DENIED, mContext.checkCallingOrSelfPermission(
-                Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
 
         // Test non system app throws SecurityException
-        assertThrows("no access to provideData from non system component",
+        assertThrows(
+                "no access to provideData from non system component",
                 SecurityException.class,
-                () -> mWearableSensingManager.provideData(new PersistableBundle(), null,
-                        EXECUTOR, (result) -> {}));
+                () ->
+                        mWearableSensingManager.provideData(
+                                new PersistableBundle(), null, EXECUTOR, (result) -> {}));
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
     public void noAccessWhenAttemptingProvideConnection() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -158,7 +165,6 @@ public class WearableSensingManagerTest {
     // process from the test runner.
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void noAccessWhenAttemptingRegisterDataRequestObserver() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -178,7 +184,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void noAccessWhenAttemptingUnregisterDataRequestObserver() {
         assertEquals(
                 PackageManager.PERMISSION_DENIED,
@@ -209,8 +214,11 @@ public class WearableSensingManagerTest {
         assertThrows(
                 "no access to startHotwordRecognition from non system component",
                 SecurityException.class,
-                () -> mWearableSensingManager.startHotwordRecognition(
-                        new ComponentName("my.package", "my.Class"), EXECUTOR, (result) -> {}));
+                () ->
+                        mWearableSensingManager.startHotwordRecognition(
+                                new ComponentName("my.package", "my.Class"),
+                                EXECUTOR,
+                                (result) -> {}));
     }
 
     @Test
@@ -232,9 +240,6 @@ public class WearableSensingManagerTest {
     // CtsWearableSensingServiceDeviceTest
 
     @Test
-    @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API,
-            Flags.FLAG_ENABLE_UNSUPPORTED_OPERATION_STATUS_CODE})
     public void registerDataRequestObserver_defaultWssImpl_receivesUnsupportedOperationStatus()
             throws Exception {
         getInstrumentation()
@@ -259,7 +264,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void registerDataRequestObserver_withPermission_success() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -285,7 +289,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void
             registerDataRequestObserver_withPermission_registersListenerToWearableSensingService() {
         getInstrumentation()
@@ -300,7 +303,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void registerDataRequestObserver_withPermission_canRegisterTwoObservers() {
         getInstrumentation()
                 .getUiAutomation()
@@ -326,7 +328,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void
             registerDataRequestObserver_withPermission_sendsPackageNameToWearableSensingService() {
         getInstrumentation()
@@ -342,9 +343,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API,
-            Flags.FLAG_ENABLE_UNSUPPORTED_OPERATION_STATUS_CODE})
     public void unregisterDataRequestObserver_defaultWssImpl_receivesUnsupportedOperationStatus()
             throws Exception {
         getInstrumentation()
@@ -371,7 +369,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void unregisterDataRequestObserver_withPermission_unregistersObserverFromWSS() {
         getInstrumentation()
                 .getUiAutomation()
@@ -393,7 +390,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void unregisterDataRequestObserver_withPermission_receivesSuccessStatus()
             throws Exception {
         getInstrumentation()
@@ -423,7 +419,6 @@ public class WearableSensingManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_DATA_REQUEST_OBSERVER_API)
     public void
             unregisterDataRequestObserver_withPermission_notPreviouslyRegistered_doesNotCallWSS() {
         getInstrumentation()
@@ -441,9 +436,7 @@ public class WearableSensingManagerTest {
     // android.voiceinteraction.cts.HotwordDetectionServiceBasicTest so that we can test their
     // interactions with voice interaction components
     @Test
-    @RequiresFlagsEnabled({
-            Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API,
-            Flags.FLAG_ENABLE_UNSUPPORTED_OPERATION_STATUS_CODE})
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_HOTWORD_WEARABLE_SENSING_API)
     public void stopHotwordRecognition_defaultWssImpl_receivesUnsupportedOperationStatus()
             throws Exception {
         getInstrumentation()

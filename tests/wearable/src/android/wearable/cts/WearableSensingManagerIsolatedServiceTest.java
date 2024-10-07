@@ -43,7 +43,6 @@ import static org.junit.Assume.assumeTrue;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import android.Manifest;
-import android.app.wearable.Flags;
 import android.app.wearable.WearableSensingManager;
 import android.companion.AssociationInfo;
 import android.companion.AssociationRequest;
@@ -58,9 +57,9 @@ import android.os.PersistableBundle;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
+import android.service.wearable.WearableSensingService;
 import android.util.Log;
 
 import androidx.test.InstrumentationRegistry;
@@ -133,7 +132,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     @Before
     public void setUp() throws Exception {
         mContext = getInstrumentation().getContext();
-        assumeFalse(isWatch(mContext));  // WearableSensingManagerService is not supported on WearOS
+        assumeFalse(isWatch(mContext)); // WearableSensingManagerService is not supported on WearOS
         // For an unknown reason, the CDM onTransportsChanged listener is not called on TV builds
         assumeFalse(isTelevision(mContext));
         // Sleep for 2 seconds to avoid flakiness until b/326256152 is fixed. The bug can cause
@@ -177,9 +176,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
-    public void provideConnection_canReceiveStatusFromWss()
-            throws Exception {
+    public void provideConnection_canReceiveStatusFromWss() throws Exception {
         AtomicInteger statusCodeRef = new AtomicInteger(WearableSensingManager.STATUS_UNKNOWN);
         CountDownLatch statusCodeLatch = new CountDownLatch(1);
 
@@ -196,9 +193,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
-    public void provideConnection_otherEndAttachedToCdm_canReceiveDataInWss()
-            throws Exception {
+    public void provideConnection_otherEndAttachedToCdm_canReceiveDataInWss() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -221,10 +216,7 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
-    public void
-            provideConnection_otherEndAttachedToCdm_canReceiveDataFromWss()
-                    throws Exception {
+    public void provideConnection_otherEndAttachedToCdm_canReceiveDataFromWss() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -244,10 +236,8 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
-    public void
-            provideConnection_wearableStreamClosedThenSendDataFromWss_channelErrorStatus()
-                    throws Exception {
+    public void provideConnection_wearableStreamClosedThenSendDataFromWss_channelErrorStatus()
+            throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -279,13 +269,8 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API,
-        Flags.FLAG_ENABLE_RESTART_WSS_PROCESS
-    })
-    public void
-            provideConnection_wearableStreamClosedThenSendDataFromWss_restartWssProcess()
-                    throws Exception {
+    public void provideConnection_wearableStreamClosedThenSendDataFromWss_restartWssProcess()
+            throws Exception {
         getInstrumentation()
                 .getUiAutomation()
                 .adoptShellPermissionIdentity(
@@ -312,7 +297,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API)
     public void provideConnection_wssStreamClosed_channelErrorStatus() throws Exception {
         getInstrumentation()
                 .getUiAutomation()
@@ -344,10 +328,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({
-        Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API,
-        Flags.FLAG_ENABLE_RESTART_WSS_PROCESS
-    })
     public void provideConnection_restartsWssProcess() throws Exception {
         // The first call of provideConnection may not restart the process,
         // so we call once first, then set up and call it again
@@ -383,7 +363,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API})
     public void openFileInputFromWss_afterProvideConnection_canReadFile() throws Exception {
         String filename = "fileFromProvideConnection";
         File file = new File(mTestDirectory, filename);
@@ -424,7 +403,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API})
     public void openFileInputFromWss_afterProvideConnection_canReadMultipleFiles()
             throws Exception {
         String filename1 = "multipleFilesFromProvideConnection1";
@@ -475,7 +453,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API})
     public void
             openFileInputFromWss_afterProvideConnection_readNonExistentFile_FileNotFoundException()
                     throws Exception {
@@ -518,7 +495,6 @@ public class WearableSensingManagerIsolatedServiceTest {
     }
 
     @Test
-    @RequiresFlagsEnabled({Flags.FLAG_ENABLE_PROVIDE_WEARABLE_CONNECTION_API})
     public void openFileInputFromWss_afterProvideConnection_cannotWriteToFile() throws Exception {
         String filename = "fileToTryWritingToFromProvideConnection";
         File file = new File(mTestDirectory, filename);
@@ -621,7 +597,8 @@ public class WearableSensingManagerIsolatedServiceTest {
                 new CompanionDeviceManager.Callback() {
                     @Override
                     public void onAssociationCreated(AssociationInfo associationInfo) {
-                        Log.d(TAG,
+                        Log.d(
+                                TAG,
                                 "#onAssociationCreated, associationId: " + associationInfo.getId());
                         associationIdRef.set(associationInfo.getId());
                         mCompanionDeviceManager.addOnTransportsChangedListener(
