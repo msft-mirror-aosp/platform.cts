@@ -313,7 +313,6 @@ public final class DeviceState extends HarrierRule {
         String testName = description.getMethodName();
 
         Log.d(LOG_TAG, "Preparing state for test " + testName);
-        mLocator.prepareTestState();
         testApps().snapshot();
         Tags.clearTags();
         Tags.addTag(Tags.USES_DEVICESTATE);
@@ -336,6 +335,7 @@ public final class DeviceState extends HarrierRule {
                 .collect(Collectors.toList());
         prepareExternalRule(description, testRulesExecutorAnnotations);
 
+        mLocator.prepareTestState();
         Log.d(LOG_TAG, "Finished preparing state for test " + testName);
     }
 

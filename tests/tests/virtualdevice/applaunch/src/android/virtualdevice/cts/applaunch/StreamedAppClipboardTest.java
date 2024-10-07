@@ -16,7 +16,6 @@
 
 package android.virtualdevice.cts.applaunch;
 
-import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
 import static android.Manifest.permission.READ_CLIPBOARD_IN_BACKGROUND;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_CUSTOM;
 import static android.companion.virtual.VirtualDeviceParams.DEVICE_POLICY_DEFAULT;
@@ -85,7 +84,6 @@ public class StreamedAppClipboardTest {
 
     @Rule
     public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            ADD_ALWAYS_UNLOCKED_DISPLAY,
             READ_CLIPBOARD_IN_BACKGROUND);
 
     private final ArrayList<DeviceEnvironment> mDeviceEnvironments = new ArrayList<>();
