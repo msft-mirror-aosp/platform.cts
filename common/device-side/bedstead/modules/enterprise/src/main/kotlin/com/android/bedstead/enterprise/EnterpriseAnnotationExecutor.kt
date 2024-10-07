@@ -29,13 +29,16 @@ import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.enterprise.annotations.MostImportantCoexistenceTest
 import com.android.bedstead.enterprise.annotations.MostRestrictiveCoexistenceTest
 import com.android.bedstead.enterprise.annotations.RequireHasPolicyExemptApps
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.AnnotationExecutor
 import com.android.bedstead.harrier.BedsteadServiceLocator
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UsersComponent
 import com.android.bedstead.testapp.TestAppProvider
+import com.android.bedstead.testapps.TestAppsComponent
 
+/**
+ * [AnnotationExecutor] for enterprise annotations
+ */
 @Suppress("unused")
 class EnterpriseAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
