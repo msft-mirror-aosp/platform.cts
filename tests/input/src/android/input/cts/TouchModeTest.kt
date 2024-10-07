@@ -38,12 +38,12 @@ import android.view.MotionEvent.ACTION_DOWN
 import android.view.MotionEvent.ACTION_UP
 import android.view.View
 import android.view.ViewTreeObserver
-import android.virtualdevice.cts.common.VirtualDeviceRule
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
 import com.android.compatibility.common.util.UserHelper
@@ -72,9 +72,6 @@ class TouchModeTest {
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
 
-    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
-    @get:Rule
-    val virtualDeviceRule = VirtualDeviceRule.createDefault()!!
     @get:Rule
     val activityRule = ActivityScenarioRule<Activity>(Activity::class.java)
     private lateinit var activity: Activity
@@ -82,6 +79,12 @@ class TouchModeTest {
     private lateinit var displayManager: DisplayManager
     private lateinit var userHelper: UserHelper
     private var secondScenario: ActivityScenario<Activity>? = null
+
+    @Rule
+    fun permissionsRule() = AdoptShellPermissionsRule(
+            instrumentation.getUiAutomation(),
+            Manifest.permission.ADD_TRUSTED_DISPLAY
+    )
 
     @Before
     fun setUp() {

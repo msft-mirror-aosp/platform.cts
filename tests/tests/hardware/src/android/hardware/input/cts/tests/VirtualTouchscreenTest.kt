@@ -24,7 +24,6 @@ import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -154,8 +153,7 @@ class VirtualTouchscreenTest : VirtualDeviceTestCase() {
         val inputSize = 1f
         val x = 50f
         val y = 50f
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
+        mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {
                 mVirtualTouchscreen.sendTouchEvent(
                     VirtualTouchEvent.Builder()

@@ -16,45 +16,68 @@
 
 package com.android.cts.input
 
+import android.Manifest.permission.CREATE_VIRTUAL_DEVICE
+import android.Manifest.permission.INJECT_EVENTS
+import android.companion.AssociationInfo
+import android.companion.virtual.VirtualDeviceManager
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice
+import android.companion.virtual.VirtualDeviceParams
+import android.content.Context
 import android.graphics.Point
 import android.hardware.input.VirtualMouse
 import android.hardware.input.VirtualMouseConfig
 import android.hardware.input.VirtualMouseRelativeEvent
 import android.view.Display
 import androidx.test.platform.app.InstrumentationRegistry
+import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 
 enum class TestPointerDevice {
 
     MOUSE {
+        private lateinit var virtualDevice: VirtualDevice
         private lateinit var virtualMouse: VirtualMouse
 
         override fun setUp(
-            virtualDevice: VirtualDevice,
-            display: Display
+            context: Context,
+            display: Display,
+            associationInfo: AssociationInfo
         ) {
-            virtualMouse =
-                virtualDevice.createVirtualMouse(
-                    VirtualMouseConfig.Builder()
+            val virtualDeviceManager =
+                context.getSystemService(VirtualDeviceManager::class.java)!!
+            runWithShellPermissionIdentity({
+                virtualDevice =
+                    virtualDeviceManager.createVirtualDevice(associationInfo.id,
+                        VirtualDeviceParams.Builder().build())
+                virtualMouse =
+                    virtualDevice.createVirtualMouse(
+                        VirtualMouseConfig.Builder()
                         .setVendorId(TEST_VENDOR_ID)
                         .setProductId(TEST_PRODUCT_ID)
                         .setInputDeviceName("Pointer Icon Test Mouse")
                         .setAssociatedDisplayId(display.displayId).build())
+            }, CREATE_VIRTUAL_DEVICE, INJECT_EVENTS)
         }
 
         override fun hoverMove(dx: Int, dy: Int) {
-            virtualMouse.sendRelativeEvent(
-                VirtualMouseRelativeEvent.Builder()
-                    .setRelativeX(dx.toFloat())
-                    .setRelativeY(dy.toFloat())
-                    .build()
-            )
+            runWithShellPermissionIdentity({
+                virtualMouse.sendRelativeEvent(
+                    VirtualMouseRelativeEvent.Builder()
+                        .setRelativeX(dx.toFloat())
+                        .setRelativeY(dy.toFloat())
+                        .build()
+                )
+            }, CREATE_VIRTUAL_DEVICE)
         }
 
         override fun tearDown() {
-            if (this::virtualMouse.isInitialized) {
-                virtualMouse.close()
-            }
+            runWithShellPermissionIdentity({
+                if (this::virtualMouse.isInitialized) {
+                    virtualMouse.close()
+                }
+                if (this::virtualDevice.isInitialized) {
+                    virtualDevice.close()
+                }
+            }, CREATE_VIRTUAL_DEVICE)
         }
 
         override fun toString(): String = "MOUSE"
@@ -66,8 +89,9 @@ enum class TestPointerDevice {
 
         @Suppress("DEPRECATION")
         override fun setUp(
-            virtualDevice: VirtualDevice,
-            display: Display
+            context: Context,
+            display: Display,
+            associationInfo: AssociationInfo,
         ) {
             val instrumentation = InstrumentationRegistry.getInstrumentation()
             drawingTablet = UinputDrawingTablet(instrumentation, display)
@@ -98,8 +122,9 @@ enum class TestPointerDevice {
         private lateinit var touchpad: UinputTouchPad
 
         override fun setUp(
-            virtualDevice: VirtualDevice,
-            display: Display
+            context: Context,
+            display: Display,
+            associationInfo: AssociationInfo,
         ) {
             touchpad =
                 UinputTouchPad(
@@ -137,8 +162,9 @@ enum class TestPointerDevice {
     };
 
     abstract fun setUp(
-        virtualDevice: VirtualDevice,
+        context: Context,
         display: Display,
+        associationInfo: AssociationInfo,
     )
 
     abstract fun hoverMove(dx: Int, dy: Int)
