@@ -32,6 +32,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.os.SystemProperties;
 import android.provider.Settings;
 
 import com.android.compatibility.common.util.ApiTest;
@@ -48,6 +49,8 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     private PowerManager mPowerManager;
     private ContentResolver mContentResolver;
     private boolean mIsTv;
+    private boolean  mSupportsSleep =
+           SystemProperties.getInt("ro.config.device.sleep_mode_disabled", 0) != 1;
 
     @Before
     public void setUp() throws Exception {
@@ -90,8 +93,8 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     public void testKeepScreenOn_activityNotForeground_screenTurnsOff() {
         assumeFalse("TVs may start screen saver instead of turning screen off - skipping test",
                 mIsTv);
+        assumeSupportsSleep();
         setScreenOffTimeoutMs("500");
-
         launchActivity(TURN_SCREEN_ON_ACTIVITY);
         assertTrue(mPowerManager.isInteractive());
         try (BlockingBroadcastReceiver r = BlockingBroadcastReceiver.create(mContext,
@@ -124,8 +127,8 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
     @Test
     public void testKeepScreenOn_activityOnVirtualDisplayNotForeground_screenTurnsOff() {
         assumeTrue(supportsMultiDisplay());
+        assumeSupportsSleep();
         setScreenOffTimeoutMs("500");
-
         final WindowManagerState.DisplayContent newDisplay = createManagedVirtualDisplaySession()
                 .setSimulateDisplay(true).createDisplay();
         launchActivityOnDisplay(TURN_SCREEN_ON_ACTIVITY, newDisplay.mId);
@@ -136,6 +139,10 @@ public class KeepScreenOnTests extends MultiDisplayTestBase {
         }
         mWmState.waitAndAssertVisibilityGone(TURN_SCREEN_ON_ACTIVITY);
         assertFalse(mPowerManager.isInteractive());
+    }
+
+    private void assumeSupportsSleep() {
+        assumeTrue("Sleep mode is disabled - skipping test", mSupportsSleep);
     }
 
     private void setScreenOffTimeoutMs(String timeoutMs) {
