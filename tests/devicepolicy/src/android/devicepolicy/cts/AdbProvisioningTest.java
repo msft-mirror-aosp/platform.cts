@@ -17,14 +17,15 @@
 package android.devicepolicy.cts;
 
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import android.content.ComponentName;
 import android.stats.devicepolicy.EventId;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDpc;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.devicepolicy.DeviceOwner;
@@ -48,7 +49,7 @@ public final class AdbProvisioningTest {
     private static final ComponentName sComponentName = new ComponentName(
             RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX,
             "com.android.bedstead.testapp.BaseTestAppDeviceAdminReceiver");
-    private static final TestApp sRemoteDpcTestApp = sDeviceState.testApps().query()
+    private static final TestApp sRemoteDpcTestApp = testApps(sDeviceState).query()
             .wherePackageName().isEqualTo(RemoteDpc.REMOTE_DPC_APP_PACKAGE_NAME_OR_PREFIX)
             .get();
 

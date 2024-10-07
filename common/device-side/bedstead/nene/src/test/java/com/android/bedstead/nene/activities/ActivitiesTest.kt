@@ -21,6 +21,7 @@ import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.packages.ComponentReference
+import com.android.bedstead.testapps.testApps
 import com.android.queryable.queries.ActivityQuery.activity
 import com.android.queryable.queries.IntentFilterQuery.intentFilter
 import com.google.common.truth.Truth.assertThat
