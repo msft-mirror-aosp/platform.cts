@@ -17,6 +17,7 @@
 import logging
 import os.path
 
+import time
 import cv2
 from mobly import test_runner
 
@@ -38,6 +39,7 @@ _AVG_LUMINANCE_THRESH = 85
 
 _IMAGE_FORMATS_TO_CONSTANTS = (('yuv', 35), ('jpeg', 256))
 
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
 _X_STRING = 'x'
 
 
@@ -205,6 +207,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       req = capture_request_utils.auto_capture_request()
 
       logging.debug('Taking auto capture with night mode ON')
+      # Wait for tablet brightness to change
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       night_cap = self._take_capture(
           cam, req, out_surfaces)
       rgb_night_img = _convert_capture(night_cap, f'{file_stem}_night')
