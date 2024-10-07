@@ -39,11 +39,11 @@ import static org.mockito.Mockito.verify;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothQualityReport;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothStatusCodes;
+import android.bluetooth.test_utils.BlockingBluetoothAdapter;
 import android.bluetooth.test_utils.Permissions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -88,20 +88,18 @@ public class BluetoothAdapterTest {
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
-    private Context mContext;
-    private boolean mHasBluetooth;
+    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
+    private final boolean mHasBluetooth =
+            mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
 
     private BluetoothAdapter mAdapter;
 
     @Before
     public void setUp() {
-        mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mHasBluetooth =
-                mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH);
         if (mHasBluetooth) {
-            mAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
+            mAdapter = BlockingBluetoothAdapter.getAdapter();
             assertThat(mAdapter).isNotNull();
-            assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         }
     }
 
@@ -167,8 +165,8 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         for (int i = 0; i < 5; i++) {
-            assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-            assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+            assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
+            assertThat(BlockingBluetoothAdapter.enable()).isTrue();
         }
     }
 
@@ -176,7 +174,6 @@ public class BluetoothAdapterTest {
     public void getAddress() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         assertThrows(SecurityException.class, () -> mAdapter.getAddress());
 
         String address;
@@ -236,7 +233,7 @@ public class BluetoothAdapterTest {
             assertThat(mAdapter.getBondedDevices()).isNotNull();
         }
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mAdapter.getBondedDevices()).isEmpty();
     }
 
@@ -248,7 +245,7 @@ public class BluetoothAdapterTest {
             assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
                     .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
         }
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
             assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
                     .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
@@ -264,7 +261,7 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         // getRemoteDevice() should work even with Bluetooth disabled
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // test bad addresses
         assertThrows(IllegalArgumentException.class, () -> mAdapter.getRemoteDevice((String) null));
@@ -288,7 +285,7 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         // getRemoteLeDevice() should work even with Bluetooth disabled
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
 
         // test bad addresses
         assertThrows(
@@ -395,7 +392,7 @@ public class BluetoothAdapterTest {
                     .isEqualTo(BluetoothStatusCodes.SUCCESS);
             assertThat(mAdapter.getDiscoverableTimeout()).isEqualTo(minutes);
         }
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mAdapter.getDiscoverableTimeout()).isNull();
         assertThat(mAdapter.setDiscoverableTimeout(minutes))
                 .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
@@ -406,7 +403,7 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         // Verify return value if Bluetooth is not enabled
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mAdapter.getConnectionState()).isEqualTo(BluetoothProfile.STATE_DISCONNECTED);
     }
 
@@ -418,7 +415,7 @@ public class BluetoothAdapterTest {
         assertThrows(SecurityException.class, () -> mAdapter.getMostRecentlyConnectedDevices());
 
         // Verify return value if Bluetooth is not enabled
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mAdapter.getMostRecentlyConnectedDevices()).isEmpty();
     }
 
@@ -432,7 +429,7 @@ public class BluetoothAdapterTest {
             assertThat(mAdapter.getUuidsList()).isNotNull();
         }
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         assertThat(mAdapter.getUuidsList()).isEmpty();
     }
 
@@ -507,7 +504,7 @@ public class BluetoothAdapterTest {
         Permissions.enforceEachPermissions(
                 () -> mAdapter.clearBluetooth(), List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(BlockingBluetoothAdapter.disable(true)).isTrue();
         // Verify throws RuntimeException when trying to save sysprop for later (permission denied)
         assertThrows(RuntimeException.class, () -> mAdapter.clearBluetooth());
     }
