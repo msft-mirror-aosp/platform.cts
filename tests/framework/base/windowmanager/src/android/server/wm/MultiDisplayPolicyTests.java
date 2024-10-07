@@ -446,7 +446,11 @@ public class MultiDisplayPolicyTests extends MultiDisplayTestBase {
                 DEFAULT_DISPLAY);
         // Finish probing activity.
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
-
+        // Certain System UI components, such as CarLauncher,
+        // might launch default activities, potentially interfering
+        // with the test execution. Therefore, wait for any pending transitions:
+        mWmState.waitForAllNonHomeActivitiesToDestroyed();
+        mWmState.waitForAppTransitionIdleOnDisplay(DEFAULT_DISPLAY);
         tryCreatingAndRemovingDisplayWithActivity(false /* splitScreen */,
                 focusedStackWindowingMode);
     }

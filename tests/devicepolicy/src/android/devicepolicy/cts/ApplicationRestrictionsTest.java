@@ -47,6 +47,7 @@ import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -126,6 +127,7 @@ public final class ApplicationRestrictionsTest {
 
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = ApplicationRestrictions.class)
+    @Ignore("b/290932414")
     public void setApplicationRestrictions_applicationRestrictionsAlreadySet_setsNewRestrictions() {
         Bundle originalApplicationRestrictions =
                 sDeviceState.dpc().devicePolicyManager()

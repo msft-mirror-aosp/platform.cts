@@ -34,6 +34,8 @@ import android.content.pm.PackageInstaller.SessionParams.MODE_FULL_INSTALL
 import android.content.pm.PackageManager
 import android.support.test.uiautomator.By
 import android.support.test.uiautomator.UiDevice
+import android.support.test.uiautomator.UiScrollable
+import android.support.test.uiautomator.UiSelector
 import android.support.test.uiautomator.Until
 import androidx.core.content.FileProvider
 import androidx.test.InstrumentationRegistry
@@ -265,8 +267,25 @@ open class PackageInstallerTestBase {
      * @param resId The resource ID of the button to click
      */
     fun clickInstallerUIButton(resId: String) {
-        uiDevice.wait(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, resId)), TIMEOUT)
-                .click()
+        val startTime = System.currentTimeMillis()
+        while (startTime + TIMEOUT > System.currentTimeMillis()) {
+            try {
+                uiDevice.wait(Until.findObject(By.res(SYSTEM_PACKAGE_NAME, resId)), 1000).click()
+                return
+            } catch (ignore: Throwable) {
+                // Try scrolling a bit, button may become visible on smaller screens.
+                scrollForward()
+            }
+        }
+        Assert.fail("Failed to click the button: $resId")
+    }
+
+    private fun scrollForward() {
+        try {
+            UiScrollable(UiSelector().scrollable(true)).scrollForward()
+        } catch (ignored: Exception) {
+            // fails if container not scrollable
+        }
     }
 
     /**

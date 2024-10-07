@@ -35,6 +35,7 @@ java_test_host {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     data: [
         ":CtsAppSearchHostTestHelperA",
@@ -60,6 +61,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     manifest: "test-apps/AppSearchHostTestHelperA/AndroidManifest.xml",
     certificate: ":cts-appsearch-hosttest-helper-cert-a",
@@ -83,6 +85,7 @@ android_test_helper_app {
         "cts",
         "general-tests",
         "mts-appsearch",
+        "mcts-appsearch",
     ],
     manifest: "test-apps/AppSearchHostTestHelperB/AndroidManifest.xml",
     certificate: ":cts-appsearch-hosttest-helper-cert-b",

@@ -41,7 +41,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
     public void setUp() throws Exception {
         super.setUp();
 
-        if (shouldTestTelecom(mContext)) {
+        if (shouldTestTelecom(mContext) && TestUtils.hasTelephonyFeature(mContext)) {
             TestUtils.setCtsPhoneAccountSuggestionService(getInstrumentation(),
                     new ComponentName(mContext, CtsPhoneAccountSuggestionService.class));
             mTelecomManager.registerPhoneAccount(TestUtils.TEST_PHONE_ACCOUNT);
@@ -58,7 +58,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
 
     @Override
     public void tearDown() throws Exception {
-        if (shouldTestTelecom(mContext)) {
+        if (shouldTestTelecom(mContext) && TestUtils.hasTelephonyFeature(mContext)) {
             if (mInCallCallbacks.getService().getLastCall() != null) {
                 mInCallCallbacks.getService().getLastCall().disconnect();
             }
@@ -73,7 +73,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
     }
 
     public void testSuggestionFlow() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -113,7 +113,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
     }
 
     public void testSuggestionTimeout() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -161,7 +161,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
     }
 
     public void testEmptySuggestions() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -193,7 +193,7 @@ public class PhoneAccountSuggestionServiceTest extends BaseTelecomTestWithMockSe
     }
 
     public void testPartialSuggestions() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

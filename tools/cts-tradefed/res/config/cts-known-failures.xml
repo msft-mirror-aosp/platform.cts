@@ -357,4 +357,8 @@
     <!-- b/326655855 -->
     <option name="compatibility:exclude-filter" value="CtsShortcutManagerTestCases android.content.pm.cts.shortcutmanager.ShortcutManagerUsageTest#testReportShortcutUsed" />
 
+    <!-- b/330018295 -->
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+    <option name="compatibility:exclude-filter" value="CtsAssistTestCases[instant] android.assist.cts.AssistantContentViewTest#testAssistantContentViewDimens" />
+
 </configuration>

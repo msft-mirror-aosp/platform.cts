@@ -17,19 +17,18 @@
 package android.telecom.cts;
 
 import static android.telecom.cts.TestUtils.*;
+
 import static com.android.compatibility.common.util.BlockedNumberUtil.deleteBlockedNumber;
 import static com.android.compatibility.common.util.BlockedNumberUtil.insertBlockedNumber;
 
 import android.app.UiModeManager;
-import com.android.compatibility.common.util.FeatureUtil;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
-import android.telecom.CallAudioState;
 import android.telecom.Call;
+import android.telecom.CallAudioState;
 import android.telecom.CallScreeningService;
 import android.telecom.Connection;
 import android.telecom.ConnectionService;
@@ -37,6 +36,8 @@ import android.telecom.InCallService;
 import android.telecom.TelecomManager;
 import android.telecom.VideoProfile;
 import android.telephony.TelephonyManager;
+
+import com.android.compatibility.common.util.FeatureUtil;
 
 import java.util.List;
 
@@ -382,8 +383,12 @@ public class ExtendedInCallServiceTest extends BaseTelecomTestWithMockServices {
             cleanupCalls();
             // Set device back to normal
             manager.disableCarMode(0);
-            // Make sure the UI mode has been set back
-            assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+            if (!TestUtils.hasAutomotiveFeature()) {
+                // Make sure the UI mode has been set back
+                assertUiMode(Configuration.UI_MODE_TYPE_NORMAL);
+            } else {
+                assertUiMode(Configuration.UI_MODE_TYPE_CAR);
+            }
         }
     }
 

@@ -150,28 +150,25 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
 
     @Override
     protected void setUp() throws Exception {
-        mContext = getInstrumentation().getContext();
-        if (!mShouldTestTelecom) {
-            mShouldTestTelecom = false;
+        super.setUp();
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
-        super.setUp();
+        mContext = getInstrumentation().getContext();
         NewOutgoingCallBroadcastReceiver.reset();
         mUiAutomation = getInstrumentation().getUiAutomation();
-        if (mShouldTestTelecom) {
-            mRoleManager = mContext.getSystemService(RoleManager.class);
-            setupConnectionService(null, FLAG_ENABLE | FLAG_REGISTER);
-            mTelecomManager.registerPhoneAccount(TestUtils.TEST_SELF_MANAGED_PHONE_ACCOUNT_4);
-            if(mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
-                mDefaultDialer = getDefaultDialer();
-            }
+        mRoleManager = mContext.getSystemService(RoleManager.class);
+        setupConnectionService(null, FLAG_ENABLE | FLAG_REGISTER);
+        mTelecomManager.registerPhoneAccount(TestUtils.TEST_SELF_MANAGED_PHONE_ACCOUNT_4);
+        if (mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+            mDefaultDialer = getDefaultDialer();
         }
     }
 
     @Override
     protected void tearDown() throws Exception {
         try {
-            if (mShouldTestTelecom) {
+            if (mShouldTestTelecom && TestUtils.hasTelephonyFeature(mContext)) {
                 disableAndVerifyCarMode(mCarModeIncallServiceControlOne,
                         Configuration.UI_MODE_TYPE_NORMAL);
                 disableAndVerifyCarMode(mCarModeIncallServiceControlTwo,
@@ -199,7 +196,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * Test bind to non-UI in call services that support self-managed connections
      */
     public void testBindToSupportNonUiInCallService() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(THIRD_PTY_CONTROL,
@@ -226,7 +223,8 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * mode
      */
     public void testBindToSupportDefaultDialerNoCarMode() throws Exception {
-        if (!mShouldTestTelecom || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)
+                || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(THIRD_PTY_CONTROL,
@@ -253,7 +251,8 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
      * in car mode
      */
     public void testNoBindToUnsupportDefaultDialerNoCarMode() throws Exception {
-        if (!mShouldTestTelecom || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)
+                || !mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
             return;
         }
         TestServiceConnection controlConn = setUpControl(THIRD_PTY_CONTROL,
@@ -272,7 +271,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testEnterCarMode() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         // carMode is not supported in Wear OS
@@ -337,7 +336,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testChangeCarModeApp() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         // carMode is not supported in Wear OS
@@ -375,7 +374,7 @@ public class SelfManagedConnectionTest extends BaseTelecomTestWithMockServices {
     }
 
     public void testExitCarMode() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
         // carMode is not supported in Wear OS

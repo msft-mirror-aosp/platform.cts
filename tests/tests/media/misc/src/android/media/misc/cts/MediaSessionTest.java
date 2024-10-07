@@ -427,6 +427,11 @@ public class MediaSessionTest extends AndroidTestCase {
         // Play a sound so this session can get the priority.
         Utils.assertMediaPlaybackStarted(getContext());
 
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
+
         // Sets the media button receiver. Framework will keep the broadcast receiver component name
         // from the pending intent in persistent storage.
         mSession.setMediaButtonReceiver(pi);
@@ -471,6 +476,11 @@ public class MediaSessionTest extends AndroidTestCase {
 
         // Play a sound so this session can get the priority.
         Utils.assertMediaPlaybackStarted(getContext());
+
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
 
         // Sets the media button receiver. Framework would try to keep the pending intent in the
         // persistent store.
@@ -543,6 +553,11 @@ public class MediaSessionTest extends AndroidTestCase {
         // persistent storage.
         mSession.setMediaButtonBroadcastReceiver(new ComponentName(mContext,
                 MediaButtonBroadcastReceiver.class));
+
+        // There is a different MediaSession that's created from StubMediaBrowserService class.
+        // This session takes over all the callbacks. we need to change the state of our session
+        // to STATE_PLAYING so it has higher priority.
+        setPlaybackState(PlaybackState.STATE_PLAYING);
 
         // Call explicit release, so change in the media key event session can be notified using the
         // component name.

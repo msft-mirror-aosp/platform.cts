@@ -35,10 +35,8 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.UserHandle;
-
 import android.provider.CallLog;
 import android.telecom.Call;
-import android.telecom.CallScreeningService;
 import android.telecom.TelecomManager;
 import android.telecom.cts.screeningtestapp.CallScreeningServiceControl;
 import android.telecom.cts.screeningtestapp.CtsCallScreeningService;
@@ -221,7 +219,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPermissionAndHasContactIncoming() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -244,7 +242,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPermissionAndNoContactOutgoing() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
@@ -265,7 +263,7 @@ public class ThirdPartyCallScreeningServiceTest extends BaseTelecomTestWithMockS
     }
 
     public void testNoPermissionAndHasContactOutgoing() throws Exception {
-        if (!shouldTestTelecom(mContext)) {
+        if (!shouldTestTelecom(mContext) || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 

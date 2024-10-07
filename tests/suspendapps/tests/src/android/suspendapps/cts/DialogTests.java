@@ -75,6 +75,7 @@ public class DialogTests {
             mUiDevice.wakeUp();
         }
         SystemUtil.runShellCommandForNoOutput("wm dismiss-keyguard");
+        mUiDevice.pressHome();
     }
 
     @Test

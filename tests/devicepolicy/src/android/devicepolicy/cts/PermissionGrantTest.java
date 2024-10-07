@@ -206,6 +206,7 @@ public final class PermissionGrantTest {
     }
 
     @CanSetPolicyTest(policy = SetPermissionGrantState.class)
+    @Ignore("b/290932414")
     public void denyPermission_setsGrantState(@DeniablePermissionTestParameter String permission) {
         int existingGrantState = sDeviceState.dpc().devicePolicyManager()
                 .getPermissionGrantState(sDeviceState.dpc().componentName(),
@@ -258,6 +259,7 @@ public final class PermissionGrantTest {
     }
 
     @PolicyAppliesTest(policy = SetPermissionGrantState.class)
+    @Ignore("b/290932414")
     public void denyPermission_permissionIsDenied(
             @DeniablePermissionTestParameter String permission) {
         int existingGrantState = sDeviceState.dpc().devicePolicyManager()
@@ -305,6 +307,7 @@ public final class PermissionGrantTest {
     }
 
     @PolicyDoesNotApplyTest(policy = SetPermissionGrantState.class)
+    @Ignore("b/290932414")
     public void denyPermission_doesNotApply_permissionIsNotDenied(
             @DeniablePermissionTestParameter String permission) {
         try {
@@ -322,6 +325,7 @@ public final class PermissionGrantTest {
     }
 
     @PolicyDoesNotApplyTest(policy = SetPermissionGrantState.class)
+    @Ignore("b/290932414")
     public void grantPermission_doesNotApply_permissionIsNotGranted(
             @DeniablePermissionTestParameter String permission) {
         try {

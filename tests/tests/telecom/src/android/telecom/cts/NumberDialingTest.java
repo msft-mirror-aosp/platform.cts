@@ -16,8 +16,6 @@
 
 package android.telecom.cts;
 
-import static android.telecom.cts.TestUtils.shouldTestTelecom;
-
 import android.net.Uri;
 import android.telecom.Connection;
 import android.telecom.ConnectionRequest;
@@ -35,7 +33,7 @@ public class NumberDialingTest extends BaseTelecomTestWithMockServices {
     private static final int CS_WAIT_MILLIS = 2000;
 
     public void testEndInPound() throws Exception {
-        if (!mShouldTestTelecom) {
+        if (!mShouldTestTelecom || !TestUtils.hasTelephonyFeature(mContext)) {
             return;
         }
 
