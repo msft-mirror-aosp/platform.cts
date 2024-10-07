@@ -761,7 +761,8 @@ public class NfcAdapterTest {
             assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
             if (Flags.nfcOverrideRecoverRoutingTable()) {
                 nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
-                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
+                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
+                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
         } finally {
             nfcOemExtension.unregisterCallback(cb);
