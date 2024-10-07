@@ -47,7 +47,6 @@ import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -366,8 +365,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
                 DefaultAccount.DefaultAccountAndState.ofNotSet());
     }
 
-    // TODO enable when setDefaultAccountForNewContacts supports DefaultAccountAndState.ofSim
-    @Ignore
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
     public void testMoveLocalContactsToSimDefaultAccount() throws Exception {
