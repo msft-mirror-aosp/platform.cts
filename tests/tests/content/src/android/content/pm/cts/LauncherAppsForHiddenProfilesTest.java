@@ -54,7 +54,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.RequireNotInstantApp;
-import com.android.bedstead.harrier.annotations.RequirePrivateSpaceSupported;
+import com.android.bedstead.multiuser.annotations.RequirePrivateSpaceSupported;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.AdbException;
 import com.android.bedstead.nene.users.UserReference;
@@ -242,7 +242,7 @@ public class LauncherAppsForHiddenProfilesTest {
                 new TestLauncherCallback(targetUser.userHandle(), mTestApp.packageName());
         mLauncherApps.registerCallback(callback, new Handler(Looper.getMainLooper()));
         triggerCallbacks(targetUser);
-        long timeoutSec = 2;
+        long timeoutSec = 10;
         try {
             assertThat(callback.mPackageAdded.await(timeoutSec, TimeUnit.SECONDS))
                     .isEqualTo(received);

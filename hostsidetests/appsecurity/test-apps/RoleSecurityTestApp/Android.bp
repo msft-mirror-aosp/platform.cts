@@ -24,8 +24,8 @@ android_test_helper_app {
     defaults: ["cts_defaults"],
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "androidx.test.core",

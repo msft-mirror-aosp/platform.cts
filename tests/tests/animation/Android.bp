@@ -30,7 +30,7 @@ android_test {
         "platform-test-annotations",
     ],
 
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
 
     srcs: ["src/**/*.java"],
 

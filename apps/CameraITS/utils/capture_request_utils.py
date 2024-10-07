@@ -583,6 +583,8 @@ def take_captures_with_flash_strength(cam, out_surface, ae_mode, strength):
   preview_req_start[
       'android.control.aePrecaptureTrigger'] = _AE_PRECAPTURE_TRIGGER_START
   preview_req_start[
+      'android.flash.mode'] = _FLASH_MODE_SINGLE
+  preview_req_start[
       'android.flash.strengthLevel'] = strength
   # Repeat preview requests with aePrecapture set to IDLE
   # until AE is converged.

@@ -55,6 +55,7 @@ import android.os.ParcelUuid;
 import android.os.PersistableBundle;
 import android.os.Process;
 import android.os.UserHandle;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -274,12 +275,14 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testGetActiveSubscriptionInfoCount() throws Exception {
         assertTrue(mSm.getActiveSubscriptionInfoCount() <=
                 mSm.getActiveSubscriptionInfoCountMax());
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetActiveSubscriptionInfoForIcc() throws Exception {
         SubscriptionInfo info = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfo(mSubId));
@@ -288,6 +291,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetAllSubscriptionInfoList() throws Exception {
         List<SubscriptionInfo> allSubInfoList = ShellIdentityUtils.invokeMethodWithShellPermissions(
                 mSm, SubscriptionManager::getAllSubscriptionInfoList);
@@ -297,6 +301,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testIsActiveSubscriptionId() throws Exception {
         assertTrue(mSm.isActiveSubscriptionId(mSubId));
     }
@@ -316,6 +321,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testGetResourcesForSubId() {
         Resources r = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getResourcesForSubId(InstrumentationRegistry.getContext(), mSubId));
@@ -331,6 +337,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testActiveSubscriptions() throws Exception {
         List<SubscriptionInfo> subList = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.getActiveSubscriptionInfoList());
@@ -357,6 +364,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_ENFORCE_SUBSCRIPTION_USER_FILTER)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testForAllProfilesSubscriptionManager() {
         SubscriptionManager allProfileSm = InstrumentationRegistry.getContext()
                 .getSystemService(SubscriptionManager.class).createForAllUserProfiles();
@@ -707,6 +715,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permission")
     public void testSubscriptionGrouping() throws Exception {
         // Set subscription group with current sub Id. This should fail
         // because we don't have MODIFY_PHONE_STATE or carrier privilege permission.
@@ -751,6 +760,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testSubscriptionGroupingWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -828,6 +838,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#getSubscriptionsInGroup")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testAddSubscriptionIntoNewGroupWithPermission() throws Exception {
         // Set subscription group with current sub Id.
         List<Integer> subGroup = new ArrayList();
@@ -867,6 +878,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @ApiTest(apis = "android.telephony.SubscriptionManager#setOpportunistic")
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have MODIFY_PHONE_STATE permissions")
     public void testSettingOpportunisticSubscription() throws Exception {
         // Set subscription to be opportunistic. This should fail
         // because we don't have MODIFY_PHONE_STATE or carrier privilege permission.
@@ -882,6 +894,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testMccMncString() {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         String mcc = info.getMccString();
@@ -891,6 +904,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetUiccApplicationsEnabled() throws Exception {
         boolean canDisable = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,
                 (sm) -> sm.canDisablePhysicalSubscription());
@@ -968,6 +982,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSubscriptionInfoCarrierId() {
         SubscriptionInfo info = mSm.getActiveSubscriptionInfo(mSubId);
         int carrierId = info.getCarrierId();
@@ -1030,6 +1045,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testRestoreAllSimSpecificSettingsFromBackup() throws Throwable {
         int activeDataSubId = SubscriptionManager.getActiveDataSubscriptionId();
         assertNotEquals(activeDataSubId, SubscriptionManager.INVALID_SUBSCRIPTION_ID);
@@ -1151,6 +1167,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetAndGetD2DStatusSharing() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
@@ -1171,6 +1188,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testSetAndGetD2DSharingContacts() {
         UiAutomation uiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
         uiAutomation.adoptShellPermissionIdentity(MODIFY_PHONE_STATE);
@@ -1189,6 +1207,8 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(
+            reason = "SDK sandboxes do not have READ_PRIVILEGED_PHONE_STATE permission")
     public void tetsSetAndGetPhoneNumber() throws Exception {
         // The phone number may be anything depends on the state of SIM and device.
         // Simply call the getter and make sure no exception.
@@ -1437,6 +1457,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testCountryIso() throws Throwable {
         final String liechtensteinIso = "li";
         final String faroeIslandsIso = "fo";
@@ -1464,6 +1485,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_enableFlag() throws Exception {
         if (!Flags.oemEnabledSatelliteFlag()) {
             return;
@@ -1475,6 +1497,7 @@ public class SubscriptionManagerTest {
     }
 
     @Test
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsNtn_disableFlag() throws Exception {
         if (Flags.oemEnabledSatelliteFlag()) {
             return;
@@ -1504,6 +1527,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUPPORT_PSIM_TO_ESIM_CONVERSION)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
     public void testUpdateSubscription_transferStatus() throws Exception {
         // Testing permission fail
         try {
@@ -1521,6 +1545,7 @@ public class SubscriptionManagerTest {
 
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_SUBSCRIPTION_USER_ASSOCIATION_QUERY)
+    @AppModeNonSdkSandbox(reason = "SDK sandboxes do not have the required permissions")
     public void testIsSubscriptionAssociatedWithUser() throws Exception {
 
         UserHandle oldAssociatedUser = ShellIdentityUtils.invokeMethodWithShellPermissions(mSm,

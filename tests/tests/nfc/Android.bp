@@ -33,6 +33,9 @@ android_test {
         "testng",
         "androidx.appcompat_appcompat",
         "CtsAppTestStubsShared",
+        "Nene",
+        "Harrier",
+        "TestApp",
     ],
     srcs: [
         "src/android/nfc/cts/*.java",
@@ -43,8 +46,8 @@ android_test {
         "framework-nfc.impl",
         "framework",
         "framework-res",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs",
+        "android.test.base.stubs",
         "unsupportedappusage",
     ],
     data: [
@@ -75,8 +78,8 @@ android_test {
         "src/android/nfc/tech/cts/interactive/*.java",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
         "framework-nfc.impl",
     ],
     test_suites: [

@@ -23,6 +23,7 @@ import com.google.auto.value.AutoAnnotation;
 
 import java.io.Serializable;
 
+@SuppressWarnings("CheckReturnValue")
 public final class IntegerSetQueryHelper<E extends Queryable> extends SetQueryHelper<E, Integer>
         implements Serializable {
 

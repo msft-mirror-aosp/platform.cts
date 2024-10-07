@@ -78,6 +78,8 @@ class InterfaceChecker {
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setAnimationsDisabled(boolean)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.inputmethod.InputMethod.hideSoftInputWithToken(int,android.os.ResultReceiver,android.os.IBinder)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract boolean android.view.WindowInsetsAnimationController.hasZeroInsetsIme()");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract long android.view.WindowInsetsAnimationController.getDurationMs()");
+        HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract android.view.animation.Interpolator android.view.WindowInsetsAnimationController.getInsetsInterpolator()");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setCaptionInsetsHeight(int)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setSystemDrivenInsetsAnimationLoggingListener(android.view.WindowInsetsAnimationControlListener)");
         HIDDEN_INTERFACE_METHOD_ALLOW_LIST.add("public abstract void android.view.WindowInsetsController.setSystemBarsAppearanceFromResource(int,int)");

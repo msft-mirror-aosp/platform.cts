@@ -36,7 +36,6 @@ import androidx.test.rule.ActivityTestRule;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.media.codec.flags.Flags;
 
 import org.junit.Rule;
@@ -44,6 +43,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -57,7 +57,6 @@ import java.util.List;
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 @RunWith(Parameterized.class)
 @FrameworkSpecificTest
-@NonMainlineTest
 public class ResourceManagerMultiTest {
 
     private static final String TAG = "ResourceManagerMultiTest";
@@ -241,6 +240,15 @@ public class ResourceManagerMultiTest {
         activity.finish();
     }
 
+    /**
+     * Determines whether running build is GSI or not.
+     * @return true if running build is GSI, false otherwise.
+     */
+    private static boolean isGsiImage() {
+        final File initGsiRc = new File("/system/system_ext/etc/init/init.gsi.rc");
+        return initGsiRc.exists();
+    }
+
     // Activity1 creates allowable number of codecs with given name (mCodecName)
     // for the given mime type (mMimeType) and the resolution as a background task.
     // Activity2 attempts to create at least one codec which should result it resource
@@ -250,7 +258,12 @@ public class ResourceManagerMultiTest {
     @Test
     public void testReclaimResource() throws Exception {
         assumeTrue("The Device should be on at least VNDK U", VNDK_IS_AT_LEAST_U);
-        doTestReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        // Skip testing image codecs on gsi builds: (b/354075153, b/369105914).
+        if (isGsiImage() && mMimeType.startsWith("image/")) {
+            assumeTrue("This test is not applicable for device running GSI image", false);
+        } else {
+            doTestReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        }
     }
 
     // Activity creates allowable number of codecs with given name (mCodecName)
@@ -264,6 +277,11 @@ public class ResourceManagerMultiTest {
     @RequiresFlagsEnabled(Flags.FLAG_CODEC_IMPORTANCE)
     public void testCodecImportanceReclaimResource() throws Exception {
         assumeTrue("Codec Importance Feature is OFF", codecImportance());
-        doTestCodecImportanceReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        // Skip testing image codecs on gsi builds: (b/354075153, b/369105914).
+        if (isGsiImage() && mMimeType.startsWith("image/")) {
+            assumeTrue("This test is not applicable for device running GSI image", false);
+        } else {
+            doTestCodecImportanceReclaimResource(mCodecName, mMimeType, mWidth, mHeight);
+        }
     }
 }

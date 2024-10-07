@@ -21,6 +21,7 @@ import static android.app.WindowConfiguration.ACTIVITY_TYPE_DREAM;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_HOME;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_RECENTS;
 import static android.app.WindowConfiguration.ACTIVITY_TYPE_STANDARD;
+import static android.app.WindowConfiguration.ACTIVITY_TYPE_UNDEFINED;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT;
@@ -60,6 +61,8 @@ import android.server.wm.WindowManagerState;
 import android.server.wm.intent.Activities;
 
 import com.android.compatibility.common.util.ApiTest;
+
+import org.junit.After;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -73,6 +76,20 @@ import java.util.stream.Stream;
  */
 @Presubmit
 public class StartActivityTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_SDK_27 = SDK_27_LAUNCHING_ACTIVITY.getPackageName();
+    private static final int[] ALL_ACTIVITY_TYPES = {
+            ACTIVITY_TYPE_UNDEFINED,
+            ACTIVITY_TYPE_STANDARD,
+            ACTIVITY_TYPE_HOME,
+            ACTIVITY_TYPE_RECENTS,
+            ACTIVITY_TYPE_ASSISTANT,
+            ACTIVITY_TYPE_DREAM,
+    };
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_SDK_27);
+    }
 
     @Test
     public void testStartHomeIfNoActivities() {
@@ -81,10 +98,7 @@ public class StartActivityTests extends ActivityManagerTestBase {
 	}
 
         final ComponentName defaultHome = getDefaultHomeComponent();
-        final int[] allActivityTypes = Arrays.copyOf(ALL_ACTIVITY_TYPE_BUT_HOME,
-                ALL_ACTIVITY_TYPE_BUT_HOME.length + 1);
-        allActivityTypes[allActivityTypes.length - 1] = ACTIVITY_TYPE_HOME;
-        removeRootTasksWithActivityTypes(allActivityTypes);
+        removeRootTasksWithAllActivityTypes();
 
         waitAndAssertResumedActivity(defaultHome,
                 "Home activity should be restarted after force-finish");
@@ -493,5 +507,12 @@ public class StartActivityTests extends ActivityManagerTestBase {
             taskIds[i + 1] = mWmState.getTaskByActivity(intents[i].getComponent()).getTaskId();
         }
         return taskIds;
+    }
+
+    private void removeRootTasksWithAllActivityTypes() {
+        runWithShellPermission(() -> {
+            mAtm.removeRootTasksWithActivityTypes(ALL_ACTIVITY_TYPES);
+        });
+        waitForIdle();
     }
 }

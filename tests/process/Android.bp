@@ -30,7 +30,7 @@ java_library {
         "truth",
         "testng",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.system"],
     srcs: [
         "src/**/*.java",
     ],

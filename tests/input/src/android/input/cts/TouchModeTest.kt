@@ -46,6 +46,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.android.compatibility.common.util.AdoptShellPermissionsRule
 import com.android.compatibility.common.util.PollingCheck
 import com.android.compatibility.common.util.SystemUtil
+import com.android.compatibility.common.util.UserHelper
 import com.android.compatibility.common.util.WindowUtil
 import com.google.common.truth.Truth.assertThat
 import java.lang.AutoCloseable
@@ -76,6 +77,7 @@ class TouchModeTest {
     private lateinit var activity: Activity
     private lateinit var targetContext: Context
     private lateinit var displayManager: DisplayManager
+    private lateinit var userHelper: UserHelper
     private var secondScenario: ActivityScenario<Activity>? = null
 
     @Rule
@@ -87,6 +89,13 @@ class TouchModeTest {
     @Before
     fun setUp() {
         targetContext = instrumentation.targetContext
+        userHelper = UserHelper(targetContext)
+        // This test is not applicable to background users. Tests may rely on the ability to call
+        // Instrumentation#setInTouchMode, which only functions for the MAIN_DISPLAY. Tests for
+        // secondary background visible users, triggered with the
+        // secondary_user_on_secondary_display flag, will run on a secondary display and not the
+        // MAIN_DISPLAY.
+        assumeFalse(userHelper.isVisibleBackgroundUser)
         displayManager = targetContext.getSystemService(DisplayManager::class.java)
         activityRule.scenario.onActivity {
             activity = it

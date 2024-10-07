@@ -902,8 +902,8 @@ public abstract class BasePrintTest {
         }, OPERATION_TIMEOUT_MILLIS * 2);
 
         // Switch to new activity, which should now use the default printer
-        Log.d(LOG_TAG, "getActivity().finish()");
-        getActivity().finish();
+        Log.d(LOG_TAG, "finishActivity");
+        finishActivity();
 
         createActivity();
     }

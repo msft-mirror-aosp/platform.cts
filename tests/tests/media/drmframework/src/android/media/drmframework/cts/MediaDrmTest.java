@@ -35,6 +35,7 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 import com.android.compatibility.common.util.NonMainlineTest;
 
 import org.junit.Assert;
@@ -44,6 +45,7 @@ import org.junit.runner.RunWith;
 import java.util.List;
 import java.util.UUID;
 
+@FrameworkSpecificTest
 @NonMainlineTest
 @RunWith(AndroidJUnit4.class)
 public class MediaDrmTest {

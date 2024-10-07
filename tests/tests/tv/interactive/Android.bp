@@ -26,8 +26,8 @@ android_library {
     ],
     libs: [
         "platform-test-annotations",
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "androidx.test.core",

@@ -118,7 +118,7 @@ public final class ClusterHomeManagerTest {
             PollingCheck.waitFor(TIMEOUT_MS, () -> {
                 String monitoringSurface = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE)
                         .get(DUMP_CLUSTER_SURFACE);
-                return !monitoringSurface.equals(mTestMonitoringSurface);
+                return monitoringSurface.equals("null");
             });
         }
 
@@ -145,12 +145,13 @@ public final class ClusterHomeManagerTest {
             var dump = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
             int count = Integer.valueOf(dump.get(DUMP_TPL_COUNT));
             boolean visible = Boolean.parseBoolean(dump.get(DUMP_CLUSTER_VISIBLE));
-            return count > oldCount && visible;
+            mTestMonitoringSurface = dump.get(DUMP_CLUSTER_SURFACE);
+            return count > oldCount && visible
+                    && mTestMonitoringSurface.contains(mTestActivityName.flattenToString());
         });
 
         var oldDump2 = DumpUtils.executeDumpShellCommand(CLUSTER_HOME_SERVICE);
         int oldCount2 = Integer.valueOf(oldDump2.get(DUMP_TPL_COUNT));
-        mTestMonitoringSurface = oldDump2.get(DUMP_CLUSTER_SURFACE);
 
         // Insets can be accessible only in the Activity's thread.
         mTestActivity.getMainExecutor().execute(() -> {

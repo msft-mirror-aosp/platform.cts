@@ -16,6 +16,7 @@
 
 package android.server.wm.jetpack.embedding;
 
+import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.DEFAULT_SPLIT_ATTRS;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.assertValidSplit;
 import static android.server.wm.jetpack.utils.ActivityEmbeddingUtil.waitAndAssertFinishing;
@@ -31,6 +32,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Rect;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.WindowManagerState.Task;
 import android.server.wm.WindowManagerStateHelper;
 import android.server.wm.jetpack.utils.TestActivity;
 import android.server.wm.jetpack.utils.TestActivityWithId;
@@ -196,10 +198,25 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         final TestActivity primaryActivity = (TestActivity) activityPair.first;
         final Activity placeholderActivity = activityPair.second;
 
-        // Shrink display size by 10% so that the primary and placeholder activities are stacked
-        final Size currentSize = mReportedDisplayMetrics.getSize();
-        mReportedDisplayMetrics.setSize(new Size((int) (currentSize.getWidth() * 0.9),
-                (int) (currentSize.getHeight() * 0.9)));
+        // Shrink by 10% so that the primary and placeholder activities are stacked.
+        // If the activity was launched in freeform windowing mode, resize the task bounds
+        // instead of resizing the display.
+        mWmState.computeState(
+                primaryActivity.getComponentName(), placeholderActivity.getComponentName());
+        // Primary and placeholder activities should be in the same task
+        final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
+        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
+            final Rect origTaskBounds = task.getBounds();
+            resizeActivityTask(primaryActivity.getComponentName(),
+                    origTaskBounds.left, origTaskBounds.top,
+                    origTaskBounds.left + (int) (origTaskBounds.width() * 0.9),
+                    origTaskBounds.top + (int) (origTaskBounds.height() * 0.9));
+        } else {
+            final Size origDisplaySize = mReportedDisplayMetrics.getSize();
+            mReportedDisplayMetrics.setSize(
+                    new Size((int) (origDisplaySize.getWidth() * 0.9),
+                             (int) (origDisplaySize.getHeight() * 0.9)));
+        }
 
         // Verify that the placeholder activity was finished and that the primary activity now
         // fills the task.
@@ -244,10 +261,24 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         waitAndAssertResumedAndFillsTask(primaryActivity);
         waitAndAssertNotResumed(PLACEHOLDER_ACTIVITY_ID);
 
-        // Increase display size by 10% so that the primary and placeholder activities are
-        // stacked
-        mReportedDisplayMetrics.setSize(new Size((int) (displaySize.getWidth() * 1.1),
-                (int) (displaySize.getHeight() * 1.1)));
+        // Enlarge by 10% so that the primary and placeholder activities are stacked.
+        // If the primary activity was launched in freeform windowing mode, resize the task bounds
+        // instead of resizing the display.
+        mWmState.computeState(primaryActivity.getComponentName());
+        // Primary and placeholder activities should be in the same task
+        final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
+        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
+            final Rect origTaskBounds = task.getBounds();
+            resizeActivityTask(primaryActivity.getComponentName(),
+                    origTaskBounds.left, origTaskBounds.top,
+                    origTaskBounds.left + (int) (origTaskBounds.width() * 1.1),
+                    origTaskBounds.top + (int) (origTaskBounds.height() * 1.1));
+        } else {
+            final Size origDisplaySize = mReportedDisplayMetrics.getSize();
+            mReportedDisplayMetrics.setSize(
+                    new Size((int) (origDisplaySize.getWidth() * 1.1),
+                             (int) (origDisplaySize.getHeight() * 1.1)));
+        }
 
         // Verify that the placeholder activity is launched into a split with the primary
         // activity
@@ -283,13 +314,28 @@ public class ActivityEmbeddingPlaceholderTests extends ActivityEmbeddingTestBase
         final Pair<Activity, Activity> activityPair =
                 launchActivityWithPlaceholderAndVerifySplit(
                         PRIMARY_ACTIVITY_ID, PLACEHOLDER_ACTIVITY_ID, splitPlaceholderRule);
+        final TestActivity primaryActivity = (TestActivity) activityPair.first;
         final TestActivity placeholderActivity = (TestActivity) activityPair.second;
 
-        // Shrink display width by 10% so that the primary and placeholder activities are
-        // stacked
-        final Size currentSize = mReportedDisplayMetrics.getSize();
-        mReportedDisplayMetrics.setSize(new Size((int) (currentSize.getWidth() * 0.9),
-                (int) (currentSize.getHeight() * 0.9)));
+        // Shrink by 10% so that the primary and placeholder activities are stacked.
+        // If the activity was launched in freeform windowing mode, resize the task bounds
+        // instead of resizing the display.
+        mWmState.computeState(
+                primaryActivity.getComponentName(), placeholderActivity.getComponentName());
+        // Primary and placeholder activities should be in the same task
+        final Task task = mWmState.getTaskByActivity(primaryActivity.getComponentName());
+        if (task.getWindowingMode() == WINDOWING_MODE_FREEFORM) {
+            final Rect origTaskBounds = task.getBounds();
+            resizeActivityTask(primaryActivity.getComponentName(),
+                    origTaskBounds.left, origTaskBounds.top,
+                    origTaskBounds.left + (int) (origTaskBounds.width() * 0.9),
+                    origTaskBounds.top + (int) (origTaskBounds.height() * 0.9));
+        } else {
+            final Size origDisplaySize = mReportedDisplayMetrics.getSize();
+            mReportedDisplayMetrics.setSize(
+                    new Size((int) (origDisplaySize.getWidth() * 0.9),
+                             (int) (origDisplaySize.getHeight() * 0.9)));
+        }
         UiDevice.getInstance(mInstrumentation).waitForIdle();
 
         // Verify that the placeholder was not finished and fills the task

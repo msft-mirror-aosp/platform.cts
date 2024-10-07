@@ -18,7 +18,6 @@ package android.devicepolicy.cts
 import android.Manifest
 import android.accounts.Account
 import android.app.admin.*
-import android.app.admin.flags.Flags
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
@@ -28,30 +27,29 @@ import android.nfc.NfcAdapter
 import android.os.*
 import android.provider.Settings
 import com.android.bedstead.deviceadminapp.DeviceAdminApp
-import com.android.bedstead.flags.annotations.RequireFlagsEnabled
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission
 import com.android.bedstead.harrier.annotations.EnsureHasAccount
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
 import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile
 import com.android.bedstead.permissions.annotations.EnsureHasPermission
-import com.android.bedstead.harrier.annotations.EnsureHasSecondaryUser
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
 import com.android.bedstead.harrier.annotations.EnsureIsNotDemoDevice
 import com.android.bedstead.harrier.annotations.PermissionTest
 import com.android.bedstead.harrier.annotations.Postsubmit
 import com.android.bedstead.harrier.annotations.RequireDoesNotHaveFeature
 import com.android.bedstead.harrier.annotations.RequireFeature
-import com.android.bedstead.harrier.annotations.RequireHeadlessSystemUserMode
-import com.android.bedstead.harrier.annotations.RequireNotHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireHeadlessSystemUserMode
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode
 import com.android.bedstead.harrier.annotations.RequireNotWatch
-import com.android.bedstead.harrier.annotations.RequireRunOnAdditionalUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnAdditionalUser
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSecondaryUser
-import com.android.bedstead.harrier.annotations.RequireRunOnSingleUser
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.multiuser.annotations.RequireRunOnSecondaryUser
+import com.android.bedstead.multiuser.annotations.RequireRunOnSingleUser
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner
@@ -418,7 +416,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDeviceOwner() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false
@@ -451,7 +448,6 @@ class ProvisioningTest {
     @Test
     @RequireHeadlessSystemUserMode(reason = "Testing headless-specific functionality")
     @RequireRunOnSingleUser
-    @RequireFlagsEnabled(Flags.FLAG_HEADLESS_DEVICE_OWNER_SINGLE_USER_ENABLED)
     @ApiTest(apis = ["android.app.admin.DevicePolicyManager#provisionFullyManagedDevice"])
     fun provisionFullyManagedDevice_headlessSingleUser_setsDoInMainUser() {
         val mainUserSetupComplete = TestApis.users().main()?.setupComplete ?: false

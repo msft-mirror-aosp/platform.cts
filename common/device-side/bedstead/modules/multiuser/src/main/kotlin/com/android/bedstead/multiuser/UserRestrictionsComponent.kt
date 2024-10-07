@@ -22,8 +22,8 @@ import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.exceptions.AdbException
@@ -32,6 +32,7 @@ import com.android.bedstead.nene.userrestrictions.CommonUserRestrictions
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Tags.hasTag
 import com.android.bedstead.remotedpc.RemotePolicyManager
+import com.google.errorprone.annotations.CanIgnoreReturnValue
 import org.junit.AssumptionViolatedException
 
 /**
@@ -111,6 +112,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         }
     }
 
+    @CanIgnoreReturnValue
     private fun trySetUserRestrictionWithDeviceOwner(restriction: String): Boolean {
         mDeviceOwnerComponent.ensureHasDeviceOwner()
         val dpc: RemotePolicyManager = mDeviceOwnerComponent.deviceOwner()
@@ -125,6 +127,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         return true
     }
 
+    @CanIgnoreReturnValue
     private fun trySetUserRestrictionWithProfileOwner(
         onUser: UserReference,
         restriction: String
@@ -238,6 +241,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         mRemovedUserRestrictions.clear()
     }
 
+    @CanIgnoreReturnValue
     private fun tryClearUserRestrictionWithDeviceOwner(restriction: String): Boolean {
         mDeviceOwnerComponent.ensureHasDeviceOwner()
         val dpc: RemotePolicyManager = mDeviceOwnerComponent.deviceOwner()
@@ -252,6 +256,7 @@ class UserRestrictionsComponent(locator: BedsteadServiceLocator) : DeviceStateCo
         return true
     }
 
+    @CanIgnoreReturnValue
     private fun tryClearUserRestrictionWithProfileOwner(
         onUser: UserReference,
         restriction: String

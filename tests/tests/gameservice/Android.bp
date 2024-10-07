@@ -35,8 +35,8 @@ android_test {
         ":CtsGameServiceTouchVerifier",
     ],
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "androidx.test.core",
@@ -44,6 +44,7 @@ android_test {
         "ctstestrunner-axt",
         "junit",
         "truth",
+        "GameManagerTestLib",
     ],
     sdk_version: "test_current",
     test_suites: [

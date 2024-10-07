@@ -415,8 +415,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         launchActivity(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
         assumeNotIgnoringOrientation(SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        assertEquals("Legacy translucent activity requested landscape orientation",
-                SCREEN_ORIENTATION_LANDSCAPE, mWmState.getLastOrientation());
+        mWmState.waitAndAssertLastOrientation(
+                "Legacy translucent activity requested landscape orientation",
+                SCREEN_ORIENTATION_LANDSCAPE);
 
         // TODO(b/36897968): uncomment once we can suppress unsupported configurations
         // final ReportedSizes updatedReportedSizes =
@@ -556,8 +557,9 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
         mWmState.assertResumedActivity(
                 "target SDK <= 26 translucent activity should be allowed to launch",
                 SDK26_TRANSLUCENT_LANDSCAPE_ACTIVITY);
-        assertEquals("translucent activity requested landscape orientation",
-                SCREEN_ORIENTATION_LANDSCAPE, mWmState.getLastOrientation());
+        mWmState.waitAndAssertLastOrientation(
+                "Translucent activity requested landscape orientation",
+                SCREEN_ORIENTATION_LANDSCAPE);
     }
 
     /**
@@ -724,10 +726,10 @@ public class AppConfigurationTests extends MultiDisplayTestBase {
 
         TestActivitySession<ConfigChangeHandlingActivity> activitySession
                 = createManagedTestActivitySession();
-        int baseDisplayId = Display.DEFAULT_DISPLAY;
+        int baseDisplayId = getMainDisplayId();
         activitySession.launchTestActivityOnDisplaySync(
                 ConfigChangeHandlingActivity.class,
-                Display.DEFAULT_DISPLAY,
+                baseDisplayId,
                 WINDOWING_MODE_FULLSCREEN);
         final ConfigChangeHandlingActivity activity = activitySession.getActivity();
 

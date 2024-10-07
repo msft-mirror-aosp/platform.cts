@@ -45,6 +45,10 @@
                 value="telecom/com.android.server.telecom.flags.cache_call_audio_callbacks=true"/>
         <option name="flag-value"
                 value="telecom/com.android.server.telecom.flags.unregister_unresolvable_accounts=true"/>
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.telecom_main_user_in_block_check=true"/>
+        <option name="flag-value"
+                value="telecom/com.android.server.telecom.flags.telecom_main_user_in_get_respond_message_app=true"/>
     </target_preparer>
 
     <!-- Enabling change id ALLOW_TEST_API_ACCESS allows that package to access @TestApi methods -->

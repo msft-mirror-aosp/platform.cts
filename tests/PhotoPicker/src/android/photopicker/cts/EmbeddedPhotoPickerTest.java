@@ -36,10 +36,15 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Build;
+import android.platform.test.annotations.RequiresFlagsEnabled;
+import android.platform.test.flag.junit.CheckFlagsRule;
+import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.view.SurfaceView;
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
 
 import androidx.test.filters.SdkSuppress;
 import androidx.test.platform.app.InstrumentationRegistry;
@@ -48,18 +53,24 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject;
 import androidx.test.uiautomator.UiObject2;
 
+import com.android.providers.media.flags.Flags;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@RequiresFlagsEnabled(Flags.FLAG_ENABLE_EMBEDDED_PHOTOPICKER)
 public class EmbeddedPhotoPickerTest {
     private static final String RESOURCE_ID_REGEX_PREFIX = ".*:id/";
     private static final String LAUNCH_EMBEDDED_BUTTON_ID =
@@ -69,6 +80,7 @@ public class EmbeddedPhotoPickerTest {
     private static final String PHOTOS_TAB_LABEL = "Photos";
     private static final String ACTION_EMBEDDED_PHOTOPICKER_SERVICE =
             "com.android.photopicker.core.embedded.EmbeddedService.BIND";
+    private static final String DONE_BUTTON_LABEL = "Done";
 
     private static final Instrumentation sInstrumentation =
             InstrumentationRegistry.getInstrumentation();
@@ -79,6 +91,10 @@ public class EmbeddedPhotoPickerTest {
     private EmbeddedTestActivity mActivity;
 
     private Intent mIntent = new Intent(ACTION_EMBEDDED_PHOTOPICKER_SERVICE);
+    private CountDownLatch mSessionCountDownLatch;
+
+    @Rule
+    public final CheckFlagsRule checkFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     @Before
     public void setUp() throws Exception {
@@ -115,41 +131,58 @@ public class EmbeddedPhotoPickerTest {
     @Test
     public void testOnItemSelected_selectedUrisNotEmptyAndHasAccess() throws Exception {
         addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
 
         // 1. Launch the embedded session
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+        assertThat(selectedUris.isEmpty()).isTrue();
 
-        // 2. Get media item and perform click
+        // 2. Get media item, perform click and wait for 'onItemsSelected' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
         clickAndWait(sDevice, getMediaItem(sDevice));
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
-        Uri selectedUri = mActivity.getSelectedUris().get(0);
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
         assertThat(hasUriPermission(selectedUri)).isTrue();
     }
 
     @Test
     public void testOnItemDeselected_selectedUrisEmptyAndAccessRevoked() throws Exception {
         addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
 
         // 1. Launch the embedded session
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+        assertThat(selectedUris.isEmpty()).isTrue();
 
-        // 2. Get media item and perform click
+        // 2. Get media item, perform click and wait for 'onItemsSelected' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
         UiObject mediaItem = getMediaItem(sDevice);
         clickAndWait(sDevice, mediaItem);
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
-        Uri selectedUri = mActivity.getSelectedUris().get(0);
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
 
-        // 3. Deselect the previously selected media item
+        // 3. Set a new count down latch for 'onItemsDeselected' client invocation
+        countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
+
+        // 4. Deselect the previously selected media item
         clickAndWait(sDevice, mediaItem);
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
+
+        // 5. Assert that the item is deselected.
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.isEmpty()).isTrue();
         assertThat(hasUriPermission(selectedUri)).isFalse();
     }
 
@@ -161,18 +194,16 @@ public class EmbeddedPhotoPickerTest {
         launchEmbeddedSession();
         assertThat(mActivity.getSession()).isNotNull();
 
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
-
-        // 2. Get media item and perform click
-        clickAndWait(sDevice, getMediaItem(sDevice));
-
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(1);
+        // 2. Set a new count down latch for 'onSessionError' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSessionErrorClientInvocation(countDownLatch);
 
         // 3. Kill the PhotoPicker process
         sDevice.executeShellCommand("am force-stop " + getExplicitPackageName());
 
+        // 4. Assert that 'onSessionError' is invoked and the session is null
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
         assertThat(mActivity.getSession()).isNull();
-        assertThat(mActivity.getSelectedUris().size()).isEqualTo(0);
     }
 
     @Test
@@ -205,8 +236,7 @@ public class EmbeddedPhotoPickerTest {
 
         // 3. Set the expanded state to true and assert that the "Photos" tab is visible
         mActivity.getSession().notifyPhotoPickerExpanded(true);
-        photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
-        assertThat(photosTab.exists()).isTrue();
+        assertPhotosTabExists();
         assertThat(photosTab.getText()).isEqualTo(PHOTOS_TAB_LABEL);
     }
 
@@ -221,6 +251,7 @@ public class EmbeddedPhotoPickerTest {
         // 2. Set the expanded state to true so that navigation bar is visible and the view that
         // constitutes the surface package can be extracted
         mActivity.getSession().notifyPhotoPickerExpanded(true);
+        assertPhotosTabExists();
         UiObject2 surfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
                 .getParent().getParent().getParent();
         assertThat(surfacePackage).isNotNull();
@@ -233,6 +264,7 @@ public class EmbeddedPhotoPickerTest {
                 surfaceView.getHeight() / 2);
 
         // 4. Get the new surface package and its dimensions
+        assertPhotosTabExists();
         UiObject2 newSurfacePackage = getUiObjectMatchingDescription(PHOTOS_TAB_LABEL, sDevice)
                 .getParent().getParent().getParent();
         assertThat(newSurfacePackage).isNotNull();
@@ -244,6 +276,82 @@ public class EmbeddedPhotoPickerTest {
         assertThat(newHeight).isEqualTo(surfaceView.getHeight() / 2);
     }
 
+    @Test
+    public void testClose_onSelectionComplete_onClickDoneButton() throws Exception {
+        addMediaAndLaunchActivity(1);
+
+        // 1. Launch the embedded session
+        launchEmbeddedSession();
+        assertThat(mActivity.getSession()).isNotNull();
+
+        // 2. For the 'Done' button to show up, notify picker expanded and click a media item
+        mActivity.getSession().notifyPhotoPickerExpanded(true);
+        assertPhotosTabExists();
+        clickAndWait(sDevice, getMediaItem(sDevice));
+
+        // 3. Set a new count down latch for 'onSelectionComplete' client invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSelectionCompleteClientInvocation(countDownLatch);
+
+        // 4. Click the 'Done' button to trigger 'onSelectionComplete'
+        final UiObject doneButton = getUiObjectMatchingText(DONE_BUTTON_LABEL, sDevice);
+        clickAndWait(sDevice, doneButton);
+
+        // 5. Assert that 'onSelectionComplete' is invoked and the surface package is released
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(getMediaItem(sDevice).exists()).isFalse();
+    }
+
+    @Test
+    public void testRevokeUriAccess_onRequestRevokeUriPermission() throws Exception {
+        addMediaAndLaunchActivity(1);
+        final List<Uri> selectedUris = mActivity.getSelectedUris();
+
+        // 1. Launch the embedded session
+        launchEmbeddedSession();
+        assertThat(mActivity.getSession()).isNotNull();
+        assertThat(selectedUris.size()).isEqualTo(0);
+
+        // 2. Get media item, perform click and wait for 'onItemsSelected' invocation
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsSelectedClientInvocation(countDownLatch);
+
+        UiObject mediaItem = getMediaItem(sDevice);
+        clickAndWait(sDevice, mediaItem);
+
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.size()).isEqualTo(1);
+        Uri selectedUri = selectedUris.get(0);
+
+        // 3. Set a new count down latch for 'onItemsDeselected' client invocation
+        countDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForItemsDeselectedClientInvocation(countDownLatch);
+
+        // 4. Notify items deselected for the previously selected media item
+        mActivity.getSession().requestRevokeUriPermission(selectedUris);
+
+        // 5. Assert that the item is deselected.
+        assertThat(countDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
+        assertThat(selectedUris.isEmpty()).isTrue();
+        assertThat(hasUriPermission(selectedUri)).isFalse();
+    }
+
+    @Test
+    public void testCustomThemeNightModeInEmbeddedPhotoPickerFeatureInfo() throws Exception {
+        EmbeddedPhotoPickerFeatureInfo embeddedPhotoPickerFeatureInfo =
+                new EmbeddedPhotoPickerFeatureInfo.Builder().build();
+
+        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
+                .isEqualTo(Configuration.UI_MODE_NIGHT_UNDEFINED);
+
+        embeddedPhotoPickerFeatureInfo =
+                new EmbeddedPhotoPickerFeatureInfo.Builder()
+                        .setThemeNightMode(Configuration.UI_MODE_NIGHT_YES).build();
+
+        assertThat(embeddedPhotoPickerFeatureInfo.getThemeNightMode())
+                .isEqualTo(Configuration.UI_MODE_NIGHT_YES);
+    }
+
     private void addMediaAndLaunchActivity(int itemCount) throws Exception {
         mUriList.addAll(createImagesAndGetUris(itemCount, mContext.getUserId()));
         launchTestActivity();
@@ -252,9 +360,11 @@ public class EmbeddedPhotoPickerTest {
     private void launchEmbeddedSession() throws Exception {
         assertUiObjectExistsWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
         assertUiObjectExistsWithId(EMBEDDED_SURFACE_ID, sDevice);
+        mSessionCountDownLatch = new CountDownLatch(1);
+        mActivity.setCountDownLatchForSessionOpenedClientInvocation(mSessionCountDownLatch);
         findAndClickUiObjectWithId(LAUNCH_EMBEDDED_BUTTON_ID, sDevice);
+        assertThat(mSessionCountDownLatch.await(1L, TimeUnit.SECONDS)).isTrue();
     }
-
 
     private void launchTestActivity() {
         final Intent intent = new Intent(mContext, EmbeddedTestActivity.class);
@@ -299,5 +409,17 @@ public class EmbeddedPhotoPickerTest {
                 Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
         return res == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /**
+     * Asserts that the "Photos" tab exists in the UI and is visible within a timeout of 1 second.
+     * This method relies on finding a UI element that matches the text specified by
+     * {@link #PHOTOS_TAB_LABEL}.
+     *
+     * @throws AssertionError If the "Photos" tab is not found within the specified timeout.
+     */
+    private void assertPhotosTabExists() {
+        UiObject photosTab = getUiObjectMatchingText(PHOTOS_TAB_LABEL, sDevice);
+        assertThat(photosTab.waitForExists(1000)).isTrue();
     }
 }

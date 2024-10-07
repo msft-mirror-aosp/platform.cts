@@ -64,6 +64,8 @@ public class CtsCredentialManagerDeviceTest {
                 isWatch(mContext));
         assumeFalse("Skipping test: Auto does not support CredentialManager yet",
                 CtsCredentialManagerUtils.isAuto(mContext));
+        assumeFalse("Skipping test: Tv does not support CredentialManager yet",
+                CtsCredentialManagerUtils.isTv(mContext));
 
         Log.i(TAG, "Enabling CredentialManager flags as well...");
         enableCredentialManagerDeviceConfigFlag(mContext);

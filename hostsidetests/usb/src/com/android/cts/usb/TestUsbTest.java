@@ -59,6 +59,8 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
     private static final String DUMMY_ACTIVITY = PACKAGE_NAME + ".DummyActivity";
     private static final long CONN_TIMEOUT_MS = 15000;
     private static final long SLEEP_MS = 300;
+    private static final String FEATURE_MIDI = "android.software.midi";
+    private static final String MIDI_DEVICE_NAME = "Android USB Peripheral Port";
 
     private ITestDevice mDevice;
     private IAbi mAbi;
@@ -256,6 +258,26 @@ public class TestUsbTest extends DeviceTestCase implements IAbiReceiver, IBuildR
         assertTrue("No usb state transition", stateList.size() > 1);
         // Last state has to be CONFIGURED.
         assertEquals("Last state != CONFIGURED", "CONFIGURED", stateList.get(stateList.size() - 1));
+    }
+
+    public void testUsbMidiGadget() throws Exception {
+        String adbSerial = mDevice.getSerialNumber().toLowerCase(Locale.ENGLISH).trim();
+        if (adbSerial.startsWith("emulator-") || mDevice.isAdbTcp()) {
+            return; // Skip emulators and adb over WiFi
+        }
+
+        if (!mDevice.executeShellCommand("pm list features").contains(FEATURE_MIDI)) {
+            return; // Skip if midi isn't supported on the device
+        }
+
+        mDevice.executeShellCommand("svc usb setFunctions midi");
+        RunUtil.getDefault().sleep(SLEEP_MS);
+        mDevice.waitForDeviceAvailable(CONN_TIMEOUT_MS);
+        CLog.i("Device reconnected");
+
+        String midiDevices = mDevice.executeShellCommand("dumpsys midi");
+        CLog.i(midiDevices);
+        assertTrue("Midi device not found", midiDevices.contains(MIDI_DEVICE_NAME));
     }
 
     private void clearLogCat() throws DeviceNotAvailableException {

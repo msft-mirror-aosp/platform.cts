@@ -70,12 +70,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.graphics.Insets;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.AppModeSdkSandbox;
 import android.platform.test.annotations.RequiresFlagsDisabled;
+import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.server.wm.WindowManagerState;
@@ -119,7 +121,9 @@ import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 import androidx.test.uiautomator.Until;
 
+import com.android.bedstead.multiuser.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.compatibility.common.util.UserHelper;
 import com.android.cts.input.UinputTouchScreen;
 import com.android.cts.mockime.ImeEvent;
 import com.android.cts.mockime.ImeEventStream;
@@ -177,6 +181,8 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private Instrumentation mInstrumentation;
 
+    private TestActivity mTestActivity;
+
     @Before
     public void setup() {
         mInstrumentation = InstrumentationRegistry.getInstrumentation();
@@ -198,7 +204,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             @NonNull String nonFocusedMarker) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
         final AtomicReference<EditText> nonFocusedEditTextRef = new AtomicReference<>();
-        TestActivity.startSync(activity -> {
+        final var activityStarter = new TestActivity.Starter().withDisplayId(
+                new UserHelper().getMainDisplayId());
+        mTestActivity = activityStarter.startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -215,7 +223,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             nonFocusedEditTextRef.set(nonFocusedEditText);
             layout.addView(nonFocusedEditText);
             return layout;
-        });
+        }, TestActivity.class);
         return new Pair<>(focusedEditTextRef.get(), nonFocusedEditTextRef.get());
     }
 
@@ -225,7 +233,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     private EditText launchTestActivity2(@NonNull String marker) {
         final AtomicReference<EditText> focusedEditTextRef = new AtomicReference<>();
-        new TestActivity.Starter().startSync(activity -> {
+        mTestActivity = new TestActivity.Starter().startSync(activity -> {
             final LinearLayout layout = new LinearLayout(activity);
             layout.setOrientation(LinearLayout.VERTICAL);
 
@@ -242,9 +250,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testBasicShowHideSoftInput() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -258,6 +263,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -295,7 +301,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             @NonNull PreBackPressProcedure preBackPressProcedure) throws Exception {
         final Instrumentation instrumentation = mInstrumentation;
         final Context context = instrumentation.getTargetContext();
-        final InputMethodManager imm = context.getSystemService(InputMethodManager.class);
 
         // Whether 'OnBackInvokedCallback' or 'onBackPressed' (legacy back) is used is defined by
         // the 'enableOnBackInvokedCallback' flag in the Application manifest.
@@ -338,6 +343,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -399,6 +405,14 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 NO_OP_PRE_BACK_PRESS_PROCEDURE);
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testHideImeAfterBackPressed_ScreenOffOn() throws Exception {
@@ -476,9 +490,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
     @Test
     public void testToggleSoftInput() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -493,6 +504,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
 
             // Test toggleSoftInputFromWindow() flow
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             runOnMainSync(() -> imm.toggleSoftInputFromWindow(editText.getWindowToken(), 0, 0));
 
             expectEvent(stream.copy(), showSoftInputMatcher(InputMethod.SHOW_EXPLICIT), TIMEOUT);
@@ -576,9 +588,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      */
     @Test
     public void testShowHideKeyboardImmediately() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -589,6 +598,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
 
             expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
 
+            final var imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -622,9 +632,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     @RequiresFlagsDisabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
     public void testShowSoftInputWithShowForcedFlagWhenAppIsLeaving() throws Exception {
-        final InputMethodManager imm = mInstrumentation
-                .getTargetContext().getSystemService(InputMethodManager.class);
-
         try (MockImeSession imeSession = MockImeSession.create(
                 mInstrumentation.getContext(),
                 mInstrumentation.getUiAutomation(),
@@ -659,6 +666,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), NOT_EXPECT_TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = testActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(ediTextRef.get())));
 
@@ -693,8 +701,6 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
     @Test
     public void testFloatingImeHideKeyboardAfterBackPressed() throws Exception {
         final Instrumentation instrumentation = mInstrumentation;
-        final InputMethodManager imm = instrumentation.getTargetContext().getSystemService(
-                InputMethodManager.class);
 
         // Initial MockIme with floating IME settings.
         try (MockImeSession imeSession = MockImeSession.create(
@@ -708,6 +714,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             notExpectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
             expectImeInvisible(TIMEOUT);
 
+            final InputMethodManager imm = mTestActivity.getSystemService(InputMethodManager.class);
             assertTrue("hasActiveInputConnection() must return true if the View has IME focus",
                     getOnMainSync(() -> imm.hasActiveInputConnection(editText)));
 
@@ -816,30 +823,70 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
         }
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Unspecified_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_UNSPECIFIED);
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Visible_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_VISIBLE);
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_AlwaysVisible_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_ALWAYS_VISIBLE);
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_Hidden_EditorDialogLostFocusAfterUnlocked() throws Exception {
         runImeDoesntReshowAfterKeyguardTest(SOFT_INPUT_STATE_HIDDEN);
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Background visible user devices (primarily Android auto) currently doesn't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported and power manager to IME communication is enabled on "
+            + "partial interactiveness. relevant bugs: b/330610015 b/366045308 b/366037029")
     @AppModeFull(reason = "KeyguardManager is not accessible from instant apps")
     @Test
     public void testImeState_AlwaysHidden_EditorDialogLostFocusAfterUnlocked() throws Exception {
@@ -1208,6 +1255,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                     View.VISIBLE, TIMEOUT);
             expectImeVisible(TIMEOUT);
 
+            WindowInsets initialRootWindowInsets =
+                    testActivity.getWindow().getDecorView().getRootWindowInsets();
+
             // Launch another test activity from another process with popup dialog.
             MockTestActivityUtil.launchSync(instant, TIMEOUT,
                     Map.of(MockTestActivityUtil.EXTRA_KEY_SHOW_DIALOG, "true"));
@@ -1215,35 +1265,28 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
             assertNotNull(uiDevice.wait(Until.hasObject(dialogSelector), TIMEOUT));
 
-            // Dismiss dialog and back to original test activity
-            MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG);
+            final UserHelper mUserHelper = new UserHelper();
 
-            final CountDownLatch imeVisibilityUpdateLatch = new CountDownLatch(1);
-            AtomicReference<Boolean> imeInsetsVisible = new AtomicReference<>();
-            TestUtils.runOnMainSync(
-                    () -> testActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
-                            (v, insets) -> {
-                                if (insets.hasInsets()) {
-                                    imeInsetsVisible.set(insets.isVisible(WindowInsets.Type.ime()));
-                                    imeVisibilityUpdateLatch.countDown();
-                                }
-                                return v.onApplyWindowInsets(insets);
-                            }));
+            // Dismiss dialog and back to original test activity
+            MockTestActivityUtil.sendBroadcastAction(MockTestActivityUtil.EXTRA_DISMISS_DIALOG,
+                    mUserHelper.getUserId());
+
             // Verify keyboard visibility should aligned with IME insets visibility.
             TestUtils.waitOnMainUntil(
                     () -> testActivity.getWindow().getDecorView().getVisibility() == VISIBLE
                             && testActivity.getWindow().getDecorView().hasWindowFocus(), TIMEOUT);
-            assertTrue("Waiting for onApplyWindowInsets timed out",
-                    imeVisibilityUpdateLatch.await(5, TimeUnit.SECONDS));
             // Wait for layout being stable in case insets visibility might not align with the
             // input view visibility.
             waitForInputViewLayoutStable(stream, LAYOUT_STABLE_THRESHOLD);
 
-            if (imeInsetsVisible.get()) {
+            if (initialRootWindowInsets.isVisible(WindowInsets.Type.ime())) {
                 expectImeVisible(TIMEOUT);
             } else {
                 expectImeInvisible(TIMEOUT);
             }
+            assertEquals(initialRootWindowInsets.getInsets(WindowInsets.Type.ime()),
+                    testActivity.getWindow().getDecorView().getRootWindowInsets().getInsets(
+                            WindowInsets.Type.ime()));
         }
     }
 
@@ -1272,8 +1315,9 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 expectImeInvisible(TIMEOUT);
 
                 // Request showSoftInput, expect the request is valid and soft-keyboard visible.
+                final UserHelper userHelper = new UserHelper();
                 MockTestActivityUtil.sendBroadcastAction(
-                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT);
+                        MockTestActivityUtil.EXTRA_SHOW_SOFT_INPUT, userHelper.getUserId());
                 expectEvent(stream, eventMatcher("showSoftInput"), TIMEOUT);
                 expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
                 expectEventWithKeyValue(stream, "onWindowVisibilityChanged", "visible",
@@ -1443,6 +1487,10 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
      * "NOT_FOCUSABLE | ALT_FOCUSABLE_IM" flags popup during pressing the recents key to the
      * overview screen.</b>
      */
+    @RequireNotVisibleBackgroundUsers(reason =
+            "To pass on secondary user on secondary display, this test should use UinputKeyboard "
+            + "instead of `mInstrumentation.sendKeyDownUpSync`. b/368974455 will allow "
+            + "UinputKeyboard to send KeyEvents to specific displays.")
     @Test
     public void testImeHiddenWhenImeLayeringTargetDelayedToShowInAppSwitch() throws Exception {
         assumeTrue(hasRecentsScreen());
@@ -1475,6 +1523,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             testActivity.getWindow().getDecorView().postDelayed(
                     () -> SystemUtil.runWithShellPermissionIdentity(() ->
                     testActivity.showOverlayWindow(true /* imeFocusable */)), 100);
+            // TODO(b/368974455): Use UinputKeyboard instead.
             mInstrumentation.sendKeyDownUpSync(
                     KeyEvent.KEYCODE_RECENT_APPS);
 
@@ -1486,6 +1535,7 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
             expectImeInvisible(TIMEOUT);
         } finally {
             // Back to home to clean up states after the test finished.
+            // TODO(b/368974455): Use UinputKeyboard instead.
             UiDevice.getInstance(mInstrumentation).pressHome();
         }
     }
@@ -1767,6 +1817,106 @@ public class KeyboardVisibilityControlTest extends EndToEndImeTestBase {
                 // Rerun the test procedure to ensure it passes after exiting split-screen mode.
                 testProcedureForTestActivity2.run();
             }
+        }
+    }
+
+    /**
+     * This tests checks that the apps that are in vertical split screen, don't get IME insets
+     */
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_REFACTOR_INSETS_CONTROLLER)
+    public void testNoImeInsetsInSplitScreen() throws Throwable {
+        assumeTrue(TestUtils.supportsSplitScreenMultiWindow());
+
+        setAutoRotateScreen(false);
+        final UiDevice uiDevice = UiDevice.getInstance(mInstrumentation);
+        uiDevice.setOrientationPortrait();
+        mInstrumentation.waitForIdleSync();
+
+        try (MockImeSession imeSession = MockImeSession.create(
+                mInstrumentation.getContext(),
+                mInstrumentation.getUiAutomation(),
+                new ImeSettings.Builder())) {
+            final ImeEventStream stream = imeSession.openEventStream();
+            final String marker = getTestMarker();
+
+            // Launch an editor activity to be on the split primary task.
+            final AtomicReference<EditText> editTextRef = new AtomicReference<>();
+            final TestActivity splitPrimaryActivity = TestActivity.startSync(activity -> {
+                final LinearLayout layout = new LinearLayout(activity);
+                layout.setOrientation(LinearLayout.VERTICAL);
+                final EditText editText = new EditText(activity);
+                editTextRef.set(editText);
+                layout.addView(editText);
+                editText.setHint("focused editText");
+                editText.setPrivateImeOptions(marker);
+                editText.requestFocus();
+                return layout;
+            });
+
+            expectEvent(stream, editorMatcher("onStartInput", marker), TIMEOUT);
+            expectImeInvisible(TIMEOUT);
+
+            // Launch another activity with SOFT_INPUT_STATE_HIDDEN flag to be on the split
+            // secondary task, expect the IME won't receive onStartInputView and invisible.
+            final TestActivity splitSecondaryActivity = new TestActivity.Starter()
+                    .asMultipleTask()
+                    .withAdditionalFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
+                    .startSync(splitPrimaryActivity, activity -> {
+                        activity.getWindow().setSoftInputMode(SOFT_INPUT_STATE_HIDDEN);
+                        return new LinearLayout(activity);
+                    }, TestActivity2.class);
+            expectImeInvisible(TIMEOUT);
+
+            final var editText = editTextRef.get();
+            final var display = editText.getContext().getDisplay();
+
+            final CountDownLatch imeInsetsLatch = new CountDownLatch(1);
+            AtomicReference<Boolean> hasNonZeroImeInsets = new AtomicReference<>(false);
+            AtomicReference<Insets> receivedInsets = new AtomicReference<>();
+            final View.OnApplyWindowInsetsListener listener = (v, windowInsets) -> {
+                receivedInsets.set(windowInsets.getInsets(WindowInsets.Type.ime()));
+                if (!Insets.NONE.equals(windowInsets.getInsets(ime()))) {
+                    hasNonZeroImeInsets.set(true);
+                }
+                if (windowInsets.isVisible(ime())) {
+                    imeInsetsLatch.countDown();
+                }
+                return v.onApplyWindowInsets(windowInsets);
+            };
+            // Depending on the size of the IME, only one of the two activities could get the insets
+            TestUtils.runOnMainSync(() -> {
+                splitPrimaryActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
+                        listener);
+                splitSecondaryActivity.getWindow().getDecorView().setOnApplyWindowInsetsListener(
+                        listener);
+            });
+
+
+            /*
+             * Since this test relies on window focus with multiple windows involved, we need to
+             * use a global method of emulating touch that goes through the entire pipeline. This
+             * ensures that the window manager is aware of the tap that occurred, and provides
+             * window focus to the tapped window.
+             */
+            try (var touch = new UinputTouchScreen(mInstrumentation, display)) {
+                // Tap the editor on the split primary task to focus the window and show the IME.
+                touch.tapOnViewCenter(editText);
+                // TODO(b/280797309): The first tap sends the IME show request before the
+                //  input focus changes, so we have to wait for that and tap again.
+                TestUtils.waitOnMainUntil(editText::hasWindowFocus, TIMEOUT);
+                touch.tapOnViewCenter(editText);
+
+                expectEvent(stream, editorMatcher("onStartInputView", marker), TIMEOUT);
+                expectImeVisible(TIMEOUT);
+            }
+
+            // Assert that the IME height of the app in split screen was zero
+            assertTrue("Waiting for onApplyWindowInsets with the IME visible failed",
+                    imeInsetsLatch.await(5, TimeUnit.SECONDS));
+            assertFalse("Received IME insets were not zero. Last received insets = "
+                    + receivedInsets.get(), hasNonZeroImeInsets.get());
+
         }
     }
 

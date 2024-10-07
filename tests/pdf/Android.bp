@@ -21,7 +21,7 @@ android_test {
     team: "trendy_team_android_pdf",
     defaults: ["cts_defaults"],
     compile_multilib: "both",
-    libs: ["android.test.runner"],
+    libs: ["android.test.runner.stubs.test"],
     static_libs: [
         "androidx.test.rules",
         "mockito-target-minus-junit4",
@@ -39,4 +39,11 @@ android_test {
         "general-tests",
     ],
     sdk_version: "test_current",
+}
+
+test_module_config {
+    name: "CtsPdfTestCases_cts_pdfdocumenttest",
+    base: "CtsPdfTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.graphics.pdf.cts.PdfDocumentTest"],
 }

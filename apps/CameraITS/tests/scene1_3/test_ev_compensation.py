@@ -17,8 +17,8 @@
 import logging
 import math
 import os.path
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -111,12 +111,12 @@ def _create_basic_plot(evs, lumas, log_path):
   """
   test_name = f'{_NAME}_basic'
   test_name_w_path = os.path.join(log_path, test_name)
-  pylab.figure(test_name)
-  pylab.plot(evs, lumas, '-ro')
-  pylab.title(test_name)
-  pylab.xlabel('EV Compensation')
-  pylab.ylabel('Mean Luma (Normalized)')
-  matplotlib.pyplot.savefig(f'{test_name_w_path}_plot.png')
+  plt.figure(test_name)
+  plt.plot(evs, lumas, '-ro')
+  plt.title(test_name)
+  plt.xlabel('EV Compensation')
+  plt.ylabel('Mean Luma (Normalized)')
+  plt.savefig(f'{test_name_w_path}_plot.png')
 
 
 def _create_advanced_plot(ev_steps, lumas, expected_lumas, log_path):
@@ -131,14 +131,14 @@ def _create_advanced_plot(ev_steps, lumas, expected_lumas, log_path):
 
   test_name = f'{_NAME}_advanced'
   test_name_w_path = os.path.join(log_path, test_name)
-  pylab.figure(test_name)
-  pylab.plot(ev_steps, lumas, '-ro', label='measured', alpha=0.7)
-  pylab.plot(ev_steps, expected_lumas, '-bo', label='expected', alpha=0.7)
-  pylab.title(test_name)
-  pylab.xlabel('EV Compensation')
-  pylab.ylabel('Mean Luma (Normalized)')
-  pylab.legend(loc='lower right', numpoints=1, fancybox=True)
-  matplotlib.pyplot.savefig(f'{test_name_w_path}_plot.png')
+  plt.figure(test_name)
+  plt.plot(ev_steps, lumas, '-ro', label='measured', alpha=0.7)
+  plt.plot(ev_steps, expected_lumas, '-bo', label='expected', alpha=0.7)
+  plt.title(test_name)
+  plt.xlabel('EV Compensation')
+  plt.ylabel('Mean Luma (Normalized)')
+  plt.legend(loc='lower right', numpoints=1, fancybox=True)
+  plt.savefig(f'{test_name_w_path}_plot.png')
 
 
 def _create_basic_request_with_ev(ev):

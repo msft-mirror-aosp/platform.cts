@@ -23,9 +23,9 @@ android_test_helper_app {
     min_sdk_version: "24",
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.test",
         "junit",
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "ctstestrunner-axt",

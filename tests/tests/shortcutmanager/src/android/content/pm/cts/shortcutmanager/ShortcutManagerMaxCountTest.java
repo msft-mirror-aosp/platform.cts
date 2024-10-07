@@ -35,20 +35,20 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             assertTrue(getManager().setDynamicShortcuts(list(makeShortcut("s1"))));
 
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts))));
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled();
 
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("sx", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("sx", 1, mMaxShortcuts))));
 
             assertDynamicShortcutCountExceeded(() -> {
-                getManager().setDynamicShortcuts(makeShortcuts(makeIds("sy", 1, 16)));
+                getManager().setDynamicShortcuts(makeShortcuts(makeIds("sy", 1, mMaxShortcuts + 1)));
             });
 
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds(makeIds("sx", 1, 15))
+                    .haveIds(makeIds("sx", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled();
 
@@ -56,25 +56,26 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
                 getManager().addDynamicShortcuts(list(
                         makeShortcut("sy1")));
             });
+            String[] dynamicIds = makeIds("sx", 1, mMaxShortcuts);
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds(makeIds("sx", 1, 15))
+                    .haveIds(dynamicIds)
                     .areAllDynamic()
                     .areAllEnabled();
-            getManager().removeDynamicShortcuts(list("sx15"));
+            getManager().removeDynamicShortcuts(list("sx" + mMaxShortcuts));
             assertTrue(getManager().addDynamicShortcuts(list(
                     makeShortcut("sy1"))));
+            dynamicIds[dynamicIds.length - 1] = "sy1";
 
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds("sx1", "sx2", "sx3", "sx4", "sx5", "sx6", "sx7", "sx8", "sx9", "sx10",
-                            "sx11", "sx12", "sx13", "sx14", "sy1")
+                    .haveIds(dynamicIds)
                     .areAllDynamic()
                     .areAllEnabled();
 
             getManager().removeAllDynamicShortcuts();
 
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts))));
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled();
         });
@@ -116,33 +117,33 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
         // Note since max counts is per activity, testNumDynamicShortcuts_single should just pass.
         testNumDynamicShortcuts();
 
-        // Launcher_manifest_1 has one manifest, so can only add 14 dynamic shortcuts.
+        // Launcher_manifest_1 has one manifest, so can only add {@link #getMaxShortcutCountPerActivity()} - 1 dynamic shortcuts.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             setTargetActivityOverride("Launcher_manifest_1");
 
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, 14))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts - 1))));
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher_manifest_1"))
-                    .haveIds(makeIds("s", 1, 14))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts - 1))
                     .areAllEnabled();
 
             assertDynamicShortcutCountExceeded(() -> getManager().setDynamicShortcuts(
-                    makeShortcuts(makeIds("sx", 1, 15))));
+                    makeShortcuts(makeIds("sx", 1, mMaxShortcuts))));
             // Not changed.
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher_manifest_1"))
-                    .haveIds(makeIds("s", 1, 14))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts - 1))
                     .areAllEnabled();
         });
 
-        // Launcher_manifest_2 has two manifests, so can only add 13.
+        // Launcher_manifest_2 has two manifests, so can only add {@link #getMaxShortcutCountPerActivity()} - 2.
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             setTargetActivityOverride("Launcher_manifest_2");
 
-            assertTrue(getManager().addDynamicShortcuts(makeShortcuts(makeIds("s", 1, 13))));
+            assertTrue(getManager().addDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts - 2))));
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher_manifest_2"))
-                    .haveIds(makeIds("s", 1, 13))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts - 2))
                     .areAllEnabled();
 
             assertDynamicShortcutCountExceeded(() -> getManager().addDynamicShortcuts(list(
@@ -151,7 +152,7 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
             // Not added.
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher_manifest_2"))
-                    .haveIds(makeIds("s", 1, 13))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts - 2))
                     .areAllEnabled();
         });
     }
@@ -159,25 +160,25 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
     public void testChangeActivity() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
             setTargetActivityOverride("Launcher");
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts))));
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher"))
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled();
 
             setTargetActivityOverride("Launcher2");
-            assertTrue(getManager().addDynamicShortcuts(makeShortcuts(makeIds("sb", 1, 15))));
+            assertTrue(getManager().addDynamicShortcuts(makeShortcuts(makeIds("sb", 1, mMaxShortcuts))));
 
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher"))
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled()
 
                     .revertToOriginalList()
                     .selectByActivity(getActivity("Launcher2"))
-                    .haveIds(makeIds("sb", 1, 15))
+                    .haveIds(makeIds("sb", 1, mMaxShortcuts))
                     .areAllDynamic()
                     .areAllEnabled();
 
@@ -186,15 +187,18 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
                     makeShortcut("s1", getActivity("Launcher2"))
             )));
 
+            String[] launcherIds = makeIds("s", 1, mMaxShortcuts);
+            String[] launcher2Ids = makeIds("sb", 1, mMaxShortcuts);
+
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher"))
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(launcherIds)
                     .areAllDynamic()
                     .areAllEnabled()
 
                     .revertToOriginalList()
                     .selectByActivity(getActivity("Launcher2"))
-                    .haveIds(makeIds("sb", 1, 15))
+                    .haveIds(launcher2Ids)
                     .areAllDynamic()
                     .areAllEnabled();
 
@@ -203,18 +207,18 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
                     makeShortcut("s1", getActivity("Launcher2")),
                     makeShortcut("sb1", getActivity("Launcher"))
             )));
+            launcherIds[0] = "sb1";
+            launcher2Ids[0] = "s1";
 
             assertWith(getManager().getDynamicShortcuts())
                     .selectByActivity(getActivity("Launcher"))
-                    .haveIds("sb1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11",
-                            "s12", "s13", "s14", "s15")
+                    .haveIds(launcherIds)
                     .areAllDynamic()
                     .areAllEnabled()
 
                     .revertToOriginalList()
                     .selectByActivity(getActivity("Launcher2"))
-                    .haveIds("s1", "sb2", "sb3", "sb4", "sb5", "sb6", "sb7", "sb8", "sb9", "sb10",
-                            "sb11", "sb12", "sb13", "sb14", "sb15")
+                    .haveIds(launcher2Ids)
                     .areAllDynamic()
                     .areAllEnabled();
         });
@@ -222,27 +226,27 @@ public class ShortcutManagerMaxCountTest extends ShortcutManagerCtsTestsBase {
 
     public void testWithPinned() {
         runWithCallerWithStrictMode(mPackageContext1, () -> {
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("s", 1, mMaxShortcuts))));
         });
 
         setDefaultLauncher(getInstrumentation(), mLauncherContext1);
 
         runWithCallerWithStrictMode(mLauncherContext1, () -> {
             getLauncherApps().pinShortcuts(mPackageContext1.getPackageName(),
-                    list(makeIds("s", 1, 15)),
+                    list(makeIds("s", 1, mMaxShortcuts)),
                     getUserHandle());
         });
 
         runWithCallerWithStrictMode(mPackageContext1, () -> {
-            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("sb", 1, 15))));
+            assertTrue(getManager().setDynamicShortcuts(makeShortcuts(makeIds("sb", 1, mMaxShortcuts))));
 
             assertWith(getManager().getDynamicShortcuts())
-                    .haveIds(makeIds("sb", 1, 15))
+                    .haveIds(makeIds("sb", 1, mMaxShortcuts))
                     .areAllEnabled()
                     .areAllNotPinned();
 
             assertWith(getManager().getPinnedShortcuts())
-                    .haveIds(makeIds("s", 1, 15))
+                    .haveIds(makeIds("s", 1, mMaxShortcuts))
                     .areAllEnabled()
                     .areAllNotDynamic();
         });

@@ -517,8 +517,7 @@ public class ConferenceTest extends BaseTelecomTestWithMockServices {
         final Call conf = mInCallService.getLastConferenceCall();
         assertCallState(conf, Call.STATE_ACTIVE);
 
-        mConferenceVerificationObject.mCurrentCallEndpoint
-                .waitForCount(WAIT_FOR_STATE_CHANGE_TIMEOUT_MS);
+        mConferenceVerificationObject.mCurrentCallEndpoint.waitForCount(1);
         CallEndpoint endpoint = (CallEndpoint) mConferenceVerificationObject
                 .mCurrentCallEndpoint.getArgs(0)[0];
         assertEquals(endpoint, mConferenceObject.getCurrentCallEndpoint());

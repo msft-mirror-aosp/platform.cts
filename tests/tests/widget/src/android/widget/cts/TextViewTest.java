@@ -18,11 +18,7 @@ package android.widget.cts;
 
 import static android.content.pm.ApplicationInfo.PRIVATE_FLAG_EXT_ENABLE_ON_BACK_INVOKED_CALLBACK;
 
-import static com.android.text.flags.Flags.FLAG_DEPRECATE_UI_FONTS;
-import static com.android.text.flags.Flags.FLAG_LETTER_SPACING_JUSTIFICATION;
-import static com.android.text.flags.Flags.FLAG_FIX_LINE_HEIGHT_FOR_LOCALE;
 import static com.android.text.flags.Flags.FLAG_FIX_NULL_TYPEFACE_BOLDING;
-import static com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -87,7 +83,6 @@ import android.os.Bundle;
 import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.SystemClock;
-import android.platform.test.annotations.RequiresFlagsDisabled;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -1351,31 +1346,6 @@ public class TextViewTest {
         mult = Float.MAX_VALUE;
         setLineSpacing(add, mult);
         assertEquals(0, mTextView.getLineHeight());
-    }
-
-    @Test
-    @RequiresFlagsDisabled(FLAG_DEPRECATE_UI_FONTS)
-    public void testSetElegantLineHeight() throws Throwable {
-        mTextView = findTextView(R.id.textview_text);
-        assertFalse(mTextView.getPaint().isElegantTextHeight());
-        mActivityRule.runOnUiThread(() -> {
-            mTextView.setWidth(mTextView.getWidth() / 3);
-            mTextView.setPadding(1, 2, 3, 4);
-            mTextView.setGravity(Gravity.BOTTOM);
-        });
-        mInstrumentation.waitForIdleSync();
-
-        int oldHeight = mTextView.getHeight();
-        mActivityRule.runOnUiThread(() -> mTextView.setElegantTextHeight(true));
-        mInstrumentation.waitForIdleSync();
-
-        assertTrue(mTextView.getPaint().isElegantTextHeight());
-        assertTrue(mTextView.getHeight() > oldHeight);
-
-        mActivityRule.runOnUiThread(() -> mTextView.setElegantTextHeight(false));
-        mInstrumentation.waitForIdleSync();
-        assertFalse(mTextView.getPaint().isElegantTextHeight());
-        assertTrue(mTextView.getHeight() == oldHeight);
     }
 
     @Test
@@ -7030,42 +7000,36 @@ public class TextViewTest {
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_WORD, interWordTv.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_LETTER_SPACING_JUSTIFICATION)
     @Test
     public void testJustificationByStyle_InterCharacter() {
         TextView textView = findTextView(R.id.textview_justification_inter_character);
         assertEquals(Layout.JUSTIFICATION_MODE_INTER_CHARACTER, textView.getJustificationMode());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testUseBoundsForWidth_ByXml_false() {
         TextView textView = findTextView(R.id.use_bounds_for_width_false);
         assertFalse(textView.getUseBoundsForWidth());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testUseBoundsForWidth_ByXml_true() {
         TextView textView = findTextView(R.id.use_bounds_for_width_true);
         assertTrue(textView.getUseBoundsForWidth());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testShiftDrawingOffsetForStartOverhang_ByXml_false() {
         TextView textView = findTextView(R.id.shift_draw_offset_false);
         assertFalse(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
-    @RequiresFlagsEnabled(FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void testShiftDrawingOffsetForStartOverhang_ByXml_true() {
         TextView textView = findTextView(R.id.shift_draw_offset_true);
         assertTrue(textView.getShiftDrawingOffsetForStartOverhang());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumDefaultTextView() {
         TextView textView = findTextView(
@@ -7073,7 +7037,6 @@ public class TextViewTest {
         assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumTrueTextView() {
         TextView textView = findTextView(
@@ -7081,7 +7044,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumFalseTextView() {
         TextView textView = findTextView(
@@ -7089,7 +7051,6 @@ public class TextViewTest {
         assertFalse(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumDefaultEditText() {
         TextView textView = findTextView(
@@ -7097,7 +7058,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumTrueEditText() {
         TextView textView = findTextView(
@@ -7105,7 +7065,6 @@ public class TextViewTest {
         assertTrue(textView.isLocalePreferredLineHeightForMinimumUsed());
     }
 
-    @RequiresFlagsEnabled(FLAG_FIX_LINE_HEIGHT_FOR_LOCALE)
     @Test
     public void testUseLocalePreferredLineHeightForMinimumFalseEditText() {
         TextView textView = findTextView(
@@ -9532,7 +9491,6 @@ public class TextViewTest {
         assertEquals(measuredWidth, textView.getMeasuredWidth());
     }
 
-    @RequiresFlagsEnabled(com.android.text.flags.Flags.FLAG_USE_BOUNDS_FOR_WIDTH)
     @Test
     public void setGetShiftDrawingOffsetForStartOverhang() {
         TextView textView = new TextView(mActivity);

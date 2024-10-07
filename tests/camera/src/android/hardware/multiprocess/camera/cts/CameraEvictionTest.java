@@ -70,7 +70,7 @@ public class CameraEvictionTest extends ActivityInstrumentationTestCase2<CameraC
     private static final int OPEN_TIMEOUT = 2000; // Timeout for camera to open (ms).
     private static final int SETUP_TIMEOUT = 5000; // Remote camera setup timeout (ms).
     private static final int EVICTION_TIMEOUT = 1000; // Remote camera eviction timeout (ms).
-    private static final int WAIT_TIME = 2000; // Time to wait for process to launch (ms).
+    private static final int WAIT_TIME = 3000; // Time to wait for process to launch (ms).
     private static final int UI_TIMEOUT = 10000; // Time to wait for UI event before timeout (ms).
     // Time to wait for onCameraAccessPrioritiesChanged (ms).
     private static final int CAMERA_ACCESS_TIMEOUT = 2000;

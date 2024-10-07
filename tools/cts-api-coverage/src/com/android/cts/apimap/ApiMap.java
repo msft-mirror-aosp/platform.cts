@@ -56,8 +56,11 @@ import javax.xml.transform.TransformerException;
 public final class ApiMap {
 
     private static final int FORMAT_XML = 1;
-
     private static final int FORMAT_HTML = 2;
+
+    private static final int FULL_MODE = 1;
+    private static final int API_ONLY_MODE = 2;
+    private static final int ANNOTATION_ONLY_MODE = 3;
 
     private static final Set<String> IGNORE_PACKAGES = new HashSet<>(
             List.of("androidx.", "javax", "kotlinx.")
@@ -71,12 +74,15 @@ public final class ApiMap {
         System.out.println("too many jars to be dealt with.");
         System.out.println();
         System.out.println("Options:");
-        System.out.println("  -o FILE                output file");
-        System.out.println("  -f [xml|html]          format of output");
-        System.out.println("  -a PATH                path to the API XML file");
-        System.out.println("  -i PATH                path to the file containing a list of jars: "
+        System.out.println("  -o FILE                  output file");
+        System.out.println("  -f [xml|html]            format of output");
+        System.out.println("  -a PATH                  path to the API XML file");
+        System.out.println("  -i PATH                  path to the file containing a list of jars: "
                 + "Jars must be split by a whitespace, e.g. {jar1} {jar2}.");
-        System.out.println("  -j PARALLELISM         number of tasks to run in parallel, defaults"
+        System.out.println("  -m [api|annotation|full] the map information to generate: api->only "
+                + "generate api mapping data; annotation->only generate annotation mapping data; "
+                + "full->generate all mapping data.");
+        System.out.println("  -j PARALLELISM           number of tasks to run in parallel, defaults"
                 + " to number of cpus");
         System.out.println();
         System.exit(1);
@@ -90,6 +96,7 @@ public final class ApiMap {
         int format = FORMAT_XML;
         String apiXmlPath = "";
         int parallelism = Runtime.getRuntime().availableProcessors();
+        int mode = FULL_MODE;
 
         for (int i = 0; i < args.length; i++) {
             if (args[i].startsWith("-")) {
@@ -106,6 +113,17 @@ public final class ApiMap {
                     }
                 } else if ("-a".equals(args[i])) {
                     apiXmlPath = getExpectedArg(args, ++i);
+                } else if ("-m".equals(args[i])) {
+                    String modeSpec = getExpectedArg(args, ++i);
+                    if ("api".equalsIgnoreCase(modeSpec)) {
+                        mode = API_ONLY_MODE;
+                    } else if ("annotation".equalsIgnoreCase(modeSpec)) {
+                        mode = ANNOTATION_ONLY_MODE;
+                    } else if ("both".equalsIgnoreCase(modeSpec)) {
+                        mode = FULL_MODE;
+                    } else {
+                        printUsage();
+                    }
                 } else if ("-j".equals(args[i])) {
                     parallelism = Integer.parseInt(
                             Objects.requireNonNull(getExpectedArg(args, ++i)));
@@ -129,7 +147,8 @@ public final class ApiMap {
             throw new IllegalArgumentException("missing output file");
         }
 
-        ApiCoverage apiCoverage = getApiCoverage(apiXmlPath);
+        ApiCoverage apiCoverage = (mode == ANNOTATION_ONLY_MODE)
+                ? new ApiCoverage() : getApiCoverage(apiXmlPath);
         apiCoverage.resolveSuperClasses();
         ExecutorService service = Executors.newFixedThreadPool(parallelism);
         List<Future<CallGraphManager>> tasks = new ArrayList<>();
@@ -140,17 +159,19 @@ public final class ApiMap {
             int dotIndex = moduleName.lastIndexOf('.');
             moduleName = (dotIndex == -1) ? moduleName : moduleName.substring(0, dotIndex);
             tasks.add(scanJarFile(
-                    service, jar.getValue(), moduleName, apiCoverage));
+                    service, jar.getValue(), moduleName, apiCoverage, mode));
             // Clear tasks when there are too many in the blocking queue to avoid memory issue.
             if (tasks.size() > parallelism * 5) {
-                executeTasks(tasks, xmlWriter);
+                executeTasks(tasks, xmlWriter, mode);
                 tasks.clear();
             }
         }
-        executeTasks(tasks, xmlWriter);
+        executeTasks(tasks, xmlWriter, mode);
         service.shutdown();
 
-        xmlWriter.generateApiMapData(apiCoverage);
+        if (mode != ANNOTATION_ONLY_MODE) {
+            xmlWriter.generateApiMapData(apiCoverage);
+        }
         FileOutputStream output = new FileOutputStream(outputFile);
         if (format == FORMAT_XML) {
             xmlWriter.dumpXml(output);
@@ -160,11 +181,14 @@ public final class ApiMap {
     }
 
     /** Executes given tasks. */
-    private static void executeTasks(List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter) {
+    private static void executeTasks(
+            List<Future<CallGraphManager>> tasks, XmlWriter xmlWriter, int mode) {
         for (Future<CallGraphManager> task : tasks) {
             try {
                 CallGraphManager callGraphManager = task.get();
-                xmlWriter.generateXtsAnnotationMapData(callGraphManager.getModule());
+                if (mode != API_ONLY_MODE) {
+                    xmlWriter.generateXtsAnnotationMapData(callGraphManager.getModule());
+                }
             } catch (ExecutionException e) {
                 System.out.println("Task was completed unsuccessfully.");
             } catch (InterruptedException e) {
@@ -196,7 +220,8 @@ public final class ApiMap {
             ExecutorService service,
             Path filePath,
             String moduleName,
-            ApiCoverage apiCoverage) {
+            ApiCoverage apiCoverage,
+            int mode) {
         return service.submit(() -> {
             ModuleProfile moduleProfile = new ModuleProfile(moduleName);
             try (ZipFile zipSrc = new ZipFile(filePath.toString())) {
@@ -227,7 +252,9 @@ public final class ApiMap {
                 throw new RuntimeException(e);
             }
             CallGraphManager callGraphManager = new CallGraphManager(moduleProfile);
-            callGraphManager.resolveCoveredApis(apiCoverage);
+            if (mode != ANNOTATION_ONLY_MODE) {
+                callGraphManager.resolveCoveredApis(apiCoverage);
+            }
             return callGraphManager;
         });
     }

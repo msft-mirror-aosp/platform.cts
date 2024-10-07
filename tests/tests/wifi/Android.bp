@@ -34,7 +34,7 @@ android_test {
     compile_multilib: "both",
 
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 
     srcs: [
@@ -68,6 +68,7 @@ android_test {
         "mcts-tethering",
         "mcts-wifi",
         "sts",
+        "dts",
     ],
 
     data: [
@@ -87,7 +88,7 @@ android_test {
     compile_multilib: "both",
 
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 
     srcs: [

@@ -28,12 +28,10 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import android.content.ComponentName;
-import android.hardware.display.DisplayManager;
 import android.os.RemoteException;
 import android.platform.test.annotations.AppModeFull;
 import android.server.wm.MultiDisplayTestBase;
 import android.server.wm.WindowManagerState;
-import android.view.Display;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.cts.util.TestActivity;
@@ -56,8 +54,8 @@ import java.util.concurrent.TimeUnit;
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "Instant apps cannot query the installed IMEs")
 public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
-    private static final String MOCK_IME_ID =
-            "com.android.cts.mockimewithsubtypes/.MockImeWithSubtypes";
+    private static final String MOCK_IME_PACKAGE_NAME = "com.android.cts.mockimewithsubtypes";
+    private static final String MOCK_IME_ID = MOCK_IME_PACKAGE_NAME + "/.MockImeWithSubtypes";
     private static final String MOCK_IME_SUBTYPE_LABEL = "CTS Subtype 1 Test String";
     private static final String SETTINGS_ACTIVITY_PACKAGE = "com.android.settings";
 
@@ -80,6 +78,8 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
     public void tearDown() {
         runShellCommandOrThrow("ime reset");
         launchHomeActivity();
+        stopTestPackage(MOCK_IME_PACKAGE_NAME);
+        stopTestPackage(SETTINGS_ACTIVITY_PACKAGE);
     }
 
     @Test
@@ -104,8 +104,6 @@ public class InputMethodManagerMultiDisplayTest extends MultiDisplayTestBase {
 
             // Set up a simulated display.
             WindowManagerState.DisplayContent dc = session.setSimulateDisplay(true).createDisplay();
-            Display simulatedDisplay = mContext.getSystemService(DisplayManager.class)
-                    .getDisplay(dc.mId);
 
             // Launch a test activity on the simulated display.
             TestActivity testActivity = new TestActivity.Starter().withDisplayId(dc.mId)

@@ -35,6 +35,7 @@ import android.server.wm.ActivityManagerTestBase;
 import android.server.wm.RotationSession;
 import android.view.Surface;
 
+import org.junit.After;
 import org.junit.Test;
 
 /**
@@ -43,6 +44,13 @@ import org.junit.Test;
  */
 @Presubmit
 public class DockConfigChangeTests extends ActivityManagerTestBase {
+    private static final String TEST_PACKAGE_DESK_RESOURCES =
+            DESK_RESOURCES_ACTIVITY.getPackageName();
+
+    @After
+    public void tearDown() {
+        stopTestPackage(TEST_PACKAGE_DESK_RESOURCES);
+    }
 
     @Test
     public void testDeskMode_noConfigChange() {

@@ -110,12 +110,17 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -154,6 +159,16 @@ public class KeyAttestationTest {
     private static final int KM_ERROR_INVALID_INPUT_LENGTH = -21;
     private static final int KM_ERROR_UNKNOWN_ERROR = -1000;
     private static final int KM_ERROR_PERMISSION_DENIED = 6;
+
+    private static final Map<String, Integer> sECKeySizes = new HashMap<>();
+
+    static {
+        sECKeySizes.put("secp224r1", 224);
+        sECKeySizes.put("secp256r1", 256);
+        sECKeySizes.put("secp384r1", 384);
+        sECKeySizes.put("secp521r1", 521);
+        sECKeySizes.put("CURVE_25519", 256);
+    }
 
     private Context getContext() {
         return InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -1092,7 +1107,6 @@ public class KeyAttestationTest {
                 + " / challenge " + Arrays.toString(challenge)
                 + " / purposes " + purpose
                 + " / devicePropertiesAttestation " + devicePropertiesAttestation);
-
         String keystoreAlias = "test_key";
         Date startTime = new Date();
         KeyGenParameterSpec.Builder builder =
@@ -1102,7 +1116,34 @@ public class KeyAttestationTest {
                         .setAttestationChallenge(challenge)
                         .setDevicePropertiesAttestationIncluded(devicePropertiesAttestation);
 
-        generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        try {
+            generateKeyPair(KEY_ALGORITHM_EC, builder.build());
+        } catch (Throwable e) {
+            boolean isIdAttestationFailure =
+                    (e.getCause() instanceof KeyStoreException)
+                            && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
+                            == ((KeyStoreException) e.getCause()).getNumericErrorCode();
+            if (devicePropertiesAttestation && isIdAttestationFailure) {
+                if (getContext().getPackageManager().hasSystemFeature(
+                        PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+                    throw new Exception("Unexpected failure while generating key."
+                        + "\nIn case of AOSP/GSI builds, system provided properties could be"
+                        + " different from provisioned properties in KeyMaster/KeyMint. In"
+                        + " such cases, make sure attestation specific properties"
+                        + " (Build.*_FOR_ATTESTATION) are configured correctly.", e);
+                } else {
+                    Log.i(TAG, "key attestation with device IDs not supported; test skipped");
+                    return;
+                }
+            }
+
+            throw new Exception("Failed on curve " + curve + " challenge ["
+                    + new String(challenge) + "], purposes "
+                    + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
+                    + devicePropertiesAttestation,
+                    e);
+
+        }
 
         KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
         keyStore.load(null);
@@ -1114,7 +1155,7 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkEcKeyDetails(attestation, "CURVE_25519", 256);
+            checkEcKeyDetails(attestationCert, attestation, "CURVE_25519", 256);
             checkKeyUsage(attestationCert, purpose);
             checkKeyIndependentAttestationInfo(challenge, purpose,
                     ImmutableSet.of(KM_DIGEST_NONE), startTime, false,
@@ -1171,7 +1212,7 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkRsaKeyDetails(attestation, keySize, purposes,
+            checkRsaKeyDetails(attestationCert, attestation, keySize,
                     (paddingModes == null)
                             ? new HashSet<String>() : ImmutableSet.copyOf(paddingModes));
             checkKeyUsage(attestationCert, purposes);
@@ -1238,7 +1279,7 @@ public class KeyAttestationTest {
             X509Certificate attestationCert = (X509Certificate) certificates[0];
             Attestation attestation = Attestation.loadFromCertificate(attestationCert);
 
-            checkEcKeyDetails(attestation, ecCurve, keySize);
+            checkEcKeyDetails(attestationCert, attestation, ecCurve, keySize);
             checkKeyUsage(attestationCert, purposes);
             checkKeyIndependentAttestationInfo(challenge, purposes, startTime,
                 includeValidityDates, devicePropertiesAttestation, attestation);
@@ -1802,8 +1843,9 @@ public class KeyAttestationTest {
         return setBitCounter;
     }
 
-    private void checkRsaKeyDetails(Attestation attestation, int keySize, int purposes,
-            Set<String> expectedPaddingModes) throws CertificateParsingException {
+    private void checkRsaKeyDetails(X509Certificate attestationCert, Attestation attestation,
+                                    int keySize, Set<String> expectedPaddingModes)
+            throws CertificateParsingException {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
@@ -1816,15 +1858,20 @@ public class KeyAttestationTest {
         }
         assertEquals(keySize, keyDetailsList.getKeySize().intValue());
         assertNull(nonKeyDetailsList.getKeySize());
+        assertEquals(keySize,
+                ((RSAPublicKey) attestationCert.getPublicKey()).getModulus().bitLength());
 
         assertEquals(KM_ALGORITHM_RSA, keyDetailsList.getAlgorithm().intValue());
         assertNull(nonKeyDetailsList.getAlgorithm());
+        assertEquals(KEY_ALGORITHM_RSA, attestationCert.getPublicKey().getAlgorithm());
 
         assertNull(keyDetailsList.getEcCurve());
         assertNull(nonKeyDetailsList.getEcCurve());
 
         assertEquals(65537, keyDetailsList.getRsaPublicExponent().longValue());
         assertNull(nonKeyDetailsList.getRsaPublicExponent());
+        assertEquals(65537,
+                ((RSAPublicKey) attestationCert.getPublicKey()).getPublicExponent().intValue());
 
         Set<String> paddingModes;
         if (attestation.getKeymasterVersion() == 0) {
@@ -1851,7 +1898,8 @@ public class KeyAttestationTest {
                 paddingModes, either(is(expectedPaddingModes)).or(is(km1PossiblePaddingModes)));
     }
 
-    private void checkEcKeyDetails(Attestation attestation, String ecCurve, int keySize) {
+    private void checkEcKeyDetails(X509Certificate attestationCert, Attestation attestation,
+                                   String ecCurve, int keySize) {
         AuthorizationList keyDetailsList;
         AuthorizationList nonKeyDetailsList;
         if (attestation.getKeymasterSecurityLevel() == KM_SECURITY_LEVEL_TRUSTED_ENVIRONMENT
@@ -1863,15 +1911,44 @@ public class KeyAttestationTest {
             nonKeyDetailsList = attestation.getTeeEnforced();
         }
         assertEquals(keySize, keyDetailsList.getKeySize().intValue());
+        assertEquals(keySize, sECKeySizes.get(ecCurve).intValue());
         assertNull(nonKeyDetailsList.getKeySize());
         assertEquals(KM_ALGORITHM_EC, keyDetailsList.getAlgorithm().intValue());
+        // Curve25519 Public key returns OID string for getAlgorithm
+        if (!ecCurve.equals("CURVE_25519")) {
+            assertEquals(KEY_ALGORITHM_EC, attestationCert.getPublicKey().getAlgorithm());
+        } else {
+            assertThat(attestationCert.getPublicKey().getAlgorithm(),
+                    /*Signing key algorithm "1.3.101.112" & Agreement Key algorithm "XDH"*/
+                    either(is("1.3.101.112")).or(is("XDH")));
+        }
         assertNull(nonKeyDetailsList.getAlgorithm());
         assertEquals(ecCurve, keyDetailsList.ecCurveAsString());
+        // Curve25519 Public key(X509PublicKey) cannot be cast to ECPublicKey and hence could not
+        // determine EC key parameters such as FieldFp, a, b, gx, gy, order and cofactor
+        if (!ecCurve.equals("CURVE_25519")) {
+            TestUtils.assertECParameterSpecEqualsIgnoreSeedIfNotPresent(
+                    getECParameterSpecFor(ecCurve),
+                    ((ECPublicKey) attestationCert.getPublicKey()).getParams());
+        }
         assertNull(nonKeyDetailsList.getEcCurve());
         assertNull(keyDetailsList.getRsaPublicExponent());
         assertNull(nonKeyDetailsList.getRsaPublicExponent());
         assertNull(keyDetailsList.getPaddingModes());
         assertNull(nonKeyDetailsList.getPaddingModes());
+    }
+
+    private ECParameterSpec getECParameterSpecFor(String ecCurve) {
+        if (ecCurve.equals("secp224r1")) {
+            return ECCurves.NIST_P_224_SPEC;
+        } else if (ecCurve.equals("secp256r1")) {
+            return ECCurves.NIST_P_256_SPEC;
+        } else if (ecCurve.equals("secp384r1")) {
+            return ECCurves.NIST_P_384_SPEC;
+        } else if (ecCurve.equals("secp521r1")) {
+            return ECCurves.NIST_P_521_SPEC;
+        }
+        return null;
     }
 
     private boolean isEncryptionPurpose(int purposes) {

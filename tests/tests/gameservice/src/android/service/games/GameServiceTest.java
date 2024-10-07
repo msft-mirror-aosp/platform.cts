@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.gamemanager.cts.util.TestUtil;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.ImageDecoder;
@@ -120,11 +121,15 @@ public final class GameServiceTest {
 
     @Before
     public void setUp() throws Exception {
+        Context context = getInstrumentation().getContext();
+        assumeTrue(TestUtil.shouldTestGameFeatures(context));
+        GameManager gameManager = context.getSystemService(GameManager.class);
+
         mServiceConnection = new ServiceConnection();
         assertThat(
-                getInstrumentation().getContext().bindService(
+                context.bindService(
                         new Intent("android.service.games.action.TEST_SERVICE").setPackage(
-                                getInstrumentation().getContext().getPackageName()),
+                                context.getPackageName()),
                         mServiceConnection,
                         Context.BIND_AUTO_CREATE)).isTrue();
         mServiceConnection.waitForConnection(10, TimeUnit.SECONDS);
@@ -138,9 +143,6 @@ public final class GameServiceTest {
                         TAKE_SCREENSHOT_VERIFIER_PACKAGE_NAME,
                         TOUCH_VERIFIER_PACKAGE_NAME));
 
-        GameManager gameManager =
-                getInstrumentation().getContext().getSystemService(GameManager.class);
-
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(gameManager,
                 manager -> manager.setGameServiceProvider(
                         getInstrumentation().getContext().getPackageName()));
@@ -153,6 +155,8 @@ public final class GameServiceTest {
 
     @After
     public void tearDown() throws Exception {
+        if (mServiceConnection == null) return;
+
         forceStop(GAME_PACKAGE_NAME);
         forceStop(NOT_GAME_PACKAGE_NAME);
         forceStop(FALSE_POSITIVE_GAME_PACKAGE_NAME);

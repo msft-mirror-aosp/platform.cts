@@ -62,6 +62,7 @@ import java.util.Random;
 public class BleRxTxOffsetPrecisionActivity extends PassFailButtons.Activity {
     private static final String TAG = BleRxTxOffsetPrecisionActivity.class.getName();
     private static final String DEVICE_NAME = Build.MODEL;
+    private static final int UNSIGNED_MASK = 0x7F;
 
     // Report log schema
     private static final String KEY_REFERENCE_DEVICE = "reference_device";
@@ -357,7 +358,7 @@ public class BleRxTxOffsetPrecisionActivity extends PassFailButtons.Activity {
         Random random = new Random();
         byte[] randomDeviceIdArray = new byte[1];
         random.nextBytes(randomDeviceIdArray);
-        mCurrentReferenceDeviceId = randomDeviceIdArray[0];
+        mCurrentReferenceDeviceId = (byte) (randomDeviceIdArray[0] & UNSIGNED_MASK);
         return mCurrentReferenceDeviceId;
     }
 

@@ -180,6 +180,23 @@ def check_apk_installed(device_id, package_name):
     )
 
 
+def get_array_size(buffer):
+  """Get array size based on different NumPy versions' functions.
+
+  Args:
+    buffer: A NumPy array.
+
+  Returns:
+    buffer_size: The size of the buffer.
+  """
+  np_version = numpy.__version__
+  if np_version.startswith(('1.25', '1.26', '2.')):
+    buffer_size = numpy.prod(buffer.shape)
+  else:
+    buffer_size = numpy.product(buffer.shape)
+  return buffer_size
+
+
 class ItsSession(object):
   """Controls a device over adb to run ITS scripts.
 
@@ -370,9 +387,9 @@ class ItsSession(object):
     time.sleep(1)
 
     its_device_utils.run(
-        f'{self.adb} shell am force-stop --user 0 {self.PACKAGE}')
+        f'{self.adb} shell am force-stop --user cur {self.PACKAGE}')
     its_device_utils.run(
-        f'{self.adb} shell am start-foreground-service --user 0 '
+        f'{self.adb} shell am start-foreground-service --user cur '
         f'-t text/plain -a {self.INTENT_START}'
     )
 
@@ -837,7 +854,7 @@ class ItsSession(object):
   def do_basic_recording(self, profile_id, quality, duration,
                          video_stabilization_mode=0, hlg10_enabled=False,
                          zoom_ratio=None, ae_target_fps_min=None,
-                         ae_target_fps_max=None):
+                         ae_target_fps_max=None, antibanding_mode=None):
     """Issue a recording request and read back the video recording object.
 
     The recording will be done with the format specified in quality. These
@@ -857,6 +874,7 @@ class ItsSession(object):
       zoom_ratio: float; zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService which
       contains path at which the recording is saved on the device, quality of
@@ -888,6 +906,9 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
+    if antibanding_mode:
+      cmd['aeAntibandingMode'] = antibanding_mode
+    else: cmd['aeAntibandingMode'] = 0
     self.sock.send(json.dumps(cmd).encode() + '\n'.encode())
     timeout = self.SOCK_TIMEOUT + self.EXTRA_SOCK_TIMEOUT
     self.sock.settimeout(timeout)
@@ -933,7 +954,8 @@ class ItsSession(object):
 
   def do_preview_recording_multiple_surfaces(
       self, output_surfaces, duration, stabilize, ois=False,
-      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None):
+      zoom_ratio=None, ae_target_fps_min=None, ae_target_fps_max=None,
+      antibanding_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -951,6 +973,7 @@ class ItsSession(object):
       zoom_ratio: float; static zoom ratio. None if default zoom
       ae_target_fps_min: int; CONTROL_AE_TARGET_FPS_RANGE min. Set if not None
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
@@ -973,11 +996,14 @@ class ItsSession(object):
     if ae_target_fps_min and ae_target_fps_max:
       cmd['aeTargetFpsMin'] = ae_target_fps_min
       cmd['aeTargetFpsMax'] = ae_target_fps_max
+    if antibanding_mode is not None:
+      cmd['aeAntibandingMode'] = antibanding_mode
     return self._execute_preview_recording(cmd)
 
-  def do_preview_recording(self, video_size, duration, stabilize, ois=False,
-                           zoom_ratio=None, ae_target_fps_min=None,
-                           ae_target_fps_max=None, hlg10_enabled=False):
+  def do_preview_recording(
+      self, video_size, duration, stabilize, ois=False, zoom_ratio=None,
+      ae_target_fps_min=None, ae_target_fps_max=None, hlg10_enabled=False,
+      antibanding_mode=None):
     """Issue a preview request and read back the preview recording object.
 
     The resolution of the preview and its recording will be determined by
@@ -995,13 +1021,14 @@ class ItsSession(object):
       ae_target_fps_max: int; CONTROL_AE_TARGET_FPS_RANGE max. Set if not None
       hlg10_enabled: boolean; True Eanable 10-bit HLG video recording, False
                               record using the regular SDK profile.
+      antibanding_mode: int; CONTROL_AE_ANTIBANDING_MODE. Set if not None
     Returns:
       video_recorded_object: The recorded object returned from ItsService
     """
     output_surfaces = self.preview_surface(video_size, hlg10_enabled)
     return self.do_preview_recording_multiple_surfaces(
         output_surfaces, duration, stabilize, ois, zoom_ratio,
-        ae_target_fps_min, ae_target_fps_max)
+        ae_target_fps_min, ae_target_fps_max, antibanding_mode)
 
   def do_preview_recording_with_dynamic_zoom(self, video_size, stabilize,
                                              sweep_zoom,
@@ -1472,7 +1499,7 @@ class ItsSession(object):
         bufs[self._camera_id][fmt].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[self._camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -1503,7 +1530,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -1633,8 +1660,9 @@ class ItsSession(object):
     cmd['previewRequestIdle'] = [preview_request_idle]
     cmd['stillCaptureRequest'] = [still_capture_req]
     cmd['outputSurfaces'] = [out_surface]
-
-    logging.debug('Capturing image with ON_AUTO_FLASH.')
+    if 'android.control.aeMode' in still_capture_req:
+      logging.debug('Capturing image with aeMode: %d',
+                    still_capture_req['android.control.aeMode'])
     return self.do_simple_capture(cmd, out_surface)
 
   def do_capture_with_extensions(self,
@@ -2022,7 +2050,7 @@ class ItsSession(object):
         # and cannot be accessed.
         nbufs += 1
       elif json_obj[_TAG_STR] == 'yuvImage':
-        buf_size = numpy.prod(buf.shape)
+        buf_size = get_array_size(buf)
         yuv_bufs[camera_id][buf_size].append(buf)
         nbufs += 1
       elif json_obj[_TAG_STR] == 'captureResults':
@@ -2040,7 +2068,7 @@ class ItsSession(object):
             if x == b'yuvImage':
               physical_id = json_obj[_TAG_STR][len(x):]
               if physical_id in cam_ids:
-                buf_size = numpy.prod(buf.shape)
+                buf_size = get_array_size(buf)
                 yuv_bufs[physical_id][buf_size].append(buf)
                 nbufs += 1
             else:
@@ -2802,6 +2830,17 @@ def validate_lighting(y_plane, scene, state='ON', log_path=None,
     else:
       raise AssertionError('Invalid lighting state string. '
                            "Valid strings: 'ON', 'OFF'.")
+
+
+def get_build_fingerprint(device_id):
+  """Return the build fingerprint of the device."""
+  cmd = f'adb -s {device_id} shell getprop ro.build.fingerprint'
+  try:
+    build_fingerprint = subprocess.check_output(cmd.split()).decode('utf-8').strip()
+    logging.debug('Build fingerprint: %s', build_fingerprint)
+  except (subprocess.CalledProcessError, ValueError) as exp_errors:
+    raise AssertionError('No build_fingerprint.') from exp_errors
+  return build_fingerprint
 
 
 def get_build_sdk_version(device_id):

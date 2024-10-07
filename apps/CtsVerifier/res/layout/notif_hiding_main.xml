@@ -50,6 +50,13 @@
                 android:padding="10dp"
                 style="@style/InstructionsSmallFont"/>
 
+            <TextView
+                android:id="@+id/test_warning"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                style="@style/InstructionsFont"/>
+
             <LinearLayout
                 android:id="@+id/action_button_layout"
                 android:layout_width="match_parent"

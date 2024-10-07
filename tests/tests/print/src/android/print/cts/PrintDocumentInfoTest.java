@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.Presubmit;
 import android.print.PageRange;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.Margins;
@@ -57,6 +58,7 @@ import java.util.List;
  * This test verifies that the system respects the {@link PrintDocumentAdapter}
  * contract and invokes all callbacks as expected.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class PrintDocumentInfoTest extends BasePrintTest {
     private static boolean sIsDefaultPrinterSet;

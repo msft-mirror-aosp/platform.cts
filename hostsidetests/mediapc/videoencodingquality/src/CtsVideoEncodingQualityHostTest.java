@@ -16,6 +16,8 @@
 
 package android.videoencodingquality.cts;
 
+import static com.android.media.videoquality.bdrate.BdRateMain.verifyBdRate;
+
 import android.cts.host.utils.DeviceJUnit4ClassRunnerWithParameters;
 import android.cts.host.utils.DeviceJUnit4Parameterized;
 import android.platform.test.annotations.AppModeFull;
@@ -83,7 +85,7 @@ import javax.annotation.Nullable;
 @OptionClass(alias = "pc-veq-test")
 public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
     private static final String RES_URL =
-            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-1_3.tar.gz";
+            "https://storage.googleapis.com/android_media/cts/hostsidetests/pc14_veq/veqtests-1_4.tar.gz";
 
     // variables related to host-side of the test
     private static final int MEDIA_PERFORMANCE_CLASS_14 = 34;
@@ -484,13 +486,10 @@ public class CtsVideoEncodingQualityHostTest implements IDeviceTest {
         }
 
         // bd rate verification
-        String jarCmd = "java -jar " + "./bin/cts-media-videoquality-bdrate.jar "
-                + "--uid= --gid= --chroot= "
-                + "--REF_JSON_FILE=" + "json/" + mJsonName + " "
-                + "--TEST_VMAF_FILE=" + outDir + "/" + "all_vmafs.txt "
-                + "> " + outDir + "/result.txt";
-        LogUtil.CLog.i("bdrate command : " + jarCmd);
-        int result = runCommand(jarCmd, sHostWorkDir);
+        String refJsonFilePath = sHostWorkDir.getPath() + "/json/" + mJsonName;
+        String testVmafFilePath = sHostWorkDir.getPath() + "/" + outDir + "/" + "all_vmafs.txt";
+        String resultFilePath = sHostWorkDir.getPath() + "/" + outDir + "/result.txt";
+        int result = verifyBdRate(refJsonFilePath, testVmafFilePath, resultFilePath);
         if (sMpc >= MEDIA_PERFORMANCE_CLASS_14) {
             Assert.assertEquals("bd rate validation failed.", 0, result);
         } else {

@@ -20,6 +20,8 @@
         <option name="command-timeout" value="2000" />
         <!-- Skip the test if we're not able to execute virtual_camera commands on device. -->
         <option name="run-command" value="cmd -w virtual_camera" />
+        <!-- Skip the test on low ram devices. -->
+        <option name="run-command" value="getprop ro.config.low_ram | grep -v true" />
         <!-- Skip the test if currently required EGL extension is not supported on device. -->
         <option name="run-command" value="dumpsys SurfaceFlinger | grep GL_EXT_YUV_target" />
         <!-- Skip if required aconfig flags are disabled -->

@@ -125,6 +125,7 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
         tests.add(new TestAdjustVolumeInPriorityOnlyAllowAlarmsMediaMode());
 
         tests.add(new SetModeAllTest());
+        tests.add(new SetModeNormalTest());
         tests.add(new TestAccessRingerMode());
         tests.add(new TestVibrateNotification());
         tests.add(new TestVibrateRinger());
@@ -635,6 +636,27 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
         }
     }
 
+    protected class SetModeNormalTest extends InteractiveTestCase {
+        @Override
+        protected View inflate(ViewGroup parent) {
+            return createRetryItem(parent, R.string.attention_ringer_mode_not_silent);
+        }
+
+        @Override
+        protected void test() {
+            if (mUserVerified) {
+                status = PASS;
+            } else {
+                status = WAIT_FOR_USER;
+            }
+        }
+
+        @Override
+        protected void tearDown() {
+            delay();
+        }
+    }
+
     protected class TestAccessRingerMode extends InteractiveTestCase {
         @Override
         protected View inflate(ViewGroup parent) {
@@ -895,6 +917,12 @@ public class RingerModeActivity extends InteractiveVerifierActivity {
                 mAudioManager.setStreamVolume(stream, maxVolume, 0);
                 mAudioManager.adjustStreamVolume(stream, ADJUST_RAISE, 0);
                 assertEquals(maxVolume, mAudioManager.getStreamVolume(stream));
+
+                if (stream == AudioManager.STREAM_VOICE_CALL) {
+                    // TODO(b/362836517): add API to check the adjust volume delta for voice call
+                    // based on ratio between index UI steps and voice call range
+                    continue;
+                }
 
                 volumeDelta = getVolumeDelta(mAudioManager.getStreamVolume(stream));
                 mAudioManager.adjustSuggestedStreamVolume(ADJUST_LOWER, stream, 0);

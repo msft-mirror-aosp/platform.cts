@@ -35,8 +35,8 @@ android_test_helper_app {
     ],
 
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs.test",
+        "android.test.runner.stubs.test",
     ],
     sdk_version: "test_current",
 }

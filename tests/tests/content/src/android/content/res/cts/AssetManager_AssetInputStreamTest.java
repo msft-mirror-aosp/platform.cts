@@ -21,12 +21,14 @@ import static org.junit.Assert.fail;
 
 import android.content.res.AssetManager;
 import android.platform.test.annotations.AppModeSdkSandbox;
+import android.platform.test.ravenwood.RavenwoodRule;
 
 import androidx.test.InstrumentationRegistry;
 import androidx.test.filters.SmallTest;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -36,6 +38,9 @@ import java.nio.charset.StandardCharsets;
 @SmallTest
 @AppModeSdkSandbox(reason = "Allow test in the SDK sandbox (does not prevent other modes).")
 public class AssetManager_AssetInputStreamTest {
+    @Rule
+    public final RavenwoodRule mRavenwoodRule = new RavenwoodRule.Builder().build();
+
     private static final byte[] EXPECTED_BYTES = "OneTwoThreeFourFiveSixSevenEightNineTen".getBytes(
             StandardCharsets.UTF_8);
     private InputStream mAssetInputStream;

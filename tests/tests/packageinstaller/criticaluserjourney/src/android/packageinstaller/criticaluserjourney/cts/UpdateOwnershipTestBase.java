@@ -16,6 +16,8 @@
 
 package android.packageinstaller.criticaluserjourney.cts;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import org.junit.After;
 import org.junit.Before;
 
@@ -37,6 +39,8 @@ public class UpdateOwnershipTestBase extends InstallationTestBase {
         mIsUpdateOwnershipEnforcementAvailable =
                 getPackageManagerDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE);
         setPackageManagerDeviceProperty(PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE, "true");
+        assertThat(Boolean.parseBoolean(getPackageManagerDeviceProperty(
+                PROPERTY_IS_UPDATE_OWNERSHIP_ENFORCEMENT_AVAILABLE))).isEqualTo(true);
 
         installTestPackageWithUpdateOwnership();
     }

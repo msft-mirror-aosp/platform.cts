@@ -167,7 +167,7 @@ public class EnumDevicesTest extends AndroidTestCase {
             int[] encapsulationMetadataTypes = deviceInfo.getEncapsulationMetadataTypes();
             assertNotNull(encapsulationMetadataTypes);
 
-            int type = deviceInfo.getType();
+            @AudioDeviceInfo.AudioDeviceType int type = deviceInfo.getType();
             assertTrue(type != AudioDeviceInfo.TYPE_UNKNOWN);
         }
     }

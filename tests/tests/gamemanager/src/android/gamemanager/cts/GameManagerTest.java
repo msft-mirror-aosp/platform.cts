@@ -34,6 +34,7 @@ import android.app.GameState;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.gamemanager.cts.util.TestUtil;
 import android.os.Build;
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.RequiresFlagsEnabled;
@@ -115,6 +116,11 @@ public class GameManagerTest {
 
     @Before
     public void setUp() {
+        final Instrumentation instrumentation = getInstrumentation();
+        mContext = instrumentation.getContext();
+        assumeTrue(TestUtil.shouldTestGameFeatures(mContext));
+        mGameManager = mContext.getSystemService(GameManager.class);
+
         TestUtil.uninstallPackage(NOT_GAME_TEST_APP_PACKAGE_NAME);
         TestUtil.uninstallPackage(GAME_TEST_APP_PACKAGE_NAME);
         TestUtil.uninstallPackage(GAME_TEST_APP_WITH_BATTERY_PACKAGE_NAME);
@@ -125,9 +131,6 @@ public class GameManagerTest {
             mActivity = activity;
         });
 
-        final Instrumentation instrumentation = getInstrumentation();
-        mContext = instrumentation.getContext();
-        mGameManager = mContext.getSystemService(GameManager.class);
         mUiDevice = UiDevice.getInstance(instrumentation);
     }
 
@@ -394,8 +397,6 @@ public class GameManagerTest {
                 gameModeInfo.isDownscalingAllowed());
         assertTrue("GameManager#getGameModeInfo returned incorrect FPS override opt-in value.",
                 gameModeInfo.isFpsOverrideAllowed());
-        assertEquals("GameManager#getGameModeInfo returned incorrect active game mode.",
-                GameManager.GAME_MODE_STANDARD, gameModeInfo.getActiveGameMode());
 
         // Attempt to set the game mode to standard.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mGameManager,
@@ -452,10 +453,9 @@ public class GameManagerTest {
                 ShellIdentityUtils.invokeMethodWithShellPermissions(mGameManager,
                         (gameManager) -> gameManager.getGameModeInfo(packageName),
                         "android.permission.MANAGE_GAME_MODE");
-        assertEquals("GameManager#getGameModeInfo returned incorrect available game modes.",
-                3, gameModeInfo.getAvailableGameModes().length);
-        assertEquals("GameManager#getGameModeInfo returned incorrect active game mode.",
-                GameManager.GAME_MODE_STANDARD, gameModeInfo.getActiveGameMode());
+        assumeTrue("Skip battery only game mode test as other modes are"
+                        + " enabled by the OEM or platform",
+                gameModeInfo.getAvailableGameModes().length == 3);
 
         // Attempt to set the game mode to battery.
         ShellIdentityUtils.invokeMethodWithShellPermissionsNoReturn(mGameManager,

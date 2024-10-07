@@ -19,7 +19,6 @@ package android.server.wm.other;
 import static android.server.wm.app.Components.KEEP_CLEAR_RECTS_ACTIVITY;
 import static android.server.wm.app.Components.KEEP_CLEAR_RECTS_ACTIVITY2;
 import static android.server.wm.app.Components.KeepClearRectsActivity.EXTRA_KEEP_CLEAR_RECTS;
-import static android.view.Display.DEFAULT_DISPLAY;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -35,6 +34,7 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.WindowManagerState;
 import android.server.wm.WindowManagerTestBase;
 import android.server.wm.cts.R;
@@ -79,6 +79,8 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
 
     private TestActivitySession<TestActivity> mTestSession;
 
+    private int mLaunchDisplayId;
+
     @Rule
     public InstrumentedAccessibilityServiceTestRule<AccessibilityTestService>
             mAccessibilityServiceRule = new InstrumentedAccessibilityServiceTestRule<>(
@@ -88,6 +90,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void setUp() throws Exception {
         super.setUp();
         mTestSession = createManagedTestActivitySession();
+        mLaunchDisplayId = getMainDisplayId();
     }
 
     @After
@@ -100,7 +103,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void testSetPreferKeepClearAttr() throws Exception {
         final Intent intent = new Intent(mContext, TestActivity.class);
         intent.putExtra(USE_KEEP_CLEAR_ATTR_LAYOUT, true);
-        mTestSession.launchTestActivityOnDisplaySync(null, intent, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(null, intent, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         // To be kept in sync with res/layout/keep_clear_attr_activity
@@ -112,7 +115,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClear"})
     public void testSetPreferKeepClearSingleView() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
@@ -126,7 +129,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClear"})
     public void testSetPreferKeepClearTwoViews() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
@@ -147,7 +150,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClearRects"})
     public void testSetMultipleKeepClearRectsSingleView() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final View v = createTestViewInActivity(activity);
@@ -160,7 +163,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClearRects"})
     public void testSetMultipleKeepClearRectsTwoViews() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final View v1 = createTestViewInActivity(activity);
@@ -179,7 +182,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setPreferKeepClear",
                      "android.view.View#isPreferKeepClear"})
     public void testIsPreferKeepClearSingleView() {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -196,7 +199,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#getPreferKeepClearRects",
                      "android.view.View#setPreferKeepClearRects"})
     public void testGetPreferKeepClearRectsSingleView() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -218,7 +221,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
                      "android.view.View#getPreferKeepClearRects",
                      "android.view.View#isPreferKeepClear"})
     public void testGettersPreferKeepClearRectsTwoViews() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds1 = new Rect(0, 0, 60, 60);
@@ -249,7 +252,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setPreferKeepClearRects",
                      "android.view.View#setPreferKeepClear"})
     public void testSetPreferKeepClearCombinesWithMultipleRects() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -272,7 +275,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setPreferKeepClearRects",
                      "android.view.View#setPreferKeepClear"})
     public void testIgnoreKeepClearRectsFromGoneViews() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -331,7 +334,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClear"})
     public void testIgnoreKeepClearRectsFromDetachedViews() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -348,7 +351,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void testFocusedViewDeclaredAsKeepClearArea() throws Exception {
         assumeTrue(ViewConfiguration.get(mContext).isPreferKeepClearForFocusEnabled());
 
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -371,7 +374,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClearRects"})
     public void testKeepClearRectsGetTranslatedToWindowSpace() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(30, 30, 60, 60);
@@ -391,7 +394,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setPreferKeepClear",
                      "android.view.View#setPreferKeepClearRects"})
     public void testSetKeepClearRectsOnDisplaySingleWindow() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect keepClearRect = new Rect(0, 0, 25, 25);
@@ -421,7 +424,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void testFinishingActivityRemovesItsKeepClearRects() throws Exception {
         final List<Rect> prevKeepClearRectsOnDisplay = getKeepClearRectsOnDefaultDisplay();
 
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 60, 60);
@@ -438,7 +441,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @Test
     @ApiTest(apis = {"android.view.View#setPreferKeepClear"})
     public void testKeepClearRectsOnDisplayTwoWindows() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 25, 25);
@@ -469,7 +472,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setPreferKeepClear",
                      "android.view.View#setPreferKeepClearRects"})
     public void testKeepClearRectsOnDisplayTwoFullscreenActivities() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity1 = mTestSession.getActivity();
 
         final Rect viewBounds = new Rect(0, 0, 25, 25);
@@ -482,7 +485,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivitySession<TranslucentTestActivity> translucentTestSession =
                 createManagedTestActivitySession();
         translucentTestSession.launchTestActivityOnDisplaySync(
-                TranslucentTestActivity.class, DEFAULT_DISPLAY);
+                TranslucentTestActivity.class, mLaunchDisplayId);
         final TestActivity activity2 = translucentTestSession.getActivity();
 
         final View v2 = createTestViewInActivity(activity2);
@@ -509,7 +512,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
         final TestActivitySession<TranslucentTestActivity> translucentTestSession =
                 createManagedTestActivitySession();
         translucentTestSession.launchTestActivityOnDisplaySync(
-                TranslucentTestActivity.class, DEFAULT_DISPLAY);
+                TranslucentTestActivity.class, mLaunchDisplayId);
         final TestActivity activity1 = translucentTestSession.getActivity();
         final Rect viewBounds = new Rect(0, 0, 25, 25);
         final View v1 = createTestViewInActivity(activity1, viewBounds);
@@ -525,7 +528,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
                 () -> getKeepClearRectsOnDefaultDisplay());
 
         // Start an opaque activity on top
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity2 = mTestSession.getActivity();
 
         // Add keep-clear rects in the opaque activity
@@ -604,7 +607,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     @ApiTest(apis = {"android.view.View#setUnrestrictedPreferKeepClearRects",
                      "android.view.View#setPreferKeepClearRects"})
     public void testUnrestrictedKeepClearRects() throws Exception {
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         final View v = createTestViewInActivity(activity);
@@ -630,7 +633,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void testAccessibilityFocusCreatesKeepClearRect() throws Exception {
         assumeTrue(ViewConfiguration.get(mContext).isPreferKeepClearForFocusEnabled());
 
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         mWmState.setSuppressAccessibilityServices(false);
@@ -651,7 +654,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
     public void testAccessibilityAndInputFocusCreateKeepClearRects() throws Exception {
         assumeTrue(ViewConfiguration.get(mContext).isPreferKeepClearForFocusEnabled());
 
-        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, DEFAULT_DISPLAY);
+        mTestSession.launchTestActivityOnDisplaySync(TestActivity.class, mLaunchDisplayId);
         final TestActivity activity = mTestSession.getActivity();
 
         mWmState.setSuppressAccessibilityServices(false);
@@ -703,7 +706,7 @@ public class KeepClearRectsTests extends WindowManagerTestBase {
 
     private List<Rect> getKeepClearRectsOnDefaultDisplay() {
         mWmState.computeState();
-        return mWmState.getDisplay(DEFAULT_DISPLAY).getKeepClearRects();
+        return mWmState.getDisplay(mLaunchDisplayId).getKeepClearRects();
     }
 
     private List<Rect> getUnrestrictedKeepClearRectsForActivity(Activity activity) {

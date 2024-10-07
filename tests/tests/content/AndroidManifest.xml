@@ -251,7 +251,6 @@
     <application android:label="Android TestCase"
          android:icon="@drawable/size_48x48"
          android:maxRecents="1"
-         android:multiArch="true"
          android:name="android.content.cts.MockApplication"
          android:supportsRtl="true"
          android:appCategory="productivity">

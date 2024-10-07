@@ -33,6 +33,7 @@ java_test_host {
         "arcts",
         "cts",
         "general-tests",
+        "mcts-permission",
         "mts-permission",
     ],
     static_libs: [
@@ -143,4 +144,18 @@ test_module_config_host {
     base: "CtsDevicePolicyManagerTestCases",
     test_suites: ["general-tests"],
     include_filters: ["com.android.cts.devicepolicy.ManagedProfileTest#testParentProfileApiDisabled"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_LockSettingsTest",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.LockSettingsTest"],
+}
+
+test_module_config_host {
+    name: "CtsDevicePolicyManagerTestCases_PermissionsTest",
+    base: "CtsDevicePolicyManagerTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["com.android.cts.devicepolicy.annotations.PermissionsTest"],
 }

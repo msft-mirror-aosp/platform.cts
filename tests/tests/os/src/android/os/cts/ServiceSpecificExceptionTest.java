@@ -33,7 +33,7 @@ public class ServiceSpecificExceptionTest {
         final var e = new ServiceSpecificException(123, "message");
         assertEquals(e.errorCode, 123);
         assertEquals(e.getMessage(), "message");
-        e.toString(); // shouldn't throw
-        e.hashCode(); // shouldn't throw
+        String unusedString = e.toString(); // shouldn't throw
+        int unusedHashCode = e.hashCode(); // shouldn't throw
     }
 }

@@ -26,6 +26,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -145,6 +146,10 @@ public class SharedConnectivityManagerTest {
         when(mUserManager.isUserUnlocked()).thenReturn(true);
         when(mContext.bindService(any(Intent.class), any(ServiceConnection.class),
                 anyInt())).thenReturn(true);
+        doAnswer(invocation -> {
+            ((Runnable) invocation.getArgument(0)).run();
+            return null;
+        }).when(mExecutor).execute(any());
     }
 
     @Test

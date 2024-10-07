@@ -17,7 +17,6 @@ package android.text.cts
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.platform.test.annotations.RequiresFlagsEnabled
 import android.platform.test.flag.junit.CheckFlagsRule
 import android.platform.test.flag.junit.DeviceFlagsValueProvider
 import android.text.Layout
@@ -25,7 +24,6 @@ import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
-import com.android.text.flags.Flags
 import com.google.common.truth.Truth.assertThat
 import kotlin.math.ceil
 import org.junit.Rule
@@ -43,7 +41,6 @@ class StaticLayoutMultilineBidiTest {
         textSize = 100f
     }
 
-    @RequiresFlagsEnabled(Flags.FLAG_ICU_BIDI_MIGRATION)
     @Test
     fun testConsistentBidiDraw() {
         // This test case verifies that the lines drawn by single StaticLayout is consistent with

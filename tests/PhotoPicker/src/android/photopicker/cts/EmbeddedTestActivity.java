@@ -22,19 +22,20 @@ import android.hardware.display.DisplayManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.provider.EmbeddedPhotoPickerClient;
-import android.provider.EmbeddedPhotoPickerFeatureInfo;
-import android.provider.EmbeddedPhotoPickerProvider;
-import android.provider.EmbeddedPhotoPickerProviderFactory;
-import android.provider.EmbeddedPhotoPickerSession;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.photopicker.EmbeddedPhotoPickerClient;
+import android.widget.photopicker.EmbeddedPhotoPickerFeatureInfo;
+import android.widget.photopicker.EmbeddedPhotoPickerProvider;
+import android.widget.photopicker.EmbeddedPhotoPickerProviderFactory;
+import android.widget.photopicker.EmbeddedPhotoPickerSession;
 
 import androidx.annotation.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
 public class EmbeddedTestActivity extends Activity {
@@ -52,24 +53,42 @@ public class EmbeddedTestActivity extends Activity {
      */
     private final List<Uri> mSelectedUris = new ArrayList<>();
 
+    private CountDownLatch mItemsDeselectedClientInvocationLatch;
+    private CountDownLatch mItemsSelectedClientInvocationLatch;
+    private CountDownLatch mSelectionCompleteClientInvocationLatch;
+    private CountDownLatch mSessionOpenedClientInvocationLatch;
+    private CountDownLatch mSessionErrorClientInvocationLatch;
+
     /**
      * Client callbacks that the service will use to interact with the client
      */
     private final EmbeddedPhotoPickerClient mClient = new EmbeddedPhotoPickerClient() {
         @Override
-        public void onItemsDeselected(@NonNull List<Uri> uris) {
+        public void onUriPermissionRevoked(@NonNull List<Uri> uris) {
             mSelectedUris.removeAll(uris);
+
+            if (mItemsDeselectedClientInvocationLatch != null) {
+                mItemsDeselectedClientInvocationLatch.countDown();
+            }
         }
 
         @Override
-        public void onItemsSelected(@NonNull List<Uri> uris) {
+        public void onUriPermissionGranted(@NonNull List<Uri> uris) {
             mSelectedUris.addAll(uris);
+
+            if (mItemsSelectedClientInvocationLatch != null) {
+                mItemsSelectedClientInvocationLatch.countDown();
+            }
         }
 
         @Override
         public void onSessionError(@NonNull Throwable cause) {
             mSession = null;
             mSelectedUris.clear();
+
+            if (mSessionErrorClientInvocationLatch != null) {
+                mSessionErrorClientInvocationLatch.countDown();
+            }
         }
 
         @Override
@@ -77,6 +96,18 @@ public class EmbeddedTestActivity extends Activity {
                 @NonNull EmbeddedPhotoPickerSession session) {
             mSession = session;
             mSurfaceView.setChildSurfacePackage(session.getSurfacePackage());
+            if (mSessionOpenedClientInvocationLatch != null) {
+                mSessionOpenedClientInvocationLatch.countDown();
+            }
+        }
+
+        @Override
+        public void onSelectionComplete() {
+            mSession.close();
+
+            if (mSelectionCompleteClientInvocationLatch != null) {
+                mSelectionCompleteClientInvocationLatch.countDown();
+            }
         }
     };
 
@@ -159,4 +190,73 @@ public class EmbeddedTestActivity extends Activity {
         return mSelectedUris;
     }
 
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onItemsSelected(List)} to enable verifying its invocation
+     * within a given time frame.
+     *
+     * @param itemsSelectedClientInvocationLatch the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onItemsSelected(List)} is invoked.
+     */
+    public void setCountDownLatchForItemsSelectedClientInvocation(
+            @NonNull CountDownLatch itemsSelectedClientInvocationLatch) {
+        mItemsSelectedClientInvocationLatch = itemsSelectedClientInvocationLatch;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onItemsDeselected(List)} to enable verifying its invocation
+     * within a given time frame.
+     *
+     * @param itemsDeselectedClientInvocationLatch the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onItemsDeselected(List)} is invoked.
+     */
+    public void setCountDownLatchForItemsDeselectedClientInvocation(
+            @NonNull CountDownLatch itemsDeselectedClientInvocationLatch) {
+        mItemsDeselectedClientInvocationLatch = itemsDeselectedClientInvocationLatch;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onSelectionComplete()} to enable verifying its invocation
+     * within a given time frame.
+     *
+     * @param selectionCompleteClientInvocationLatch the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onSelectionComplete()} is invoked.
+     */
+    public void setCountDownLatchForSelectionCompleteClientInvocation(
+            @NonNull CountDownLatch selectionCompleteClientInvocationLatch) {
+        mSelectionCompleteClientInvocationLatch = selectionCompleteClientInvocationLatch;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onSessionOpened(EmbeddedPhotoPickerSession)} to enable
+     * verifying its invocation within a given time frame.
+     *
+     * @param sessionOpenedClientInvocation the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onSessionOpened(EmbeddedPhotoPickerSession)} ()} is invoked.
+     */
+    public void setCountDownLatchForSessionOpenedClientInvocation(
+            @NonNull CountDownLatch sessionOpenedClientInvocation) {
+        mSessionOpenedClientInvocationLatch = sessionOpenedClientInvocation;
+    }
+
+    /**
+     * Sets a {@link CountDownLatch} that gets counted down during
+     * {@link EmbeddedPhotoPickerClient#onSessionError(Throwable)} to enable verifying its
+     * invocation within a given time frame.
+     *
+     * @param sessionErrorClientInvocationLatch the {@link CountDownLatch latch} to
+     * {@link CountDownLatch#countDown() countDown} when
+     * {@link EmbeddedPhotoPickerClient#onSessionError(Throwable)} is invoked.
+     */
+    public void setCountDownLatchForSessionErrorClientInvocation(
+            @NonNull CountDownLatch sessionErrorClientInvocationLatch) {
+        mSessionErrorClientInvocationLatch = sessionErrorClientInvocationLatch;
+    }
 }

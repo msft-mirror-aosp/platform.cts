@@ -669,7 +669,7 @@ TEST(AHardwareBufferTest, LockWithZeroAccessTest) {
         .height = 128,
         .layers = 1,
         .format = AHARDWAREBUFFER_FORMAT_R8G8B8A8_UNORM,
-        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_NEVER | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
+        .usage = AHARDWAREBUFFER_USAGE_CPU_READ_RARELY | AHARDWAREBUFFER_USAGE_GPU_FRAMEBUFFER
     };
     AHardwareBuffer* aHardwareBuffer = nullptr;
     int err = AHardwareBuffer_allocate(&ahbDesc, &aHardwareBuffer);

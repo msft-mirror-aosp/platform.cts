@@ -26,6 +26,7 @@ import android.mediapc.cts.common.PerformanceClassEvaluator;
 import android.mediapc.cts.common.Requirements;
 import android.mediapc.cts.common.Requirements.ConcurrentVideoDecoderSessionsRequirement;
 import android.mediapc.cts.common.Requirements.SecureVideoDecoderSessionsRequirement;
+import android.mediapc.cts.common.Requirements.VideoDecoderInstancesRequirement;
 import android.mediapc.cts.common.Utils;
 import android.util.Pair;
 
@@ -131,7 +132,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
     /**
      * This test validates that the decoder can support at least 6 SDR non-secure concurrent
      * instances with 3 sessions at 1080p 30 fps and 3 sessions at 4k 30fps / 2 SDR secure
-     * concurrent instances at 4k 30 fps. Also ensures that all the concurrent sessions succeed
+     * concurrent instances at 1080 30 fps. Also ensures that all the concurrent sessions succeed
      * in decoding with meeting the expected frame rate.
      */
     @LargeTest
@@ -144,7 +145,7 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
         Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
 
         if (isSecureSupportedCodec(mDecoderName, mMediaType)) {
-            testCodec(m2160pPc14WidevineTestFiles, 2160, 3840,
+            testCodec(m1080pWidevineTestFiles, 2160, 3840,
                     REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
         } else {
             testCodec(m2160pPc14TestFiles, 2160, 3840, REQUIRED_MIN_CONCURRENT_INSTANCES);
@@ -153,17 +154,17 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
 
     /**
      * This test validates that the decoder can support at least 2 HDR secure concurrent instances
-     * at 4k 30 fps. Also ensures that all the concurrent sessions succeed in decoding with
+     * at 1080 30 fps. Also ensures that all the concurrent sessions succeed in decoding with
      * meeting the expected frame rate.
      */
     @LargeTest
     @Test(timeout = CodecTestBase.PER_TEST_TIMEOUT_LARGE_TEST_MS)
     @CddTest(requirements = {"2.2.7.1/5.1/H-1-9"})
-    public void test4kHbd() throws Exception {
+    public void test1080pHbd() throws Exception {
         Assume.assumeTrue(Utils.isUPerfClass() || Utils.isVPerfClass() || !Utils.isPerfClass());
         Assume.assumeTrue("Skipping regular performance tests for non-secure codecs",
                 isSecureSupportedCodec(mDecoderName, mMediaType));
-        testCodec(m2160pPc1410bitWidevineTestFiles, 2160, 3840,
+        testCodec(m1080pWidevine10bitTestFiles, 2160, 3840,
                 REQUIRED_MIN_CONCURRENT_SECURE_INSTANCES);
     }
 
@@ -210,34 +211,40 @@ public class MultiDecoderPerfTest extends MultiCodecPerfTestBase {
             r5_1__H_1_9.setFrameDropsPerSec(frameDropsPerSec);
             r5_1__H_1_9.setConcurrentFps(achievedFrameRate);
         } else {
-            PerformanceClassEvaluator.ConcurrentCodecRequirement r5_1__H_1_1;
+            VideoDecoderInstancesRequirement r5_1__H_1_1;
             ConcurrentVideoDecoderSessionsRequirement r5_1__H_1_2;
             if (height > 1080) {
-                r5_1__H_1_1 = pce.addR5_1__H_1_1_4k();
+                r5_1__H_1_1 = Requirements.addR5_1__H_1_1().withConfig4K().to(pce);
                 r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig4K().to(pce);
-                r5_1__H_1_1.setConcurrentInstances(maxInstances);
+                r5_1__H_1_1.setConcurrentSessions(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
                 r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
             } else if (height == 1080) {
-                r5_1__H_1_1 = pce.addR5_1__H_1_1_1080p();
+                r5_1__H_1_1 = Requirements.addR5_1__H_1_1().withConfig1080P().to(pce);
                 r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig1080P().to(pce);
-                r5_1__H_1_1.setConcurrentInstances(maxInstances);
+                r5_1__H_1_1.setConcurrentSessions(maxInstances);
                 r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
             } else {
-                r5_1__H_1_1 = pce.addR5_1__H_1_1_720p(mMediaType, mMediaType, height);
-                r5_1__H_1_1.setConcurrentInstances(maxInstances);
 
                 if (isMPCCodec(mMediaType)) {
                     if (isRCodec(mMediaType)) {
+                        r5_1__H_1_1 = Requirements.addR5_1__H_1_1().withConfig720P().to(pce);
                         r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig720P().to(pce);
                     } else if (isVP9Codec(mMediaType)) {
+                        r5_1__H_1_1 = Requirements.addR5_1__H_1_1().withConfig720P()
+                                .withVariantVP9().to(pce);
                         r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig720P()
                                 .withVariantVP9().to(pce);
                     } else {
+                        r5_1__H_1_1 = Requirements.addR5_1__H_1_1().withConfig720P()
+                                .withVariantAV1().to(pce);
                         r5_1__H_1_2 = Requirements.addR5_1__H_1_2().withConfig720P()
                                 .withVariantAV1().to(pce);
                     }
+                    r5_1__H_1_1.setConcurrentSessions(maxInstances);
                     r5_1__H_1_2.setConcurrentFps(achievedFrameRate);
+                    r5_1__H_1_2.setFrameDropsPerSec(frameDropsPerSec);
                 }
             }
         }

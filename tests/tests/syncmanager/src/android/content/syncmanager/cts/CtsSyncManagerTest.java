@@ -91,6 +91,7 @@ public class CtsSyncManagerTest {
 
     Context mContext;
     ContentResolver mContentResolver;
+    int mTestRunningUserId;
 
     @Before
     public void setUp() throws Exception {
@@ -101,7 +102,10 @@ public class CtsSyncManagerTest {
         // Don't wait so tests can also run for devices without battery saver.
         BatteryUtils.enableBatterySaver(false, false);
 
-        AmUtils.setStandbyBucket(APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_ACTIVE);
+        mTestRunningUserId = InstrumentationRegistry.getTargetContext().getUserId();
+
+        AmUtils.setStandbyBucketAsUser(
+                APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_ACTIVE, mTestRunningUserId);
 
         mContext = InstrumentationRegistry.getContext();
         mContentResolver = mContext.getContentResolver();
@@ -219,7 +223,8 @@ public class CtsSyncManagerTest {
 
         clearSyncInvocations(APP1_PACKAGE);
 
-        AmUtils.setStandbyBucket(APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_ACTIVE);
+        AmUtils.setStandbyBucketAsUser(
+                APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_ACTIVE, mTestRunningUserId);
 
         // Set soft error.
         mRpc.invoke(APP1_PACKAGE, rb ->
@@ -254,7 +259,8 @@ public class CtsSyncManagerTest {
 
         clearSyncInvocations(APP1_PACKAGE);
 
-        AmUtils.setStandbyBucket(APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_RARE);
+        AmUtils.setStandbyBucketAsUser(
+                APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_RARE, mTestRunningUserId);
 
         Bundle b = makeBundle(ContentResolver.SYNC_EXTRAS_SCHEDULE_AS_EXPEDITED_JOB, true,
                 ContentResolver.SYNC_EXTRAS_IGNORE_SETTINGS, true);
@@ -284,7 +290,8 @@ public class CtsSyncManagerTest {
 
         clearSyncInvocations(APP1_PACKAGE);
 
-        AmUtils.setStandbyBucket(APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_RARE);
+        AmUtils.setStandbyBucketAsUser(
+                APP1_PACKAGE, UsageStatsManager.STANDBY_BUCKET_RARE, mTestRunningUserId);
 
         setDozeState(true);
         Bundle b = makeBundle(ContentResolver.SYNC_EXTRAS_SCHEDULE_AS_EXPEDITED_JOB, true,
@@ -305,7 +312,7 @@ public class CtsSyncManagerTest {
     public void testInitialSyncInNeverBucket() throws Exception {
         removeAllAccounts();
 
-        AmUtils.setStandbyBucket(APP1_PACKAGE, STANDBY_BUCKET_NEVER);
+        AmUtils.setStandbyBucketAsUser(APP1_PACKAGE, STANDBY_BUCKET_NEVER, mTestRunningUserId);
 
         mRpc.invoke(APP1_PACKAGE, rb -> rb.setClearSyncInvocations(
                 ClearSyncInvocations.newBuilder()));
@@ -314,7 +321,7 @@ public class CtsSyncManagerTest {
 
         // App should be brought out of the NEVER bucket to handle the sync
         assertTrue("Standby bucket should be WORKING_SET or better",
-                AmUtils.getStandbyBucket(APP1_PACKAGE)
+                AmUtils.getStandbyBucketAsUser(APP1_PACKAGE, mTestRunningUserId)
                         <= UsageStatsManager.STANDBY_BUCKET_WORKING_SET);
 
         // Check the sync request parameters.

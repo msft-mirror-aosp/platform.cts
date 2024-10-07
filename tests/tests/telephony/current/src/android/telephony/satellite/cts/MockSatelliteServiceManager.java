@@ -19,7 +19,6 @@ package android.telephony.satellite.cts;
 
 import static android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_GONE;
 
-import android.annotation.ArrayRes;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.app.ActivityManager;
@@ -74,6 +73,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-gateway-service-package-name -s ";
     private static final String SET_SATELLITE_LISTENING_TIMEOUT_DURATION_CMD =
             "cmd phone set-satellite-listening-timeout-duration -t ";
+    private static final String SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD =
+            "cmd phone set-satellite-ignore-cellular-service-state -d ";
     private static final String SET_SATELLITE_POINTING_UI_CLASS_NAME_CMD =
             "cmd phone set-satellite-pointing-ui-class-name";
     private static final String SET_DATAGRAM_CONTROLLER_TIMEOUT_DURATION_CMD =
@@ -91,6 +92,8 @@ class MockSatelliteServiceManager {
             "cmd phone set-satellite-access-control-overlay-configs";
     private static final String SET_IS_SATELLITE_COMMUNICATION_ALLOWED_FOR_CURRENT_LOCATION_CACHE =
             "cmd phone set-is-satellite-communication-allowed-for-current-location-cache ";
+    private static final String SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT =
+            "cmd phone set-satellite-subscriberid-list-changed-intent-component ";
 
     private static final long TIMEOUT = 5000;
     @NonNull private ActivityManager mActivityManager;
@@ -628,7 +631,7 @@ class MockSatelliteServiceManager {
         }
     }
 
-    void clearRequestSatelliteEnabledInfo() {
+    void clearRequestSatelliteEnabledPermits() {
         synchronized (mRequestSatelliteEnabledLock) {
             mRequestSatelliteEnabledSemaphore.drainPermits();
         }
@@ -1032,6 +1035,19 @@ class MockSatelliteServiceManager {
         }
     }
 
+    boolean setSatelliteIgnoreCellularServiceState(boolean enabled) {
+        try {
+            String result =
+                    TelephonyUtils.executeShellCommand(mInstrumentation,
+                            SET_SATELLITE_IGNORE_CELLULAR_SERVICE_STATE_CMD + enabled);
+            logd("setSatelliteIgnoreCellularServiceState: result = " + result);
+            return "true".equals(result);
+        } catch (Exception e) {
+            loge("setSatelliteIgnoreCellularServiceState: e=" + e);
+            return false;
+        }
+    }
+
     boolean setDatagramControllerTimeoutDuration(
             boolean reset, int timeoutType, long timeoutMillis) {
         StringBuilder command = new StringBuilder();
@@ -1127,13 +1143,23 @@ class MockSatelliteServiceManager {
         return mSatelliteService.sendSavedDatagram();
     }
 
-    boolean respondToRequestSatelliteEnabled(boolean isEnabled) {
-        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled);
+    boolean respondToRequestSatelliteEnabled(boolean isEnabled, int modemState) {
+        logd("respondToRequestSatelliteEnabled, isEnabled=" + isEnabled
+                + ", modemState=" + modemState);
         if (mSatelliteService == null) {
             loge("respondToRequestSatelliteEnabled: mSatelliteService is null");
             return false;
         }
-        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled);
+        return mSatelliteService.respondToRequestSatelliteEnabled(isEnabled, modemState);
+    }
+
+    void clearSatelliteEnableRequestQueues() {
+        logd("clearSatelliteEnableRequestQueues");
+        if (mSatelliteService == null) {
+            loge("clearSatelliteEnableRequestQueues: mSatelliteService is null");
+            return;
+        }
+        mSatelliteService.clearSatelliteEnableRequestQueues();
     }
 
     boolean stopExternalSatelliteService() {
@@ -1405,6 +1431,30 @@ class MockSatelliteServiceManager {
             return true;
         } catch (Exception e) {
             loge("setIsSatelliteCommunicationAllowedForCurrentLocationCache: e=" + e);
+            return false;
+        }
+    }
+
+    boolean setSatelliteSubscriberIdListChangedIntentComponent(String name) {
+        String option;
+        if ("package".equalsIgnoreCase(name)) {
+            option = "-p";
+        } else if ("class".equalsIgnoreCase(name)) {
+            option = "-c";
+        } else if ("reset".equalsIgnoreCase(name)) {
+            option = "-r";
+        } else {
+            return false;
+        }
+
+        try {
+            String result = TelephonyUtils.executeShellCommand(mInstrumentation,
+                    SET_SATELLITE_SUBSCRIBERID_LIST_CHANGED_INTENT_COMPONENT + option);
+            logd("setSatelliteSubscriberIdListChangedIntentComponent(" + option + "): result = "
+                    + result);
+            return true;
+        } catch (Exception e) {
+            loge("setSatelliteSubscriberIdListChangedIntentComponent: e=" + e);
             return false;
         }
     }

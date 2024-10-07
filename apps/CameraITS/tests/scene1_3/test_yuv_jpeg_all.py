@@ -17,7 +17,7 @@
 import logging
 import os.path
 import matplotlib
-from matplotlib import pylab
+from matplotlib import pyplot as plt
 import matplotlib.lines as mlines
 from matplotlib.ticker import MaxNLocator
 from mobly import test_runner
@@ -179,24 +179,24 @@ class YuvJpegAllTest(its_base_test.ItsBaseTest):
         jpg_imgs.append(jpg_img)
 
       # Plot means vs format
-      pylab.figure(_NAME)
-      pylab.title(_NAME)
+      plt.figure(_NAME)
+      plt.title(_NAME)
       yuv_index = range(len(yuv_rgbs))
       jpg_index = range(len(jpg_rgbs))
-      pylab.plot(yuv_index, [rgb[0] for rgb in yuv_rgbs],
-                 '-ro', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.plot(yuv_index, [rgb[1] for rgb in yuv_rgbs],
-                 '-go', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.plot(yuv_index, [rgb[2] for rgb in yuv_rgbs],
-                 '-bo', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.plot(jpg_index, [rgb[0] for rgb in jpg_rgbs],
-                 '-r^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.plot(jpg_index, [rgb[1] for rgb in jpg_rgbs],
-                 '-g^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.plot(jpg_index, [rgb[2] for rgb in jpg_rgbs],
-                 '-b^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
-      pylab.ylim([0, 1])
-      ax = pylab.gca()
+      plt.plot(yuv_index, [rgb[0] for rgb in yuv_rgbs],
+               '-ro', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.plot(yuv_index, [rgb[1] for rgb in yuv_rgbs],
+               '-go', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.plot(yuv_index, [rgb[2] for rgb in yuv_rgbs],
+               '-bo', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.plot(jpg_index, [rgb[0] for rgb in jpg_rgbs],
+               '-r^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.plot(jpg_index, [rgb[1] for rgb in jpg_rgbs],
+               '-g^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.plot(jpg_index, [rgb[2] for rgb in jpg_rgbs],
+               '-b^', alpha=_PLOT_ALPHA, markersize=_PLOT_MARKER_SIZE)
+      plt.ylim([0, 1])
+      ax = plt.gca()
       ax.xaxis.set_major_locator(MaxNLocator(integer=True))  # x-axis integers
       yuv_marker = mlines.Line2D([], [], linestyle='None',
                                  color='black', marker='.',
@@ -207,9 +207,9 @@ class YuvJpegAllTest(its_base_test.ItsBaseTest):
                                  markersize=_PLOT_LEGEND_TRIANGLE_SIZE,
                                  label='JPEG')
       ax.legend(handles=[yuv_marker, jpg_marker])
-      pylab.xlabel('format number')
-      pylab.ylabel('RGB avg [0, 1]')
-      matplotlib.pyplot.savefig(f'{name_with_log_path}_plot_means.png')
+      plt.xlabel('format number')
+      plt.ylabel('RGB avg [0, 1]')
+      plt.savefig(f'{name_with_log_path}_plot_means.png')
 
       # Assert all captures are similar in RGB space using rgbs[0] as ref.
       rgbs = yuv_rgbs + jpg_rgbs

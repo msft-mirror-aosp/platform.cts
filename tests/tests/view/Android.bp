@@ -71,3 +71,33 @@ android_test {
 
     sdk_version: "test_current",
 }
+
+test_module_config {
+    name: "CtsViewTestCases_cts_surfaceoomtest",
+    base: "CtsViewTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.view.cts.SurfaceOOMTest"],
+}
+
+test_module_config {
+    name: "CtsViewTestCases_cts_input",
+    base: "CtsViewTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.view.cts.input"],
+}
+
+test_module_config {
+    name: "CtsViewTestCases_",
+    base: "CtsViewTestCases",
+    test_suites: ["general-tests"],
+    include_filters: [
+        "android.view.cts.MotionEventTest",
+        "android.view.cts.HoverTest",
+        "android.view.cts.ViewTest",
+        "android.view.cts.PointerCaptureTest",
+        "android.view.cts.ViewUnbufferedTest",
+        "android.view.cts.TooltipTest",
+        "android.view.cts.VerifyInputEventTest",
+        "android.view.cts.TouchDelegateTest",
+    ],
+}

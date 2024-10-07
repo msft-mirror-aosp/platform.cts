@@ -42,7 +42,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.FrameworkSpecificTest;
-import com.android.compatibility.common.util.NonMainlineTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import libcore.io.IoUtils;
@@ -63,7 +62,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 @FrameworkSpecificTest
-@NonMainlineTest
 @AppModeFull(reason = "Instant apps cannot access the SD card")
 @RunWith(AndroidJUnit4.class)
 public class ExifInterfaceTest {

@@ -70,5 +70,5 @@
             <meta-data android:name="android.credentials.testsystemprovider" android:value="true" />
         </service>
     </application>
-    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="34"/>
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35"/>
 </manifest>

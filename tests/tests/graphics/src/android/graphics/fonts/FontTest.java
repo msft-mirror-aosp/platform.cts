@@ -54,6 +54,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 @SmallTest
 @RunWith(AndroidJUnit4.class)
@@ -130,6 +132,12 @@ public class FontTest {
         }
     }
 
+    private int openTypeValueFromTag(String tag) {
+        assertEquals(4, tag.length());
+        return ((int) tag.charAt(0)) << 24 | ((int) tag.charAt(1)) << 16
+                | ((int) tag.charAt(2)) << 8 | ((int) tag.charAt(3));
+    }
+
     private void assertAxesEquals(String msg, FontVariationAxis[] left, FontVariationAxis[] right) {
         if (left == right) {
             return;
@@ -140,6 +148,12 @@ public class FontTest {
         } else if (right == null) {
             assertWithMessage(msg).that(left).isEmpty();
         } else {
+            // Sort both font variation settings because the font variation axes are unordered.
+            Comparator<FontVariationAxis> axisComparator =
+                    (l, r) -> openTypeValueFromTag(l.getTag()) - openTypeValueFromTag(r.getTag());
+            Arrays.sort(left, axisComparator);
+            Arrays.sort(right, axisComparator);
+
             assertWithMessage(msg).that(left).isEqualTo(right);
         }
     }

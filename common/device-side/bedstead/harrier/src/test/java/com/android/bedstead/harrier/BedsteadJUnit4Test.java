@@ -284,37 +284,37 @@ public class BedsteadJUnit4Test {
     @PolicyAppliesTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyAppliesTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyDoesNotApplyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_policyDoesNotApplyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CanSetPolicyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_canSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @CannotSetPolicyTest(policy = LockTask.class)
     @AdditionalQueryParameters(
             forTestApp = "dpc",
-            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 28))
+            query = @Query(targetSdkVersion = @IntegerQuery(isEqualTo = 30))
     )
     public void additionalQueryParameters_cannotSetPolicyTest_isRespected() {
-        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(28);
+        assertThat(sDeviceState.dpc().testApp().targetSdkVersion()).isEqualTo(30);
     }
 
     @PolicyAppliesTest(policy = {

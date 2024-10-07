@@ -16,8 +16,8 @@
 
 import logging
 import os
-import matplotlib
-from matplotlib import pylab
+
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -42,14 +42,14 @@ def plot_results(modes, sharpness_values, name_with_log_path):
     sharpness_values: float values of sharpness
     name_with_log_path: file name with log_path for save location
   """
-  pylab.figure(_NAME)
-  pylab.suptitle(_NAME)
-  pylab.title(str(_EDGE_MODES))
-  pylab.xlabel('Edge Enhancement Mode')
-  pylab.ylabel('Image Sharpness')
-  pylab.xticks(modes)
-  pylab.plot(modes, sharpness_values, '-ro')
-  matplotlib.pyplot.savefig(f'{name_with_log_path}_plot.png')
+  plt.figure(_NAME)
+  plt.suptitle(_NAME)
+  plt.title(str(_EDGE_MODES))
+  plt.xlabel('Edge Enhancement Mode')
+  plt.ylabel('Image Sharpness')
+  plt.xticks(modes)
+  plt.plot(modes, sharpness_values, '-ro')
+  plt.savefig(f'{name_with_log_path}_plot.png')
 
 
 def do_capture_and_determine_sharpness(
@@ -85,8 +85,8 @@ def do_capture_and_determine_sharpness(
   req['android.edge.mode'] = edge_mode
 
   sharpness_list = []
-  caps = cam.do_capture([req]*_NUM_SAMPLES, [out_surface], repeat_request=req)
-  for n, cap in enumerate(caps):
+  for n in range(_NUM_SAMPLES):
+    cap = capture_request_utils.stationary_lens_capture(cam, req, out_surface)
     y, _, _ = image_processing_utils.convert_capture_to_planes(cap)
     chart.img = image_processing_utils.get_image_patch(
         y, chart.xnorm, chart.ynorm, chart.wnorm, chart.hnorm)

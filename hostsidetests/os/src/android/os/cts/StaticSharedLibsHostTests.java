@@ -19,6 +19,11 @@ package android.os.cts;
 import static com.google.common.truth.Truth.assertThat;
 import static com.google.common.truth.Truth.assertWithMessage;
 
+import static junit.framework.Assert.fail;
+
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
+
 import android.platform.test.annotations.AppModeFull;
 import android.platform.test.annotations.AppModeInstant;
 import android.platform.test.annotations.LargeTest;
@@ -27,29 +32,29 @@ import android.platform.test.annotations.Presubmit;
 import com.android.compatibility.common.tradefed.build.CompatibilityBuildHelper;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.ddmlib.Log;
-import com.android.ddmlib.testrunner.RemoteAndroidTestRunner;
-import com.android.ddmlib.testrunner.TestResult.TestStatus;
 import com.android.tradefed.build.IBuildInfo;
 import com.android.tradefed.device.DeviceNotAvailableException;
 import com.android.tradefed.log.LogUtil;
-import com.android.tradefed.result.CollectingTestListener;
-import com.android.tradefed.result.TestDescription;
-import com.android.tradefed.result.TestResult;
-import com.android.tradefed.result.TestRunResult;
-import com.android.tradefed.testtype.DeviceTestCase;
+import com.android.tradefed.testtype.DeviceJUnit4ClassRunner;
 import com.android.tradefed.testtype.IBuildReceiver;
+import com.android.tradefed.testtype.junit4.BaseHostJUnit4Test;
 import com.android.tradefed.util.CommandResult;
 import com.android.tradefed.util.CommandStatus;
 import com.android.tradefed.util.RunUtil;
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import java.io.FileNotFoundException;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Presubmit
-public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildReceiver {
+@RunWith(DeviceJUnit4ClassRunner.class)
+public class StaticSharedLibsHostTests extends BaseHostJUnit4Test implements IBuildReceiver {
     private static final String ANDROID_JUNIT_RUNNER_CLASS =
             "androidx.test.runner.AndroidJUnitRunner";
 
@@ -122,7 +127,9 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     private CompatibilityBuildHelper mBuildHelper;
     private boolean mInstantMode = false;
 
-    private void cleanUp() throws Exception {
+    @Before
+    @After
+    public void cleanUp() throws Exception {
         getDevice().uninstallPackage(STATIC_LIB_CONSUMER3_PKG);
         getDevice().uninstallPackage(STATIC_LIB_CONSUMER2_PKG);
         getDevice().uninstallPackage(STATIC_LIB_CONSUMER1_PKG);
@@ -138,22 +145,19 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @Override
-    protected void setUp() throws Exception {
-        cleanUp();
-    }
-
-    @Override
     public void setBuild(IBuildInfo buildInfo) {
         mBuildHelper = new CompatibilityBuildHelper(buildInfo);
     }
 
     @AppModeInstant
+    @Test
     public void testInstallSharedLibraryInstantMode() throws Exception {
         mInstantMode = true;
         doTestInstallSharedLibrary();
     }
 
     @AppModeFull
+    @Test
     public void testInstallSharedLibraryFullMode() throws Exception {
         doTestInstallSharedLibrary();
     }
@@ -180,12 +184,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testCannotInstallSharedLibraryWithMissingDependencyInstantMode() throws Exception {
         mInstantMode = true;
         doTestCannotInstallSharedLibraryWithMissingDependency();
     }
 
     @AppModeFull
+    @Test
     public void testCannotInstallSharedLibraryWithMissingDependencyFullMode() throws Exception {
         doTestCannotInstallSharedLibraryWithMissingDependency();
     }
@@ -200,6 +206,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
         }
     }
 
+    @Test
     public void testLoadCodeAndResourcesFromSharedLibraryRecursively() throws Exception {
         try {
             // Install library dependency
@@ -219,6 +226,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
         }
     }
 
+    @Test
     public void testLoadCodeAndResourcesFromSharedLibraryRecursivelyUpdate() throws Exception {
         try {
             // Install library dependency
@@ -251,12 +259,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testCannotUninstallUsedSharedLibrary1InstantMode() throws Exception {
         mInstantMode = true;
         doTestCannotUninstallUsedSharedLibrary1();
     }
 
     @AppModeFull
+    @Test
     public void testCannotUninstallUsedSharedLibrary1FullMode() throws Exception {
         doTestCannotUninstallUsedSharedLibrary1();
     }
@@ -280,12 +290,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testCannotUninstallUsedSharedLibrary2InstantMode() throws Exception {
         mInstantMode = true;
         doTestCannotUninstallUsedSharedLibrary2();
     }
 
     @AppModeFull
+    @Test
     public void testCannotUninstallUsedSharedLibrary2FullMode() throws Exception {
         doTestCannotUninstallUsedSharedLibrary2();
     }
@@ -314,12 +326,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testLibraryVersionsAndVersionCodesSameOrderInstantMode() throws Exception {
         mInstantMode = true;
         doTestLibraryVersionsAndVersionCodesSameOrder();
     }
 
     @AppModeFull
+    @Test
     public void testLibraryVersionsAndVersionCodesSameOrderFullMode() throws Exception {
         doTestLibraryVersionsAndVersionCodesSameOrder();
     }
@@ -343,12 +357,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testCannotInstallAppWithMissingLibraryInstantMode() throws Exception {
         mInstantMode = true;
         doTestCannotInstallAppWithMissingLibrary();
     }
 
     @AppModeFull
+    @Test
     public void testCannotInstallAppWithMissingLibraryFullMode() throws Exception {
         doTestCannotInstallAppWithMissingLibrary();
     }
@@ -363,6 +379,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testCanReplaceLibraryIfVersionAndVersionCodeSame() throws Exception {
         try {
             // Install library dependency
@@ -378,12 +395,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testUninstallSpecificLibraryVersionInstantMode() throws Exception {
         mInstantMode = true;
         doTestUninstallSpecificLibraryVersion();
     }
 
     @AppModeFull
+    @Test
     public void testUninstallSpecificLibraryVersionFullMode() throws Exception {
         doTestUninstallSpecificLibraryVersion();
     }
@@ -397,11 +416,11 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
             // Install library version 2 with version code 4
             assertNull(install(STATIC_LIB_PROVIDER2_APK));
             // Uninstall the library package with version code 4 (version 2)
-            assertTrue(getDevice().executeShellCommand("pm uninstall --versionCode 4 "
-                    + STATIC_LIB_PROVIDER1_PKG).startsWith("Success"));
+            assertThat(getDevice().executeShellCommand("pm uninstall --versionCode 4 "
+                    + STATIC_LIB_PROVIDER1_PKG).startsWith("Success")).isTrue();
             // Uninstall the library package with version code 1 (version 1)
-            assertTrue(getDevice().executeShellCommand("pm uninstall "
-                    + STATIC_LIB_PROVIDER1_PKG).startsWith("Success"));
+            assertThat(getDevice().executeShellCommand("pm uninstall "
+                    + STATIC_LIB_PROVIDER1_PKG).startsWith("Success")).isTrue();
         } finally {
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER1_PKG);
             getDevice().uninstallPackage(STATIC_LIB_PROVIDER_RECURSIVE_PKG);
@@ -409,12 +428,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testKeyRotationInstantMode() throws Exception {
         mInstantMode = true;
         doTestKeyRotation();
     }
 
     @AppModeFull
+    @Test
     public void testKeyRotationFullMode() throws Exception {
         doTestKeyRotation();
     }
@@ -439,12 +460,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testCannotInstallIncorrectlySignedLibraryInstantMode() throws Exception {
         mInstantMode = true;
         doTestCannotInstallIncorrectlySignedLibrary();
     }
 
     @AppModeFull
+    @Test
     public void testCannotInstallIncorrectlySignedLibraryFullMode() throws Exception {
         doTestCannotInstallIncorrectlySignedLibrary();
     }
@@ -465,12 +488,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testLibraryAndPackageNameCanMatchInstantMode() throws Exception {
         mInstantMode = true;
         doTestLibraryAndPackageNameCanMatch();
     }
 
     @AppModeFull
+    @Test
     public void testLibraryAndPackageNameCanMatchFullMode() throws Exception {
         doTestLibraryAndPackageNameCanMatch();
     }
@@ -488,12 +513,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testGetSharedLibrariesInstantMode() throws Exception {
         mInstantMode = true;
         doTestGetSharedLibraries();
     }
 
     @AppModeFull
+    @Test
     public void testGetSharedLibrariesFullMode() throws Exception {
         doTestGetSharedLibraries();
     }
@@ -532,6 +559,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
 
     @AppModeFull(
             reason = "getDeclaredSharedLibraries() requires ACCESS_SHARED_LIBRARIES permission")
+    @Test
     public void testGetDeclaredSharedLibraries() throws Exception {
         try {
             // Install library dependency
@@ -561,12 +589,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testAppCanSeeOnlyLibrariesItDependOnInstantMode() throws Exception {
         mInstantMode = true;
         doTestAppCanSeeOnlyLibrariesItDependOn();
     }
 
     @AppModeFull
+    @Test
     public void testAppCanSeeOnlyLibrariesItDependOnFullMode() throws Exception {
         doTestAppCanSeeOnlyLibrariesItDependOn();
     }
@@ -594,12 +624,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testLoadCodeFromNativeLibInstantMode() throws Exception {
         mInstantMode = true;
         doTestLoadCodeFromNativeLib();
     }
 
     @AppModeFull
+    @Test
     public void testLoadCodeFromNativeLibFullMode() throws Exception {
         doTestLoadCodeFromNativeLib();
     }
@@ -607,9 +639,15 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     private void doTestLoadCodeFromNativeLib() throws Exception {
         try {
             // Install library
-            assertNull(install(STATIC_LIB_NATIVE_PROVIDER_APK));
+            assertThat(installPackageWithCurrentAbi(STATIC_LIB_NATIVE_PROVIDER_APK)).isNull();
             // Install the library client
-            assertNull(install(STATIC_LIB_NATIVE_CONSUMER_APK));
+            final String result = installPackageWithCurrentAbi(STATIC_LIB_NATIVE_CONSUMER_APK);
+            if (result != null) {
+                assumeFalse("The test consumer APK does not include the matched ABI library",
+                        result.contains("INSTALL_FAILED_NO_MATCHING_ABIS"));
+                // The test app can't be installed with the other errors
+                fail("The test consumer APK can not be installed on the device: " + result);
+            }
             // Ensure the client can load native code from the library
             runDeviceTests(STATIC_LIB_NATIVE_CONSUMER_PKG,
                     "android.os.lib.consumer.UseSharedLibraryTest",
@@ -620,13 +658,22 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
         }
     }
 
+    private String installPackageWithCurrentAbi(String apkName) throws Exception {
+        return getDevice().installPackage(
+                mBuildHelper.getTestFile(apkName),
+                /* reinstall= */ false, /* grantPermissions= */ false,
+                /* extraArgs= */ "--abi " + getAbi().getName());
+    }
+
     @AppModeInstant
+    @Test
     public void testLoadCodeFromNativeLibMultiArchViolationInstantMode() throws Exception {
         mInstantMode = true;
         doTestLoadCodeFromNativeLibMultiArchViolation();
     }
 
     @AppModeFull
+    @Test
     public void testLoadCodeFromNativeLibMultiArchViolationFullMode() throws Exception {
         doTestLoadCodeFromNativeLibMultiArchViolation();
     }
@@ -641,12 +688,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeInstant
+    @Test
     public void testLoadCodeAndResourcesFromSharedLibrarySignedWithTwoCertsInstantMode() throws Exception {
         mInstantMode = true;
         doTestLoadCodeAndResourcesFromSharedLibrarySignedWithTwoCerts();
     }
 
     @AppModeFull
+    @Test
     public void testLoadCodeAndResourcesFromSharedLibrarySignedWithTwoCertsFullMode() throws Exception {
         doTestLoadCodeAndResourcesFromSharedLibrarySignedWithTwoCerts();
     }
@@ -668,6 +717,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
         }
     }
 
+    @Test
     public void testSamegradeStaticSharedLibByAdb() throws Exception {
         try {
             assertNull(install(STATIC_LIB_PROVIDER5_APK));
@@ -678,55 +728,19 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull(reason = "Instant app cannot get package installer service")
+    @Test
     public void testCannotSamegradeStaticSharedLibByInstaller() throws Exception {
         runDeviceTests(STATIC_LIB_TEST_APP_PKG, STATIC_LIB_TEST_APP_CLASS_NAME,
                 "testSamegradeStaticSharedLibFail");
     }
 
-    private void runDeviceTests(String packageName, String testClassName,
-            String testMethodName) throws DeviceNotAvailableException {
-        RemoteAndroidTestRunner testRunner = new RemoteAndroidTestRunner(packageName,
-                ANDROID_JUNIT_RUNNER_CLASS, getDevice().getIDevice());
-        testRunner.setMethodName(testClassName, testMethodName);
-        CollectingTestListener listener = new CollectingTestListener();
-
-        getDevice().runInstrumentationTests(testRunner, listener);
-
-        final TestRunResult result = listener.getCurrentRunResults();
-        if (result.isRunFailure()) {
-            throw new AssertionError("Failed to successfully run device tests for "
-                    + result.getName() + ": " + result.getRunFailureMessage());
-        }
-        if (result.getNumTests() == 0) {
-            throw new AssertionError("No tests were run on the device");
-        }
-        if (result.hasFailedTests()) {
-            // build a meaningful error message
-            StringBuilder errorBuilder = new StringBuilder("on-device tests failed:\n");
-            for (Map.Entry<TestDescription, TestResult> resultEntry :
-                    result.getTestResults().entrySet()) {
-                if (!resultEntry.getValue().getStatus().equals(TestStatus.PASSED)) {
-                    errorBuilder.append(resultEntry.getKey().toString());
-                    errorBuilder.append(":\n");
-                    errorBuilder.append(resultEntry.getValue().getStackTrace());
-                }
-            }
-            throw new AssertionError(errorBuilder.toString());
-        }
-    }
-
     @LargeTest
     @AppModeFull
+    @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_fullMode()
             throws Exception {
-        // This really should be a assumeTrue(getDevice().getMaxNumberOfUsersSupported() > 1), but
-        // JUnit3 doesn't support assumptions framework.
-        // TODO: change to assumeTrue after migrating tests to JUnit4.
         final int maxUserCount = getDevice().getMaxNumberOfUsersSupported();
-        if (!(maxUserCount > 1)) {
-            LogUtil.CLog.logAndDisplay(Log.LogLevel.INFO, "The device does not support multi-user");
-            return;
-        }
+        assumeTrue("The device does not support multi-user", maxUserCount > 1);
 
         boolean shouldCreateSecondUser = true;
         // Check whether the current user count on the device is not less than the max user count or
@@ -745,6 +759,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
 
     @LargeTest
     @AppModeInstant
+    @Test
     public void testPruneUnusedStaticSharedLibrariesWithMultiUser_reboot_instantMode()
             throws Exception {
         // This really should be a assumeTrue(getDevice().getMaxNumberOfUsersSupported() > 1), but
@@ -789,6 +804,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
 
     @LargeTest
     @AppModeFull
+    @Test
     public void testPruneUnusedStaticSharedLibraries_reboot_fullMode()
             throws Exception {
         doTestPruneUnusedStaticSharedLibraries_reboot();
@@ -796,6 +812,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
 
     @LargeTest
     @AppModeInstant
+    @Test
     public void testPruneUnusedStaticSharedLibraries_reboot_instantMode()
             throws Exception {
         mInstantMode = true;
@@ -842,6 +859,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
 
     @LargeTest
     @AppModeFull
+    @Test
     public void testInstallStaticSharedLib_notKillDependentApp() throws Exception {
         try {
             // Install library dependency
@@ -863,6 +881,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testSamegradeStaticSharedLib_killDependentApp() throws Exception {
         try {
             // Install library dependency
@@ -884,6 +903,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibInstall_broadcastReceived() throws Exception {
         // Install library dependency
         assertNull(install(STATIC_LIB_PROVIDER_RECURSIVE_APK));
@@ -892,6 +912,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibInstall_incorrectInstallerPkgName_broadcastNotReceived()
             throws Exception {
         // Install library dependency
@@ -901,6 +922,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibUninstall_broadcastReceived()
             throws Exception {
         // Install library dependency
@@ -910,6 +932,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibUninstall_incorrectInstallerPkgName_broadcastNotReceived()
             throws Exception {
         // Install library dependency
@@ -919,6 +942,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibInstallOnSecondaryUser_broadcastReceivedByAllUsers()
             throws Exception {
 
@@ -927,6 +951,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testStaticSharedLibUninstallOnAllUsers_broadcastReceivedByAllUsers()
             throws Exception {
 
@@ -935,6 +960,7 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
     }
 
     @AppModeFull
+    @Test
     public void testCannotInstallAppWithBadCertDigestDeclared() throws Exception {
         try {
             // Install library dependency
@@ -958,6 +984,14 @@ public class StaticSharedLibsHostTests extends DeviceTestCase implements IBuildR
             throws DeviceNotAvailableException, FileNotFoundException {
         return getDevice().installPackage(mBuildHelper.getTestFile(apk), reinstall, false,
                 apk.contains("consumer") && mInstantMode ? "--instant" : "");
+    }
+
+    private void assertNull(Object object) {
+        assertThat(object).isNull();
+    }
+
+    private void assertNotNull(Object object) {
+        assertThat(object).isNotNull();
     }
 
     private boolean checkLibrary(String libName) throws DeviceNotAvailableException {

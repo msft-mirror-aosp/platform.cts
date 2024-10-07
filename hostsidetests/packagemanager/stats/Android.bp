@@ -77,3 +77,17 @@ java_test_host {
     ],
     test_config: "IncrementalStatsTests.xml",
 }
+
+test_module_config_host {
+    name: "CtsPackageManagerStatsHostTestCases_host_packageinstallerv2statstests",
+    base: "CtsPackageManagerStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["com.android.cts.packagemanager.stats.host.PackageInstallerV2StatsTests"],
+}
+
+test_module_config_host {
+    name: "CtsPackageManagerIncrementalStatsHostTestCases_LargeTest",
+    base: "CtsPackageManagerIncrementalStatsHostTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["androidx.test.filters.LargeTest"],
+}

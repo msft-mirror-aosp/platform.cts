@@ -33,7 +33,7 @@ android_test {
         "flag-junit",
         "android.content.flags-aconfig-java",
     ],
-    libs: ["android.test.base"],
+    libs: ["android.test.base.stubs.test"],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
     test_suites: [

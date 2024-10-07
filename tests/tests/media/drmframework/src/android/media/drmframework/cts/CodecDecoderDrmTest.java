@@ -24,6 +24,7 @@ import android.media.MediaFormat;
 import android.media.NotProvisionedException;
 import android.media.ResourceBusyException;
 import android.media.UnsupportedSchemeException;
+import android.media.cts.TestUtils;
 import android.mediav2.common.cts.CodecDecoderBlockModelDrmTestBase;
 import android.mediav2.common.cts.CodecDecoderDrmTestBase;
 import android.mediav2.common.cts.OutputManager;
@@ -93,7 +94,11 @@ public class CodecDecoderDrmTest extends CodecDecoderDrmTestBase {
                 {MediaFormat.MIMETYPE_AUDIO_MPEG, "bbb_stereo_48kHz_192kbps_mp3_cenc.mp4"},
                 {MediaFormat.MIMETYPE_AUDIO_OPUS, "bbb_stereo_48kHz_192kbps_opus_cenc.mp4"},
         }));
-        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo, false);
+        // cts -- check them all
+        // mcts/mts -- just check codecs implemented in modules
+        boolean ignoreModule = (TestUtils.currentTestMode() == TestUtils.TESTMODE_CTS);
+        return prepareParamList(exhaustiveArgsList, isEncoder, needAudio, needVideo,
+                        false /*testingallCodecs*/, ignoreModule /*ignoreModeDuringSelection*/);
     }
 
     static byte[] convert(int[] intArray) {

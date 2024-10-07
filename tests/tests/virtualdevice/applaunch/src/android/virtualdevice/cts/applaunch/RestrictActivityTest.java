@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import android.annotation.Nullable;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.companion.virtual.VirtualDeviceManager;
@@ -39,6 +38,7 @@ import android.platform.test.annotations.AppModeFull;
 import android.virtualdevice.cts.applaunch.AppComponents.EmptyActivity;
 import android.virtualdevice.cts.common.VirtualDeviceRule;
 
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import org.junit.Before;

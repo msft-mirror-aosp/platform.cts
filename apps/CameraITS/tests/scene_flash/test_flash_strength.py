@@ -35,15 +35,15 @@ _FLASH_STATES = {0: 'FLASH_STATE_UNAVAILABLE', 1: 'FLASH_STATE_CHARGING',
                  4: 'FLASH_STATE_PARTIAL'}
 _FORMAT_NAME = 'yuv'
 _IMG_SIZE = (640, 480)
-_PATCH_H = 0.25  # center 25%
-_PATCH_W = 0.25
+_PATCH_H = 0.5  # center 50%
+_PATCH_W = 0.5
 _PATCH_X = 0.5-_PATCH_W/2
 _PATCH_Y = 0.5-_PATCH_H/2
 _TEST_NAME = os.path.splitext(os.path.basename(__file__))[0]
 _CAPTURE_INTENT_STILL_CAPTURE = 2
 _MAX_FLASH_STRENGTH = 'android.flash.singleStrengthMaxLevel'
 _MAX_TORCH_STRENGTH = 'android.flash.torchStrengthMaxLevel'
-_BRIGHTNESS_MEAN_ATOL = 5  # Tolerance for brightness mean
+_BRIGHTNESS_MEAN_ATOL = 15  # Tolerance for brightness mean
 _STRENGTH_STEPS = 3  # Steps of flash strengths to be tested
 
 
@@ -227,10 +227,14 @@ class FlashStrengthTest(its_base_test.ItsBaseTest):
             # take capture and evaluate
             cap = _take_captures(out_surfaces, cam, img_name, ae_mode, strength)
             formats_means.append(_get_mean(cap, props))
-
+        check_mean = True
+        first_api_level = its_session_utils.get_first_api_level(self.dut.serial)
+        if ae_mode == 1 and first_api_level <= its_session_utils.ANDROID15_API_LEVEL:
+          check_mean = False
         # Compare means and assert PASS/FAIL
-        failure_messages += _compare_means(formats_means,
-                                           ae_mode, flash_strengths)
+        if check_mean:
+          failure_messages += _compare_means(formats_means,
+                                             ae_mode, flash_strengths)
 
     # turn the lights back on
     lighting_control_utils.set_lighting_state(

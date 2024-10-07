@@ -16,6 +16,14 @@
 
 package com.android.bedstead.testapp;
 
+import static android.content.pm.PackageManager.PERMISSION_DENIED;
+
+import static com.android.bedstead.nene.TestApis.users;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
+import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
+
+import android.content.Context;
+
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.packages.Package;
@@ -64,13 +72,24 @@ public final class Utils {
                 reasons += "Package " + pkg + " is not installed on User " + user + ".";
             }
 
+            Context context = TestApis.context().instrumentedContext();
+            // we need to check permissions before the current user, because users().current grants
+            // INTERACT_ACROSS_USERS_FULL permission
+            if (context.checkSelfPermission(INTERACT_ACROSS_USERS) == PERMISSION_DENIED
+                    && context.checkSelfPermission(INTERACT_ACROSS_USERS_FULL) == PERMISSION_DENIED
+                    && user != users().current()
+            ) {
+                reasons += "User " + user + " isn't the current user and the "
+                        + INTERACT_ACROSS_USERS_FULL + " permission isn't granted.";
+            }
+
             return new NeneException("Error connecting to test app: " + reasons
                     + ". Relevant logcat: "
                     + TestApis.logcat().dump(
                             l -> l.contains("TestAppBinder")
                                     || l.contains("CrossProfileSender")
                                     || l.contains("TestAppConnector")
-                                    || l.contains(pkg.packageName())));
+                                    || l.contains(pkg.packageName())), t);
         }
 
         return new NeneException("Error connecting to test app", t);

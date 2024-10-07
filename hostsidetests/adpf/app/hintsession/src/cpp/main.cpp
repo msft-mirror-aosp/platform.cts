@@ -181,14 +181,6 @@ void android_main(struct android_app *pApp) {
 
     // Ensure renderer is initialized
     drawFrames(1, pApp, events, pSource);
-
-    bool supported = getRenderer(pApp)->getAdpfSupported();
-
-    if (!supported) {
-        JNIManager::sendResultsToJava(getRenderer(pApp)->getResults());
-        return;
-    }
-
     std::this_thread::sleep_for(10s);
     getRenderer(pApp)->setNumHeads(100);
     // Run an initial load to get the CPU active and stable
@@ -198,9 +190,10 @@ void android_main(struct android_app *pApp) {
 
     std::vector<pid_t> tids;
     tids.push_back(gettid());
-    getRenderer(pApp)->startHintSession(tids, 6 * initialStats.medianWorkDuration);
-    if (!getRenderer(pApp)->isHintSessionRunning()) {
-        Utility::setFailure("Session failed to start!", getRenderer(pApp));
+    bool supported = getRenderer(pApp)->startHintSession(tids, 6 * initialStats.medianWorkDuration);
+    if (!supported) {
+        JNIManager::sendResultsToJava(getRenderer(pApp)->getResults());
+        return;
     }
 
     // Do an initial load with the session to let CPU settle

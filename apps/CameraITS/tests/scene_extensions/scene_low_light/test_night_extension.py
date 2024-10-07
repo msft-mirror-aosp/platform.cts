@@ -17,6 +17,7 @@
 import logging
 import os.path
 
+import time
 import cv2
 from mobly import test_runner
 
@@ -30,14 +31,14 @@ import low_light_utils
 
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics.EXTENSION_NIGHT
-_TABLET_BRIGHTNESS = '6'  # Highest minimum brightness on a supported tablet
 _TEST_REQUIRED_MPC = 34
 
 _AVG_DELTA_LUMINANCE_THRESH = 17
-_AVG_LUMINANCE_THRESH = 90
+_AVG_LUMINANCE_THRESH = 85
 
 _IMAGE_FORMATS_TO_CONSTANTS = (('yuv', 35), ('jpeg', 256))
 
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
 _X_STRING = 'x'
 
 
@@ -182,7 +183,18 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
         raise AssertionError('No supported sizes/formats found!')
 
       # Set tablet brightness to darken scene
-      self.set_screen_brightness(_TABLET_BRIGHTNESS)
+      brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
+      if (props['android.lens.facing'] ==
+          camera_properties_utils.LENS_FACING['BACK']):
+        self.set_screen_brightness(brightness[0])
+      elif (props['android.lens.facing'] ==
+            camera_properties_utils.LENS_FACING['FRONT']):
+        self.set_screen_brightness(brightness[1])
+      else:
+        logging.debug('Only front and rear camera supported. '
+                      'Skipping for camera ID %s',
+                      self.camera_id)
+        camera_properties_utils.skip_unless(False)
 
       file_stem = f'{test_name}_{camera_id}_{accepted_format}_{width}x{height}'
       out_surfaces = {
@@ -190,6 +202,8 @@ class NightExtensionTest(its_base_test.ItsBaseTest):
       req = capture_request_utils.auto_capture_request()
 
       logging.debug('Taking auto capture with night mode ON')
+      # Wait for tablet brightness to change
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       night_cap = self._take_capture(
           cam, req, out_surfaces)
       rgb_night_img = _convert_capture(night_cap, f'{file_stem}_night')

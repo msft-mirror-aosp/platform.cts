@@ -87,9 +87,9 @@ public class HevcVp9ClaimsPerformanceTest {
                     MediaFormat.MIMETYPE_VIDEO_VP9)), 3840, 2160, 60, false, ComponentClass.ALL});
         }
 
-        int argLength = argsList.get(0).length;
         final List<Object[]> updatedArgsList = new ArrayList<>();
         for (Object[] arg : argsList) {
+            int argLength = arg.length;
             Object[] argUpdate = new Object[argLength + 1];
             System.arraycopy(arg, 0, argUpdate, 0, argLength);
             argUpdate[argLength] = CodecTestBase.paramToString(argUpdate);

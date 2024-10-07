@@ -99,7 +99,7 @@ android_test {
         "truth",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     test_suites: [
         "cts",
@@ -111,4 +111,11 @@ android_test {
         ":CtsWindowManagerJetpackSignedApp",
     ],
     per_testcase_directory: true,
+}
+
+test_module_config {
+    name: "CtsWindowManagerJetpackTestCases_Presubmit",
+    base: "CtsWindowManagerJetpackTestCases",
+    test_suites: ["general-tests"],
+    include_annotations: ["android.platform.test.annotations.Presubmit"],
 }

@@ -33,6 +33,6 @@ android_test_helper_app {
         "CtsWebkitTestCasesSharedWithSdk",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 }

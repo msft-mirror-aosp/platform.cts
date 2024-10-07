@@ -16,7 +16,7 @@ public class Common {
     // M = major version
     // mm = minor version
     // pp = patch
-    public static final int VERSION_CODE = 10104;
+    public static final int VERSION_CODE = 10105;
     // Key for storing in a protobuf.
     public static final String KEY_VERSION_CODE = "version_code";
 

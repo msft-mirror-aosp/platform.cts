@@ -24,7 +24,7 @@ android_test {
         "compatibility-device-preconditions",
     ],
 
-    libs: ["android.test.base"],
+    libs: ["sdk_public_30_android.test.base"],
 
     srcs: ["src/**/*.java"],
 

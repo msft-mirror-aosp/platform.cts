@@ -39,6 +39,7 @@ import android.net.MacAddress;
 import android.net.Network;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiSsid;
@@ -466,6 +467,11 @@ public class MockWifiTest {
             sMockModemManager.updateConfiguredMockedMethods();
             // Force Screen off before disconnect, then device should trigger pno scan.
             turnScreenOffNoDelay();
+            // Temporarily disable on all networks.
+            List<WifiConfiguration> savedNetworks = sWifiManager.getConfiguredNetworks();
+            for (WifiConfiguration network : savedNetworks) {
+                sWifiManager.disableEphemeralNetwork(network.SSID);
+            }
             sWifiManager.disconnect();
             waitForDisconnection();
             PollingCheck.check(
@@ -485,6 +491,9 @@ public class MockWifiTest {
             turnScreenOnNoDelay();
             sWifiManager.clearExternalPnoScanRequest();
             sMockModemManager.disconnectMockWifiModemService();
+            // Off/On wifi to recover temporarily disable on all networks.
+            setWifiEnabled(false);
+            setWifiEnabled(true);
             uiAutomation.dropShellPermissionIdentity();
         }
     }

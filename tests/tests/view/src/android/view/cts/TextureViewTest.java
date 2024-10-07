@@ -22,7 +22,6 @@ import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glClearColor;
 import static android.opengl.GLES20.glEnable;
 import static android.opengl.GLES20.glScissor;
-import static android.view.WindowInsets.Type.captionBar;
 import static android.view.WindowInsets.Type.systemBars;
 
 import static org.junit.Assert.assertEquals;
@@ -144,15 +143,11 @@ public class TextureViewTest {
         activity.waitForSurface();
         activity.initGl();
         int updatedCount;
-        // If the caption bar is present, the surface update counts increase by 1
-        int extraSurfaceOffset =
-                window.getDecorView().getRootWindowInsets().getInsets(captionBar()).top == 0
-                ? 0 : 1;
-        updatedCount = activity.waitForSurfaceUpdateCount(0 + extraSurfaceOffset);
-        assertEquals(0 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(0);
+        assertEquals(0, updatedCount);
         activity.drawColor(Color.GREEN);
-        updatedCount = activity.waitForSurfaceUpdateCount(1 + extraSurfaceOffset);
-        assertEquals(1 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(1);
+        assertEquals(1, updatedCount);
         assertEquals(Color.WHITE, getPixel(window, center));
         WidgetTestUtils.runOnMainAndDrawSync(mActivityRule,
                 activity.findViewById(android.R.id.content), () -> activity.removeCover());
@@ -160,8 +155,8 @@ public class TextureViewTest {
         int color = waitForChange(window, center, Color.WHITE);
         assertEquals(Color.GREEN, color);
         activity.drawColor(Color.BLUE);
-        updatedCount = activity.waitForSurfaceUpdateCount(2 + extraSurfaceOffset);
-        assertEquals(2 + extraSurfaceOffset, updatedCount);
+        updatedCount = activity.waitForSurfaceUpdateCount(2);
+        assertEquals(2, updatedCount);
         color = waitForChange(window, center, color);
         assertEquals(Color.BLUE, color);
     }

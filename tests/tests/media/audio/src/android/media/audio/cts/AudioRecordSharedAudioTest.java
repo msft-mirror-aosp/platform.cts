@@ -16,28 +16,35 @@
 
 package android.media.audio.cts;
 
+import static android.content.pm.PackageManager.FEATURE_MICROPHONE;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.testng.Assert.assertThrows;
 
-import android.content.pm.PackageManager;
+import android.app.Instrumentation;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.MediaSyncEvent;
 import android.util.Log;
 
-import androidx.test.InstrumentationRegistry;
+import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.filters.SdkSuppress;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.RequiredFeatureRule;
 import com.android.compatibility.common.util.SystemUtil;
+import com.android.media.mediatestutils.PermissionUpdateBarrierRule;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Rule;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
@@ -51,26 +58,33 @@ public class AudioRecordSharedAudioTest {
     private static final String TAG = "AudioRecordSharedAudioTest";
     private static final int SAMPLING_RATE_HZ = 16000;
 
+    @Rule(order = 0)
+    public final RequiredFeatureRule mMicRule = new RequiredFeatureRule(FEATURE_MICROPHONE);
+
+    @Rule(order = 1)
+    public final AdoptShellPermissionsRule mPermissionRule = new AdoptShellPermissionsRule();
+
+    @Rule(order = 2)
+    public final PermissionUpdateBarrierRule mBarrierRule = new PermissionUpdateBarrierRule();
+
+    private final Instrumentation mInstrumentation = InstrumentationRegistry.getInstrumentation();
+    private String mPackageName = mInstrumentation.getContext().getPackageName();
+
     @Before
     public void setUp() throws Exception {
-        assumeTrue(hasMicrophone());
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity();
         clearAudioserverPermissionCache();
     }
 
     @After
     public void tearDown() throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
         clearAudioserverPermissionCache();
     }
 
     @Test
     public void testPermissionFailure() throws Exception {
-        InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .dropShellPermissionIdentity();
+        mInstrumentation.getUiAutomation().dropShellPermissionIdentity();
         clearAudioserverPermissionCache();
+        mInstrumentation.getContext().getSystemService(AudioManager.class).permissionUpdateBarrier();
 
         assertThrows(UnsupportedOperationException.class, () -> {
                     AudioRecord record = new AudioRecord.Builder().setMaxSharedAudioHistoryMillis(
@@ -91,8 +105,7 @@ public class AudioRecordSharedAudioTest {
         Thread.sleep(500);
 
         assertThrows(SecurityException.class, () -> {
-                    record.shareAudioHistory(
-                            InstrumentationRegistry.getTargetContext().getPackageName(), 100);
+                    record.shareAudioHistory(mPackageName, 100);
                 });
 
         record.stop();
@@ -116,8 +129,7 @@ public class AudioRecordSharedAudioTest {
         record.startRecording();
         Thread.sleep(500);
         try {
-            record.shareAudioHistory(
-                    InstrumentationRegistry.getTargetContext().getPackageName(), 100);
+            record.shareAudioHistory(mPackageName, 100);
         } catch (SecurityException e) {
             fail("testPermissionSuccess shareAudioHistory be allowed");
         } finally {
@@ -160,9 +172,7 @@ public class AudioRecordSharedAudioTest {
                 });
 
         assertThrows(IllegalArgumentException.class, () -> {
-                    record.shareAudioHistory(
-                            InstrumentationRegistry.getTargetContext().getPackageName(),
-                            -1 /* startFromMillis */);
+                    record.shareAudioHistory(mPackageName, -1 /* startFromMillis */);
                 });
 
         record.stop();
@@ -196,8 +206,7 @@ public class AudioRecordSharedAudioTest {
 
 
             final int RECORD2_START_TIME_MS = 100;
-            MediaSyncEvent event = record1.shareAudioHistory(
-                    InstrumentationRegistry.getTargetContext().getPackageName(),
+            MediaSyncEvent event = record1.shareAudioHistory(mPackageName,
                     (long) RECORD2_START_TIME_MS /* startFromMillis */);
             assertEquals(event.getAudioSessionId(), record1.getAudioSessionId());
 
@@ -267,11 +276,6 @@ public class AudioRecordSharedAudioTest {
                 record2.release();
             }
         }
-    }
-
-    private boolean hasMicrophone() {
-        return InstrumentationRegistry.getTargetContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_MICROPHONE);
     }
 
     private void clearAudioserverPermissionCache() {

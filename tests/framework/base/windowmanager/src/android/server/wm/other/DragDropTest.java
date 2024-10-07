@@ -269,6 +269,7 @@ public class DragDropTest extends WindowManagerTestBase {
             MotionEvent event = MotionEvent.obtain(downTime, downTime, action,
                     destLoc[0] * mInvCompatScale + offset, destLoc[1] * mInvCompatScale + offset,
                     1);
+            event.setDisplayId(mActivity.getDisplay().getDisplayId());
             event.setSource(InputDevice.SOURCE_MOUSE);
             mAutomation.injectInputEvent(event, false);
         });
@@ -338,7 +339,9 @@ public class DragDropTest extends WindowManagerTestBase {
     }
 
     @Before
-    public void setUp() throws InterruptedException {
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
         assumeFalse(isWatchDevice());
         UiAutomatorUtils.getUiDevice().waitForIdle();
         mActivity = startActivityInWindowingMode(DragDropActivity.class, WINDOWING_MODE_FULLSCREEN);

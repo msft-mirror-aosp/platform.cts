@@ -24,8 +24,8 @@ android_test {
         "androidx.test.runner",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     srcs: [
         "src/**/*.java",

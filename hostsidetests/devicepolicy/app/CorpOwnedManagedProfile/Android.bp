@@ -33,9 +33,9 @@ android_test_helper_app {
         local_include_dirs: ["src"],
     },
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.test",
         "junit",
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "ctstestrunner-axt",
@@ -62,9 +62,9 @@ android_test_helper_app {
         local_include_dirs: ["src"],
     },
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.test",
         "junit",
-        "android.test.base",
+        "android.test.base.stubs.test",
     ],
     static_libs: [
         "ctstestrunner-axt",

@@ -107,9 +107,11 @@ public class AppStandbyTests {
     private static TestAlarmHistory sAlarmHistory;
     private static Context sContext = InstrumentationRegistry.getTargetContext();
 
-    private ComponentName mAlarmScheduler;
-    private AtomicInteger mAlarmCount;
-    private AlarmManagerDeviceConfigHelper mConfigHelper = new AlarmManagerDeviceConfigHelper();
+    private final ComponentName mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE,
+            TEST_APP_RECEIVER);
+    private final AtomicInteger mAlarmCount = new AtomicInteger(0);
+    private final AlarmManagerDeviceConfigHelper mConfigHelper =
+            new AlarmManagerDeviceConfigHelper();
 
     private final BroadcastReceiver mAlarmStateReceiver = new BroadcastReceiver() {
         @Override
@@ -135,9 +137,7 @@ public class AppStandbyTests {
 
     @Before
     public void setUp() throws Exception {
-        mAlarmScheduler = new ComponentName(TEST_APP_PACKAGE, TEST_APP_RECEIVER);
-        mAlarmCount = new AtomicInteger(0);
-
+        assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
         // To make sure it doesn't get pinned to working_set on older versions.
         AppOpsUtils.setUidMode(Utils.getPackageUid(TEST_APP_PACKAGE), OPSTR_SCHEDULE_EXACT_ALARM,
                 MODE_IGNORED);
@@ -149,7 +149,6 @@ public class AppStandbyTests {
 
         setBatteryCharging(false);
         updateAlarmManagerConstants();
-        assumeTrue("App Standby not enabled on device", AppStandbyUtils.isAppStandbyEnabled());
     }
 
     private void scheduleAlarm(long triggerMillis, long interval) throws InterruptedException {
@@ -262,6 +261,9 @@ public class AppStandbyTests {
 
     @After
     public void tearDown() throws Exception {
+        if (!AppStandbyUtils.isAppStandbyEnabled()) {
+            return;
+        }
         setPowerAllowlisted(false);
         setBatteryCharging(true);
         mConfigHelper.restoreAll();

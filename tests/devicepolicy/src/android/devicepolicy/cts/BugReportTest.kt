@@ -20,8 +20,8 @@ import android.stats.devicepolicy.EventId
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureHasAdditionalUser
-import com.android.bedstead.harrier.annotations.EnsureHasNoAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser
+import com.android.bedstead.multiuser.annotations.EnsureHasNoAdditionalUser
 import com.android.bedstead.harrier.annotations.EnsureWillTakeQuickBugReports
 import com.android.bedstead.harrier.annotations.NotificationsTest
 import com.android.bedstead.harrier.annotations.SlowApiTest

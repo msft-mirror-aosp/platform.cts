@@ -30,6 +30,7 @@ import image_processing_utils
 AE_AWB_METER_WEIGHT = 1000  # 1 - 1000 with 1000 the highest
 ANGLE_CHECK_TOL = 1  # degrees
 ANGLE_NUM_MIN = 10  # Minimum number of angles for find_angle() to be valid
+ARUCO_DETECTOR_ATTRIBUTE_NAME = 'ArucoDetector'
 ARUCO_CORNER_COUNT = 4  # total of 4 corners to a aruco marker
 
 TEST_IMG_DIR = os.path.join(os.environ['CAMERA_ITS_TOP'], 'test_images')
@@ -67,6 +68,8 @@ CV2_WHITE = (255, 255, 255)
 CV2_YELLOW = (255, 255, 0)
 CV2_THRESHOLD_BLOCK_SIZE = 11
 CV2_THRESHOLD_CONSTANT = 2
+CV2_ZOOM_MARKER_SIZE = 30
+CV2_ZOOM_MARKER_THICKNESS = 3
 
 CV2_HOME_DIRECTORY = os.path.dirname(cv2.__file__)
 CV2_ALTERNATE_DIRECTORY = pathlib.Path(CV2_HOME_DIRECTORY).parents[3]
@@ -88,6 +91,8 @@ IMAGE_ROTATION_THRESHOLD = 40  # rotation by 20 pixels
 LOW_RES_IMG_THRESH = 320 * 240
 
 NUM_AE_AWB_REGIONS = 4
+
+OPT_VALUE_THRESH = 0.5  # Max opt value is ~0.8
 
 SCALE_CHART_33_PERCENT = 0.33
 SCALE_CHART_67_PERCENT = 0.67
@@ -389,17 +394,12 @@ class Chart(object):
 
     # determine if optimization results are valid
     opt_values = [x[0] for x in max_match]
-    if not opt_values or (2.0 * min(opt_values) > max(opt_values)):
-      estring = ('Warning: unable to find chart in scene!\n'
-                 'Check camera distance and self-reported '
-                 'pixel pitch, focal length and hyperfocal distance.')
-      logging.warning(estring)
-      self._set_scale_factors_to_one()
+    if not opt_values or max(opt_values) < OPT_VALUE_THRESH:
+      raise AssertionError(
+            'Unable to find chart in scene!\n'
+            'Check camera distance and self-reported '
+            'pixel pitch, focal length and hyperfocal distance.')
     else:
-      if (max(opt_values) == opt_values[0] or
-          max(opt_values) == opt_values[len(opt_values) - 1]):
-        estring = ('Warning: Chart is at extreme range of locator.')
-        logging.warning(estring)
       # find max and draw bbox
       matched_scale_and_loc = max(max_match, key=lambda x: x[0])
       self.opt_val = matched_scale_and_loc[0]
@@ -844,23 +844,48 @@ def correct_faces_for_crop(faces, img, crop):
   """Correct face rectangles for sensor crop.
 
   Args:
-    faces: list of dicts with face information
+    faces: list of dicts with face information relative to sensor's
+      aspect ratio
     img: np image array
-    crop: dict of crop region size with 'top, right, left, bottom' as keys
+    crop: dict of crop region size with 'top', 'right', 'left', 'bottom'
+      as keys to desired region of the sensor to read out
   Returns:
     list of face locations (left, right, top, bottom) corrected
   """
   faces_corrected = []
-  cw, ch = crop['right'] - crop['left'], crop['bottom'] - crop['top']
+  crop_w = crop['right'] - crop['left']
+  crop_h = crop['bottom'] - crop['top']
   logging.debug('crop region: %s', str(crop))
-  w = img.shape[1]
-  h = img.shape[0]
+  img_w, img_h = img.shape[1], img.shape[0]
+  crop_aspect_ratio = crop_w / crop_h
+  img_aspect_ratio = img_w / img_h
   for rect in [face['bounds'] for face in faces]:
     logging.debug('rect: %s', str(rect))
-    left = int(round((rect['left'] - crop['left']) * w / cw))
-    right = int(round((rect['right'] - crop['left']) * w / cw))
-    top = int(round((rect['top'] - crop['top']) * h / ch))
-    bottom = int(round((rect['bottom'] - crop['top']) * h / ch))
+    if crop_aspect_ratio >= img_aspect_ratio:
+      # Sensor width is being cropped, so we need to adjust the horizontal
+      # coordinates of the face rectangles to account for the crop.
+      # Since we are converting from sensor coordinates to image coordinates
+      img_crop_h_ratio = img_h / crop_h
+      scaled_crop_w = crop_w * img_crop_h_ratio
+      excess_w = (img_w - scaled_crop_w) / 2
+      left = int(
+          round((rect['left'] - crop['left']) * img_crop_h_ratio + excess_w))
+      right = int(
+          round((rect['right'] - crop['left']) * img_crop_h_ratio + excess_w))
+      top = int(round((rect['top'] - crop['top']) * img_crop_h_ratio))
+      bottom = int(round((rect['bottom'] - crop['top']) * img_crop_h_ratio))
+    else:
+      # Sensor height is being cropped, so we need to adjust the vertical
+      # coordinates of the face rectangles to account for the crop.
+      img_crop_w_ratio = img_w / crop_w
+      scaled_crop_h = crop_h * img_crop_w_ratio
+      excess_w = (img_h - scaled_crop_h) / 2
+      left = int(round((rect['left'] - crop['left']) * img_crop_w_ratio))
+      right = int(round((rect['right'] - crop['left']) * img_crop_w_ratio))
+      top = int(
+          round((rect['top'] - crop['top']) * img_crop_w_ratio + excess_w))
+      bottom = int(
+          round((rect['bottom'] - crop['top']) * img_crop_w_ratio + excess_w))
     faces_corrected.append([left, right, top, bottom])
   logging.debug('faces_corrected: %s', str(faces_corrected))
   return faces_corrected
@@ -956,7 +981,8 @@ def draw_green_boxes_around_faces(img, faces_cropped, img_name):
   image_processing_utils.write_image(img, img_name)
 
 
-def find_aruco_markers(input_img, output_img_path):
+def find_aruco_markers(
+    input_img, output_img_path, aruco_marker_count=ARUCO_CORNER_COUNT):
   """Detects ArUco markers in the input_img.
 
   Finds ArUco markers in the input_img and draws the contours
@@ -966,18 +992,27 @@ def find_aruco_markers(input_img, output_img_path):
       to be detected
     output_img_path: path of the image to be saved with contours
       around the markers detected
+    aruco_marker_count: optional int for minimum markers to expect.
   Returns:
     corners: list of detected corners
     ids: list of int ids for each ArUco markers in the input_img
     rejected_params: list of rejected corners
   """
-  parameters = cv2.aruco.DetectorParameters_create()
   # ArUco markers used are 4x4
   aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_100)
-  corners, ids, rejected_params = cv2.aruco.detectMarkers(
-      input_img, aruco_dict, parameters=parameters)
+  parameters = cv2.aruco.DetectorParameters()
+  aruco_detector = None
+  if hasattr(cv2.aruco, ARUCO_DETECTOR_ATTRIBUTE_NAME):
+    aruco_detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+  # Use ArucoDetector object if available, else fall back to detectMarkers()
+  if aruco_detector is not None:
+    corners, ids, rejected_params = aruco_detector.detectMarkers(input_img)
+  else:
+    corners, ids, rejected_params = cv2.aruco.detectMarkers(
+        input_img, aruco_dict, parameters=parameters
+    )
   # Early return if sufficient markers found
-  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+  if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected.')
     cv2.aruco.drawDetectedMarkers(input_img, corners, ids)
     image_processing_utils.write_image(input_img / 255, output_img_path)
@@ -987,7 +1022,7 @@ def find_aruco_markers(input_img, output_img_path):
   bw_img = convert_image_to_high_contrast_black_white(input_img)
   corners, ids, rejected_params = cv2.aruco.detectMarkers(
       bw_img, aruco_dict, parameters=parameters)
-  if ids is not None and len(ids) >= ARUCO_CORNER_COUNT:
+  if ids is not None and len(ids) >= aruco_marker_count:
     logging.debug('All ArUco markers detected with greyscale image.')
   # Handle case where no markers are found
   if ids is None:
@@ -1114,6 +1149,98 @@ def get_chart_boundary_from_aruco_markers(
   logging.debug('ArUco marker top_left: %s', top_left)
   logging.debug('ArUco marker bottom_right: %s', bottom_right)
   return top_left, top_right, bottom_right, bottom_left
+
+
+def get_aruco_center(corners):
+  """Get the center of an ArUco marker defined by its four corners.
+
+  Args:
+    corners: list of 4 Iterables, each Iterable is a (x, y) corner coordinate.
+  Returns:
+    x, y: the x, y coordinates of the center of the ArUco marker.
+  """
+  x = (corners[0][0] + corners[2][0]) // 2  # mean of top left x, bottom right x
+  y = (corners[1][1] + corners[3][1]) // 2  # mean of top right y, bottom left y
+  return x, y
+
+
+def get_aruco_marker_side_length(corners):
+  """Get the side length of an ArUco marker defined by its four corners.
+
+  This method uses the x-distance from the top left corner to the
+  bottom right corner and the y-distance from the top right corner to the
+  bottom left corner to calculate the side length of the ArUco marker.
+
+  Args:
+    corners: list of 4 Iterables, each Iterable is a (x, y) corner coordinate.
+  Returns:
+    The side length of the ArUco marker.
+  """
+  return math.sqrt(
+      (corners[2][0] - corners[0][0]) * (corners[3][1] - corners[1][1])
+  )
+
+
+def _mark_aruco_image(img, data):
+  """Return marked image with ArUco marker center and image center.
+
+  Args:
+    img: NumPy image in BGR channel order.
+    data: zoom_capture_utils.ZoomTestData corresponding to the image.
+  """
+  center_x, center_y = get_aruco_center(
+      data.aruco_corners)
+  # Mark ArUco marker center
+  img = cv2.drawMarker(
+      img, (int(center_x), int(center_y)),
+      color=CV2_GREEN, markerType=cv2.MARKER_TILTED_CROSS,
+      markerSize=CV2_ZOOM_MARKER_SIZE, thickness=CV2_ZOOM_MARKER_THICKNESS)
+  # Mark ArUco marker edges
+  # TODO: b/369852004 - make side length discrepancies more visible
+  for line_start, line_end in zip(
+      data.aruco_corners,
+      numpy.vstack((data.aruco_corners[1:], data.aruco_corners[0]))):
+    img = cv2.line(
+        img,
+        (int(line_start[0]), int(line_start[1])),
+        (int(line_end[0]), int(line_end[1])),
+        color=CV2_BLUE,
+        thickness=CV2_ZOOM_MARKER_THICKNESS)
+  # Mark image center
+  m_x, m_y = img.shape[1] // 2, img.shape[0] // 2
+  img = cv2.drawMarker(img, (m_x, m_y),
+                       color=CV2_BLUE, markerType=cv2.MARKER_CROSS,
+                       markerSize=CV2_ZOOM_MARKER_SIZE,
+                       thickness=CV2_ZOOM_MARKER_THICKNESS)
+  return img
+
+
+def mark_zoom_images(images, test_data, img_name_stem):
+  """Mark chosen ArUco marker's center and center of image for all test images.
+
+  Args:
+    images: BGR images in uint8, [0, 255] format.
+    test_data: Iterable[zoom_capture_utils.ZoomTestData].
+    img_name_stem: str, beginning of path to save data.
+  """
+  for img, data in zip(images, test_data):
+    img = _mark_aruco_image(img, data)
+    img_name = (f'{img_name_stem}_{data.result_zoom:.2f}_marked.jpg')
+    cv2.imwrite(img_name, img)
+
+
+def mark_zoom_images_to_video(out, image_paths, test_data):
+  """Mark chosen ArUco marker's center and image center, then write to video.
+
+  Args:
+    out: VideoWriter to write frames to.
+    image_paths: Iterable[str] of images paths of the frames
+    test_data: Iterable[zoom_capture_utils.ZoomTestData].
+  """
+  for image_path, data in zip(image_paths, test_data):
+    img = cv2.imread(image_path)
+    img = _mark_aruco_image(img, data)
+    out.write(img)
 
 
 def define_metering_rectangle_values(

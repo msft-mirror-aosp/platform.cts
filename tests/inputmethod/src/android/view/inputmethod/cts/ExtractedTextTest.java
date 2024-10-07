@@ -62,7 +62,6 @@ public class ExtractedTextTest {
 
     private static SpannableStringBuilder getExpectedHint() {
         final SpannableStringBuilder text = new SpannableStringBuilder("hint");
-        final Annotation span = new Annotation("testHintKey", "testHintValue");
         text.setSpan(EXPECTED_HINT_ANNOTATION, 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         return text;
     }

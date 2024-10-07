@@ -26,9 +26,9 @@ import static com.google.common.truth.Truth.assertThat;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageInstaller;
+import android.content.rollback.PackageRollbackInfo;
 import android.content.rollback.RollbackInfo;
 import android.content.rollback.RollbackManager;
-import android.os.storage.StorageManager;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 
@@ -767,6 +767,72 @@ public class HostTestHelper {
         assertThat(committedB).causePackagesContainsExactly(TestApp.B2);
         assertThat(committedB.getCommittedSessionId()).isNotEqualTo(-1);
     }
+
+    @Test
+    public void testIsApexAndIsApkInApexFalseForApkRollback() {
+        // ensure that rollback is correctly created
+        assertThat(InstallUtils.getInstalledVersion(TestApp.A)).isEqualTo(2);
+        InstallUtils.processUserData(TestApp.A);
+
+        RollbackInfo available = RollbackUtils.getAvailableRollback(TestApp.A);
+        assertThat(available).isStaged();
+        assertThat(available).packagesContainsExactly(
+                Rollback.from(TestApp.A2).to(TestApp.A1));
+        assertThat(RollbackUtils.getCommittedRollback(TestApp.A)).isNull();
+
+        // check the PackageRollbackInfo API response
+        PackageRollbackInfo info = getPackageRollbackInfoForPackage(available, TestApp.A);
+        assertThat(info).isNotNull();
+        assertThat(info.isApex()).isFalse();
+        assertThat(info.isApkInApex()).isFalse();
+    }
+
+    @Test
+    public void testIsApexAndIsApkInApexForApkInApexRollback() throws Exception {
+        // ensure that rollback is correctly created
+        assertThat(InstallUtils.getInstalledVersion(SHIM_APEX_PACKAGE_NAME)).isEqualTo(2);
+
+        long[] versions = retrieveApkInApexVersion();
+        final long apkInShimApexVersion = versions[0];
+        final long privApkInShimApexVersion = versions[1];
+
+        RollbackInfo available = RollbackUtils.getAvailableRollback(SHIM_APEX_PACKAGE_NAME);
+        assertThat(available).isStaged();
+        assertThat(available).packagesContainsExactly(
+                Rollback.from(TestApp.Apex2).to(TestApp.Apex1),
+                Rollback.from(SHIM_PACKAGE_NAME, 0)
+                        .to(SHIM_PACKAGE_NAME, apkInShimApexVersion),
+                Rollback.from(PRIVILEGED_SHIM_PACKAGE_NAME, 0)
+                        .to(PRIVILEGED_SHIM_PACKAGE_NAME, privApkInShimApexVersion));
+
+
+        // check the PackageRollbackInfo API response for APK-in-APEX
+        PackageRollbackInfo info = getPackageRollbackInfoForPackage(available,
+                PRIVILEGED_SHIM_PACKAGE_NAME);
+        assertThat(info).isNotNull();
+        assertThat(info.isApkInApex()).isTrue();
+        assertThat(info.isApex()).isFalse();
+
+        // check the PackageRollbackInfo API response for APEX
+        info = getPackageRollbackInfoForPackage(available, SHIM_APEX_PACKAGE_NAME);
+        assertThat(info).isNotNull();
+        assertThat(info.isApkInApex()).isFalse();
+        assertThat(info.isApex()).isTrue();
+    }
+
+    /**
+     * Get PackageRollbackInfo from rollbacks for given packageName
+     */
+    private PackageRollbackInfo getPackageRollbackInfoForPackage(RollbackInfo available,
+            String packageName) {
+        for (PackageRollbackInfo info: available.getPackages()) {
+            if (info.getPackageName().equals(packageName)) {
+                return info;
+            }
+        }
+        return null;
+    }
+
 
     /**
      * Record the versions of Apk in shim apex and PrivApk in shim apex

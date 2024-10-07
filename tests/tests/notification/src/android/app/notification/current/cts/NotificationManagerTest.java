@@ -26,6 +26,10 @@ import static android.app.AppOpsManager.MODE_ERRORED;
 import static android.app.Notification.FLAG_FOREGROUND_SERVICE;
 import static android.app.Notification.FLAG_NO_CLEAR;
 import static android.app.Notification.FLAG_USER_INITIATED_JOB;
+import static android.app.NotificationChannel.NEWS_ID;
+import static android.app.NotificationChannel.PROMOTIONS_ID;
+import static android.app.NotificationChannel.RECS_ID;
+import static android.app.NotificationChannel.SOCIAL_MEDIA_ID;
 import static android.app.NotificationManager.IMPORTANCE_DEFAULT;
 import static android.app.NotificationManager.IMPORTANCE_HIGH;
 import static android.app.NotificationManager.IMPORTANCE_LOW;
@@ -45,7 +49,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeFalse;
 
 import android.Manifest;
 import android.app.Notification;
@@ -104,10 +107,11 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.PollingCheck;
 import com.android.compatibility.common.util.SystemUtil;
 import com.android.compatibility.common.util.ThrowingSupplier;
-import com.android.compatibility.common.util.UserHelper;
 import com.android.modules.utils.build.SdkLevel;
 import com.android.test.notificationlistener.INLSControlService;
 import com.android.test.notificationlistener.INotificationUriAccessService;
@@ -116,7 +120,9 @@ import com.google.common.base.Preconditions;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.FixMethodOrder;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
@@ -128,8 +134,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -150,6 +158,10 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
             "com.android.test.notificationprovider.RichNotificationActivity";
     final String TAG = NotificationManagerTest.class.getSimpleName();
     final boolean DEBUG = false;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     private static final long ENFORCE_NO_CLEAR_FLAG_ON_MEDIA_NOTIFICATION = 264179692L;
     private static final String DELEGATE_POST_CLASS = TEST_APP + ".NotificationDelegateAndPost";
@@ -837,6 +849,7 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
                 new NotificationChannel(
                         UUID.randomUUID().toString(), "name4", IMPORTANCE_MIN);
 
+        Set<String> reservedChannels = new HashSet<>();
         Map<String, NotificationChannel> channelMap = new HashMap<>();
         channelMap.put(channel1.getId(), channel1);
         channelMap.put(channel2.getId(), channel2);
@@ -848,18 +861,43 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         mNotificationManager.createNotificationChannel(channel3);
         mNotificationManager.createNotificationChannel(channel4);
 
+        if (Flags.notificationClassification()) {
+            reservedChannels.add(SOCIAL_MEDIA_ID);
+            reservedChannels.add(PROMOTIONS_ID);
+            reservedChannels.add(NEWS_ID);
+            reservedChannels.add(RECS_ID);
+        }
+
         mNotificationManager.deleteNotificationChannel(channel3.getId());
 
         List<NotificationChannel> channels = mNotificationManager.getNotificationChannels();
         for (NotificationChannel nc : channels) {
             assertFalse(channel3.getId().equals(nc.getId()));
-            if (!channelMap.containsKey(nc.getId())) {
-                fail("Found extra channel " + nc.getId());
+            if (Flags.notificationClassification()) {
+                if (!channelMap.containsKey(nc.getId()) && !reservedChannels.contains(nc.getId())) {
+                    fail("Found extra channel " + nc.getId());
+                }
+                if (reservedChannels.contains(nc.getId())) {
+                    assertThat(nc.getImportance()).isEqualTo(IMPORTANCE_LOW);
+                } else {
+                    compareChannels(channelMap.get(nc.getId()), nc);
+                }
+            } else {
+                if (!channelMap.containsKey(nc.getId())) {
+                    fail("Found extra channel " + nc.getId());
+                }
+                compareChannels(channelMap.get(nc.getId()), nc);
             }
-            compareChannels(channelMap.get(nc.getId()), nc);
         }
-        // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this test
-        assertEquals(4, channels.size());
+        if (Flags.notificationClassification()) {
+            // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
+            // test + 4 system reserved bundle channels
+            assertEquals(8, channels.size());
+        } else {
+            // 1 channel from setUp() (NOTIFICATION_CHANNEL_ID) + 3 randomUUID channels from this
+            // test
+            assertEquals(4, channels.size());
+        }
     }
 
     @Test
@@ -944,8 +982,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendPackage() throws Exception {
-        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
 
@@ -1205,8 +1246,11 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
     }
 
     @Test
+    // TODO(b/355106764): Remove the annotation once suspend package supports visible background
+    //  users.
+    @RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "Suspending package does not support"
+            + " visible background users at the moment")
     public void testSuspendedPackageSendsNotification() throws Exception {
-        assumeNotVisibleBackgroundUser();
         mListener = mNotificationHelper.enableListener(STUB_PACKAGE_NAME);
         assertNotNull(mListener);
         CountDownLatch postedLatch = mListener.setPostedCountDown(1);
@@ -3656,11 +3700,25 @@ public class NotificationManagerTest extends BaseNotificationManagerTest {
         }
     }
 
-    // TODO(b/340238181): enable the tests for visible background user.
-    private void assumeNotVisibleBackgroundUser() {
-        UserHelper userHelper = new UserHelper(mContext);
-        assumeFalse("Not supported on visible background user",
-                userHelper.isVisibleBackgroundUser());
+    @Test
+    @RequiresFlagsEnabled(android.app.Flags.FLAG_API_RICH_ONGOING)
+    public void testCanPostPromotedNotifications() {
+        assertThat(mNotificationManager.canPostPromotedNotifications()).isFalse();
+
+        try {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), true);
+            });
+
+            assertThat(mNotificationManager.canPostPromotedNotifications()).isTrue();
+
+        } finally {
+            SystemUtil.runWithShellPermissionIdentity(() -> {
+                mNotificationManager.setCanPostPromotedNotifications(
+                        mContext.getPackageName(), android.os.Process.myUid(), false);
+            });
+        }
     }
 
     private static class EventCallback extends Handler {

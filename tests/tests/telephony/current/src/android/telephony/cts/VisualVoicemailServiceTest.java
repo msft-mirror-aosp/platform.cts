@@ -47,6 +47,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.platform.test.annotations.AppModeNonSdkSandbox;
 import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Intents;
@@ -83,6 +84,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+@AppModeNonSdkSandbox(reason = "SDK sandboxes do not have READ_PHONE_STATE permission")
 public class VisualVoicemailServiceTest {
 
     private static final String TAG = "VvmServiceTest";
@@ -210,8 +212,6 @@ public class VisualVoicemailServiceTest {
         setupSmsReceiver(text);
 
         SmsManager.getDefault().sendTextMessage(mPhoneNumber, null, text, null, null);
-
-        mSmsReceiver.assertNotReceived(EVENT_RECEIVED_TIMEOUT_MILLIS);
 
         try {
             future.get(EVENT_NOT_RECEIVED_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);

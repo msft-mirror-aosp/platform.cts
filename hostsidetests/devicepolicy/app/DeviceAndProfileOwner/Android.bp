@@ -22,8 +22,8 @@ android_test_helper_app {
     platform_apis: true,
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -57,8 +57,8 @@ android_test_helper_app {
     target_sdk_version: "25",
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -91,8 +91,8 @@ android_test_helper_app {
     platform_apis: true,
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "compatibility-device-util-axt",
@@ -129,8 +129,8 @@ android_test_helper_app {
     min_sdk_version: "30",
     srcs: ["src/**/*.java"],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.system",
+        "android.test.base.stubs.system",
     ],
     static_libs: [
         "compatibility-device-util-axt",

@@ -6,12 +6,7 @@
   ],
   "postsubmit": [
     {
-      "name": "CtsViewTestCases",
-      "options": [
-        {
-          "include-filter": "android.view.cts.SurfaceOOMTest"
-        }
-      ]
+      "name": "CtsViewTestCases_cts_surfaceoomtest"
     }
   ]
 }

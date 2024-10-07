@@ -31,6 +31,7 @@ import android.content.ServiceConnection
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.content.res.Resources
+import android.content.res.Resources.ID_NULL
 import android.graphics.Color
 import android.graphics.drawable.Icon
 import android.media.projection.MediaProjection
@@ -56,6 +57,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
     private lateinit var shortcutManager: ShortcutManager
     private lateinit var title: TextView
     private lateinit var instructions: TextView
+    private lateinit var warning: TextView
     private lateinit var buttonView: View
     private var currentTestIdx = 0
     private var numFailures = 0
@@ -72,6 +74,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         setContentView(R.layout.notif_hiding_main)
         title = requireViewById(R.id.test_title)
         instructions = requireViewById(R.id.test_instructions)
+        warning = requireViewById(R.id.test_warning)
         buttonView = requireViewById(R.id.action_button_layout)
         requireViewById<Button>(R.id.test_step_passed).setOnClickListener { _ ->
             showNextTestOrSummary()
@@ -149,6 +152,13 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         } else {
             title.setText(tests[currentTestIdx].getTestTitle())
             instructions.setText(tests[currentTestIdx].getTestInstructions())
+            val testWarning = tests[currentTestIdx].getTestWarning()
+            if (testWarning == ID_NULL) {
+                warning.visibility = View.GONE
+            } else {
+                warning.visibility = View.VISIBLE
+                warning.setText(testWarning)
+            }
         }
     }
 
@@ -162,6 +172,7 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
         } else {
             instructions.text = (getString(R.string.notif_hiding_failure, numFailures, tests.size))
         }
+        warning.visibility = View.GONE
     }
 
     private fun sendNotification(createBubble: Boolean) {
@@ -361,6 +372,10 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
             override fun getTestInstructions(): Int {
                 return R.string.notif_hiding_shade_local_screen_recorder_test_instructions
             }
+
+            override fun getTestWarning(): Int {
+                return R.string.notif_hiding_no_local_screen_recorder_warning
+            }
         }
 
     private val notificationContentHiddenInAppLocalScreenRecorderTest =
@@ -371,6 +386,10 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
             override fun getTestInstructions(): Int {
                 return R.string.notif_hiding_app_local_screen_recorder_test_instructions
+            }
+
+            override fun getTestWarning(): Int {
+                return R.string.notif_hiding_no_local_screen_recorder_warning
             }
         }
 
@@ -426,6 +445,9 @@ class NotificationHidingVerifierActivity : PassFailButtons.Activity() {
 
         /** What the tester should do & look for to verify this step was successful.  */
         abstract fun getTestInstructions(): Int
+
+        /** Returns string res id for any warnings associated with the test not passing prerequisites */
+        open fun getTestWarning(): Int = ID_NULL
 
         open fun sendNotification() = sendNotification(createBubble = false)
     }

@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.RectF;
@@ -43,7 +42,6 @@ import android.view.inputmethod.TextAppearanceInfo;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.SmallTest;
-import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
 
@@ -103,8 +101,6 @@ public class CursorAnchorInfoTest {
         FLAG_HAS_INVISIBLE_REGION,
         FLAG_HAS_INVISIBLE_REGION | FLAG_IS_RTL,
     };
-
-    private final Context mContext = InstrumentationRegistry.getInstrumentation().getContext();
 
     @Test
     @ApiTest(

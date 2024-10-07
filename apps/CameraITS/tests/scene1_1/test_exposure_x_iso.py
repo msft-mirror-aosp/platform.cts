@@ -16,9 +16,8 @@
 
 import logging
 import os.path
-import matplotlib
-from matplotlib import pylab
 
+from matplotlib import pyplot as plt
 from mobly import test_runner
 import numpy as np
 
@@ -97,18 +96,17 @@ def plot_rgb_means(title, x, r, g, b, test_name_with_path):
     b: b plane menas
     test_name_with_path: path for saved files
   """
-  pylab.figure(title)
-  pylab.semilogx(x, r, 'ro-')
-  pylab.semilogx(x, g, 'go-')
-  pylab.semilogx(x, b, 'bo-')
-  pylab.title(f'{_NAME} {title}')
-  pylab.xlabel('Gain Multiplier')
-  pylab.ylabel('Normalized RGB Plane Avg')
-  pylab.minorticks_off()
-  pylab.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
-  pylab.ylim([0, 1])
-  plot_name = f'{test_name_with_path}_plot_rgb_means.png'
-  matplotlib.pyplot.savefig(plot_name)
+  plt.figure(title)
+  plt.semilogx(x, r, 'ro-')
+  plt.semilogx(x, g, 'go-')
+  plt.semilogx(x, b, 'bo-')
+  plt.title(f'{_NAME} {title}')
+  plt.xlabel('Gain Multiplier')
+  plt.ylabel('Normalized RGB Plane Avg')
+  plt.minorticks_off()
+  plt.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
+  plt.ylim([0, 1])
+  plt.savefig(f'{test_name_with_path}_plot_rgb_means.png')
 
 
 def plot_raw_means(title, x, r, gr, gb, b, test_name_with_path):
@@ -123,20 +121,20 @@ def plot_raw_means(title, x, r, gr, gb, b, test_name_with_path):
     b: B plane menas
     test_name_with_path: path for saved files
   """
-  pylab.figure(title)
-  pylab.semilogx(x, r, 'ro-', label='R')
-  pylab.semilogx(x, gr, 'go-', label='Gr')
-  pylab.semilogx(x, gb, 'ko-', label='Gb')
-  pylab.semilogx(x, b, 'bo-', label='B')
-  pylab.title(f'{_NAME} {title}')
-  pylab.xlabel('Gain Multiplier')
-  pylab.ylabel('Normalized RAW Plane Avg')
-  pylab.minorticks_off()
-  pylab.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
-  pylab.ylim([0, 1])
-  pylab.legend(numpoints=1)
+  plt.figure(title)
+  plt.semilogx(x, r, 'ro-', label='R')
+  plt.semilogx(x, gr, 'go-', label='Gr')
+  plt.semilogx(x, gb, 'ko-', label='Gb')
+  plt.semilogx(x, b, 'bo-', label='B')
+  plt.title(f'{_NAME} {title}')
+  plt.xlabel('Gain Multiplier')
+  plt.ylabel('Normalized RAW Plane Avg')
+  plt.minorticks_off()
+  plt.xticks(x[0::_NUM_PTS_2X_GAIN], x[0::_NUM_PTS_2X_GAIN])
+  plt.ylim([0, 1])
+  plt.legend(numpoints=1)
   plot_name = f'{test_name_with_path}_plot_raw_means.png'
-  matplotlib.pyplot.savefig(plot_name)
+  plt.savefig(plot_name)
 
 
 def check_line_fit(color, mults, values, thresh_max_level_diff):

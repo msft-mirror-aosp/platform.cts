@@ -53,7 +53,6 @@ import androidx.test.filters.SmallTest;
 
 import com.android.compatibility.common.util.BitmapUtils;
 import com.android.compatibility.common.util.CddTest;
-import com.android.compatibility.common.util.MediaUtils;
 
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
@@ -830,7 +829,7 @@ public class BitmapFactoryTest {
     }
 
     @Test
-    @CddTest(requirement = "5.1.5/C-0-6")
+    @CddTest(requirements = {"5.1.5/C-0-6"})
     @Parameters(method = "parametersForTestDng")
     @LargeTest
     public void testDng(DNG dng) {

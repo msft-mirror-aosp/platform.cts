@@ -24,22 +24,20 @@ import static com.google.common.truth.Truth.assertThat;
 import static org.testng.Assert.assertThrows;
 
 import android.annotation.NonNull;
-import android.app.admin.flags.Flags;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.Build;
-import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.telephony.TelephonyManager;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.EnrollmentSpecificId;
 import com.android.bedstead.nene.TestApis;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -119,7 +117,6 @@ public final class EnrollmentSpecificIdTest {
     @PolicyAppliesTest(policy = EnrollmentSpecificId.class)
     @EnsureHasPermission({READ_PRIVILEGED_PHONE_STATE, NETWORK_SETTINGS, LOCAL_MAC_ADDRESS})
     @EnsureHasDevicePolicyManagerRoleHolder
-    @RequiresFlagsEnabled(Flags.FLAG_PERMISSION_MIGRATION_FOR_ZERO_TRUST_IMPL_ENABLED)
     public void enrollmentSpecificId_RoleHolderCanAccess() {
         try {
             sDeviceState.dpc().devicePolicyManager().setOrganizationId(ORGANIZATION_ID);

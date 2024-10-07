@@ -17,6 +17,7 @@
 import cv2
 import logging
 import os.path
+import time
 
 from mobly import test_runner
 import numpy as np
@@ -42,9 +43,7 @@ _EXTENSION_NIGHT = 4  # CameraExtensionCharacteristics#EXTENSION_NIGHT
 _EXTENSION_NONE = -1  # Use Camera2 instead of a Camera Extension
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _NUM_FRAMES_TO_WAIT = 40  # The preview frame number to capture
-_TABLET_BRIGHTNESS_REAR_CAMERA = '6'  # Target brightness on a supported tablet
-_TABLET_BRIGHTNESS_FRONT_CAMERA = '12'  # Target brightness on a supported
-                                        # tablet
+_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC = 5  # Seconds
 
 _AVG_DELTA_LUMINANCE_THRESH = 18
 _AVG_LUMINANCE_THRESH = 70
@@ -181,12 +180,13 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Set tablet brightness to darken scene
       props = cam.get_camera_properties()
+      brightness = low_light_utils.TABLET_BRIGHTNESS[tablet_name.lower()]
       if (props['android.lens.facing'] ==
           camera_properties_utils.LENS_FACING['BACK']):
-        self.set_screen_brightness(_TABLET_BRIGHTNESS_REAR_CAMERA)
+        self.set_screen_brightness(brightness[0])
       elif (props['android.lens.facing'] ==
             camera_properties_utils.LENS_FACING['FRONT']):
-        self.set_screen_brightness(_TABLET_BRIGHTNESS_FRONT_CAMERA)
+        self.set_screen_brightness(brightness[1])
       else:
         logging.debug('Only front and rear camera supported. '
                       'Skipping for camera ID %s',
@@ -202,7 +202,8 @@ class LowLightBoostTest(its_base_test.ItsBaseTest):
 
       # Since low light boost can be supported by Camera2 and Night Mode
       # Extensions, run the test for both (if supported)
-
+      # Wait for tablet brightness to change
+      time.sleep(_BRIGHTNESS_SETTING_CHANGE_WAIT_SEC)
       if is_low_light_boost_supported:
         # Determine preview width and height to test
         target_preview_size = (

@@ -51,12 +51,11 @@ android_test {
     test_suites: [
         "cts",
         "general-tests",
-        "mts-documentsui",
     ],
     sdk_version: "test_current",
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     // Do not compress minijail policy files.
     aaptflags: ["-0 .policy"],

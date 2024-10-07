@@ -32,7 +32,7 @@ java_library {
         enabled: false,
     },
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.test",
         "junit",
     ],
     static_libs: [

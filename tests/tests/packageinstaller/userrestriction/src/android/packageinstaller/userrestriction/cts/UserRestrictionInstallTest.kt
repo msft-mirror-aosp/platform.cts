@@ -40,10 +40,10 @@ import androidx.test.uiautomator.Until
 import com.android.bedstead.harrier.BedsteadJUnit4
 import com.android.bedstead.harrier.DeviceState
 import com.android.bedstead.harrier.UserType
-import com.android.bedstead.harrier.annotations.EnsureDoesNotHaveUserRestriction
-import com.android.bedstead.harrier.annotations.EnsureHasUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureDoesNotHaveUserRestriction
+import com.android.bedstead.multiuser.annotations.EnsureHasUserRestriction
 import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile
-import com.android.bedstead.harrier.annotations.RequireRunOnWorkProfile
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile
 import com.android.bedstead.harrier.annotations.enterprise.DevicePolicyRelevant
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.exceptions.AdbException

@@ -20,7 +20,7 @@ android_test {
     name: "CtsGetBindingUidImportanceTest",
     defaults: ["cts_defaults"],
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.test",
     ],
     static_libs: [
         "androidx.test.ext.junit",

@@ -25,7 +25,6 @@ import android.os.Looper
 import android.server.wm.CtsWindowInfoUtils
 import android.server.wm.WindowManagerStateHelper
 import android.view.Display
-import android.view.Surface
 import android.view.View
 import com.android.compatibility.common.util.SystemUtil.runWithShellPermissionIdentity
 import com.android.compatibility.common.util.TestUtils.waitOn
@@ -44,7 +43,8 @@ private fun transformFromScreenToTouchDeviceSpace(x: Int, y: Int, display: Displ
 
     if (displayTransform == null) {
         throw IllegalStateException(
-            "failed to find display transform for display ${display.displayId}")
+            "failed to find display transform for display ${display.displayId}"
+            )
     }
 
     // The display transform is the transform from physical display space to
@@ -68,6 +68,7 @@ open class UinputTouchDevice(
     private val display: Display,
     private val registerCommand: UinputRegisterCommand,
     source: Int,
+    private val defaultToolType: Int,
 ) : AutoCloseable {
 
     private val DISPLAY_ASSOCIATION_TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(5)
@@ -100,17 +101,31 @@ open class UinputTouchDevice(
         injectEvent(intArrayOf(EV_KEY, btnCode, if (isDown) 1 else 0))
     }
 
-    fun sendDown(id: Int, location: Point, toolType: Int? = null) {
+    /**
+     * Send events signifying a new pointer is being tracked.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling. Use
+     * [touchDown] to start tracking a pointer in screen (a.k.a. logical display)
+     * coordinate space.
+     */
+    fun sendDown(id: Int, physicalLocation: Point) {
         injectEvent(intArrayOf(EV_ABS, ABS_MT_SLOT, id))
         injectEvent(intArrayOf(EV_ABS, ABS_MT_TRACKING_ID, id))
-        if (toolType != null) injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, toolType))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, location.x))
-        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, location.y))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_TOOL_TYPE, defaultToolType))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_X, physicalLocation.x))
+        injectEvent(intArrayOf(EV_ABS, ABS_MT_POSITION_Y, physicalLocation.y))
     }
 
-    fun sendMove(id: Int, location: Point) {
+    /**
+     * Send events signifying a tracked pointer is being moved.
+     *
+     * Note: The [physicalLocation] parameter is specified in the touch device's
+     * raw coordinate space, and does not factor display rotation or scaling.
+    */
+    fun sendMove(id: Int, physicalLocation: Point) {
         // Use same events of down.
-        sendDown(id, location)
+        sendDown(id, physicalLocation)
     }
 
     fun sendUp(id: Int) {
@@ -150,7 +165,7 @@ open class UinputTouchDevice(
         )
         waitForDeviceUpdatesUntil {
             val inputDevice = inputManager.getInputDevice(uinputDevice.deviceId)
-            display.displayId == inputDevice!!.associatedDisplayId
+            inputDevice != null && display.displayId == inputDevice.associatedDisplayId
         }
     }
 
@@ -214,11 +229,15 @@ open class UinputTouchDevice(
     /**
      * Send a new pointer to the screen, generating an ACTION_DOWN if there aren't any other
      * pointers currently down, or an ACTION_POINTER_DOWN otherwise.
+     * @param x The x coordinate in screen (logical display) space.
+     * @param y The y coordinate in screen (logical display) space.
+     * @param pressure The pressure value to be used, default not sending pressure.
      */
-    fun touchDown(x: Int, y: Int): Pointer {
+    @JvmOverloads
+    fun touchDown(x: Int, y: Int, pressure: Int? = null): Pointer {
         val pointerId = firstUnusedPointerId()
         pointerIds.add(pointerId)
-        return Pointer(pointerId, x, y)
+        return Pointer(pointerId, pressure, x, y)
     }
 
     private fun firstUnusedPointerId(): Int {
@@ -238,18 +257,21 @@ open class UinputTouchDevice(
     /**
      * A single pointer interacting with the screen. This class simplifies the interactions by
      * removing the need to separately manage the pointer id.
-     * Works in the screen coordinate space.
+     * Works in the screen (logical display) coordinate space.
      */
     inner class Pointer(
         private val id: Int,
+        private val pressure: Int?,
         x: Int,
         y: Int,
     ) : AutoCloseable {
         private var active = true
+
         init {
             // Send ACTION_DOWN or ACTION_POINTER_DOWN
             sendBtnTouch(true)
-            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display), MT_TOOL_FINGER)
+            sendDown(id, transformFromScreenToTouchDeviceSpace(x, y, display))
+            pressure?.let { sendPressure(pressure) }
             sync()
         }
 
@@ -275,6 +297,7 @@ open class UinputTouchDevice(
                 sendBtnTouch(false)
             }
             sendUp(id)
+            pressure?.let { sendPressure(0) }
             sync()
             active = false
             removePointer(id)

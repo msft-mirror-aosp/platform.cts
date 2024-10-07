@@ -173,6 +173,18 @@ public class BatteryHealthTest {
     }
 
     @Test
+    @ApiTest(apis = {"android.os.BatteryManager#EXTRA_CAPACITY_LEVEL"})
+    public void testBatteryCapacityLevel_dataValid() {
+        final Context context = InstrumentationRegistry.getContext();
+        final Intent batteryInfo = context.registerReceiver(null,
+                                    new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        final int batteryCapacityLevel = batteryInfo.getIntExtra(BatteryManager
+                .EXTRA_CAPACITY_LEVEL, -1);
+
+        assertThat(batteryCapacityLevel).isAtLeast(-1);
+    }
+
+    @Test
     @ApiTest(apis = {"android.os.BatteryManager#EXTRA_CYCLE_COUNT"})
     public void testBatteryCycleCount_dataInRange() {
         final Context context = InstrumentationRegistry.getContext();

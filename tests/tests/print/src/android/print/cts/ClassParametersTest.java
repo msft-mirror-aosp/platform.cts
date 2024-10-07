@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import android.platform.test.annotations.Presubmit;
 import android.print.PrintAttributes;
 import android.print.PrintAttributes.MediaSize;
 import android.print.PrintAttributes.Resolution;
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
  * Test that the print attributes can be constructed correctly. This does not test that the
  * attributes have the desired effect when send to the print framework.
  */
+@Presubmit
 @RunWith(AndroidJUnit4.class)
 public class ClassParametersTest {
     /**

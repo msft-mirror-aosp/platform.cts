@@ -37,9 +37,10 @@ android_test {
     min_sdk_version: "30",
     target_sdk_version: "33",
     libs: [
-        "android.test.base",
-        "android.test.runner",
+        "android.test.base.stubs",
+        "android.test.runner.stubs",
         "framework-mediaprovider.impl",
+        "framework-photopicker.impl",
         "framework-res",
         "android_test_stubs_current",
     ],

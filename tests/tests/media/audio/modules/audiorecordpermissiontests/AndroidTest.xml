@@ -28,10 +28,18 @@
         <option name="disable-audio" value="false"/>
         <option name="screen-saver" value="off"/>
     </target_preparer>
+    <target_preparer class="com.android.tradefed.targetprep.RunCommandTargetPreparer">
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi34NoCap " />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi34 " />
+        <option name="run-command" value="am compat enable ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi33 " />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi34NoCap " />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi34 " />
+        <option name="teardown-command" value="am compat reset ALLOW_TEST_API_ACCESS android.media.audio.cts.CtsRecordServiceApi33 " />
+    </target_preparer>
     <target_preparer class="com.android.tradefed.targetprep.suite.SuiteApkInstaller">
         <option name="cleanup-apks" value="true" />
         <option name="install-arg" value="-t" />
-        <option name="test-file-name" value="CtsAudioRecordPermissionTests.apk" />
+        <option name="test-file-name" value="CtsMediaAudioPermissionTestCases.apk" />
         <option name="test-file-name" value="CtsRecordServiceApi34.apk" />
         <option name="test-file-name" value="CtsRecordServiceApi34NoCap.apk" />
         <option name="test-file-name" value="CtsRecordServiceApi33.apk" />

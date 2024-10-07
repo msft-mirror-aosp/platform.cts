@@ -27,7 +27,6 @@ import android.Manifest;
 import android.app.UiAutomation;
 import android.content.Context;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.platform.test.annotations.RequiresFlagsEnabled;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
@@ -42,6 +41,7 @@ import androidx.test.filters.MediumTest;
 import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiTest;
+import com.android.compatibility.common.util.NullWebViewUtils;
 
 import org.junit.Assume;
 import org.junit.Before;
@@ -59,29 +59,23 @@ public class WebViewUpdateManagerTest {
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
 
     private Context mContext;
-    private PackageManager mPackageManager;
     private WebViewUpdateManager mUpdateManager;
-    private boolean mHasWebViewFeature;
 
     @Before
     public void setUp() {
+        // The WebViewUpdateService does not run on devices without FEATURE_WEBVIEW,
+        // so WebViewUpdateManager is unavailable.
+        Assume.assumeTrue("WebView is not available", NullWebViewUtils.isWebViewAvailable());
+
         mContext = InstrumentationRegistry.getInstrumentation().getContext();
-        mPackageManager = mContext.getPackageManager();
         mUpdateManager = mContext.getSystemService(WebViewUpdateManager.class);
-        mHasWebViewFeature = mPackageManager.hasSystemFeature(PackageManager.FEATURE_WEBVIEW);
     }
 
     private void validateWebViewProviderResponse(WebViewProviderResponse response) {
-        if (mHasWebViewFeature) {
-            assertEquals(WebViewProviderResponse.STATUS_SUCCESS, response.status);
-            assertNotNull(response.packageInfo);
-            PackageInfo fromPublicApi = WebView.getCurrentWebViewPackage();
-            assertEquals(response.packageInfo.packageName, fromPublicApi.packageName);
-        } else {
-            assertEquals(WebViewProviderResponse.STATUS_FAILED_LISTING_WEBVIEW_PACKAGES,
-                    response.status);
-            assertNull(response.packageInfo);
-        }
+        assertEquals(WebViewProviderResponse.STATUS_SUCCESS, response.status);
+        assertNotNull(response.packageInfo);
+        PackageInfo fromPublicApi = WebView.getCurrentWebViewPackage();
+        assertEquals(response.packageInfo.packageName, fromPublicApi.packageName);
     }
 
     @Test
@@ -104,13 +98,8 @@ public class WebViewUpdateManagerTest {
     public void testGetCurrentWebViewPackage() {
         PackageInfo pi = mUpdateManager.getCurrentWebViewPackage();
         String name = mUpdateManager.getCurrentWebViewPackageName();
-        if (mHasWebViewFeature) {
-            assertNotNull(pi);
-            assertEquals(pi.packageName, name);
-        } else {
-            assertNull(pi);
-            assertNull(name);
-        }
+        assertNotNull(pi);
+        assertEquals(pi.packageName, name);
     }
 
     @Test
@@ -132,25 +121,15 @@ public class WebViewUpdateManagerTest {
         }
 
         WebViewProviderInfo[] all = mUpdateManager.getAllWebViewPackages();
-
-        if (mHasWebViewFeature) {
-            assertThat(all, not(emptyArray()));
-            assertThat(valid, not(emptyArray()));
-            // check that the valid providers are a subset of all providers
-            assertThat(Arrays.asList(valid), everyItem(isIn(all)));
-        } else {
-            assertThat(all, emptyArray());
-            assertThat(valid, emptyArray());
-        }
-
+        assertThat(all, not(emptyArray()));
+        assertThat(valid, not(emptyArray()));
+        // check that the valid providers are a subset of all providers
+        assertThat(Arrays.asList(valid), everyItem(isIn(all)));
     }
 
     @Test
     @ApiTest(apis = "android.webkit.WebViewUpdateManager#changeProviderAndSetting")
     public void testChangeProviderAndSetting() {
-        // API doesn't do anything on devices with no WebView.
-        Assume.assumeTrue(mHasWebViewFeature);
-
         String originalPackage = mUpdateManager.getCurrentWebViewPackageName();
         assertNotNull(originalPackage);
 
@@ -176,13 +155,8 @@ public class WebViewUpdateManagerTest {
     @RequiresFlagsEnabled(Flags.FLAG_UPDATE_SERVICE_V2)
     public void testGetDefaultWebViewPackage() {
         WebViewProviderInfo defaultPackage = mUpdateManager.getDefaultWebViewPackage();
-
-        if (mHasWebViewFeature) {
-            assertNotNull(defaultPackage);
-            WebViewProviderInfo[] all = mUpdateManager.getAllWebViewPackages();
-            assertThat(defaultPackage, isIn(all));
-        } else {
-            assertNull(defaultPackage);
-        }
+        assertNotNull(defaultPackage);
+        WebViewProviderInfo[] all = mUpdateManager.getAllWebViewPackages();
+        assertThat(defaultPackage, isIn(all));
     }
 }

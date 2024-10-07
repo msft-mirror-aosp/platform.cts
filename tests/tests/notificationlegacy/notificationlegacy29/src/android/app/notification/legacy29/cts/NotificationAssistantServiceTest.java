@@ -23,6 +23,8 @@ import static android.service.notification.NotificationAssistantService.FEEDBACK
 
 import static com.android.compatibility.common.preconditions.SystemUiHelper.hasNoTraditionalStatusBar;
 
+import static com.google.common.truth.Truth.assertThat;
+
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertFalse;
@@ -55,6 +57,7 @@ import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
 import android.provider.Telephony;
 import android.service.notification.Adjustment;
+import android.service.notification.Flags;
 import android.service.notification.NotificationAssistantService;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
@@ -63,10 +66,13 @@ import android.util.Log;
 import androidx.test.InstrumentationRegistry;
 import androidx.test.runner.AndroidJUnit4;
 
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.multiuser.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.SystemUtil;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -75,10 +81,14 @@ import org.junit.runner.RunWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
+@RequireRunNotOnVisibleBackgroundNonProfileUser(reason = "collapsePanels(), "
+        + "expandNotificationsPanel() and sendNotificationFeedback() don't support visible "
+        + "background user")
 public class NotificationAssistantServiceTest {
 
     private static final String PKG = "android.app.notification.legacy29.cts";
@@ -95,6 +105,10 @@ public class NotificationAssistantServiceTest {
     private UiAutomation mUi;
     private NotificationHelper mHelper;
     private String mPreviousAssistant;
+
+    @ClassRule
+    @Rule
+    public static final DeviceState sDeviceState = new DeviceState();
 
     @Rule
     public final CheckFlagsRule mCheckFlagsRule = DeviceFlagsValueProvider.createCheckFlagsRule();
@@ -701,6 +715,42 @@ public class NotificationAssistantServiceTest {
         if (reason != NotificationListenerService.REASON_LISTENER_CANCEL) {
             fail("Failed cancellation from assistant: reason=" + reason);
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testSetAdjustmentTypeSupportedState_false() throws Exception {
+        setUpListeners(); // also enables assistant
+        mNotificationAssistantService.setAdjustmentTypeSupportedState(
+                Adjustment.KEY_IMPORTANCE, false);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).containsExactly(
+                    Adjustment.KEY_IMPORTANCE);
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testSetAdjustmentTypeSupportedState_true() throws Exception {
+        setUpListeners(); // also enables assistant
+        mNotificationAssistantService.setAdjustmentTypeSupportedState(
+                Adjustment.KEY_IMPORTANCE, false);
+        mNotificationAssistantService.setAdjustmentTypeSupportedState(
+                Adjustment.KEY_IMPORTANCE, true);
+
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).isEmpty();
+        });
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_NOTIFICATION_CLASSIFICATION)
+    public void testSetAdjustmentTypeSupportedState_default() throws Exception {
+        setUpListeners(); // also enables assistant
+        SystemUtil.runWithShellPermissionIdentity(() -> {
+            assertThat(mNotificationManager.getUnsupportedAdjustmentTypes()).isEmpty();
+        });
     }
 
     private void setUpListeners() throws Exception {

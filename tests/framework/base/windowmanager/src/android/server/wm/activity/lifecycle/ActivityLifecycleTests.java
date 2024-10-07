@@ -83,6 +83,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.platform.test.annotations.Presubmit;
+import android.server.wm.LaunchActivityBuilder;
 import android.server.wm.RotationSession;
 
 import androidx.test.filters.MediumTest;
@@ -510,6 +511,7 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
             return;
         }
 
+        final RotationSession rotationSession = createManagedRotationSession();
         final ActivityOptions options = ActivityOptions.makeBasic();
         options.setLaunchWindowingMode(WINDOWING_MODE_FULLSCREEN);
 
@@ -524,7 +526,6 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 state(becomingVisibleActivity, ON_STOP),
                 state(translucentActivity, ON_STOP));
 
-        final RotationSession rotationSession = createManagedRotationSession();
         if (!supportsLockedUserRotation(
                 rotationSession, translucentActivity.getDisplay().getDisplayId())) {
             return;

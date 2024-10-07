@@ -34,7 +34,7 @@ android_test_helper_app {
         "ctstestrunner-axt",
     ],
     libs: [
-        "android.test.base",
+        "android.test.base.stubs.system",
     ],
 }
 

@@ -16,6 +16,12 @@
 
 package android.media.audio.cts;
 
+import static android.media.Utils.VIBRATION_URI_PARAM;
+import static android.media.cts.Utils.getTestVibrationFile;
+import static android.media.cts.Utils.RINGTONE_TEST_URI;
+
+import static com.google.common.truth.Truth.assertThat;
+
 import android.content.ContentProvider;
 import android.content.Context;
 import android.content.pm.PackageManager;
@@ -23,16 +29,21 @@ import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
+import android.media.audio.Flags;
 import android.media.audiofx.HapticGenerator;
 import android.media.cts.Utils;
 import android.net.Uri;
 import android.os.Build;
+import android.os.UserHandle;
+import android.os.VibrationEffect;
 import android.platform.test.annotations.AppModeFull;
 import android.provider.Settings;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+
+import java.io.IOException;
 
 @AppModeFull(reason = "TODO: evaluate and port to instant")
 public class RingtoneTest extends InstrumentationTestCase {
@@ -90,7 +101,9 @@ public class RingtoneTest extends InstrumentationTestCase {
 
     private void enableAppOps() {
         StringBuilder cmd = new StringBuilder();
-        cmd.append("appops set ");
+        cmd.append("appops set --user ");
+        cmd.append(UserHandle.myUserId());
+        cmd.append(" ");
         cmd.append(getInstrumentation().getContext().getPackageName());
         cmd.append(" android:write_settings allow");
         getInstrumentation().getUiAutomation().executeShellCommand(cmd.toString());
@@ -215,5 +228,32 @@ public class RingtoneTest extends InstrumentationTestCase {
         assertEquals("invalid ringtone player volume", 0.5f, mRingtone.getVolume());
         mRingtone.stop();
         assertFalse(mRingtone.isPlaying());
+    }
+
+    public void testRingtoneVibration() throws IOException {
+        if (isTV()) {
+            return;
+        }
+        if (!hasAudioOutput()) {
+            Log.i(TAG, "Skipping testRingtoneVibration(): device doesn't have audio output.");
+            return;
+        }
+        if (!Flags.enableRingtoneHapticsCustomization()) {
+            Log.i(TAG, "Skipping testRingtoneVibration(): ringtone vibration isn't enabled.");
+            return;
+        }
+        if (!Utils.isRingtoneVibrationSupported(mContext)) {
+            Log.i(TAG, "Skipping testRingtoneVibration(): vibration settings isn't supported.");
+            return;
+        }
+
+        assertThat(mRingtone.getVibrationEffect()).isNull();
+
+        String vibrationUriString = getTestVibrationFile().toURI().toString();
+        final Uri ringtoneUri = RINGTONE_TEST_URI.buildUpon().appendQueryParameter(
+                VIBRATION_URI_PARAM, vibrationUriString).build();
+        mRingtone = RingtoneManager.getRingtone(mContext, ringtoneUri);
+
+        assertThat(mRingtone.getVibrationEffect()).isInstanceOf(VibrationEffect.class);
     }
 }

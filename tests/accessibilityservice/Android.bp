@@ -40,8 +40,8 @@ android_test {
         "com_android_systemui_flags_lib",
     ],
     libs: [
-        "android.test.runner",
-        "android.test.base",
+        "android.test.runner.stubs.test",
+        "android.test.base.stubs.test",
     ],
     srcs: ["src/**/*.java"],
     // Tag this module as a cts test artifact
@@ -72,4 +72,11 @@ java_library_static {
         "CtsAccessibilityCommon",
     ],
     srcs: ["src/**/utils/*.java"],
+}
+
+test_module_config {
+    name: "CtsAccessibilityServiceTestCases_cts_accessibilitydisplayproxytest",
+    base: "CtsAccessibilityServiceTestCases",
+    test_suites: ["general-tests"],
+    include_filters: ["android.accessibilityservice.cts.AccessibilityDisplayProxyTest"],
 }

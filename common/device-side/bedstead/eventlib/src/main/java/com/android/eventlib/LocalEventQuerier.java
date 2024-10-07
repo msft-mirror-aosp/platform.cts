@@ -17,6 +17,7 @@
 package com.android.eventlib;
 
 import android.content.Context;
+import android.util.Log;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -32,6 +33,7 @@ public class LocalEventQuerier<E extends Event, F extends EventLogsQuery> implem
     private final EventLogsQuery<E, F> mEventLogsQuery;
     private final Events mEvents;
     private final BlockingDeque<Event> mFetchedEvents;
+    private static final String LOG_TAG = "LocalEventQuerier";
 
     LocalEventQuerier(Context context, EventLogsQuery<E, F> eventLogsQuery) {
         mEventLogsQuery = eventLogsQuery;
@@ -57,16 +59,20 @@ public class LocalEventQuerier<E extends Event, F extends EventLogsQuery> implem
                 Duration remainingTimeout = Duration.between(Instant.now(), endTime);
                 event = mFetchedEvents.pollFirst(remainingTimeout.toMillis(), TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
+                Log.i(LOG_TAG, "Thread interrupted while fetching event, returning null.");
                 return null;
             }
 
             if (event == null) {
                 // Timed out waiting for event
+                Log.i(LOG_TAG, "Timed out waiting for event, returning null.");
                 return null;
             }
 
             if (mEventLogsQuery.eventClass().isInstance(event)) {
                 if (event.mTimestamp.isBefore(earliestLogTime)) {
+                    Log.i(LOG_TAG, "Event found but it occurred before earliest log time: " +
+                            earliestLogTime + ", looking for another instance of this event.");
                     continue;
                 }
 

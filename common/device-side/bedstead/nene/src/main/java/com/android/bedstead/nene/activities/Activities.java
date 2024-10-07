@@ -26,7 +26,6 @@ import static com.android.bedstead.permissions.CommonPermissions.MANAGE_ACTIVITY
 
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
-import android.app.ActivityTaskManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -192,12 +191,17 @@ public final class Activities {
         } else {
             try (PermissionContext p = TestApis.permissions().withPermission(
                     MANAGE_ACTIVITY_STACKS)) {
-                Method method = ActivityTaskManager.class.getDeclaredMethod(
-                        "removeStacksWithActivityTypes",
-                        new Class<?>[]{int[].class});
+                // This should have been a proxy call through ActivityTaskManagerProxy as well, but
+                // is not since ActivityTaskManager#removeStacksWithActivityTypes is not available
+                // to be fetched and proxied in Versions S+.
+                Method method = Class.forName("android.app.ActivityTaskManager")
+                        .getDeclaredMethod("removeStacksWithActivityTypes",
+                        new Class<?>[]{ int[].class });
                 method.invoke(TestApis.context().instrumentedContext().getSystemService(
-                        ActivityTaskManager.class), ALL_ACTIVITY_TYPE_BUT_HOME);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                        Class.forName("android.app.ActivityTaskManager")),
+                        ALL_ACTIVITY_TYPE_BUT_HOME);
+            } catch (NoSuchMethodException | IllegalAccessException |
+                     InvocationTargetException | ClassNotFoundException e) {
                 throw new NeneException("Error clearing all activities activity pre S", e);
             }
         }

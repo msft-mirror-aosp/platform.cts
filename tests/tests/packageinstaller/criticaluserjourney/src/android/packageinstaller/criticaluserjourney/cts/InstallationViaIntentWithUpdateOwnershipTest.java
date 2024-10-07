@@ -31,6 +31,40 @@ import org.junit.runner.RunWith;
 public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershipTestBase {
 
     @Test
+    public void noLauncherEntry_launchGrantPermission_updateAnyway_success() throws Exception {
+        startNoLauncherActivityInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void disableEntry_launchGrantPermission_updateAnyway_success() throws Exception {
+        disableTestPackageLauncherActivity();
+
+        startInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickSettingsButton();
+
+        toggleToGrantRequestInstallPackagesPermission();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
     public void launchGrantPermission_updateAnyway_success() throws Exception {
         startInstallationUpdateViaIntent();
 
@@ -95,6 +129,37 @@ public class InstallationViaIntentWithUpdateOwnershipTest extends UpdateOwnershi
         clickCancelButton();
 
         assertTestPackageInstalled();
+    }
+
+
+    @Test
+    public void noLauncherEntry_noLaunchGrantPermission_updateAnyway_success() throws Exception {
+        grantRequestInstallPackagesPermission();
+
+        startNoLauncherActivityInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
+    }
+
+    @Test
+    public void disableEntry_noLaunchGrantPermission_updateAnyway_success() throws Exception {
+        disableTestPackageLauncherActivity();
+
+        grantRequestInstallPackagesPermission();
+
+        startInstallationUpdateViaIntent();
+
+        waitForUiIdle();
+
+        clickUpdateAnywayButton();
+
+        assertInstallSuccessDialogForNoLauncherActivity();
+        assertTestPackageVersion2Installed();
     }
 
     @Test

@@ -33,7 +33,7 @@ import video_processing_utils
 _NAME = os.path.splitext(os.path.basename(__file__))[0]
 _PREVIEW_RECORDING_DURATION_SECONDS = 10
 _MAX_VAR_FRAME_DELTA = 0.001  # variance of frame deltas, units: seconds^2
-_FPS_ATOL = 2  # TODO: b/330158924 - explicitly handle anti-banding
+_FPS_ATOL = 0.8
 _DARKNESS_ATOL = 0.1 * 255  # openCV uses [0:255] images
 
 
@@ -83,7 +83,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
       its_session_utils.validate_lighting(
           y_plane, self.scene, state='OFF', tablet_state='OFF',
           log_path=self.log_path)
-
+      # Check for flickering frequency
+      scene_flicker_freq = cap['metadata']['android.statistics.sceneFlicker']
+      logging.debug('Detected flickering frequency: %d', scene_flicker_freq)
       logging.debug('Taking preview recording in darkened scene.')
       # determine camera capabilities for preview
       preview_sizes = cam.get_supported_preview_sizes(
@@ -105,7 +107,9 @@ class PreviewMinFrameRateTest(its_base_test.ItsBaseTest):
           preview_size, _PREVIEW_RECORDING_DURATION_SECONDS, stabilize=False,
           zoom_ratio=None,
           ae_target_fps_min=ae_target_fps_range[0],
-          ae_target_fps_max=ae_target_fps_range[1])
+          ae_target_fps_max=ae_target_fps_range[1],
+          antibanding_mode=scene_flicker_freq
+      )
       logging.debug('preview_recording_obj: %s', preview_recording_obj)
 
       # turn lights back ON

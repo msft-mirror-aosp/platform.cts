@@ -28,7 +28,7 @@ android_test_helper_app {
         "src/**/*.java",
     ],
     libs: [
-        "android.test.runner",
+        "android.test.runner.stubs.system",
         "junit",
     ],
     static_libs: [
