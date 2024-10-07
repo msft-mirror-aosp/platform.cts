@@ -14,16 +14,34 @@
  * limitations under the License.
  */
 
-package android.security.cts.dynamicpermissiontestattackerapp
+package android.security.cts.usepermission
 
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PermissionInfo
 import android.os.IBinder
+import android.security.cts.dynamicpermissiontestattackerapp.IDynamicPermissionService
 
-class RemovePermissionService : Service() {
-    private val binder = object : IRemovePermissionService.Stub() {
+class DynamicPermissionService : Service() {
+    private val binder = object : IDynamicPermissionService.Stub() {
         override fun removePermission(permissionName: String) {
             packageManager.removePermission(permissionName)
+        }
+
+        override fun addPermission(
+            permissionName: String,
+            packageName: String,
+            protectionLevel: Int,
+            group: String?
+        ) {
+            val permissionInfo = PermissionInfo().apply {
+                name = permissionName
+                nonLocalizedLabel = permissionName
+                this.packageName = packageName
+                this.protectionLevel = protectionLevel
+                this.group = group
+            }
+            packageManager.addPermission(permissionInfo)
         }
     }
 

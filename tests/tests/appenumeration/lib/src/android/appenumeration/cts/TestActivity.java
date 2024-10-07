@@ -811,6 +811,16 @@ public class TestActivity extends Activity {
         final ArrayList<Parcelable> parcelables = new ArrayList<>();
         final int segmentSize = 10;
 
+        // Sends in one parcelable array directly if the size of providers is
+        // less than segmentSize, then early-exits.
+        if (providers.size() <= segmentSize) {
+            parcelables.addAll(providers);
+            final Bundle result = new Bundle();
+            result.putParcelableArrayList(EXTRA_RETURN_RESULT, parcelables);
+            remoteCallback.sendResult(result);
+            finish();
+        }
+
         // In order to avoid RemoteCallback receiving a large amount of data at one time,
         // we transmit 10 items at a time.
         for (AppWidgetProviderInfo info : providers) {

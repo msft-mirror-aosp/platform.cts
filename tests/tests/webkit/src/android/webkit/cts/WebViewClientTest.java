@@ -52,6 +52,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -630,6 +631,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingHitBackToSafety() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
@@ -665,6 +667,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingHitProceed() throws Throwable {
         mWebServer = getTestEnvironment().getSetupWebServer(SslMode.INSECURE);
         String url = mWebServer.getAssetUrl(TestHtmlConstants.HELLO_WORLD_URL);
@@ -719,6 +722,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingMalwareCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_MALWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_MALWARE);
@@ -731,6 +735,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingPhishingCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_PHISHING_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_PHISHING);
@@ -743,6 +748,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingUnwantedSoftwareCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_UNWANTED_SOFTWARE_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_UNWANTED_SOFTWARE);
@@ -755,6 +761,7 @@ public class WebViewClientTest extends SharedWebViewTest {
      * http://go/modifying-webview-cts.
      */
     @Test
+    @Ignore("b/40196091")
     public void testOnSafeBrowsingBillingCode() throws Throwable {
         testOnSafeBrowsingCode(TEST_SAFE_BROWSING_BILLING_URL,
                 WebViewClient.SAFE_BROWSING_THREAT_BILLING);

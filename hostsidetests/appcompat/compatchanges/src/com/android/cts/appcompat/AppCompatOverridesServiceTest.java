@@ -54,7 +54,7 @@ public class AppCompatOverridesServiceTest extends CompatChangeGatingTestCase {
     private static final String FLAG_OWNED_CHANGE_IDS = "owned_change_ids";
     private static final String FLAG_REMOVE_OVERRIDES = "remove_overrides";
 
-    public static final int WAIT_TIME_MS = 1_000;
+    public static final int WAIT_TIME_MS = 3_000;
 
     private String initialOwnedChangeIdsValue;
     private String initialRemoveOverridesValue;

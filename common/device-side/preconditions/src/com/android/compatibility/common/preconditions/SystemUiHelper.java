@@ -37,7 +37,7 @@ public class SystemUiHelper {
         boolean isWatch = context.getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_WATCH);
 
-        return isTelevision && isWatch && Boolean.getBoolean(
+        return isTelevision || isWatch || Boolean.getBoolean(
                 "persist.sysui.nostatusbar");
 
     }

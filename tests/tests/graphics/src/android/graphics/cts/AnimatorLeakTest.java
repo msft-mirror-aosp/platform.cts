@@ -16,7 +16,7 @@
 
 package android.graphics.cts;
 
-import static androidx.test.InstrumentationRegistry.getInstrumentation;
+import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -170,8 +170,7 @@ public class AnimatorLeakTest {
 
             // Send the activity to the background. This should cause the animators to be paused
             // after Animator.getBackgroundPauseDelay()
-            UiDevice uiDevice = UiDevice.getInstance(getInstrumentation());
-            uiDevice.pressHome();
+            UiDevice.getInstance(getInstrumentation()).pressBack();
 
             animatorPausedLatch.await(5, TimeUnit.SECONDS);
 

@@ -189,7 +189,7 @@ public class ScanningSettingsTest extends AndroidTestCase {
                 // Ignore
             }
         } while (!mDevice.wait(
-                Until.hasObject(By.res("com.android.settings:id/settingslib_main_switch_bar")),
+                Until.hasObject(By.res("android:id/switch_widget")),
                 POLLING_INTERVAL_MILLIS));
     }
 

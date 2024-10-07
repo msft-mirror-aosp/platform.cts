@@ -47,6 +47,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.os.SystemProperties;
+import android.platform.test.annotations.AsbSecurityTest;
 import android.provider.Telephony.Sms;
 import android.provider.Telephony.Sms.Intents;
 import android.telecom.PhoneAccount;
@@ -75,6 +76,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -90,6 +92,13 @@ public class VisualVoicemailServiceTest {
     private static final String COMMAND_GET_DEFAULT_DIALER = "telecom get-default-dialer";
 
     private static final String PACKAGE = "android.telephony.cts";
+
+    private static final String STR_257_CHARS = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            + "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    private static final int INVALID_LIST_SIZE = 101;
 
     private static final long EVENT_RECEIVED_TIMEOUT_MILLIS = 60_000;
     private static final long EVENT_NOT_RECEIVED_TIMEOUT_MILLIS = 5_000;
@@ -177,12 +186,15 @@ public class VisualVoicemailServiceTest {
                 PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP);
         String clientPrefix = "//CTSVVM";
         String text = "//CTSVVM:STATUS:st=R;rc=0;srv=1;dn=1;ipt=1;spt=0;u=eg@example.com;pw=1";
-
-        mTelephonyManager.setVisualVoicemailSmsFilterSettings(
-                new VisualVoicemailSmsFilterSettings.Builder()
-                        .setClientPrefix(clientPrefix)
-                        .build());
-
+        try {
+            mTelephonyManager.setVisualVoicemailSmsFilterSettings(
+                    new VisualVoicemailSmsFilterSettings.Builder()
+                            .setClientPrefix(clientPrefix)
+                            .build());
+            fail("SecurityException expected");
+        } catch (SecurityException e) {
+            // Expected
+        }
         try {
             mTelephonyManager
                     .sendVisualVoicemailSms(mPhoneNumber, 0, text, null);
@@ -197,8 +209,6 @@ public class VisualVoicemailServiceTest {
         setupSmsReceiver(text);
 
         SmsManager.getDefault().sendTextMessage(mPhoneNumber, null, text, null, null);
-
-        mSmsReceiver.assertReceived(EVENT_RECEIVED_TIMEOUT_MILLIS);
         try {
             future.get(EVENT_NOT_RECEIVED_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
             throw new RuntimeException("Unexpected visual voicemail SMS received");
@@ -250,6 +260,71 @@ public class VisualVoicemailServiceTest {
         assertEquals("1", result.getFields().getString("pw"));
     }
 
+    /**
+     * Verify an IllegalArgumentException is thrown if {@link
+     * VisualVoicemailSmsFilterSettings#clientPrefix} value is greater than 256 characters.
+     */
+    @AsbSecurityTest(cveBugId = 308932906)
+    @Test
+    public void testClientPrefixLimitOnVisualVoicemailSmsFilter() {
+        if (!hasDataSms()) {
+            Log.d(TAG, "skipping test that requires data SMS feature");
+            return;
+        }
+
+        try {
+            mTelephonyManager.setVisualVoicemailSmsFilterSettings(
+                    new VisualVoicemailSmsFilterSettings.Builder()
+                            .setClientPrefix(STR_257_CHARS)
+                            .build());
+            fail("test should have failed when setting the visual voicemail with an invalid "
+                    + "clientPrefix length.");
+        } catch (IllegalArgumentException e) {
+            // pass
+        }
+    }
+
+    /**
+     * Verify an IllegalArgumentException is thrown if {@link
+     * VisualVoicemailSmsFilterSettings#originatingNumbers} list size is greater than 100 elements
+     * or one of the elements within the list is greater than 256 characters.
+     */
+    @AsbSecurityTest(cveBugId = 308932906)
+    @Test
+    public void testOriginatingNumbersLimitOnVisualVoicemailSmsFilter() {
+        if (!hasDataSms()) {
+            Log.d(TAG, "skipping test that requires data SMS feature");
+            return;
+        }
+
+        try {
+            ArrayList originatingNumbers = new ArrayList();
+            for (int i = 0; i < INVALID_LIST_SIZE + 1; i++) {
+                originatingNumbers.add("a");
+            }
+            mTelephonyManager.setVisualVoicemailSmsFilterSettings(
+                    new VisualVoicemailSmsFilterSettings.Builder()
+                            .setOriginatingNumbers(originatingNumbers)
+                            .build());
+            fail("test should have failed when setting the visual voicemail with an invalid "
+                    + "originatingNumbers list size.");
+        } catch (IllegalArgumentException e) {
+            // pass
+        }
+
+        try {
+            ArrayList originatingNumbers = new ArrayList();
+            originatingNumbers.add(STR_257_CHARS);
+            mTelephonyManager.setVisualVoicemailSmsFilterSettings(
+                    new VisualVoicemailSmsFilterSettings.Builder()
+                            .setOriginatingNumbers(originatingNumbers)
+                            .build());
+            fail("test should have failed when setting the visual voicemail with an invalid "
+                    + "element in the originatingNumbers list.");
+        } catch (IllegalArgumentException e) {
+            // pass
+        }
+    }
 
     @Test
     public void testFilter_TrailingSemiColon() {

@@ -22,6 +22,7 @@
 
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <application android:label="Split Permission Test App">
         <activity android:name="android.security.cts.usepermission.RequestPermissionActivity"

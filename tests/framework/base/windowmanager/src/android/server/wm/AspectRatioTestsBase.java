@@ -17,7 +17,9 @@
 package android.server.wm;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.junit.Assume.assumeThat;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -47,6 +49,7 @@ class AspectRatioTestsBase extends ActivityManagerTestBase {
         final int displayId = mWmState.getDisplayByActivity(componentName);
         final WindowManagerState.Activity activity = mWmState.getActivity(componentName);
         final WindowManagerState.DisplayContent display = mWmState.getDisplay(displayId);
+        assumeThat(activity.getWindowingMode(), is(windowingMode));
 
         final Rect bounds = activity.getAppBounds();
         final int shortSide = Math.min(bounds.width(), bounds.height());

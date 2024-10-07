@@ -37,6 +37,16 @@ public class TunerResourceTestService extends Service {
     private final Object mLock = new Object();
 
     @Override
+    public void onCreate() {
+        try {
+            TunerTest.setUpClass();
+        } catch (Exception e) {
+            // If TunerTest.setUpClass() is not working, it will fail when running TunerTest first.
+            Log.e(TAG, "Fail to run TunerTest.setUpClass()", e);
+        }
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         mContext = this;
         return mBinder;

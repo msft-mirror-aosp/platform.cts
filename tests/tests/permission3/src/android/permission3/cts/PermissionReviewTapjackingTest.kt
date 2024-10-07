@@ -83,7 +83,7 @@ class PermissionReviewTapjackingTest : BaseUsePermissionTest() {
             // expected
         }
 
-        pressHome()
+        pressBack()
         findOverlay()
     }
 

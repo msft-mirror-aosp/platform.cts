@@ -233,6 +233,8 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     @Test
     @CddTest(requirement = "9.8.2/H-4-1,T-4-1,A-1-1")
     fun testMicIndicator() {
+        // If mic is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE))
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = true, useCamera = false)
     }
@@ -242,6 +244,8 @@ class CameraMicIndicatorsPermissionTest : StsExtraBusinessLogicTestCase {
     @AsbSecurityTest(cveBugId = [258672042])
     @SdkSuppress(minSdkVersion = Build.VERSION_CODES.UPSIDE_DOWN_CAKE, codeName = "UpsideDownCake")
     fun testMicIndicatorWithManualFinishOpStillShows() {
+        // If mic is not available skip the test
+        assumeTrue(packageManager.hasSystemFeature(PackageManager.FEATURE_MICROPHONE))
         changeSafetyCenterFlag(false.toString())
         testCameraAndMicIndicator(useMic = true, useCamera = false, finishEarly = true)
     }
