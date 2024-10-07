@@ -16,12 +16,6 @@
 
 package com.android.cts.verifier.streamquality;
 
-import com.android.cts.verifier.ArrayTestListAdapter;
-import com.android.cts.verifier.PassFailButtons;
-import com.android.cts.verifier.R;
-import com.android.cts.verifier.TestListAdapter;
-import com.android.cts.verifier.TestListAdapter.TestListItem;
-
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
@@ -33,10 +27,15 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
+import com.android.cts.verifier.ArrayTestListAdapter;
+import com.android.cts.verifier.PassFailButtons;
+import com.android.cts.verifier.R;
+import com.android.cts.verifier.TestListAdapter;
+import com.android.cts.verifier.TestListAdapter.TestListItem;
+
 import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Serializable;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -116,6 +115,8 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
             "&signature=%s";
 
     private static final Stream[] HTTP_STREAMS = {
+        // TODO(b/150835350): Re-enable H263 test once the clip is updated to profile 0
+        /*
         new Stream("H263 Video, AMR Audio", "http_h263_amr",
                 "http://redirector.gvt1.com/"
                 + "videoplayback?id=271de9756065677e"
@@ -125,24 +126,13 @@ public class StreamingVideoActivity extends PassFailButtons.TestListActivity {
                 + ".1DDA3F999541D2136E6755F16FC44CA972767169"
                 + "&source=youtube"
                 + "&key=ik0&user=android-device-test"),
+        */
         new Stream("MPEG4 SP Video, AAC Audio", "http_mpeg4_aac",
-                "http://redirector.gvt1.com/"
-                + "videoplayback?id=271de9756065677e"
-                + "&itag=17&ip=0.0.0.0&ipbits=0&expire=19000000000"
-                + "&sparams=ip,ipbits,expire,id,itag"
-                + "&signature=6B0F8B8A6A7FD9E4CDF123349C2E061ED2020D74"
-                + ".3460FC81D6C8894BA2D241597D2E1D059845F5F0"
-                + "&source=youtube"
-                + "&key=ik0&user=android-device-test"),
+              "https://dl.google.com/"
+              + "android/xts/cts/apps/CtsVerifier/streaming-video-activity-itag-17.mp4"),
         new Stream("H264 Base Video, AAC Audio", "http_h264_aac",
-                "http://redirector.gvt1.com/"
-                + "videoplayback?id=271de9756065677e"
-                + "&itag=18&ip=0.0.0.0&ipbits=0&expire=19000000000"
-                + "&sparams=ip,ipbits,expire,id,itag"
-                + "&signature=75627CD4CEA73D7868CBDE3CE5C4011955164107"
-                + ".1DCFB0EF1372B48DDCFBE69645FE137AC02AF561"
-                + "&source=youtube"
-                + "&key=ik0&user=android-device-test"),
+              "https://dl.google.com/"
+              + "android/xts/cts/apps/CtsVerifier/streaming-video-activity-itag-18.mp4"),
     };
 
     @Override
