@@ -20,6 +20,9 @@ import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
 
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -28,7 +31,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import android.app.UiAutomation;
 import android.bluetooth.BluetoothActivityEnergyInfo;
@@ -50,7 +56,6 @@ import android.os.Bundle;
 import android.os.SystemProperties;
 import android.platform.test.flag.junit.CheckFlagsRule;
 import android.platform.test.flag.junit.DeviceFlagsValueProvider;
-import android.util.Log;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.MediumTest;
@@ -58,11 +63,14 @@ import androidx.test.platform.app.InstrumentationRegistry;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
 
+import org.hamcrest.Matcher;
+import org.hamcrest.core.AllOf;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.hamcrest.MockitoHamcrest;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -70,16 +78,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
 
 /** Very basic test, just of the static methods of {@link BluetoothAdapter}. */
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class BluetoothAdapterTest {
     private static final String TAG = "BluetoothAdapterTest";
-    private static final int SET_NAME_TIMEOUT = 5000; // ms timeout for setting adapter name
     private static final String ENABLE_DUAL_MODE_AUDIO = "persist.bluetooth.enable_dual_mode_audio";
 
     @Rule
@@ -87,9 +91,6 @@ public class BluetoothAdapterTest {
 
     private Context mContext;
     private boolean mHasBluetooth;
-    private ReentrantLock mAdapterNameChangedlock;
-    private Condition mConditionAdapterNameChanged;
-    private boolean mIsAdapterNameChanged;
 
     private BluetoothAdapter mAdapter;
     private UiAutomation mUiAutomation;
@@ -105,9 +106,6 @@ public class BluetoothAdapterTest {
             mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
             mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
         }
-        mAdapterNameChangedlock = new ReentrantLock();
-        mConditionAdapterNameChanged = mAdapterNameChangedlock.newCondition();
-        mIsAdapterNameChanged = false;
     }
 
     @After
@@ -198,6 +196,7 @@ public class BluetoothAdapterTest {
 
     @Test
     public void setName_getName() {
+        final Duration setNameTimeout = Duration.ofMillis(5000);
         assumeTrue(mHasBluetooth);
 
         assertTrue(BTAdapterUtils.enableAdapter(mAdapter, mContext));
@@ -205,24 +204,30 @@ public class BluetoothAdapterTest {
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED);
         filter.setPriority(IntentFilter.SYSTEM_HIGH_PRIORITY);
-        mContext.registerReceiver(mAdapterNameChangeReceiver, filter);
+        BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
+        mContext.registerReceiver(mockReceiver, filter);
 
-        String name = mAdapter.getName();
-        assertNotNull(name);
+        String originalName = mAdapter.getName();
+        assertNotNull(originalName);
 
         // Check renaming the adapter
         String genericName = "Generic Device 1";
-        mIsAdapterNameChanged = false;
         assertTrue(mAdapter.setName(genericName));
-        assertTrue(waitForAdapterNameChange());
-        mIsAdapterNameChanged = false;
+        verifyIntentReceived(
+                mockReceiver,
+                setNameTimeout,
+                hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
+                hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, genericName));
         assertEquals(genericName, mAdapter.getName());
 
         // Check setting adapter back to original name
         assertTrue(mAdapter.setName(name));
-        assertTrue(waitForAdapterNameChange());
-        mIsAdapterNameChanged = false;
-        assertEquals(name, mAdapter.getName());
+        verifyIntentReceived(
+                mockReceiver,
+                setNameTimeout,
+                hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
+                hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, originalName));
+        assertEquals(originalName, mAdapter.getName());
 
         mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mAdapter.setName("The name"));
@@ -774,7 +779,7 @@ public class BluetoothAdapterTest {
         mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
-            if (isDualModeAudioEnabled()) {
+            if (SystemProperties.getBoolean(ENABLE_DUAL_MODE_AUDIO, false)) {
                 assertEquals(
                         BluetoothStatusCodes.SUCCESS,
                         mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
@@ -861,43 +866,9 @@ public class BluetoothAdapterTest {
                 mAdapter.notifyActiveDeviceChangeApplied(device));
     }
 
-    private boolean isDualModeAudioEnabled() {
-        return SystemProperties.getBoolean(ENABLE_DUAL_MODE_AUDIO, false);
+    private void verifyIntentReceived(
+            BroadcastReceiver receiver, Duration timeout, Matcher<Intent>... matchers) {
+        verify(receiver, timeout(timeout.toMillis()))
+                .onReceive(any(), MockitoHamcrest.argThat(AllOf.allOf(matchers)));
     }
-
-    private boolean waitForAdapterNameChange() {
-        mAdapterNameChangedlock.lock();
-        try {
-            // Wait for the Adapter name to be changed
-            while (!mIsAdapterNameChanged) {
-                if (!mConditionAdapterNameChanged.await(SET_NAME_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                    Log.e(TAG, "Timeout while waiting for adapter name change");
-                    break;
-                }
-            }
-        } catch (InterruptedException e) {
-            Log.e(TAG, "waitForAdapterNameChange: interrupted");
-        } finally {
-            mAdapterNameChangedlock.unlock();
-        }
-        return mIsAdapterNameChanged;
-    }
-
-    private final BroadcastReceiver mAdapterNameChangeReceiver =
-            new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context context, Intent intent) {
-                    String action = intent.getAction();
-                    if (action.equals(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED)) {
-                        mAdapterNameChangedlock.lock();
-                        mIsAdapterNameChanged = true;
-                        try {
-                            mConditionAdapterNameChanged.signal();
-                        } catch (IllegalMonitorStateException ex) {
-                        } finally {
-                            mAdapterNameChangedlock.unlock();
-                        }
-                    }
-                }
-            };
 }
