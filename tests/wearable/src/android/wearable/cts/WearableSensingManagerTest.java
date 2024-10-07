@@ -31,6 +31,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import android.Manifest;
 import android.app.PendingIntent;
 import android.app.wearable.Flags;
+import android.app.wearable.WearableConnection;
 import android.app.wearable.WearableSensingManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -234,6 +235,70 @@ public class WearableSensingManagerTest {
                 "no access to stopHotwordRecognition from non system component",
                 SecurityException.class,
                 () -> mWearableSensingManager.stopHotwordRecognition(EXECUTOR, (result) -> {}));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void noAccessWhenAttemptingGetAvailableConnectionCount() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to getAvailableConnectionCount from non system app",
+                SecurityException.class,
+                () -> mWearableSensingManager.getAvailableConnectionCount());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void noAccessWhenAttemptingProvideConcurrentConnection() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to provideConnection from non system app",
+                SecurityException.class,
+                () ->
+                        mWearableSensingManager.provideConnection(
+                                new WearableConnection() {
+                                    @Override
+                                    public ParcelFileDescriptor getConnection() {
+                                        return mPipe[0];
+                                    }
+
+                                    @Override
+                                    public PersistableBundle getMetadata() {
+                                        return PersistableBundle.EMPTY;
+                                    }
+
+                                    @Override
+                                    public void onConnectionAccepted() {}
+
+                                    @Override
+                                    public void onError(int errorCode) {}
+                                },
+                                EXECUTOR));
+    }
+
+    @Test
+    @RequiresFlagsEnabled(Flags.FLAG_ENABLE_CONCURRENT_WEARABLE_CONNECTIONS)
+    public void noAccessWhenAttemptingRemoveAllConnections() {
+        assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                mContext.checkCallingOrSelfPermission(
+                        Manifest.permission.MANAGE_WEARABLE_SENSING_SERVICE));
+
+        // Test non system app throws SecurityException
+        assertThrows(
+                "no access to removeAllConnections from non system app",
+                SecurityException.class,
+                () -> mWearableSensingManager.removeAllConnections());
     }
 
     // The tests for sending data requests from WearableSensingService are in

@@ -25,6 +25,8 @@ import android.service.ambientcontext.AmbientContextDetectionServiceStatus;
 import android.service.wearable.WearableSensingService;
 import android.util.Log;
 
+import com.android.internal.annotations.GuardedBy;
+
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -34,6 +36,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -54,6 +59,12 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
 
     /** PersistableBundle value that represents a request to reset the service. */
     public static final String ACTION_RESET = "RESET";
+
+    /** PersistableBundle key that represents the ID of the connection to action on. */
+    public static final String BUNDLE_CONNECTION_ID_KEY = "CONNECTION_ID";
+
+    /** A connection ID that is not valid. */
+    public static final int INVALID_CONNECTION_ID = -1;
 
     /**
      * PersistableBundle value that represents a request to verify the data received from the
@@ -119,7 +130,18 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
     public static final String ACTION_WRITE_FILE_AND_VERIFY_EXCEPTION =
             "WRITE_FILE_AND_VERIFY_EXCEPTION";
 
+    /**
+     * PersistableBundle value that represents a request to write to a connection and verify an
+     * exception is thrown.
+     */
+    public static final String ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION =
+            "WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION";
+
     private volatile ParcelFileDescriptor mSecureWearableConnection;
+
+    @GuardedBy("mSecureWearableConnectionMap")
+    private final Map<Integer, ParcelFileDescriptor> mSecureWearableConnectionMap = new HashMap<>();
+
     private volatile boolean mBooleanState = false;
 
     @Override
@@ -127,6 +149,34 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             ParcelFileDescriptor secureWearableConnection, Consumer<Integer> statusConsumer) {
         Log.w(TAG, "onSecureConnectionProvided");
         mSecureWearableConnection = secureWearableConnection;
+        statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+    }
+
+    @Override
+    public void onSecureConnectionProvided(
+            ParcelFileDescriptor secureWearableConnection,
+            PersistableBundle metadata,
+            Consumer<Integer> statusConsumer) {
+        Log.w(TAG, "onSecureConnectionProvided with metadata");
+        mSecureWearableConnection = secureWearableConnection;
+        int connectionId = metadata.getInt(BUNDLE_CONNECTION_ID_KEY, INVALID_CONNECTION_ID);
+        if (connectionId != INVALID_CONNECTION_ID) {
+            synchronized (mSecureWearableConnectionMap) {
+                Log.i(
+                        TAG,
+                        "connectionId: "
+                                + connectionId
+                                + " connection: "
+                                + secureWearableConnection);
+                mSecureWearableConnectionMap.put(connectionId, secureWearableConnection);
+            }
+        } else {
+            Log.w(
+                    TAG,
+                    "Connection Id not found, not adding the connection to"
+                        + " mSecureWearableConnectionMap. This may be expected if the test does not"
+                        + " involve multiple concurrent connections.");
+        }
         statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
     }
 
@@ -144,6 +194,7 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         Log.i(TAG, "#onDataProvided, action: " + action);
         try {
             String relativeFilePath;
+            int connectionId;
             switch (action) {
                 case ACTION_RESET:
                     reset();
@@ -151,11 +202,30 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                     return;
                 case ACTION_VERIFY_DATA_RECEIVED_FROM_WEARABLE:
                     String expectedString = data.getString(EXPECTED_STRING_FROM_WEARABLE_KEY);
-                    verifyDataReceivedFromWearable(expectedString, statusConsumer);
+                    connectionId =
+                            data.getInt(
+                                    BUNDLE_CONNECTION_ID_KEY,
+                                    /* defaultValue= */ INVALID_CONNECTION_ID);
+                    if (connectionId == INVALID_CONNECTION_ID) {
+                        verifyDataReceivedFromWearableViaNonConcurrentConnection(
+                                expectedString, statusConsumer);
+                    } else {
+                        verifyDataReceivedFromWearableViaConcurrentConnection(
+                                expectedString, statusConsumer, connectionId);
+                    }
                     return;
                 case ACTION_SEND_DATA_TO_WEARABLE:
                     String stringToSend = data.getString(STRING_TO_SEND_KEY);
-                    sendDataToWearable(stringToSend, statusConsumer);
+                    connectionId =
+                            data.getInt(
+                                    BUNDLE_CONNECTION_ID_KEY,
+                                    /* defaultValue= */ INVALID_CONNECTION_ID);
+                    if (connectionId == INVALID_CONNECTION_ID) {
+                        sendDataToWearableViaNonConcurrentConnection(stringToSend, statusConsumer);
+                    } else {
+                        sendDataToWearableViaConcurrentConnection(
+                                stringToSend, statusConsumer, connectionId);
+                    }
                     return;
                 case ACTION_CLOSE_WEARABLE_CONNECTION:
                     closeWearableConnection(statusConsumer);
@@ -181,6 +251,21 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                     relativeFilePath = data.getString(FILE_PATH_KEY);
                     writeToFileAndVerifyException(relativeFilePath, statusConsumer);
                     return;
+                case ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION:
+                    connectionId =
+                            data.getInt(
+                                    BUNDLE_CONNECTION_ID_KEY,
+                                    /* defaultValue= */ INVALID_CONNECTION_ID);
+                    if (connectionId == INVALID_CONNECTION_ID) {
+                        Log.e(
+                                TAG,
+                                "ACTION_WRITE_TO_CONNECTION_AND_VERIFY_EXCEPTION but no"
+                                    + " connectionId provided.");
+                        statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+                    } else {
+                        writeToConnectionAndVerifyException(connectionId, statusConsumer);
+                    }
+                    return;
                 default:
                     Log.w(TAG, "Unknown action: " + action);
                     statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
@@ -196,11 +281,26 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
 
     private void reset() {
         Log.i(TAG, "#reset");
+        Optional.ofNullable(mSecureWearableConnection).ifPresent(this::tryCloseConnection);
         mSecureWearableConnection = null;
+        synchronized (mSecureWearableConnectionMap) {
+            for (ParcelFileDescriptor connection : mSecureWearableConnectionMap.values()) {
+                tryCloseConnection(connection);
+            }
+            mSecureWearableConnectionMap.clear();
+        }
         mBooleanState = false;
     }
 
-    private void verifyDataReceivedFromWearable(
+    private void tryCloseConnection(ParcelFileDescriptor connection) {
+        try {
+            connection.close();
+        } catch (IOException ex) {
+            Log.w(TAG, "Unable to close connection.", ex);
+        }
+    }
+
+    private void verifyDataReceivedFromWearableViaNonConcurrentConnection(
             String expectedString, Consumer<Integer> statusConsumer) throws IOException {
         if (mSecureWearableConnection == null) {
             Log.e(
@@ -209,13 +309,57 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
+        verifyDataReceivedFromWearable(expectedString, statusConsumer, mSecureWearableConnection);
+    }
+
+    private void verifyDataReceivedFromWearableViaConcurrentConnection(
+            String expectedString, Consumer<Integer> statusConsumer, int connectionId)
+            throws IOException {
+        ParcelFileDescriptor connection;
+        synchronized (mSecureWearableConnectionMap) {
+            if (!mSecureWearableConnectionMap.containsKey(connectionId)) {
+                Log.e(
+                        TAG,
+                        "#verifyDataReceivedFromWearableViaConcurrentConnection connection ID not"
+                            + " found: "
+                                + connectionId);
+                statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+                return;
+            }
+            connection = mSecureWearableConnectionMap.get(connectionId);
+        }
+        Log.i(
+                TAG,
+                "Verifying connectionId "
+                        + connectionId
+                        + ", connection "
+                        + connection
+                        + ", expected "
+                        + expectedString);
+        verifyDataReceivedFromWearable(expectedString, statusConsumer, connection);
+    }
+
+    private void verifyDataReceivedFromWearable(
+            String expectedString,
+            Consumer<Integer> statusConsumer,
+            ParcelFileDescriptor secureWearableConnection)
+            throws IOException {
         if (expectedString == null) {
             Log.e(TAG, "#verifyDataReceivedFromWearable called but no expected string is provided");
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
         byte[] expectedBytes = expectedString.getBytes(StandardCharsets.UTF_8);
-        byte[] dataFromWearable = readData(mSecureWearableConnection, expectedBytes.length);
+        Log.i(
+                TAG,
+                "About to read from " + secureWearableConnection + " expected: " + expectedString);
+        byte[] dataFromWearable = readData(secureWearableConnection, expectedBytes.length);
+        Log.i(
+                TAG,
+                "Finished reading from "
+                        + secureWearableConnection
+                        + " data read: "
+                        + new String(dataFromWearable, StandardCharsets.UTF_8));
         if (Arrays.equals(expectedBytes, dataFromWearable)) {
             statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
         } else {
@@ -223,7 +367,7 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
                     TAG,
                     String.format(
                             "Data bytes received from wearable are different from expected."
-                                + " Received length: %s, expected length: %s",
+                                    + " Received length: %s, expected length: %s",
                             dataFromWearable.length, expectedBytes.length));
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
         }
@@ -237,20 +381,46 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
         return dataRead;
     }
 
-    private void sendDataToWearable(String stringToSend, Consumer<Integer> statusConsumer)
+    private void sendDataToWearableViaConcurrentConnection(
+            String stringToSend, Consumer<Integer> statusConsumer, int connectionId)
             throws Exception {
+        ParcelFileDescriptor connection;
+        synchronized (mSecureWearableConnectionMap) {
+            if (!mSecureWearableConnectionMap.containsKey(connectionId)) {
+                Log.e(
+                        TAG,
+                        "#sendDataToWearableViaConcurrentConnection connection ID not found: "
+                                + connectionId);
+                statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+                return;
+            }
+            connection = mSecureWearableConnectionMap.get(connectionId);
+        }
+        sendDataToWearable(stringToSend, statusConsumer, connection);
+    }
+
+    private void sendDataToWearableViaNonConcurrentConnection(
+            String stringToSend, Consumer<Integer> statusConsumer) throws Exception {
         if (mSecureWearableConnection == null) {
             Log.e(TAG, "#sendDataToWearable called but mSecureWearableConnection is null");
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
+        sendDataToWearable(stringToSend, statusConsumer, mSecureWearableConnection);
+    }
+
+    private void sendDataToWearable(
+            String stringToSend,
+            Consumer<Integer> statusConsumer,
+            ParcelFileDescriptor secureWearableConnection)
+            throws Exception {
         if (stringToSend == null) {
             Log.e(TAG, "#sendDataToWearable called but no stringToSend is provided");
             statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
             return;
         }
         byte[] bytesToSend = stringToSend.getBytes(StandardCharsets.UTF_8);
-        writeData(mSecureWearableConnection, bytesToSend);
+        writeData(secureWearableConnection, bytesToSend);
         statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
     }
 
@@ -321,6 +491,27 @@ public class CtsIsolatedWearableSensingService extends WearableSensingService {
             }
         }
         Log.e(TAG, "#writeToFileAndVerifyException does not throw any exception.");
+        statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+    }
+
+    private void writeToConnectionAndVerifyException(
+            int connectionId, Consumer<Integer> statusConsumer) throws Exception {
+        ParcelFileDescriptor connection;
+        synchronized (mSecureWearableConnectionMap) {
+            if (!mSecureWearableConnectionMap.containsKey(connectionId)) {
+                Log.e(TAG, "Connection ID not found: " + connectionId);
+                statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
+                return;
+            }
+            connection = mSecureWearableConnectionMap.get(connectionId);
+        }
+        try {
+            new ParcelFileDescriptor.AutoCloseOutputStream(connection).write(1);
+        } catch (IOException ex) {
+            statusConsumer.accept(WearableSensingManager.STATUS_SUCCESS);
+            return;
+        }
+        Log.e(TAG, "No exception encountered when writing to the connection");
         statusConsumer.accept(WearableSensingManager.STATUS_UNKNOWN);
     }
 
