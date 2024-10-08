@@ -19,6 +19,11 @@ package android.bluetooth.cts;
 import static android.Manifest.permission.BLUETOOTH_CONNECT;
 import static android.Manifest.permission.BLUETOOTH_PRIVILEGED;
 import static android.Manifest.permission.BLUETOOTH_SCAN;
+import static android.bluetooth.BluetoothAdapter.BT_SNOOP_LOG_MODE_DISABLED;
+import static android.bluetooth.BluetoothAdapter.BT_SNOOP_LOG_MODE_FILTERED;
+import static android.bluetooth.BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL;
+import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_PUBLIC;
+import static android.bluetooth.BluetoothDevice.ADDRESS_TYPE_RANDOM;
 
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasAction;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasExtra;
@@ -32,8 +37,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import android.app.UiAutomation;
-import android.bluetooth.BluetoothActivityEnergyInfo;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -63,7 +66,6 @@ import com.google.common.collect.Range;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.core.AllOf;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,7 +75,6 @@ import org.mockito.hamcrest.MockitoHamcrest;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executor;
 
@@ -91,7 +92,6 @@ public class BluetoothAdapterTest {
     private boolean mHasBluetooth;
 
     private BluetoothAdapter mAdapter;
-    private UiAutomation mUiAutomation;
 
     @Before
     public void setUp() {
@@ -101,15 +101,7 @@ public class BluetoothAdapterTest {
         if (mHasBluetooth) {
             mAdapter = mContext.getSystemService(BluetoothManager.class).getAdapter();
             assertThat(mAdapter).isNotNull();
-            mUiAutomation = InstrumentationRegistry.getInstrumentation().getUiAutomation();
-            mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        }
-    }
-
-    @After
-    public void tearDown() {
-        if (mHasBluetooth) {
-            mUiAutomation.dropShellPermissionIdentity();
+            assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         }
     }
 
@@ -170,7 +162,6 @@ public class BluetoothAdapterTest {
         assertThat(BluetoothAdapter.checkBluetoothAddress("DE:F0:FE:DC:B8:76")).isTrue();
     }
 
-    /** Checks enable(), disable(), getState(), isEnabled() */
     @Test
     public void enableDisable() {
         assumeTrue(mHasBluetooth);
@@ -186,18 +177,24 @@ public class BluetoothAdapterTest {
         assumeTrue(mHasBluetooth);
 
         assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        assertThat(BluetoothAdapter.checkBluetoothAddress(mAdapter.getAddress())).isTrue();
-
-        mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mAdapter.getAddress());
+
+        String address;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            address = mAdapter.getAddress();
+        }
+
+        assertThat(BluetoothAdapter.checkBluetoothAddress(address)).isTrue();
     }
 
     @Test
     public void setName_getName() {
-        final Duration setNameTimeout = Duration.ofMillis(5000);
         assumeTrue(mHasBluetooth);
+        final Duration setNameTimeout = Duration.ofSeconds(5);
+        final String genericName = "Generic Device 1";
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        assertThrows(SecurityException.class, () -> mAdapter.setName("The name"));
+        assertThrows(SecurityException.class, () -> mAdapter.getName());
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED);
@@ -205,70 +202,61 @@ public class BluetoothAdapterTest {
         BroadcastReceiver mockReceiver = mock(BroadcastReceiver.class);
         mContext.registerReceiver(mockReceiver, filter);
 
-        String originalName = mAdapter.getName();
-        assertThat(originalName).isNotNull();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            String originalName = mAdapter.getName();
+            assertThat(originalName).isNotNull();
 
-        // Check renaming the adapter
-        String genericName = "Generic Device 1";
-        assertThat(mAdapter.setName(genericName)).isTrue();
-        verifyIntentReceived(
-                mockReceiver,
-                setNameTimeout,
-                hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
-                hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, genericName));
-        assertThat(mAdapter.getName()).isEqualTo(genericName);
+            // Check renaming the adapter
+            assertThat(mAdapter.setName(genericName)).isTrue();
+            verifyIntentReceived(
+                    mockReceiver,
+                    setNameTimeout,
+                    hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
+                    hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, genericName));
+            assertThat(mAdapter.getName()).isEqualTo(genericName);
 
-        // Check setting adapter back to original name
-        assertThat(mAdapter.setName(originalName)).isTrue();
-        verifyIntentReceived(
-                mockReceiver,
-                setNameTimeout,
-                hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
-                hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, originalName));
-        assertThat(mAdapter.getName()).isEqualTo(originalName);
-
-        mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mAdapter.setName("The name"));
-        assertThrows(SecurityException.class, () -> mAdapter.getName());
+            // Check setting adapter back to original name
+            assertThat(mAdapter.setName(originalName)).isTrue();
+            verifyIntentReceived(
+                    mockReceiver,
+                    setNameTimeout,
+                    hasAction(BluetoothAdapter.ACTION_LOCAL_NAME_CHANGED),
+                    hasExtra(BluetoothAdapter.EXTRA_LOCAL_NAME, originalName));
+            assertThat(mAdapter.getName()).isEqualTo(originalName);
+        }
     }
 
     @Test
     public void getBondedDevices() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThrows(SecurityException.class, () -> mAdapter.getBondedDevices());
 
-        // empty value is returned when Bluetooth is disabled
-        Set<BluetoothDevice> devices = mAdapter.getBondedDevices();
-        assertThat(devices).isNotNull();
-        assertThat(devices).isEmpty();
-
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        devices = mAdapter.getBondedDevices();
-        assertThat(devices).isNotNull();
-        for (BluetoothDevice device : devices) {
-            assertThat(BluetoothAdapter.checkBluetoothAddress(device.getAddress())).isTrue();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            assertThat(mAdapter.getBondedDevices()).isNotNull();
         }
 
-        mUiAutomation.dropShellPermissionIdentity();
-        assertThrows(SecurityException.class, () -> mAdapter.getBondedDevices());
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mAdapter.getBondedDevices()).isEmpty();
     }
 
     @Test
     public void getProfileConnectionState() {
         assumeTrue(mHasBluetooth);
 
-        mUiAutomation.dropShellPermissionIdentity();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
+                    .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
+        }
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
+                    .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
+        }
         // getProfileConnectionState is caching it's return value and cts test doesn't know how to
         // deal with it
         // assertThrows(SecurityException.class,
         //         () -> mAdapter.getProfileConnectionState(BluetoothProfile.A2DP));
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
-        assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
-                .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        assertThat(mAdapter.getProfileConnectionState(BluetoothProfile.A2DP))
-                .isEqualTo(BluetoothAdapter.STATE_DISCONNECTED);
     }
 
     @Test
@@ -277,7 +265,6 @@ public class BluetoothAdapterTest {
 
         // getRemoteDevice() should work even with Bluetooth disabled
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-        mUiAutomation.dropShellPermissionIdentity();
 
         // test bad addresses
         assertThrows(IllegalArgumentException.class, () -> mAdapter.getRemoteDevice((String) null));
@@ -291,10 +278,8 @@ public class BluetoothAdapterTest {
 
         // test success
         BluetoothDevice device = mAdapter.getRemoteDevice("00:11:22:AA:BB:CC");
-        assertThat(device).isNotNull();
         assertThat(device.getAddress()).isEqualTo("00:11:22:AA:BB:CC");
         device = mAdapter.getRemoteDevice(new byte[] {0x01, 0x02, 0x03, 0x04, 0x05, 0x06});
-        assertThat(device).isNotNull();
         assertThat(device.getAddress()).isEqualTo("01:02:03:04:05:06");
     }
 
@@ -304,46 +289,33 @@ public class BluetoothAdapterTest {
 
         // getRemoteLeDevice() should work even with Bluetooth disabled
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-        mUiAutomation.dropShellPermissionIdentity();
 
         // test bad addresses
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mAdapter.getRemoteLeDevice(
-                                (String) null, BluetoothDevice.ADDRESS_TYPE_PUBLIC));
+                () -> mAdapter.getRemoteLeDevice((String) null, ADDRESS_TYPE_PUBLIC));
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mAdapter.getRemoteLeDevice(
-                                "01:02:03:04:05:06:07:08", BluetoothDevice.ADDRESS_TYPE_PUBLIC));
+                () -> mAdapter.getRemoteLeDevice("01:02:03:04:05:06:07:08", ADDRESS_TYPE_PUBLIC));
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mAdapter.getRemoteLeDevice(
-                                "01:02:03:04:05", BluetoothDevice.ADDRESS_TYPE_PUBLIC));
+                () -> mAdapter.getRemoteLeDevice("01:02:03:04:05", ADDRESS_TYPE_PUBLIC));
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mAdapter.getRemoteLeDevice(
-                                "00:01:02:03:04:05", BluetoothDevice.ADDRESS_TYPE_RANDOM + 1));
+                () -> mAdapter.getRemoteLeDevice("00:01:02:03:04:05", ADDRESS_TYPE_RANDOM + 1));
         assertThrows(
                 IllegalArgumentException.class,
-                () ->
-                        mAdapter.getRemoteLeDevice(
-                                "00:01:02:03:04:05", BluetoothDevice.ADDRESS_TYPE_PUBLIC - 1));
+                () -> mAdapter.getRemoteLeDevice("00:01:02:03:04:05", ADDRESS_TYPE_PUBLIC - 1));
 
         // test success
-        BluetoothDevice device =
-                mAdapter.getRemoteLeDevice(
-                        "00:11:22:AA:BB:CC", BluetoothDevice.ADDRESS_TYPE_PUBLIC);
-        assertThat(device).isNotNull();
-        assertThat(device.getAddress()).isEqualTo("00:11:22:AA:BB:CC");
-        device =
-                mAdapter.getRemoteLeDevice(
-                        "01:02:03:04:05:06", BluetoothDevice.ADDRESS_TYPE_RANDOM);
-        assertThat(device).isNotNull();
-        assertThat(device.getAddress()).isEqualTo("01:02:03:04:05:06");
+        assertThat(
+                        mAdapter.getRemoteLeDevice("00:11:22:AA:BB:CC", ADDRESS_TYPE_PUBLIC)
+                                .getAddress())
+                .isEqualTo("00:11:22:AA:BB:CC");
+        assertThat(
+                        mAdapter.getRemoteLeDevice("01:02:03:04:05:06", ADDRESS_TYPE_RANDOM)
+                                .getAddress())
+                .isEqualTo("01:02:03:04:05:06");
     }
 
     @Test
@@ -373,43 +345,34 @@ public class BluetoothAdapterTest {
     public void isDistanceMeasurementSupported() throws IOException {
         assumeTrue(mHasBluetooth);
 
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-        assertThat(mAdapter.isDistanceMeasurementSupported())
-                .isNotEqualTo(BluetoothStatusCodes.ERROR_UNKNOWN);
-        TestUtils.dropPermissionAsShellUid();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.isDistanceMeasurementSupported())
+                    .isNotEqualTo(BluetoothStatusCodes.ERROR_UNKNOWN);
+        }
     }
 
     @Test
     public void getMaxConnectedAudioDevices() {
         assumeTrue(mHasBluetooth);
-
-        // Defined in com.android.bluetooth.btservice.AdapterProperties
-        int maxConnectedAudioDevicesLowerBound = 1;
-        // Defined in com.android.bluetooth.btservice.AdapterProperties
-        int maxConnectedAudioDevicesUpperBound = 5;
-
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        assertThat(mAdapter.getMaxConnectedAudioDevices())
-                .isIn(
-                        Range.closed(
-                                maxConnectedAudioDevicesLowerBound,
-                                maxConnectedAudioDevicesUpperBound));
-
-        mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mAdapter.getMaxConnectedAudioDevices());
+
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            // Range defined in com.android.bluetooth.btservice.AdapterProperties
+            assertThat(mAdapter.getMaxConnectedAudioDevices()).isIn(Range.closed(1, 5));
+        }
     }
 
     @Test
     public void listenUsingRfcommWithServiceRecord() throws IOException {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        BluetoothServerSocket socket =
-                mAdapter.listenUsingRfcommWithServiceRecord("test", UUID.randomUUID());
+        BluetoothServerSocket socket;
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            socket = mAdapter.listenUsingRfcommWithServiceRecord("test", UUID.randomUUID());
+        }
         assertThat(socket).isNotNull();
         socket.close();
 
-        mUiAutomation.dropShellPermissionIdentity();
         assertThrows(
                 SecurityException.class,
                 () -> mAdapter.listenUsingRfcommWithServiceRecord("test", UUID.randomUUID()));
@@ -421,13 +384,6 @@ public class BluetoothAdapterTest {
 
         Duration minutes = Duration.ofMinutes(2);
 
-        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-        assertThat(mAdapter.getDiscoverableTimeout()).isNull();
-        assertThat(mAdapter.setDiscoverableTimeout(minutes))
-                .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
-
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.setDiscoverableTimeout(Duration.ofDays(25000)));
@@ -439,6 +395,10 @@ public class BluetoothAdapterTest {
                     .isEqualTo(BluetoothStatusCodes.SUCCESS);
             assertThat(mAdapter.getDiscoverableTimeout()).isEqualTo(minutes);
         }
+        assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
+        assertThat(mAdapter.getDiscoverableTimeout()).isNull();
+        assertThat(mAdapter.setDiscoverableTimeout(minutes))
+                .isEqualTo(BluetoothStatusCodes.ERROR_BLUETOOTH_NOT_ENABLED);
     }
 
     @Test
@@ -454,8 +414,6 @@ public class BluetoothAdapterTest {
     public void getMostRecentlyConnectedDevices() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-
         // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
         assertThrows(SecurityException.class, () -> mAdapter.getMostRecentlyConnectedDevices());
 
@@ -468,17 +426,13 @@ public class BluetoothAdapterTest {
     public void getUuids() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-
-        // Verify return value without permission.BLUETOOTH_CONNECT
-        mUiAutomation.dropShellPermissionIdentity();
         assertThrows(SecurityException.class, () -> mAdapter.getUuidsList());
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
 
-        assertThat(mAdapter.getUuidsList()).isNotNull();
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT)) {
+            assertThat(mAdapter.getUuidsList()).isNotNull();
+        }
+
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
-
-        // Verify return value if Bluetooth is not enabled
         assertThat(mAdapter.getUuidsList()).isEmpty();
     }
 
@@ -534,37 +488,25 @@ public class BluetoothAdapterTest {
     public void requestControllerActivityEnergyInfo() {
         assumeTrue(mHasBluetooth);
 
+        Executor executor = mock(Executor.class);
         BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback callback =
-                new BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback() {
-                    @Override
-                    public void onBluetoothActivityEnergyInfoAvailable(
-                            BluetoothActivityEnergyInfo info) {
-                        assertThat(info).isNotNull();
-                    }
+                mock(BluetoothAdapter.OnBluetoothActivityEnergyInfoCallback.class);
 
-                    @Override
-                    public void onBluetoothActivityEnergyInfoError(int errorCode) {}
-                };
-
-        // Verify parameter
         assertThrows(
                 NullPointerException.class,
                 () -> mAdapter.requestControllerActivityEnergyInfo(null, callback));
+        assertThrows(
+                NullPointerException.class,
+                () -> mAdapter.requestControllerActivityEnergyInfo(executor, null));
     }
 
     @Test
     public void clearBluetooth() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.clearBluetooth(), List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
 
-        // Verify throws SecurityException without permission.BLUETOOTH_PRIVILEGED
-        assertThrows(SecurityException.class, () -> mAdapter.clearBluetooth());
-        mUiAutomation.dropShellPermissionIdentity();
-        // Verify throws SecurityException without permission.BLUETOOTH_CONNECT
-        assertThrows(SecurityException.class, () -> mAdapter.clearBluetooth());
-
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT);
         assertThat(BTAdapterUtils.disableAdapter(mAdapter, mContext)).isTrue();
         // Verify throws RuntimeException when trying to save sysprop for later (permission denied)
         assertThrows(RuntimeException.class, () -> mAdapter.clearBluetooth());
@@ -631,16 +573,16 @@ public class BluetoothAdapterTest {
         assertThrows(SecurityException.class, () -> mAdapter.isAutoOnEnabled());
         assertThrows(SecurityException.class, () -> mAdapter.setAutoOnEnabled(false));
 
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_PRIVILEGED);
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            // Not all devices support the auto on feature
+            assumeTrue(mAdapter.isAutoOnSupported());
 
-        // Not all devices support the auto on feature
-        assumeTrue(mAdapter.isAutoOnSupported());
+            mAdapter.setAutoOnEnabled(false);
+            assertThat(mAdapter.isAutoOnEnabled()).isFalse();
 
-        mAdapter.setAutoOnEnabled(false);
-        assertThat(mAdapter.isAutoOnEnabled()).isFalse();
-
-        mAdapter.setAutoOnEnabled(true);
-        assertThat(mAdapter.isAutoOnEnabled()).isTrue();
+            mAdapter.setAutoOnEnabled(true);
+            assertThat(mAdapter.isAutoOnEnabled()).isTrue();
+        }
     }
 
     @Test
@@ -649,43 +591,35 @@ public class BluetoothAdapterTest {
 
         assertThrows(
                 SecurityException.class,
-                () ->
-                        mAdapter.setBluetoothHciSnoopLoggingMode(
-                                BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL));
+                () -> mAdapter.setBluetoothHciSnoopLoggingMode(BT_SNOOP_LOG_MODE_FULL));
         assertThrows(SecurityException.class, () -> mAdapter.getBluetoothHciSnoopLoggingMode());
 
-        TestUtils.adoptPermissionAsShellUid(BLUETOOTH_PRIVILEGED);
+        try (var p = Permissions.withPermissions(BLUETOOTH_PRIVILEGED)) {
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> mAdapter.setBluetoothHciSnoopLoggingMode(-1));
 
-        assertThrows(
-                IllegalArgumentException.class, () -> mAdapter.setBluetoothHciSnoopLoggingMode(-1));
+            assertThat(mAdapter.setBluetoothHciSnoopLoggingMode(BT_SNOOP_LOG_MODE_FULL))
+                    .isEqualTo(BluetoothStatusCodes.SUCCESS);
+            assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
+                    .isEqualTo(BT_SNOOP_LOG_MODE_FULL);
 
-        assertThat(
-                        mAdapter.setBluetoothHciSnoopLoggingMode(
-                                BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
-                .isEqualTo(BluetoothAdapter.BT_SNOOP_LOG_MODE_FULL);
+            assertThat(mAdapter.setBluetoothHciSnoopLoggingMode(BT_SNOOP_LOG_MODE_FILTERED))
+                    .isEqualTo(BluetoothStatusCodes.SUCCESS);
+            assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
+                    .isEqualTo(BT_SNOOP_LOG_MODE_FILTERED);
 
-        assertThat(
-                        mAdapter.setBluetoothHciSnoopLoggingMode(
-                                BluetoothAdapter.BT_SNOOP_LOG_MODE_FILTERED))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
-                .isEqualTo(BluetoothAdapter.BT_SNOOP_LOG_MODE_FILTERED);
-
-        assertThat(
-                        mAdapter.setBluetoothHciSnoopLoggingMode(
-                                BluetoothAdapter.BT_SNOOP_LOG_MODE_DISABLED))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
-                .isEqualTo(BluetoothAdapter.BT_SNOOP_LOG_MODE_DISABLED);
+            assertThat(mAdapter.setBluetoothHciSnoopLoggingMode(BT_SNOOP_LOG_MODE_DISABLED))
+                    .isEqualTo(BluetoothStatusCodes.SUCCESS);
+            assertThat(mAdapter.getBluetoothHciSnoopLoggingMode())
+                    .isEqualTo(BT_SNOOP_LOG_MODE_DISABLED);
+        }
     }
 
     @Test
     public void setPreferredAudioProfiles_getPreferredAudioProfiles() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
@@ -732,8 +666,6 @@ public class BluetoothAdapterTest {
     public void preferredAudioProfileCallbacks() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
-
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.PreferredAudioProfilesChangedCallback callback =
                 mock(BluetoothAdapter.PreferredAudioProfilesChangedCallback.class);
@@ -748,15 +680,12 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.unregisterPreferredAudioProfilesChangedCallback(null));
 
-        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
-        assertThrows(
-                SecurityException.class,
-                () -> mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback));
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.registerPreferredAudioProfilesChangedCallback(executor, callback),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.unregisterPreferredAudioProfilesChangedCallback(callback));
-
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
 
         try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
             if (SystemProperties.getBoolean(ENABLE_DUAL_MODE_AUDIO, false)) {
@@ -782,25 +711,15 @@ public class BluetoothAdapterTest {
     public void bluetoothQualityReportReadyCallbacks() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
         Executor executor = mContext.getMainExecutor();
         BluetoothAdapter.BluetoothQualityReportReadyCallback callback =
-                new BluetoothAdapter.BluetoothQualityReportReadyCallback() {
-                    @Override
-                    public void onBluetoothQualityReportReady(
-                            @androidx.annotation.NonNull BluetoothDevice device,
-                            @androidx.annotation.NonNull
-                                    BluetoothQualityReport bluetoothQualityReport,
-                            int status) {}
-                };
+                mock(BluetoothAdapter.BluetoothQualityReportReadyCallback.class);
 
         BluetoothQualityReport bqr =
                 BluetoothQualityReportTest.getBqr(BluetoothQualityReport.QUALITY_REPORT_ID_MONITOR);
-
-        callback.onBluetoothQualityReportReady(device, bqr, BluetoothStatusCodes.SUCCESS);
 
         assertThrows(
                 NullPointerException.class,
@@ -812,28 +731,25 @@ public class BluetoothAdapterTest {
                 NullPointerException.class,
                 () -> mAdapter.unregisterBluetoothQualityReportReadyCallback(null));
 
-        // This should throw a SecurityException because no BLUETOOTH_PRIVILEGED permission
-        assertThrows(
-                SecurityException.class,
-                () -> mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback));
+        Permissions.enforceEachPermissions(
+                () -> mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback),
+                List.of(BLUETOOTH_PRIVILEGED, BLUETOOTH_CONNECT));
         assertThrows(
                 IllegalArgumentException.class,
                 () -> mAdapter.unregisterBluetoothQualityReportReadyCallback(callback));
 
-        mUiAutomation.adoptShellPermissionIdentity(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED);
-
-        // Try the happy path
-        assertThat(mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
-        assertThat(mAdapter.unregisterBluetoothQualityReportReadyCallback(callback))
-                .isEqualTo(BluetoothStatusCodes.SUCCESS);
+        try (var p = Permissions.withPermissions(BLUETOOTH_CONNECT, BLUETOOTH_PRIVILEGED)) {
+            assertThat(mAdapter.registerBluetoothQualityReportReadyCallback(executor, callback))
+                    .isEqualTo(BluetoothStatusCodes.SUCCESS);
+            assertThat(mAdapter.unregisterBluetoothQualityReportReadyCallback(callback))
+                    .isEqualTo(BluetoothStatusCodes.SUCCESS);
+        }
     }
 
     @Test
     public void notifyActiveDeviceChangeApplied() {
         assumeTrue(mHasBluetooth);
 
-        assertThat(BTAdapterUtils.enableAdapter(mAdapter, mContext)).isTrue();
         String deviceAddress = "00:11:22:AA:BB:CC";
         BluetoothDevice device = mAdapter.getRemoteDevice(deviceAddress);
 
