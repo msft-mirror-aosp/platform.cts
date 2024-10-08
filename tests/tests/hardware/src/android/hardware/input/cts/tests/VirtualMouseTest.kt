@@ -27,7 +27,6 @@ import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputEvent
 import android.view.MotionEvent
-import com.android.compatibility.common.util.SystemUtil
 import com.android.cts.input.DefaultPointerSpeedRule
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
@@ -209,8 +208,7 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
 
     @Test
     fun sendButtonEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
+        mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {
                 mVirtualMouse.sendButtonEvent(
                     VirtualMouseButtonEvent.Builder()
@@ -226,8 +224,7 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
     fun sendRelativeEvent_withoutCreateVirtualDevicePermission_throwsException() {
         val relativeChangeX = 25f
         val relativeChangeY = 35f
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
+        mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {
                 mVirtualMouse.sendRelativeEvent(
                     VirtualMouseRelativeEvent.Builder()
@@ -243,8 +240,7 @@ class VirtualMouseTest : VirtualDeviceTestCase() {
     fun sendScrollEvent_withoutCreateVirtualDevicePermission_throwsException() {
         val moveX = 0f
         val moveY = 1f
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
+        mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {
                 mVirtualMouse.sendScrollEvent(
                     VirtualMouseScrollEvent.Builder()

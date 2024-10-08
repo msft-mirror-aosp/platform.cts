@@ -17,6 +17,7 @@ package android.hardware.input.cts.tests
 
 import android.app.ActivityOptions
 import android.companion.virtual.VirtualDeviceManager
+import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.os.Bundle
 import android.server.wm.WindowManagerStateHelper
@@ -32,8 +33,11 @@ abstract class VirtualDeviceTestCase : InputTestCase() {
 
     public override fun onBeforeLaunchActivity() {
         mVirtualDevice = mRule.createManagedVirtualDevice()
-        mVirtualDisplay = mRule.createManagedVirtualDisplay(
-            mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
+            mVirtualDevice,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         mRule.assumeActivityLaunchSupported(mVirtualDisplay.display.displayId)
     }
