@@ -44,7 +44,7 @@ import androidx.test.uiautomator.By;
 import androidx.test.uiautomator.UiDevice;
 import androidx.test.uiautomator.UiObject2;
 
-import com.android.compatibility.common.util.NonMainlineTest;
+import com.android.compatibility.common.util.FrameworkSpecificTest;
 
 import libcore.junit.util.compat.CoreCompatChangeRule.DisableCompatChanges;
 import libcore.junit.util.compat.CoreCompatChangeRule.EnableCompatChanges;
@@ -63,7 +63,7 @@ import org.junit.rules.TestRule;
  * Run with:
  * atest CtsMediaProjectionTestCases:MediaProjectionCompatChangeTest
  */
-@NonMainlineTest
+@FrameworkSpecificTest
 public class MediaProjectionCompatChangeTest {
     private static final String LOG_COMPAT_CHANGE = "android.permission.LOG_COMPAT_CHANGE";
     private static final String READ_COMPAT_CHANGE_CONFIG =

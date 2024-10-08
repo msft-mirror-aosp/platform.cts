@@ -114,6 +114,7 @@ import androidx.test.runner.AndroidJUnit4;
 import androidx.test.uiautomator.UiDevice;
 
 import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.RequireNotVisibleBackgroundUsers;
 import com.android.bedstead.harrier.annotations.RequireRunNotOnVisibleBackgroundNonProfileUser;
 import com.android.compatibility.common.util.ScreenUtils;
 import com.android.compatibility.common.util.SystemUtil;
@@ -2803,6 +2804,13 @@ public class NotificationManagerZenTest extends BaseNotificationManagerTest {
         assertThat(isUiModeManagerThemeOverlayActive()).isFalse();
     }
 
+    @RequireNotVisibleBackgroundUsers(reason =
+            "Visible background user devices (primarily Android auto) currently don't support "
+            + "per display interactiveness. So when the screen Off event is sent, "
+            + "PowerManager#IsInteractive is still true while driver screen is off as passenger "
+            + "screens are on. It also doesn't trigger the code path related to global "
+            + "wakefulness in power manager. The test will be enabled once per display "
+            + "interactiveness is supported on MUMD. relevant bugs: b/370631032")
     @Test
     @RequiresFlagsEnabled(Flags.FLAG_MODES_API)
     public void setAutomaticZenRuleState_ruleWithNightMode_appliedOnScreenOff() throws Exception {
