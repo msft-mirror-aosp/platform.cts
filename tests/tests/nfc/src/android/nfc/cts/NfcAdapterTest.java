@@ -712,6 +712,7 @@ public class NfcAdapterTest {
                 nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
                         PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
+            assertThat(nfcOemExtension.getRoutingTable()).isNotNull();
         } finally {
             nfcOemExtension.unregisterCallback(cb);
         }
