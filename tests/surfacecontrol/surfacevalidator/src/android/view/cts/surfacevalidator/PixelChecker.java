@@ -46,8 +46,12 @@ public abstract class PixelChecker {
         byte[] scanline = new byte[bytesWidth];
         for (int row = boundsToCheck.top; row < boundsToCheck.bottom; row++) {
             buffer.position(rowStride * row + boundsToCheck.left * PIXEL_STRIDE);
-            buffer.get(scanline, 0, scanline.length);
-            for (int i = 0; i < bytesWidth; i += PIXEL_STRIDE) {
+            int scanWidth = Math.min(scanline.length, buffer.remaining());
+            if (scanWidth == 0) {
+                break;
+            }
+            buffer.get(scanline, 0, scanWidth);
+            for (int i = 0; i < scanWidth; i += PIXEL_STRIDE) {
                 // Format is RGBA_8888 not ARGB_8888
                 if (matchesColor(expectedColor, scanline, i)) {
                     numMatchingPixels++;
@@ -64,8 +68,12 @@ public abstract class PixelChecker {
         byte[] scanline = new byte[bytesWidth];
         for (int row = boundsToCheck.top; row < boundsToCheck.bottom; row++) {
             buffer.position(rowStride * row + boundsToCheck.left * PIXEL_STRIDE);
-            buffer.get(scanline, 0, scanline.length);
-            for (int i = 0; i < bytesWidth; i += 1) {
+            int scanWidth = Math.min(scanline.length, buffer.remaining());
+            if (scanWidth == 0) {
+                break;
+            }
+            buffer.get(scanline, 0, scanWidth);
+            for (int i = 0; i < scanWidth; i += 1) {
                 if (scanline[i] != 0) {
                     return false;
                 }
