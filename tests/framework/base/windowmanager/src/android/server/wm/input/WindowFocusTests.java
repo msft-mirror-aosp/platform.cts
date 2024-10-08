@@ -22,7 +22,6 @@ import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLI
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_STEAL_TOP_FOCUS_DISABLED;
 import static android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED;
 import static android.server.wm.CtsWindowInfoUtils.waitForStableWindowGeometry;
-import static android.view.Display.DEFAULT_DISPLAY;
 import static android.view.Display.INVALID_DISPLAY;
 import static android.view.KeyEvent.ACTION_DOWN;
 import static android.view.KeyEvent.ACTION_UP;
@@ -94,9 +93,11 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
 
     private static void sendKey(int action, int keyCode, int displayId) {
-        final KeyEvent keyEvent = new KeyEvent(action, keyCode);
+        final long downTime = SystemClock.uptimeMillis();
+        final KeyEvent keyEvent = new KeyEvent(downTime, downTime, action, keyCode,
+                /* repeat= */ 0);
         keyEvent.setDisplayId(displayId);
-        getInstrumentation().sendKeySync(keyEvent);
+        getInstrumentation().getUiAutomation().injectInputEvent(keyEvent, /* sync= */ true);
     }
 
     private static void sendAndAssertTargetConsumedKey(InputTargetActivity target, int keyCode,
@@ -148,9 +149,9 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     public void testKeyReceiving() {
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_0, INVALID_DISPLAY);
-        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_1, DEFAULT_DISPLAY);
+        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_1, getMainDisplayId());
 
         assumeTrue(supportsMultiDisplay());
 
@@ -201,7 +202,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeFalse(perDisplayFocusEnabled());
 
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final VirtualDisplayWithOwnFocusSession session =
                 createManagedVirtualDisplayWithOwnFocusSession();
@@ -219,7 +220,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
 
         // Send a key event to the primary activity on the default display to make it the top
         // focused display.; the secondary ones did not lose window focus.
-        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_6, DEFAULT_DISPLAY);
+        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_6, getMainDisplayId());
         primaryActivity.waitAndAssertWindowFocusState(/* hasFocus= */ true);
         secondaryActivity.waitAndAssertWindowFocusState(/* hasFocus= */ true);
 
@@ -242,7 +243,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
 
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         // Create two VirtualDisplays with its own focus and launch an activity on them
         final VirtualDisplayWithOwnFocusSession secondarySession =
@@ -281,12 +282,12 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
 
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         final InvisibleVirtualDisplaySession session = createManagedInvisibleDisplaySession();
         final int secondaryDisplayId = session.getDisplayId();
         final SecondaryActivity secondaryActivity = session.startActivityAndFocus();
 
-        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_0, DEFAULT_DISPLAY);
+        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_0, getMainDisplayId());
         sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_1, INVALID_DISPLAY);
 
         sendAndAssertTargetConsumedKey(secondaryActivity, KEYCODE_2, secondaryDisplayId);
@@ -304,13 +305,13 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
 
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
         // Primary should have window focus for sure after launching
         primaryActivity.waitAndAssertWindowFocusState(/* hasFocus */ true);
         // Confirm this display has the top focus and receives untargeted events
         sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_0, INVALID_DISPLAY);
         // Confirm this display has the top focus and receives targeted events
-        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_1, DEFAULT_DISPLAY);
+        sendAndAssertTargetConsumedKey(primaryActivity, KEYCODE_1, getMainDisplayId());
 
         // Create a VirtualDisplay with top focus disabled and launch an activity on it
         final VirtualDisplayWithOwnFocusSession session =
@@ -351,7 +352,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     public void testDelayLosingFocus() {
         final LosingFocusActivity activity = startActivity(LosingFocusActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         getInstrumentation().runOnMainSync(activity::addChildWindow);
         activity.waitAndAssertWindowFocusState(false /* hasFocus */);
@@ -368,7 +369,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     public void testPointerCapture() {
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         // Assert primary activity can have pointer capture before we have multiple focused windows.
         getInstrumentation().runOnMainSync(primaryActivity::requestPointerCapture);
@@ -399,7 +400,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
     @Test
     public void testPointerCaptureWhenFocus() throws Throwable {
         final AutoEngagePointerCaptureActivity primaryActivity =
-                startActivity(AutoEngagePointerCaptureActivity.class, DEFAULT_DISPLAY);
+                startActivity(AutoEngagePointerCaptureActivity.class, getMainDisplayId());
         assertTrue("Failed to reach stable window geometry",
                 waitForStableWindowGeometry(Duration.ofSeconds(5)));
 
@@ -432,7 +433,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
 
         final PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class,
-                DEFAULT_DISPLAY);
+                getMainDisplayId());
 
         final InvisibleVirtualDisplaySession session = createManagedInvisibleDisplaySession();
         final SecondaryActivity secondaryActivity = session.startActivityAndFocus();
@@ -440,7 +441,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         session.close();
 
         assertNotNull("SecondaryActivity must be started.", secondaryActivity);
-        secondaryActivity.waitAndAssertDisplayId(DEFAULT_DISPLAY);
+        secondaryActivity.waitAndAssertDisplayId(getMainDisplayId());
         secondaryActivity.waitAndAssertWindowFocusState(true /* hasFocus */);
 
         primaryActivity.waitAndAssertWindowFocusState(false /* hasFocus */);
@@ -455,7 +456,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
         assumeFalse(perDisplayFocusEnabled());
 
-        PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class, DEFAULT_DISPLAY);
+        PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class, getMainDisplayId());
         final SecondaryActivity secondaryActivity =
                 createManagedInvisibleDisplaySession().startActivityAndFocus();
 
@@ -474,7 +475,7 @@ public class WindowFocusTests extends WindowManagerTestBase {
         assumeTrue(supportsMultiDisplay());
         assumeFalse(perDisplayFocusEnabled());
 
-        PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class, DEFAULT_DISPLAY);
+        PrimaryActivity primaryActivity = startActivity(PrimaryActivity.class, getMainDisplayId());
         final SecondaryActivity secondaryActivity =
                 createManagedInvisibleDisplaySession().startActivityAndFocus();
 
