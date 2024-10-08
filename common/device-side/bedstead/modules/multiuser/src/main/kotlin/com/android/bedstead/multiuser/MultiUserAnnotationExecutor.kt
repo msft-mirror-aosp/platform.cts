@@ -46,6 +46,9 @@ import com.android.bedstead.multiuser.annotations.meta.RequireRunOnProfileAnnota
 import com.android.bedstead.multiuser.annotations.meta.RequireRunOnUserAnnotation
 import com.android.bedstead.nene.types.OptionalBoolean
 
+/**
+ * [AnnotationExecutor] for multi-user annotations
+ */
 @Suppress("unused")
 class MultiUserAnnotationExecutor(locator: BedsteadServiceLocator) : AnnotationExecutor {
 
