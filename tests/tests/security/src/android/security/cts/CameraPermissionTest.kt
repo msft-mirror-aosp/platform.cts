@@ -155,7 +155,9 @@ class CameraPermissionTest {
   fun tearDown() {
     finishActivity()
 
-    instrumentation.context.unregisterReceiver(broadcastReceiver)
+    if (this::broadcastReceiver.isInitialized) {
+      instrumentation.context.unregisterReceiver(broadcastReceiver)
+    }
   }
 
   @Test
