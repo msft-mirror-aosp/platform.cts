@@ -21,7 +21,10 @@ import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentat
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeFalse;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
+import android.app.Activity;
 import android.companion.virtual.VirtualDeviceManager.VirtualDevice;
 import android.companion.virtualdevice.flags.Flags;
 import android.content.ContentResolver;
@@ -48,15 +51,16 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 /** Tests to verify that power manager APIs behave as expected for virtual devices. */
 @RunWith(AndroidJUnit4.class)
 @AppModeFull(reason = "VirtualDeviceManager cannot be accessed by instant apps")
-@RequiresFlagsEnabled(
-        {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
 public class VirtualDevicePowerTest {
 
     private static final int FAST_SCREEN_OFF_TIMEOUT_MS = 500;
+    private static final int DISPLAY_TIMEOUT_MS = 2000;
 
     @Rule
     public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
@@ -74,11 +78,22 @@ public class VirtualDevicePowerTest {
     private int mInitialStayOnWhilePluggedInSetting;
     private int mMinimumScreenOffTimeoutMs;
 
+    private VirtualDevice mVirtualDevice;
+    private Display mDisplay;
+
+    @Mock
+    private VirtualDisplay.Callback mVirtualDisplayCallback;
+
     @Before
     public void setUp() throws Exception {
-        VirtualDevice virtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
+        MockitoAnnotations.initMocks(this);
+
+        mVirtualDevice = mVirtualDeviceRule.createManagedVirtualDevice();
         VirtualDisplay virtualDisplay =
-                mVirtualDeviceRule.createManagedVirtualDisplay(virtualDevice);
+                mVirtualDeviceRule.createManagedVirtualDisplay(mVirtualDevice,
+                        VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder(),
+                        mVirtualDisplayCallback);
+        mDisplay = virtualDisplay.getDisplay();
 
         DisplayManager displayManager = mContext.getSystemService(DisplayManager.class);
 
@@ -86,7 +101,7 @@ public class VirtualDevicePowerTest {
                 displayManager.getDisplay(Display.DEFAULT_DISPLAY));
         mDefaultDisplayPowerManager = defaultDisplayContext.getSystemService(PowerManager.class);
 
-        Context virtualDisplayContext = mContext.createDisplayContext(virtualDisplay.getDisplay());
+        Context virtualDisplayContext = mContext.createDisplayContext(mDisplay);
         mVirtualDisplayPowerManager = virtualDisplayContext.getSystemService(PowerManager.class);
 
         mInitialDisplayTimeout =
@@ -98,6 +113,10 @@ public class VirtualDevicePowerTest {
         mMinimumScreenOffTimeoutMs = mContext.getResources().getInteger(
                 Resources.getSystem().getIdentifier("config_minimumScreenOffTimeout", "integer",
                         "android"));
+        mVirtualDeviceRule.runWithoutPermissions(() -> {
+            UiDeviceUtils.wakeUpAndUnlock(mContext);
+            return true;
+        });
     }
 
     @After
@@ -112,6 +131,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void proximityOffWakeLockLevelSupported_falseOnVirtualDevice() {
         // Only PROXIMITY_SCREEN_OFF_WAKE_LOCK's availability depends on the display.
         assertThat(mVirtualDisplayPowerManager.isWakeLockLevelSupported(
@@ -120,6 +140,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void isInteractive_screenOffTimeout_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -134,6 +155,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void isInteractive_powerButton_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -147,6 +169,7 @@ public class VirtualDevicePowerTest {
     }
 
     @Test
+    @RequiresFlagsEnabled(Flags.FLAG_DISPLAY_POWER_MANAGER_APIS)
     public void newWakeLock_isPerPowerGroup() {
         assumeScreenOffSupported();
 
@@ -175,6 +198,27 @@ public class VirtualDevicePowerTest {
                 wakeLock.release();
             }
         }
+    }
+
+    @Test
+    @RequiresFlagsEnabled(
+            {Flags.FLAG_DEVICE_AWARE_DISPLAY_POWER, Flags.FLAG_DISPLAY_POWER_MANAGER_APIS})
+    public void testGoToSleepAndWakeUp_turnsOffAndOnVirtualDisplay() {
+        mVirtualDeviceRule.startActivityOnDisplaySync(mDisplay.getDisplayId(), Activity.class);
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+
+        mVirtualDevice.goToSleep();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onPaused();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_OFF);
+        assertThat(mDefaultDisplayPowerManager.isInteractive()).isTrue();
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isFalse();
+
+        mVirtualDevice.wakeUp();
+        verify(mVirtualDisplayCallback, timeout(DISPLAY_TIMEOUT_MS).times(1)).onResumed();
+
+        assertThat(mDisplay.getState()).isEqualTo(Display.STATE_ON);
+        assertThat(mVirtualDisplayPowerManager.isInteractive()).isTrue();
     }
 
     private void assumeScreenOffSupported() {
