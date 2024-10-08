@@ -30,6 +30,7 @@ ACTION_ITS_DO_JCA_CAPTURE = (
 )
 ACTIVITY_WAIT_TIME_SECONDS = 5
 AGREE_BUTTON = 'Agree and continue'
+CANCEL_BUTTON_TXT = 'Cancel'
 CAMERA_FILES_PATHS = ('/sdcard/DCIM/Camera',
                       '/storage/emulated/0/Pictures')
 CAPTURE_BUTTON_RESOURCE_ID = 'CaptureButton'
@@ -199,6 +200,9 @@ def launch_and_take_capture(dut, pkg_name):
     if dut.ui(text=DONE_BUTTON_TXT).wait.exists(
         timeout=WAIT_INTERVAL_FIVE_SECONDS):
       dut.ui(text=DONE_BUTTON_TXT).click.wait()
+    if dut.ui(text=CANCEL_BUTTON_TXT).wait.exists(
+        timeout=WAIT_INTERVAL_FIVE_SECONDS):
+      dut.ui(text=CANCEL_BUTTON_TXT).click.wait()
 
     logging.debug('Taking photo')
     its_device_utils.run_adb_shell_command(device_id, TAKE_PHOTO_CMD)
