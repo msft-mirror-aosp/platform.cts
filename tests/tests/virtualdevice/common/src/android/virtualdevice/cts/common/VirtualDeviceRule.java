@@ -217,10 +217,21 @@ public class VirtualDeviceRule implements TestRule {
     @Nullable
     public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice,
             @NonNull VirtualDisplayConfig.Builder builder) {
+        return createManagedVirtualDisplay(virtualDevice, builder, /* callback= */ null);
+    }
+
+    /**
+     * Creates a virtual display associated with the given device and config that will be
+     * automatically released when the test is torn down.
+     */
+    @Nullable
+    public VirtualDisplay createManagedVirtualDisplay(@NonNull VirtualDevice virtualDevice,
+            @NonNull VirtualDisplayConfig.Builder builder,
+            @Nullable VirtualDisplay.Callback callback) {
         VirtualDisplayConfig config = builder.build();
         final Surface surface = prepareSurface(config.getWidth(), config.getHeight());
         final VirtualDisplay virtualDisplay = virtualDevice.createVirtualDisplay(
-                builder.setSurface(surface).build(), /* executor= */ null, /* callback= */ null);
+                builder.setSurface(surface).build(), Runnable::run, callback);
         if (virtualDisplay != null) {
             assertDisplayExists(virtualDisplay.getDisplay().getDisplayId());
             // There's no need to track managed virtual displays to have them released on tear-down

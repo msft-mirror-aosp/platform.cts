@@ -135,7 +135,8 @@ public class OnDeviceIntelligenceManagerTest {
     public static final int REQUEST_TYPE_GET_FILE_FROM_NON_FILES_DIRECTORY = 1007;
 
     private static final Executor EXECUTOR = InstrumentationRegistry.getContext().getMainExecutor();
-    private static final String MODEL_LOADED_BROADCAST_ACTION = "TEST_MODEL_LOADED";
+    private static final String MODEL_LOADED_BROADCAST_ACTION
+        = "android.service.ondeviceintelligence.MODEL_LOADED";
 
     private Context mContext;
     public OnDeviceIntelligenceManager mOnDeviceIntelligenceManager;
