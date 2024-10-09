@@ -133,7 +133,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testScreenCaptureDisabled_assist_allowedPrimaryUser"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSecondaryLockscreen"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetGetPreferentialNetworkServiceStatus"/>
-    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyGrant"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyPairCertificateLogged"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetKeyguardDisabledSecureCameraLogged"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.MixedManagedProfileOwnerTest#testSetPermissionGrantStateLogged"/>
@@ -191,7 +190,6 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCanRelinquishControlOverDevice"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testCommonCriteriaMode"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testDevicePolicyManagerParentSupport"/>
-    <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testInstallUpdate"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testIsDeviceOrganizationOwnedWithManagedProfile"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testLockScreenInfo"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyManagerTestCases com.android.cts.devicepolicy.OrgOwnedProfileOwnerTest#testNetworkLogging"/>
@@ -275,11 +273,9 @@
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#canInteractAcrossProfiles_noOtherProfile_returnsFalse"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#canInteractAcrossProfiles_permissionIsSet_returnsTrue[android.permission.INTERACT_ACROSS_USERS]"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#canRequestInteractAcrossProfiles_permissionNotRequested_returnsFalse"/>
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#canRequestInteractAcrossProfiles_profileOwner_returnsFalse"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#getProfileSwitchingLabelIconDrawable_targetIsInvalid_throwsSecurityException[INITIAL_USER_to_INITIAL_USER]"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#getProfileSwitchingLabel_targetIsValid_notNull[INITIAL_USER_to_WORK_PROFILE]"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#getTargetUserProfiles_containsOtherUser[INITIAL_USER_to_WORK_PROFILE]"/>
-    <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#startActivity_byComponent_withPermission_startsActivity[android.permission.INTERACT_ACROSS_USERS]"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#startActivity_byComponent_withPermission_startsActivity[android.permission.START_CROSS_PROFILE_ACTIVITIES]"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#startActivity_byIntent_differentPackage_throwsException"/>
     <option name="compatibility:include-filter" value="CtsDevicePolicyTestCases android.devicepolicy.cts.CrossProfileAppsTest#startActivity_byIntent_noComponent_throwsException"/>
