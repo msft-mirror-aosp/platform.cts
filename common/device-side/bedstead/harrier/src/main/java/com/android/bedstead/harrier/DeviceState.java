@@ -55,7 +55,6 @@ import com.android.bedstead.harrier.annotations.UsesTestRuleExecutor;
 import com.android.bedstead.harrier.annotations.meta.ParameterizedAnnotation;
 import com.android.bedstead.harrier.annotations.meta.RequiresBedsteadJUnit4;
 import com.android.bedstead.harrier.components.AccountsComponent;
-import com.android.bedstead.harrier.components.TestAppsComponent;
 import com.android.bedstead.multiuser.UsersComponent;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.accounts.AccountReference;
@@ -76,6 +75,7 @@ import com.android.bedstead.remotedpc.RemoteDpc;
 import com.android.bedstead.remotedpc.RemotePolicyManager;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.bedstead.testapp.TestAppProvider;
+import com.android.bedstead.testapps.TestAppsComponent;
 import com.android.eventlib.EventLogs;
 
 import junit.framework.AssertionFailedError;

@@ -149,13 +149,10 @@ public class ContactsContract_DefaultAccountTest {
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)
     @Test
     public void testDefaultAccount_sim() {
-        // Currently sim account cannot be set as the default account. The restriction
-        // is going to be removed in future.
         SystemUtil.runWithShellPermissionIdentity(() -> {
-            assertThrows(IllegalArgumentException.class,
-                    () -> setDefaultAccountForNewContacts(DefaultAccountAndState.ofSim(SIM_ACCT)));
+            setDefaultAccountForNewContacts(DefaultAccountAndState.ofSim(SIM_ACCT));
         });
-        assertEquals(DefaultAccountAndState.ofNotSet(), getDefaultAccountForNewContacts());
+        assertEquals(DefaultAccountAndState.ofSim(SIM_ACCT), getDefaultAccountForNewContacts());
     }
 
     @RequiresFlagsEnabled(FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED)

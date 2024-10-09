@@ -576,6 +576,31 @@ public class MediaCasTest {
     }
 
     /**
+     * Test updateResourcePriority API.
+     */
+    @Test
+    public void testUpdateResourcePriority() throws Exception {
+        MediaCas mediaCas = null;
+        if (!MediaUtils.check(mIsAtLeastS, "test needs Android 12")) return;
+
+        try {
+            mediaCas =
+                    new MediaCas(
+                            InstrumentationRegistry.getContext(),
+                            sClearKeySystemId,
+                            null,
+                            android.media.tv.TvInputService.PRIORITY_HINT_USE_CASE_TYPE_LIVE);
+
+            assertTrue(mediaCas.updateResourcePriority(100, 20));
+
+        } finally {
+            if (mediaCas != null) {
+                mediaCas.close();
+            }
+        }
+    }
+
+    /**
      * Test Resource Lost Event.
      */
     @Test
