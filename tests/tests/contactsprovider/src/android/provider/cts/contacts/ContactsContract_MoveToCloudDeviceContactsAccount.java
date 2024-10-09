@@ -20,6 +20,7 @@ import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
 import static android.provider.Flags.newDefaultAccountApiEnabled;
 
 import static com.android.providers.contacts.flags.Flags.FLAG_CP2_ACCOUNT_MOVE_FLAG;
+import static com.android.providers.contacts.flags.Flags.FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -204,6 +205,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableLocalContactsWithLocalContacts() throws Exception {
         // create contact with null/local account
         insertRawContact(null);
@@ -226,6 +228,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveLocalContactsToCloudDefaultAccount() throws Exception {
         // create contact with null/local account
         long rawContactId1 = insertRawContact(null);
@@ -272,6 +275,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testGetNumberOfMovableSimContactsWithSimContacts() throws Exception {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
@@ -299,6 +303,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
 
     @Test
     @RequiresFlagsEnabled({FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED, FLAG_CP2_ACCOUNT_MOVE_FLAG})
+    @RequiresFlagsDisabled({FLAG_DISABLE_MOVE_TO_INELIGIBLE_DEFAULT_ACCOUNT_FLAG})
     public void testMoveSimContactsToCloudDefaultAccount() throws Exception {
         // create contact with null/local account
         long rawContactId = insertRawContact(
