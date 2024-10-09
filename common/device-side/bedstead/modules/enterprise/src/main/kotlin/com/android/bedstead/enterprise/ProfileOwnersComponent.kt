@@ -24,7 +24,6 @@ import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsureTestAppInstalled
 import com.android.bedstead.harrier.annotations.FailureMode
 import com.android.bedstead.harrier.components.AccountsComponent
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UserRestrictionsComponent
 import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis.devicePolicy
@@ -37,6 +36,7 @@ import com.android.bedstead.remotedpc.RemoteDpcUsingParentInstance
 import com.android.bedstead.testapp.TestApp
 import com.android.bedstead.testapp.TestAppProvider
 import com.android.bedstead.testapp.TestAppQueryBuilder
+import com.android.bedstead.testapps.TestAppsComponent
 
 /**
  * Manages profile owners for device state tests.

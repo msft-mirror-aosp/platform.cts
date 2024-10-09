@@ -28,7 +28,6 @@ import com.android.bedstead.harrier.AnnotationExecutorUtil.failOrSkip
 import com.android.bedstead.harrier.annotations.AnnotationPriorityRunPrecedence.MIDDLE
 import com.android.bedstead.harrier.annotations.EnsureNoPackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsurePackageNotInstalled
-import com.android.bedstead.harrier.annotations.EnsurePackageRespondsToIntent
 import com.android.bedstead.harrier.annotations.EnsureScreenIsOn
 import com.android.bedstead.harrier.annotations.EnsureUnlocked
 import com.android.bedstead.harrier.annotations.FailureMode
@@ -53,7 +52,6 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.harrier.components.TestAppsComponent
 import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
@@ -64,9 +62,6 @@ import com.android.bedstead.nene.TestApis.roles
 import com.android.bedstead.nene.TestApis.services
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.nene.utils.Tags
-import com.android.bedstead.testapp.NotFoundException
-import com.android.queryable.queries.ActivityQuery
-import com.android.queryable.queries.IntentFilterQuery
 import org.hamcrest.CoreMatchers
 import org.junit.Assume
 import org.junit.Assume.assumeTrue
@@ -260,41 +255,6 @@ fun RequireTelephonySupport.logic() {
         packageManager.hasSystemFeature(PackageManager.FEATURE_TELEPHONY),
         failureMode
     )
-}
-
-fun EnsurePackageRespondsToIntent.logic(
-    testAppsComponent: TestAppsComponent,
-    userTypeResolver: UserTypeResolver
-) {
-    val userReference = userTypeResolver.toUser(user)
-    val packageResponded = packages().queryIntentActivities(
-        userReference,
-        Intent(intent.action),
-        /* flags= */ 0
-    ).size > 0
-
-    if (!packageResponded) {
-        try {
-            testAppsComponent.ensureTestAppInstalled(
-                testApp = testAppsComponent.testAppProvider.query().whereActivities().contains(
-                    ActivityQuery.activity().where().intentFilters().contains(
-                        IntentFilterQuery
-                            .intentFilter()
-                            .where()
-                            .actions()
-                            .contains(intent.action)
-                    )
-                ).get(),
-                user = userReference
-            )
-        } catch (ignored: NotFoundException) {
-            failOrSkip(
-                "Could not found the testApp which contains an activity matching the " +
-                        "intent action '${intent.action}'.",
-                failureMode
-            )
-        }
-    }
 }
 
 fun EnsureNoPackageRespondsToIntent.logic(userTypeResolver: UserTypeResolver) {
