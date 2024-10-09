@@ -17,6 +17,7 @@
 package android.provider.cts.contacts;
 
 import static android.provider.Flags.FLAG_NEW_DEFAULT_ACCOUNT_API_ENABLED;
+import static android.provider.Flags.newDefaultAccountApiEnabled;
 
 import static com.android.providers.contacts.flags.Flags.FLAG_CP2_ACCOUNT_MOVE_FLAG;
 
@@ -99,6 +100,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         });
 
         mCreatedContacts = new HashSet<>();
+        resetDefaultAccount();
     }
 
     @After
@@ -112,6 +114,18 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
             mAccountManager.removeAccount(OTHER_ACCOUNT, null , null, null);
             SimContacts.removeSimAccounts(mResolver, SIM_SLOT_0);
             SimContacts.removeSimAccounts(mResolver, SIM_SLOT_1);
+        });
+
+        resetDefaultAccount();
+    }
+
+    private void resetDefaultAccount() {
+        if (!newDefaultAccountApiEnabled()) {
+            // if newDefaultAccountApiEnabled isn't enabled, entire DefaultAccountAndState API is
+            // disabled
+            return;
+        }
+        SystemUtil.runWithShellPermissionIdentity(() -> {
             setDefaultAccountForNewContacts(DefaultAccount.DefaultAccountAndState.ofNotSet());
         });
     }
@@ -205,9 +219,7 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
     public void testGetNumberOfMovableLocalContactsWithLocalContacts_flagsOff() throws Exception {
         // create contact with null/local account
         insertRawContact(null);
-        // set a cloud default account
-        setDefaultAccountForNewContacts(
-                DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
+
         int count = getNumberOfMovableLocalContacts();
         assertEquals(0, count);
     }
@@ -246,9 +258,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         // create contact with OEM configurable local account
         long rawContactId2 = insertRawContact(getOemCustomLocalAccount());
 
-        // set a cloud default account
-        setDefaultAccountForNewContacts(
-                DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
         int count = getNumberOfMovableLocalContacts();
         assertEquals(0, count);
 
@@ -284,9 +293,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         insertRawContact(
                 new Account(SIM_ACCT_NAME_2, SIM_ACCT_TYPE_2));
 
-        setDefaultAccountForNewContacts(
-                DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
-
         int count = getNumberOfMovableSimContacts();
         assertEquals(0, count);
     }
@@ -319,9 +325,6 @@ public class ContactsContract_MoveToCloudDeviceContactsAccount {
         long rawContactId = insertRawContact(
                 new Account(SIM_ACCT_NAME_1, SIM_ACCT_TYPE_1));
 
-        // set a cloud default account
-        setDefaultAccountForNewContacts(
-                DefaultAccount.DefaultAccountAndState.ofCloud(CLOUD_ACCOUNT));
         int count = getNumberOfMovableSimContacts();
         assertEquals(0, count);
 
