@@ -95,6 +95,9 @@ public class CtsMediaShortFormFullModePlaybackTest extends CujTestBase {
     if (mCujTestParam.playerListener().isCallNotificationTest()) {
       Assume.assumeTrue("Skipping " + mTestType + " as device doesn't support call feature",
           deviceSupportPhoneCall(mActivity));
+      // Skip call notification tests for visible background users.
+      // Visible background users do not support call notifications.
+      Assume.assumeFalse(isVisibleBackgroundNonProfileUser(mActivity));
     }
     play(mCujTestParam.mediaUrls(), mCujTestParam.timeoutMilliSeconds());
   }
