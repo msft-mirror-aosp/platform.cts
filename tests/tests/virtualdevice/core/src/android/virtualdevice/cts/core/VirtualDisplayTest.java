@@ -16,8 +16,6 @@
 
 package android.virtualdevice.cts.core;
 
-import static android.Manifest.permission.ADD_ALWAYS_UNLOCKED_DISPLAY;
-
 import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
@@ -65,8 +63,7 @@ public class VirtualDisplayTest {
     private static final int STATUS_BAR_HEIGHT = 80;
 
     @Rule
-    public VirtualDeviceRule mRule = VirtualDeviceRule.withAdditionalPermissions(
-            ADD_ALWAYS_UNLOCKED_DISPLAY);
+    public VirtualDeviceRule mRule = VirtualDeviceRule.createDefault();
 
     private VirtualDeviceManager mVirtualDeviceManager;
     private VirtualDevice mVirtualDevice;

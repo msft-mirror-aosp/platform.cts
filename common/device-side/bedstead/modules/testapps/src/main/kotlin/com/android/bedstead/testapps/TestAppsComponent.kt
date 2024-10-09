@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.harrier.components
+package com.android.bedstead.testapps
 
 import com.android.bedstead.enterprise.EnterpriseComponent
 import com.android.bedstead.enterprise.annotations.EnsureHasDelegate
