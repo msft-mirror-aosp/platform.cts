@@ -67,10 +67,10 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager.LayoutParams;
+import android.virtualdevice.cts.common.VirtualDeviceRule;
 
 import androidx.annotation.NonNull;
 
-import com.android.compatibility.common.util.SystemUtil;
 import com.android.cts.input.DebugInputRule;
 
 import org.junit.Rule;
@@ -91,6 +91,9 @@ import javax.annotation.concurrent.GuardedBy;
 public class WindowFocusTests extends WindowManagerTestBase {
 
     @Rule public DebugInputRule mDebugInputRule = new DebugInputRule();
+
+    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
+    @Rule public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.createDefault();
 
     private static void sendKey(int action, int keyCode, int displayId) {
         final long downTime = SystemClock.uptimeMillis();
@@ -740,12 +743,10 @@ public class WindowFocusTests extends WindowManagerTestBase {
         VirtualDisplayWithOwnFocusSession(Context context, int additionalFlags) {
             mReader = ImageReader.newInstance(WIDTH, HEIGHT, PixelFormat.RGBA_8888,
                     /* maxImages= */ 2);
-            SystemUtil.runWithShellPermissionIdentity(() -> {
-                mVirtualDisplay = context.getSystemService(DisplayManager.class)
-                        .createVirtualDisplay(WindowFocusTests.class.getSimpleName(), WIDTH, HEIGHT,
-                                DENSITY, mReader.getSurface(),
-                                getVirtualDisplayFlags() | additionalFlags);
-            });
+            mVirtualDisplay = context.getSystemService(DisplayManager.class)
+                    .createVirtualDisplay(WindowFocusTests.class.getSimpleName(), WIDTH, HEIGHT,
+                            DENSITY, mReader.getSurface(),
+                            getVirtualDisplayFlags() | additionalFlags);
             mDisplay = mVirtualDisplay.getDisplay();
         }
 

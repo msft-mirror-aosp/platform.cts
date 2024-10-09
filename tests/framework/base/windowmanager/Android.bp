@@ -69,6 +69,7 @@ java_defaults {
         "CtsSurfaceValidatorLib",
         "CtsMockInputMethodLib",
         "CtsAccessibilityCommon",
+        "CtsVirtualDeviceCommonLib",
         "metrics-helper-lib",
         "truth",
         "cts-wm-overlayapp-base",

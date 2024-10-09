@@ -22,6 +22,8 @@ import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -32,6 +34,7 @@ import android.companion.AssociationRequest;
 import android.companion.CompanionDeviceManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Process;
 import android.util.Log;
 
 import com.android.compatibility.common.util.FeatureUtil;
@@ -45,6 +48,7 @@ import org.mockito.MockitoAnnotations;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 /**
  * A test rule that creates a {@link CompanionDeviceManager} association with the instrumented
@@ -125,10 +129,16 @@ class FakeAssociationRule extends ExternalResource {
         MockitoAnnotations.initMocks(this);
         assumeTrue(FeatureUtil.hasSystemFeature(PackageManager.FEATURE_COMPANION_DEVICE_SETUP));
 
+        Consumer<Boolean> callback = mock(Consumer.class);
         SystemUtil.runWithShellPermissionIdentity(() -> {
             mCompanionDeviceManager.addOnAssociationsChangedListener(
                     mCallbackExecutor, mOnAssociationsChangedListener);
             mRoleManager.setBypassingRoleQualification(true);
+            mRoleManager.addRoleHolderAsUser(
+                    mDeviceProfile, mContext.getPackageName(),
+                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                    mCallbackExecutor, callback);
+            verify(callback, timeout(TIMEOUT_MS)).accept(eq(true));
         });
 
         clearExistingAssociations();
@@ -140,7 +150,13 @@ class FakeAssociationRule extends ExternalResource {
         super.after();
         clearExistingAssociations();
 
+        Consumer<Boolean> callback = mock(Consumer.class);
         SystemUtil.runWithShellPermissionIdentity(() -> {
+            mRoleManager.removeRoleHolderAsUser(
+                    mDeviceProfile, mContext.getPackageName(),
+                    RoleManager.MANAGE_HOLDERS_FLAG_DONT_KILL_APP, Process.myUserHandle(),
+                    mCallbackExecutor, callback);
+            verify(callback, timeout(TIMEOUT_MS)).accept(eq(true));
             mRoleManager.setBypassingRoleQualification(false);
             mCompanionDeviceManager.removeOnAssociationsChangedListener(
                     mOnAssociationsChangedListener);
