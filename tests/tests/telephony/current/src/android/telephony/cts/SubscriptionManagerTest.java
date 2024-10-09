@@ -1509,7 +1509,6 @@ public class SubscriptionManagerTest {
     }
 
     @Test
-    @RequiresFlagsEnabled(Flags.FLAG_DATA_ONLY_CELLULAR_SERVICE)
     @ApiTest(apis = {"android.telephony.SubscriptionInfo#getServiceCapabilities"})
     public void testSubscriptionInfo_getServiceCapabilities() throws Exception {
         final List<SubscriptionInfo> allSubInfos =
