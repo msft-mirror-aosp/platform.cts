@@ -32,6 +32,7 @@ android_test {
     libs: [
         "android.test.runner.stubs",
         "android.test.base.stubs",
+        "android.view.flags-aconfig-java",
     ],
 
     static_libs: [
