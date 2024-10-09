@@ -26,6 +26,7 @@ import com.android.bedstead.nene.TestApis.content
 import com.android.bedstead.nene.packages.ComponentReference
 import com.android.bedstead.nene.users.UserReference
 import com.android.bedstead.testapp.TestApp
+import com.android.bedstead.testapps.TestAppsComponent
 
 /**
  * Contains logic specific to content suggestions for Bedstead tests using [DeviceState] rule

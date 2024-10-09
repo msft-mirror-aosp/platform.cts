@@ -45,9 +45,7 @@ import org.junit.runner.RunWith
 @RunWith(JUnitParamsRunner::class)
 class VirtualInputDeviceGenericTest {
     @get:Rule
-    val mRule: VirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
-        Manifest.permission.INJECT_EVENTS
-    )
+    val mRule: VirtualDeviceRule = VirtualDeviceRule.createDefault()
 
     private lateinit var mVirtualDevice: VirtualDeviceManager.VirtualDevice
     private lateinit var mDisplayManager: DisplayManager
@@ -100,9 +98,11 @@ class VirtualInputDeviceGenericTest {
     @Test
     @Throws(Exception::class)
     fun close_multipleCallsSucceed(factory: VirtualInputDeviceFactory<*>) {
-        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
             mVirtualDevice,
-            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         val inputDevice: Closeable =
             factory.create(mVirtualDevice, DEVICE_NAME, display.display).device
@@ -115,9 +115,11 @@ class VirtualInputDeviceGenericTest {
     @Test
     @Throws(Exception::class)
     fun close_removesInputDevice(factory: VirtualInputDeviceFactory<*>) {
-        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
             mVirtualDevice,
-            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         val deviceHolder: VirtualInputDeviceCreator.InputDeviceHolder<*> =
             factory.create(mVirtualDevice, DEVICE_NAME, display.display)
@@ -131,9 +133,11 @@ class VirtualInputDeviceGenericTest {
     @Test
     @Throws(Exception::class)
     fun closeVirtualDevice_removesInputDevice(factory: VirtualInputDeviceFactory<*>) {
-        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
             mVirtualDevice,
-            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         val deviceHolder: VirtualInputDeviceCreator.InputDeviceHolder<*> =
             factory.create(mVirtualDevice, DEVICE_NAME, display.display)
@@ -148,9 +152,11 @@ class VirtualInputDeviceGenericTest {
     fun createVirtualInputDevice_duplicateName_throwsException(
         factory: VirtualInputDeviceFactory<*>
     ) {
-        val display: VirtualDisplay = mRule.createManagedVirtualDisplay(
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
             mVirtualDevice,
-            VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         factory.create(mVirtualDevice, DEVICE_NAME, display.display)
         assertThrows(IllegalArgumentException::class.java) {
@@ -164,10 +170,8 @@ class VirtualInputDeviceGenericTest {
         factory: VirtualInputDeviceFactory<*>
     ) {
         val display: Display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY)
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                factory.create(mVirtualDevice, DEVICE_NAME, display)
-            }
+        assertThrows(SecurityException::class.java) {
+            factory.create(mVirtualDevice, DEVICE_NAME, display)
         }
     }
 
@@ -179,10 +183,8 @@ class VirtualInputDeviceGenericTest {
         val unownedDisplay: VirtualDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
             DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
         )!!
-        mRule.runWithoutPermissions {
-            assertThrows(SecurityException::class.java) {
-                factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.display)
-            }
+        assertThrows(SecurityException::class.java) {
+            factory.create(mVirtualDevice, DEVICE_NAME, unownedDisplay.display)
         }
     }
 
@@ -193,10 +195,16 @@ class VirtualInputDeviceGenericTest {
     ) {
         val display: Display = mDisplayManager.getDisplay(Display.DEFAULT_DISPLAY)
         assertThat(
-            factory.create(
-                mVirtualDevice,
-                DEVICE_NAME,
-                display
+            mRule.runWithTemporaryPermission(
+                {
+                    factory.create(
+                        mVirtualDevice,
+                        DEVICE_NAME,
+                        display
+                    )
+                },
+                Manifest.permission.INJECT_EVENTS,
+                Manifest.permission.CREATE_VIRTUAL_DEVICE
             )
         )
             .isNotNull()
@@ -211,11 +219,17 @@ class VirtualInputDeviceGenericTest {
             DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
         )!!
         assertThat(
-            factory.create(
-                mVirtualDevice,
-                DEVICE_NAME,
-                unownedDisplay.getDisplay()
-           )
+            mRule.runWithTemporaryPermission(
+                {
+                    factory.create(
+                        mVirtualDevice,
+                        DEVICE_NAME,
+                        unownedDisplay.getDisplay()
+                    )
+                },
+                Manifest.permission.INJECT_EVENTS,
+                Manifest.permission.CREATE_VIRTUAL_DEVICE
+            )
         )
             .isNotNull()
     }

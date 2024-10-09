@@ -476,7 +476,7 @@
             android:theme="@style/window_task_animation"
             android:exported="true"/>
 
-        <activity android:name="android.server.wm.input.WindowUntrustedTouchTest$TestActivity"
+        <activity android:name="android.server.wm.input.WindowUntrustedTouchTestBase$TestActivity"
                   android:exported="true"
                   android:configChanges="screenSize|screenLayout|orientation"
                   android:screenOrientation="nosensor" />

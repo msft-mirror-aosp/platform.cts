@@ -26,7 +26,6 @@ import android.view.InputDevice
 import android.view.InputEvent
 import android.view.MotionEvent
 import androidx.test.filters.SmallTest
-import com.android.compatibility.common.util.SystemUtil
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
 import org.junit.Assert.assertThrows
@@ -374,8 +373,7 @@ class VirtualStylusTest : VirtualDeviceTestCase() {
     fun sendTouchEvent_withoutCreateVirtualDevicePermission_throwsException() {
         val x = 50
         val y = 50
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
+        mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {
                 mVirtualStylus.sendMotionEvent(
                     VirtualStylusMotionEvent.Builder()
