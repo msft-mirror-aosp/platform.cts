@@ -31,59 +31,67 @@
             android:id="@+id/car_power_policy_results"/>
         <Button
             android:id="@+id/car_component_power_off_policy_check"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+	    android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_component_power_off_policy_check"/>
         <Button
             android:id="@+id/car_wifi_settings_disable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_wifi_settings_disable"/>
         <Button
             android:id="@+id/car_bluetooth_settings_disable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_bluetooth_settings_disable"/>
         <Button
             android:id="@+id/car_location_settings_disable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_location_settings_disable"/>
         <Button
             android:id="@+id/car_component_power_on_policy_check"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_component_power_on_policy_check"/>
         <Button
             android:id="@+id/car_wifi_settings_enable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_wifi_settings_enable"/>
         <Button
             android:id="@+id/car_bluetooth_settings_enable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_bluetooth_settings_enable"/>
         <Button
             android:id="@+id/car_location_settings_enable"
-            android:layout_height="40dp"
+            android:layout_height="20dp"
             android:layout_width="500dp"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="5dp"
+	    android:textSize="15sp"
             android:text="@string/car_location_settings_enable"/>
     </LinearLayout>
 </com.android.cts.verifier.BoxInsetLayout>

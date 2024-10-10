@@ -137,6 +137,11 @@
             android:exported="true"
             android:turnScreenOn="true"
             android:showWhenLocked="true" />
+
+        <activity android:name=".TextureViewActivity"
+             android:exported="true"
+             android:turnScreenOn="true"
+             android:showWhenLocked="true" />
     </application>
 
     <instrumentation android:name="androidx.test.runner.AndroidJUnitRunner"

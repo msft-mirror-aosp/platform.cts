@@ -32,6 +32,8 @@ import android.platform.test.annotations.RequiresDevice;
 import android.test.AndroidTestCase;
 import android.util.Log;
 
+import com.android.compatibility.common.util.FrameworkSpecificTest;
+
 import androidx.test.filters.SmallTest;
 
 import java.nio.ByteBuffer;
@@ -42,6 +44,7 @@ import java.util.UUID;
  *
  * In particular, check various API edge cases.
  */
+@FrameworkSpecificTest
 @Presubmit
 @SmallTest
 @RequiresDevice
