@@ -39,6 +39,7 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.android.compatibility.common.util.ApiLevelUtil;
+import com.android.compatibility.common.util.ApiTest;
 import com.android.compatibility.common.util.Preconditions;
 
 import org.junit.After;
@@ -297,11 +298,13 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         ex(mCodecs, adaptiveEosFlushSeek);
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void test_adaptiveSkipAhead() {
         ex(mCodecs, adaptiveSkipAhead);
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void test_adaptiveSkipBack() {
         ex(mCodecs, adaptiveSkipBack);
@@ -317,11 +320,13 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         ex(mCodecs, adaptiveSmallReconfigDrc);
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void test_adaptiveDrc() {
         ex(mCodecs, adaptiveDrc);
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void test_AdaptiveDrcEarlyEosTest() {
         String mime = mCodecs.get(0).mediaList[0].getMime();
@@ -330,6 +335,7 @@ public class AdaptivePlaybackTest extends MediaTestBase {
         ex(mCodecs, new AdaptiveDrcEarlyEosTest());
     }
 
+    @ApiTest(apis = {"android.media.MediaCodecInfo.CodecCapabilities#FEATURE_AdaptivePlayback"})
     @Test
     public void test_adaptiveSmallDrc() {
         String mime = mCodecs.get(0).mediaList[0].getMime();
