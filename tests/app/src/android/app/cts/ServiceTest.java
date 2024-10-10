@@ -86,6 +86,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 
 @Presubmit
 public class ServiceTest extends ActivityTestsBase {
@@ -1826,6 +1828,17 @@ public class ServiceTest extends ActivityTestsBase {
         }
     }
 
+    private boolean doWaitWhile(BooleanSupplier condition, long pause, long timeout) {
+        final long endTime = System.currentTimeMillis() + timeout;
+        while (condition.getAsBoolean()) {
+            if (System.currentTimeMillis() > endTime) {
+                return false;
+            }
+            SystemClock.sleep(pause);
+        }
+        return true;
+    }
+
     private void doUpdateServiceGroup(Context context, IsolatedConnectionInfo[] connections,
             int group, int strong) {
         for (IsolatedConnectionInfo ci : connections) {
@@ -2077,6 +2090,32 @@ public class ServiceTest extends ActivityTestsBase {
                     new LruOrderItem(connections[CONN_0_0_S_1], 0),
                     new LruOrderItem(connections[CONN_0_0_W_1], 0),
                     new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_0], 0),
+            });
+
+            // send the app to background
+            assertTrue("Failed to send the app to background", a.moveTaskToBack(true));
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App is still at the top of the LRU list after getting moved to background",
+                    doWaitWhile(() -> new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+
+            // bring the app back to foreground
+            a.startActivity(a.getIntent());
+            // TODO: b/372710412 - Call a test API to force recomputation, instead of doWaitWhile.
+            assertTrue("App hasn't come to the top of LRU list after getting back to foreground",
+                    doWaitWhile(() -> !new LruOrderItem(Process.myUid(), 0)
+                            .isEquivalentTo(getLruProcesses().getLast()), DELAY / 10, DELAY));
+
+            verifyLruOrder(new LruOrderItem[]{
+                    new LruOrderItem(Process.myUid(), 0),
+                    new LruOrderItem(connections[CONN_0_0_S_3], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_1], 0),
+                    new LruOrderItem(connections[CONN_0_0_S_0], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_3], LruOrderItem.FLAG_SKIP_UNKNOWN),
+                    new LruOrderItem(connections[CONN_0_0_W_2], 0),
+                    new LruOrderItem(connections[CONN_0_0_W_1], 0),
                     new LruOrderItem(connections[CONN_0_0_W_0], 0),
             });
 
