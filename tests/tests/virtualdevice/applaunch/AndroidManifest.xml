@@ -24,7 +24,8 @@
 
     <application>
         <uses-library android:name="android.test.runner" />
-        <activity android:name=".AppComponents$EmptyActivity" />
+        <activity android:name=".AppComponents$EmptyActivity"
+            android:allowEmbedded="true" />
         <activity android:name=".AppComponents$SecondActivity" />
         <activity
             android:name=".ActivityBlockingTest$CannotDisplayOnRemoteActivity"

@@ -302,13 +302,31 @@ public class VirtualDisplayTest {
                 .isEqualTo(Display.FLAG_OWN_FOCUS);
     }
 
+    /** Untrusted display goes in the default display group, so it can't be always unlocked. */
     @Test
-    public void createVirtualDisplay_alwaysUnlocked_shouldSpecifyAlwaysUnlockedFlag() {
+    public void createVirtualDisplay_alwaysUnlocked_untrusted_shouldNotSpecifyAlwaysUnlockedFlag() {
         VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
                 new VirtualDeviceParams.Builder()
                         .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
                         .build());
         VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplay(virtualDevice);
+
+        assertThat(virtualDisplay).isNotNull();
+        Display display = virtualDisplay.getDisplay();
+        assertThat(display.isValid()).isTrue();
+        int displayFlags = display.getFlags();
+        assertThat(displayFlags & Display.FLAG_ALWAYS_UNLOCKED).isEqualTo(0);
+    }
+
+    /** A trusted display goes in the virtual device display group, so it can be always unlocked. */
+    @Test
+    public void createVirtualDisplay_alwaysUnlocked_trusted_shouldSpecifyAlwaysUnlockedFlag() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setLockState(VirtualDeviceParams.LOCK_STATE_ALWAYS_UNLOCKED)
+                        .build());
+        VirtualDisplay virtualDisplay = mRule.createManagedVirtualDisplayWithFlags(virtualDevice,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED);
 
         assertThat(virtualDisplay).isNotNull();
         Display display = virtualDisplay.getDisplay();

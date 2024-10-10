@@ -160,6 +160,23 @@ class VirtualInputDeviceGenericTest {
 
     @Parameters(method = "allInputDevices")
     @Test
+    fun createVirtualInputDevice_untrustedDisplay_throwsException(
+        factory: VirtualInputDeviceFactory<*>
+    ) {
+        val display: VirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
+            mVirtualDevice,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+        )!!
+        mRule.runWithoutPermissions {
+            assertThrows(SecurityException::class.java) {
+                factory.create(mVirtualDevice, DEVICE_NAME, display.display)
+            }
+        }
+    }
+
+    @Parameters(method = "allInputDevices")
+    @Test
     fun createVirtualInputDevice_defaultDisplay_throwsException(
         factory: VirtualInputDeviceFactory<*>
     ) {
@@ -178,6 +195,7 @@ class VirtualInputDeviceGenericTest {
     ) {
         val unownedDisplay: VirtualDisplay = mRule.createManagedUnownedVirtualDisplayWithFlags(
             DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
         mRule.runWithoutPermissions {
             assertThrows(SecurityException::class.java) {

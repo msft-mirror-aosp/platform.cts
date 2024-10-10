@@ -32,6 +32,7 @@ import static androidx.test.core.app.ApplicationProvider.getApplicationContext;
 
 import static com.google.common.truth.Truth.assertThat;
 
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -100,6 +101,26 @@ public class StreamedAppClipboardTest {
         for (int i = 0; i < mDeviceEnvironments.size(); ++i) {
             mDeviceEnvironments.get(i).close();
         }
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_CROSS_DEVICE_CLIPBOARD})
+    @Test
+    public void createUntrustedDisplay_customClipboardPolicy_disallowed() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice(
+                new VirtualDeviceParams.Builder()
+                        .setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM)
+                        .build());
+        assertThrows(SecurityException.class,
+                () -> mRule.createManagedVirtualDisplay(virtualDevice));
+    }
+
+    @RequiresFlagsEnabled({Flags.FLAG_CROSS_DEVICE_CLIPBOARD, Flags.FLAG_DYNAMIC_POLICY})
+    @Test
+    public void setCustomClipboardPolicy_withUntrustedDisplay_disallowed() {
+        VirtualDevice virtualDevice = mRule.createManagedVirtualDevice();
+        mRule.createManagedVirtualDisplay(virtualDevice);
+        assertThrows(SecurityException.class,
+                () -> virtualDevice.setDevicePolicy(POLICY_TYPE_CLIPBOARD, DEVICE_POLICY_CUSTOM));
     }
 
     /** The virtual device owner has access to its device's clipboard. */
