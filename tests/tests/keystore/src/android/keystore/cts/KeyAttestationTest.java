@@ -252,25 +252,9 @@ public class KeyAttestationTest {
                                         purposes[purposeIndex], devicePropertiesAttestation,
                                         isStrongBox);
                             } catch (Throwable e) {
-                                boolean isIdAttestationFailure =
-                                        (e.getCause() instanceof KeyStoreException)
-                                        && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
-                                        == ((KeyStoreException) e.getCause()).getNumericErrorCode();
-                                if (devicePropertiesAttestation && isIdAttestationFailure) {
-                                    if (getContext().getPackageManager().hasSystemFeature(
-                                            PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
-                                        throw new Exception("Unexpected failure while generating"
-                                                + " key.\nIn case of AOSP/GSI builds, system "
-                                                + "provided properties could be different from "
-                                                + "provisioned properties in KeyMaster/KeyMint. "
-                                                + "In such cases, make sure attestation specific "
-                                                + "properties (Build.*_FOR_ATTESTATION) are "
-                                                + "configured correctly.", e);
-                                    } else {
-                                        Log.i(TAG, "key attestation with device IDs not supported;"
-                                                + " test skipped");
-                                        continue;
-                                    }
+                                if (devicePropertiesAttestation
+                                        && isIgnorableIdAttestationFailure(e)) {
+                                    continue;
                                 }
                                 throw new Exception("Failed on curve " + curveIndex +
                                         " challenge " + challengeIndex + " purpose " +
@@ -971,22 +955,8 @@ public class KeyAttestationTest {
                 testRsaAttestation(challenge, false /* includeValidityDates */, keySize, purpose,
                         paddings, devicePropertiesAttestation, isStrongBox);
             } catch (Throwable e) {
-                boolean isIdAttestationFailure =
-                        (e.getCause() instanceof KeyStoreException)
-                                && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
-                                == ((KeyStoreException) e.getCause()).getNumericErrorCode();
-                if (devicePropertiesAttestation && isIdAttestationFailure) {
-                    if (getContext().getPackageManager().hasSystemFeature(
-                            PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
-                        throw new Exception("Unexpected failure while generating key."
-                            + "\nIn case of AOSP/GSI builds, system provided properties could be"
-                            + " different from provisioned properties in KeyMaster/KeyMint. In"
-                            + " such cases, make sure attestation specific properties"
-                            + " (Build.*_FOR_ATTESTATION) are configured correctly.", e);
-                    } else {
-                        Log.i(TAG, "key attestation with device IDs not supported; test skipped");
-                        continue;
-                    }
+                if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
+                    continue;
                 }
                 throw new Exception("Failed on key size " + keySize + " challenge [" +
                         new String(challenge) + "], purposes " +
@@ -1104,24 +1074,9 @@ public class KeyAttestationTest {
         try {
             generateKeyPair(KEY_ALGORITHM_EC, builder.build());
         } catch (Throwable e) {
-            boolean isIdAttestationFailure =
-                    (e.getCause() instanceof KeyStoreException)
-                            && KeyStoreException.ERROR_ID_ATTESTATION_FAILURE
-                            == ((KeyStoreException) e.getCause()).getNumericErrorCode();
-            if (devicePropertiesAttestation && isIdAttestationFailure) {
-                if (getContext().getPackageManager().hasSystemFeature(
-                        PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
-                    throw new Exception("Unexpected failure while generating key."
-                        + "\nIn case of AOSP/GSI builds, system provided properties could be"
-                        + " different from provisioned properties in KeyMaster/KeyMint. In"
-                        + " such cases, make sure attestation specific properties"
-                        + " (Build.*_FOR_ATTESTATION) are configured correctly.", e);
-                } else {
-                    Log.i(TAG, "key attestation with device IDs not supported; test skipped");
-                    return;
-                }
+            if (devicePropertiesAttestation && isIgnorableIdAttestationFailure(e)) {
+                return;
             }
-
             throw new Exception("Failed on curve " + curve + " challenge ["
                     + new String(challenge) + "], purposes "
                     + buildPurposeSet(purpose) + " and devicePropertiesAttestation "
@@ -2010,5 +1965,32 @@ public class KeyAttestationTest {
                 throw e;
             }
         }
+    }
+
+    // Indicate whether the provided exception indicates an ID attestation failure that
+    // can be ignored (because the device doesn't support ID attestation).  This method
+    // will throw a new exception if the error is an ID attestation failure that can't
+    // be ignored.
+    private boolean isIgnorableIdAttestationFailure(Throwable e) throws Exception {
+        if (!(e.getCause() instanceof KeyStoreException)) {
+            return false;
+        }
+        if (((KeyStoreException) e.getCause()).getNumericErrorCode()
+                != KeyStoreException.ERROR_ID_ATTESTATION_FAILURE) {
+            return false;
+        }
+        if (!getContext().getPackageManager().hasSystemFeature(
+                    PackageManager.FEATURE_DEVICE_ID_ATTESTATION)) {
+            Log.i(TAG, "key attestation with device IDs not supported; test skipped");
+            return true;
+        }
+        throw new Exception("Unexpected failure while generating"
+                        + " key.\nIn case of AOSP/GSI builds, system "
+                        + "provided properties could be different from "
+                        + "provisioned properties in KeyMaster/KeyMint. "
+                        + "In such cases, make sure attestation specific "
+                        + "properties (Build.*_FOR_ATTESTATION) are "
+                        + "configured correctly.",
+                e);
     }
 }
