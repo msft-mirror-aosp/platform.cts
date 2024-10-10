@@ -50,7 +50,7 @@ _RADIUS_RTOL_MIN_FD = 0.15
 DEFAULT_FOV_RATIO = 1  # ratio of sub camera's fov over logical camera's fov
 JPEG_STR = 'jpg'
 OFFSET_RTOL = 0.15
-OFFSET_RTOL_SMOOTH_ZOOM = 0.2
+OFFSET_RTOL_SMOOTH_ZOOM = 0.5  # generous RTOL paired with other offset checks
 PREFERRED_BASE_ZOOM_RATIO = 1  # Preferred base image for zoom data verification
 PREFERRED_BASE_ZOOM_RATIO_RTOL = 0.1
 PRV_Z_RTOL = 0.02  # 2% variation of zoom ratio between request and result
@@ -476,6 +476,7 @@ def verify_zoom_data(
 
   side_success = True
   offset_success = True
+  used_smooth_offset = False
 
   # initialize relative size w/ zoom[0] for diff zoom ratio checks
   side_0 = opencv_processing_utils.get_aruco_marker_side_length(
@@ -575,7 +576,8 @@ def verify_zoom_data(
       if offsets_while_transitioning:
         logging.debug('Offsets while transitioning: %s',
                       offsets_while_transitioning)
-        if not _verify_offset_monotonicity(offsets_while_transitioning):
+        if used_smooth_offset and not _verify_offset_monotonicity(
+            offsets_while_transitioning):
           logging.error('Offsets %s are not monotonic',
                         offsets_while_transitioning)
           offset_success = False
@@ -588,14 +590,33 @@ def verify_zoom_data(
       rel_tol = data.offset_tol
       if not math.isclose(initial_offset, offset_hypot_rel,
                           rel_tol=rel_tol, abs_tol=_OFFSET_ATOL):
-        offset_success = False
-        e_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
+        w_msg = ('Original offset check failed. '
+                 f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {initial_offset:.4f}, '
                  f'offset rel: {offset_hypot_rel:.4f}, '
                  f'Zoom: {z_ratio:.1f}, '
                  f'RTOL: {rel_tol}, ATOL: {_OFFSET_ATOL}')
-        logging.error(e_msg)
-      # TODO: b/346867328 - create alternative offset check
+        logging.warning(w_msg)
+        used_smooth_offset = True
+        if data.physical_id not in id_to_next_offset:
+          offset_success = False
+          logging.error('No physical camera is available to explain '
+                        'offset changes!')
+        else:
+          next_initial_offset = id_to_next_offset[data.physical_id]
+          if not math.isclose(next_initial_offset, data.aruco_offset,
+                              rel_tol=OFFSET_RTOL_SMOOTH_ZOOM,
+                              abs_tol=_OFFSET_ATOL):
+            offset_success = False
+            e_msg = ('Current offset did not match upcoming physical camera! '
+                     f'{i} zoom: {data.result_zoom:.2f}, '
+                     f'next initial offset: {next_initial_offset:.1f}, '
+                     f'current offset: {data.aruco_offset:.1f}, '
+                     f'RTOL: {OFFSET_RTOL_SMOOTH_ZOOM}, ATOL: {_OFFSET_ATOL}')
+            logging.error(e_msg)
+          else:
+            logging.debug('Successfully matched current offset with upcoming '
+                          'physical camera offset')
       if offset_success:
         d_msg = (f'{i} zoom: {data.result_zoom:.2f}, '
                  f'offset init: {initial_offset:.1f}, '

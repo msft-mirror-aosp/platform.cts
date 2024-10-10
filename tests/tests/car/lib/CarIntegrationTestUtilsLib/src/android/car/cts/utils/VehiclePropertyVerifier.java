@@ -741,10 +741,9 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
                     mCarPropertyManager.getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || (AREA_ID_CONFIG_ACCESS_FLAG
-                    ? adasEnabledCarPropertyConfig.getAreaIdConfig(GLOBAL_AREA_ID).getAccess()
-                    : adasEnabledCarPropertyConfig.getAccess())
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
+                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
                 Log.w(TAG, "Cannot enable " + VehiclePropertyIds.toString(adasEnabledPropertyId)
                         + " for testing " + VehiclePropertyIds.toString(mPropertyId)
                         + " because property is either not implemented or READ only."
@@ -781,10 +780,9 @@ public class VehiclePropertyVerifier<T> {
             CarPropertyConfig<Boolean> adasEnabledCarPropertyConfig = (CarPropertyConfig<Boolean>)
                     mCarPropertyManager.getCarPropertyConfig(adasEnabledPropertyId);
 
-            if (adasEnabledCarPropertyConfig == null || (AREA_ID_CONFIG_ACCESS_FLAG
-                    ? adasEnabledCarPropertyConfig.getAreaIdConfig(GLOBAL_AREA_ID).getAccess()
-                    : adasEnabledCarPropertyConfig.getAccess())
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+            if (adasEnabledCarPropertyConfig == null || getAreaIdAccessOrElseGlobalAccess(
+                    adasEnabledCarPropertyConfig, GLOBAL_AREA_ID)
+                            == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
                 return;
             }
 
@@ -848,12 +846,11 @@ public class VehiclePropertyVerifier<T> {
         SparseArray<U> areaIdToInitialValue = new SparseArray<U>();
         int propertyId = carPropertyConfig.getPropertyId();
         String propertyName = VehiclePropertyIds.toString(propertyId);
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessNotMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                 continue;
             }
-            int areaId = areaIdConfig.getAreaId();
             CarPropertyValue<U> carPropertyValue = null;
             try {
                 carPropertyValue = carPropertyManager.getProperty(propertyId, areaId);
@@ -1022,10 +1019,8 @@ public class VehiclePropertyVerifier<T> {
                 }
             }  else {
                 // If the configArray is not specified, then use min/max values.
-                Float minValueFloat =
-                        (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMinValue();
-                Float maxValueFloat =
-                        (Float) getCarPropertyConfig().getAreaIdConfig(areaId).getMaxValue();
+                Float minValueFloat = (Float) getCarPropertyConfig().getMinValue(areaId);
+                Float maxValueFloat = (Float) getCarPropertyConfig().getMaxValue(areaId);
                 possibleValuesBuilder.add(minValueFloat);
                 possibleValuesBuilder.add(maxValueFloat);
             }
@@ -1083,10 +1078,9 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyBooleanPropertySetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            int areaId = areaIdConfig.getAreaId();
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
                 verifySetPropertyFails(areaId);
                 continue;
             }
@@ -1099,10 +1093,9 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifyIntegerPropertySetter() {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            int areaId = areaIdConfig.getAreaId();
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
                 verifySetPropertyFails(areaId);
                 continue;
             }
@@ -1112,8 +1105,8 @@ public class VehiclePropertyVerifier<T> {
         }
         if (!mAllPossibleEnumValues.isEmpty() && isAtLeastU()) {
             for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-                if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                if (doesAreaIdAccessMatch(carPropertyConfig, areaIdConfig.getAreaId(),
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
                     continue;
                 }
                 for (T valueToSet : (List<T>) areaIdConfig.getSupportedEnumValues()) {
@@ -1153,12 +1146,11 @@ public class VehiclePropertyVerifier<T> {
 
     private void verifySetProperty(int areaId, T valueToSet) {
         CarPropertyConfig<T> carPropertyConfig = getCarPropertyConfig();
-        if (AREA_ID_CONFIG_ACCESS_FLAG && carPropertyConfig.getAreaIdConfig(areaId).getAccess()
-                == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+        if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
             return;
         }
-        if ((AREA_ID_CONFIG_ACCESS_FLAG ? carPropertyConfig.getAreaIdConfig(areaId).getAccess()
-                : carPropertyConfig.getAccess())
+        if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                 == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
             Log.w(TAG, "Property: " + mPropertyName + " will be altered during the test and it is"
                     + " not possible to restore.");
@@ -1244,12 +1236,11 @@ public class VehiclePropertyVerifier<T> {
                 != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
             return;
         }
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    != CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessNotMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE)) {
                 continue;
             }
-            int areaId = areaIdConfig.getAreaId();
             CarPropertyValue<T> currentValue = null;
             try {
                 // getProperty may/may not throw exception when the property is not available.
@@ -1299,13 +1290,12 @@ public class VehiclePropertyVerifier<T> {
             return;
         }
 
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 continue;
             }
-            Integer adasState = mCarPropertyManager.getIntProperty(mPropertyId,
-                    areaIdConfig.getAreaId());
+            Integer adasState = mCarPropertyManager.getIntProperty(mPropertyId, areaId);
             assertWithMessage(
                             "When ADAS feature is disabled, "
                                 + VehiclePropertyIds.toString(mPropertyId)
@@ -1688,10 +1678,9 @@ public class VehiclePropertyVerifier<T> {
             verifyGetPropertyFails(carPropertyConfig.getAreaIds()[0]);
             return;
         }
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
-            int areaId = areaIdConfig.getAreaId();
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
+            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 verifyGetPropertyFails(areaId);
                 continue;
             }
@@ -1978,12 +1967,11 @@ public class VehiclePropertyVerifier<T> {
                 .isNull();
 
         int access = carPropertyConfig.getAccess();
-        for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
+        for (int areaId : carPropertyConfig.getAreaIds()) {
             if (AREA_ID_CONFIG_ACCESS_FLAG) {
-                access = areaIdConfig.getAccess();
+                access = carPropertyConfig.getAreaIdConfig(areaId).getAccess();
             }
 
-            int areaId = areaIdConfig.getAreaId();
             if (access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ
                     || access == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ_WRITE) {
                 assertGetPropertyThrowsException(
@@ -2080,6 +2068,30 @@ public class VehiclePropertyVerifier<T> {
                             + hvacTemperatureSetConfigArray)
                 .that(numIncrementsFahrenheit)
                 .isEqualTo(numIncrementsCelsius);
+    }
+
+    private static Optional<Integer> getAreaIdAccess(CarPropertyConfig<?> carPropertyConfig,
+            int areaId) {
+        return AREA_ID_CONFIG_ACCESS_FLAG
+                ? Optional.of(carPropertyConfig.getAreaIdConfig(areaId).getAccess())
+                : Optional.empty();
+    }
+
+    private static Integer getAreaIdAccessOrElseGlobalAccess(CarPropertyConfig<?> carPropertyConfig,
+            int areaId) {
+        return getAreaIdAccess(carPropertyConfig, areaId).orElse(carPropertyConfig.getAccess());
+    }
+
+    private static boolean doesAreaIdAccessMatch(
+            CarPropertyConfig<?> carPropertyConfig, int areaId, int expectedAccess) {
+        return getAreaIdAccess(carPropertyConfig, areaId)
+                .filter(areaIdAccess -> areaIdAccess == expectedAccess).isPresent();
+    }
+
+    private static boolean doesAreaIdAccessNotMatch(
+            CarPropertyConfig<?> carPropertyConfig, int areaId, int access) {
+        return getAreaIdAccess(carPropertyConfig, areaId)
+                .filter(areaIdAccess -> areaIdAccess != access).isPresent();
     }
 
     /**
@@ -2698,8 +2710,8 @@ public class VehiclePropertyVerifier<T> {
         SparseIntArray requestIdToAreaIdMap = new SparseIntArray();
         for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
             int areaId = areaIdConfig.getAreaId();
-            if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                    == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
+            if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                    CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE)) {
                 verifyGetPropertiesAsyncFails(areaId);
                 continue;
             }
@@ -2808,8 +2820,8 @@ public class VehiclePropertyVerifier<T> {
             List<SetPropertyRequest<?>> setPropertyRequests = new ArrayList<>();
             for (AreaIdConfig<?> areaIdConfig : carPropertyConfig.getAreaIdConfigs()) {
                 int areaId = areaIdConfig.getAreaId();
-                if (AREA_ID_CONFIG_ACCESS_FLAG && areaIdConfig.getAccess()
-                        == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ) {
+                if (doesAreaIdAccessMatch(carPropertyConfig, areaId,
+                        CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_READ)) {
                     verifySetPropertiesAsyncFails(areaId);
                     continue;
                 }
@@ -2822,8 +2834,7 @@ public class VehiclePropertyVerifier<T> {
                 SetPropertyRequest setPropertyRequest =
                         mCarPropertyManager.generateSetPropertyRequest(mPropertyId, areaId,
                                 possibleValues.get(index));
-                if ((AREA_ID_CONFIG_ACCESS_FLAG ? areaIdConfig.getAccess()
-                        : carPropertyConfig.getAccess())
+                if (getAreaIdAccessOrElseGlobalAccess(carPropertyConfig, areaId)
                         == CarPropertyConfig.VEHICLE_PROPERTY_ACCESS_WRITE) {
                     setPropertyRequest.setWaitForPropertyUpdate(false);
                 }

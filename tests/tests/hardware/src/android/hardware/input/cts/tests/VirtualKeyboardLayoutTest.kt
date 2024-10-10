@@ -16,6 +16,7 @@
 package android.hardware.input.cts.tests
 
 import android.companion.virtual.VirtualDeviceManager
+import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
 import android.hardware.input.InputManager
 import android.hardware.input.VirtualKeyboard
@@ -48,8 +49,11 @@ class VirtualKeyboardLayoutTest {
         val context = InstrumentationRegistry.getInstrumentation().getTargetContext()
         mInputManager = context.getSystemService(InputManager::class.java)
         mVirtualDevice = mRule.createManagedVirtualDevice()
-        mVirtualDisplay = mRule.createManagedVirtualDisplay(
-            mVirtualDevice, VirtualDeviceRule.createTrustedVirtualDisplayConfigBuilder()
+        mVirtualDisplay = mRule.createManagedVirtualDisplayWithFlags(
+            mVirtualDevice,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                    or DisplayManager.VIRTUAL_DISPLAY_FLAG_TRUSTED
         )!!
     }
 
