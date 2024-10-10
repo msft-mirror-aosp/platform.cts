@@ -22,6 +22,7 @@ import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -72,9 +73,9 @@ public final class ApplicationRestrictionsTest {
 
     private static final String TAG = ApplicationRestrictionsTest.class.getSimpleName();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().any();
+    private static final TestApp sTestApp = testApps(sDeviceState).any();
 
-    private static final TestApp sDifferentTestApp = sDeviceState.testApps().any();
+    private static final TestApp sDifferentTestApp = testApps(sDeviceState).any();
 
     @Postsubmit(reason = "New test")
     @PolicyAppliesTest(policy = DpcOnlyApplicationRestrictions.class)

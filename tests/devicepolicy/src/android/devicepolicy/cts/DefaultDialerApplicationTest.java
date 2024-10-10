@@ -19,6 +19,7 @@ package android.devicepolicy.cts;
 
 import static android.content.pm.PackageManager.FEATURE_TELEPHONY;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -64,7 +65,7 @@ public final class DefaultDialerApplicationTest {
     public static DeviceState sDeviceState = new DeviceState();
 
     private static final Context sContext = TestApis.context().instrumentedContext();
-    private static final TestApp sDialerApp = sDeviceState.testApps()
+    private static final TestApp sDialerApp = testApps(sDeviceState)
             .query()
             .whereActivities().contains(
                     activity().where().intentFilters().contains(
