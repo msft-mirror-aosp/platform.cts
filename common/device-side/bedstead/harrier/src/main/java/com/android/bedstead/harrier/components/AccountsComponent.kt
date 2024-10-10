@@ -27,7 +27,6 @@ import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator
 import com.android.bedstead.harrier.annotations.EnsureHasAccounts
 import com.android.bedstead.harrier.annotations.EnsureHasNoAccounts
 import com.android.bedstead.harrier.annotations.FailureMode
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.devicePolicy
 import com.android.bedstead.nene.TestApis.users

@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.android.bedstead.multiuser
+package com.android.bedstead.harrier.components
 
-import com.android.bedstead.enterprise.EnterpriseComponent
 import com.android.bedstead.harrier.BedsteadServiceLocator
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.UserType.ADDITIONAL_USER
@@ -34,15 +33,25 @@ import com.android.bedstead.harrier.UserType.TV_PROFILE
 import com.android.bedstead.harrier.UserType.WORK_PROFILE
 import com.android.bedstead.nene.TestApis.users
 import com.android.bedstead.nene.users.UserReference
-import com.android.bedstead.nene.users.UserType.SECONDARY_USER_TYPE_NAME
+
+/**
+ * An interface to create the appropriate [UserReference] for the [UserType]
+ */
+interface IUserTypeResolver {
+    fun toUser(userType: UserType): UserReference
+}
 
 /**
  * A tool to create the appropriate [UserReference] for the [UserType]
  */
 class UserTypeResolver(locator: BedsteadServiceLocator) {
 
-    private val usersComponent: UsersComponent by locator
-    private val enterpriseComponent: EnterpriseComponent by locator
+    private val multiUserResolver: IUserTypeResolver by lazy {
+        locator.get("com.android.bedstead.multiuser.MultiUserUserTypeResolver")
+    }
+    private val enterpriseResolver: IUserTypeResolver by lazy {
+        locator.get("com.android.bedstead.enterprise.EnterpriseUserTypeResolver")
+    }
 
     /**
      * Creates appropriate [UserReference] for the [UserType]
@@ -54,15 +63,12 @@ class UserTypeResolver(locator: BedsteadServiceLocator) {
             INSTRUMENTED_USER -> users().instrumented()
             CURRENT_USER -> users().current()
             PRIMARY_USER -> users().primary()
-            SECONDARY_USER -> usersComponent.user(SECONDARY_USER_TYPE_NAME)
-            WORK_PROFILE -> enterpriseComponent.workProfile()
-            TV_PROFILE -> usersComponent.tvProfile()
-            DPC_USER -> enterpriseComponent.dpc().user()
             INITIAL_USER -> users().initial()
-            ADDITIONAL_USER -> usersComponent.additionalUser()
-            CLONE_PROFILE -> usersComponent.cloneProfile()
-            PRIVATE_PROFILE -> usersComponent.privateProfile()
             ADMIN_USER -> users().admin()
+            WORK_PROFILE, DPC_USER -> enterpriseResolver.toUser(userType)
+            SECONDARY_USER, TV_PROFILE, ADDITIONAL_USER, CLONE_PROFILE, PRIVATE_PROFILE
+                -> multiUserResolver.toUser(userType)
+
             ANY -> throw IllegalStateException("ANY UserType can not be used here")
         }
     }
