@@ -26,9 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
-public class AngleDriverTestActivity {
-
-    private final String TAG = this.getClass().getSimpleName();
+public class AngleDriverTest {
 
     private void validateDeveloperOption(boolean angleEnabled) throws Exception {
         GlesView glesView = new GlesView();
