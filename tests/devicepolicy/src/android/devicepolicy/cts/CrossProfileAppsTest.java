@@ -26,11 +26,12 @@ import static com.android.bedstead.harrier.UserType.INITIAL_USER;
 import static com.android.bedstead.harrier.UserType.PRIVATE_PROFILE;
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
 import static com.android.bedstead.metricsrecorder.truth.MetricQueryBuilderSubject.assertThat;
+import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_PROFILES;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS;
 import static com.android.bedstead.permissions.CommonPermissions.INTERACT_ACROSS_USERS_FULL;
 import static com.android.bedstead.permissions.CommonPermissions.START_CROSS_PROFILE_ACTIVITIES;
-import static com.android.bedstead.nene.types.OptionalBoolean.TRUE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.eventlib.truth.EventLogsSubject.assertThat;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
@@ -54,25 +55,25 @@ import android.stats.devicepolicy.EventId;
 import androidx.test.core.app.ApplicationProvider;
 
 import com.android.activitycontext.ActivityContext;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.flags.annotations.RequireFlagsEnabled;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.CrossUserTest;
-import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
-import com.android.bedstead.multiuser.annotations.EnsureHasNoProfile;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.PermissionTest;
 import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.annotations.RequireRunOnInitialUser;
-import com.android.bedstead.enterprise.annotations.RequireRunOnWorkProfile;
 import com.android.bedstead.harrier.annotations.UserPair;
 import com.android.bedstead.harrier.annotations.UserTest;
 import com.android.bedstead.metricsrecorder.EnterpriseMetricsRecorder;
+import com.android.bedstead.multiuser.annotations.EnsureHasNoProfile;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.appops.AppOpsMode;
 import com.android.bedstead.nene.packages.Package;
 import com.android.bedstead.nene.packages.ProcessReference;
+import com.android.bedstead.permissions.annotations.EnsureDoesNotHavePermission;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -109,13 +110,13 @@ public final class CrossProfileAppsTest {
             .outerRule(DeviceFlagsValueProvider.createCheckFlagsRule())
             .around(sDeviceState);
 
-    private static final TestApp sCrossProfileTestApp = sDeviceState.testApps().query()
+    private static final TestApp sCrossProfileTestApp = testApps(sDeviceState).query()
             .whereCrossProfile().isTrue()
             // TODO: Add query for a receiver for ACTION_CAN_INTERACT_ACROSS_PROFILES_CHANGED
             .wherePermissions().contains("android.permission.INTERACT_ACROSS_PROFILES").get();
-    private static final TestApp sNonCrossProfileTestApp = sDeviceState.testApps().query()
+    private static final TestApp sNonCrossProfileTestApp = testApps(sDeviceState).query()
             .wherePermissions().doesNotContain("android.permission.INTERACT_ACROSS_PROFILES").get();
-    private static final TestApp sTestAppWithMainActivity = sDeviceState.testApps().query()
+    private static final TestApp sTestAppWithMainActivity = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains(Intent.ACTION_MAIN))

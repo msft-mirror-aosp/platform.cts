@@ -20,6 +20,7 @@ import static android.Manifest.permission.INTERACT_ACROSS_USERS_FULL;
 import static android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK;
 import static android.content.Intent.FLAG_ACTIVITY_NEW_TASK;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -30,23 +31,23 @@ import static org.junit.Assert.assertThrows;
 import android.content.ComponentName;
 import android.content.Intent;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
 import com.android.bedstead.enterprise.annotations.PolicyDoesNotApplyTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.SuspendPersonalApps;
 import com.android.bedstead.harrier.policies.SuspendPersonalAppsWithCloneProfileDisabled;
+import com.android.bedstead.multiuser.annotations.RequireNotHeadlessSystemUserMode;
 import com.android.bedstead.nene.TestApis;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.roles.RoleContext;
+import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
+import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
-import com.android.bedstead.nene.utils.BlockingBroadcastReceiver;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -63,11 +64,11 @@ public final class PersonalAppsSuspensionTest {
     private static final String ACTION_MY_PACKAGE_SUSPENDED =
             "android.intent.action.MY_PACKAGE_SUSPENDED";
     private static final TestApp sSmsTestApp =
-            sDeviceState.testApps().query().whereActivities().contains(
+            testApps(sDeviceState).query().whereActivities().contains(
                     activity().where().intentFilters().contains(
                             intentFilter().where().actions().contains("android.intent.action.SEND")
                     )).get();
-    private static final TestApp sTestApp = sDeviceState.testApps().any();
+    private static final TestApp sTestApp = testApps(sDeviceState).any();
 
     @Postsubmit(reason = "new test")
     @ApiTest(apis = "android.app.admin.DevicePolicyManager#setPersonalAppsSuspended")

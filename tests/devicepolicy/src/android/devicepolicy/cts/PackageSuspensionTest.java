@@ -16,6 +16,9 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApp;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assume.assumeTrue;
@@ -61,7 +64,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void isPackageSuspended_packageIsSuspended_returnsTrue() throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         try {
             sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp}, /* suspended */ true);
@@ -79,7 +82,7 @@ public final class PackageSuspensionTest {
     @Postsubmit(reason = "new test")
     @EnsureTestAppInstalled
     public void isPackageSuspended_packageIsNotSuspended_returnFalse() throws Exception {
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         skipRoleHolderTestIfFlagNotEnabled();
         sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
                 mAdmin, new String[] {testApp},  /* suspended */ false);
@@ -93,7 +96,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackagesSuspended_suspendSuccessful() throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         try {
             assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
                     mAdmin, new String[] {testApp},  /* suspended */ true)
@@ -112,8 +115,8 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackagesSuspended_suspendAlreadySuspendedPackage_returnsEmpty() {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
-        try (TestAppInstance anotherApp = sDeviceState.testApps().any().install()) {
+        String testApp = testApp(sDeviceState).packageName();
+        try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
                 sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
@@ -143,7 +146,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackagesSuspended_unsuspendSuccessful() throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         try {
             // Start with suspended package
             sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
@@ -168,7 +171,7 @@ public final class PackageSuspensionTest {
         skipRoleHolderTestIfFlagNotEnabled();
         assertThat(sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
                 mAdmin,
-                new String[] {sDeviceState.testApp().packageName()},
+                new String[] {testApp(sDeviceState).packageName()},
                 /* suspended */ false)
         ).isEmpty();
     }
@@ -188,8 +191,8 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackagesSuspended_suspendMultipleTimes_allPackagesSuspended() throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
-        try (TestAppInstance anotherApp = sDeviceState.testApps().any().install()) {
+        String testApp = testApp(sDeviceState).packageName();
+        try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Suspend both packages in two calls
@@ -215,8 +218,8 @@ public final class PackageSuspensionTest {
     public void setPackagesSuspended_unsuspendMultipleTimes_allPackagesUnsuspended()
             throws Exception {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
-        try (TestAppInstance anotherApp = sDeviceState.testApps().any().install()) {
+        String testApp = testApp(sDeviceState).packageName();
+        try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Start with packages suspended
@@ -244,7 +247,7 @@ public final class PackageSuspensionTest {
     @Postsubmit(reason = "new test")
     @EnsureTestAppInstalled
     public void setPackagesSuspended_suspendMixedPackages_onlySomeSuspended() throws Exception {
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         skipRoleHolderTestIfFlagNotEnabled();
         try {
             // Suspend both packages
@@ -269,8 +272,8 @@ public final class PackageSuspensionTest {
     @Test
     @EnsureTestAppInstalled
     public void setPackagesSuspended_multipleAdminsSuspendPackages_success() throws Exception {
-        String testApp = sDeviceState.testApp().packageName();
-        try (TestAppInstance anotherApp = sDeviceState.testApps().any().install()) {
+        String testApp = testApp(sDeviceState).packageName();
+        try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
                 // Suspend packages from different admins
@@ -304,8 +307,8 @@ public final class PackageSuspensionTest {
     @Test
     @EnsureTestAppInstalled
     public void setPackagesSuspended_adminsUnsuspendOtherAdmin_fail() throws Exception {
-        String testApp = sDeviceState.testApp().packageName();
-        try (TestAppInstance anotherApp = sDeviceState.testApps().any().install()) {
+        String testApp = testApp(sDeviceState).packageName();
+        try (TestAppInstance anotherApp = testApps(sDeviceState).any().install()) {
             String anotherTestApp = anotherApp.packageName();
             try {
                 sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
@@ -338,7 +341,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void isPackageSuspended_notAllowed_throwsException() {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         assertThrows(SecurityException.class, () ->
                 sDeviceState.dpc().devicePolicyManager().isPackageSuspended(mAdmin, testApp));
     }
@@ -348,7 +351,7 @@ public final class PackageSuspensionTest {
     @EnsureTestAppInstalled
     public void setPackageSuspended_notAllowed_throwsException() {
         skipRoleHolderTestIfFlagNotEnabled();
-        String testApp = sDeviceState.testApp().packageName();
+        String testApp = testApp(sDeviceState).packageName();
         try {
             assertThrows(SecurityException.class, () ->
                     sDeviceState.dpc().devicePolicyManager().setPackagesSuspended(
