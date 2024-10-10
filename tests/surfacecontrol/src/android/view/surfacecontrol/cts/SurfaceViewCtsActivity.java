@@ -25,27 +25,37 @@ import android.os.Bundle;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.FrameLayout;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class SurfaceViewCtsActivity extends Activity {
+    private FrameLayout mRootLayout;
     private TestSurfaceView mSurfaceView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // New a TestSurfaceView
+        // New a TestSurfaceView and add it to the layout.
+        mRootLayout = new FrameLayout(this);
         mSurfaceView = new TestSurfaceView(this);
-        setContentView(mSurfaceView);
+        mRootLayout.addView(mSurfaceView);
+
+        setContentView(mRootLayout);
     }
 
     public TestSurfaceView getSurfaceView() {
         return mSurfaceView;
     }
 
-    public class TestSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
+    /** Add a SurfaceView to the activity. */
+    public void addSurfaceView(TestSurfaceView view) {
+        mRootLayout.addView(view);
+    }
+
+    public static class TestSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
         private static final int FIX_WIDTH = 240;
         private static final int FIX_HEIGHT = 240;
         private static final int BITMAP_WIDTH = 100;

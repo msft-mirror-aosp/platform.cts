@@ -68,12 +68,13 @@ import android.view.Display;
 import android.view.DisplayCutout;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
-import android.virtualdevice.cts.common.VirtualDeviceRule;
 import android.widget.ImageView;
+
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 
+import com.android.compatibility.common.util.AdoptShellPermissionsRule;
 import com.android.compatibility.common.util.DisplayStateManager;
 import com.android.compatibility.common.util.SettingsStateKeeperRule;
 import com.android.compatibility.common.util.StateKeeperRule;
@@ -129,9 +130,10 @@ public class VirtualDisplayTest {
     private HandlerThread mCheckThread;
     private Handler mCheckHandler;
 
-    // Use a VDM role to get the ADD_TRUSTED_DISPLAY permission.
     @Rule(order = 0)
-    public VirtualDeviceRule mVirtualDeviceRule = VirtualDeviceRule.withAdditionalPermissions(
+    public AdoptShellPermissionsRule mAdoptShellPermissionsRule = new AdoptShellPermissionsRule(
+            InstrumentationRegistry.getInstrumentation().getUiAutomation(),
+            Manifest.permission.ADD_TRUSTED_DISPLAY,
             Manifest.permission.WRITE_SECURE_SETTINGS);
 
     @ClassRule
@@ -306,9 +308,8 @@ public class VirtualDisplayTest {
      */
     @Test
     public void testTrustedVirtualDisplay() throws Exception {
-        // Shell doesn't have the ADD_TRUSTED_DISPLAY permission.
         InstrumentationRegistry.getInstrumentation().getUiAutomation()
-                .adoptShellPermissionIdentity();
+                .dropShellPermissionIdentity();
 
         try {
             VirtualDisplay virtualDisplay = mDisplayManager.createVirtualDisplay(NAME,

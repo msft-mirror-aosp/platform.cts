@@ -27,7 +27,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
+import android.content.pm.SharedLibraryInfo;
+import android.content.pm.SigningInfo;
+import android.content.pm.verify.pkg.VerificationSession;
 import android.os.Build;
 import android.os.ConditionVariable;
 import android.platform.test.annotations.AppModeFull;
@@ -48,6 +53,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -69,6 +75,12 @@ public class VerifierServiceTest {
             SAMPLE_APK_BASE + "CtsTestVerifierAppIncompleteUnknown.apk";
     private static final String EMPTY_APP_APK = SAMPLE_APK_BASE
             + "CtsContentEmptyTestApp.apk";
+    private static final String EMPTY_APP_APK_DECLARING_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringLibrary.apk";
+    private static final String EMPTY_APP_APK_DECLARING_SDK_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringSdkLibrary.apk";
+    private static final String EMPTY_APP_APK_DECLARING_STATIC_LIBRARY = SAMPLE_APK_BASE
+            + "CtsContentDeclaringStaticLibrary.apk";
     private static final String EMPTY_APP_PACKAGE_NAME = "android.content.cts.emptytestapp";
     private static final String ACTION_SERVICE_CONNECTED =
             "android.content.pm.cts.verify.SERVICE_CONNECTED";
@@ -82,10 +94,13 @@ public class VerifierServiceTest {
     private static final String NAMESPACE_PACKAGE_MANAGER_SERVICE = "package_manager_service";
     private static final String PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS =
             "verification_request_timeout_millis";
+    static final String EXTRA_VERIFICATION_SESSION = "android.content.pm.cts.verify.session";
+
+
     private static final long DEFAULT_TIMEOUT_MS = isLowRamDevice()
             ? TimeUnit.SECONDS.toMillis(60) : TimeUnit.SECONDS.toMillis(15);
     private final ConditionVariable mServiceConnectedLatch = new ConditionVariable();
-    private final ConditionVariable mVerificationRequiredLatch = new ConditionVariable();
+    private CompletableFuture<VerificationSession> mVerificationSession;
     private CompletableFuture<String> mNameAvailableLatch;
     private CompletableFuture<String> mVerificationCancelledLatch;
 
@@ -114,7 +129,7 @@ public class VerifierServiceTest {
 
         // Reset the latches
         mServiceConnectedLatch.close();
-        mVerificationRequiredLatch.close();
+        mVerificationSession = new CompletableFuture<>();
         mNameAvailableLatch = new CompletableFuture<>();
         mVerificationCancelledLatch = new CompletableFuture<>();
     }
@@ -146,7 +161,63 @@ public class VerifierServiceTest {
         assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
         assertThat(mNameAvailableLatch.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isEqualTo(
                 EMPTY_APP_PACKAGE_NAME);
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        assertThat(session.getId()).isGreaterThan(0);
+        assertThat(session.getPackageName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(session.getInstallSessionId()).isGreaterThan(0);
+        assertThat(session.getStagedPackageUri().getScheme()).isEqualTo("file");
+        assertThat(session.getStagedPackageUri().toString()).contains("vmdl");
+        SigningInfo sessionSigningInfo = session.getSigningInfo();
+        assertThat(sessionSigningInfo).isNotNull();
+        final PackageInfo packageInfoExpected = mContext.getPackageManager().getPackageInfo(
+                EMPTY_APP_PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES);
+        assertThat(packageInfoExpected).isNotNull();
+        final SigningInfo expectedSigningInfo = packageInfoExpected.signingInfo;
+        assertThat(expectedSigningInfo.getApkContentsSigners()).isEqualTo(
+                sessionSigningInfo.getApkContentsSigners());
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testInstallSuccessWithDynamicLib() throws Exception {
+        installPackageWithPackageName(EMPTY_APP_APK_DECLARING_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+        assertThat(libs).hasSize(1);
+        SharedLibraryInfo lib = libs.get(0);
+        assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_DYNAMIC);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testInstallSuccessWithSdkLib() throws Exception {
+        installPackageWithPackageName(EMPTY_APP_APK_DECLARING_SDK_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+        assertThat(libs).hasSize(1);
+        SharedLibraryInfo lib = libs.get(0);
+        assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_SDK_PACKAGE);
+        assertThat(lib.getLongVersion()).isEqualTo(1);
+    }
+
+    @Test
+    @RequiresFlagsEnabled(FLAG_VERIFICATION_SERVICE)
+    public void testInstallSuccessWithStaticLib() throws Exception {
+        installPackageWithPackageName(
+                EMPTY_APP_APK_DECLARING_STATIC_LIBRARY, EMPTY_APP_PACKAGE_NAME);
+        VerificationSession session =
+                mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+        List<SharedLibraryInfo> libs = session.getDeclaredLibraries();
+        assertThat(libs).hasSize(1);
+        SharedLibraryInfo lib = libs.get(0);
+        assertThat(lib.getName()).isEqualTo(EMPTY_APP_PACKAGE_NAME);
+        assertThat(lib.getType()).isEqualTo(SharedLibraryInfo.TYPE_STATIC);
+        assertThat(lib.getLongVersion()).isEqualTo(1);
     }
 
     @Test
@@ -188,7 +259,7 @@ public class VerifierServiceTest {
                 "Failure [INSTALL_FAILED_VERIFICATION_FAILURE:"
                         + " Verifier rejected the installation with message: " + REJECT_MESSAGE);
         assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isNotNull();
     }
 
     @Test
@@ -209,7 +280,8 @@ public class VerifierServiceTest {
                             + " Verification timed out;"
                             + " missing a response from the verifier within the time limit");
             assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-            assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+            assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS))
+                    .isNotNull();
         } finally {
             setTimeoutValueInDeviceConfig(PROPERTY_VERIFICATION_REQUEST_TIMEOUT_MILLIS,
                     existingTimeoutValueInDeviceConfig);
@@ -227,7 +299,7 @@ public class VerifierServiceTest {
                 "Failure [INSTALL_FAILED_INTERNAL_ERROR:"
                         + " Verification cannot be completed for unknown reasons.");
         assertThat(mServiceConnectedLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
-        assertThat(mVerificationRequiredLatch.block(DEFAULT_TIMEOUT_MS)).isTrue();
+        assertThat(mVerificationSession.get(DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS)).isNotNull();
     }
 
     private void installPackage(String apkPath) {
@@ -263,7 +335,8 @@ public class VerifierServiceTest {
                             intent.getStringExtra(Intent.EXTRA_PACKAGE_NAME));
                     break;
                 case ACTION_REQUEST_RECEIVED:
-                    mVerificationRequiredLatch.open();
+                    mVerificationSession.complete(intent.getParcelableExtra(
+                            EXTRA_VERIFICATION_SESSION, VerificationSession.class));
                     break;
             }
         }
