@@ -82,6 +82,9 @@
         <option name="push" value="CtsTestVerifierAppReject.apk->/data/local/tmp/cts/content/CtsTestVerifierAppReject.apk" />
         <option name="push" value="CtsTestVerifierAppTimeout.apk->/data/local/tmp/cts/content/CtsTestVerifierAppTimeout.apk" />
         <option name="push" value="CtsTestVerifierAppIncompleteUnknown.apk->/data/local/tmp/cts/content/CtsTestVerifierAppIncompleteUnknown.apk" />
+        <option name="push" value="CtsContentDeclaringLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringLibrary.apk" />
+        <option name="push" value="CtsContentDeclaringSdkLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringSdkLibrary.apk" />
+        <option name="push" value="CtsContentDeclaringStaticLibrary.apk->/data/local/tmp/cts/content/CtsContentDeclaringStaticLibrary.apk" />
     </target_preparer>
 
     <target_preparer class="com.android.tradefed.targetprep.PushFilePreparer">

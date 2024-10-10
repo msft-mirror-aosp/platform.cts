@@ -318,6 +318,9 @@ android_test {
         ":CtsTestVerifierAppReject",
         ":CtsTestVerifierAppTimeout",
         ":CtsTestVerifierAppIncompleteUnknown",
+        ":CtsContentDeclaringLibrary",
+        ":CtsContentDeclaringSdkLibrary",
+        ":CtsContentDeclaringStaticLibrary",
     ],
     java_resources: [
         ":PackagePropertyTestApp1",
