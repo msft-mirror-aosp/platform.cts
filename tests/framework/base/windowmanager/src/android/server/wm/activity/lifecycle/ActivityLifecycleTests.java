@@ -780,8 +780,13 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 .setOptions(activityOptions)
                 .launch();
 
-        // Wait for first activity to become occluded
-        waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
+        // Wait for the first activity to become occluded, or in case of multi-window environments,
+        // to be pushed out of their top position.
+        if (secondActivity.isInMultiWindowMode()) {
+            waitAndAssertActivityStates(state(recreatingActivity, ON_TOP_POSITION_LOST));
+        } else {
+            waitAndAssertActivityStates(state(recreatingActivity, ON_STOP));
+        }
 
         // Launch the activity again to recreate
         getTransitionLog().clear();
@@ -795,7 +800,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Wait for activity to relaunch and resume
         final List<String> expectedRelaunchSequence;
-        if (isTranslucent(secondActivity)) {
+        if (secondActivity.isInMultiWindowMode()) {
+            // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
+            expectedRelaunchSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
+                    ON_PAUSE, ON_STOP, ON_DESTROY, ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME);
+        } else if (isTranslucent(secondActivity)) {
             expectedRelaunchSequence = Arrays.asList(ON_NEW_INTENT, ON_RESUME,
                     ON_PAUSE, ON_STOP, ON_DESTROY, ON_CREATE, ON_START, ON_POST_CREATE, ON_RESUME);
         } else {
@@ -845,7 +854,13 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
                 .setOptions(activityOptions)
                 .launch();
 
-        waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
+        // Wait for the first activity to become occluded, or in case of multi-window environments,
+        // to be pushed out of their top position.
+        if (secondActivity.isInMultiWindowMode()) {
+            waitAndAssertActivityStates(state(singleTopActivity, ON_TOP_POSITION_LOST));
+        } else {
+            waitAndAssertActivityStates(state(singleTopActivity, ON_STOP));
+        }
 
         // Try to launch again
         getTransitionLog().clear();
@@ -856,7 +871,11 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
 
         // Verify that the first activity was restarted, new intent was delivered and resumed again
         final List<String> expectedSequence;
-        if (isTranslucent(singleTopActivity)) {
+        if (secondActivity.isInMultiWindowMode()) {
+            // Transition from ON_TOP_POSITION_LOST to RESUMED state is via ON_PAUSE.
+            expectedSequence = Arrays.asList(ON_PAUSE, ON_NEW_INTENT, ON_RESUME,
+                    ON_TOP_POSITION_GAINED);
+        } else if (isTranslucent(singleTopActivity)) {
             expectedSequence = Arrays.asList(ON_NEW_INTENT, ON_RESUME, ON_TOP_POSITION_GAINED);
         } else {
             expectedSequence = Arrays.asList(ON_RESTART, ON_START, ON_NEW_INTENT, ON_RESUME,
