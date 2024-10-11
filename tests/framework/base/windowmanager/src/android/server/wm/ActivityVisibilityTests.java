@@ -64,6 +64,7 @@ import android.content.ComponentName;
 import android.platform.test.annotations.Presubmit;
 import android.server.wm.CommandSession.ActivitySession;
 import android.server.wm.CommandSession.ActivitySessionClient;
+import android.server.wm.WindowManagerState.Task;
 import android.server.wm.app.Components;
 
 import org.junit.Rule;
@@ -93,13 +94,11 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         launchHomeActivity();
         launchActivity(TRANSLUCENT_ACTIVITY, WINDOWING_MODE_FULLSCREEN);
 
-        int expectedWindowingMode = hasAutomotiveSplitscreenMultitaskingFeature()
-                // On auto devices with this feature enabled, the system is in a permanent
-                // split-screen UI where every app opens in MULTI_WINDOW mode.
-                ? WINDOWING_MODE_MULTI_WINDOW
-                : WINDOWING_MODE_FULLSCREEN;
-        mWmState.assertFrontStack("Fullscreen stack must be the front stack.",
-                expectedWindowingMode, ACTIVITY_TYPE_STANDARD);
+        final int taskWindowingMode =
+                mWmState.getTaskByActivity(TRANSLUCENT_ACTIVITY).getWindowingMode();
+        mWmState.assertFrontStack(
+                "Activity with matching windowing mode must be the front stack.",
+                taskWindowingMode, ACTIVITY_TYPE_STANDARD);
         mWmState.assertVisibility(TRANSLUCENT_ACTIVITY, true);
         mWmState.assertHomeActivityVisible(true);
     }
@@ -389,7 +388,8 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 .setLaunchTaskDisplayAreaFeatureId(homeTaskDisplayAreaFeatureId)
                 .setIntentFlags(FLAG_ACTIVITY_NEW_TASK).execute();
         waitAndAssertResumedActivity(BROADCAST_RECEIVER_ACTIVITY,"Activity must be resumed");
-        final int taskId = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).mTaskId;
+        final Task task = mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY);
+        final int taskId = task.mTaskId;
 
         try {
             runWithShellPermission(() -> mAtm.startSystemLockTaskMode(taskId));
@@ -407,8 +407,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         mBroadcastActionTrigger.finishBroadcastReceiverActivity();
         mWmState.waitAndAssertActivityRemoved(BROADCAST_RECEIVER_ACTIVITY);
 
-        if (!hasAutomotiveSplitscreenMultitaskingFeature()) {
-            // TODO(b/300009006): remove this if condition when root tasks setup is moved to SysUI.
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If the launched activity's task is not in fullscreen windowing mode, it would not
+        // fully obscure the home activity. Only check that the home activity is not visible if
+        // the launched activity's task is fullscreen in this case.
+        final int taskWindowingMode = task.getWindowingMode();
+        if (taskWindowingMode == WINDOWING_MODE_FULLSCREEN) {
             mWmState.assertHomeActivityVisible(false);
         }
     }
@@ -450,9 +454,16 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
                 launchTaskDisplayAreaFeatureId, DEFAULT_DISPLAY);
         mWmState.waitForActivityState(BROADCAST_RECEIVER_ACTIVITY, STATE_RESUMED);
         mWmState.waitForActivityState(MOVE_TASK_TO_BACK_ACTIVITY,STATE_STOPPED);
-        final boolean shouldBeVisible =
-                !mWmState.isBehindOpaqueActivities(MOVE_TASK_TO_BACK_ACTIVITY);
-        mWmState.assertVisibility(MOVE_TASK_TO_BACK_ACTIVITY, shouldBeVisible);
+        final int topActivityTaskWindowingMode =
+                mWmState.getTaskByActivity(BROADCAST_RECEIVER_ACTIVITY).getWindowingMode();
+        final boolean topActivityOccludes =
+                topActivityTaskWindowingMode == WINDOWING_MODE_FULLSCREEN &&
+                        !mWmState.isActivityTranslucent(BROADCAST_RECEIVER_ACTIVITY);
+        if (!topActivityOccludes) {
+            mWmState.assertVisibility(MOVE_TASK_TO_BACK_ACTIVITY, true);
+        } else {
+            mWmState.waitAndAssertVisibilityGone(MOVE_TASK_TO_BACK_ACTIVITY);
+        }
         mWmState.assertVisibility(BROADCAST_RECEIVER_ACTIVITY, true);
 
         // Finish the top-most activity.
@@ -759,8 +770,12 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         mInstrumentation.getUiAutomation().syncInputTransactions();
         mWmState.assertVisibility(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY, true);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
-            // TODO(b/300009006): remove when root tasks setup is moved to SysUI.
+        // Different form factors may force tasks to be multi-window (e.g. in freeform windowing
+        // mode). If the launched activity's task is not in fullscreen windowing mode, it would
+        // still be visible and resumed. Otherwise, just assert that it was launched once.
+        final int taskWindowingMode =
+                mWmState.getTaskByActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY).getWindowingMode();
+        if (taskWindowingMode != WINDOWING_MODE_FULLSCREEN) {
             waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
         } else {
             assertSingleLaunch(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
@@ -779,11 +794,10 @@ public class ActivityVisibilityTests extends ActivityManagerTestBase {
         // and reported after the activity launch.
         waitForDefaultDisplayState(true /* wantOn */);
         assertTrue("Display turns on", isDisplayOn(DEFAULT_DISPLAY));
-        if (hasAutomotiveSplitscreenMultitaskingFeature()) {
+        if (taskWindowingMode != WINDOWING_MODE_FULLSCREEN) {
             // In the scenario when the Launcher HOME activity hosts the TaskView, the HOME activity
             // itself will be resumed first before the Test activity resulting in 2 calls to
             // ON_RESUME rather than 1. Is such case just check if the Test activity is resumed.
-            // TODO(b/300009006): assertSingleStart when fixed.
             waitAndAssertResumedActivity(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
         } else {
             assertSingleStart(TURN_SCREEN_ON_SINGLE_TASK_ACTIVITY);
