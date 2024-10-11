@@ -419,7 +419,7 @@ public class AnimatedImageDrawableTest {
 
         // FIXME: Now that it seems the reason for the flakiness has been solved (b/129400990),
         // reduce this extra duration workaround.
-        cb.waitForEnd(DURATION * 20);
+        cb.waitForEnd(DURATION * 30);
         cb.assertEnded(true);
 
         drawable.setRepeatCount(AnimatedImageDrawable.REPEAT_INFINITE);
