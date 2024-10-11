@@ -680,6 +680,10 @@ public class WindowManagerStateHelper extends WindowManagerState {
         assertFrontStackActivityTypeOnDisplay(msg, activityType, DEFAULT_DISPLAY);
     }
 
+    void assertFocusedRootTaskOnDisplay(String msg, int taskId, int displayId) {
+        assertEquals(msg, taskId, getFocusedTaskIdOnDisplay(displayId));
+    }
+
     public void assertFocusedRootTask(String msg, int taskId) {
         assertEquals(msg, taskId, getFocusedTaskId());
     }
@@ -691,6 +695,13 @@ public class WindowManagerStateHelper extends WindowManagerState {
         if (activityType != ACTIVITY_TYPE_UNDEFINED) {
             assertEquals(msg, activityType, getFocusedRootTaskActivityType());
         }
+    }
+
+    public void assertFocusedActivityOnDisplay(final String msg, final ComponentName activityName,
+            final int displayId) {
+        final String activityComponentName = getActivityName(activityName);
+        assertEquals(msg, activityComponentName, getFocusedActivityOnDisplay(displayId));
+        assertEquals(msg, activityComponentName, getFocusedAppOnDisplay(displayId));
     }
 
     public void assertFocusedActivity(final String msg, final ComponentName activityName) {
