@@ -42,6 +42,10 @@ class BedsteadServiceLocator : DeviceStateComponent {
         } else {
             createDependencyByReflection(clazz.java).also {
                 dependenciesMap[clazz] = it
+                if (it is DeviceStateComponent) {
+                    Log.v(LOG_TAG, "prepareTestState (after creation): " + it.javaClass)
+                    it.prepareTestState()
+                }
             }
         }
     }
@@ -145,6 +149,7 @@ class BedsteadServiceLocator : DeviceStateComponent {
 
     override fun prepareTestState() {
         getAllDependenciesOfType<DeviceStateComponent>().forEach {
+            Log.v(LOG_TAG, "prepareTestState: " + it.javaClass)
             it.prepareTestState()
         }
     }

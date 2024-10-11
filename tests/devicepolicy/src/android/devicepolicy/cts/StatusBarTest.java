@@ -16,18 +16,19 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
-import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.StatusBarDisabled;
+import com.android.bedstead.multiuser.annotations.RequireRunOnPrimaryUser;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppActivityReference;
 import com.android.bedstead.testapp.TestAppInstance;
@@ -50,7 +51,7 @@ public final class StatusBarTest {
     @Rule
     public static final DeviceState sDeviceState = new DeviceState();
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity()
                             .where().exported().isTrue()

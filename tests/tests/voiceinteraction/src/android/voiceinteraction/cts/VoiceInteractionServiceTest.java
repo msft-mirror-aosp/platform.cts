@@ -27,6 +27,7 @@ import static android.voiceinteraction.cts.testcore.Helper.CTS_SERVICE_PACKAGE;
 import static androidx.test.platform.app.InstrumentationRegistry.getInstrumentation;
 
 import static com.android.bedstead.harrier.UserType.WORK_PROFILE;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.compatibility.common.util.ActivitiesWatcher.ActivityLifecycle.RESUMED;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
@@ -108,7 +109,7 @@ public class VoiceInteractionServiceTest {
 
     private static final SettingsStateManager sScreenshotEnabledManager = new SettingsStateManager(
             getInstrumentation().getTargetContext(), "assist_screenshot_enabled");
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities()
             .contains(activity().where().exported().isTrue())
             .get();

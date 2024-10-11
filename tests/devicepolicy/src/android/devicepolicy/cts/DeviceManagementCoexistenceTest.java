@@ -46,6 +46,7 @@ import static android.os.UserManager.DISALLOW_MODIFY_ACCOUNTS;
 import static android.os.UserManager.DISALLOW_WIFI_DIRECT;
 
 import static com.android.bedstead.permissions.CommonPermissions.MANAGE_PROFILE_AND_DEVICE_OWNERS;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 
 import static com.google.common.truth.Truth.assertThat;
@@ -82,20 +83,20 @@ import android.devicepolicy.cts.utils.PolicySetResultUtils;
 import android.os.Bundle;
 import android.os.UserHandle;
 
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
+import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.UserType;
 import com.android.bedstead.harrier.annotations.EnsureHasAccountAuthenticator;
-import com.android.bedstead.permissions.annotations.EnsureHasPermission;
-import com.android.bedstead.enterprise.annotations.EnsureHasWorkProfile;
 import com.android.bedstead.harrier.annotations.Postsubmit;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasDevicePolicyManagerRoleHolder;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.inputmethods.InputMethod;
 import com.android.bedstead.nene.packages.Package;
-import com.android.bedstead.permissions.PermissionContext;
 import com.android.bedstead.nene.utils.Poll;
+import com.android.bedstead.permissions.PermissionContext;
+import com.android.bedstead.permissions.annotations.EnsureHasPermission;
 import com.android.bedstead.testapp.TestApp;
 import com.android.bedstead.testapp.TestAppInstance;
 import com.android.compatibility.common.util.ApiTest;
@@ -153,7 +154,7 @@ public final class DeviceManagementCoexistenceTest {
             TestApis.packages().find("com.android.keychain");
 
 
-    private static final TestApp sTestApp = sDeviceState.testApps().query()
+    private static final TestApp sTestApp = testApps(sDeviceState).query()
             .whereActivities().contains(
                     activity().where().exported().isTrue()
             ).get();

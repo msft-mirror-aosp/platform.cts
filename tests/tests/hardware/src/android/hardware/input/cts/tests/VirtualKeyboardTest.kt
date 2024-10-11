@@ -23,6 +23,7 @@ import android.view.InputEvent
 import android.view.KeyEvent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SmallTest
+import com.android.compatibility.common.util.SystemUtil
 import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -69,7 +70,8 @@ class VirtualKeyboardTest : VirtualDeviceTestCase() {
 
     @Test
     fun sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        mRule.runWithoutPermissions {
+        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
+        SystemUtil.runWithShellPermissionIdentity {
             assertThrows(SecurityException::class.java) {
                 mVirtualKeyboard.sendKeyEvent(
                     VirtualKeyEvent.Builder()
