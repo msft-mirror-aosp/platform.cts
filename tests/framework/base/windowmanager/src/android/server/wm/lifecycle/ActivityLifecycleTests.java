@@ -739,7 +739,8 @@ public class ActivityLifecycleTests extends ActivityLifecycleClientTestBase {
         final Activity testActivity = new Launcher(FirstActivity.class)
                 .setOptions(activityOptions)
                 .launch();
-        final boolean isTranslucent = isTranslucent(testActivity);
+        final boolean isTranslucent =
+            isTranslucent(testActivity) || testActivity.isInMultiWindowMode();
         mWmState.waitForActivityState(
                 targetActivity, isTranslucent ? STATE_PAUSED : STATE_STOPPED);
 
