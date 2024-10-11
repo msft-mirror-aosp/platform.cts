@@ -35,6 +35,7 @@ android_test {
         "hamcrest-library",
         "junit",
         "flag-junit",
+        "cts-display-lib",
         "junit-params",
         "SurfaceFlingerProperties",
         "testng",
