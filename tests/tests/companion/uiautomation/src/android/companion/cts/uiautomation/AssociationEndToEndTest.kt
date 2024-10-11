@@ -54,12 +54,36 @@ class AssociationEndToEndTest(
     }
 
     @Test
-    fun test_userRejected() =
-            super.test_userRejected(singleDevice = false, selfManaged = false, displayName = null)
+    fun test_userRejected() = super.test_userRejected(
+            singleDevice = false,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
 
     @Test
-    fun test_userDismissed() =
-            super.test_userDismissed(singleDevice = false, selfManaged = false, displayName = null)
+    fun test_userDismissed() = super.test_userDismissed(
+            singleDevice = false,
+            selfManaged = false,
+            timeout = false,
+            displayName = null
+    )
+
+    @Test
+    fun test_userRejectedDiscovery() = super.test_userRejected(
+            singleDevice = false,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
+
+    @Test
+    fun test_userDismissedDiscovery() = super.test_userDismissed(
+            singleDevice = false,
+            selfManaged = false,
+            timeout = true,
+            displayName = null
+    )
 
     @Test
     fun test_userConfirmed() = super.test_userConfirmed_foundDevice(singleDevice = false) {
