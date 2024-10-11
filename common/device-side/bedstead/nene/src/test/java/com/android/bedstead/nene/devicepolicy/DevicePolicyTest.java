@@ -17,6 +17,7 @@
 package com.android.bedstead.nene.devicepolicy;
 
 import static com.android.bedstead.harrier.UserType.ADDITIONAL_USER;
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -27,19 +28,19 @@ import android.os.Build;
 import android.os.UserManager;
 
 import com.android.bedstead.enterprise.annotations.EnsureHasDeviceAdmin;
+import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
+import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
+import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.harrier.BedsteadJUnit4;
 import com.android.bedstead.harrier.DeviceState;
 import com.android.bedstead.harrier.annotations.AfterClass;
 import com.android.bedstead.harrier.annotations.BeforeClass;
+import com.android.bedstead.harrier.annotations.RequireSdkVersion;
 import com.android.bedstead.multiuser.annotations.EnsureHasAdditionalUser;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoWorkProfile;
 import com.android.bedstead.multiuser.annotations.EnsureHasSecondaryUser;
 import com.android.bedstead.multiuser.annotations.RequireRunOnSystemUser;
-import com.android.bedstead.harrier.annotations.RequireSdkVersion;
-import com.android.bedstead.enterprise.annotations.EnsureHasDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoDeviceOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasNoProfileOwner;
-import com.android.bedstead.enterprise.annotations.EnsureHasProfileOwner;
 import com.android.bedstead.nene.TestApis;
 import com.android.bedstead.nene.exceptions.NeneException;
 import com.android.bedstead.nene.users.UserReference;
@@ -84,7 +85,7 @@ public class DevicePolicyTest {
 
     @BeforeClass
     public static void setupClass() {
-        sTestApp = sDeviceState.testApps().query()
+        sTestApp = testApps(sDeviceState).query()
                 .wherePackageName().isEqualTo(DEVICE_ADMIN_TESTAPP_PACKAGE_NAME)
                 .get();
 

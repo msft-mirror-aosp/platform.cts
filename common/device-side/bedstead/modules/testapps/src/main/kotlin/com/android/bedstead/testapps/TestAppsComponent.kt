@@ -225,6 +225,10 @@ class TestAppsComponent(locator: BedsteadServiceLocator) : DeviceStateComponent 
         }
     }
 
+    override fun prepareTestState() {
+        testAppProvider.snapshot()
+    }
+
     override fun teardownNonShareableState() {
         testApps.clear()
         testAppProvider.restore()
