@@ -750,7 +750,10 @@ public class NfcAdapterTest {
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
-            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
+            List<String> nfceeList = nfcOemExtension.getActiveNfceeList();
+            for (String nfcee : nfceeList) {
+                assertThat(nfcee).isNotEmpty();
+            }
             nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
