@@ -126,6 +126,7 @@ open class UiAutomationTestBase(
     ) = test_cancelled(singleDevice, selfManaged, userRejected = true, displayName) {
             // User "rejects" the request.
             if (singleDevice || selfManaged) {
+                confirmationUi.scrollToBottom()
                 confirmationUi.clickNegativeButton()
             } else {
                 confirmationUi.clickNegativeButtonMultipleDevices()
