@@ -372,4 +372,7 @@
 
     <!-- b/339846869 -->
     <option name="compatibility:exclude-filter" value="CtsTelephonyTestCases android.telephony.satellite.cts.SatelliteManagerTestOnMockService" />
+
+    <!-- b/368509186 -->
+    <option name="compatibility:exclude-filter" value="CtsGameFrameRateTestCases android.gameframerate.cts.GameFrameRateTest" />
 </configuration>
