@@ -77,9 +77,6 @@ android_test {
     defaults: ["MediaMuxerTestCases_defaults"],
     test_config: "AndroidTest-mcts.xml",
     test_suites: [
-        "cts",
         "general-tests",
-        "mcts-media",
-        "mts-media",
     ],
 }
