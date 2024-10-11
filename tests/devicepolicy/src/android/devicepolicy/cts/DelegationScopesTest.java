@@ -25,6 +25,8 @@ import static android.app.admin.DevicePolicyManager.DELEGATION_SECURITY_LOGGING;
 import static android.app.admin.DevicePolicyManager.EXTRA_DELEGATION_SCOPES;
 import static android.content.Context.RECEIVER_EXPORTED;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
+
 import static com.google.common.truth.Truth.assertThat;
 
 import static org.junit.Assert.assertThrows;
@@ -34,13 +36,13 @@ import android.content.ComponentName;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import com.android.bedstead.harrier.BedsteadJUnit4;
-import com.android.bedstead.harrier.DeviceState;
-import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.enterprise.annotations.CanSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.CannotSetPolicyTest;
 import com.android.bedstead.enterprise.annotations.EnsureHasNoDelegate;
 import com.android.bedstead.enterprise.annotations.PolicyAppliesTest;
+import com.android.bedstead.harrier.BedsteadJUnit4;
+import com.android.bedstead.harrier.DeviceState;
+import com.android.bedstead.harrier.annotations.Postsubmit;
 import com.android.bedstead.harrier.policies.Delegation;
 import com.android.bedstead.harrier.policies.NetworkLoggingDelegation;
 import com.android.bedstead.harrier.policies.SecurityLoggingDelegation;
@@ -76,9 +78,9 @@ public final class DelegationScopesTest {
     @ClassRule @Rule
     public static final DeviceState sDeviceState = new DeviceState();
     private static final UserReference sUser = TestApis.users().instrumented();
-    private static final TestApp sTestApp = sDeviceState.testApps()
+    private static final TestApp sTestApp = testApps(sDeviceState)
             .query().whereActivities().isNotEmpty().get();
-    private static final TestApp sTestApp2 = sDeviceState.testApps().any();
+    private static final TestApp sTestApp2 = testApps(sDeviceState).any();
 
     @CanSetPolicyTest(policy = Delegation.class)
     public void getDelegatedScopes_returnsFromSetDelegatedScopes() {

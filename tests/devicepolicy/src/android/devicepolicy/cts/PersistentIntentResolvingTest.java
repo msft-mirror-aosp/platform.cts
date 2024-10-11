@@ -16,6 +16,7 @@
 
 package android.devicepolicy.cts;
 
+import static com.android.bedstead.testapps.TestAppsDeviceStateExtensionsKt.testApps;
 import static com.android.queryable.queries.ActivityQuery.activity;
 import static com.android.queryable.queries.IntentFilterQuery.intentFilter;
 
@@ -52,7 +53,7 @@ public final class PersistentIntentResolvingTest {
     private static final String TEST_ACTION = "com.android.cts.deviceandprofileowner.CONFIRM";
 
     private static final TestApp sTestAppWithMultipleActivities =
-            sDeviceState.testApps().query()
+            testApps(sDeviceState).query()
                     .whereActivities().contains(
                             activity().where().intentFilters().contains(
                                     intentFilter()
