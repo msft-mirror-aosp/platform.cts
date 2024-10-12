@@ -1715,7 +1715,7 @@ public class ServiceTest extends ActivityTestsBase {
             if (mConnection != null) {
                 return true;
             }
-            Log.i("XXXXXXX", "Binding " + mLabel + ": conn=" + mConnection
+            Log.i(TAG, "Binding " + mLabel + ": conn=" + mConnection
                     + " context=" + context);
             mConnection = new IsolatedConnection();
             boolean result = context.bindIsolatedService(
@@ -1735,7 +1735,7 @@ public class ServiceTest extends ActivityTestsBase {
 
         void unbind(Context context) {
             if (mConnection != null) {
-                Log.i("XXXXXXX", "Unbinding " + mLabel + ": conn=" + mConnection
+                Log.i(TAG, "Unbinding " + mLabel + ": conn=" + mConnection
                         + " context=" + context);
                 context.unbindService(mConnection);
                 mConnection = null;
@@ -1884,18 +1884,18 @@ public class ServiceTest extends ActivityTestsBase {
     }
 
     private void logProc(int i, ProcessRecordProto proc) {
-        Log.i("XXXXXXXX", printProc(i, proc));
+        Log.i(TAG, printProc(i, proc));
     }
 
     private void verifyLruOrder(LruOrderItem[] orderItems) {
         List<ProcessRecordProto> procs = getLruProcesses();
-        Log.i("XXXXXXXX", "Processes:");
+        Log.i(TAG, "Processes:");
         int orderI = 0;
         for (int i = procs.size() - 1; i >= 0; i--) {
             ProcessRecordProto proc = procs.get(i);
             logProc(i, proc);
             final LruOrderItem lru = orderItems[orderI];
-            Log.i("XXXXXXXX", "Expecting uid: " + lru.getUid());
+            Log.i(TAG, "Expecting uid: " + lru.getUid());
             if (!lru.isEquivalentTo(proc)) {
                 if ((lru.getFlags() & LruOrderItem.FLAG_SKIP_UNKNOWN) != 0) {
                     while (i > 0) {
@@ -2209,7 +2209,7 @@ public class ServiceTest extends ActivityTestsBase {
         } finally {
             if (!passed) {
                 List<ProcessRecordProto> procs = getLruProcesses();
-                Log.i("XXXXXXXX", "Processes:");
+                Log.i(TAG, "Processes:");
                 for (int i = procs.size() - 1; i >= 0; i--) {
                     ProcessRecordProto proc = procs.get(i);
                     logProc(i, proc);

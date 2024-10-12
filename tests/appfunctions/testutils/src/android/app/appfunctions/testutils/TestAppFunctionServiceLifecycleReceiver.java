@@ -17,6 +17,7 @@
 package android.app.appfunctions.testutils;
 
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 
@@ -58,8 +59,8 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
     }
 
     /**
-     * Blocks the current thread until the operation is cancelled by the caller, or the
-     * specified timeout elapses.
+     * Blocks the current thread until the operation is cancelled by the caller, or the specified
+     * timeout elapses.
      *
      * @param timeout The duration to wait for.
      * @param unit The unit of time for the timeout value.
@@ -102,6 +103,10 @@ public class TestAppFunctionServiceLifecycleReceiver extends BroadcastReceiver {
 
     private static void notifyEvent(Context context, String action) {
         Intent intent = new Intent(context, TestAppFunctionServiceLifecycleReceiver.class);
+        intent.setComponent(
+                new ComponentName(
+                        "android.app.appfunctions.cts",
+                        "android.app.appfunctions.testutils.TestAppFunctionServiceLifecycleReceiver"));
         intent.setAction(action);
         intent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
         context.sendBroadcast(intent);

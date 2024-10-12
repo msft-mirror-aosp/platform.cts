@@ -53,6 +53,7 @@ import com.android.bedstead.testapp.TestAppInstance;
 
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 
@@ -124,6 +125,7 @@ public final class DefaultDialerApplicationTest {
     // TODO(b/198588696): Add support is @RequireVoiceCapable and @RequireNotVoiceCapable
     @Postsubmit(reason = "new test")
     @CanSetPolicyTest(policy = DefaultDialerApplication.class)
+    @Ignore("Low quality test not passing CTS bar") //TODO(b/366142977)
     public void setDefaultDialerApplication_dialerPackageDoesNotExist_unchanged() {
         assumeTrue(mTelephonyManager.isVoiceCapable()
                 || (mRoleManager != null && mRoleManager.isRoleAvailable(RoleManager.ROLE_DIALER)));

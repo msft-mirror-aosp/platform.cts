@@ -52,7 +52,7 @@ import com.android.bedstead.harrier.annotations.RequireTargetSdkVersion
 import com.android.bedstead.harrier.annotations.RequireTelephonySupport
 import com.android.bedstead.harrier.annotations.RequireUsbDataSignalingCanBeDisabled
 import com.android.bedstead.harrier.annotations.TestTag
-import com.android.bedstead.multiuser.UserTypeResolver
+import com.android.bedstead.harrier.components.UserTypeResolver
 import com.android.bedstead.nene.TestApis
 import com.android.bedstead.nene.TestApis.context
 import com.android.bedstead.nene.TestApis.devicePolicy

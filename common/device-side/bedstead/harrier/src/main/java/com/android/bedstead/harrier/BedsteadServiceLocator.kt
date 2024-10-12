@@ -68,6 +68,22 @@ class BedsteadServiceLocator : DeviceStateComponent {
      */
     fun <T : Any> get(clazz: Class<T>): T = get(clazz.kotlin)
 
+    /**
+     * Obtains the instance of the given [className]
+     * @param className – the fully qualified name of the desired class.
+     */
+    @Suppress("UNCHECKED_CAST")
+    fun <T : Any> get(className: String): T {
+        try {
+            return (get(Class.forName(className))) as T
+        } catch (e: ClassNotFoundException) {
+            throw IllegalStateException(
+                "Could not find dependency: $className. " +
+                        "Make sure it is on the classpath and the appropriate module is loaded"
+            )
+        }
+    }
+
     private fun <T : Any> createDependencyByReflection(clazz: Class<T>): T {
         return try {
             clazz.getDeclaredConstructor().newInstance()
