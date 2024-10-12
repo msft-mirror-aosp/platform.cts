@@ -750,7 +750,10 @@ public class NfcAdapterTest {
             // TODO: Fix these tests as we add more functionality to this API surface.
             nfcOemExtension.clearPreference();
             nfcOemExtension.synchronizeScreenState();
-            assertThat(nfcOemExtension.getActiveNfceeList()).isNotEmpty();
+            List<String> nfceeList = nfcOemExtension.getActiveNfceeList();
+            for (String nfcee : nfceeList) {
+                assertThat(nfcee).isNotEmpty();
+            }
             nfcOemExtension.triggerInitialization();
             nfcOemExtension.hasUserEnabledNfc();
             nfcOemExtension.isTagPresent();
@@ -761,7 +764,8 @@ public class NfcAdapterTest {
             assertThat(nfcOemExtension.isAutoChangeEnabled()).isTrue();
             if (Flags.nfcOverrideRecoverRoutingTable()) {
                 nfcOemExtension.overwriteRoutingTable(PROTOCOL_AND_TECHNOLOGY_ROUTE_ESE,
-                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
+                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET, PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET,
+                        PROTOCOL_AND_TECHNOLOGY_ROUTE_UNSET);
             }
         } finally {
             nfcOemExtension.unregisterCallback(cb);
