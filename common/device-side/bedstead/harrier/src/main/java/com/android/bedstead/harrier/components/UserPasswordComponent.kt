@@ -23,7 +23,6 @@ import com.android.bedstead.harrier.DeviceStateComponent
 import com.android.bedstead.harrier.UserType
 import com.android.bedstead.harrier.annotations.EnsurePasswordNotSet
 import com.android.bedstead.harrier.annotations.EnsurePasswordSet
-import com.android.bedstead.multiuser.UserTypeResolver
 import com.android.bedstead.nene.exceptions.NeneException
 import com.android.bedstead.nene.users.UserReference
 

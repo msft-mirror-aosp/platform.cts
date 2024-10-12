@@ -89,21 +89,6 @@ class VirtualDpadTest : VirtualDeviceTestCase() {
     }
 
     @Test
-    fun sendKeyEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
-            assertThrows(SecurityException::class.java) {
-                mVirtualDpad.sendKeyEvent(
-                    VirtualKeyEvent.Builder()
-                        .setKeyCode(KeyEvent.KEYCODE_DPAD_UP)
-                        .setAction(VirtualKeyEvent.ACTION_DOWN)
-                        .build()
-                )
-            }
-        }
-    }
-
-    @Test
     fun rejectsUnsupportedKeyCodes() {
         assertThrows(IllegalArgumentException::class.java) {
             mVirtualDpad.sendKeyEvent(

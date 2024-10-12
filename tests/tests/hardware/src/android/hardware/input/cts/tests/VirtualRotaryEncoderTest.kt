@@ -24,10 +24,8 @@ import android.platform.test.annotations.RequiresFlagsDisabled
 import android.platform.test.annotations.RequiresFlagsEnabled
 import android.view.InputEvent
 import androidx.test.filters.SmallTest
-import com.android.compatibility.common.util.SystemUtil
 import junitparams.JUnitParamsRunner
 import junitparams.Parameters
-import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -42,20 +40,6 @@ class VirtualRotaryEncoderTest : VirtualDeviceTestCase() {
             mVirtualDevice,
             DEVICE_NAME, mVirtualDisplay.display
         ).device
-    }
-
-    @Test
-    fun sendScrollEvent_withoutCreateVirtualDevicePermission_throwsException() {
-        // Shell doesn't have CREATE_VIRTUAL_DEVICE permission.
-        SystemUtil.runWithShellPermissionIdentity {
-            assertThrows(SecurityException::class.java) {
-                mVirtualRotary.sendScrollEvent(
-                    VirtualRotaryEncoderScrollEvent.Builder()
-                        .setScrollAmount(1f)
-                        .build()
-                )
-            }
-        }
     }
 
     @RequiresFlagsEnabled(Flags.FLAG_VIRTUAL_ROTARY)

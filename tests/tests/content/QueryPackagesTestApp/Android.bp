@@ -1,4 +1,4 @@
-// Copyright (C) 2016 The Android Open Source Project
+// Copyright (C) 2024 The Android Open Source Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,31 +13,21 @@
 // limitations under the License.
 
 package {
-    default_team: "trendy_team_framework_android_multiuser",
+    default_team: "trendy_team_framework_android_packages",
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-android_test {
-    name: "CtsMultiUserTestCases",
-    defaults: ["cts_defaults"],
-    // Tag this module as a cts test artifact
+android_test_helper_app {
+    name: "CtsQueryPackagesTestApp",
+    defaults: [
+        "cts_defaults",
+    ],
+    manifest: "AndroidManifest.xml",
+    srcs: ["src/**/*.java"],
+    sdk_version: "test_current",
+    // tag this module as a cts test artifact
     test_suites: [
         "cts",
         "general-tests",
-        "automotive-tests",
     ],
-    srcs: ["src/**/*.java"],
-    static_libs: [
-        "ctstestrunner-axt",
-        "compatibility-device-util-axt",
-        "Nene",
-        "Harrier",
-        "TestApp",
-        "android.multiuser.flags-aconfig-java",
-        "android.os.flags-aconfig-java",
-        "flag-junit",
-    ],
-    libs: ["android.test.base.stubs.test"],
-    min_sdk_version: "29",
-    sdk_version: "test_current",
 }
